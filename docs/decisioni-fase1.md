@@ -163,9 +163,11 @@ la formazione.
 
 ### Conseguenza: l'admin sceglie la durata reale senza saperlo
 
-Con una giornata per turno, `P = (N − 1) × G` è **contemporaneamente** il numero di partite
-e il numero di giorni di calendario. Le combinazioni ammesse da §3.1 vanno da 6 giorni
-(N=4, G=2) a **114 giorni** (N=20, G=6).
+Con una giornata per turno, `P = (N − 1) × G` è il numero di partite per squadra.
+La durata in giorni è `D = (N − 1 + N mod 2) × G`: coincide con `P` per N pari,
+mentre con N dispari è `N × G` perché il metodo del cerchio aggiunge un riposo.
+Le combinazioni ammesse da §3.1 vanno da 6 giorni (N=4, G=2) a **114 giorni**
+(N=19 o 20, G=6).
 
 Chi crea la lega crede di scegliere il formato del campionato e sta scegliendo il mese
 in cui finisce. Quindi la schermata di creazione lega **deve** mostrare in tempo reale,
@@ -185,7 +187,7 @@ nel codice.
 Misurato su 200 stagioni per cella, spread di forza 79→84 distribuito su N squadre,
 `usaCondizione: false`:
 
-| N | G | P = partite = giorni | % titolo alla più forte | (caso puro) | % titolo alla metà debole |
+| N | G | P = partite per squadra | % titolo alla più forte | (caso puro) | % titolo alla metà debole |
 |---|---|---|---|---|---|
 | 6 | 2 | 10 | 45,5% | 16,7% | 13,0% |
 | 8 | 2 | 14 | 36,5% | 12,5% | 13,0% |

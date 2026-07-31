@@ -74,13 +74,16 @@ Quando servirà:
 | Slot rosa | 20–30 | 25 |
 | Portieri minimi | 2–4 | 3 |
 
-**Partite totali** `P = (N − 1) × G`. Con N dispari il sistema genera un turno di riposo per giornata usando il **metodo del cerchio** (una squadra fittizia "riposo" aggiunta per rendere pari il numero, poi ruotata).
+**Partite per squadra** `P = (N − 1) × G`. Con N dispari il sistema genera un turno di riposo per giornata usando il **metodo del cerchio** (una squadra fittizia "riposo" aggiunta per rendere pari il numero, poi ruotata).
 
-> **`P` è anche la durata reale della stagione in giorni**, perché si simula una giornata
+**Giornate totali** `D = (N − 1 + N mod 2) × G`: con N pari `D=P`, con N dispari
+`D=N×G` perché ogni girone include una giornata di riposo per squadra.
+
+> **`D` è la durata reale della stagione in giorni**, perché si simula una giornata
 > per turno (vedi `docs/decisioni-fase1.md` §7). Le combinazioni ammesse vanno da 6 giorni
 > (N=4, G=2) a 114 giorni (N=20, G=6): l'admin sceglie la durata senza accorgersene, quindi
 > la schermata di creazione lega **deve** mostrare giornate e data di fine in `Europe/Rome`
-> mentre muove i selettori. Con N dispari una squadra che riposa attende due giorni.
+> mentre muove i selettori.
 
 ### 3.2 Ingresso
 

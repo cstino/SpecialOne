@@ -133,8 +133,8 @@ Il porting non è urgente. Il motore funziona in JS e può restare in JS a lungo
 - Schieramento formazione: 7 moduli, titolari + panchina + tribuna, penalità fuori ruolo
 - Generazione calendario (metodo del cerchio, gestione squadre dispari con turni di riposo)
 - Cron notturno che simula **una** giornata (vedi `docs/decisioni-fase1.md` §7)
-- Anteprima della durata stagione nella creazione lega: con una giornata per turno,
-  `P = (N − 1) × G` è anche il numero di giorni reali
+- Anteprima della durata stagione nella creazione lega: `P = (N − 1) × G` sono le
+  partite per squadra; i giorni reali sono `D = (N − 1 + N mod 2) × G`
 - Classifica con i criteri corretti (punti → scontri diretti → differenza reti → gol fatti)
 - Pagina partita con tabellino e statistiche individuali
 - Formazione automatica di fallback se il partecipante non schiera entro le 23:00
