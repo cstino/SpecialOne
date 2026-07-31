@@ -8,6 +8,10 @@ FORM: direzione “lavagna gara”, settima opzione grounded; staging registrati
 import { useCallback, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { AuthScreen } from './components/AuthScreen'
+import { Draft } from './components/Draft'
+import { Formazione } from './components/Formazione'
+import { Rosa } from './components/Rosa'
+import type { GameView } from './components/GameNav'
 import { Lobby } from './components/Lobby'
 import { Onboarding } from './components/Onboarding'
 import { configurationError, supabase } from './lib/supabase'
@@ -20,6 +24,7 @@ export default function App() {
   const [dataLoading, setDataLoading] = useState(false)
   const [activeLeagueId, setActiveLeagueId] = useState<number | null>(null)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [gameView, setGameView] = useState<GameView>('overview')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -102,6 +107,14 @@ export default function App() {
   }
 
   const active = memberships.find((item) => item.league_id === activeLeagueId) ?? memberships[0]
+  if (active.league?.stato === 'draft') {
+    if (gameView === 'squad') return <Rosa membership={active} onNavigate={setGameView} />
+    return <Draft user={session.user} membership={active} onNavigate={setGameView} />
+  }
+  if (active.league?.stato === 'stagione') {
+    if (gameView === 'squad') return <Rosa membership={active} onNavigate={setGameView} />
+    return <Formazione membership={active} onNavigate={setGameView} />
+  }
   return (
     <Lobby
       user={session.user}

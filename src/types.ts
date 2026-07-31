@@ -23,6 +23,7 @@ export type Team = {
   stemma_url: string | null
   budget: number
   reroll_rimasti: number
+  ordine_draft: number | null
 }
 
 export type Membership = Team & { league?: League }

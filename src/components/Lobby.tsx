@@ -3,6 +3,7 @@ import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import type { League, Membership, Team } from '../types'
 import { Crest } from './Crest'
+import { GameNav } from './GameNav'
 
 type LobbyProps = {
   user: User
@@ -21,6 +22,7 @@ export function Lobby({ user, membership, memberships, onSelectLeague, onNewLeag
   const [loadError, setLoadError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [refreshIndex, setRefreshIndex] = useState(0)
+  const [startingDraft, setStartingDraft] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -63,8 +65,18 @@ export function Lobby({ user, membership, memberships, onSelectLeague, onNewLeag
     window.setTimeout(() => setCopied(false), 1800)
   }
 
+  async function avviaDraft() {
+    setStartingDraft(true)
+    setLoadError(null)
+    const { error } = await supabase.rpc('avvia_draft', { p_league_id: league.id })
+    if (error) setLoadError(error.message)
+    else onRefresh()
+    setStartingDraft(false)
+  }
+
   return (
     <main className="app-shell lobby-shell">
+      <GameNav league={league} active="overview" />
       <header className="topbar">
         <div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div>
         <div className="topbar-actions">
@@ -87,6 +99,13 @@ export function Lobby({ user, membership, memberships, onSelectLeague, onNewLeag
           </button>
         </div>
       </section>
+
+      {league.admin_id === user.id && teams.length === league.n_squadre && league.stato === 'setup' && (
+        <section className="draft-launch-panel">
+          <div><p className="kicker">Distinta completa</p><h2>Pronti per il draft?</h2><p>Avvia il draft quando tutti i partecipanti sono entrati. L’ordine verrà assegnato in base all’ingresso.</p></div>
+          <button className="button button--primary" type="button" disabled={startingDraft} onClick={avviaDraft}>{startingDraft ? 'Avvio…' : 'Avvia il draft'}</button>
+        </section>
+      )}
 
       <div className="lobby-grid">
         <section className="squad-list">
