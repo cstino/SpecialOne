@@ -12,3 +12,4 @@ __pycache__/
 data/fc26/
 tools/importazione/output/
 supabase/.temp/
+*.log

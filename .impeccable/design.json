@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-31T14:10:00+02:00",
+  "title": "Design System: SpecialOne",
+  "extensions": {
+    "colorMeta": {
+      "pitch": { "role": "primary", "displayName": "Verde campo", "canonical": "#1f6f43", "tonalRamp": ["#0b2b1b", "#125030", "#1f6f43", "#4d8c67", "#7daa8c", "#aac7b2", "#dce9df", "#f2f7f3"] },
+      "referee": { "role": "tertiary", "displayName": "Rosso arbitro", "canonical": "#b9362d", "tonalRamp": ["#3a0e0b", "#701c17", "#9c2a23", "#b9362d", "#d86b62", "#e9a29b", "#f6d9d5", "#fff2f0"] },
+      "paper": { "role": "neutral", "displayName": "Carta distinta", "canonical": "#f3f1e8", "tonalRamp": ["#262620", "#4a4a42", "#707068", "#98978e", "#bdbcb3", "#d9d8cf", "#f3f1e8", "#fffdf4"] },
+      "ink": { "role": "neutral", "displayName": "Inchiostro tattico", "canonical": "#18221c", "tonalRamp": ["#101612", "#18221c", "#344039", "#566058", "#7c857e", "#a5aca7", "#d2d6d2", "#f2f4f2"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Distinta", "purpose": "Titoli, codici e numeri che determinano il ritmo della stagione." },
+      "body": { "displayName": "Interfaccia", "purpose": "Form, spiegazioni e dati operativi." }
+    },
+    "shadows": [
+      { "name": "magnet-low", "value": "0 7px 18px rgba(24, 34, 28, 0.12)", "purpose": "Stato selezionato e hover dei controlli." },
+      { "name": "sheet-high", "value": "0 16px 36px rgba(13, 50, 30, 0.18)", "purpose": "Pannello di lavoro sollevato su desktop." }
+    ],
+    "motion": [
+      { "name": "magnet-settle", "value": "180ms cubic-bezier(.2,.8,.2,1)", "purpose": "Sollevamento breve di pulsanti e stemmi." }
+    ],
+    "breakpoints": [
+      { "name": "tablet", "value": "640px" },
+      { "name": "desktop", "value": "900px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Conferma l'azione principale del percorso.",
+      "html": "<button class=\"ds-btn-primary\">CREA LEGA E SQUADRA</button>",
+      "css": ".ds-btn-primary{min-height:50px;border:0;border-radius:10px;padding:14px 19px;color:#fffdf4;background:#1f6f43;font:800 16px Inter,sans-serif;transition:transform 180ms cubic-bezier(.2,.8,.2,1),box-shadow 180ms ease,background 180ms ease}.ds-btn-primary:hover{transform:translateY(-2px);background:#125030;box-shadow:0 7px 18px rgba(24,34,28,.12)}.ds-btn-primary:focus-visible{outline:3px solid #e9c46a;outline-offset:3px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campo operativo ad alta leggibilità.",
+      "html": "<label class=\"ds-field\">Nome squadra<input value=\"Atletico Bar Sport\"></label>",
+      "css": ".ds-field{display:grid;gap:8px;color:#18221c;font:750 14px Inter,sans-serif}.ds-field input{box-sizing:border-box;width:100%;min-height:50px;border:1px solid #8f978f;border-radius:10px;padding:12px 14px;color:#18221c;background:#fffdf4;font:400 16px Inter,sans-serif}.ds-field input:focus-visible{outline:3px solid #e9c46a;outline-offset:3px}"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "description": "Etichetta breve per stato o appartenenza.",
+      "html": "<span class=\"ds-status\">LA TUA</span>",
+      "css": ".ds-status{display:inline-block;border-radius:999px;padding:6px 9px;color:#125030;background:#dce9df;font:850 11px Inter,sans-serif}.ds-status:focus-visible{outline:3px solid #e9c46a;outline-offset:3px}"
+    },
+    {
+      "name": "Invite Code",
+      "kind": "custom",
+      "description": "Codice condivisibile trattato come oggetto principale della lobby.",
+      "html": "<button class=\"ds-invite\"><strong>ABC234</strong><small>Tocca per copiare</small></button>",
+      "css": ".ds-invite{border:1px solid rgba(255,253,244,.52);border-radius:14px;padding:18px;color:#fffdf4;background:#1f6f43;text-align:left}.ds-invite strong{display:block;font:900 52px/1 'Arial Narrow',sans-serif;letter-spacing:.13em}.ds-invite small{display:block;margin-top:10px;color:#d4e6d9}.ds-invite:focus-visible{outline:3px solid #e9c46a;outline-offset:3px}"
+    },
+    {
+      "name": "Team Row",
+      "kind": "custom",
+      "description": "Riga aperta della distinta partecipanti.",
+      "html": "<div class=\"ds-team\"><span>01</span><b>S1</b><strong>Atletico Bar Sport</strong></div>",
+      "css": ".ds-team{min-height:76px;display:grid;grid-template-columns:32px 44px 1fr;align-items:center;gap:12px;border-bottom:1px solid #c9cdc3;color:#18221c;font:400 14px Inter,sans-serif}.ds-team>span{color:#566058;font:750 11px ui-monospace,monospace}.ds-team>b{width:44px;height:52px;display:grid;place-items:center;clip-path:polygon(8% 0,92% 0,100% 18%,88% 75%,50% 100%,12% 75%,0 18%);color:#fffdf4;background:#1f6f43}.ds-team strong{font-size:15px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "La lavagna gara",
+    "overview": "SpecialOne prende il linguaggio operativo del calcio: distinta stampata, lavagna tattica, magneti squadra e segni rapidi dell'allenatore. I dati restano nitidi e l'identità emerge da grandi campi colore e controlli compatti.",
+    "keyCharacteristics": ["Mobile denso ma leggibile", "Carta e verde come superfici dominanti", "Titoli condensati e testo di sistema", "Conseguenze esplicite prima della conferma"],
+    "rules": [{ "name": "Referee Red", "body": "Il rosso non decora: appare solo per errori, scadenze e conseguenze irreversibili.", "section": "colors" }],
+    "dos": ["Do mostrare durata, capienza e conseguenze accanto alla scelta.", "Do mantenere le azioni primarie raggiungibili col pollice."],
+    "donts": ["Don't trasformare ogni impostazione in una card.", "Don't usare bagliori neon, vetro o gradienti decorativi."]
+  }
+}

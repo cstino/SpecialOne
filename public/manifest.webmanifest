@@ -1,0 +1,13 @@
+{
+  "name": "SpecialOne",
+  "short_name": "SpecialOne",
+  "description": "Manageriale calcistico multiplayer a turni.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f1e8",
+  "theme_color": "#1f6f43",
+  "lang": "it",
+  "icons": [
+    { "src": "/specialone-mark.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
