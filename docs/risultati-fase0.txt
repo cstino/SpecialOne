@@ -1,0 +1,120 @@
+
+CONFIG:  SENSIBILITA_FORZA=0.09   XG_BASE_BLOCCO=0.252   AMPLIFICA_CONTROLLO=1.4
+
+==============================================================================
+TEST 1 — BASELINE: due squadre identiche (OVR 81), 4-3-3 vs 4-3-3
+==============================================================================
+Gol per partita                        2.50   target 2.50–2.90    OK 
+Vittorie casa %                        45.3   target 43.0–47.0    OK 
+Pareggi %                              26.4   target 23.0–27.0    OK 
+Vittorie ospite %                      28.3   target 28.0–33.0    OK 
+Tiri per squadra                       12.4   target 11.0–14.0    OK 
+% passaggi riusciti                    80.0   target 76.0–88.0    OK 
+Possesso casa %                        52.8   target 49.0–54.0    OK 
+
+Distribuzione gol totali per partita
+  0 |################## 9.1%
+  1 |######################################### 20.0%
+  2 |#################################################### 25.6%
+  3 |########################################## 20.6%
+  4 |########################### 13.4%
+  5 |############## 6.7%
+  6 |###### 3.0%
+  7 |## 1.0%
+  8 |# 0.6%
+
+
+==============================================================================
+TEST 2 — SENSIBILITA AL DIVARIO DI OVERALL (campo neutro)
+==============================================================================
+  gap     vitt.forte%   pareggi%   vitt.debole%   gol forte   gol debole
+   0         36.7        28.0         35.3        1.16        1.14
+   2         49.1        26.0         24.9        1.44        0.90
+   4         63.0        21.8         15.2        1.80        0.70
+   6         73.6        17.6          8.8        2.23        0.56
+   8         84.2        11.5          4.3        2.84        0.47
+  12         95.5         3.6          0.9        4.26        0.37
+
+==============================================================================
+TEST 3 — STAGIONI COMPLETE (500 stagioni, 8 squadre, 4 gironi = 28 partite)
+  Forza squadre: da OVR 79 (T0) a OVR 84 (T7). Moduli casuali ogni partita.
+==============================================================================
+Punti del vincitore                    58.4   target 58.0–68.0    OK 
+Punti dell'ultimo                      19.6   target 15.0–28.0    OK 
+Spread primo-ultimo                    38.8   target 35.0–50.0    OK 
+Gol per partita                        2.73   target 2.50–2.90    OK 
+Condizione titolari a fine stag.       83.7   target 55.0–85.0    OK 
+
+  Punti vincitore  p10=51  mediana=58  p90=66   dev.std=5.6
+
+  Titoli vinti per forza squadra (T0=piu debole, T7=piu forte):
+   T0 (OVR 79.0)    0.0%  
+   T1 (OVR 79.7)    0.2%  
+   T2 (OVR 80.4)    1.2%  #
+   T3 (OVR 81.1)    2.8%  ###
+   T4 (OVR 81.9)    8.2%  ########
+   T5 (OVR 82.6)   15.6%  ################
+   T6 (OVR 83.3)   26.2%  ##########################
+   T7 (OVR 84.0)   45.8%  ##############################################
+
+Distribuzione punti del vincitore
+ 40 | 0.0%
+ 44 |### 1.6%
+ 48 |################# 9.2%
+ 52 |####################################### 21.0%
+ 56 |#################################################### 28.0%
+ 60 |######################################## 21.4%
+ 64 |####################### 12.4%
+ 68 |########## 5.4%
+ 72 |# 0.6%
+ 76 | 0.2%
+ 80 | 0.2%
+
+
+==============================================================================
+TEST 4 — PROFILO STRUTTURALE DEI MODULI + verifica di equilibrio
+==============================================================================
+  Profilo strutturale (punti di overall rispetto al 4-3-3):
+  modulo        ATT     MID     DEF
+  4-3-3        0.00    0.00    0.00
+  4-4-2       -0.55   -0.11    0.22
+  4-2-3-1     -0.11   -1.87    0.66
+  3-5-2       -1.10   -0.33    1.32
+  3-4-3        0.55    0.22   -0.66
+  5-3-2       -1.54   -0.99    1.98
+  4-2-4        1.65   -2.09   -0.66
+
+  TORNEO ALL-PLAY-ALL: ogni modulo con rosa su misura, OVR 81, campo neutro,
+  familiarita piena, 1500 partite per accoppiamento. Un modulo equilibrato sta a ~50%.
+
+  modulo      punti/partita   gol fatti   gol subiti
+  3-5-2           1.417        1.32         1.25
+  3-4-3           1.416        1.47         1.43
+  5-3-2           1.395        1.26         1.21
+  4-3-3           1.385        1.41         1.40
+  4-2-4           1.374        1.50         1.53
+  4-4-2           1.348        1.35         1.39
+  4-2-3-1         1.295        1.31         1.42
+
+  Scarto punti/partita max-min        0.122   target 0.000–0.220    OK 
+
+==============================================================================
+TEST 5 — TABELLINO DI ESEMPIO   (Casa OVR83 4-3-3  vs  Ospite OVR80 3-5-2)
+==============================================================================
+
+  RISULTATO:  3 - 0
+
+  CASA       poss 58%  tiri 15 (5 in porta)  pass 445/554 (80%)  contr 15  drib 14
+  OSPITE     poss 42%  tiri 10 (3 in porta)  pass 324/406 (80%)  contr 21  drib 10
+
+  Marcatori casa:   CM-5076016, RW-5076022, RW-5076021
+  Marcatori ospite: -
+
+  Top statistiche individuali CASA:
+   giocatore        tiri  passaggi  contrasti  dribbling
+   CDM-5076013       1        83          1          1
+   CM-5076014        1        82          2          1
+   CM-5076016        1        67          1          1
+   CB-5076004        0        63          2          0
+   CB-5076005        0        55          3          0
+   RB-5076010        0        54          2          0
