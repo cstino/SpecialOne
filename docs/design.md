@@ -26,7 +26,8 @@ Snapshot singolo **2025/26** (FC 26), 10 campionati:
 
 Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Eredivisie, Liga Portugal, Süper Lig, Saudi Pro League, EFL Championship.
 
-**Volume atteso**: ~5.500–6.500 giocatori, ~200 club.
+**Volume dello snapshot importato**: 5.416 giocatori, 192 club. Fonte e conteggi sono
+documentati in `docs/dataset-fc26.md`.
 
 **Motivo dello snapshot singolo**: in una carriera pluristagionale gli snapshot storici sono temporalmente incoerenti (un Del Piero 2003 che invecchia accanto a un Haaland 2025 non ha senso). Con un anno zero unico, tutti invecchiano insieme e il problema duplicati/età sparisce per costruzione.
 

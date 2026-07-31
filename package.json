@@ -1,1 +1,9 @@
-{ "name": "specialone", "type": "module", "private": true }
+{
+  "name": "specialone",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test:engine": "node tools/validazione/simulate.js",
+    "test:import": "python3 -m unittest discover -s tools/importazione -p 'test_*.py'"
+  }
+}

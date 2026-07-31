@@ -117,9 +117,15 @@ Il porting non è urgente. Il motore funziona in JS e può restare in JS a lungo
 
 ## 5. Stato attuale e task corrente
 
-**Fatto**: Fase 0 — motore di simulazione validato.
+**Fatto**:
 
-**Da fare adesso**: Fase 1 — lega giocabile con una singola stagione.
+- Fase 0 — motore di simulazione validato
+- Fase 1 / task 1 — schema Supabase completo, migrazioni e RLS
+- Fase 1 / task 2 — 5.416 giocatori FC 26 importati; pipeline in `tools/importazione/`
+  e bucket foto privato pronto (foto opzionali non ancora caricate)
+
+**Da fare adesso**: Fase 1 / task 3 — Auth, creazione lega, codice invito e
+registrazione squadra.
 
 ### Scope della Fase 1 — cosa includere
 

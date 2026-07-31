@@ -6,4 +6,9 @@
 node_modules/
 dist/
 coverage/
+.venv/
+__pycache__/
+*.py[cod]
+data/fc26/
+tools/importazione/output/
 supabase/.temp/

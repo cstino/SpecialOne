@@ -69,14 +69,11 @@ che è Fase 3.
 
 ---
 
-## 3. Dataset: da reperire. Foto: scaricate e ospitate, mai in hotlink.
+## 3. Dataset: importato. Foto: scaricate e ospitate, mai in hotlink.
 
-**Non esiste un CSV pronto da consegnare.** Va reperito. Percorso realistico, in ordine
-di preferenza:
-
-1. Dataset FC 26 su Kaggle (derivati da scraping SoFIFA, formato CSV già pulito con
-   `overall`, `potential`, `age`, `player_positions`, e i sottoattributi)
-2. Scraping diretto di SoFIFA o FIFA Index
+È stato importato lo snapshot Kaggle `rovnez/fc-26-fifa-26-player-data`, derivato da
+SoFIFA e dichiarato CC BY 4.0: 5.416 giocatori, 192 club, 10 campionati. Fonte, hash e
+conteggi sono in `docs/dataset-fc26.md`; la pipeline ripetibile è in `tools/importazione/`.
 
 È materiale in zona grigia dal punto di vista della licenza. Per un gioco privato tra
 8 persone senza monetizzazione il rischio è nullo, ma **non va reso pubblico né indicizzabile**.
@@ -87,7 +84,8 @@ webp e carica su Supabase Storage. ~6.000 immagini, ordine di grandezza 60-100 M
 il piano gratuito. L'app deve degradare senza errori quando `foto_url` è null: un placeholder
 con le iniziali va benissimo, e in Fase 1 va bene partire direttamente senza foto.
 
-L'import è un task a sé, da fare **dopo** lo schema e **prima** del draft.
+Le foto restano opzionali e non sono ancora state caricate. Il bucket privato e lo script
+WebP separato sono pronti; l'app deve comunque funzionare con `foto_url = null`.
 
 ---
 

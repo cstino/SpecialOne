@@ -20,6 +20,10 @@ specialone/
 │   ├── roster.js
 │   ├── simulate.js
 │   └── package.json
+├── tools/importazione/            pipeline one-off dataset FC 26 e foto
+│   ├── normalizza.py
+│   ├── prepara_foto.py
+│   └── README.md
 │
 ├── src/                           React + Vite (da creare)
 └── supabase/
