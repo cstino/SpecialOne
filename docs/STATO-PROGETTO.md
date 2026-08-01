@@ -181,6 +181,29 @@ deciso: o si accetta la pausa, o il pulsante admin deve spostare le date delle g
 quando simula in anticipo, oppure il cron ignora il calendario e simula la prima giornata pendente
 ogni notte (e allora le date mostrate diventano bugiarde).
 
+### Deploy su Vercel — preparato, non ancora pubblicato
+
+Progetto collegato: `cstinos-projects/specialone`. Variabili `VITE_SUPABASE_URL` e
+`VITE_SUPABASE_PUBLISHABLE_KEY` già impostate su production, preview e development.
+
+File aggiunti: `vercel.json` (fallback SPA, header `X-Robots-Tag: noindex`, cache immutabile
+sugli asset, `no-cache` sul service worker), `public/robots.txt` con `Disallow: /`, e il
+`<meta name="robots" content="noindex, nofollow">` in `index.html`. Non è pignoleria: è
+`decisioni-fase1.md` §3, che vieta di rendere il dataset pubblico o indicizzabile.
+
+`.vercelignore` tiene fuori dal caricamento `docs/`, `tools/`, `supabase/` ed `engine/`: al
+browser non servono, e `engine/` appartiene alle Edge Function su Supabase.
+
+**Manca solo l'autenticazione.** La CLI installata globalmente è la 42.3.0 e l'API ora pretende
+almeno la 47.2.2; il token salvato da quella vecchia non vale per la nuova. Serve:
+
+```bash
+npx vercel@latest login
+npx vercel@latest --prod --yes
+```
+
+Da fare a mano perché `login` apre il browser.
+
 ### Menu iniziale e profilo allenatore
 
 Prima la `Lobby` faceva da schermata di casa, ma è la **sala d'attesa di una singola lega**:

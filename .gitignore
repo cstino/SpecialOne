@@ -13,3 +13,4 @@ data/fc26/
 tools/importazione/output/
 supabase/.temp/
 *.log
+.vercel

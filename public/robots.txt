@@ -1,0 +1,9 @@
+# SpecialOne e' una lega privata fra amici, non un sito pubblico.
+#
+# Il dataset FC 26 e' materiale di terzi in zona grigia dal punto di vista
+# della licenza: decisioni-fase1.md §3 impone che non sia reso pubblico ne'
+# indicizzabile. L'app e' gia' dietro autenticazione; questo file toglie di
+# mezzo anche l'indicizzazione della pagina di accesso.
+
+User-agent: *
+Disallow: /

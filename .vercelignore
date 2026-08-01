@@ -1,0 +1,19 @@
+# Vercel costruisce solo il frontend: tutto il resto non deve nemmeno salire.
+#
+# Il motore di simulazione e le Edge Function vivono su Supabase, non qui:
+# `engine/` serve a `supabase/functions/`, non al bundle del browser.
+
+node_modules
+dist
+.git
+
+docs
+tools
+supabase
+engine
+
+data
+*.log
+__pycache__
+.venv
+.impeccable
