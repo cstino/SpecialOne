@@ -16,6 +16,8 @@ type OnboardingProps = {
   user: User
   onComplete: (result: RpcResult) => void
   onCancel?: () => void
+  /** Dal menu iniziale si entra gia' dentro il ramo scelto. */
+  modoIniziale?: 'choose' | 'create' | 'join'
 }
 
 type TeamFields = {
@@ -73,8 +75,8 @@ async function eliminaStemmaSeOrfano(path: string) {
   if (!error && !data) await supabase.storage.from('team-crests').remove([path])
 }
 
-export function Onboarding({ user, onComplete, onCancel }: OnboardingProps) {
-  const [mode, setMode] = useState<'choose' | 'create' | 'join'>('choose')
+export function Onboarding({ user, onComplete, onCancel, modoIniziale = 'choose' }: OnboardingProps) {
+  const [mode, setMode] = useState<'choose' | 'create' | 'join'>(modoIniziale)
 
   return (
     <main className="app-shell onboarding-shell">

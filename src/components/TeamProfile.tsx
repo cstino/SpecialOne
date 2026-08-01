@@ -58,6 +58,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [statRows, setStatRows] = useState<MatchPlayerStat[]>([])
   const [schedaAperta, setSchedaAperta] = useState<RosterPlayer | null>(null)
   const [fotoScheda, setFotoScheda] = useState<string | undefined>(undefined)
+  const [allenatore, setAllenatore] = useState<string | null>(null)
   const [rosterLoading, setRosterLoading] = useState(true)
   const [rosterError, setRosterError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
@@ -67,6 +68,19 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [saveError, setSaveError] = useState<string | null>(null)
   const team = teamOverride?.id === teamId ? teamOverride : seasonData.teamById.get(teamId)
   const ownTeam = teamId === membership.id
+
+  // Il nome dell'allenatore e' leggibile solo fra chi condivide una lega
+  // (policy profiles_lettura): fuori dalla lega la query non restituisce nulla.
+  useEffect(() => {
+    let active = true
+    async function loadAllenatore() {
+      if (!team?.user_id) { setAllenatore(null); return }
+      const { data } = await supabase.from('profiles').select('nome_allenatore').eq('user_id', team.user_id).maybeSingle()
+      if (active) setAllenatore((data as { nome_allenatore: string } | null)?.nome_allenatore ?? null)
+    }
+    void loadAllenatore()
+    return () => { active = false }
+  }, [team?.user_id])
 
   useEffect(() => {
     let active = true
@@ -236,6 +250,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         <div>
           <p className="kicker">{league.nome} · Stagione {league.stagione_corrente}</p>
           <h1>{team.nome}</h1>
+          {allenatore && <p className="team-allenatore">Allenatore · <b>{allenatore}</b></p>}
           <div className="team-form">
             <span className="team-form__eti">FORMA</span>
             {forma.map((esito, indice) => <span className={`esito esito--${esito}`} key={`e${indice}`}>{esito}</span>)}
@@ -277,7 +292,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       <section className="team-roster-panel">
         <div className="season-card__heading"><div><p className="kicker">Rosa completa</p><h2>Dal portiere all’attacco</h2></div><span>{players.length} / {league.slot_rosa}</span></div>
         {rosterError && <p className="notice notice--error">{rosterError}</p>}
-        {rosterLoading ? <p className="season-empty">Carico la rosa…</p> : <div className="team-roster-list">{players.map((player) => <button className={`team-roster-player team-roster-player--${department(player.posizioni[0])}`} type="button" key={player.id} onClick={() => setSchedaAperta(player)} aria-label={`Scheda di ${player.nome}`}><i /><span className="team-roster-role">{player.posizioni[0] ?? '—'}</span><div><strong>{player.nome}</strong><small>{player.posizioni.join(' · ')} · {player.eta} anni</small></div><b>{player.overall}</b><dl><span>{player.minuti}<small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span></dl></button>)}</div>}
+        {rosterLoading ? <p className="season-empty">Carico la rosa…</p> : <div className="team-roster-list">{players.map((player) => <button className={`team-roster-player team-roster-player--${department(player.posizioni[0])}`} type="button" key={player.id} onClick={() => setSchedaAperta(player)} aria-label={`Scheda di ${player.nome}`}><i /><span className="team-roster-role">{player.posizioni[0] ?? '—'}</span><div><strong>{player.nome}</strong><small>{player.posizioni.join(' · ')} · {player.eta} anni · <em>{money(player.ingaggio)}/anno</em></small></div><b>{player.overall}</b><dl><span>{player.minuti}<small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span></dl></button>)}</div>}
       </section>
 
       {schedaAperta && <SchedaGiocatore
@@ -289,6 +304,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           eta: schedaAperta.eta,
           piede: schedaAperta.piede,
           altezza: schedaAperta.altezza,
+          ingaggio: schedaAperta.ingaggio,
           attributi: schedaAperta.attributi,
         }}
         fotoUrl={fotoScheda}

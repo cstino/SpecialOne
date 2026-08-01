@@ -18,7 +18,9 @@ import { Standings } from './components/Standings'
 import { TeamProfile } from './components/TeamProfile'
 import type { GameView } from './components/GameNav'
 import { Lobby } from './components/Lobby'
+import { MenuIniziale } from './components/MenuIniziale'
 import { Onboarding } from './components/Onboarding'
+import { ContestoHome } from './lib/navigazione'
 import { configurationError, supabase } from './lib/supabase'
 import type { League, Membership, RpcResult, Team } from './types'
 
@@ -32,7 +34,11 @@ export default function App() {
   const [gameView, setGameView] = useState<GameView>('overview')
   const [openMatch, setOpenMatch] = useState<{ id: number; from: GameView } | null>(null)
   const [viewedTeamId, setViewedTeamId] = useState<number | null>(null)
+  const [inLobby, setInLobby] = useState(false)
+  const [modoOnboarding, setModoOnboarding] = useState<'choose' | 'create' | 'join'>('choose')
   const [error, setError] = useState<string | null>(null)
+
+  const apriLobby = useCallback(() => setInLobby(true), [])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -99,6 +105,8 @@ export default function App() {
   async function completed(result: RpcResult) {
     setActiveLeagueId(result.league_id)
     setShowOnboarding(false)
+    setModoOnboarding('choose')
+    setInLobby(false)
     await loadMemberships()
   }
 
@@ -110,13 +118,62 @@ export default function App() {
   if (dataLoading && memberships.length === 0) return <main className="loading-screen"><span className="loading-mark">S1</span><p>Preparo la distinta…</p></main>
   if (error) return <main className="fatal-state"><h1>Qualcosa non torna</h1><p>{error}</p><button className="button button--primary" type="button" onClick={() => loadMemberships()}>Riprova</button></main>
   if (showOnboarding || memberships.length === 0) {
-    return <Onboarding user={session.user} onComplete={completed} onCancel={memberships.length ? () => setShowOnboarding(false) : undefined} />
+    return <Onboarding
+      user={session.user}
+      onComplete={completed}
+      onCancel={memberships.length ? () => { setShowOnboarding(false); setModoOnboarding('choose') } : undefined}
+      modoIniziale={modoOnboarding}
+    />
   }
 
   const active = memberships.find((item) => item.league_id === activeLeagueId) ?? memberships[0]
+
+  function selezionaLega(leagueId: number) {
+    setActiveLeagueId(leagueId)
+    setInLobby(false)
+    setGameView('overview')
+    setOpenMatch(null)
+    setViewedTeamId(null)
+  }
+
+  function apriOnboarding(modo: 'choose' | 'create' | 'join') {
+    setModoOnboarding(modo)
+    setShowOnboarding(true)
+  }
+
+  // Menu iniziale: si arriva qui dal marchio in alto a sinistra. La Lobby resta
+  // la sala d'attesa della singola lega prima del draft, non la schermata di casa.
+  if (inLobby) {
+    return (
+      <MenuIniziale
+        user={session.user}
+        memberships={memberships}
+        onEntraNellaLega={selezionaLega}
+        onCreaLega={() => apriOnboarding('create')}
+        onEntraConCodice={() => apriOnboarding('join')}
+        onRefresh={loadMemberships}
+      />
+    )
+  }
+
+  if (active.league?.stato !== 'draft' && active.league?.stato !== 'stagione') {
+    return (
+      <ContestoHome.Provider value={apriLobby}>
+        <Lobby
+          user={session.user}
+          membership={active}
+          memberships={memberships}
+          onSelectLeague={selezionaLega}
+          onNewLeague={apriLobby}
+          onRefresh={loadMemberships}
+        />
+      </ContestoHome.Provider>
+    )
+  }
+
   if (active.league?.stato === 'draft') {
-    if (gameView === 'squad') return <Rosa membership={active} onNavigate={setGameView} />
-    return <Draft user={session.user} membership={active} onNavigate={setGameView} />
+    if (gameView === 'squad') return <ContestoHome.Provider value={apriLobby}><Rosa membership={active} onNavigate={setGameView} /></ContestoHome.Provider>
+    return <ContestoHome.Provider value={apriLobby}><Draft user={session.user} membership={active} onNavigate={setGameView} /></ContestoHome.Provider>
   }
 
   function navigateGame(view: GameView) {
@@ -129,22 +186,15 @@ export default function App() {
     setViewedTeamId(teamId)
     setGameView('team')
   }
-  if (active.league?.stato === 'stagione') {
-    if (openMatch) return <MatchDetail membership={active} matchId={openMatch.id} onBack={() => { setOpenMatch(null); setGameView(openMatch.from) }} onNavigate={navigateGame} onOpenTeam={openTeam} />
-    if (gameView === 'squad') return <Formazione membership={active} onNavigate={navigateGame} />
-    if (gameView === 'team') return <TeamProfile membership={active} teamId={viewedTeamId ?? active.id} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'team' })} onTeamUpdated={loadMemberships} />
-    if (gameView === 'matches') return <Matches membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'matches' })} onOpenTeam={openTeam} />
-    if (gameView === 'table') return <Standings membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
-    return <SeasonOverview membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'overview' })} onOpenTeam={openTeam} />
-  }
   return (
-    <Lobby
-      user={session.user}
-      membership={active}
-      memberships={memberships}
-      onSelectLeague={setActiveLeagueId}
-      onNewLeague={() => setShowOnboarding(true)}
-      onRefresh={loadMemberships}
-    />
+    <ContestoHome.Provider value={apriLobby}>
+      {openMatch
+        ? <MatchDetail membership={active} matchId={openMatch.id} onBack={() => { setOpenMatch(null); setGameView(openMatch.from) }} onNavigate={navigateGame} onOpenTeam={openTeam} />
+        : gameView === 'squad' ? <Formazione membership={active} onNavigate={navigateGame} />
+        : gameView === 'team' ? <TeamProfile membership={active} teamId={viewedTeamId ?? active.id} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'team' })} onTeamUpdated={loadMemberships} />
+        : gameView === 'matches' ? <Matches membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'matches' })} onOpenTeam={openTeam} />
+        : gameView === 'table' ? <Standings membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
+        : <SeasonOverview membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'overview' })} onOpenTeam={openTeam} />}
+    </ContestoHome.Provider>
   )
 }

@@ -24,6 +24,8 @@ export type DatiScheda = {
   piede?: string | null
   altezza?: number | null
   condizione?: number
+  /** Ingaggio annuo in euro (design §5.1: la scala e' annuale). */
+  ingaggio?: number
   attributi: Record<string, number | null>
 }
 
@@ -89,6 +91,7 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, onClose }: Props
         <div><dt>Piede</dt><dd>{giocatore.piede ?? '—'}</dd></div>
         <div><dt>Altezza</dt><dd>{giocatore.altezza ? `${giocatore.altezza} cm` : '—'}</dd></div>
         {typeof giocatore.condizione === 'number' && <div><dt>Condizione</dt><dd>{giocatore.condizione}%</dd></div>}
+        {typeof giocatore.ingaggio === 'number' && <div className="fatto-ingaggio"><dt>Ingaggio</dt><dd>{(giocatore.ingaggio / 1_000_000).toFixed(1)} M€ <small>/ anno</small></dd></div>}
       </dl>
 
       {stagione && <div className="player-modal__stats">

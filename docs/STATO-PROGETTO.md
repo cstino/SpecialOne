@@ -114,6 +114,39 @@ Già applicato:
   Card per giornata con fascia di intestazione e pillola di stato.
 - Nelle partite non ancora giocate compare **VS** invece del segnaposto `00:00`.
 
+### Menu iniziale e profilo allenatore
+
+Prima la `Lobby` faceva da schermata di casa, ma è la **sala d'attesa di una singola lega**:
+mostra i partecipanti di quella lega e il suo codice invito. Ora è tornata a fare solo quello.
+
+`src/components/MenuIniziale.tsx` è la vera schermata iniziale, raggiungibile toccando il
+marchio in alto a sinistra da dentro qualunque lega (draft o stagione):
+
+- Crea una lega / Entra con un codice, che aprono l'onboarding già dentro il ramo giusto
+  (`Onboarding` accetta `modoIniziale`).
+- Elenco delle proprie leghe con stemma, stato e, per le leghe in corso, posizione e punti.
+- Bottone a tre lineette in alto a destra: apre un pannello laterale con **Profilo** ed **Esci**.
+
+Il ritorno alla schermata iniziale passa da un **contesto React** (`src/lib/navigazione.ts`),
+non da una prop: altrimenti `onHome` andrebbe infilata in tutte e otto le schermate solo per
+arrivare a `GameNav`.
+
+**Tabella `profiles`** (migrazione `20260801181500_profilo_allenatore.sql`): fino ad ora un
+partecipante era solo un `user_id` e un'email. Contiene il nome dell'allenatore, con:
+
+- helper `private.condivide_lega(uuid)` in SECURITY DEFINER — obbligatorio, altrimenti una
+  policy su `profiles` che interroga `teams` applica anche la RLS di `teams` ed entra in
+  ricorsione. È la trappola documentata in `20260731120400_helper_rls.sql`;
+- policy di lettura: il proprio profilo più quello di chi condivide una lega. Non è una
+  rubrica globale;
+- scrittura solo via RPC `aggiorna_nome_allenatore`, il browser non ha INSERT/UPDATE;
+- creazione pigra al primo salvataggio: nessun trigger su `auth.users`, nessun backfill.
+
+Le statistiche di carriera (leghe, stagioni, titoli, partite, record punti, miglior
+piazzamento) sono calcolate dal client su `standings` × `seasons`, senza schema aggiuntivo.
+**L'albo d'oro nasce vuoto per costruzione**: i titoli si contano su `standings.posizione = 1`
+con stagione `conclusa`, e nessuna stagione lo è ancora.
+
 ### Scheda giocatore condivisa
 
 `src/components/SchedaGiocatore.tsx` è usata **sia** da Formazione **sia** da Squadra: non
@@ -130,7 +163,7 @@ cognome. Provata su tutti i 5.416 nomi: zero risultati vuoti, gestisce cognomi c
 
 ## Database remoto
 
-Migrazioni applicate fino a `20260801163000_correggi_lettura_foto_giocatori.sql`.
+Migrazioni applicate fino a `20260801181500_profilo_allenatore.sql`.
 
 Quella migrazione corregge un difetto latente che vale la pena capire, perché è il genere di cosa
 che si ripresenta. La policy `player_photos_download` limitava l'accesso alle sole operazioni
@@ -181,6 +214,8 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
 - `useSeasonData` interroga `matches` per `league_id` senza `season_id`: innocuo con una sola
   stagione, diventa un difetto alla seconda.
 - `Rosa.tsx` carica `foto_url` ma non lo usa: nessuna foto nella rosa di draft.
+- Il bundle ha superato i 500 kB e Vite lo segnala a ogni build. Non e' un errore, ma e' il
+  momento in cui varrebbe la pena separare il codice per schermata.
 - La formazione salvata è slot-per-slot; non riordinare gli array dei titolari prima del motore.
 - `sostituzioni()` muta il lineup: costruire oggetti freschi per ogni partita.
 - Il seed globale impone simulazioni in sequenza, mai in parallelo.
@@ -196,7 +231,8 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
 1. **Provare la simulazione** con la Edge Function versione 6 e verificare cronaca e assist.
 2. **Completare la grafica**: mancano **Overview** e **Classifica** nel menu di stagione, e poi
    Lobby, Draft, Onboarding e Login. I mattoni condivisi esistono già (`.esito`, `.esito-riga`,
-   `.stat-guida`, `.giornata-card`, `.sezione-testa`, `.button-fantasma`): è in gran parte riuso.
+   `.stat-guida`, `.giornata-card`, `.sezione-testa`, `.button-fantasma`, `.pillola-stato`,
+   `.menu-azione`): è in gran parte riuso.
 3. **Automazione stagione**: configurare `pg_cron`/`pg_net` in `Europe/Rome`. Attenzione: la Edge
    Function è dichiarata `withSupabase({ auth: 'user' })` e verifica `league.admin_id`. Una chiamata
    da `pg_net` non ha JWT utente, quindi **così com'è il cron non può invocarla**: serve prima un

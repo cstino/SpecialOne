@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTornaAllaHome } from '../lib/navigazione'
 import type { League } from '../types'
 
 export type GameView = 'overview' | 'draft' | 'squad' | 'team' | 'matches' | 'table'
@@ -39,10 +40,18 @@ const seasonItems = [
 
 export function GameNav({ league, active, onNavigate }: GameNavProps) {
   const items = league.stato === 'draft' ? draftItems : seasonItems
+  const tornaAllaHome = useTornaAllaHome()
+
+  // Il marchio riporta all'elenco delle leghe: e' l'unica via d'uscita da una
+  // lega in corso per chi ne ha piu' di una.
+  const marchio = (chiave: string) => tornaAllaHome
+    ? <button className="game-sidebar__brand game-sidebar__brand--azione" type="button" key={chiave} onClick={tornaAllaHome} title="Torna alle tue leghe" aria-label="Torna alle tue leghe"><img src="/specialone-mark.svg" alt="" /><span>Special<span>One</span></span></button>
+    : <div className="game-sidebar__brand" key={chiave}><img src="/specialone-mark.svg" alt="" /><span>Special<span>One</span></span></div>
+
   return (
     <>
       <aside className="game-sidebar">
-        <div className="game-sidebar__brand"><img src="/specialone-mark.svg" alt="" /><span>Special<span>One</span></span></div>
+        {marchio('desktop')}
         <div className="game-sidebar__league"><small>LEGA ATTIVA</small><strong>{league.nome}</strong><span>{league.stato === 'draft' ? 'Draft in corso' : `Stagione ${league.stagione_corrente} in corso`}</span></div>
         <nav aria-label="Navigazione lega">
           {items.map(([key, label]) => <button className={`game-nav-item ${active === key ? 'is-active' : ''}`} key={key} type="button" onClick={() => onNavigate?.(key)} aria-current={active === key ? 'page' : undefined}><i aria-hidden="true"><Icona nome={key} /></i><span>{label}</span>{key === active && <b />}</button>)}
@@ -50,7 +59,7 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
         <div className="game-sidebar__footer"><span className="game-online-dot" /> Server online<span className="game-version">S1 · BETA</span></div>
       </aside>
       <>
-        <div className="game-mobilebar"><div className="game-sidebar__brand"><img src="/specialone-mark.svg" alt="" /><span>Special<span>One</span></span></div><span className="game-mobilebar__league">{league.nome}</span></div>
+        <div className="game-mobilebar">{marchio('mobile')}<span className="game-mobilebar__league">{league.nome}</span></div>
         <nav className="game-mobile-nav" aria-label="Navigazione lega mobile">
           {items.map(([key, label]) => <button className={active === key ? 'is-active' : ''} key={key} type="button" onClick={() => onNavigate?.(key)} aria-current={active === key ? 'page' : undefined}><i aria-hidden="true"><Icona nome={key} /></i><span>{key === 'squad' ? 'Rosa' : label}</span></button>)}
         </nav>
