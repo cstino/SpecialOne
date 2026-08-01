@@ -185,8 +185,8 @@ function marcatori(lineup, nGol) {
 
 export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}) {
   const usaCondizione = opt.usaCondizione !== false;
-  const lc = schiera(rosaCasa, modCasa);
-  const lo = schiera(rosaOspite, modOspite);
+  const lc = opt.lineupCasa || schiera(rosaCasa, modCasa);
+  const lo = opt.lineupOspite || schiera(rosaOspite, modOspite);
 
   const famC = familiarita(rosaCasa, modCasa);
   const famO = familiarita(rosaOspite, modOspite);
@@ -255,22 +255,31 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   const sC = mk(lc, golC, ctrlMedio, forzeLinee(lc), xgTotC);
   const sO = mk(lo, golO, 1 - ctrlMedio, forzeLinee(lo), xgTotO);
 
-  const perGiocatore = opt.statsGiocatori ? {
-    casa: {
+  const perGiocatore = opt.statsGiocatori ? (() => {
+    const marcatoriCasa = marcatori(lc, golC);
+    const marcatoriOspite = marcatori(lo, golO);
+    const minuti = rosa => new Map(rosa.giocatori
+      .map(g => [g.id, Math.round((inCampo.get(g.id) || 0) * 90 / CFG.BLOCCHI_PARTITA)])
+      .filter(([, valore]) => valore > 0));
+    return { casa: {
       tiri: distribuisci(lc, 'tiri', sC.tiri, 'finishing'),
       passaggi: distribuisci(lc, 'passaggi', sC.passaggiT, 'short_passing'),
       contrasti: distribuisci(lc, 'contrasti', sC.contrasti, 'tackle'),
       dribbling: distribuisci(lc, 'dribbling', sC.dribbling, 'dribbling'),
-      marcatori: marcatori(lc, golC).map(g => g.nome),
+      minuti: minuti(rosaCasa),
+      marcatori: marcatoriCasa.map(g => g.nome),
+      marcatoriIds: marcatoriCasa.map(g => g.id),
     },
     ospite: {
       tiri: distribuisci(lo, 'tiri', sO.tiri, 'finishing'),
       passaggi: distribuisci(lo, 'passaggi', sO.passaggiT, 'short_passing'),
       contrasti: distribuisci(lo, 'contrasti', sO.contrasti, 'tackle'),
       dribbling: distribuisci(lo, 'dribbling', sO.dribbling, 'dribbling'),
-      marcatori: marcatori(lo, golO).map(g => g.nome),
+      minuti: minuti(rosaOspite),
+      marcatori: marcatoriOspite.map(g => g.nome),
+      marcatoriIds: marcatoriOspite.map(g => g.id),
     },
-  } : null;
+  }; })() : null;
 
   // ---------- recupero condizione + infortuni ----------
   if (usaCondizione) {

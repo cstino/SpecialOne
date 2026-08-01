@@ -3,6 +3,10 @@
 Contesto per l'agent. Leggi questo file per intero prima di scrivere codice.
 Vale anche per Codex: se usi Codex, copia questo file anche come `AGENTS.md`.
 
+> **Handoff aggiornato:** dopo questo file leggere `docs/STATO-PROGETTO.md`.
+> La sezione 5 sottostante fotografa l'inizio della Fase 1 ed è storica; per funzionalità
+> completate, working tree e prossime task fa fede `docs/STATO-PROGETTO.md`.
+
 ---
 
 ## 1. Cos'è questo progetto

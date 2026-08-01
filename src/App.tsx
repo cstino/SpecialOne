@@ -11,6 +11,11 @@ import { AuthScreen } from './components/AuthScreen'
 import { Draft } from './components/Draft'
 import { Formazione } from './components/Formazione'
 import { Rosa } from './components/Rosa'
+import { Matches } from './components/Matches'
+import { MatchDetail } from './components/MatchDetail'
+import { SeasonOverview } from './components/SeasonOverview'
+import { Standings } from './components/Standings'
+import { TeamProfile } from './components/TeamProfile'
 import type { GameView } from './components/GameNav'
 import { Lobby } from './components/Lobby'
 import { Onboarding } from './components/Onboarding'
@@ -25,6 +30,8 @@ export default function App() {
   const [activeLeagueId, setActiveLeagueId] = useState<number | null>(null)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [gameView, setGameView] = useState<GameView>('overview')
+  const [openMatch, setOpenMatch] = useState<{ id: number; from: GameView } | null>(null)
+  const [viewedTeamId, setViewedTeamId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -111,9 +118,24 @@ export default function App() {
     if (gameView === 'squad') return <Rosa membership={active} onNavigate={setGameView} />
     return <Draft user={session.user} membership={active} onNavigate={setGameView} />
   }
+
+  function navigateGame(view: GameView) {
+    setOpenMatch(null)
+    setViewedTeamId(null)
+    setGameView(view)
+  }
+  function openTeam(teamId: number) {
+    setOpenMatch(null)
+    setViewedTeamId(teamId)
+    setGameView('team')
+  }
   if (active.league?.stato === 'stagione') {
-    if (gameView === 'squad') return <Rosa membership={active} onNavigate={setGameView} />
-    return <Formazione membership={active} onNavigate={setGameView} />
+    if (openMatch) return <MatchDetail membership={active} matchId={openMatch.id} onBack={() => { setOpenMatch(null); setGameView(openMatch.from) }} onNavigate={navigateGame} onOpenTeam={openTeam} />
+    if (gameView === 'squad') return <Formazione membership={active} onNavigate={navigateGame} />
+    if (gameView === 'team') return <TeamProfile membership={active} teamId={viewedTeamId ?? active.id} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'team' })} onTeamUpdated={loadMemberships} />
+    if (gameView === 'matches') return <Matches membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'matches' })} onOpenTeam={openTeam} />
+    if (gameView === 'table') return <Standings membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
+    return <SeasonOverview membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'overview' })} onOpenTeam={openTeam} />
   }
   return (
     <Lobby

@@ -13,6 +13,7 @@ export type League = {
   partite_per_squadra: number
   giornate_totali: number
   stato: 'setup' | 'draft' | 'stagione' | 'conclusa'
+  stagione_corrente: number
 }
 
 export type Team = {
@@ -28,6 +29,86 @@ export type Team = {
 
 export type Membership = Team & { league?: League }
 
+export type Season = {
+  id: number
+  league_id: number
+  numero: number
+  stato: 'preparazione' | 'in_corso' | 'conclusa'
+  data_inizio: string | null
+  data_fine: string | null
+}
+
+export type Fixture = {
+  id: number
+  season_id: number
+  league_id: number
+  giornata: number
+  home_team_id: number
+  away_team_id: number
+  data_sim: string
+  stato: 'programmata' | 'in_corso' | 'simulata' | 'annullata'
+}
+
+export type Match = {
+  id: number
+  fixture_id: number
+  league_id: number
+  gol_home: number
+  gol_away: number
+  modulo_home: string
+  modulo_away: string
+  stats_squadra: {
+    home: MatchTeamStats
+    away: MatchTeamStats
+  }
+  simulata_il: string
+}
+
+export type MatchTeamStats = {
+  possesso: number
+  tiri: number
+  inPorta: number
+  passaggiT: number
+  passaggiR: number
+  passaggiPct: number
+  contrasti: number
+  dribbling: number
+  gol: number
+}
+
+export type MatchPlayerStat = {
+  id: number
+  match_id: number
+  league_id: number
+  team_id: number
+  player_instance_id: number
+  minuti: number
+  gol: number
+  assist: number
+  tiri: number
+  tiri_porta: number
+  passaggi_tentati: number
+  passaggi_riusciti: number
+  contrasti_vinti: number
+  contrasti_persi: number
+  dribbling: number
+}
+
+export type Standing = {
+  season_id: number
+  league_id: number
+  team_id: number
+  punti: number
+  vittorie: number
+  pareggi: number
+  sconfitte: number
+  gol_fatti: number
+  gol_subiti: number
+  differenza_reti: number
+  giocate: number
+  posizione: number | null
+}
+
 export type RpcResult = {
   league_id: number
   team_id: number
@@ -37,3 +118,4 @@ export type RpcResult = {
 export type CrestChoice =
   | { type: 'preset'; value: string }
   | { type: 'upload'; file: File; previewUrl: string }
+  | { type: 'existing'; value: string; previewUrl: string }

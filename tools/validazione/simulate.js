@@ -6,6 +6,7 @@
 import { CFG, MODULI } from '../../engine/config.js';
 import { creaRosa, creaRosaPerModulo, setSeed, rnd } from './roster.js';
 import { simulaPartita, calendario, counter, schiera } from '../../engine/engine.js';
+import assert from 'node:assert/strict';
 
 const args = process.argv.slice(2);
 const getArg = (n, d) => { const i = args.indexOf('--' + n); return i >= 0 ? parseFloat(args[i + 1]) : d; };
@@ -16,6 +17,23 @@ const NOMI_MOD = Object.keys(MODULI);
 const media = a => a.reduce((x, y) => x + y, 0) / a.length;
 const dev = a => { const m = media(a); return Math.sqrt(media(a.map(v => (v - m) ** 2))); };
 const pct = (a, p) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length * p)]; };
+
+function verificaFormazioneUtente() {
+  setSeed(991);
+  const casa = creaRosa('Casa', 81), ospite = creaRosa('Ospite', 81);
+  let letture = 0;
+  const sceltaUtente = new Proxy(schiera(casa, '4-3-3'), {
+    get(target, property, receiver) {
+      letture++;
+      return Reflect.get(target, property, receiver);
+    },
+  });
+  simulaPartita(casa, ospite, '4-3-3', '4-3-3', {
+    usaCondizione: false,
+    lineupCasa: sceltaUtente,
+  });
+  assert.ok(letture > 0, 'Il motore ha ignorato la formazione scelta dall’utente');
+}
 
 function riga(label, val, min, max, fmt = v => v.toFixed(2)) {
   const ok = val >= min && val <= max;
@@ -267,3 +285,4 @@ function test5() {
 
 if (args.includes('--sweep')) { sweep(); }
 else { test1(); test2(); test3(); test4(); test5(); }
+verificaFormazioneUtente();

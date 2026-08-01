@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { preparaStemma } from '../lib/crest'
+import { formatoStemma, generaUuidV4, preparaStemma } from '../lib/crest'
 import {
   CAMPIONATI,
   calcolaGiornateTotali,
@@ -51,11 +51,12 @@ function TeamIdentity({ fields, onChange, disabled }: {
 }
 
 async function salvaStemma(user: User, crest: CrestChoice) {
-  if (crest.type === 'preset') return { path: crest.value, uploaded: false }
+  if (crest.type === 'preset' || crest.type === 'existing') return { path: crest.value, uploaded: false }
   const blob = await preparaStemma(crest.file)
-  const path = `${user.id}/${crypto.randomUUID()}.webp`
+  const formato = formatoStemma(blob)
+  const path = `${user.id}/${generaUuidV4()}.${formato.extension}`
   const { error } = await supabase.storage.from('team-crests').upload(path, blob, {
-    contentType: 'image/webp',
+    contentType: formato.contentType,
     cacheControl: '31536000',
     upsert: false,
   })

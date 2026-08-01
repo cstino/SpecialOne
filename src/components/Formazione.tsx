@@ -31,7 +31,7 @@ type SavedLineup = { modulo: string; titolari: number[]; panchina: number[]; tri
 type FormazioneProps = { membership: Membership; onNavigate: (view: GameView) => void }
 type PlayerZone = 'starter' | 'bench' | 'tribuna'
 type PlayerLocation = { zone: PlayerZone; index: number; id: number }
-type PlayerAction = { player: Player; location: PlayerLocation; position: string; x: number; y: number }
+type PlayerAction = { player: Player; location: PlayerLocation; x: number; y: number }
 
 type PlayerPortraitProps = {
   player?: Player
@@ -112,7 +112,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const giornata = 1
+  const [giornata, setGiornata] = useState(1)
 
   useEffect(() => {
     if (!detailPlayer && !playerAction) return
@@ -147,7 +147,21 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         return [player.id, data?.signedUrl] as const
       }))
       if (active) setImageUrls(Object.fromEntries(signed.filter((item): item is [number, string] => Boolean(item[1]))))
-      const { data: lineup } = await supabase.from('lineups').select('modulo, titolari, panchina, tribuna').eq('team_id', membership.id).eq('giornata', giornata).maybeSingle()
+      const { data: nextFixture, error: fixtureError } = await supabase.from('fixtures').select('giornata')
+        .eq('league_id', league.id).in('stato', ['programmata', 'in_corso']).order('giornata').limit(1).maybeSingle()
+      if (fixtureError) { setError(fixtureError.message); setLoading(false); return }
+      const targetGiornata = nextFixture?.giornata ?? league.giornate_totali
+      if (active) setGiornata(targetGiornata)
+      const { data: lineup, error: lineupError } = await supabase.from('lineups')
+        .select('modulo, titolari, panchina, tribuna')
+        .eq('league_id', league.id)
+        .eq('team_id', membership.id)
+        .lte('giornata', targetGiornata)
+        .order('automatica', { ascending: true })
+        .order('giornata', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (lineupError) { setError(lineupError.message); setLoading(false); return }
       if (lineup) {
         const current = lineup as SavedLineup
         setModulo(current.modulo); setTitolari(current.titolari); setPanchina(current.panchina); setTribuna(current.tribuna)
@@ -226,7 +240,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     setSelected(null)
   }
 
-  function handlePlayerClick(event: ReactMouseEvent<HTMLButtonElement>, location: PlayerLocation, player: Player | undefined, position: string) {
+  function handlePlayerClick(event: ReactMouseEvent<HTMLButtonElement>, location: PlayerLocation, player: Player | undefined) {
     if (selected) {
       setPlayerAction(null)
       selectPlayer(location)
@@ -238,7 +252,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     const menuHeight = 138
     const x = Math.max(12, Math.min(rect.left + rect.width / 2 - menuWidth / 2, window.innerWidth - menuWidth - 12))
     const y = rect.bottom + menuHeight + 8 < window.innerHeight ? rect.bottom + 8 : Math.max(12, rect.top - menuHeight - 8)
-    setPlayerAction({ player, location, position, x, y })
+    setPlayerAction({ player, location, x, y })
   }
 
   async function save() {
@@ -291,7 +305,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
               {visibleLocations.filter((location) => !(selected?.zone === location.zone && selected.index === location.index)).map((location) => {
                 const player = players.find((item) => item.id === location.id)
                 const position = location.zone === 'starter' ? slots[location.index] : player?.posizioni[0] ?? '—'
-                return <PlayerPortrait compact key={`${location.zone}-${location.index}-${location.id}`} player={player} imageUrl={imageUrls[location.id] ?? eaPortraitUrl(player?.fc_id)} position={position} selected={selected?.zone === location.zone && selected.index === location.index} onClick={(event) => handlePlayerClick(event, location, player, position)} />
+                return <PlayerPortrait compact key={`${location.zone}-${location.index}-${location.id}`} player={player} imageUrl={imageUrls[location.id] ?? eaPortraitUrl(player?.fc_id)} position={position} selected={selected?.zone === location.zone && selected.index === location.index} onClick={(event) => handlePlayerClick(event, location, player)} />
               })}
             </div>}
           </div>
@@ -301,7 +315,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
             <div className="pitch-field__circle" />
             <div className="pitch-field__box pitch-field__box--top" /><div className="pitch-field__box pitch-field__box--bottom" />
             <div className="pitch-grid">
-              {rows.map((row, rowIndex) => <div className={`pitch-row pitch-row--${rowIndex}`} style={{ '--row-count': row.length } as CSSProperties} key={rowIndex}>{row.map(({ slot, index }) => { const player = players.find((item) => item.id === titolari[index]); const location = { zone: 'starter', index, id: titolari[index] ?? 0 } as PlayerLocation; return <div className={`pitch-slot pitch-slot--${reparto(slot)}`} key={`${slot}-${index}`}><PlayerPortrait player={player} imageUrl={imageUrls[player?.id ?? 0] ?? eaPortraitUrl(player?.fc_id)} position={slot} selected={selected?.zone === 'starter' && selected.index === index} onClick={(event) => handlePlayerClick(event, location, player, slot)} /></div> })}</div>)}
+              {rows.map((row, rowIndex) => <div className={`pitch-row pitch-row--${rowIndex}`} style={{ '--row-count': row.length } as CSSProperties} key={rowIndex}>{row.map(({ slot, index }) => { const player = players.find((item) => item.id === titolari[index]); const location = { zone: 'starter', index, id: titolari[index] ?? 0 } as PlayerLocation; return <div className={`pitch-slot pitch-slot--${reparto(slot)}`} key={`${slot}-${index}`}><PlayerPortrait player={player} imageUrl={imageUrls[player?.id ?? 0] ?? eaPortraitUrl(player?.fc_id)} position={slot} selected={selected?.zone === 'starter' && selected.index === index} onClick={(event) => handlePlayerClick(event, location, player)} /></div> })}</div>)}
             </div>
           </div>
           <div className="role-legend"><span><i className="role-bar role-bar--GK" />Portiere</span><span><i className="role-bar role-bar--DEF" />Difensori</span><span><i className="role-bar role-bar--MID" />Centrocampisti</span><span><i className="role-bar role-bar--ATT" />Attaccanti</span></div>
@@ -311,7 +325,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       {playerAction && <div className="player-action-layer" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setPlayerAction(null) }}>
         <section className="player-action-menu" role="dialog" aria-label={`Azioni per ${playerAction.player.nome}`} style={{ left: playerAction.x, top: playerAction.y }}>
           <div className="player-action-menu__player">
-            <span className={`player-action-menu__photo player-action-menu__photo--${reparto(playerAction.position)} has-photo`}><AnonymousPlayer /><img src={imageUrls[playerAction.player.id] ?? eaPortraitUrl(playerAction.player.fc_id)} alt="" onError={(event) => { event.currentTarget.hidden = true; event.currentTarget.parentElement?.classList.remove('has-photo') }} /></span>
+            <span className={`player-action-menu__photo player-action-menu__photo--${reparto(playerAction.player.posizioni[0] ?? 'ATT')} has-photo`}><AnonymousPlayer /><img src={imageUrls[playerAction.player.id] ?? eaPortraitUrl(playerAction.player.fc_id)} alt="" onError={(event) => { event.currentTarget.hidden = true; event.currentTarget.parentElement?.classList.remove('has-photo') }} /></span>
             <div><strong>{playerAction.player.nome}</strong><small>{playerAction.player.posizioni.join(' · ')} · OVR {playerAction.player.overall_corrente}</small></div>
             <button type="button" onClick={() => setPlayerAction(null)} aria-label="Chiudi menu">×</button>
           </div>
