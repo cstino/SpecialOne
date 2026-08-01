@@ -48,7 +48,7 @@ export function useSeasonData(membership: Membership) {
 
     const [fixturesResult, matchesResult, standingsResult] = await Promise.all([
       supabase.from('fixtures').select('*').eq('league_id', league.id).eq('season_id', currentSeason.id).order('giornata').order('id'),
-      supabase.from('matches').select('id, fixture_id, league_id, gol_home, gol_away, modulo_home, modulo_away, stats_squadra, simulata_il').eq('league_id', league.id).order('simulata_il', { ascending: false }),
+      supabase.from('matches').select('id, fixture_id, league_id, gol_home, gol_away, modulo_home, modulo_away, stats_squadra, blocchi, simulata_il').eq('league_id', league.id).order('simulata_il', { ascending: false }),
       supabase.from('standings').select('*').eq('league_id', league.id).eq('season_id', currentSeason.id),
     ])
 

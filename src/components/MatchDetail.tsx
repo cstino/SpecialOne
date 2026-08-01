@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { cognome } from '../lib/nomi'
 import { useSeasonData } from '../lib/useSeasonData'
-import type { League, MatchPlayerStat, MatchTeamStats, Membership } from '../types'
+import type { EventoGol, League, MatchPlayerStat, MatchTeamStats, Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { SeasonState, TeamLabel } from './SeasonUI'
 
@@ -14,6 +15,22 @@ type Props = {
 }
 
 type PlayerIdentity = { id: number; nome: string; posizioni: string[] }
+
+// Come sul tabellone di uno stadio: i marcatori stanno sotto la propria squadra.
+function ScorerList({ eventi, lato, players }: { eventi: EventoGol[]; lato: 'casa' | 'ospite'; players: Map<number, PlayerIdentity> }) {
+  const propri = eventi.filter((evento) => evento.lato === lato)
+  if (propri.length === 0) return null
+  return <ul className={`match-scorers match-scorers--${lato}`}>
+    {propri.map((evento, indice) => {
+      const assistman = evento.assist === null ? undefined : players.get(evento.assist)
+      return <li key={`${evento.minuto}-${evento.marcatore}-${indice}`}>
+        <b>{cognome(players.get(evento.marcatore)?.nome ?? `Giocatore ${evento.marcatore}`)}</b>
+        <time>{evento.minuto}&#39;</time>
+        {assistman && <em title={`Assist di ${assistman.nome}`}>({cognome(assistman.nome)})</em>}
+      </li>
+    })}
+  </ul>
+}
 
 const STAT_ROWS: Array<[string, keyof MatchTeamStats, (value: number) => string]> = [
   ['Possesso', 'possesso', (value) => `${Math.round(value * 100)}%`],
@@ -65,10 +82,17 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
     return () => { active = false }
   }, [matchId])
 
+  // Le partite simulate prima dell'introduzione della cronaca hanno blocchi vuoto.
+  const eventi = useMemo(() => {
+    const registrati = match?.blocchi
+    if (!Array.isArray(registrati)) return []
+    return [...registrati].sort((sinistra, destra) => sinistra.minuto - destra.minuto)
+  }, [match])
+
   const byTeam = useMemo(() => {
     const grouped = new Map<number, MatchPlayerStat[]>()
     for (const row of stats) grouped.set(row.team_id, [...(grouped.get(row.team_id) ?? []), row])
-    for (const rows of grouped.values()) rows.sort((left, right) => right.gol - left.gol || right.tiri_porta - left.tiri_porta || right.minuti - left.minuti)
+    for (const rows of grouped.values()) rows.sort((left, right) => right.gol - left.gol || right.assist - left.assist || right.tiri_porta - left.tiri_porta || right.minuti - left.minuti)
     return grouped
   }, [stats])
 
@@ -82,10 +106,14 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
     {!data.loading && !data.error && match && fixture && <div className="season-page season-page--narrow match-detail-page">
       <section className="match-report-hero">
         <p className="kicker">Giornata {fixture.giornata} · Stagione {league.stagione_corrente}</p>
+        {/* Stemmi e punteggio stanno sulla prima riga della griglia, i marcatori
+            sulla seconda: cosi' la lista puo' crescere senza spostare gli stemmi. */}
         <div className="match-report-score">
-          <div><TeamLabel team={data.teamById.get(fixture.home_team_id)} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} onClick={() => onOpenTeam(fixture.home_team_id)} /><small>{match.modulo_home}</small></div>
+          <div><TeamLabel team={data.teamById.get(fixture.home_team_id)} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} onClick={() => onOpenTeam(fixture.home_team_id)} /></div>
           <strong><span>{match.gol_home}</span><i>:</i><span>{match.gol_away}</span></strong>
-          <div><TeamLabel team={data.teamById.get(fixture.away_team_id)} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} reversed onClick={() => onOpenTeam(fixture.away_team_id)} /><small>{match.modulo_away}</small></div>
+          <div><TeamLabel team={data.teamById.get(fixture.away_team_id)} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} reversed onClick={() => onOpenTeam(fixture.away_team_id)} /></div>
+          <ScorerList eventi={eventi} lato="casa" players={players} />
+          <ScorerList eventi={eventi} lato="ospite" players={players} />
         </div>
         <span className="match-report-final">RISULTATO FINALE</span>
       </section>
@@ -111,8 +139,8 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
         {statsLoading ? <p className="season-empty">Carico le prestazioni…</p> : <div className="match-player-columns">
           {[fixture.home_team_id, fixture.away_team_id].map((teamId) => <div className="match-player-team" key={teamId}>
             <h3>{data.teamById.get(teamId)?.nome ?? 'Squadra'}</h3>
-            <div className="match-player-table"><div className="match-player-table__head"><span>Giocatore</span><span>MIN</span><span>G</span><span>T</span><span>PASS</span></div>
-              {(byTeam.get(teamId) ?? []).map((row) => <div key={row.id}><span><strong>{players.get(row.player_instance_id)?.nome ?? `Giocatore ${row.player_instance_id}`}</strong><small>{players.get(row.player_instance_id)?.posizioni.join(' · ')}</small></span><b>{row.minuti}</b><b className={row.gol ? 'is-highlight' : ''}>{row.gol}</b><b>{row.tiri}</b><b>{row.passaggi_riusciti}/{row.passaggi_tentati}</b></div>)}
+            <div className="match-player-table"><div className="match-player-table__head"><span>Giocatore</span><span>MIN</span><span>G</span><span>A</span><span>T</span><span>PASS</span></div>
+              {(byTeam.get(teamId) ?? []).map((row) => <div key={row.id}><span><strong>{players.get(row.player_instance_id)?.nome ?? `Giocatore ${row.player_instance_id}`}</strong><small>{players.get(row.player_instance_id)?.posizioni.join(' · ')}</small></span><b>{row.minuti}</b><b className={row.gol ? 'is-highlight' : ''}>{row.gol}</b><b className={row.assist ? 'is-assist' : ''}>{row.assist}</b><b>{row.tiri}</b><b>{row.passaggi_riusciti}/{row.passaggi_tentati}</b></div>)}
             </div>
           </div>)}
         </div>}

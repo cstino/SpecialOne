@@ -5,6 +5,8 @@ import { MODULI } from '../../../engine/config.js'
 import { setSeed } from '../../../engine/random.js'
 
 type JsonMap = Record<string, unknown>
+type GolBlocco = { blocco: number; casa: number; ospite: number }
+type EventoGol = { minuto: number; blocco: number; lato: 'casa' | 'ospite'; team_id: number; marcatore: number; assist: number | null }
 type DbPlayer = { id: number; nome: string; posizioni: string[]; attributi: Record<string, number> }
 type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number }
 type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; gk: number; condizione: number; infortunatoFinoA: number }
@@ -69,7 +71,110 @@ function mapValue(map: Map<number, number> | undefined, id: number) {
   return map?.get(id) ?? 0
 }
 
-function playerStats(teamId: number, stats: JsonMap, teamStats: JsonMap) {
+// ============================================================
+//  MINUTI E ASSIST
+//
+//  Il motore decide i gol e i marcatori; non modella ne' il minuto esatto
+//  ne' l'ultimo passaggio. Minuto e assist sono quindi un'attribuzione di
+//  presentazione, calcolata qui e non nell'engine: cosi' il motore validato
+//  resta intatto e il suo stream RNG non viene consumato.
+//  L'RNG e' lo stesso LCG di engine/random.js, ma con stato locale e seme
+//  derivato da quello della partita: gli assist sono riproducibili quanto
+//  il risultato.
+// ============================================================
+
+const MINUTI_PER_BLOCCO = 15
+const QUOTA_GOL_SENZA_ASSIST = 0.28 // rigori, tiri da fuori, ribattute, azioni personali
+
+// Propensione all'assist per slot. Non deriva da PESI_STAT.passaggi, che misura
+// il volume di passaggi: userebbe i centrali difensivi come uomini assist.
+const PESO_ASSIST: Record<string, number> = {
+  GK: 0.02,
+  CB: 0.15, LB: 0.75, RB: 0.75, LWB: 0.90, RWB: 0.90,
+  CDM: 0.50, CM: 0.95, CAM: 1.60, LM: 1.20, RM: 1.20,
+  LW: 1.70, RW: 1.70, ST: 1.00, CF: 1.10,
+}
+
+function creaRng(seme: number) {
+  let stato = seme % 4294967296
+  return () => {
+    stato = (stato * 1664525 + 1013904223) % 4294967296
+    return stato / 4294967296
+  }
+}
+
+function scegliPesatoLocale<T>(items: T[], pesi: number[], rnd: () => number): T {
+  const totale = pesi.reduce((somma, peso) => somma + peso, 0)
+  if (totale <= 0) return items[Math.floor(rnd() * items.length)]
+  let resto = rnd() * totale
+  for (let i = 0; i < items.length; i++) {
+    resto -= pesi[i]
+    if (resto <= 0) return items[i]
+  }
+  return items[items.length - 1]
+}
+
+// Sceglie l'uomo assist fra i titolari, escluso il marcatore.
+function scegliAssist(lineup: EngineLineup, marcatore: number, rnd: () => number): number | null {
+  if (rnd() < QUOTA_GOL_SENZA_ASSIST) return null
+  const candidati: number[] = []
+  const pesi: number[] = []
+  for (let i = 0; i < lineup.slots.length; i++) {
+    const giocatore = lineup.titolari[i]
+    if (!giocatore || giocatore.id === marcatore) continue
+    candidati.push(giocatore.id)
+    pesi.push((PESO_ASSIST[lineup.slots[i]] ?? 0.5) * (giocatore.short_passing / 100))
+  }
+  if (candidati.length === 0) return null
+  return scegliPesatoLocale(candidati, pesi, rnd)
+}
+
+// Trasforma i gol per blocco in eventi cronologici con minuto, marcatore e assist.
+function costruisciEventiGol(
+  golPerBlocco: GolBlocco[],
+  lati: Array<{ lato: 'casa' | 'ospite'; teamId: number; lineup: EngineLineup; marcatori: number[] }>,
+  seed: number,
+): EventoGol[] {
+  const rnd = creaRng(seed)
+  const eventi: EventoGol[] = []
+
+  for (const blocco of golPerBlocco) {
+    for (const lato of lati) {
+      const quanti = lato.lato === 'casa' ? blocco.casa : blocco.ospite
+      for (let g = 0; g < quanti; g++) {
+        const minutoBase = (blocco.blocco - 1) * MINUTI_PER_BLOCCO
+        eventi.push({
+          minuto: minutoBase + 1 + Math.floor(rnd() * MINUTI_PER_BLOCCO),
+          blocco: blocco.blocco,
+          lato: lato.lato,
+          team_id: lato.teamId,
+          marcatore: 0,
+          assist: null,
+        })
+      }
+    }
+  }
+
+  eventi.sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.blocco - destra.blocco)
+
+  // I marcatori arrivano dal motore come lista per squadra, senza legame con il
+  // blocco: li assegniamo in ordine cronologico. Qualunque abbinamento sarebbe
+  // arbitrario, perche' il motore non modella il singolo gol.
+  const prossimo = new Map<string, number>()
+  for (const evento of eventi) {
+    const lato = lati.find((item) => item.lato === evento.lato)!
+    const indice = prossimo.get(evento.lato) ?? 0
+    prossimo.set(evento.lato, indice + 1)
+    const marcatore = lato.marcatori[indice]
+    if (marcatore === undefined) continue
+    evento.marcatore = marcatore
+    evento.assist = scegliAssist(lato.lineup, marcatore, rnd)
+  }
+
+  return eventi.filter((evento) => evento.marcatore !== 0)
+}
+
+function playerStats(teamId: number, stats: JsonMap, teamStats: JsonMap, assist: Map<number, number>) {
   const minuti = stats.minuti as Map<number, number>
   const tiri = stats.tiri as Map<number, number>
   const passaggi = stats.passaggi as Map<number, number>
@@ -90,7 +195,7 @@ function playerStats(teamId: number, stats: JsonMap, teamStats: JsonMap) {
       team_id: teamId,
       minuti: Math.max(0, Math.min(90, minutes)),
       gol: goals.get(id) ?? 0,
-      assist: 0,
+      assist: assist.get(id) ?? 0,
       tiri: shots,
       tiri_porta: Math.min(shots, shotsTotal ? Math.round(shots * shotsOnTarget / shotsTotal) : 0),
       passaggi_tentati: passes,
@@ -200,9 +305,19 @@ export default {
           lineupCasa: homeLineup,
           lineupOspite: awayLineup,
         })
+        const eventi = costruisciEventiGol(result.golPerBlocco as GolBlocco[], [
+          { lato: 'casa', teamId: fixture.home_team_id, lineup: homeLineup, marcatori: result.perGiocatore.casa.marcatoriIds as number[] },
+          { lato: 'ospite', teamId: fixture.away_team_id, lineup: awayLineup, marcatori: result.perGiocatore.ospite.marcatoriIds as number[] },
+        ], seed)
+        const assistPerGiocatore = new Map<number, number>()
+        for (const evento of eventi) {
+          if (evento.assist === null) continue
+          assistPerGiocatore.set(evento.assist, (assistPerGiocatore.get(evento.assist) ?? 0) + 1)
+        }
+
         const stats = [
-          ...playerStats(fixture.home_team_id, result.perGiocatore.casa, result.statsCasa),
-          ...playerStats(fixture.away_team_id, result.perGiocatore.ospite, result.statsOspite),
+          ...playerStats(fixture.home_team_id, result.perGiocatore.casa, result.statsCasa, assistPerGiocatore),
+          ...playerStats(fixture.away_team_id, result.perGiocatore.ospite, result.statsOspite, assistPerGiocatore),
         ]
         const { data: saved, error: saveError } = await ctx.supabaseAdmin.rpc('registra_risultato_partita', {
           p_fixture_id: fixture.id,
@@ -211,7 +326,7 @@ export default {
           p_modulo_away: awayDbLineup.modulo,
           p_gol_home: result.golC,
           p_gol_away: result.golO,
-          p_blocchi: [],
+          p_blocchi: eventi,
           p_stats_squadra: { home: result.statsCasa, away: result.statsOspite },
           p_player_stats: stats,
         })

@@ -46,3 +46,43 @@ done
 Le immagini vengono scaricate solo dallo script one-off, convertite in WebP 160×160 e
 caricate nel bucket privato `player-photos`. Nel database resta il percorso Storage,
 mai l'URL SoFIFA.
+
+## Foto senza il CSV Kaggle
+
+Quando il dataset sorgente non è più a portata di mano, `scarica_foto.py` ricostruisce
+l'URL del CDN dall'`fc_id`, che è già in `public.players`. Il sorgente è la variante a
+240px ridotta a 160, così si ritaglia verso il basso invece di ingrandire un 120px.
+
+```bash
+npx --yes supabase@2.111.0 db query --linked --experimental \
+  "select fc_id from public.players order by fc_id;" > /tmp/ids.json
+
+/tmp/specialone-foto-venv/bin/python tools/importazione/scarica_foto.py \
+  --ids /tmp/ids.json --output-dir /tmp/specialone-foto
+```
+
+Accetta sia l'output JSON di `db query` sia un id per riga, ed è ripetibile: i file già
+presenti vengono saltati, quindi si può rilanciare dopo un'interruzione.
+
+### Upload: due trappole della CLI su Windows
+
+1. **Percorsi con lettera di unità non funzionano.** `C:/…` viene interpretato come schema
+   URI e il comando fallisce con `LegacyStorageUnsupportedOperationError`. Bisogna entrare
+   nella cartella e usare un percorso relativo.
+2. **La cartella sorgente diventa la cartella di destinazione.** `cp -r ./players
+   ss:///player-photos` scrive in `player-photos/players/…`. Se la cartella locale si
+   chiama `images`, i file finiscono in `players/images/…` e i percorsi in `foto_url`
+   non corrispondono più.
+
+```bash
+cd /tmp/specialone-foto            # la cartella locale deve chiamarsi "players"
+npx --yes supabase@2.111.0 storage cp -r ./players ss:///player-photos \
+  --linked --experimental --jobs 8
+
+for file_sql in /tmp/specialone-foto/sql/foto_*.sql; do
+  npx --yes supabase@2.111.0 db query --linked --experimental --file "$file_sql"
+done
+```
+
+I giocatori senza ritratto sul CDN restano con `foto_url` nullo e l'app mostra l'avatar
+anonimo: è il comportamento previsto, non un errore da correggere.

@@ -61,7 +61,19 @@ export type Match = {
     home: MatchTeamStats
     away: MatchTeamStats
   }
+  blocchi: EventoGol[]
   simulata_il: string
+}
+
+// Minuto e assist sono un'attribuzione della Edge Function: il motore decide
+// gol e marcatori, non il singolo passaggio.
+export type EventoGol = {
+  minuto: number
+  blocco: number
+  lato: 'casa' | 'ospite'
+  team_id: number
+  marcatore: number
+  assist: number | null
 }
 
 export type MatchTeamStats = {

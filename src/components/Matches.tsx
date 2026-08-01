@@ -1,45 +1,142 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useSeasonData } from '../lib/useSeasonData'
-import type { League, Membership } from '../types'
+import type { Fixture, League, Match, Membership, Team } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { FixtureScore, formatMatchDate, SeasonState, TeamLabel } from './SeasonUI'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; onOpenMatch: (matchId: number) => void; onOpenTeam: (teamId: number) => void }
 
+type CardProps = {
+  giornata: number
+  fixtures: Fixture[]
+  membership: Membership
+  teamById: Map<number, Team>
+  crestUrlByTeamId: Map<number, string>
+  matchByFixture: Map<number, Match>
+  onOpenMatch: (matchId: number) => void
+  onOpenTeam: (teamId: number) => void
+  evidenza?: boolean
+}
+
+// Esito della partita dal punto di vista della propria squadra: colora la
+// striscia laterale della riga, cosi' il risultato si legge prima del punteggio.
+function esitoProprio(fixture: Fixture, match: Match | undefined, teamId: number) {
+  if (!match) return null
+  const inCasa = fixture.home_team_id === teamId
+  if (!inCasa && fixture.away_team_id !== teamId) return null
+  const propri = inCasa ? match.gol_home : match.gol_away
+  const subiti = inCasa ? match.gol_away : match.gol_home
+  return propri > subiti ? 'V' : propri < subiti ? 'P' : 'N'
+}
+
+function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeamId, matchByFixture, onOpenMatch, onOpenTeam, evidenza = false }: CardProps) {
+  const simulate = fixtures.filter((fixture) => fixture.stato === 'simulata').length
+  const completata = fixtures.length > 0 && simulate === fixtures.length
+
+  return <article className={`giornata-card ${evidenza ? 'giornata-card--evidenza' : ''}`}>
+    <header className="giornata-card__testa">
+      <span className="giornata-card__numero">{giornata}</span>
+      <span className="giornata-card__testo">
+        <b>Giornata {giornata}</b>
+        <small>{fixtures[0] ? formatMatchDate(fixtures[0].data_sim, false) : 'Turno di riposo'}</small>
+      </span>
+      <span className={`pillola-stato ${completata ? 'pillola-stato--fatta' : 'pillola-stato--attesa'}`}>{completata ? 'COMPLETATA' : 'DA GIOCARE'}</span>
+    </header>
+
+    <div className="fixture-list">
+      {fixtures.map((fixture) => {
+        const match = matchByFixture.get(fixture.id)
+        const mia = fixture.home_team_id === membership.id || fixture.away_team_id === membership.id
+        const esito = esitoProprio(fixture, match, membership.id)
+        return <article
+          className={`fixture-row ${mia ? 'is-mine' : ''} ${match ? 'is-clickable' : ''} ${esito ? `esito-riga esito-riga--${esito}` : ''}`}
+          key={fixture.id}
+          onClick={() => match && onOpenMatch(match.id)}
+          onKeyDown={(event) => { if (match && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onOpenMatch(match.id) } }}
+          role={match ? 'button' : undefined}
+          tabIndex={match ? 0 : undefined}
+        >
+          <TeamLabel team={teamById.get(fixture.home_team_id)} imageUrl={crestUrlByTeamId.get(fixture.home_team_id)} reversed onClick={() => onOpenTeam(fixture.home_team_id)} />
+          <FixtureScore fixture={fixture} match={match} />
+          <TeamLabel team={teamById.get(fixture.away_team_id)} imageUrl={crestUrlByTeamId.get(fixture.away_team_id)} onClick={() => onOpenTeam(fixture.away_team_id)} />
+          {mia && <small>LA TUA PARTITA</small>}
+        </article>
+      })}
+      {!fixtures.length && <p className="season-empty">Turno di riposo.</p>}
+    </div>
+  </article>
+}
+
 export function Matches({ membership, onNavigate, onOpenMatch, onOpenTeam }: Props) {
   const league = membership.league as League
   const data = useSeasonData(membership)
-  const [giornata, setGiornata] = useState(1)
+  const [calendarioAperto, setCalendarioAperto] = useState(false)
 
-  useEffect(() => { if (!data.loading) setGiornata(data.currentGiornata) }, [data.currentGiornata, data.loading])
-  const fixtures = useMemo(() => data.fixtures.filter((fixture) => fixture.giornata === giornata), [data.fixtures, giornata])
-  const simulated = fixtures.filter((fixture) => fixture.stato === 'simulata').length
+  const giornate = useMemo(() => {
+    const mappa = new Map<number, Fixture[]>()
+    for (const fixture of data.fixtures) mappa.set(fixture.giornata, [...(mappa.get(fixture.giornata) ?? []), fixture])
+    return [...mappa.entries()].sort((sinistra, destra) => sinistra[0] - destra[0])
+  }, [data.fixtures])
+
+  const prossima = giornate.find(([, fixtures]) => fixtures.some((fixture) => fixture.stato === 'programmata' || fixture.stato === 'in_corso'))
+  // In ordine crescente: la freccia sinistra porta indietro nel tempo.
+  const completate = useMemo(() => giornate.filter(([, fixtures]) => fixtures.length > 0 && fixtures.every((fixture) => fixture.stato === 'simulata')), [giornate])
+
+  // Finche' non si tocca nulla si mostra l'ultima giocata, che e' quella che
+  // interessa; l'indice esplicito vale solo dopo un passo con le frecce.
+  const [indiceScelto, setIndiceScelto] = useState<number | null>(null)
+  const indice = Math.min(indiceScelto ?? completate.length - 1, completate.length - 1)
+  const completataCorrente = completate[indice]
+
+  const proprieta = {
+    membership,
+    teamById: data.teamById,
+    crestUrlByTeamId: data.crestUrlByTeamId,
+    matchByFixture: data.matchByFixture,
+    onOpenMatch,
+    onOpenTeam,
+  }
 
   return <main className="app-shell season-shell">
     <GameNav league={league} active="matches" onNavigate={onNavigate} />
     <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>Calendario ufficiale</span></header>
     <SeasonState loading={data.loading} error={data.error} onRetry={data.reload} />
     {!data.loading && !data.error && <div className="season-page season-page--narrow">
-      <section className="season-title-row"><div><p className="kicker">Stagione {league.stagione_corrente} · {league.nome}</p><h1>Partite.</h1><p>Una giornata ogni notte, alle 00:00 ora italiana.</p></div><div className="season-total"><strong>{data.fixtures.length}</strong><span>partite totali</span></div></section>
+      <section className="season-title-row"><div><p className="kicker">Stagione {league.stagione_corrente} · {league.nome}</p><h1>Partite.</h1><p>Una giornata ogni notte, alle 00:00 ora italiana.</p></div><div className="season-total"><strong>{completate.length}</strong><span>di {league.giornate_totali} giornate</span></div></section>
 
-      <section className="matchday-panel">
-        <div className="matchday-toolbar">
-          <button type="button" disabled={giornata <= 1} onClick={() => setGiornata((value) => value - 1)} aria-label="Giornata precedente">←</button>
-          <label><span>GIORNATA</span><select value={giornata} onChange={(event) => setGiornata(Number(event.target.value))}>{Array.from({ length: league.giornate_totali }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1} di {league.giornate_totali}</option>)}</select></label>
-          <button type="button" disabled={giornata >= league.giornate_totali} onClick={() => setGiornata((value) => value + 1)} aria-label="Giornata successiva">→</button>
+      {calendarioAperto ? <>
+        <div className="sezione-testa">
+          <div><p className="kicker">Dalla prima all&#39;ultima</p><h2>Calendario completo</h2></div>
+          <button className="button-fantasma" type="button" onClick={() => setCalendarioAperto(false)}>← Torna alla sintesi</button>
         </div>
-        <div className="matchday-meta"><span>{fixtures[0] ? formatMatchDate(fixtures[0].data_sim, false) : 'Turno di riposo'}</span><b>{simulated === fixtures.length && fixtures.length ? 'COMPLETATA' : giornata === data.currentGiornata ? 'PROSSIMA' : 'PROGRAMMATA'}</b></div>
+        <div className="giornata-elenco">
+          {giornate.map(([numero, fixtures]) => <GiornataCard key={numero} giornata={numero} fixtures={fixtures} evidenza={numero === prossima?.[0]} {...proprieta} />)}
+        </div>
+      </> : <>
+        <div className="sezione-testa">
+          <div><p className="kicker">Si gioca stanotte</p><h2>Prossima giornata</h2></div>
+          <button className="button-fantasma" type="button" onClick={() => setCalendarioAperto(true)}>Calendario completo →</button>
+        </div>
+        {prossima
+          ? <GiornataCard giornata={prossima[0]} fixtures={prossima[1]} evidenza {...proprieta} />
+          : <p className="season-empty">La stagione è conclusa: non restano giornate da giocare.</p>}
 
-        <div className="fixture-list">
-          {fixtures.map((fixture) => { const match = data.matchByFixture.get(fixture.id); return <article className={`fixture-row ${(fixture.home_team_id === membership.id || fixture.away_team_id === membership.id) ? 'is-mine' : ''} ${match ? 'is-clickable' : ''}`} key={fixture.id} onClick={() => match && onOpenMatch(match.id)} onKeyDown={(event) => { if (match && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onOpenMatch(match.id) } }} role={match ? 'button' : undefined} tabIndex={match ? 0 : undefined}>
-            <TeamLabel team={data.teamById.get(fixture.home_team_id)} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} reversed onClick={() => onOpenTeam(fixture.home_team_id)} />
-            <FixtureScore fixture={fixture} match={match} />
-            <TeamLabel team={data.teamById.get(fixture.away_team_id)} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} onClick={() => onOpenTeam(fixture.away_team_id)} />
-            {(fixture.home_team_id === membership.id || fixture.away_team_id === membership.id) && <small>LA TUA PARTITA</small>}
-          </article>})}
-          {!fixtures.length && <p className="season-empty">Nessuna partita in questa giornata.</p>}
+        <div className="sezione-testa">
+          <div><p className="kicker">Risultati</p><h2>Giornate completate</h2></div>
+          {completate.length > 0 && <div className="giornata-passo">
+            <button type="button" disabled={indice <= 0} onClick={() => setIndiceScelto(indice - 1)} aria-label="Giornata precedente">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
+            </button>
+            <span aria-live="polite">{indice + 1} <i>/</i> {completate.length}</span>
+            <button type="button" disabled={indice >= completate.length - 1} onClick={() => setIndiceScelto(indice + 1)} aria-label="Giornata successiva">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg>
+            </button>
+          </div>}
         </div>
-      </section>
+        {completataCorrente
+          ? <GiornataCard giornata={completataCorrente[0]} fixtures={completataCorrente[1]} {...proprieta} />
+          : <p className="season-empty">Nessuna giornata ancora simulata.</p>}
+      </>}
     </div>}
   </main>
 }

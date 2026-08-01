@@ -1,21 +1,40 @@
 # Stato progetto e handoff
 
-Ultimo aggiornamento: **1 agosto 2026**. Questo documento descrive lo stato reale della working tree ed è il punto di partenza per il prossimo agent.
+Ultimo aggiornamento: **1 agosto 2026, sera**. Questo documento descrive lo stato reale del
+repository ed è il punto di partenza per il prossimo agent (Claude o Codex).
 
 ## Prima di lavorare
 
-1. Leggere `CLAUDE.md` e `docs/decisioni-fase1.md`.
-2. Non scartare né sovrascrivere la working tree: contiene molto lavoro non ancora incluso nell'ultimo commit.
-3. Per ogni modifica Supabase creare una nuova migrazione; non modificare migrazioni già applicate.
-4. Il motore è validato. Se si modifica `engine/`, eseguire obbligatoriamente `npm run test:engine` e confrontare la baseline.
-5. UI mobile-first, stato di gioco solo su Supabase, nessun `localStorage`.
+1. Leggere `CLAUDE.md` (o `AGENTS.md`, sono lo stesso file) e `docs/decisioni-fase1.md`.
+2. Per ogni modifica Supabase creare una nuova migrazione; non modificare migrazioni già applicate.
+3. Il motore è validato. Se si modifica `engine/`, eseguire obbligatoriamente
+   `node tools/validazione/simulate.js` e confrontare con `docs/risultati-fase0.txt`.
+   Il confronto va fatto con `diff --strip-trailing-cr`: il file di baseline ha fine riga CRLF.
+4. UI mobile-first, stato di gioco solo su Supabase, nessun `localStorage`.
+5. La CLI Supabase non è installata globalmente: si usa `npx supabase@2.111.0 …`.
+   Quasi tutti i comandi richiedono `--linked --experimental`.
 
 ## Stato Git
 
-- Branch: `main`
-- Ultimo commit: `71d1ffb feat: add independent draft and tactical squad management`
+- Branch: `main`, allineato con `origin/main`
 - Remote: `https://github.com/cstino/SpecialOne.git`
-- **Importante:** calendario, simulazione, pagine stagione/partita/classifica/squadra e gli ultimi fix stemma sono ancora modifiche locali non committate. Un clone nuovo da GitHub non le contiene.
+- Working tree pulita al momento di questo aggiornamento.
+
+## Accesso al database dall'agent
+
+Verificato funzionante e molto utile per diagnosi:
+
+```bash
+npx supabase@2.111.0 db query --linked --experimental "select count(*) from public.players;"
+npx supabase@2.111.0 db query --linked --experimental --file percorso/query.sql
+npx supabase@2.111.0 db push --linked --experimental --yes
+npx supabase@2.111.0 functions deploy simula-giornata --project-ref hhvyyjpbsgjcaaaizgwb
+```
+
+Project ref: `hhvyyjpbsgjcaaaizgwb`. Il login (`npx supabase login`) è già stato fatto su questa
+macchina; su un'altra va rifatto insieme a `supabase link`, perché `supabase/.temp/` è in `.gitignore`.
+
+---
 
 ## Funzionalità completate
 
@@ -24,125 +43,176 @@ Ultimo aggiornamento: **1 agosto 2026**. Questo documento descrive lo stato real
 - React 19 + Vite + TypeScript, Supabase Auth/Database/Storage/Edge Functions.
 - Schema Fase 1 con RLS, RPC e privilegi server-side.
 - Dataset FC 26 importato: 5.416 giocatori, 192 club, 10 campionati.
-- Bucket privato per foto giocatori; avatar anonimo grigio quando la foto manca.
 - Motore di simulazione validato e integrato mantenendo il seed deterministico.
 
-### Onboarding e lega
+### Foto giocatori — ospitate, non più in hotlink
 
-- Login e sessione Supabase.
-- Creazione lega e ingresso con codice invito.
-- Creazione squadra con nome e stemma preset/custom.
-- Stemmi ritagliati in formato quadrato, tool locale per rimuovere lo sfondo e upload privato.
-- Compatibilità mobile: fallback UUID quando `crypto.randomUUID` non è disponibile.
-- Compatibilità Safari/iOS: il client usa il MIME realmente prodotto dal canvas; Storage e validatore accettano `image/webp` e `image/png`.
+**Questa è la modifica più delicata dell'ultima sessione.**
 
-### Draft
+Prima l'app non aveva foto proprie: `foto_url` era nullo per tutti e 5.416 i giocatori e
+`Formazione.tsx` cadeva su una funzione `eaPortraitUrl()` che **hotlinkava il CDN di EA**
+(`ratings-images-prod.pulse.ea.com`). Era esattamente ciò che `decisioni-fase1.md` §3 vieta.
 
-- Draft indipendente: ogni squadra procede senza aspettare le altre.
-- Regola “chi prima arriva”: un giocatore già scelto rimane visibile ma non selezionabile; il server garantisce l'unicità.
-- Spin club, reroll, budget/solvibilità e completamento rosa.
-- Nella lega di test `sdsDas` sono presenti quattro squadre e il draft è stato completato anche per le squadre simulate.
+Ora:
 
-### Formazione e rosa
+- 5.225 ritratti scaricati, convertiti in WebP 160×160 con canale alpha, caricati nel bucket
+  privato `player-photos` al percorso `players/{fc_id}.webp`.
+- `foto_url` valorizzato per tutti e 5.225. Verificato con una join fra `public.players` e
+  `storage.objects`: 5.225 su 5.225 puntano a file esistenti.
+- 191 giocatori non hanno ritratto sul CDN sorgente: restano con `foto_url` nullo e mostrano
+  l'avatar anonimo grigio. È il comportamento previsto, non un difetto.
+- `eaPortraitUrl()` è stata **rimossa**. Non reintrodurla.
 
-- Campo tattico grafico in stile videogame, portiere in basso e attaccanti in alto.
-- Moduli gestiti: 4-3-3, 4-2-3-1, 4-4-2, 3-5-2, 5-3-2, 3-4-3 e 4-3-1-2.
-- Corretti gli slot noti: 4-2-3-1 (LW/CAM), 4-4-2 (RM), 3-4-3 (LM), 4-3-3 (ST/RW), 3-5-2 distinto dal 5-3-2.
-- Selettore modulo aperto premendo il titolo; rimosso il select duplicato.
-- Titolari, panchina e tribuna in tab separate.
-- Click giocatore apre mini-card con posizioni preferite e azioni `Sostituzione` / `Dettagli`.
-- Scambio possibile fra qualunque due giocatori, anche tra campo, panchina e tribuna.
-- Panchina e tribuna ordinate per reparto (GK → DEF → MID → ATT), poi overall decrescente.
-- Foto, overall e ruolo specifico; colori reparto: GK arancione, DEF azzurro, MID verde, ATT rosso.
-- Indicatore fuori posizione: giallo per incompatibilità lieve, rosso per incompatibilità completa.
-- Il colore della mini-card dipende dal reparto naturale del giocatore, non dallo slot occupato.
-- La formazione resta consultabile durante il draft e viene salvata su Supabase senza perdere lo stato.
+Nuovo script `tools/importazione/scarica_foto.py`: ricostruisce l'URL del CDN dall'`fc_id`,
+quindi non serve più il CSV Kaggle (che non è su questa macchina). Sorgente a 240px ridotto a
+160, così si ritaglia verso il basso invece di ingrandire. È ripetibile: salta i file già presenti.
+Procedura completa e trappole della CLI in `tools/importazione/README.md`.
 
-### Stagione e simulazione
+### Assist e minuti dei gol
 
-- Inizializzazione stagione e calendario con metodo del cerchio.
-- Edge Function `simula-giornata` implementata e distribuita; al momento l'admin può lanciarla dal pulsante `Simula giornata`.
-- Simulazione sequenziale con seed salvato, adapter DB → motore che fallisce se mancano dati obbligatori e `usaCondizione: false`.
-- Registrazione atomica e idempotente di risultato, statistiche, classifica e `formation_xp` tramite RPC.
-- Se la formazione della giornata manca, viene ereditata l'ultima formazione salvata. Solo in assenza di qualsiasi formazione viene generato il 4-3-3 automatico.
-- Corretto il bug che dopo una simulazione mostrava una formazione automatica diversa da quella salvata.
-- Overview stagione con prossima partita, ultima partita e risultato.
-- Menu Partite con calendario e risultati cliccabili.
-- Dettaglio partita con risultato, moduli, statistiche squadra e statistiche giocatori.
-- Classifica aggiornata dopo la simulazione.
+- **Motore**: unica modifica, puramente contabile. Le due chiamate `poisson()` per blocco erano
+  già lì; ora il risultato viene trattenuto in `golPerBlocco`, che dice quanti gol sono caduti in
+  quale blocco. Nessuna estrazione RNG in più, nessuna formula toccata.
+  **Protocollo di regressione eseguito: diff zero contro `docs/risultati-fase0.txt`.**
+- **Assist**: calcolati **fuori** dal motore, nella Edge Function, con un LCG a stato locale
+  seminato dal seed della partita. Sono riproducibili quanto il risultato ma non consumano lo
+  stream RNG dell'engine, che resta intatto. Tabella `PESO_ASSIST` dedicata per slot: non deriva
+  da `PESI_STAT.passaggi`, che misura il volume di passaggi e incoronerebbe i centrali difensivi.
+  Il 28% dei gol resta senza assist (rigori, tiri da fuori, ribattute).
+- **Minuti**: derivati dal blocco (6 blocchi da 15 minuti) nella Edge Function.
+- Gli eventi gol finiscono in `matches.blocchi` (colonna già esistente, prima riempita con `[]`).
+  `match_stats.assist` non è più il letterale `0`.
+- Verificato su 4.000 partite: eventi e gol coincidono sempre, minuti sempre in 1-90, assist mai
+  uguale al marcatore, 72,4% dei gol assistiti, assist distribuiti in modo plausibile per ruolo.
+- **Edge Function distribuita**: versione 6, stato ACTIVE.
 
-### Pagina squadra
+### Interfaccia — nuovo linguaggio grafico
 
-- Nuova voce `Squadra` nel menu.
-- Profilo della propria squadra con statistiche, risultati recenti e rosa ordinata per ruolo.
-- Modifica di nome e stemma solo per il proprietario, validata da RPC server-side.
-- Click su una squadra avversaria apre il suo profilo pubblico nella lega, senza controlli di modifica.
+Direzione approvata dall'utente su un mockup: fondo scuro con luce ambientale, viola come
+identità, colore semantico separato (verde vittoria, grigio pari, rosso sconfitta), immagini in
+ogni riga, un elemento dominante per schermata invece di riquadri tutti uguali.
+
+Già applicato:
+
+- **Navigazione**: barra **fissa in basso** su mobile con indicatore viola sopra la voce attiva.
+  Le icone erano glifi Unicode (`▦ ♜ ♙ ◆ ◉ ≡`) resi dal font di sistema, quindi diversi su ogni
+  dispositivo: ora sono **SVG disegnate**, usate anche nella barra laterale desktop.
+- **Stemmi**: sei stemmi SVG con forme e palette distinte, al posto di sei caratteri di testo
+  dentro la stessa sagoma viola. Prima chi non sceglieva prendeva il default e nei risultati non
+  si distingueva una squadra dall'altra.
+- **Rapporto partita**: marcatori con minuto e assist fra parentesi sotto la propria squadra;
+  niente più pannello cronaca separato, niente casa/trasferta e moduli. Stemmi e punteggio sono
+  sulla riga 1 della griglia e i marcatori sulla riga 2, così la lista cresce verso il basso senza
+  spostare gli stemmi.
+- **Formazione**: il campo è rimasto **volutamente com'era** (scelta dell'utente). È cambiata solo
+  la targhetta: cognome, e sotto ruolo e overall con trattamento tipografico dedicato.
+- **Squadra**: stemma senza cornice, gerarchia delle statistiche (posizione dominante, tre di
+  supporto), chip della forma V/N/P, striscia colorata dell'esito su ogni risultato, club rimosso
+  dalla riga della rosa, righe della rosa cliccabili.
+- **Partite**: ristrutturata in «Prossima giornata» + «Giornate completate» sfogliabili con le
+  frecce (impilarle tutte allungava troppo la pagina) + calendario integrale dietro un pulsante.
+  Card per giornata con fascia di intestazione e pillola di stato.
+- Nelle partite non ancora giocate compare **VS** invece del segnaposto `00:00`.
+
+### Scheda giocatore condivisa
+
+`src/components/SchedaGiocatore.tsx` è usata **sia** da Formazione **sia** da Squadra: non
+duplicare la scheda, estenderla. Mostra anagrafica, attributi e — quando le statistiche vengono
+passate — la sezione «Stagione»: presenze, minuti, gol, assist, porta inviolata, G+A ogni 90',
+% tiri in porta, % passaggi riusciti, contrasti vinti, dribbling riusciti. Ogni percentuale porta
+sotto i valori grezzi.
+
+`src/lib/nomi.ts` contiene `cognome()`, che trasforma il nome puntato del dataset nel solo
+cognome. Provata su tutti i 5.416 nomi: zero risultati vuoti, gestisce cognomi composti
+(`O. El Hilali` → `El Hilali`), doppie iniziali e mononimi (`Rodri` resta `Rodri`).
+
+---
 
 ## Database remoto
 
-Le migrazioni risultano applicate fino a:
+Migrazioni applicate fino a `20260801163000_correggi_lettura_foto_giocatori.sql`.
 
-`20260801113304_supporta_png_stemmi.sql`
+Quella migrazione corregge un difetto latente che vale la pena capire, perché è il genere di cosa
+che si ripresenta. La policy `player_photos_download` limitava l'accesso alle sole operazioni
+`object.get_authenticated_info` e `object.get_authenticated`. **La creazione di una URL firmata è
+un'operazione diversa e restava negata.** Il difetto non si era mai visto perché con `foto_url`
+nullo il client non aveva mai chiesto una firma: è emerso tutto insieme nel momento in cui le foto
+sono state caricate. La policy è ora allineata a quella degli stemmi, che usa il solo vincolo sul
+bucket. Conseguenza accettata: un partecipante autenticato può anche elencare il bucket delle foto.
 
-Le ultime migrazioni locali aggiungono:
+---
 
-- `20260801094500_inizializza_stagione_calendario.sql`
-- `20260801094923_correggi_lint_calendario.sql`
-- `20260801100819_registra_risultato_partita.sql`
-- `20260801111119_aggiorna_profilo_squadra.sql`
-- `20260801113304_supporta_png_stemmi.sql`
+## Verifiche eseguite
 
-La Edge Function attiva è `supabase/functions/simula-giornata/index.ts`. Non mettere la `service_role` nel frontend.
+- `npm run build` e `npm run lint`: superati.
+- `node tools/validazione/simulate.js`: **diff zero** contro `docs/risultati-fase0.txt`.
+- Attribuzione minuti/assist provata su 4.000 partite generate dal motore.
+- `cognome()` provata su tutti i 5.416 nomi del dataset.
+- Integrità foto: join `players` × `storage.objects`, 5.225 su 5.225.
+- L'utente ha verificato su iPhone che le foto si vedono e che la navigazione in basso funziona.
 
-## Verifiche già eseguite
+## Cosa NON è verificato
 
-- `npm run build`: superato.
-- `npm run lint`: superato.
-- Supabase `db lint --linked`: nessun errore di schema.
-- Test SQL di `registra_risultato_partita`: superato con rollback.
-- Test SQL di `aggiorna_profilo_squadra`: superato con rollback.
-- Verificato sul database remoto che `team-crests` accetti WebP e PNG e che policy/validatore siano coerenti.
-- Simulazione manuale della giornata verificata dall'utente su mobile.
+- La Edge Function versione 6 **non è mai stata eseguita su una partita vera**: assist, minuti e
+  cronaca sono distribuiti ma mai girati in produzione. Prima cosa da fare: simulare una giornata
+  e aprire il rapporto partita.
+- Il bundler di Supabase non fa type-check del TypeScript delle Edge Function: un errore di tipo
+  non blocca il deploy e si manifesta solo alla prima chiamata.
 
-## Stato UX deciso dall'utente
+---
 
-- Il prodotto deve sembrare un videogioco manageriale, non un sito minimale.
-- Riferimenti visivi: Football Manager e lineup “Dream Team”; fondo scuro, viola, immagini giocatori e gerarchia forte.
-- L'esperienza principale è smartphone; ogni cambiamento va testato prima su viewport mobile.
-- Le immagini giocatore non devono avere un rettangolo netto dietro: sfumatura trasparente.
-- Logo squadra sempre quadrato.
+## Debiti noti e trappole
+
+- **5.225 oggetti duplicati** nel bucket, al percorso sbagliato `players/images/…`, residuo del
+  primo tentativo di upload. Nessuno li referenzia, ma occupano 44 MB. **`supabase storage rm`
+  risponde `{"deleted":[]}` senza errore** con qualunque forma di percorso: è un difetto della CLI.
+  Vanno cancellati dalla dashboard (Storage → `player-photos` → cartella `images`).
+- **Percorsi Windows con lettera di unità rompono la CLI Storage**: `C:/…` viene letto come schema
+  URI. Bisogna entrare nella cartella e usare percorsi relativi.
+- **`storage cp -r` usa il nome della cartella sorgente come destinazione**: la cartella locale
+  deve chiamarsi `players`, altrimenti i percorsi non corrispondono a `foto_url`.
+- **% contrasti vinti e % dribbling riusciti non sono calcolabili**: il motore non produce i
+  tentativi. `contrasti_persi` è scritto come `0` fisso dalla Edge Function, quindi la percentuale
+  sarebbe 100% per chiunque. Nella scheda giocatore sono mostrati come numeri assoluti. Renderle
+  vere richiede una modifica additiva a `engine.js` con protocollo di regressione completo.
+- **I gol sono distribuiti in modo piatto sui 90 minuti** (16,6% per quarto d'ora): il motore
+  assegna a tutti e 6 i blocchi lo stesso xG di base. Non è un difetto dell'attribuzione. Correggerlo
+  significherebbe modulare `XG_BASE_BLOCCO` per blocco, cioè toccare le formule validate.
+- `useSeasonData` interroga `matches` per `league_id` senza `season_id`: innocuo con una sola
+  stagione, diventa un difetto alla seconda.
+- `Rosa.tsx` carica `foto_url` ma non lo usa: nessuna foto nella rosa di draft.
+- La formazione salvata è slot-per-slot; non riordinare gli array dei titolari prima del motore.
+- `sostituzioni()` muta il lineup: costruire oggetti freschi per ogni partita.
+- Il seed globale impone simulazioni in sequenza, mai in parallelo.
+- Le sostituzioni e gli infortuni **esistono già nel motore** ma non possono scattare in Fase 1:
+  con `usaCondizione: false` la condizione resta a 100 e la soglia di cambio è 55. Accendere il
+  flag da solo non basta: servirebbe persistere `condizione` su `player_instances` fra una partita
+  e l'altra, altrimenti nessuno scende mai sotto soglia in una singola gara.
+
+---
 
 ## Prossime task consigliate
 
-1. **Mettere in sicurezza l'handoff Git:** rivedere le modifiche locali, eseguire test finali, poi commit e push. Finché non viene fatto, GitHub non contiene il lavoro descritto sopra.
-2. **Automazione stagione:** configurare davvero i job `pg_cron`/`pg_net` in `Europe/Rome` (fallback formazione alle 23:00 e simulazione alle 00:00). Il pulsante admin è attualmente il percorso di test.
-3. **Completamento Fase 1:** test end-to-end con più account reali, turni di riposo, fine calendario, criteri classifica e controlli RLS avversari.
-4. **Mercato:** richiesto dall'utente come prossimo grande modulo. Prima di implementarlo rileggere le sezioni mercato/economia di `docs/design.md` e chiarire se entra subito nella roadmap nonostante il vecchio scope della Fase 1 lo rimandasse.
-5. **Pagina squadra:** eventuali rifiniture visuali, scelta/crop logo più guidata e collegamenti al profilo squadra da tutte le classifiche/partite.
-6. **Fine stagione:** non ancora implementata; crescita/declino, contratti e seconda stagione restano fuori dallo stato attuale.
+1. **Provare la simulazione** con la Edge Function versione 6 e verificare cronaca e assist.
+2. **Completare la grafica**: mancano **Overview** e **Classifica** nel menu di stagione, e poi
+   Lobby, Draft, Onboarding e Login. I mattoni condivisi esistono già (`.esito`, `.esito-riga`,
+   `.stat-guida`, `.giornata-card`, `.sezione-testa`, `.button-fantasma`): è in gran parte riuso.
+3. **Automazione stagione**: configurare `pg_cron`/`pg_net` in `Europe/Rome`. Attenzione: la Edge
+   Function è dichiarata `withSupabase({ auth: 'user' })` e verifica `league.admin_id`. Una chiamata
+   da `pg_net` non ha JWT utente, quindi **così com'è il cron non può invocarla**: serve prima un
+   secondo percorso di autenticazione (header segreto o service role).
+4. **Fallback formazione alle 23:00**: oggi l'ereditarietà avviene dentro la simulazione, cioè alle
+   00:00. L'utente non ha modo di vedere e correggere la formazione automatica prima della partita,
+   che è lo scopo dell'orario anticipato (design §6.7).
+5. **Test end-to-end** con più account reali: turni di riposo, fine calendario, controlli RLS.
+6. **Mercato**: richiesto dall'utente come prossimo grande modulo, fuori dallo scope Fase 1.
 
-## File principali aggiunti o modificati localmente
+## Stato UX deciso dall'utente
 
-- `src/App.tsx`: routing a stato tra overview, draft/rosa, partite, classifica, squadra e dettaglio partita.
-- `src/components/Formazione.tsx`: campo, moduli, selezione e dettagli giocatore.
-- `src/components/SeasonOverview.tsx`: dashboard stagione e simulazione admin.
-- `src/components/Matches.tsx`: calendario.
-- `src/components/MatchDetail.tsx`: tabellino.
-- `src/components/Standings.tsx`: classifica.
-- `src/components/TeamProfile.tsx`: pagina squadra e modifica profilo.
-- `src/components/SeasonUI.tsx`: componenti condivisi stagione.
-- `src/lib/useSeasonData.ts`: caricamento aggregato dati stagione.
-- `src/lib/crest.ts`: elaborazione stemmi, rimozione sfondo, UUID compatibile e MIME reale.
-- `supabase/functions/simula-giornata/index.ts`: orchestrazione simulazione.
-- `supabase/migrations/20260801*.sql`: calendario, risultati, profilo squadra e PNG stemmi.
-
-## Attenzioni tecniche
-
-- La working tree è intenzionalmente sporca: non usare `git reset --hard`, `git checkout --` o pulizie automatiche.
-- La formazione salvata è slot-per-slot; non riordinare gli array dei titolari prima di passarli al motore.
-- `sostituzioni()` muta il lineup: costruire sempre oggetti freschi per ogni partita.
-- Il seed globale impone simulazioni in sequenza, mai in parallelo.
-- Formazioni altrui devono rimanere protette dalle policy fino alla simulazione.
-- Gli stemmi custom sono percorsi Storage privati, non URL pubblici.
-- Le foto FC 26 devono essere ospitate nel bucket privato, mai hotlinkate.
-
+- Deve sembrare un videogioco manageriale, non un sito minimale.
+- Riferimenti visivi: app di risultati live in stile LiveScore e cruscotti calcistici viola.
+- L'esperienza principale è smartphone: ogni cambiamento va provato prima su viewport mobile.
+- Le immagini giocatore non devono avere rettangoli dietro. **Attenzione**: un `filter` CSS si
+  applica anche agli pseudo-elementi, quindi un `drop-shadow` sul contenitore proietta l'ombra dei
+  loro riquadri invece della sagoma del giocatore. L'ombra va sull'`img`.
+- Logo squadra sempre quadrato, e senza cornice attorno.

@@ -1,7 +1,9 @@
 import { useEffect, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react'
 import { supabase } from '../lib/supabase'
+import { cognome } from '../lib/nomi'
 import type { League, Membership } from '../types'
 import { GameNav } from './GameNav'
+import { SchedaGiocatore } from './SchedaGiocatore'
 import type { GameView } from './GameNav'
 
 const MODULI: Record<string, string[]> = {
@@ -44,12 +46,6 @@ type PlayerPortraitProps = {
 
 type PositionFit = 'natural' | 'adapted' | 'out'
 
-const STAT_LABELS: Array<[string, string]> = [
-  ['pace', 'Velocità'], ['shooting', 'Tiro'], ['passing', 'Passaggio'], ['dribbling_generale', 'Dribbling'], ['defending', 'Difesa'], ['physic', 'Fisico'],
-  ['stamina', 'Resistenza'], ['finishing', 'Finalizzazione'], ['short_passing', 'Passaggi corti'], ['standing_tackle', 'Contrasti'],
-  ['gk_diving', 'Tuffo'], ['gk_handling', 'Presa'], ['gk_kicking', 'Rinvio'], ['gk_positioning', 'Posizionamento'], ['gk_reflexes', 'Riflessi'],
-]
-
 function reparto(slot: string) {
   if (slot === 'GK') return 'GK'
   if (['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(slot)) return 'DEF'
@@ -71,10 +67,6 @@ function positionFit(slot: string, preferred: string[]): PositionFit {
   return 'out'
 }
 
-function eaPortraitUrl(fcId?: number) {
-  return fcId ? `https://ratings-images-prod.pulse.ea.com/FC25/full/player-portraits/p${fcId}.png?padding=0.7` : undefined
-}
-
 function AnonymousPlayer() {
   return <span className="anonymous-player" aria-hidden="true"><svg viewBox="0 0 100 110" focusable="false"><circle cx="50" cy="33" r="22" /><path d="M12 108c2-31 16-48 38-48s36 17 38 48H12Z" /></svg></span>
 }
@@ -88,9 +80,11 @@ function PlayerPortrait({ player, imageUrl, position, selected = false, onClick,
       {fit !== 'natural' && <i className={`position-warning position-warning--${fit}`} title={fit === 'adapted' ? 'Giocatore adattato in un ruolo vicino' : 'Giocatore completamente fuori posizione'} aria-label={fit === 'adapted' ? 'Fuori posizione di poco' : 'Completamente fuori posizione'}>!</i>}
     </span>
     <span className="lineup-player__plate">
-      <span className={`lineup-player__position lineup-player__position--${reparto(position)}`}>{position}</span>
-      <strong>{player?.nome ?? 'Seleziona'}</strong>
-      <b>{player?.overall_corrente ?? '—'}</b>
+      <strong>{player ? cognome(player.nome) : 'Seleziona'}</strong>
+      <span className="lineup-player__meta">
+        <span className={`lineup-player__position lineup-player__position--${reparto(position)}`}>{position}</span>
+        <b>{player?.overall_corrente ?? '—'}</b>
+      </span>
     </span>
   </button>
 }
@@ -114,14 +108,14 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [error, setError] = useState<string | null>(null)
   const [giornata, setGiornata] = useState(1)
 
+  // La scheda giocatore gestisce da se' Escape e blocco dello scorrimento:
+  // qui resta solo la mini-card delle azioni.
   useEffect(() => {
-    if (!detailPlayer && !playerAction) return
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') { setDetailPlayer(null); setPlayerAction(null) } }
-    document.addEventListener('keydown', closeOnEscape)
-    const previousOverflow = document.body.style.overflow
-    if (detailPlayer) document.body.style.overflow = 'hidden'
-    return () => { document.removeEventListener('keydown', closeOnEscape); document.body.style.overflow = previousOverflow }
-  }, [detailPlayer, playerAction])
+    if (!playerAction) return
+    const chiudiConEsc = (event: KeyboardEvent) => { if (event.key === 'Escape') setPlayerAction(null) }
+    document.addEventListener('keydown', chiudiConEsc)
+    return () => { document.removeEventListener('keydown', chiudiConEsc) }
+  }, [playerAction])
 
   useEffect(() => {
     let active = true
@@ -305,7 +299,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
               {visibleLocations.filter((location) => !(selected?.zone === location.zone && selected.index === location.index)).map((location) => {
                 const player = players.find((item) => item.id === location.id)
                 const position = location.zone === 'starter' ? slots[location.index] : player?.posizioni[0] ?? '—'
-                return <PlayerPortrait compact key={`${location.zone}-${location.index}-${location.id}`} player={player} imageUrl={imageUrls[location.id] ?? eaPortraitUrl(player?.fc_id)} position={position} selected={selected?.zone === location.zone && selected.index === location.index} onClick={(event) => handlePlayerClick(event, location, player)} />
+                return <PlayerPortrait compact key={`${location.zone}-${location.index}-${location.id}`} player={player} imageUrl={imageUrls[location.id]} position={position} selected={selected?.zone === location.zone && selected.index === location.index} onClick={(event) => handlePlayerClick(event, location, player)} />
               })}
             </div>}
           </div>
@@ -315,7 +309,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
             <div className="pitch-field__circle" />
             <div className="pitch-field__box pitch-field__box--top" /><div className="pitch-field__box pitch-field__box--bottom" />
             <div className="pitch-grid">
-              {rows.map((row, rowIndex) => <div className={`pitch-row pitch-row--${rowIndex}`} style={{ '--row-count': row.length } as CSSProperties} key={rowIndex}>{row.map(({ slot, index }) => { const player = players.find((item) => item.id === titolari[index]); const location = { zone: 'starter', index, id: titolari[index] ?? 0 } as PlayerLocation; return <div className={`pitch-slot pitch-slot--${reparto(slot)}`} key={`${slot}-${index}`}><PlayerPortrait player={player} imageUrl={imageUrls[player?.id ?? 0] ?? eaPortraitUrl(player?.fc_id)} position={slot} selected={selected?.zone === 'starter' && selected.index === index} onClick={(event) => handlePlayerClick(event, location, player)} /></div> })}</div>)}
+              {rows.map((row, rowIndex) => <div className={`pitch-row pitch-row--${rowIndex}`} style={{ '--row-count': row.length } as CSSProperties} key={rowIndex}>{row.map(({ slot, index }) => { const player = players.find((item) => item.id === titolari[index]); const location = { zone: 'starter', index, id: titolari[index] ?? 0 } as PlayerLocation; return <div className={`pitch-slot pitch-slot--${reparto(slot)}`} key={`${slot}-${index}`}><PlayerPortrait player={player} imageUrl={imageUrls[player?.id ?? 0]} position={slot} selected={selected?.zone === 'starter' && selected.index === index} onClick={(event) => handlePlayerClick(event, location, player)} /></div> })}</div>)}
             </div>
           </div>
           <div className="role-legend"><span><i className="role-bar role-bar--GK" />Portiere</span><span><i className="role-bar role-bar--DEF" />Difensori</span><span><i className="role-bar role-bar--MID" />Centrocampisti</span><span><i className="role-bar role-bar--ATT" />Attaccanti</span></div>
@@ -325,7 +319,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       {playerAction && <div className="player-action-layer" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setPlayerAction(null) }}>
         <section className="player-action-menu" role="dialog" aria-label={`Azioni per ${playerAction.player.nome}`} style={{ left: playerAction.x, top: playerAction.y }}>
           <div className="player-action-menu__player">
-            <span className={`player-action-menu__photo player-action-menu__photo--${reparto(playerAction.player.posizioni[0] ?? 'ATT')} has-photo`}><AnonymousPlayer /><img src={imageUrls[playerAction.player.id] ?? eaPortraitUrl(playerAction.player.fc_id)} alt="" onError={(event) => { event.currentTarget.hidden = true; event.currentTarget.parentElement?.classList.remove('has-photo') }} /></span>
+            <span className={`player-action-menu__photo player-action-menu__photo--${reparto(playerAction.player.posizioni[0] ?? 'ATT')} has-photo`}><AnonymousPlayer /><img src={imageUrls[playerAction.player.id]} alt="" onError={(event) => { event.currentTarget.hidden = true; event.currentTarget.parentElement?.classList.remove('has-photo') }} /></span>
             <div><strong>{playerAction.player.nome}</strong><small>{playerAction.player.posizioni.join(' · ')} · OVR {playerAction.player.overall_corrente}</small></div>
             <button type="button" onClick={() => setPlayerAction(null)} aria-label="Chiudi menu">×</button>
           </div>
@@ -335,18 +329,22 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           </div>
         </section>
       </div>}
-      {detailPlayer && <div className="player-modal-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setDetailPlayer(null) }}>
-        <section className="player-modal" role="dialog" aria-modal="true" aria-labelledby="player-modal-title">
-          <button className="player-modal__close" type="button" onClick={() => setDetailPlayer(null)} aria-label="Chiudi dettagli giocatore">×</button>
-          <div className="player-modal__hero">
-            <div className={`player-modal__photo player-modal__photo--${reparto(detailPlayer.posizioni[0] ?? 'ATT')} has-photo`}><AnonymousPlayer /><img src={imageUrls[detailPlayer.id] ?? eaPortraitUrl(detailPlayer.fc_id)} alt={detailPlayer.nome} onError={(event) => { event.currentTarget.hidden = true; event.currentTarget.parentElement?.classList.remove('has-photo') }} /></div>
-            <div><p className="kicker">Scheda giocatore</p><h2 id="player-modal-title">{detailPlayer.nome}</h2><p>{detailPlayer.club}{detailPlayer.nazionalita ? ` · ${detailPlayer.nazionalita}` : ''}</p></div>
-            <strong className="player-modal__overall"><span>OVR</span>{detailPlayer.overall_corrente}</strong>
-          </div>
-          <dl className="player-modal__facts"><div><dt>Età</dt><dd>{detailPlayer.eta_corrente}</dd></div><div><dt>Ruoli</dt><dd>{detailPlayer.posizioni.join(' · ')}</dd></div><div><dt>Piede</dt><dd>{detailPlayer.piede ?? '—'}</dd></div><div><dt>Altezza</dt><dd>{detailPlayer.altezza ? `${detailPlayer.altezza} cm` : '—'}</dd></div><div><dt>Condizione</dt><dd>{detailPlayer.condizione}%</dd></div></dl>
-          <div className="player-modal__stats"><h3>Statistiche</h3><div className="player-stats-grid">{STAT_LABELS.map(([key, label]) => { const value = detailPlayer.attributi[key]; return typeof value === 'number' ? <div className="player-stat" key={key}><span>{label}</span><b>{value}</b><i><span style={{ width: `${value}%` }} /></i></div> : null })}</div></div>
-        </section>
-      </div>}
+      {detailPlayer && <SchedaGiocatore
+        giocatore={{
+          nome: detailPlayer.nome,
+          club: detailPlayer.club,
+          nazionalita: detailPlayer.nazionalita,
+          posizioni: detailPlayer.posizioni,
+          overall: detailPlayer.overall_corrente,
+          eta: detailPlayer.eta_corrente,
+          piede: detailPlayer.piede,
+          altezza: detailPlayer.altezza,
+          condizione: detailPlayer.condizione,
+          attributi: detailPlayer.attributi,
+        }}
+        fotoUrl={imageUrls[detailPlayer.id]}
+        onClose={() => setDetailPlayer(null)}
+      />}
     </main>
   )
 }

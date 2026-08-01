@@ -194,6 +194,7 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   let golC = 0, golO = 0, xgTotC = 0, xgTotO = 0;
   const ctrlStorico = [];
   const inCampo = new Map(); // id -> blocchi giocati
+  const golPerBlocco = []; // solo bookkeeping: quanti gol cadono in quale blocco
 
   for (let b = 0; b < CFG.BLOCCHI_PARTITA; b++) {
     const fc = forzeLinee(lc), fo = forzeLinee(lo);
@@ -218,8 +219,13 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
 
     xgC = Math.max(0, xgC); xgO = Math.max(0, xgO);
     xgTotC += xgC; xgTotO += xgO;
-    golC += poisson(xgC);
-    golO += poisson(xgO);
+    // stesse due estrazioni di prima, nello stesso ordine: qui vengono solo
+    // trattenute per sapere in quale blocco e' caduto ogni gol
+    const nGolC = poisson(xgC);
+    const nGolO = poisson(xgO);
+    golC += nGolC;
+    golO += nGolO;
+    golPerBlocco.push({ blocco: b + 1, casa: nGolC, ospite: nGolO });
 
     // consumo condizione + conteggio blocchi
     for (const L of [lc, lo]) {
@@ -308,7 +314,7 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   rosaCasa.esperienzaModulo[modCasa] = (rosaCasa.esperienzaModulo[modCasa] || 0) + 1;
   rosaOspite.esperienzaModulo[modOspite] = (rosaOspite.esperienzaModulo[modOspite] || 0) + 1;
 
-  return { golC, golO, statsCasa: sC, statsOspite: sO, perGiocatore };
+  return { golC, golO, statsCasa: sC, statsOspite: sO, perGiocatore, golPerBlocco };
 }
 
 // ---------- Calendario (metodo del cerchio) ----------

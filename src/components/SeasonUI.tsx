@@ -21,7 +21,9 @@ export function FixtureScore({ fixture, match }: { fixture: Fixture; match?: Mat
   }
   if (fixture.stato === 'in_corso') return <span className="fixture-status fixture-status--live">LIVE</span>
   if (fixture.stato === 'annullata') return <span className="fixture-status">ANN.</span>
-  return <span className="fixture-time">00:00</span>
+  // L'orario e' gia' nell'intestazione della giornata: qui serve solo il segno
+  // che separa le due squadre.
+  return <span className="fixture-time">VS</span>
 }
 
 export function SeasonState({ loading, error, onRetry }: { loading: boolean; error: string | null; onRetry: () => void }) {
