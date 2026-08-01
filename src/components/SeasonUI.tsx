@@ -26,6 +26,37 @@ export function FixtureScore({ fixture, match }: { fixture: Fixture; match?: Mat
   return <span className="fixture-time">VS</span>
 }
 
+export type Esito = 'V' | 'N' | 'P'
+
+// Ultimi cinque risultati di ogni squadra, in ordine cronologico. Le fixture
+// arrivano gia' ordinate per giornata, quindi la coda e' la parte recente.
+export function formaPerSquadra(fixtures: Fixture[], matchByFixture: Map<number, Match>) {
+  const mappa = new Map<number, Esito[]>()
+  for (const fixture of fixtures) {
+    if (fixture.stato !== 'simulata') continue
+    const match = matchByFixture.get(fixture.id)
+    if (!match) continue
+    const lati = [
+      [fixture.home_team_id, match.gol_home, match.gol_away],
+      [fixture.away_team_id, match.gol_away, match.gol_home],
+    ] as const
+    for (const [teamId, propri, subiti] of lati) {
+      const esito: Esito = propri > subiti ? 'V' : propri < subiti ? 'P' : 'N'
+      mappa.set(teamId, [...(mappa.get(teamId) ?? []), esito])
+    }
+  }
+  for (const [teamId, lista] of mappa) mappa.set(teamId, lista.slice(-5))
+  return mappa
+}
+
+export function Forma({ esiti, slot = 5 }: { esiti?: Esito[]; slot?: number }) {
+  const lista = esiti ?? []
+  return <span className="forma-chip">
+    {lista.map((esito, indice) => <span className={`esito esito--${esito}`} key={`e${indice}`}>{esito}</span>)}
+    {Array.from({ length: Math.max(0, slot - lista.length) }).map((_, indice) => <span className="esito esito--vuoto" key={`v${indice}`} aria-hidden="true">·</span>)}
+  </span>
+}
+
 export function SeasonState({ loading, error, onRetry }: { loading: boolean; error: string | null; onRetry: () => void }) {
   if (loading) return <section className="season-state"><span className="season-loader" /><h2>Preparo la stagione…</h2><p>Recupero calendario, risultati e classifica.</p></section>
   if (error) return <section className="season-state"><span className="season-state__icon">!</span><h2>Dati non disponibili</h2><p>{error}</p><button className="button button--primary" type="button" onClick={onRetry}>Riprova</button></section>

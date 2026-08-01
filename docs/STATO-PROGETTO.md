@@ -112,7 +112,23 @@ Già applicato:
 - **Partite**: ristrutturata in «Prossima giornata» + «Giornate completate» sfogliabili con le
   frecce (impilarle tutte allungava troppo la pagina) + calendario integrale dietro un pulsante.
   Card per giornata con fascia di intestazione e pillola di stato.
+- **Overview**: l'eroe porta l'identità della squadra (stemma, nome, posizione, punti, forma)
+  invece di uno slogan fisso; la card dell'ultima partita prende il colore dell'esito.
+- **Classifica**: colonna forma con i chip V/N/P delle ultime cinque giornate. Sono **dentro la
+  cella squadra**, non in una colonna nuova: la griglia nasconde le colonne su mobile con regole
+  `nth-child`, e aggiungerne una le avrebbe sfasate tutte. Così la forma resta visibile anche su
+  telefono, dove V/N/P/GF/GS sono nascoste.
 - Nelle partite non ancora giocate compare **VS** invece del segnaposto `00:00`.
+
+Il calcolo della forma (`formaPerSquadra`) e il componente `Forma` stanno in `SeasonUI.tsx` e
+sono condivisi da Overview, Classifica e pagina Squadra: una sola implementazione.
+
+**Con questo il menu di stagione è completo.** Restano da rivedere Lobby, Draft, Onboarding e
+Login, che stanno tutte prima dell'inizio della stagione.
+
+Una cosa deliberatamente **non** fatta: le frecce di salita e discesa in classifica. Servirebbe
+la posizione della giornata precedente e `standings` conserva solo quella corrente, quindi
+andrebbero inventate.
 
 ### Menu iniziale e profilo allenatore
 
@@ -229,10 +245,10 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
 ## Prossime task consigliate
 
 1. **Provare la simulazione** con la Edge Function versione 6 e verificare cronaca e assist.
-2. **Completare la grafica**: mancano **Overview** e **Classifica** nel menu di stagione, e poi
-   Lobby, Draft, Onboarding e Login. I mattoni condivisi esistono già (`.esito`, `.esito-riga`,
+2. **Completare la grafica**: il menu di stagione è finito. Restano **Lobby**, **Draft**,
+   **Onboarding** e **Login**. I mattoni condivisi esistono già (`.esito`, `.esito-riga`,
    `.stat-guida`, `.giornata-card`, `.sezione-testa`, `.button-fantasma`, `.pillola-stato`,
-   `.menu-azione`): è in gran parte riuso.
+   `.menu-azione`, `.forma-chip`, `.pannello-laterale`): è in gran parte riuso.
 3. **Automazione stagione**: configurare `pg_cron`/`pg_net` in `Europe/Rome`. Attenzione: la Edge
    Function è dichiarata `withSupabase({ auth: 'user' })` e verifica `league.admin_id`. Una chiamata
    da `pg_net` non ha JWT utente, quindi **così com'è il cron non può invocarla**: serve prima un

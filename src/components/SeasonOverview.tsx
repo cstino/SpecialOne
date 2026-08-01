@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useSeasonData } from '../lib/useSeasonData'
 import { supabase } from '../lib/supabase'
 import type { League, Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
-import { FixtureScore, formatMatchDate, SeasonState, TeamLabel } from './SeasonUI'
+import { Crest } from './Crest'
+import { FixtureScore, Forma, formaPerSquadra, formatMatchDate, SeasonState, TeamLabel } from './SeasonUI'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; onOpenMatch: (matchId: number) => void; onOpenTeam: (teamId: number) => void }
 
@@ -12,6 +13,21 @@ export function SeasonOverview({ membership, onNavigate, onOpenMatch, onOpenTeam
   const data = useSeasonData(membership)
   const [simulating, setSimulating] = useState(false)
   const [simulationError, setSimulationError] = useState<string | null>(null)
+  const forma = useMemo(() => formaPerSquadra(data.fixtures, data.matchByFixture), [data.fixtures, data.matchByFixture])
+  const miaSquadra = data.teamById.get(membership.id)
+  const miaClassifica = data.standings.find((riga) => riga.team_id === membership.id)
+
+  // Esito dell'ultima partita dal proprio punto di vista: colora la card.
+  const esitoUltima = (() => {
+    const fixture = data.lastFixture
+    const match = fixture ? data.matchByFixture.get(fixture.id) : undefined
+    if (!fixture || !match) return null
+    const inCasa = fixture.home_team_id === membership.id
+    if (!inCasa && fixture.away_team_id !== membership.id) return null
+    const propri = inCasa ? match.gol_home : match.gol_away
+    const subiti = inCasa ? match.gol_away : match.gol_home
+    return propri > subiti ? 'V' : propri < subiti ? 'P' : 'N'
+  })()
 
   async function simulateNextRound() {
     if (!window.confirm(`Simulare ora la giornata ${data.currentGiornata}? I risultati diventeranno definitivi.`)) return
@@ -35,13 +51,26 @@ export function SeasonOverview({ membership, onNavigate, onOpenMatch, onOpenTeam
     <SeasonState loading={data.loading} error={data.error} onRetry={data.reload} />
     {!data.loading && !data.error && <div className="season-page">
       {simulationError && <p className="notice notice--error season-notice" role="alert">{simulationError}</p>}
+      {/* L'eroe porta l'identita' della squadra, non uno slogan: posizione,
+          punti e forma sono le tre cose che si cercano per prime. */}
       <section className="season-hero">
-        <div><p className="kicker">Stagione {league.stagione_corrente} · {league.nome}</p><h1>La corsa è iniziata.</h1><p>Calendario pronto. Prepara la formazione prima della prossima simulazione notturna.</p></div>
+        <div className="season-hero__squadra">
+          <Crest value={miaSquadra?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(membership.id)} size="large" />
+          <div>
+            <p className="kicker">{league.nome} · Stagione {league.stagione_corrente}</p>
+            <h1>{miaSquadra?.nome ?? 'La tua squadra'}</h1>
+            <div className="season-hero__stato">
+              <span className="season-hero__posizione">{miaClassifica?.posizione ?? '—'}<sup>ª</sup></span>
+              <span className="season-hero__punti">{miaClassifica?.punti ?? 0} punti</span>
+              <Forma esiti={forma.get(membership.id)} />
+            </div>
+          </div>
+        </div>
         <div className="season-round-stamp"><small>GIORNATA</small><strong>{data.currentGiornata}</strong><span>di {league.giornate_totali}</span></div>
       </section>
 
       <section className="season-dashboard">
-        {data.lastFixture && data.matchByFixture.get(data.lastFixture.id) && <article className="season-card season-card--last" onClick={() => onOpenMatch(data.matchByFixture.get(data.lastFixture!.id)!.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpenMatch(data.matchByFixture.get(data.lastFixture!.id)!.id) } }} role="button" tabIndex={0}>
+        {data.lastFixture && data.matchByFixture.get(data.lastFixture.id) && <article className={`season-card season-card--last ${esitoUltima ? `esito-riga esito-riga--${esitoUltima}` : ''}`} onClick={() => onOpenMatch(data.matchByFixture.get(data.lastFixture!.id)!.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpenMatch(data.matchByFixture.get(data.lastFixture!.id)!.id) } }} role="button" tabIndex={0}>
           <div className="season-card__heading"><div><p className="kicker">Ultima partita</p><h2>Giornata {data.lastFixture.giornata}</h2></div><span className="matchday-chip">DETTAGLI ›</span></div>
           <div className="last-match-duel">
             <TeamLabel team={data.teamById.get(data.lastFixture.home_team_id)} imageUrl={data.crestUrlByTeamId.get(data.lastFixture.home_team_id)} onClick={() => onOpenTeam(data.lastFixture!.home_team_id)} />

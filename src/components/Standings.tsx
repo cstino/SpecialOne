@@ -1,13 +1,15 @@
+import { useMemo } from 'react'
 import { useSeasonData } from '../lib/useSeasonData'
 import type { League, Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
-import { SeasonState, TeamLabel } from './SeasonUI'
+import { Forma, formaPerSquadra, SeasonState, TeamLabel } from './SeasonUI'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; onOpenTeam: (teamId: number) => void }
 
 export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
   const league = membership.league as League
   const data = useSeasonData(membership)
+  const forma = useMemo(() => formaPerSquadra(data.fixtures, data.matchByFixture), [data.fixtures, data.matchByFixture])
 
   return <main className="app-shell season-shell">
     <GameNav league={league} active="table" onNavigate={onNavigate} />
@@ -21,11 +23,14 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
         <div className="standings-body">
           {data.standings.map((standing, index) => <div className={`standings-row ${standing.team_id === membership.id ? 'is-mine' : ''}`} key={standing.team_id}>
             <span className="standings-position">{standing.posizione ?? index + 1}</span>
-            <TeamLabel team={data.teamById.get(standing.team_id)} imageUrl={data.crestUrlByTeamId.get(standing.team_id)} onClick={() => onOpenTeam(standing.team_id)} />
+            <div className="standings-squadra">
+              <TeamLabel team={data.teamById.get(standing.team_id)} imageUrl={data.crestUrlByTeamId.get(standing.team_id)} onClick={() => onOpenTeam(standing.team_id)} />
+              <Forma esiti={forma.get(standing.team_id)} />
+            </div>
             <span>{standing.giocate}</span><span>{standing.vittorie}</span><span>{standing.pareggi}</span><span>{standing.sconfitte}</span><span>{standing.gol_fatti}</span><span>{standing.gol_subiti}</span><span>{standing.differenza_reti > 0 ? `+${standing.differenza_reti}` : standing.differenza_reti}</span><strong>{standing.punti}</strong>
           </div>)}
         </div>
-        <footer><span><i /> La tua squadra</span><small>Ordine: punti · differenza reti · gol fatti</small></footer>
+        <footer><span><i /> La tua squadra</span><small>Ordine: punti · scontri diretti · differenza reti · gol fatti</small></footer>
       </section>
     </div>}
   </main>
