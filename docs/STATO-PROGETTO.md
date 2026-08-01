@@ -130,6 +130,57 @@ Una cosa deliberatamente **non** fatta: le frecce di salita e discesa in classif
 la posizione della giornata precedente e `standings` conserva solo quella corrente, quindi
 andrebbero inventate.
 
+### Simulazione notturna automatica — attiva
+
+Job `simula-giornata-notturna` in `cron.job`, **attivo**. Gira **ogni ora**; è la funzione
+`private.simula_giornata_notturna()` a decidere se a Roma è mezzanotte.
+
+**Perché ogni ora e non alle 23:00 UTC.** pg_cron pianifica in UTC: un orario fisso sarebbe a
+mezzanotte d'inverno e all'una d'estate. Il controllo sull'ora italiana dentro la funzione
+attraversa il cambio dell'ora legale senza saltare né duplicare una giornata — è la trappola
+annunciata in `CLAUDE.md` §2.
+
+Due guardie contro la doppia simulazione: si simula solo una giornata la cui data di calendario
+è già arrivata, e mai due volte nella stessa data italiana. `registra_risultato_partita` resta
+comunque idempotente per fixture.
+
+#### Autenticazione del cron — la parte che è costata di più
+
+`verify_jwt = false` nel `config.toml`: l'autenticazione la fa `@supabase/server` dentro la
+funzione con `auth: ['user', 'secret']`, quindi l'endpoint non è aperto. Il browser passa dal
+JWT utente e resta soggetto al controllo su `admin_id`; il cron passa dal ramo `secret`.
+
+Tre cose scoperte provando, ognuna aveva prodotto un 401 o un 404:
+
+1. **La chiave va nell'header `apikey`, non in `Authorization`.** Il ramo `secret` legge solo
+   `request.headers.apikey`; un bearer token non viene nemmeno guardato.
+2. **`SUPABASE_SECRET_KEY` non è iniettata** nel runtime e la piattaforma **vieta** di creare
+   variabili col prefisso `SUPABASE_`. Per questo la chiave è esposta come
+   `CHIAVE_SEGRETA_PROGETTO` e passata a `withSupabase` con `env: { secretKeys: { default: … } }`.
+3. **Quella mappa è la stessa che alimenta `createAdminClient`.** Metterci un segreto inventato
+   autentica il cron ma rompe ogni query della funzione, perché il client amministrativo userebbe
+   quel valore come chiave del progetto. Deve essere la chiave segreta vera.
+
+Il segreto sta nel vault come `chiave_simulazione` e non compare in nessun file del repository.
+
+#### Verificato in produzione
+
+La catena `pg_net → gateway → Edge Function` è stata provata a mano prima di lasciarla al cron:
+risposta `200`, `modo: "secret"`, giornata 6 simulata. **Con questa esecuzione è finalmente
+verificata anche la funzione assist**: eventi gol pari al numero di gol in entrambe le partite,
+assist scritti in `match_stats`, un gol senza assist su quattro — coerente con la quota prevista.
+
+#### Da decidere: il calendario è disallineato
+
+Le prime cinque giornate sono state simulate a mano **in anticipo** rispetto alle date generate
+all'avvio della stagione. Oggi è il 1º agosto ma la giornata 7 è in calendario per l'**8 agosto**,
+quindi il cron resterà fermo per una settimana e poi recupererà una giornata per notte.
+
+È coerente — il calendario è la fonte di verità e le date sono quelle mostrate nell'app — ma va
+deciso: o si accetta la pausa, o il pulsante admin deve spostare le date delle giornate successive
+quando simula in anticipo, oppure il cron ignora il calendario e simula la prima giornata pendente
+ogni notte (e allora le date mostrate diventano bugiarde).
+
 ### Menu iniziale e profilo allenatore
 
 Prima la `Lobby` faceva da schermata di casa, ma è la **sala d'attesa di una singola lega**:
@@ -179,7 +230,7 @@ cognome. Provata su tutti i 5.416 nomi: zero risultati vuoti, gestisce cognomi c
 
 ## Database remoto
 
-Migrazioni applicate fino a `20260801181500_profilo_allenatore.sql`.
+Migrazioni applicate fino a `20260801203000_cron_usa_header_apikey.sql`.
 
 Quella migrazione corregge un difetto latente che vale la pena capire, perché è il genere di cosa
 che si ripresenta. La policy `player_photos_download` limitava l'accesso alle sole operazioni
@@ -202,9 +253,6 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
 
 ## Cosa NON è verificato
 
-- La Edge Function versione 6 **non è mai stata eseguita su una partita vera**: assist, minuti e
-  cronaca sono distribuiti ma mai girati in produzione. Prima cosa da fare: simulare una giornata
-  e aprire il rapporto partita.
 - Il bundler di Supabase non fa type-check del TypeScript delle Edge Function: un errore di tipo
   non blocca il deploy e si manifesta solo alla prima chiamata.
 
@@ -249,10 +297,8 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
    **Onboarding** e **Login**. I mattoni condivisi esistono già (`.esito`, `.esito-riga`,
    `.stat-guida`, `.giornata-card`, `.sezione-testa`, `.button-fantasma`, `.pillola-stato`,
    `.menu-azione`, `.forma-chip`, `.pannello-laterale`): è in gran parte riuso.
-3. **Automazione stagione**: configurare `pg_cron`/`pg_net` in `Europe/Rome`. Attenzione: la Edge
-   Function è dichiarata `withSupabase({ auth: 'user' })` e verifica `league.admin_id`. Una chiamata
-   da `pg_net` non ha JWT utente, quindi **così com'è il cron non può invocarla**: serve prima un
-   secondo percorso di autenticazione (header segreto o service role).
+3. **Decidere il disallineamento del calendario** descritto sopra: il cron rispetta le date, ma le
+   simulazioni manuali sono andate avanti rispetto ad esse.
 4. **Fallback formazione alle 23:00**: oggi l'ereditarietà avviene dentro la simulazione, cioè alle
    00:00. L'utente non ha modo di vedere e correggere la formazione automatica prima della partita,
    che è lo scopo dell'orario anticipato (design §6.7).

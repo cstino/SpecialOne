@@ -4,6 +4,12 @@ import { schiera, simulaPartita } from '../../../engine/engine.js'
 import { MODULI } from '../../../engine/config.js'
 import { setSeed } from '../../../engine/random.js'
 
+// La chiave segreta del progetto, esposta con un nome non riservato: la
+// piattaforma non inietta SUPABASE_SECRET_KEY e vieta di crearla a mano.
+// Serve per due cose insieme, ed e' la stessa mappa: autenticare il cron
+// (header `apikey`) e costruire il client amministrativo.
+const CHIAVE_SEGRETA = Deno.env.get('CHIAVE_SEGRETA_PROGETTO') ?? ''
+
 type JsonMap = Record<string, unknown>
 type GolBlocco = { blocco: number; casa: number; ospite: number }
 type EventoGol = { minuto: number; blocco: number; lato: 'casa' | 'ospite'; team_id: number; marcatore: number; assist: number | null }
@@ -208,23 +214,34 @@ function playerStats(teamId: number, stats: JsonMap, teamStats: JsonMap, assist:
 }
 
 export default {
-  fetch: withSupabase({ auth: 'user' }, async (req, ctx) => {
+  // Due chiamanti: l'amministratore dal browser (JWT utente) e il cron
+  // notturno, che presenta la chiave segreta del progetto nell'header `apikey`.
+  fetch: withSupabase({
+    auth: ['user', 'secret'],
+    env: { secretKeys: CHIAVE_SEGRETA ? { default: CHIAVE_SEGRETA } : {} },
+  }, async (req, ctx) => {
     try {
       if (req.method !== 'POST') return Response.json({ error: 'Metodo non consentito.' }, { status: 405 })
       const body = await req.json().catch(() => ({})) as { league_id?: number; giornata?: number }
       const leagueId = Number(body.league_id)
       if (!Number.isInteger(leagueId) || leagueId < 1) return Response.json({ error: 'league_id non valido.' }, { status: 400 })
 
-      const { data: league, error: leagueError } = await ctx.supabase.from('leagues')
+      // Lettura con il client amministrativo, come tutto il resto della
+      // funzione: in modalita' segreta `ctx.supabase` porta la chiave del cron,
+      // che PostgREST non riconosce. Il controllo sull'admin resta esplicito.
+      const chiamataDiSistema = ctx.authMode === 'secret'
+      const { data: league, error: leagueError } = await ctx.supabaseAdmin.from('leagues')
         .select('id, nome, admin_id, stato').eq('id', leagueId).single()
       if (leagueError || !league) return Response.json({ error: 'Lega non trovata.' }, { status: 404 })
-      if (league.admin_id !== ctx.userClaims?.id) return Response.json({ error: 'Solo l’amministratore può simulare una giornata.' }, { status: 403 })
+      if (!chiamataDiSistema && league.admin_id !== ctx.userClaims?.id) {
+        return Response.json({ error: 'Solo l’amministratore può simulare una giornata.' }, { status: 403 })
+      }
       if (league.stato !== 'stagione') return Response.json({ error: 'La stagione non è in corso.' }, { status: 409 })
 
       const { data: firstFixture, error: firstError } = await ctx.supabaseAdmin.from('fixtures')
         .select('giornata').eq('league_id', leagueId).eq('stato', 'programmata').order('giornata').limit(1).maybeSingle()
       if (firstError) throw firstError
-      if (!firstFixture) return Response.json({ league_id: leagueId, completata: true, partite: [] })
+      if (!firstFixture) return Response.json({ league_id: leagueId, completata: true, modo: ctx.authMode, partite: [] })
       if (body.giornata && body.giornata !== firstFixture.giornata) {
         return Response.json({ error: `La prossima giornata simulabile è la ${firstFixture.giornata}.` }, { status: 409 })
       }
@@ -334,7 +351,7 @@ export default {
         summaries.push(saved)
       }
 
-      return Response.json({ league_id: leagueId, giornata, partite: summaries })
+      return Response.json({ league_id: leagueId, giornata, modo: ctx.authMode, partite: summaries })
     } catch (error) {
       console.error(error)
       return Response.json({ error: error instanceof Error ? error.message : 'Errore durante la simulazione.' }, { status: 500 })
