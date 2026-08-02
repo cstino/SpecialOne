@@ -130,6 +130,58 @@ Una cosa deliberatamente **non** fatta: le frecce di salita e discesa in classif
 la posizione della giornata precedente e `standings` conserva solo quella corrente, quindi
 andrebbero inventate.
 
+### Condizione, sostituzioni e infortuni — attivi
+
+Fino a ieri `usaCondizione: false`, com'era previsto per la Fase 1. Ora è **acceso**, e con esso
+sostituzioni e infortuni. Va capito perché non bastava girare il flag.
+
+**Le colonne non venivano mai riscritte.** `condizione` e `infortunato_fino_a` esistevano dal
+primo giorno e la Edge Function le leggeva, ma non le salvava: ogni partita ripartiva da 100 e
+senza infortuni. Con la condizione ferma a 100 nemmeno le sostituzioni potevano scattare, perché
+la soglia di cambio del motore è 55. Ora c'è la RPC `aggiorna_condizione_rosa`, chiamata a fine
+giornata.
+
+**Nota importante sulla validazione**: il test stagionale della suite gira con
+`usaCondizione: true`. Era la produzione a discostarsi dalla configurazione validata, non il
+contrario. Accendere la condizione ci riporta dentro il perimetro tarato in Fase 0.
+
+#### Due adattamenti alla lunghezza della stagione — nell'adapter, mai nel motore
+
+Le costanti del motore sono tarate su 28 giornate. Entrambe le correzioni stanno nella Edge
+Function: `engine/` resta intatto, come impone `CLAUDE.md` §4.
+
+1. **Durata degli infortuni** (`scalaInfortunio`): il motore sorteggia fino a 15 giornate, che in
+   un campionato da 12 significa perdere il giocatore per sempre. La durata è scalata sulle
+   giornate reali, con tetto al 40% del totale.
+2. **Usura della condizione** (`fattoreUsura`): il consumo netto è −5 a partita, quindi da 100
+   servono nove giornate per arrivare sotto soglia. **Misurato: in un campionato da 12 giornate le
+   sostituzioni non scattavano mai** — quattro partite di prova, 22 giocatori su 22 sempre a 90
+   minuti. Il fattore `28 / giornate_totali` (limitato fra 0,5 e 3) riporta l'usura di una
+   stagione corta a quella di una da 28.
+
+   Attenzione al caso limite già gestito: a fine infortunio il motore **riporta** la condizione a
+   65. È un valore assoluto, non una variazione, e amplificarlo darebbe risultati assurdi.
+
+**Verificato dopo la correzione**: sostituzioni assenti nelle prime due giornate (rosa fresca),
+poi 4, 6, 8 e 6 giocatori coinvolti nei cambi. Progressione corretta.
+
+#### Un difetto che esisteva solo in potenza
+
+Un giocatore può infortunarsi **dopo** che la formazione è stata salvata, e la formazione
+ereditata dalla giornata precedente non veniva mai ricontrollata. `schiera()` scarta gli
+indisponibili, ma una formazione che arriva dal database no — e il motore controlla gli infortuni
+solo a fine partita. Un infortunato sarebbe sceso in campo. Ora `buildLineup` lo rimpiazza con il
+miglior disponibile per quello slot, usando `ovrEfficace` invece di un criterio inventato.
+
+#### Interfaccia
+
+Sul ritratto in "Rosa", in alto a sinistra, c'è la **percentuale di energia**: verde sopra 75,
+gialla fra 55 e 75, rossa sotto 55 — la soglia oltre cui il motore sostituisce da solo — e una
+croce rossa per gli infortunati, con le giornate mancanti nel titolo.
+
+Le sostituzioni sono già leggibili nel tabellino senza lavoro aggiuntivo: `match_stats.minuti` è
+calcolato sui blocchi giocati, quindi chi esce ha 45' e chi entra il resto.
+
 ### Simulazione notturna automatica — attiva
 
 Job `simula-giornata-notturna` in `cron.job`, **attivo**. Gira **ogni ora**; è la funzione
@@ -253,7 +305,7 @@ cognome. Provata su tutti i 5.416 nomi: zero risultati vuoti, gestisce cognomi c
 
 ## Database remoto
 
-Migrazioni applicate fino a `20260801203000_cron_usa_header_apikey.sql`.
+Migrazioni applicate fino a `20260802094000_persisti_condizione_rosa.sql`.
 
 Quella migrazione corregge un difetto latente che vale la pena capire, perché è il genere di cosa
 che si ripresenta. La policy `player_photos_download` limitava l'accesso alle sole operazioni
@@ -306,10 +358,10 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
 - La formazione salvata è slot-per-slot; non riordinare gli array dei titolari prima del motore.
 - `sostituzioni()` muta il lineup: costruire oggetti freschi per ogni partita.
 - Il seed globale impone simulazioni in sequenza, mai in parallelo.
-- Le sostituzioni e gli infortuni **esistono già nel motore** ma non possono scattare in Fase 1:
-  con `usaCondizione: false` la condizione resta a 100 e la soglia di cambio è 55. Accendere il
-  flag da solo non basta: servirebbe persistere `condizione` su `player_instances` fra una partita
-  e l'altra, altrimenti nessuno scende mai sotto soglia in una singola gara.
+- **I cartellini non esistono nel motore**: nessun riferimento a falli, ammonizioni o espulsioni
+  in tutto `engine/`. Non sono un flag da accendere. Due strade: attribuirli fuori dal motore come
+  gli assist (rischio zero) oppure modellarli dentro con l'effetto vero dell'uomo in meno, che
+  però tocca le formule validate e impone il protocollo di regressione.
 
 ---
 

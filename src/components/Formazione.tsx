@@ -67,6 +67,15 @@ function positionFit(slot: string, preferred: string[]): PositionFit {
   return 'out'
 }
 
+// La soglia di cambio del motore e' 55: sotto quel valore il giocatore viene
+// sostituito da solo, quindi e' li' che l'avviso deve diventare rosso.
+function livelloEnergia(player: Player) {
+  if (player.infortunato_fino_a > 0) return 'infortunato'
+  if (player.condizione < 55) return 'scarica'
+  if (player.condizione < 75) return 'media'
+  return 'piena'
+}
+
 function AnonymousPlayer() {
   return <span className="anonymous-player" aria-hidden="true"><svg viewBox="0 0 100 110" focusable="false"><circle cx="50" cy="33" r="22" /><path d="M12 108c2-31 16-48 38-48s36 17 38 48H12Z" /></svg></span>
 }
@@ -77,6 +86,9 @@ function PlayerPortrait({ player, imageUrl, position, selected = false, onClick,
     <span className={`lineup-player__portrait lineup-player__portrait--${reparto(position)} ${imageUrl ? 'has-photo' : ''}`}>
       <AnonymousPlayer />
       {imageUrl && <img src={imageUrl} alt="" onError={(event) => { event.currentTarget.hidden = true; event.currentTarget.parentElement?.classList.remove('has-photo') }} />}
+      {player && <span className={`energia energia--${livelloEnergia(player)}`} title={player.infortunato_fino_a > 0 ? `Infortunato: salta ancora ${player.infortunato_fino_a} ${player.infortunato_fino_a === 1 ? 'giornata' : 'giornate'}` : `Energia ${player.condizione}%`}>
+        {player.infortunato_fino_a > 0 ? '✚' : `${player.condizione}%`}
+      </span>}
       {fit !== 'natural' && <i className={`position-warning position-warning--${fit}`} title={fit === 'adapted' ? 'Giocatore adattato in un ruolo vicino' : 'Giocatore completamente fuori posizione'} aria-label={fit === 'adapted' ? 'Fuori posizione di poco' : 'Completamente fuori posizione'}>!</i>}
     </span>
     <span className="lineup-player__plate">

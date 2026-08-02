@@ -1,6 +1,6 @@
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { withSupabase } from '@supabase/server'
-import { schiera, simulaPartita } from '../../../engine/engine.js'
+import { ovrEfficace, schiera, simulaPartita } from '../../../engine/engine.js'
 import { MODULI } from '../../../engine/config.js'
 import { setSeed } from '../../../engine/random.js'
 
@@ -65,7 +65,33 @@ function buildLineup(lineup: DbLineup, roster: EngineRoster): EngineLineup {
   const titolari = lineup.titolari.map((id) => byId.get(id))
   const panchina = lineup.panchina.map((id) => byId.get(id))
   if (titolari.some((player) => !player) || panchina.some((player) => !player)) throw new Error(`Formazione con giocatori fuori rosa per la squadra ${lineup.team_id}.`)
-  return { modulo: lineup.modulo, slots: [...slots], titolari: titolari as EnginePlayer[], panchina: panchina as EnginePlayer[], cambiFatti: 0 }
+
+  // Un giocatore puo' infortunarsi DOPO che la formazione e' stata salvata, e
+  // la formazione ereditata dalla giornata precedente non e' mai stata
+  // ricontrollata. `schiera()` scarta gli indisponibili, ma qui la formazione
+  // arriva dal database: senza questo blocco un infortunato scenderebbe in
+  // campo, perche' il motore controlla gli infortuni solo a fine partita.
+  const undici = titolari as EnginePlayer[]
+  const riserve = panchina as EnginePlayer[]
+  const rimpiazzi: Array<{ esce: string; entra: string }> = []
+  for (let i = 0; i < undici.length; i++) {
+    if (undici[i].infortunatoFinoA <= 0) continue
+    const inCampo = new Set(undici.filter(Boolean).map((giocatore) => giocatore.id))
+    const candidati = [...riserve, ...roster.giocatori]
+      .filter((giocatore) => giocatore.infortunatoFinoA <= 0 && !inCampo.has(giocatore.id))
+    if (candidati.length === 0) continue
+    let migliore = candidati[0]
+    for (const candidato of candidati) {
+      if (ovrEfficace(candidato, slots[i]) > ovrEfficace(migliore, slots[i])) migliore = candidato
+    }
+    rimpiazzi.push({ esce: undici[i].nome, entra: migliore.nome })
+    undici[i] = migliore
+  }
+  if (rimpiazzi.length) {
+    console.log(`Squadra ${lineup.team_id}: rimpiazzati infortunati`, rimpiazzi)
+  }
+
+  return { modulo: lineup.modulo, slots: [...slots], titolari: undici, panchina: riserve.filter((giocatore) => giocatore.infortunatoFinoA <= 0 && !undici.includes(giocatore)), cambiFatti: 0 }
 }
 
 function seedFor(fixture: Fixture) {
@@ -75,6 +101,38 @@ function seedFor(fixture: Fixture) {
 
 function mapValue(map: Map<number, number> | undefined, id: number) {
   return map?.get(id) ?? 0
+}
+
+// ============================================================
+//  DURATA DEGLI INFORTUNI
+//
+//  Il motore sorteggia 1-2, 3-6 oppure 8-15 giornate, tarato su una stagione
+//  da 28 partite (la configurazione della validazione di Fase 0). In un
+//  campionato da 14 giornate un 8-15 significa perdere il giocatore fino alla
+//  fine: non e' una scelta tattica, e' una condanna.
+//
+//  Scaliamo la durata sulla lunghezza vera della stagione, con un tetto al 40%
+//  delle giornate totali. Si tocca solo qui: le formule del motore restano
+//  intatte, come impone CLAUDE.md §4.
+// ============================================================
+
+const GIORNATE_DI_TARATURA = 28
+
+// Stesso principio per l'usura. Il motore consuma ~13 punti a partita e ne
+// recupera 8: da 100 servono nove giornate per scendere sotto la soglia di
+// cambio (55). In un campionato da 12 giornate le sostituzioni non
+// scatterebbero mai, e infatti nelle prove nessuno usciva prima del 90'.
+// Il fattore riporta l'usura di una stagione corta a quella di una da 28.
+function fattoreUsura(giornateTotali: number) {
+  if (giornateTotali <= 0) return 1
+  return Math.min(3, Math.max(0.5, GIORNATE_DI_TARATURA / giornateTotali))
+}
+
+function scalaInfortunio(giornateOriginali: number, giornateTotali: number) {
+  if (giornateOriginali <= 0 || giornateTotali <= 0) return giornateOriginali
+  const scalato = Math.round(giornateOriginali * giornateTotali / GIORNATE_DI_TARATURA)
+  const tetto = Math.max(1, Math.ceil(giornateTotali * 0.4))
+  return Math.max(1, Math.min(scalato, tetto))
 }
 
 // ============================================================
@@ -231,7 +289,7 @@ export default {
       // che PostgREST non riconosce. Il controllo sull'admin resta esplicito.
       const chiamataDiSistema = ctx.authMode === 'secret'
       const { data: league, error: leagueError } = await ctx.supabaseAdmin.from('leagues')
-        .select('id, nome, admin_id, stato').eq('id', leagueId).single()
+        .select('id, nome, admin_id, stato, giornate_totali').eq('id', leagueId).single()
       if (leagueError || !league) return Response.json({ error: 'Lega non trovata.' }, { status: 404 })
       if (!chiamataDiSistema && league.admin_id !== ctx.userClaims?.id) {
         return Response.json({ error: 'Solo l’amministratore può simulare una giornata.' }, { status: 403 })
@@ -306,6 +364,17 @@ export default {
         lineups.set(teamId, fallback)
       }
 
+      // Fotografia prima delle partite: serve a distinguere un infortunio nuovo
+      // da uno vecchio che il motore sta solo scalando di una giornata.
+      const infortuniPrima = new Map<number, number>()
+      const condizionePrima = new Map<number, number>()
+      for (const roster of rosters.values()) {
+        for (const giocatore of roster.giocatori) {
+          infortuniPrima.set(giocatore.id, giocatore.infortunatoFinoA)
+          condizionePrima.set(giocatore.id, giocatore.condizione)
+        }
+      }
+
       const summaries = []
       for (const fixture of fixtures) {
         const homeRoster = rosters.get(fixture.home_team_id)!
@@ -317,7 +386,7 @@ export default {
         const seed = seedFor(fixture)
         setSeed(seed)
         const result = simulaPartita(homeRoster, awayRoster, homeDbLineup.modulo, awayDbLineup.modulo, {
-          usaCondizione: false,
+          usaCondizione: true,
           statsGiocatori: true,
           lineupCasa: homeLineup,
           lineupOspite: awayLineup,
@@ -351,7 +420,41 @@ export default {
         summaries.push(saved)
       }
 
-      return Response.json({ league_id: leagueId, giornata, modo: ctx.authMode, partite: summaries })
+      // Condizione e infortuni tornano sul database: senza questo passaggio il
+      // logoramento non si accumula, nessuno scende sotto la soglia di cambio e
+      // le sostituzioni non scattano mai.
+      const giornateTotali = Number(league.giornate_totali) || GIORNATE_DI_TARATURA
+      const valoriCondizione = []
+      for (const roster of rosters.values()) {
+        for (const giocatore of roster.giocatori) {
+          const prima = infortuniPrima.get(giocatore.id) ?? 0
+          const dopo = giocatore.infortunatoFinoA
+          // Un valore cresciuto e' un infortunio nuovo, da riscalare sulla
+          // lunghezza della stagione. Uno calato e' il conto alla rovescia.
+          const giornateFuori = dopo > prima ? scalaInfortunio(dopo, giornateTotali) : dopo
+
+          // A fine infortunio il motore RIPORTA la condizione a 65: e' un valore
+          // assoluto, non una variazione, e amplificarlo sarebbe sbagliato.
+          const rientroDaInfortunio = prima > 0 && dopo === 0
+          const partenza = condizionePrima.get(giocatore.id) ?? giocatore.condizione
+          const condizioneFinale = rientroDaInfortunio
+            ? giocatore.condizione
+            : partenza + (giocatore.condizione - partenza) * fattoreUsura(giornateTotali)
+
+          valoriCondizione.push({
+            id: giocatore.id,
+            condizione: Math.round(Math.max(0, Math.min(100, condizioneFinale))),
+            infortunato_fino_a: Math.max(0, Math.round(giornateFuori)),
+          })
+        }
+      }
+      const { error: condizioneError } = await ctx.supabaseAdmin.rpc('aggiorna_condizione_rosa', {
+        p_league_id: leagueId,
+        p_valori: valoriCondizione,
+      })
+      if (condizioneError) throw condizioneError
+
+      return Response.json({ league_id: leagueId, giornata, modo: ctx.authMode, rose_aggiornate: valoriCondizione.length, partite: summaries })
     } catch (error) {
       console.error(error)
       return Response.json({ error: error instanceof Error ? error.message : 'Errore durante la simulazione.' }, { status: 500 })

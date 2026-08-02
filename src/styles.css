@@ -556,6 +556,21 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .anonymous-player svg { width: 82%; height: 88%; align-self: end; fill: currentColor; filter: drop-shadow(0 5px 7px rgba(0,0,0,.35)); }
 .has-photo > .anonymous-player { visibility: hidden; }
 .lineup-player__portrait img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center bottom; -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 76%, transparent 100%); mask-image: linear-gradient(to bottom, #000 0%, #000 76%, transparent 100%); filter: drop-shadow(0 8px 9px rgba(0,0,0,.5)); transition: filter .16s ease; }
+/* Energia in alto a sinistra sul ritratto: e' il dato su cui si decide se
+   sostituire un giocatore, quindi deve leggersi senza aprire la scheda. */
+.energia {
+  position: absolute; z-index: 6; top: -5px; left: -6px;
+  min-width: 26px; padding: 2px 4px;
+  border: 2px solid #111217; border-radius: 7px;
+  font-size: .5rem; font-weight: 950; line-height: 1.15; text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 3px 9px rgba(0,0,0,.55);
+}
+.energia--piena { color: #08110c; background: #2fd07e; }
+.energia--media { color: #241800; background: #ffc24b; }
+.energia--scarica { color: #fff; background: #e13e52; }
+.energia--infortunato { color: #fff; background: #8b1220; font-size: .62rem; }
+
 .position-warning { position: absolute; z-index: 6; top: -5px; right: -5px; width: 19px; height: 19px; display: grid; place-items: center; border: 2px solid #111217; border-radius: 50%; color: #17130a; font-size: .72rem; font-style: normal; font-weight: 1000; line-height: 1; box-shadow: 0 3px 9px rgba(0,0,0,.55); }
 .position-warning--adapted { background: #f3c84b; }.position-warning--out { color: #fff; background: #e13e52; }
 .lineup-player__portrait--GK { border-color: #f59b45; }.lineup-player__portrait--DEF { border-color: #55c9ed; }.lineup-player__portrait--MID { border-color: #5dd17b; }.lineup-player__portrait--ATT { border-color: #ed6375; }
