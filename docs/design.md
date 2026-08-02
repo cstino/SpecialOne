@@ -568,9 +568,25 @@ soglia = ingaggio_teorico × uniform(0.90, 1.10)
 ```
 Non visibile alle squadre. Offerte sotto soglia vengono scartate.
 
-**Assegnazione**: alle 17:00 vince l'offerta più alta sopra soglia. A parità, sorteggio. Il giocatore entra in rosa con contratto di 1 anno all'ingaggio offerto. Se nessuna offerta supera la soglia, il giocatore torna nel pool.
+**Assegnazione**: alle 21:00 vince l'offerta più alta sopra soglia. **A parità vince chi ha offerto prima.** Il giocatore entra in rosa con contratto di 1 anno all'ingaggio offerto. Se nessuna offerta supera la soglia, il giocatore torna nel pool.
 
-**Vincolo**: una squadra non può vincere più di 3 aste nello stesso giorno.
+Alla chiusura **le offerte vincenti vengono rivelate** a tutta la lega: chi ha preso chi, e per quanto. Le offerte perdenti restano private.
+
+> **Due correzioni dell'utente, 2 agosto 2026.** Vincono su quanto diceva prima questo paragrafo.
+>
+> **Niente tetto di 3 aste al giorno.** La versione precedente lo imponeva. Non regge al modo in
+> cui è fatta la giornata: la lista esce completa alle 07:00 e nessuno viene assegnato fino alle
+> 21:00, quindi si offre su tutti e si scopre solo alla fine quante se ne sono vinte. Un tetto su
+> cui non puoi calibrare le offerte non è una scelta tattica, è una sorpresa. **Se hai i soldi,
+> puoi prenderli tutti.**
+>
+> **A parità vince chi ha offerto prima**, non il sorteggio. Così offrire presto vale qualcosa.
+> Attenzione al dettaglio che ne discende: conta l'istante in cui è stato fissato l'importo
+> **attuale**, non la prima offerta in assoluto. Modificare l'offerta fa perdere la precedenza —
+> altrimenti si piazzerebbe il minimo su tutto alle 07:00 solo per prenotarsi, alzando poi alle
+> 20:59.
+
+**Unico limite rimasto: il budget e gli slot di rosa**, ricontrollati al momento dell'assegnazione. Quando il budget finisce a metà risoluzione, quali aste si vincono dipende dall'ordine in cui vengono processate, cioè dall'ordine di estrazione.
 
 ### 9.5 Svincolo
 

@@ -455,9 +455,22 @@ Il pool è «catalogo meno chi ha già una squadra in questa lega», filtrato pe
 Gli under 20 vengono estratti **per primi** (3 su N): un sorteggio uniforme su migliaia di nomi non
 ne pescherebbe quasi mai tre.
 
-Il tetto di 3 aste vinte al giorno rende l'assegnazione **sequenziale** — chi ha già vinto tre volte
-esce dalla contesa per le aste successive — quindi si procede in ordine di id. Alla risoluzione si
-ricontrollano budget e slot: fra l'offerta e le 21:00 la squadra può aver comprato altrove.
+**Nessun tetto di vittorie giornaliere**, e **a parità vince chi ha offerto prima**. Entrambe sono
+correzioni dell'utente del 2 agosto contro design §9.4, che imponeva un massimo di 3 aste al giorno
+e il sorteggio in caso di parità; la specifica è stata aggiornata con la motivazione. Il tetto non
+regge al modo in cui è fatta la giornata: la lista esce completa alle 07:00 e nulla viene assegnato
+fino alle 21:00, quindi si offre su tutti e si scopre solo alla fine quante se ne sono vinte.
+
+Conseguenza della precedenza: conta l'istante in cui è stato fissato l'importo **attuale**.
+Modificare l'offerta riazzera `free_agent_bids.aggiornata_il` — la colonna si chiamava `creata_il`
+ma veniva già riscritta a ogni modifica, e il nome mentiva. Senza questa regola si piazzerebbe il
+minimo su tutto alle 07:00 solo per prenotare la precedenza, alzando poi alle 20:59.
+
+Restano i due limiti reali — budget e slot di rosa — ricontrollati al momento dell'assegnazione,
+perché fra l'offerta e le 21:00 la squadra può aver comprato altrove. **Dettaglio non deciso**:
+quando il budget finisce a metà risoluzione, quali aste si vincono dipende dall'ordine di
+estrazione, non dalla cifra offerta. Se l'utente preferisce che vincano prima quelle su cui ha
+puntato di più, è un `order by` da cambiare.
 
 **Il numero di estratti è un parametro**, `private.svincolati_da_estrarre()`: 10 normalmente, 20 con
 `leagues.stato = 'offseason'` (design §10.6). Quello stato non esiste ancora nel CHECK, quindi il

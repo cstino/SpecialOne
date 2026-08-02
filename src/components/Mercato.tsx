@@ -314,7 +314,9 @@ export function Mercato({ membership, onNavigate }: Props) {
         <p className="mercato-nota">
           Offri l’ingaggio annuale che sei disposto a pagare. <strong>Nessuno vede le offerte altrui</strong>,
           e nemmeno tu vedi quanto chiede davvero il giocatore: se lo sapessi offriresti sempre un euro sopra.
-          Alle 21:00 vince l’offerta più alta che supera la sua richiesta. Massimo 3 aste vinte al giorno.
+          Alle 21:00 vince l’offerta più alta che supera la sua richiesta, e <strong>a parità vince chi ha
+          offerto prima</strong> — modificare l’offerta fa ripartire il tuo turno. Nessun limite al numero di
+          aste vinte: contano solo il budget e gli slot liberi in rosa.
         </p>
 
         {asteDelGiorno.length === 0
