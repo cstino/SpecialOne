@@ -1,7 +1,79 @@
 # Stato progetto e handoff
 
-Ultimo aggiornamento: **2 agosto 2026**. Questo documento descrive lo stato reale del
+Ultimo aggiornamento: **2 agosto 2026, sera**. Questo documento descrive lo stato reale del
 repository ed è il punto di partenza per il prossimo agent (Claude o Codex).
+
+---
+
+## ▶ CONSEGNA A CODEX — leggi prima questo
+
+Il lavoro passa a Codex a partire dal 2 agosto 2026, sera. Ultimo commit: `f5bc91e`.
+
+### La prossima task, in concreto
+
+**Svincolo (design §9.5)** — è l'ultimo pezzo del mercato e il più piccolo. Cosa serve:
+
+- **Nessuna tabella nuova.** `player_instances.team_id` è già nullable e il commento in
+  `20260731120500_rose.sql` dice già «null = svincolato». Svincolare = metterlo a `null`.
+- Una RPC `public.svincola_giocatore(p_instance_id bigint)` che verifichi, nell'ordine:
+  utente autenticato → il giocatore è suo → mercato aperto (`private.mercato_aperto()`) →
+  la rosa resta valida dopo (≥ 11 giocatori e ≥ `portieri_minimi` portieri: le stesse due
+  soglie usate in `rispondi_a_proposta`, che puoi copiare da lì).
+- **Nessun rimborso** (design §9.5). Il giocatore esce dal monte ingaggi della stagione
+  **successiva**, non di questa: quindi nessun movimento in `transactions`.
+- **Cancellare le formazioni** delle giornate non ancora simulate che contenevano quel
+  giocatore, ed emettere una notifica. Il blocco è già scritto in `rispondi_a_proposta`
+  (`delete from public.lineups … where titolari && … or panchina && … or tribuna && …`):
+  va riusato tale e quale, non reinventato.
+- Il giocatore svincolato torna nel pool delle aste **automaticamente**: la query del pool in
+  `private.estrai_svincolati_lega()` esclude solo chi ha `team_id is not null`.
+- UI: un pulsante nella scheda giocatore o nella rosa, con conferma. Non nel mercato.
+
+### Poi, se resta tempo
+
+Le schermate non ancora ridisegnate: **Lobby, Draft, Onboarding, Login**. È in gran parte
+riuso dei mattoni già esistenti, elencati più sotto.
+
+### Decisioni ferme in attesa dell'utente — non deciderle da solo
+
+1. **Off-season, come pesca un nuovo partecipante**: rollate sui club (versione utente) o draft
+   dagli svincolati (versione design §10.5). Vedi `design.md` §10.6, dove il conflitto è scritto
+   per esteso con i numeri.
+2. Gli altri quattro punti scoperti dell'off-season, sempre in §10.6.
+3. **Cartellini**: il motore non li ha affatto. Due strade descritte in fondo a questo documento.
+4. Se le **offerte perdenti** delle aste debbano diventare pubbliche dopo le 21:00. Oggi restano
+   private per sempre; l'utente ha chiesto che si rivelino «le vincenti», ed è ciò che accade.
+
+### Come si verifica il lavoro su questo progetto
+
+Il metodo usato per tutto il mercato, e che conviene continuare: **uno script SQL dentro
+`begin; … rollback;`** che porta il database nello stato voluto, esegue le RPC **assumendo
+l'identità di utenti reali**, raccoglie gli esiti in una tabella temporanea e la stampa alla
+fine. Si lancia con `db query --file`. Esempi vivi in `scratchpad` (non versionati, si riscrivono
+in due minuti). Lo scheletro:
+
+```sql
+begin;
+create temporary table esiti (n int, verifica text, misurato text, esito text) on commit drop;
+-- … prepara lo stato …
+grant select on <temp tables> to authenticated;   -- servono dopo il cambio di ruolo
+set local role authenticated;
+select set_config('request.jwt.claims',
+  json_build_object('sub', '<uuid utente>', 'role', 'authenticated')::text, true);
+-- … chiama le RPC, inserisci in esiti …
+reset role;
+select verifica, misurato, esito from esiti order by n;
+rollback;
+```
+
+Per provare che una RPC **rifiuta** qualcosa, avvolgila in un `do $$ … exception when others then
+get stacked diagnostics v_msg = message_text; … end $$;` e registra il messaggio: così il test
+dimostra *quale* controllo è scattato, non solo che è fallito qualcosa.
+
+**Il CLI restituisce solo l'ultimo result set**: raccogliere tutto in una tabella e fare una sola
+select finale, altrimenti si vedono solo le ultime righe.
+
+---
 
 ## Prima di lavorare
 
@@ -11,28 +83,39 @@ repository ed è il punto di partenza per il prossimo agent (Claude o Codex).
    `node tools/validazione/simulate.js` e confrontare con `docs/risultati-fase0.txt`.
    Il confronto va fatto con `diff --strip-trailing-cr`: il file di baseline ha fine riga CRLF.
 4. UI mobile-first, stato di gioco solo su Supabase, nessun `localStorage`.
-5. La CLI Supabase non è installata globalmente: si usa `npx supabase@2.111.0 …`.
-   Quasi tutti i comandi richiedono `--linked --experimental`.
+5. La CLI Supabase non è installata globalmente: si usa `npx supabase …`.
+   `db query` è **sperimentale e non compare in `--help`**: va invocato con
+   `--linked --experimental`. È il comando più utile del progetto, non rinunciarci.
 
 ## Stato Git
 
 - Branch: `main`, allineato con `origin/main`
 - Remote: `https://github.com/cstino/SpecialOne.git`
-- Working tree pulita al momento di questo aggiornamento.
+- Ultimo commit al momento di questo aggiornamento: `f5bc91e`.
+- **Vercel è collegato a GitHub**: ogni push su `main` fa un deploy di produzione da solo, in
+  circa 10 secondi. Non serve `vercel --prod` a mano. Verificato confrontando l'hash del bundle
+  locale con quello servito da `specialone-five.vercel.app`.
 
 ## Accesso al database dall'agent
 
-Verificato funzionante e molto utile per diagnosi:
+Verificato funzionante e indispensabile per diagnosi e verifiche:
 
 ```bash
-npx supabase@2.111.0 db query --linked --experimental "select count(*) from public.players;"
-npx supabase@2.111.0 db query --linked --experimental --file percorso/query.sql
-npx supabase@2.111.0 db push --linked --experimental --yes
-npx supabase@2.111.0 functions deploy simula-giornata --project-ref hhvyyjpbsgjcaaaizgwb
+npx supabase db query --linked --experimental "select count(*) from public.players;"
+npx supabase db query --linked --experimental --file percorso/query.sql
+npx supabase db push --linked --experimental --yes
+npx supabase functions deploy simula-giornata
 ```
 
 Project ref: `hhvyyjpbsgjcaaaizgwb`. Il login (`npx supabase login`) è già stato fatto su questa
 macchina; su un'altra va rifatto insieme a `supabase link`, perché `supabase/.temp/` è in `.gitignore`.
+
+**`db dump` non funziona su questa macchina**: richiede Docker, che non è in esecuzione. Per
+ispezionare lo schema si usa `db query` su `information_schema` / `pg_catalog`.
+
+Il file locale `.env.local` contiene **solo** URL e chiave pubblicabile: da qui non si può
+interrogare il database via REST con privilegi. La chiave segreta sta solo nelle variabili
+d'ambiente della Edge Function e nel Vault.
 
 ---
 
@@ -288,7 +371,7 @@ deciso: o si accetta la pausa, o il pulsante admin deve spostare le date delle g
 quando simula in anticipo, oppure il cron ignora il calendario e simula la prima giornata pendente
 ogni notte (e allora le date mostrate diventano bugiarde).
 
-### Deploy su Vercel — preparato, non ancora pubblicato
+### Deploy su Vercel — pubblicato e automatico
 
 Progetto collegato: `cstinos-projects/specialone`. Variabili `VITE_SUPABASE_URL` e
 `VITE_SUPABASE_PUBLISHABLE_KEY` già impostate su production, preview e development.
@@ -388,7 +471,7 @@ non serve. Il service worker esiste già (`public/sw.js`), quindi mancano solo c
 e un handler `push`. **Su iPhone le push web arrivano solo se la PWA è installata sulla schermata
 home**: da Safari normale non arrivano e non c'è modo di aggirarlo.
 
-### Mercato — trattative fra squadre (backend fatto, UI da fare)
+### Mercato — trattative fra squadre (database e interfaccia, complete)
 
 **Finestra: 07:00–21:00 Europe/Rome.** L'utente ha spostato la chiusura dalle 17:00 (design §9.1)
 alle 21:00 il 2 agosto 2026; il design doc è stato aggiornato con la motivazione. Le 17:00 cadevano
@@ -523,7 +606,31 @@ qualsiasi e viene rimpiazzato; si solleva un errore solo se non si arriva a undi
 
 ## Database remoto
 
-Migrazioni applicate fino a `20260802150000_mercato_trattative.sql`.
+Migrazioni applicate fino a `20260802200000_aste_messaggi_leggibili.sql`.
+
+Le nove del 2 agosto, in ordine e con il perché di ciascuna:
+
+| Migrazione | Perché |
+|---|---|
+| `094000_persisti_condizione_rosa` | condizione e infortuni riscritti dopo la giornata |
+| `120000_notifiche` | tabella notifiche, RLS, RPC, realtime |
+| `133000_chiudi_privilegi_scrittura` | revoca write ad `authenticated`, elenco a mano — **ne mancava tre** |
+| `134500_chiudi_privilegi_tabelle_draft` | rifatto iterando su `pg_class`, più le default privileges |
+| `150000_mercato_trattative` | finestra, `trade_proposals`, tre RPC, cron delle 21:00 |
+| `170000_mercato_aste_svincolati` | aste, soglia in `private`, offerte, due cron |
+| `173000_aste_logica_verificabile` | guardia oraria separata dalla logica, per poterla provare |
+| `183000_aste_niente_tetto_e_precedenza` | correzioni dell'utente contro §9.4 |
+| `193000_aste_budget_impegnato` | offrire impegna budget e slot |
+| `200000_aste_messaggi_leggibili` | `private.in_milioni()`, messaggi d'errore leggibili |
+
+**Cron registrati**, tutti ogni ora, ciascuno decide da sé se a Roma è l'ora giusta:
+`simulazione-notturna` 00:00 · `estrazione-svincolati` 07:00 · `chiusura-mercato` 21:00 ·
+`risoluzione-aste` 21:00.
+
+**Nessuna lega è in stato `stagione`**: due in `setup` con una sola squadra, una `conclusa` con
+24 giornate su 24 simulate. Finché non se ne avvia una, il mercato non è visibile dall'app e i
+cron non hanno nulla su cui lavorare. È anche il motivo per cui nulla del mercato è stato ancora
+provato dall'interfaccia.
 
 ### Privilegi di scrittura chiusi — difetto latente trovato il 2 agosto
 
@@ -582,6 +689,17 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
   `rollback`, tre identità vere): proposta creata e visibile a entrambe le parti, accettata,
   giocatori scambiati, **somma dei due saldi = 0**, due movimenti in `transactions`, 6 formazioni
   rimosse perché contenevano un ceduto, 3 notifiche generate.
+- **Aste, percorso completo** (15 controlli, rollback): 10 estratti di cui 4 under 20, nessuno già
+  in una rosa, 10 soglie generate, istanze create, budget addebitato, movimenti e notifiche.
+- **Aste, riservatezza**: un partecipante che prova a leggere `private.auction_thresholds` riceve
+  `permission denied`; con 5 offerte in tabella una squadra ne vede **1**, la propria.
+- **Aste, regole corrette dall'utente**: una squadra ne ha vinte **5** dove il vecchio tetto ne
+  avrebbe permesse 3; su un pareggio esatto ha vinto la squadra la cui offerta era retrodatata.
+- **Aste, impegno del budget** (7 controlli): la prima offerta azzera il disponibile, la seconda è
+  respinta col motivo, il ritiro libera all'istante, modificare la propria offerta non la conta due
+  volte, gli slot liberi tornano il numero atteso.
+- **Deploy automatico**: hash del bundle locale identico a quello servito da
+  `specialone-five.vercel.app` dopo un push, con deploy partito da solo in ~10 secondi.
 - **Mercato, prove negative**: un terzo partecipante della stessa lega vede 0 righe di una proposta
   pendente e non può accettarla al posto del destinatario («Questa proposta non è indirizzata a
   te»); la stessa proposta, una volta accettata, gli diventa visibile (design §9.3). Uno scambio
@@ -601,12 +719,39 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
 - Il canale Realtime non è stato provato con un client vero: la tabella è nella publication e il
   codice si iscrive, ma la consegna dal vivo non è stata osservata. Se non funzionasse, il refetch
   su `visibilitychange` copre comunque il caso.
-- **Il cron `chiusura-mercato` non è mai stato visto girare alle 21:00.** È registrato e la
-  funzione è provata chiamandola a mano, ma nessuna esecuzione reale è stata osservata.
+- **Nessuno dei tre cron del mercato è mai stato visto girare al proprio orario.** Sono registrati
+  (`chiusura-mercato`, `estrazione-svincolati`, `risoluzione-aste`, tutti ogni ora) e le funzioni
+  sono provate chiamandole a mano, ma nessuna esecuzione reale è stata osservata. Il primo giorno
+  con una lega in stagione è anche il primo collaudo vero.
+- **Tutto il mercato non è mai stato usato dall'interfaccia da un utente vero**: le verifiche sono
+  passate dalle RPC via SQL. Le schermate compilano e sono state ragionate, non provate a mano.
 - **Nessuna lega è attualmente in stato `stagione`**: le tre esistenti sono due in `setup` e una
   `conclusa`. Il mercato quindi non è provabile dall'interfaccia finché non se ne avvia una.
 
 ---
+
+## Trappole scoperte il 2 agosto — costano ore se le si reincontra
+
+- **`now()` è costante dentro una transazione.** Due righe inserite di seguito in uno script di
+  prova hanno lo **stesso identico istante**. Provando la precedenza a parità d'offerta il test
+  sarebbe passato senza dimostrare nulla: i timestamp vanno impostati a mano. In produzione il
+  problema non esiste, perché ogni chiamata dal browser è una transazione a sé.
+- **La RLS filtra le righe, non le colonne.** Un segreto che sta in una colonna di una tabella
+  leggibile *è leggibile*. La soglia delle aste è per questo in `private.auction_thresholds`,
+  fuori da `public`, che PostgREST non espone. In alternativa esistono i GRANT per colonna, ma
+  rompono `select('*')` dal client.
+- **Le default privileges di Supabase concedevano ALL a `anon` e `authenticated` su ogni tabella
+  nuova.** Chiuse il 2 agosto: ora una tabella nuova nasce senza privilegi e **i GRANT vanno
+  scritti a mano nella migrazione**, altrimenti la tabella è invisibile anche a chi ha diritto.
+- **Una guardia oraria dentro il corpo di una funzione la rende non verificabile.** Le funzioni
+  delle aste sono state spezzate in wrapper (con la guardia) e logica (con il giorno come
+  parametro) proprio per poterle provare. Se aggiungi job schedulati, fai lo stesso.
+- **`supabase.rpc(...)` non restituisce una `Promise`** ma un builder attendibile: nelle firme
+  TypeScript va tipizzato `PromiseLike<…>`, altrimenti `tsc` fallisce.
+- **`round(x / 100000.0) / 10.0` conserva la scala della divisione** e stampa
+  `2.0000000000000000`. Per il testo che legge un utente c'è `private.in_milioni(bigint)`.
+- **Il CLI Supabase mostra solo l'ultimo result set** di uno script multi-statement.
+- **`transactions.importo` ha un CHECK `<> 0`**: un movimento nullo va saltato, non inserito.
 
 ## Debiti noti e trappole
 
@@ -642,7 +787,7 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
 
 ## Prossime task consigliate
 
-1. **Provare la simulazione** con la Edge Function versione 6 e verificare cronaca e assist.
+1. **Svincolo (design §9.5)** — la prossima, descritta in concreto in cima a questo documento.
 2. **Completare la grafica**: il menu di stagione è finito. Restano **Lobby**, **Draft**,
    **Onboarding** e **Login**. I mattoni condivisi esistono già (`.esito`, `.esito-riga`,
    `.stat-guida`, `.giornata-card`, `.sezione-testa`, `.button-fantasma`, `.pillola-stato`,
@@ -653,14 +798,11 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
    00:00. L'utente non ha modo di vedere e correggere la formazione automatica prima della partita,
    che è lo scopo dell'orario anticipato (design §6.7).
 5. **Test end-to-end** con più account reali: turni di riposo, fine calendario, controlli RLS.
-6. **Mercato**: è il modulo in corso, fuori dallo scope Fase 1, deciso dall'utente. Sono tre
-   sottosistemi indipendenti (design §9) più due cron nuovi, e vanno fatti uno alla volta:
-   - **trattative fra squadre** (§9.2): acquisto secco, scambio, scambio con conguaglio;
-     solvibilità e validità rosa per **entrambe** le squadre; log pubblico dei conclusi (§9.3);
-   - **aste svincolati** (§9.4): 10 estratti alle 07:00 con almeno 3 under 20, busta chiusa,
-     risoluzione alle 17:00 con soglia nascosta, massimo 3 aste vinte al giorno per squadra;
-   - **svincolo** (§9.5): non richiede schema nuovo, `player_instances.team_id` è già nullable
-     e il commento in `20260731120500_rose.sql` dice già «null = svincolato».
+6. **Mercato**: fuori dallo scope Fase 1, deciso dall'utente. Dei tre sottosistemi di design §9
+   ne restano **uno**:
+   - ~~trattative fra squadre (§9.2)~~ — **fatte**, database e interfaccia;
+   - ~~aste svincolati (§9.4)~~ — **fatte**, database e interfaccia;
+   - **svincolo (§9.5)** — da fare, è la task 1 qui sopra.
 
    **Due cose da sapere prima di scrivere codice**, entrambe verificate nel codice:
 
