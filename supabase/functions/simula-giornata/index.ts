@@ -302,7 +302,7 @@ export default {
       const teamIds = [...new Set(fixtures.flatMap((fixture) => [fixture.home_team_id, fixture.away_team_id]))]
 
       const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult] = await Promise.all([
-        ctx.supabaseAdmin.from('teams').select('id, nome').eq('league_id', leagueId).in('id', teamIds),
+        ctx.supabaseAdmin.from('teams').select('id, nome, user_id').eq('league_id', leagueId).in('id', teamIds),
         ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a').eq('league_id', leagueId).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, automatica').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, automatica').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
@@ -318,6 +318,9 @@ export default {
       if (playersError) throw playersError
       const catalog = new Map((playersData ?? []).map((player) => [player.id, player as DbPlayer]))
       const teamNames = new Map((teamsResult.data ?? []).map((team) => [team.id, team.nome]))
+      // Serve a sapere chi notificare: le notifiche sono per-persona, non
+      // per-squadra, perche' la campanella e' una sola per tutte le leghe.
+      const teamUsers = new Map((teamsResult.data ?? []).map((team) => [team.id, team.user_id as string]))
       const rosters = new Map<number, EngineRoster>()
 
       for (const teamId of teamIds) {
@@ -335,10 +338,15 @@ export default {
       for (const lineup of previousLineupsResult.data ?? []) {
         if (!inheritedLineups.has(lineup.team_id)) inheritedLineups.set(lineup.team_id, lineup as DbLineup)
       }
+      // Chi non ha schierato entro le 23:00 va avvisato: ha giocato con una
+      // formazione che non ha scelto, ed e' un'informazione che cambia il
+      // comportamento della giornata dopo.
+      const formazioniAutomatiche = new Map<number, 'ereditata' | 'generata'>()
       for (const teamId of teamIds) {
         if (lineups.has(teamId)) continue
         const roster = rosters.get(teamId)!
         const inherited = inheritedLineups.get(teamId)
+        formazioniAutomatiche.set(teamId, inherited ? 'ereditata' : 'generata')
         let fallback: DbLineup
         if (inherited) {
           fallback = { team_id: teamId, modulo: inherited.modulo, titolari: inherited.titolari, panchina: inherited.panchina, tribuna: inherited.tribuna, automatica: true }
@@ -437,7 +445,65 @@ export default {
       })
       if (condizioneError) throw condizioneError
 
-      return Response.json({ league_id: leagueId, giornata, modo: ctx.authMode, rose_aggiornate: valoriCondizione.length, partite: summaries })
+      // Notifiche: la giornata si gioca alle 00:00, quando tutti dormono.
+      // Senza un avviso, il risultato lo si scopre solo riaprendo l'app.
+      //
+      // Un errore qui non deve far fallire la chiamata: la giornata e' gia'
+      // scritta, e un 500 farebbe ritentare il cron su dati gia' registrati.
+      let notificheInviate = 0
+      try {
+        const righe = []
+        for (let i = 0; i < fixtures.length; i++) {
+          const fixture = fixtures[i]
+          const esito = summaries[i] as
+            { match_id: number; gia_simulata: boolean; gol_home: number; gol_away: number } | null
+          // Una partita gia' registrata e' un ritentativo: non si rinotifica.
+          if (!esito || esito.gia_simulata) continue
+
+          const lati = [
+            { teamId: fixture.home_team_id, avversario: fixture.away_team_id, fatti: esito.gol_home, subiti: esito.gol_away },
+            { teamId: fixture.away_team_id, avversario: fixture.home_team_id, fatti: esito.gol_away, subiti: esito.gol_home },
+          ]
+          for (const lato of lati) {
+            const userId = teamUsers.get(lato.teamId)
+            if (!userId) continue
+            const verdetto = lato.fatti > lato.subiti ? 'Vittoria' : lato.fatti < lato.subiti ? 'Sconfitta' : 'Pareggio'
+            righe.push({
+              user_id: userId,
+              league_id: leagueId,
+              tipo: 'giornata_simulata',
+              titolo: `${verdetto} ${lato.fatti}-${lato.subiti}`,
+              corpo: `Giornata ${giornata} contro ${teamNames.get(lato.avversario) ?? 'l’avversario'}`,
+              dati: { match_id: esito.match_id, giornata },
+            })
+          }
+        }
+
+        for (const [teamId, origine] of formazioniAutomatiche) {
+          const userId = teamUsers.get(teamId)
+          if (!userId) continue
+          righe.push({
+            user_id: userId,
+            league_id: leagueId,
+            tipo: 'formazione_mancante',
+            titolo: `Formazione automatica alla giornata ${giornata}`,
+            corpo: origine === 'ereditata'
+              ? 'Non hai schierato entro le 23:00: e’ stata riproposta la tua ultima formazione.'
+              : 'Non hai schierato entro le 23:00: e’ stato schierato il miglior 4-3-3 disponibile.',
+            dati: { giornata },
+          })
+        }
+
+        if (righe.length) {
+          const { error: notificheError } = await ctx.supabaseAdmin.from('notifications').insert(righe)
+          if (notificheError) console.error('Notifiche non inviate:', notificheError)
+          else notificheInviate = righe.length
+        }
+      } catch (errore) {
+        console.error('Notifiche non inviate:', errore)
+      }
+
+      return Response.json({ league_id: leagueId, giornata, modo: ctx.authMode, rose_aggiornate: valoriCondizione.length, notifiche: notificheInviate, partite: summaries })
     } catch (error) {
       console.error(error)
       return Response.json({ error: error instanceof Error ? error.message : 'Errore durante la simulazione.' }, { status: 500 })

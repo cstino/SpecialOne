@@ -1,6 +1,6 @@
 # Stato progetto e handoff
 
-Ultimo aggiornamento: **1 agosto 2026, sera**. Questo documento descrive lo stato reale del
+Ultimo aggiornamento: **2 agosto 2026**. Questo documento descrive lo stato reale del
 repository ed è il punto di partenza per il prossimo agent (Claude o Codex).
 
 ## Prima di lavorare
@@ -356,11 +356,68 @@ sotto i valori grezzi.
 cognome. Provata su tutti i 5.416 nomi: zero risultati vuoti, gestisce cognomi composti
 (`O. El Hilali` → `El Hilali`), doppie iniziali e mononimi (`Rodri` resta `Rodri`).
 
+### Notifiche in-app — attive
+
+Richieste dall'utente come premessa al mercato: *«se un giocatore manda un'offerta, mi arriva la
+notifica»*. Sono state fatte **prima** del mercato di proposito — sono il pezzo su cui il mercato
+scrive, e farle dopo avrebbe significato tornare a modificare ogni RPC già scritta.
+
+- `notifications`: una riga per **persona**, non per squadra, perché la campanella è una sola per
+  tutte le leghe. `league_id` nullable (null = avviso di account). `dati jsonb` porta il
+  collegamento profondo: `{"match_id": 12}` apre il tabellino invece della home della lega.
+- La CHECK su `tipo` elenca già i tre valori del mercato (`mercato_proposta`, `mercato_esito`,
+  `mercato_asta`) benché nessuno li emetta ancora: serve a non migrare la CHECK a ogni pezzo.
+- RLS: si leggono **solo le proprie**. Non esiste una vista di lega, perché sapere cosa è stato
+  notificato a un avversario rivelerebbe che ha ricevuto una proposta.
+- Scrittura: nessuna policy per il browser. `private.notifica(...)` per le future RPC del mercato,
+  `public.segna_notifiche_lette(bigint[])` per segnare lette (senza argomenti, tutte).
+- Realtime: la tabella è nella publication `supabase_realtime`, quindi il pallino compare senza
+  ricaricare. `useNotifiche` ha comunque un refetch su `visibilitychange`, per quando il socket
+  cade mentre il telefono è in tasca.
+- La simulazione notturna emette due tipi: `giornata_simulata` (personalizzata — «Vittoria 3-1»,
+  «Giornata 5 contro …», con `match_id`) e `formazione_mancante` a chi non ha schierato entro le
+  23:00. Le notifiche sono in un `try/catch` che **non** propaga: la giornata è già scritta, e un
+  500 farebbe ritentare il cron su dati registrati. Una partita con `gia_simulata: true` non
+  rinotifica.
+- UI: `Notifiche.tsx` (campanella + pannello) compare nella topbar del menu iniziale, nella sidebar
+  desktop e nella barra mobile. Aprire il pannello vale come aver visto: chiedere un secondo tocco
+  per spegnere il pallino sarebbe solo attrito.
+
+**Push del browser: non fatte, e l'ordine è voluto.** Una push senza una schermata dove atterrare
+non serve. Il service worker esiste già (`public/sw.js`), quindi mancano solo chiavi VAPID nel Vault
+e un handler `push`. **Su iPhone le push web arrivano solo se la PWA è installata sulla schermata
+home**: da Safari normale non arrivano e non c'è modo di aggirarlo.
+
 ---
 
 ## Database remoto
 
-Migrazioni applicate fino a `20260802094000_persisti_condizione_rosa.sql`.
+Migrazioni applicate fino a `20260802134500_chiudi_privilegi_tabelle_draft.sql`.
+
+### Privilegi di scrittura chiusi — difetto latente trovato il 2 agosto
+
+Supabase imposta `ALTER DEFAULT PRIVILEGES` in modo che **ogni tabella creata in `public` conceda
+automaticamente ALL a `anon` e `authenticated`**. Le migrazioni del progetto avevano sempre revocato
+ad `anon` ma mai ad `authenticated`, contando sulla RLS. La RLS in effetti bloccava tutto:
+`INSERT`/`UPDATE`/`DELETE` sono negate perché nessuna tabella ha policy di scrittura, e la verifica
+ha confermato **RLS attiva su tutte e 15 le tabelle** di `public`.
+
+Il buco era un altro: **`TRUNCATE` non passa dalla RLS**. E su `draft_team_state` — creata dopo la
+migrazione dei privilegi e mai coperta da nessun revoke — i privilegi pieni erano concessi anche ad
+**`anon`**, cioè alla chiave pubblicabile che viaggia dentro il bundle del frontend.
+
+Nulla stava trapelando: `TRUNCATE` non è esposto da PostgREST e nessuna policy si applica ad `anon`.
+Ma la sicurezza del progetto non deve dipendere da cosa PostgREST espone.
+
+Due migrazioni: `20260802133000` elenca le tabelle a mano e **ne manca tre** (le tre del draft);
+`20260802134500` le chiude iterando su `pg_class` invece di elencarle. La lezione è nel commento
+della seconda: un elenco scritto a mano ha già sbagliato una volta, e la prossima tabella
+dimenticata sarebbe una del mercato. La prima migrazione contiene anche
+`alter default privileges in schema public revoke all on tables from anon, authenticated`, così le
+tabelle future — proposte di scambio e offerte a busta chiusa — **nascono chiuse**.
+
+Nessun effetto sull'applicazione: il frontend non fa **nessuna** scrittura diretta (verificato con
+una ricerca su `src/`), tutto passa da RPC `SECURITY DEFINER` che girano come proprietario.
 
 Quella migrazione corregge un difetto latente che vale la pena capire, perché è il genere di cosa
 che si ripresenta. La policy `player_photos_download` limitava l'accesso alle sole operazioni
@@ -380,11 +437,29 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
 - `cognome()` provata su tutti i 5.416 nomi del dataset.
 - Integrità foto: join `players` × `storage.objects`, 5.225 su 5.225.
 - L'utente ha verificato su iPhone che le foto si vedono e che la navigazione in basso funziona.
+- **Isolamento RLS delle notifiche, provato sul database reale** con due identità vere
+  (`set local role authenticated` + `request.jwt.claims`), il tutto dentro un `rollback`:
+  l'utente B legge 0 righe di A, l'utente A legge la propria, `authenticated` non ha né `TRUNCATE`
+  né `DELETE`, `anon` non ha `SELECT`. Lo script è in `scratchpad`, non versionato: si rifà in un
+  minuto e va rifatto **dopo ogni tabella nuova del mercato**.
+- Stato privilegi dopo le due migrazioni: zero privilegi di scrittura per `anon`/`authenticated`
+  su tutto `public`, zero grant di qualsiasi tipo per `anon`, `SELECT` per `authenticated` su tutte.
+- Esistenza degli oggetti confermata anche da PostgREST: una chiamata senza login a
+  `/rest/v1/notifications` e a `/rest/v1/rpc/segna_notifiche_lette` risponde `42501`
+  (permesso negato) e non «relation not found», cioè la schema cache li vede.
 
 ## Cosa NON è verificato
 
 - Il bundler di Supabase non fa type-check del TypeScript delle Edge Function: un errore di tipo
   non blocca il deploy e si manifesta solo alla prima chiamata.
+- **Le notifiche non sono ancora state viste arrivare da una simulazione reale.** Il percorso è
+  verificato pezzo per pezzo (tabella, policy, isolamento, grant, build, deploy), ma nessuna
+  giornata è stata simulata dopo il deploy: manca la prova che la riga compaia sulla campanella.
+  Si fa simulando una giornata e guardando il campanello, oppure con
+  `select tipo, titolo, corpo from public.notifications order by id desc limit 10;`.
+- Il canale Realtime non è stato provato con un client vero: la tabella è nella publication e il
+  codice si iscrive, ma la consegna dal vivo non è stata osservata. Se non funzionasse, il refetch
+  su `visibilitychange` copre comunque il caso.
 
 ---
 
@@ -433,7 +508,32 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
    00:00. L'utente non ha modo di vedere e correggere la formazione automatica prima della partita,
    che è lo scopo dell'orario anticipato (design §6.7).
 5. **Test end-to-end** con più account reali: turni di riposo, fine calendario, controlli RLS.
-6. **Mercato**: richiesto dall'utente come prossimo grande modulo, fuori dallo scope Fase 1.
+6. **Mercato**: è il modulo in corso, fuori dallo scope Fase 1, deciso dall'utente. Sono tre
+   sottosistemi indipendenti (design §9) più due cron nuovi, e vanno fatti uno alla volta:
+   - **trattative fra squadre** (§9.2): acquisto secco, scambio, scambio con conguaglio;
+     solvibilità e validità rosa per **entrambe** le squadre; log pubblico dei conclusi (§9.3);
+   - **aste svincolati** (§9.4): 10 estratti alle 07:00 con almeno 3 under 20, busta chiusa,
+     risoluzione alle 17:00 con soglia nascosta, massimo 3 aste vinte al giorno per squadra;
+   - **svincolo** (§9.5): non richiede schema nuovo, `player_instances.team_id` è già nullable
+     e il commento in `20260731120500_rose.sql` dice già «null = svincolato».
+
+   **Due cose da sapere prima di scrivere codice**, entrambe verificate nel codice:
+
+   - **Le istanze giocatore nascono solo al pick** (`draft_indipendente.sql:223`): chi non è mai
+     stato draftato **non ha una riga**. Quindi il pool svincolati non è «istanze con `team_id`
+     null» ma «catalogo meno gli istanziati in questa lega, filtrati per `campionati_attivi`», e la
+     riga nasce quando l'asta viene vinta. Il design doc lascia intendere il contrario.
+   - `transactions` è già append-only con `saldo_dopo`: i trasferimenti ci entrano senza toccare
+     nulla. I premi partita vanno normalizzati (design §5.2), mai valori assoluti.
+
+   **Decisione ancora aperta, da porre all'utente**: design §9.2 fa scadere le proposte alla
+   chiusura del mercato dello stesso giorno. Con 6-10 amici che lavorano, una finestra 07:00–17:00
+   significa che se l'avversario non apre l'app quel giorno la trattativa muore. Le notifiche
+   mitigano, non risolvono. Va confermato prima di scrivere lo schema, perché cambia la colonna di
+   scadenza e il cron delle 17:00.
+
+7. **Push del browser**, sopra la tabella `notifications` che ora esiste. Vedi il limite iOS
+   descritto nella sezione delle notifiche.
 
 ## Stato UX deciso dall'utente
 

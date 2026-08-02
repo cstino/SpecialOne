@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
-import { useTornaAllaHome } from '../lib/navigazione'
+import { useNotificheContesto, useTornaAllaHome } from '../lib/navigazione'
 import type { League } from '../types'
+import { Notifiche } from './Notifiche'
 
 export type GameView = 'overview' | 'draft' | 'squad' | 'team' | 'matches' | 'table'
 type GameNavProps = { league: League; active: GameView; onNavigate?: (view: GameView) => void }
@@ -41,6 +42,7 @@ const seasonItems = [
 export function GameNav({ league, active, onNavigate }: GameNavProps) {
   const items = league.stato === 'draft' ? draftItems : seasonItems
   const tornaAllaHome = useTornaAllaHome()
+  const notifiche = useNotificheContesto()
 
   // Il marchio riporta all'elenco delle leghe: e' l'unica via d'uscita da una
   // lega in corso per chi ne ha piu' di una.
@@ -52,14 +54,14 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
     <>
       <aside className="game-sidebar">
         {marchio('desktop')}
-        <div className="game-sidebar__league"><small>LEGA ATTIVA</small><strong>{league.nome}</strong><span>{league.stato === 'draft' ? 'Draft in corso' : `Stagione ${league.stagione_corrente} in corso`}</span></div>
+        <div className="game-sidebar__league"><small>LEGA ATTIVA</small><strong>{league.nome}</strong><span>{league.stato === 'draft' ? 'Draft in corso' : `Stagione ${league.stagione_corrente} in corso`}</span>{notifiche && <Notifiche userId={notifiche.userId} onApriNotifica={notifiche.apri} />}</div>
         <nav aria-label="Navigazione lega">
           {items.map(([key, label]) => <button className={`game-nav-item ${active === key ? 'is-active' : ''}`} key={key} type="button" onClick={() => onNavigate?.(key)} aria-current={active === key ? 'page' : undefined}><i aria-hidden="true"><Icona nome={key} /></i><span>{label}</span>{key === active && <b />}</button>)}
         </nav>
         <div className="game-sidebar__footer"><span className="game-online-dot" /> Server online<span className="game-version">S1 · BETA</span></div>
       </aside>
       <>
-        <div className="game-mobilebar">{marchio('mobile')}<span className="game-mobilebar__league">{league.nome}</span></div>
+        <div className="game-mobilebar">{marchio('mobile')}<span className="game-mobilebar__league">{league.nome}</span>{notifiche && <Notifiche userId={notifiche.userId} onApriNotifica={notifiche.apri} />}</div>
         <nav className="game-mobile-nav" aria-label="Navigazione lega mobile">
           {items.map(([key, label]) => <button className={active === key ? 'is-active' : ''} key={key} type="button" onClick={() => onNavigate?.(key)} aria-current={active === key ? 'page' : undefined}><i aria-hidden="true"><Icona nome={key} /></i><span>{key === 'squad' ? 'Rosa' : label}</span></button>)}
         </nav>

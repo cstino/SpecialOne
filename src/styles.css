@@ -1144,3 +1144,64 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .standings-row .season-team strong { font-size: .68rem; }
   .standings-panel footer { min-width: 0; align-items: flex-start; flex-direction: column; gap: 7px; }
 }
+
+/* ============================================================
+   NOTIFICHE
+   La campanella vive in tre contenitori diversi (topbar del menu, sidebar
+   desktop, barra mobile) e in ognuno eredita regole gia' esistenti: da qui
+   le riprese esplicite piu' sotto.
+   ============================================================ */
+.topbar__azioni { display: flex; align-items: center; gap: 10px; }
+
+.notifiche { position: relative; }
+.notifiche__campana { position: relative; width: 42px; height: 42px; display: grid; place-items: center; padding: 0; border: 1px solid #332c40; border-radius: 12px; color: #d8cbe8; background: #17151f; cursor: pointer; transition: border-color .16s ease, background .16s ease; }
+.notifiche__campana:hover { border-color: #7a45c0; background: #1d1729; }
+.notifiche__campana:focus-visible { outline: 2px solid #c77dff; outline-offset: 2px; }
+.notifiche__campana svg { width: 21px; height: 21px; }
+.notifiche__campana.ha-novita { color: #f4e8ff; border-color: #57327f; }
+.notifiche__pallino { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; display: grid; place-items: center; padding: 0 5px; border-radius: 999px; color: #fff; background: linear-gradient(135deg, #f0567c, #c62f57); box-shadow: 0 0 0 2px #14121c; font-size: .62rem; font-weight: 900; line-height: 1; }
+
+.notifiche__pannello { position: absolute; z-index: 70; top: calc(100% + 10px); right: 0; width: min(348px, calc(100vw - 24px)); max-height: min(70vh, 520px); display: flex; flex-direction: column; border: 1px solid #332c40; border-radius: 14px; background: #14121c; box-shadow: 0 24px 70px rgba(0,0,0,.55); overflow: hidden; }
+.notifiche__pannello header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 14px; border-bottom: 1px solid #2b2634; }
+.notifiche__pannello header strong { font-size: .84rem; }
+.notifiche__chiudi { flex-shrink: 0; width: 28px; height: 28px; padding: 0; border: 1px solid #332c40; border-radius: 50%; color: #b9aecb; background: transparent; font-size: 1.05rem; line-height: 1; cursor: pointer; }
+.notifiche__chiudi:focus-visible { outline: 2px solid #c77dff; outline-offset: 2px; }
+.notifiche__pannello ul { margin: 0; padding: 6px; display: grid; gap: 2px; list-style: none; overflow-y: auto; }
+.notifiche__vuoto { margin: 0; padding: 26px 18px; color: #7f7789; font-size: .76rem; line-height: 1.55; text-align: center; }
+
+.notifiche__voce { position: relative; width: 100%; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: start; gap: 10px; padding: 10px; border: 0; border-radius: 10px; background: transparent; font-family: inherit; text-align: left; cursor: pointer; }
+.notifiche__voce:hover { background: #1f1a2b; }
+.notifiche__voce:focus-visible { outline: 2px solid #c77dff; outline-offset: -2px; }
+.notifiche__voce i { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; color: #c99cff; background: #241d35; }
+.notifiche__voce i svg { width: 17px; height: 17px; }
+.notifiche__voce > span { min-width: 0; display: grid; gap: 3px; }
+.notifiche__voce strong { color: #e6dff3; font-size: .8rem; font-weight: 800; }
+.notifiche__voce small { color: #8c839c; font-size: .69rem; line-height: 1.45; }
+.notifiche__voce time { padding-top: 2px; color: #6c6579; font-size: .63rem; white-space: nowrap; }
+.notifiche__voce.e-nuova strong { color: #fff; }
+.notifiche__voce.e-nuova::before { content: ''; position: absolute; top: 16px; left: 1px; width: 4px; height: 4px; border-radius: 50%; background: #c77dff; }
+
+.notifiche__voce i[data-tipo="giornata_simulata"] { color: #7fe0a4; background: #16301f; }
+.notifiche__voce i[data-tipo="formazione_mancante"] { color: #f3c969; background: #33280f; }
+.notifiche__voce i[data-tipo="mercato_proposta"] { color: #9fc7ff; background: #172438; }
+
+/* Sidebar desktop: la campanella si appoggia in alto a destra del blocco
+   "lega attiva", che percio' deve lasciarle spazio e fare da riferimento. */
+.game-sidebar__league { position: relative; padding-right: 42px; }
+.game-sidebar__league .notifiche { position: absolute; top: 11px; right: 0; }
+.game-sidebar__league .notifiche__campana { width: 34px; height: 34px; border-radius: 10px; }
+.game-sidebar__league .notifiche__campana svg { width: 18px; height: 18px; }
+/* La sidebar sta a sinistra: il pannello si apre verso il campo, non fuori. */
+.game-sidebar .notifiche__pannello { left: 0; right: auto; }
+
+@media (max-width: 640px) {
+  .game-mobilebar__league { min-width: 0; flex: 1; }
+  .game-mobilebar .notifiche__campana { width: 38px; height: 38px; border-radius: 9px; }
+  /* Ancorato alla finestra e non al bottone: a 360px un pannello allineato
+     alla campanella uscirebbe dallo schermo. */
+  .notifiche__pannello { position: fixed; top: 68px; right: 10px; left: 10px; width: auto; max-height: 72vh; }
+  /* .game-mobilebar button (38x38, bordato) colpirebbe anche i bottoni
+     dentro il pannello, che e' suo discendente: qui si annulla. */
+  .game-mobilebar .notifiche__pannello button { width: auto; height: auto; border: 0; border-radius: 10px; background: transparent; font-size: inherit; }
+  .game-mobilebar .notifiche__chiudi { width: 28px; height: 28px; border: 1px solid #332c40; border-radius: 50%; font-size: 1.05rem; }
+}

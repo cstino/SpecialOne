@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import type { User } from '@supabase/supabase-js'
+import type { Notifica } from '../lib/notifiche'
 import { supabase } from '../lib/supabase'
 import type { Membership, Season, Standing } from '../types'
 import { Crest } from './Crest'
+import { Notifiche } from './Notifiche'
 
 type Props = {
   user: User
@@ -11,6 +13,7 @@ type Props = {
   onCreaLega: () => void
   onEntraConCodice: () => void
   onRefresh: () => void
+  onApriNotifica: (notifica: Notifica) => void
 }
 
 const ETICHETTE_STATO: Record<string, string> = {
@@ -20,7 +23,7 @@ const ETICHETTE_STATO: Record<string, string> = {
   conclusa: 'Conclusa',
 }
 
-export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, onEntraConCodice, onRefresh }: Props) {
+export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, onEntraConCodice, onRefresh, onApriNotifica }: Props) {
   const [vista, setVista] = useState<'leghe' | 'profilo'>('leghe')
   const [menuAperto, setMenuAperto] = useState(false)
   const [classifiche, setClassifiche] = useState<Map<number, Standing>>(new Map())
@@ -121,9 +124,12 @@ export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, 
   return <main className="app-shell menu-shell">
     <header className="topbar">
       <div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div>
-      <button className="apri-menu" type="button" onClick={() => setMenuAperto(true)} aria-label="Apri il menu" aria-expanded={menuAperto}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
-      </button>
+      <div className="topbar__azioni">
+        <Notifiche userId={user.id} onApriNotifica={onApriNotifica} />
+        <button className="apri-menu" type="button" onClick={() => setMenuAperto(true)} aria-label="Apri il menu" aria-expanded={menuAperto}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+        </button>
+      </div>
     </header>
 
     <div className="menu-page">
