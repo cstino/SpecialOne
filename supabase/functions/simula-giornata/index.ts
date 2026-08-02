@@ -62,21 +62,28 @@ function buildLineup(lineup: DbLineup, roster: EngineRoster): EngineLineup {
   const byId = new Map(roster.giocatori.map((player) => [player.id, player]))
   const slots = MODULI[lineup.modulo]
   if (!slots || slots.length !== 11 || lineup.titolari.length !== 11) throw new Error(`Formazione non valida per la squadra ${lineup.team_id}.`)
+  // Un giocatore puo' sparire dalla rosa DOPO che la formazione e' stata
+  // salvata: il mercato chiude alle 21:00 e la formazione salvata prima (o
+  // ereditata dalla giornata precedente) resta li' con dentro un ceduto.
+  //
+  // Prima qui c'era un throw. Siccome l'errore risale fino al gestore esterno,
+  // UNA sola formazione stantia avrebbe fatto fallire la giornata dell'intera
+  // lega. Un ceduto va trattato come un indisponibile qualsiasi.
   const titolari = lineup.titolari.map((id) => byId.get(id))
-  const panchina = lineup.panchina.map((id) => byId.get(id))
-  if (titolari.some((player) => !player) || panchina.some((player) => !player)) throw new Error(`Formazione con giocatori fuori rosa per la squadra ${lineup.team_id}.`)
+  const riserve = lineup.panchina
+    .map((id) => byId.get(id))
+    .filter((giocatore): giocatore is EnginePlayer => Boolean(giocatore))
 
-  // Un giocatore puo' infortunarsi DOPO che la formazione e' stata salvata, e
-  // la formazione ereditata dalla giornata precedente non e' mai stata
-  // ricontrollata. `schiera()` scarta gli indisponibili, ma qui la formazione
-  // arriva dal database: senza questo blocco un infortunato scenderebbe in
-  // campo, perche' il motore controlla gli infortuni solo a fine partita.
-  const undici = titolari as EnginePlayer[]
-  const riserve = panchina as EnginePlayer[]
+  // Stessa logica per gli infortunati: `schiera()` scarta gli indisponibili,
+  // ma qui la formazione arriva dal database e il motore controlla gli
+  // infortuni solo a fine partita, quindi senza questo blocco un infortunato
+  // scenderebbe in campo.
+  const undici: Array<EnginePlayer | undefined> = titolari
   const rimpiazzi: Array<{ esce: string; entra: string }> = []
   for (let i = 0; i < undici.length; i++) {
-    if (undici[i].infortunatoFinoA <= 0) continue
-    const inCampo = new Set(undici.filter(Boolean).map((giocatore) => giocatore.id))
+    const attuale = undici[i]
+    if (attuale && attuale.infortunatoFinoA <= 0) continue
+    const inCampo = new Set(undici.filter(Boolean).map((giocatore) => giocatore!.id))
     const candidati = [...riserve, ...roster.giocatori]
       .filter((giocatore) => giocatore.infortunatoFinoA <= 0 && !inCampo.has(giocatore.id))
     if (candidati.length === 0) continue
@@ -84,14 +91,20 @@ function buildLineup(lineup: DbLineup, roster: EngineRoster): EngineLineup {
     for (const candidato of candidati) {
       if (ovrEfficace(candidato, slots[i]) > ovrEfficace(migliore, slots[i])) migliore = candidato
     }
-    rimpiazzi.push({ esce: undici[i].nome, entra: migliore.nome })
+    rimpiazzi.push({ esce: attuale ? attuale.nome : 'giocatore non piu’ in rosa', entra: migliore.nome })
     undici[i] = migliore
   }
+  // Restare senza undici e' l'unico caso che resta irrecuperabile: il motore
+  // non sa giocare in dieci dal primo minuto.
+  if (undici.some((giocatore) => !giocatore)) {
+    throw new Error(`Rosa insufficiente per completare la formazione della squadra ${lineup.team_id}.`)
+  }
   if (rimpiazzi.length) {
-    console.log(`Squadra ${lineup.team_id}: rimpiazzati infortunati`, rimpiazzi)
+    console.log(`Squadra ${lineup.team_id}: rimpiazzati indisponibili`, rimpiazzi)
   }
 
-  return { modulo: lineup.modulo, slots: [...slots], titolari: undici, panchina: riserve.filter((giocatore) => giocatore.infortunatoFinoA <= 0 && !undici.includes(giocatore)), cambiFatti: 0 }
+  const formazione = undici as EnginePlayer[]
+  return { modulo: lineup.modulo, slots: [...slots], titolari: formazione, panchina: riserve.filter((giocatore) => giocatore.infortunatoFinoA <= 0 && !formazione.includes(giocatore)), cambiFatti: 0 }
 }
 
 function seedFor(fixture: Fixture) {

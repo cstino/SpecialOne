@@ -525,8 +525,17 @@ A piena condizione: 2,5%. A condizione 40: 5,5%. Risultato atteso: ~0,7 infortun
 |---|---|
 | 00:00 | Simulazione di **una** giornata |
 | 07:00 | Apertura mercato + estrazione 10 svincolati |
-| 17:00 | Chiusura mercato + rivelazione buste chiuse |
+| 21:00 | Chiusura mercato + rivelazione buste chiuse + scadenza proposte |
 | 23:00 | Deadline formazioni (poi fallback automatico) |
+
+> **Chiusura spostata dalle 17:00 alle 21:00** — decisione dell'utente, 2 agosto 2026.
+> Vince sulla versione precedente di questa tabella.
+>
+> Le 17:00 cadevano in orario di lavoro: chi apriva l'app solo la sera trovava le proposte
+> già scadute e le aste già assegnate, cioè non giocava il mercato. Con le 21:00 la finestra
+> copre la serata, e resta comunque il margine giusto prima della deadline formazioni: alle
+> 21:00 si scopre chi si è preso all'asta, e ci sono **due ore** per rifare la formazione
+> tenendone conto prima che alle 23:00 scatti il fallback.
 
 ### 9.2 Trattative tra squadre
 

@@ -388,11 +388,59 @@ non serve. Il service worker esiste già (`public/sw.js`), quindi mancano solo c
 e un handler `push`. **Su iPhone le push web arrivano solo se la PWA è installata sulla schermata
 home**: da Safari normale non arrivano e non c'è modo di aggirarlo.
 
+### Mercato — trattative fra squadre (backend fatto, UI da fare)
+
+**Finestra: 07:00–21:00 Europe/Rome.** L'utente ha spostato la chiusura dalle 17:00 (design §9.1)
+alle 21:00 il 2 agosto 2026; il design doc è stato aggiornato con la motivazione. Le 17:00 cadevano
+in orario di lavoro. Alle 21:00 si scopre l'esito delle aste e restano **due ore** per rifare la
+formazione prima del fallback delle 23:00.
+
+**Non esiste uno stato «mercato aperto» sul database e nessun cron lo apre**: `private.mercato_aperto()`
+guarda l'ora di Roma. Uno stato memorizzato può restare disallineato se un job salta, un orario
+calcolato no. Il cron (`chiusura-mercato`, ogni ora al minuto 5) serve solo a far scadere le
+proposte rimaste appese, e come il cron notturno decide da sé se a Roma sono davvero le 21:00.
+
+Le tre forme di proposta di §9.2 stanno in **una tabella sola**, `trade_proposals`: acquisto secco
+= offerti vuoti; scambio = liste piene e conguaglio 0; con conguaglio = liste piene e conguaglio
+diverso da 0. Il conguaglio è **con segno**: positivo paga il proponente, negativo paga il
+destinatario (serve per «ti do il campione, tu dammi una riserva più denaro»).
+
+RLS: le pendenti le vedono **solo le due squadre coinvolte**; le accettate le vede tutta la lega
+(design §9.3, deterrente sociale alla collusione). Provato con tre identità reali.
+
+RPC: `proponi_scambio`, `rispondi_a_proposta(id, accetta)`, `ritira_proposta`.
+
+**La correzione economica da conoscere.** Design §5.4 vuole che chi acquista a stagione in corso
+paghi «costo trasferimento + ingaggio pro-rata sulle giornate rimanenti». Preso alla lettera quel
+pro-rata **sparirebbe dalla lega**: il venditore l'ingaggio pieno l'ha già pagato al draft, e §5.3
+dice che i trasferimenti sono a somma zero. Qui si applica l'unica lettura coerente con entrambe:
+chi riceve un giocatore ne paga il pro-rata, **chi lo cede se lo vede accreditato**. La RPC verifica
+a runtime che i due saldi sommino a zero e solleva un errore interno se non lo fanno.
+`giornate_rimanenti` conta le fixture ancora `programmata`.
+
+Vincoli all'accettazione, per **entrambe** le squadre: rosa ≤ `slot_rosa`, rosa ≥ 11 (sotto gli
+undici il motore non saprebbe schierare), portieri ≥ `portieri_minimi`. La proprietà dei giocatori
+è ricontrollata all'accettazione: fra proposta e risposta possono passare ore e un altro scambio.
+
+Uno scambio **cancella le formazioni già salvate** delle giornate non ancora simulate che
+contenevano un giocatore coinvolto, e lo dice nella notifica. Senza, si scenderebbe in campo con
+una scelta del computer al posto della propria.
+
+**Manca la UI**: nessuna schermata di mercato esiste ancora. Il backend è completo e verificato.
+
+### Il motore non muore più per una formazione stantia
+
+`buildLineup` faceva `throw` se un giocatore della formazione salvata non era più in rosa. Siccome
+l'errore risale fino al gestore esterno, **una sola formazione stantia avrebbe fatto fallire la
+giornata dell'intera lega**. Non era un difetto vivo finché `team_id` non cambiava mai dopo il
+draft: lo sarebbe diventato al primo scambio. Ora un ceduto è trattato come un indisponibile
+qualsiasi e viene rimpiazzato; si solleva un errore solo se non si arriva a undici.
+
 ---
 
 ## Database remoto
 
-Migrazioni applicate fino a `20260802134500_chiudi_privilegi_tabelle_draft.sql`.
+Migrazioni applicate fino a `20260802150000_mercato_trattative.sql`.
 
 ### Privilegi di scrittura chiusi — difetto latente trovato il 2 agosto
 
@@ -447,6 +495,16 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
 - Esistenza degli oggetti confermata anche da PostgREST: una chiamata senza login a
   `/rest/v1/notifications` e a `/rest/v1/rpc/segna_notifiche_lette` risponde `42501`
   (permesso negato) e non «relation not found», cioè la schema cache li vede.
+- **Mercato, percorso completo sul database reale** (lega riportata in stagione dentro un
+  `rollback`, tre identità vere): proposta creata e visibile a entrambe le parti, accettata,
+  giocatori scambiati, **somma dei due saldi = 0**, due movimenti in `transactions`, 6 formazioni
+  rimosse perché contenevano un ceduto, 3 notifiche generate.
+- **Mercato, prove negative**: un terzo partecipante della stessa lega vede 0 righe di una proposta
+  pendente e non può accettarla al posto del destinatario («Questa proposta non è indirizzata a
+  te»); la stessa proposta, una volta accettata, gli diventa visibile (design §9.3). Uno scambio
+  alla pari che lascerebbe una squadra senza portieri è respinto dal controllo giusto — la prima
+  versione della prova era stata respinta dal vincolo sugli slot, che scatta prima, quindi è stata
+  rifatta a parità di numeri per esercitare davvero la regola sui portieri.
 
 ## Cosa NON è verificato
 
@@ -460,6 +518,10 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
 - Il canale Realtime non è stato provato con un client vero: la tabella è nella publication e il
   codice si iscrive, ma la consegna dal vivo non è stata osservata. Se non funzionasse, il refetch
   su `visibilitychange` copre comunque il caso.
+- **Il cron `chiusura-mercato` non è mai stato visto girare alle 21:00.** È registrato e la
+  funzione è provata chiamandola a mano, ma nessuna esecuzione reale è stata osservata.
+- **Nessuna lega è attualmente in stato `stagione`**: le tre esistenti sono due in `setup` e una
+  `conclusa`. Il mercato quindi non è provabile dall'interfaccia finché non se ne avvia una.
 
 ---
 
@@ -526,11 +588,9 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
    - `transactions` è già append-only con `saldo_dopo`: i trasferimenti ci entrano senza toccare
      nulla. I premi partita vanno normalizzati (design §5.2), mai valori assoluti.
 
-   **Decisione ancora aperta, da porre all'utente**: design §9.2 fa scadere le proposte alla
-   chiusura del mercato dello stesso giorno. Con 6-10 amici che lavorano, una finestra 07:00–17:00
-   significa che se l'avversario non apre l'app quel giorno la trattativa muore. Le notifiche
-   mitigano, non risolvono. Va confermato prima di scrivere lo schema, perché cambia la colonna di
-   scadenza e il cron delle 17:00.
+   **Stato**: le **trattative sono fatte lato database** (vedi sopra) e la finestra è stata portata
+   a 07:00–21:00 dall'utente. Restano **la UI delle trattative**, **le aste svincolati** e **lo
+   svincolo**.
 
 7. **Push del browser**, sopra la tabella `notifications` che ora esiste. Vedi il limite iOS
    descritto nella sezione delle notifiche.
