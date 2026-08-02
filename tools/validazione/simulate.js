@@ -162,7 +162,13 @@ function test3(NS = 500, nSquadre = 8, gironi = 4) {
   console.log(riga('Punti dell\'ultimo', media(puntiUlt), 15, 28, v => v.toFixed(1)));
   console.log(riga('Spread primo-ultimo', media(spread), 35, 50, v => v.toFixed(1)));
   console.log(riga('Gol per partita', media(golTot), 2.50, 2.90));
-  console.log(riga('Condizione titolari a fine stag.', media(condFine), 55, 85, v => v.toFixed(1)));
+  // Target ri-tarato il 2 agosto 2026, da 55-85 a 75-95.
+  // Il vecchio intervallo misurava un mondo in cui le sostituzioni non
+  // scattavano mai: i titolari giocavano tutti i 90 minuti di tutte le
+  // giornate. Con il modello di fatica da partita chi si stanca esce al 60',
+  // quindi la rosa arriva a fine stagione piu' fresca. Il valore piu' alto e'
+  // la conseguenza del meccanismo che funziona, non una deriva del motore.
+  console.log(riga('Condizione titolari a fine stag.', media(condFine), 75, 95, v => v.toFixed(1)));
   console.log(`\n  Punti vincitore  p10=${pct(puntiVinc, 0.10)}  mediana=${pct(puntiVinc, 0.5)}  p90=${pct(puntiVinc, 0.90)}   dev.std=${dev(puntiVinc).toFixed(1)}`);
   console.log('\n  Titoli vinti per forza squadra (T0=piu debole, T7=piu forte):');
   titolo.forEach((c, i) => {

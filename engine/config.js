@@ -43,11 +43,15 @@ export const CFG = {
   DRIBBLING_BASE: 12,
 
   // --- Condizione ---
-  CONSUMO_BASE: 3.4,
-  CONSUMO_MOD_STAMINA: 1.6,
-  REC_TRIBUNA: 38,
-  REC_PANCHINA: 30,
-  REC_GIOCATO: 8,
+  // Modello "da partita" e non "da stagione": si consuma molto in campo e si
+  // recupera quasi tutto dopo. Un titolare con stamina 80 finisce i 90 minuti
+  // sotto 60, quindi nell'ultimo terzo il cambio conviene per davvero e le
+  // sostituzioni avvengono in ogni giornata, non solo a stagione inoltrata.
+  CONSUMO_BASE: 10.5,
+  CONSUMO_MOD_STAMINA: 4.0, // la stamina ora pesa: 95 consuma il 15% meno di 60
+  REC_TRIBUNA: 45,
+  REC_PANCHINA: 40,
+  REC_GIOCATO: 36,
 
   // --- Infortuni ---
   INFORTUNIO_BASE: 0.025,
@@ -57,7 +61,9 @@ export const CFG = {
   FINESTRE_CAMBI: [3, 4, 5], // fine di questi blocchi
   MAX_CAMBI: 5,
   MAX_CAMBI_FINESTRA: 2,
-  SOGLIA_CAMBIO_COND: 55,
+  // Alzata da 55: col consumo nuovo un titolare arriva a ~78 alla prima
+  // finestra e ~63 all'ultima. A 55 nessuna finestra si sarebbe mai aperta.
+  SOGLIA_CAMBIO_COND: 75,
 };
 
 // ============================================================

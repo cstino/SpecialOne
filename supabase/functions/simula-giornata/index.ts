@@ -118,16 +118,6 @@ function mapValue(map: Map<number, number> | undefined, id: number) {
 
 const GIORNATE_DI_TARATURA = 28
 
-// Stesso principio per l'usura. Il motore consuma ~13 punti a partita e ne
-// recupera 8: da 100 servono nove giornate per scendere sotto la soglia di
-// cambio (55). In un campionato da 12 giornate le sostituzioni non
-// scatterebbero mai, e infatti nelle prove nessuno usciva prima del 90'.
-// Il fattore riporta l'usura di una stagione corta a quella di una da 28.
-function fattoreUsura(giornateTotali: number) {
-  if (giornateTotali <= 0) return 1
-  return Math.min(3, Math.max(0.5, GIORNATE_DI_TARATURA / giornateTotali))
-}
-
 function scalaInfortunio(giornateOriginali: number, giornateTotali: number) {
   if (giornateOriginali <= 0 || giornateTotali <= 0) return giornateOriginali
   const scalato = Math.round(giornateOriginali * giornateTotali / GIORNATE_DI_TARATURA)
@@ -367,11 +357,9 @@ export default {
       // Fotografia prima delle partite: serve a distinguere un infortunio nuovo
       // da uno vecchio che il motore sta solo scalando di una giornata.
       const infortuniPrima = new Map<number, number>()
-      const condizionePrima = new Map<number, number>()
       for (const roster of rosters.values()) {
         for (const giocatore of roster.giocatori) {
           infortuniPrima.set(giocatore.id, giocatore.infortunatoFinoA)
-          condizionePrima.set(giocatore.id, giocatore.condizione)
         }
       }
 
@@ -433,17 +421,12 @@ export default {
           // lunghezza della stagione. Uno calato e' il conto alla rovescia.
           const giornateFuori = dopo > prima ? scalaInfortunio(dopo, giornateTotali) : dopo
 
-          // A fine infortunio il motore RIPORTA la condizione a 65: e' un valore
-          // assoluto, non una variazione, e amplificarlo sarebbe sbagliato.
-          const rientroDaInfortunio = prima > 0 && dopo === 0
-          const partenza = condizionePrima.get(giocatore.id) ?? giocatore.condizione
-          const condizioneFinale = rientroDaInfortunio
-            ? giocatore.condizione
-            : partenza + (giocatore.condizione - partenza) * fattoreUsura(giornateTotali)
-
+          // Nessuna amplificazione dell'usura: da quando il motore usa il
+          // modello di fatica da partita, il consumo dentro i 90 minuti basta
+          // da solo a far scattare i cambi in ogni giornata.
           valoriCondizione.push({
             id: giocatore.id,
-            condizione: Math.round(Math.max(0, Math.min(100, condizioneFinale))),
+            condizione: Math.round(Math.max(0, Math.min(100, giocatore.condizione))),
             infortunato_fino_a: Math.max(0, Math.round(giornateFuori)),
           })
         }

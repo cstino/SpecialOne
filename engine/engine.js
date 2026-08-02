@@ -126,6 +126,10 @@ function sostituzioni(lineup) {
   let fatti = 0;
   for (let i = 0; i < lineup.slots.length && fatti < CFG.MAX_CAMBI_FINESTRA; i++) {
     const slot = lineup.slots[i], tit = lineup.titolari[i];
+    // Il portiere non si sostituisce per stanchezza: nel calcio vero esce solo
+    // per infortunio. Col modello di fatica da partita scendeva sotto soglia
+    // come tutti e veniva cambiato all'intervallo.
+    if (slot === 'GK') continue;
     if (!tit || tit.condizione >= CFG.SOGLIA_CAMBIO_COND) continue;
     let bestIdx = -1, bestVal = ovrEfficace(tit, slot);
     for (let j = 0; j < lineup.panchina.length; j++) {

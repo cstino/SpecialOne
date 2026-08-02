@@ -130,6 +130,69 @@ Una cosa deliberatamente **non** fatta: le frecce di salita e discesa in classif
 la posizione della giornata precedente e `standings` conserva solo quella corrente, quindi
 andrebbero inventate.
 
+### Modello di fatica «da partita» — costanti del motore cambiate
+
+**Questa è la prima modifica deliberata alle costanti validate. Va letta prima di toccare
+`engine/config.js`.**
+
+Il motore modellava la fatica **di stagione**: ~2,1 punti a blocco, cioè un titolare finiva i 90
+minuti a 87 con soglia di cambio a 55. Dentro la partita nessuno si stancava abbastanza, quindi
+**le sostituzioni non si innescavano mai**. Su richiesta dell'utente si è passati al modello
+«da partita» in stile FIFA: si consuma molto in campo e si recupera quasi tutto dopo.
+
+| Costante | Prima | Ora |
+|---|---|---|
+| `CONSUMO_BASE` | 3,4 | 10,5 |
+| `CONSUMO_MOD_STAMINA` | 1,6 | 4,0 |
+| `REC_GIOCATO` | 8 | 36 |
+| `REC_PANCHINA` | 30 | 40 |
+| `REC_TRIBUNA` | 38 | 45 |
+| `SOGLIA_CAMBIO_COND` | 55 | 75 |
+
+`sostituzioni()` ha una riga in più: **il portiere è escluso dai cambi per stanchezza**. Col
+consumo nuovo scendeva sotto soglia come tutti e veniva sostituito all'intervallo — è successo
+davvero in una partita di prova, Alisson fuori al 45°. Nel calcio un portiere esce solo per
+infortunio.
+
+#### Un target della validazione è stato ri-tarato
+
+`Condizione titolari a fine stagione`: da **55-85** a **75-95**, con il motivo scritto accanto
+alla riga in `tools/validazione/simulate.js`.
+
+Non è una deriva del motore ed è importante capirlo. Il vecchio intervallo misurava un mondo in
+cui **nessuno veniva mai sostituito**: i titolari giocavano tutti i 90 minuti di tutte le
+giornate. Ora chi si stanca esce al 60', quindi la rosa arriva a fine stagione più fresca. Il
+valore più alto è la conseguenza del meccanismo che funziona.
+
+Tentativi misurati prima di decidere, per non ri-tarare a occhio:
+
+| `REC_GIOCATO` | Punti vincitore (min 58,0) | Condizione fine stagione |
+|---|---|---|
+| 38 | 58,4 OK | 90,6 |
+| 36 | 58,2 OK | 89,0 |
+| 34 | 57,9 FUORI | 87,3 |
+| 30 | 57,6 FUORI | 83,6 |
+
+Nessun valore soddisfaceva insieme il vecchio target e i punti del vincitore: le due metriche si
+muovono in direzioni opposte. Da notare che `Punti del vincitore` ha 58,0 come minimo e la
+baseline storica stava a 58,4 — quattro decimi di margine, quindi è una metrica fragile.
+
+Con le costanti nuove **tutti e tredici i target passano**. `docs/risultati-fase0.txt` è stato
+rigenerato; la baseline precedente è conservata in `docs/risultati-fase0-pre-rotazione.txt`.
+
+#### Verifica del comportamento, su 1.500 partite
+
+- squadre con almeno un cambio: **99,9%** (prima: nessuna);
+- cambi medi per squadra 3,71, **massimo 5 mai superato**, tre finestre come in Serie A
+  (erano già in `config.js`: `FINESTRE_CAMBI: [3,4,5]`, `MAX_CAMBI: 5`, `MAX_CAMBI_FINESTRA: 2`);
+- **portieri sostituiti: 0**;
+- entrati fuori dal reparto dello slot: 5,7%, e solo quando la panchina non offre di meglio.
+  La scelta passa da `ovrEfficace`, che è `ovr × penalitaRuolo × fattoreCondizione`: un difensore
+  messo in attacco prende 0,58 di penalità e non viene scelto.
+
+Di conseguenza `fattoreUsura` è stato **rimosso** dalla Edge Function: serviva a far accumulare
+fatica in stagioni corte, ma ora il consumo dentro i 90 minuti basta da solo.
+
 ### Condizione, sostituzioni e infortuni — attivi
 
 Fino a ieri `usaCondizione: false`, com'era previsto per la Fase 1. Ora è **acceso**, e con esso
@@ -153,17 +216,9 @@ Function: `engine/` resta intatto, come impone `CLAUDE.md` §4.
 1. **Durata degli infortuni** (`scalaInfortunio`): il motore sorteggia fino a 15 giornate, che in
    un campionato da 12 significa perdere il giocatore per sempre. La durata è scalata sulle
    giornate reali, con tetto al 40% del totale.
-2. **Usura della condizione** (`fattoreUsura`): il consumo netto è −5 a partita, quindi da 100
-   servono nove giornate per arrivare sotto soglia. **Misurato: in un campionato da 12 giornate le
-   sostituzioni non scattavano mai** — quattro partite di prova, 22 giocatori su 22 sempre a 90
-   minuti. Il fattore `28 / giornate_totali` (limitato fra 0,5 e 3) riporta l'usura di una
-   stagione corta a quella di una da 28.
-
-   Attenzione al caso limite già gestito: a fine infortunio il motore **riporta** la condizione a
-   65. È un valore assoluto, non una variazione, e amplificarlo darebbe risultati assurdi.
-
-**Verificato dopo la correzione**: sostituzioni assenti nelle prime due giornate (rosa fresca),
-poi 4, 6, 8 e 6 giocatori coinvolti nei cambi. Progressione corretta.
+2. **Usura della condizione**: era stata scalata sulla stagione con un `fattoreUsura`, poi
+   **rimosso** quando il motore è passato al modello di fatica da partita descritto sopra. Il
+   consumo dentro i 90 minuti ora basta da solo a innescare i cambi.
 
 #### Un difetto che esisteva solo in potenza
 
