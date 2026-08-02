@@ -70,7 +70,7 @@ function buildLineup(lineup: DbLineup, roster: EngineRoster): EngineLineup {
   // UNA sola formazione stantia avrebbe fatto fallire la giornata dell'intera
   // lega. Un ceduto va trattato come un indisponibile qualsiasi.
   const titolari = lineup.titolari.map((id) => byId.get(id))
-  const riserve = lineup.panchina
+  const riserveSalvate = lineup.panchina
     .map((id) => byId.get(id))
     .filter((giocatore): giocatore is EnginePlayer => Boolean(giocatore))
 
@@ -84,7 +84,7 @@ function buildLineup(lineup: DbLineup, roster: EngineRoster): EngineLineup {
     const attuale = undici[i]
     if (attuale && attuale.infortunatoFinoA <= 0) continue
     const inCampo = new Set(undici.filter(Boolean).map((giocatore) => giocatore!.id))
-    const candidati = [...riserve, ...roster.giocatori]
+    const candidati = [...riserveSalvate, ...roster.giocatori]
       .filter((giocatore) => giocatore.infortunatoFinoA <= 0 && !inCampo.has(giocatore.id))
     if (candidati.length === 0) continue
     let migliore = candidati[0]
@@ -104,7 +104,21 @@ function buildLineup(lineup: DbLineup, roster: EngineRoster): EngineLineup {
   }
 
   const formazione = undici as EnginePlayer[]
-  return { modulo: lineup.modulo, slots: [...slots], titolari: formazione, panchina: riserve.filter((giocatore) => giocatore.infortunatoFinoA <= 0 && !formazione.includes(giocatore)), cambiFatti: 0 }
+  const inCampo = new Set(formazione.map((giocatore) => giocatore.id))
+  const panchina: EnginePlayer[] = []
+  const inPanchina = new Set<number>()
+  const aggiungiInPanchina = (giocatore: EnginePlayer) => {
+    if (panchina.length >= 9 || giocatore.infortunatoFinoA > 0 || inCampo.has(giocatore.id) || inPanchina.has(giocatore.id)) return
+    panchina.push(giocatore)
+    inPanchina.add(giocatore.id)
+  }
+  // Conserva le riserve sane scelte dall'allenatore e completa gli eventuali
+  // buchi con i migliori giocatori disponibili della rosa.
+  riserveSalvate.forEach(aggiungiInPanchina)
+  const miglioriDisponibili = [...roster.giocatori].sort((a, b) => b.ovr - a.ovr)
+  miglioriDisponibili.forEach(aggiungiInPanchina)
+
+  return { modulo: lineup.modulo, slots: [...slots], titolari: formazione, panchina, cambiFatti: 0 }
 }
 
 function seedFor(fixture: Fixture) {
@@ -434,13 +448,17 @@ export default {
       // le sostituzioni non scattano mai.
       const giornateTotali = Number(league.giornate_totali) || GIORNATE_DI_TARATURA
       const valoriCondizione = []
-      for (const roster of rosters.values()) {
+      const nuoviInfortuni: Array<{ teamId: number; playerId: number; nome: string; giornate: number }> = []
+      for (const [teamId, roster] of rosters) {
         for (const giocatore of roster.giocatori) {
           const prima = infortuniPrima.get(giocatore.id) ?? 0
           const dopo = giocatore.infortunatoFinoA
           // Un valore cresciuto e' un infortunio nuovo, da riscalare sulla
           // lunghezza della stagione. Uno calato e' il conto alla rovescia.
           const giornateFuori = dopo > prima ? scalaInfortunio(dopo, giornateTotali) : dopo
+          if (dopo > prima) {
+            nuoviInfortuni.push({ teamId, playerId: giocatore.id, nome: giocatore.nome, giornate: Math.max(1, Math.round(giornateFuori)) })
+          }
 
           // Nessuna amplificazione dell'usura: da quando il motore usa il
           // modello di fatica da partita, il consumo dentro i 90 minuti basta
@@ -466,12 +484,15 @@ export default {
       let notificheInviate = 0
       try {
         const righe = []
+        const squadreConPartitaNuova = new Set<number>()
         for (let i = 0; i < fixtures.length; i++) {
           const fixture = fixtures[i]
           const esito = summaries[i] as
             { match_id: number; gia_simulata: boolean; gol_home: number; gol_away: number } | null
           // Una partita gia' registrata e' un ritentativo: non si rinotifica.
           if (!esito || esito.gia_simulata) continue
+          squadreConPartitaNuova.add(fixture.home_team_id)
+          squadreConPartitaNuova.add(fixture.away_team_id)
 
           const lati = [
             { teamId: fixture.home_team_id, avversario: fixture.away_team_id, fatti: esito.gol_home, subiti: esito.gol_away },
@@ -490,6 +511,20 @@ export default {
               dati: { match_id: esito.match_id, giornata },
             })
           }
+        }
+
+        for (const infortunio of nuoviInfortuni) {
+          if (!squadreConPartitaNuova.has(infortunio.teamId)) continue
+          const userId = teamUsers.get(infortunio.teamId)
+          if (!userId) continue
+          righe.push({
+            user_id: userId,
+            league_id: leagueId,
+            tipo: 'infortunio',
+            titolo: `${infortunio.nome} si è infortunato`,
+            corpo: `Sarà indisponibile per ${infortunio.giornate} ${infortunio.giornate === 1 ? 'giornata' : 'giornate'}. Controlla la formazione.`,
+            dati: { view: 'squad', player_instance_id: infortunio.playerId, giornata },
+          })
         }
 
         for (const [teamId, origine] of formazioniAutomatiche) {

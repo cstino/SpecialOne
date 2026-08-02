@@ -102,7 +102,7 @@ export function Matches({ membership, onNavigate, onOpenMatch, onOpenTeam }: Pro
     <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>Calendario ufficiale</span></header>
     <SeasonState loading={data.loading} error={data.error} onRetry={data.reload} />
     {!data.loading && !data.error && <div className="season-page season-page--narrow">
-      <section className="season-title-row"><div><p className="kicker">Stagione {league.stagione_corrente} · {league.nome}</p><h1>Partite.</h1><p>Una giornata ogni notte, alle 00:00 ora italiana.</p></div><div className="season-total"><strong>{completate.length}</strong><span>di {league.giornate_totali} giornate</span></div></section>
+      <section className="season-title-row"><div><p className="kicker">Stagione {league.stagione_corrente} · {league.nome}</p><h1>Partite.</h1><p>Una giornata ogni sera, alle 23:00 ora di Roma.</p></div><div className="season-total"><strong>{completate.length}</strong><span>di {league.giornate_totali} giornate</span></div></section>
 
       {calendarioAperto ? <>
         <div className="sezione-testa">

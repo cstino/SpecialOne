@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { formatoStemma, generaUuidV4, preparaStemma } from '../lib/crest'
+import { ROSA_MASSIMA, ROSA_MINIMA } from '../lib/league'
 import { supabase } from '../lib/supabase'
+import { STEMMA_SQUADRA_DEFAULT } from '../lib/teamCrests'
 import { useSeasonData } from '../lib/useSeasonData'
 import type { CrestChoice, Fixture, League, MatchPlayerStat, Membership, Team } from '../types'
 import { Crest } from './Crest'
@@ -27,6 +29,7 @@ type RosterPlayer = {
   eta: number
   ingaggio: number
   condizione: number
+  infortunatoFinoA: number
   piede: string | null
   altezza: number | null
   attributi: Record<string, number | null>
@@ -63,9 +66,12 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [rosterError, setRosterError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
   const [teamName, setTeamName] = useState('')
-  const [crest, setCrest] = useState<CrestChoice>({ type: 'preset', value: 'preset:scudo' })
+  const [crest, setCrest] = useState<CrestChoice>({ type: 'preset', value: STEMMA_SQUADRA_DEFAULT })
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [releasePending, setReleasePending] = useState(false)
+  const [releaseError, setReleaseError] = useState<string | null>(null)
+  const [rosterNotice, setRosterNotice] = useState<string | null>(null)
   const team = teamOverride?.id === teamId ? teamOverride : seasonData.teamById.get(teamId)
   const ownTeam = teamId === membership.id
 
@@ -100,7 +106,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       ? { type: 'preset', value: team.stemma_url }
       : team.stemma_url && crestUrl
         ? { type: 'existing', value: team.stemma_url, previewUrl: crestUrl }
-        : { type: 'preset', value: 'preset:scudo' })
+        : { type: 'preset', value: STEMMA_SQUADRA_DEFAULT })
   }, [team, crestUrl])
 
   useEffect(() => {
@@ -109,7 +115,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       setRosterLoading(true)
       setRosterError(null)
       const [instancesResult, statsResult] = await Promise.all([
-        supabase.from('player_instances').select('id, player_id, overall_corrente, eta_corrente, ingaggio, condizione').eq('league_id', league.id).eq('team_id', teamId),
+        supabase.from('player_instances').select('id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a').eq('league_id', league.id).eq('team_id', teamId),
         supabase.from('match_stats').select('match_id, player_instance_id, minuti, gol, assist, tiri, tiri_porta, passaggi_tentati, passaggi_riusciti, contrasti_vinti, dribbling').eq('league_id', league.id).eq('team_id', teamId),
       ])
       const firstError = instancesResult.error ?? statsResult.error
@@ -134,7 +140,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           id: instance.id, nome: info?.nome ?? `Giocatore ${instance.id}`, club: info?.club ?? '—',
           nazionalita: info?.nazionalita ?? null, posizioni: info?.posizioni ?? [],
           overall: instance.overall_corrente, eta: instance.eta_corrente, ingaggio: instance.ingaggio,
-          condizione: instance.condizione, piede: info?.piede ?? null, altezza: info?.altezza ?? null,
+          condizione: instance.condizione, infortunatoFinoA: instance.infortunato_fino_a, piede: info?.piede ?? null, altezza: info?.altezza ?? null,
           attributi: (info?.attributi ?? {}) as Record<string, number | null>, foto_url: info?.foto_url ?? null,
           ...total,
         }
@@ -240,6 +246,30 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     setSaving(false)
   }
 
+  function openPlayer(player: RosterPlayer) {
+    setReleaseError(null)
+    setRosterNotice(null)
+    setSchedaAperta(player)
+  }
+
+  async function releasePlayer() {
+    if (!schedaAperta || !ownTeam) return
+    setReleasePending(true)
+    setReleaseError(null)
+    const player = schedaAperta
+    const { error } = await supabase.rpc('svincola_giocatore', { p_instance_id: player.id })
+    if (error) {
+      setReleaseError(error.message)
+      setReleasePending(false)
+      return
+    }
+    setPlayers((current) => current.filter((item) => item.id !== player.id))
+    setStatRows((current) => current.filter((item) => item.player_instance_id !== player.id))
+    setSchedaAperta(null)
+    setRosterNotice(`${player.nome} è stato svincolato. Nessun rimborso è stato accreditato.`)
+    setReleasePending(false)
+  }
+
   return <main className="app-shell season-shell">
     <GameNav league={league} active="team" onNavigate={onNavigate} />
     <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>{ownTeam ? 'La tua squadra' : 'Profilo avversario'}</span></header>
@@ -290,9 +320,10 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       </section>
 
       <section className="team-roster-panel">
-        <div className="season-card__heading"><div><p className="kicker">Rosa completa</p><h2>Dal portiere all’attacco</h2></div><span>{players.length} / {league.slot_rosa}</span></div>
+        <div className="season-card__heading"><div><p className="kicker">Rosa completa</p><h2>Dal portiere all’attacco</h2></div><span>{players.length} giocatori · min {ROSA_MINIMA} · max {ROSA_MASSIMA}</span></div>
+        {rosterNotice && <p className="notice notice--success">{rosterNotice}</p>}
         {rosterError && <p className="notice notice--error">{rosterError}</p>}
-        {rosterLoading ? <p className="season-empty">Carico la rosa…</p> : <div className="team-roster-list">{players.map((player) => <button className={`team-roster-player team-roster-player--${department(player.posizioni[0])}`} type="button" key={player.id} onClick={() => setSchedaAperta(player)} aria-label={`Scheda di ${player.nome}`}><i /><span className="team-roster-role">{player.posizioni[0] ?? '—'}</span><div><strong>{player.nome}</strong><small>{player.posizioni.join(' · ')} · {player.eta} anni · <em>{money(player.ingaggio)}/anno</em></small></div><b>{player.overall}</b><dl><span>{player.minuti}<small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span></dl></button>)}</div>}
+        {rosterLoading ? <p className="season-empty">Carico la rosa…</p> : <div className="team-roster-list">{players.map((player) => <button className={`team-roster-player team-roster-player--${department(player.posizioni[0])}`} type="button" key={player.id} onClick={() => openPlayer(player)} aria-label={`Scheda di ${player.nome}`}><i /><span className="team-roster-role">{player.posizioni[0] ?? '—'}</span><div><strong>{player.nome}</strong><small>{player.posizioni.join(' · ')} · {player.eta} anni · <em>{money(player.ingaggio)}/anno</em></small></div><b>{player.overall}</b><dl><span>{player.minuti}<small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span></dl></button>)}</div>}
       </section>
 
       {schedaAperta && <SchedaGiocatore
@@ -305,6 +336,8 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           piede: schedaAperta.piede,
           altezza: schedaAperta.altezza,
           ingaggio: schedaAperta.ingaggio,
+          condizione: schedaAperta.condizione,
+          infortunatoFinoA: schedaAperta.infortunatoFinoA,
           attributi: schedaAperta.attributi,
         }}
         fotoUrl={fotoScheda}
@@ -312,6 +345,13 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           presenze: 0, minuti: 0, gol: 0, assist: 0, porteInviolate: 0,
           tiri: 0, tiriPorta: 0, passaggiTentati: 0, passaggiRiusciti: 0, contrastiVinti: 0, dribbling: 0,
         }}
+        azionePericolosa={ownTeam && league.stato === 'stagione' ? {
+          etichetta: 'Svincola giocatore',
+          descrizione: `${schedaAperta.nome} uscirà subito dalla rosa. Devi mantenere almeno ${ROSA_MINIMA} giocatori. Non riceverai alcun rimborso e le formazioni future che lo contengono dovranno essere salvate di nuovo.`,
+          inCorso: releasePending,
+          errore: releaseError,
+          onConferma: releasePlayer,
+        } : undefined}
         onClose={() => setSchedaAperta(null)}
       />}
     </div>}

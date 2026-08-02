@@ -1,9 +1,9 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useNotificheContesto, useTornaAllaHome } from '../lib/navigazione'
 import type { League } from '../types'
 import { Notifiche } from './Notifiche'
 
-export type GameView = 'overview' | 'draft' | 'squad' | 'team' | 'mercato' | 'matches' | 'table'
+export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'matches' | 'table'
 type GameNavProps = { league: League; active: GameView; onNavigate?: (view: GameView) => void }
 
 // Icone disegnate a mano: i glifi Unicode di prima (▦ ♜ ♙ ◆ ◉ ≡) venivano resi dal
@@ -16,6 +16,7 @@ const ICONE: Record<string, ReactNode> = {
   matches: <><circle cx="12" cy="12" r="9" /><path d="m12 7 4.3 3.1-1.6 5h-5.4l-1.6-5z" /></>,
   table: <><path d="M5 20V11M12 20V4M19 20v-6" /></>,
   mercato: <><path d="M4 8.5h12m0 0-3-3m3 3-3 3" /><path d="M20 15.5H8m0 0 3-3m-3 3 3 3" /></>,
+  offseason: <><path d="M4 7h16M6 3v4m12-4v4" /><path d="M5 11h14v9H5z" /><path d="m9 15 2 2 4-4" /></>,
 }
 
 function Icona({ nome }: { nome: string }) {
@@ -41,16 +42,54 @@ const seasonItems = [
   ['table', 'Classifica'],
 ] as const
 
+const offseasonItems = [
+  ['offseason', 'Off-season'],
+  ['team', 'Squadra'],
+  ['mercato', 'Mercato'],
+  ['matches', 'Partite'],
+  ['table', 'Classifica'],
+] as const
+
+const concludedItems = [
+  ['offseason', 'Off-season'],
+  ['overview', 'Overview'],
+  ['team', 'Squadra'],
+  ['matches', 'Partite'],
+  ['table', 'Classifica'],
+] as const
+
 export function GameNav({ league, active, onNavigate }: GameNavProps) {
   // A campionato concluso il mercato non ha piu' senso: non ci sono giornate
   // su cui schierare chi si compra, e le RPC lo rifiuterebbero comunque.
-  const items = league.stato === 'draft'
+  const items = league.fase_carriera === 'offseason'
+    ? offseasonItems
+    : league.stato === 'draft'
     ? draftItems
     : league.stato === 'conclusa'
-      ? seasonItems.filter(([chiave]) => chiave !== 'mercato')
+      ? concludedItems
       : seasonItems
   const tornaAllaHome = useTornaAllaHome()
   const notifiche = useNotificheContesto()
+  const [menuMobileAperto, setMenuMobileAperto] = useState(false)
+
+  useEffect(() => {
+    if (!menuMobileAperto) return
+    const overflowPrecedente = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const chiudiConEscape = (evento: KeyboardEvent) => {
+      if (evento.key === 'Escape') setMenuMobileAperto(false)
+    }
+    document.addEventListener('keydown', chiudiConEscape)
+    return () => {
+      document.body.style.overflow = overflowPrecedente
+      document.removeEventListener('keydown', chiudiConEscape)
+    }
+  }, [menuMobileAperto])
+
+  function vai(view: GameView) {
+    setMenuMobileAperto(false)
+    onNavigate?.(view)
+  }
 
   // Il marchio riporta all'elenco delle leghe: e' l'unica via d'uscita da una
   // lega in corso per chi ne ha piu' di una.
@@ -62,18 +101,33 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
     <>
       <aside className="game-sidebar">
         {marchio('desktop')}
-        <div className="game-sidebar__league"><small>LEGA ATTIVA</small><strong>{league.nome}</strong><span>{league.stato === 'draft' ? 'Draft in corso' : league.stato === 'conclusa' ? `Stagione ${league.stagione_corrente} conclusa` : `Stagione ${league.stagione_corrente} in corso`}</span>{notifiche && <Notifiche userId={notifiche.userId} onApriNotifica={notifiche.apri} />}</div>
+        <div className="game-sidebar__league"><small>LEGA ATTIVA</small><strong>{league.nome}</strong><span>{league.fase_carriera === 'offseason' ? `Off-season · verso la S${league.stagione_corrente + 1}` : league.stato === 'draft' ? 'Draft in corso' : league.stato === 'conclusa' ? `Stagione ${league.stagione_corrente} conclusa` : `Stagione ${league.stagione_corrente} in corso`}</span>{notifiche && <Notifiche userId={notifiche.userId} onApriNotifica={notifiche.apri} />}</div>
         <nav aria-label="Navigazione lega">
-          {items.map(([key, label]) => <button className={`game-nav-item ${active === key ? 'is-active' : ''}`} key={key} type="button" onClick={() => onNavigate?.(key)} aria-current={active === key ? 'page' : undefined}><i aria-hidden="true"><Icona nome={key} /></i><span>{label}</span>{key === active && <b />}</button>)}
+          {items.map(([key, label]) => <button className={`game-nav-item ${active === key ? 'is-active' : ''}`} key={key} type="button" onClick={() => vai(key)} aria-current={active === key ? 'page' : undefined}><i aria-hidden="true"><Icona nome={key} /></i><span>{label}</span>{key === active && <b />}</button>)}
         </nav>
         <div className="game-sidebar__footer"><span className="game-online-dot" /> Server online<span className="game-version">S1 · BETA</span></div>
       </aside>
-      <>
-        <div className="game-mobilebar">{marchio('mobile')}<span className="game-mobilebar__league">{league.nome}</span>{notifiche && <Notifiche userId={notifiche.userId} onApriNotifica={notifiche.apri} />}</div>
-        <nav className="game-mobile-nav" aria-label="Navigazione lega mobile">
-          {items.map(([key, label]) => <button className={active === key ? 'is-active' : ''} key={key} type="button" onClick={() => onNavigate?.(key)} aria-current={active === key ? 'page' : undefined}><i aria-hidden="true"><Icona nome={key} /></i><span>{key === 'squad' ? 'Rosa' : label}</span></button>)}
-        </nav>
-      </>
+      <div className="game-mobilebar">
+        {marchio('mobile')}
+        <span className="game-mobilebar__league">{league.nome}</span>
+        <button className="game-mobilebar__menu" type="button" onClick={() => setMenuMobileAperto(true)} aria-label="Apri menu" aria-expanded={menuMobileAperto}>
+          <span /><span /><span />
+        </button>
+      </div>
+      {menuMobileAperto && <div className="game-drawer-layer" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) setMenuMobileAperto(false) }}>
+        <aside className="game-drawer" role="dialog" aria-modal="true" aria-label="Menu della lega">
+          <header className="game-drawer__header">
+            <div><img src="/specialone-mark.svg" alt="" /><span><strong>{league.nome}</strong><small>Stagione {league.stagione_corrente}</small></span></div>
+            <button type="button" onClick={() => setMenuMobileAperto(false)} aria-label="Chiudi menu">×</button>
+          </header>
+          <nav className="game-drawer__nav" aria-label="Navigazione lega mobile">
+            {items.map(([key, label]) => <button className={`game-nav-item ${active === key ? 'is-active' : ''}`} key={key} type="button" onClick={() => vai(key)} aria-current={active === key ? 'page' : undefined}><i aria-hidden="true"><Icona nome={key} /></i><span>{key === 'squad' ? 'Rosa' : label}</span>{key === active && <b />}</button>)}
+          </nav>
+          {notifiche && <div className="game-drawer__alerts"><Notifiche embedded userId={notifiche.userId} onApriNotifica={(notifica) => { setMenuMobileAperto(false); notifiche.apri(notifica) }} /></div>}
+          {tornaAllaHome && <button className="game-drawer__home" type="button" onClick={() => { setMenuMobileAperto(false); tornaAllaHome() }}>Torna alle mie leghe <span>→</span></button>}
+          <footer><span className="game-online-dot" /> Server online <small>S1 · BETA</small></footer>
+        </aside>
+      </div>}
     </>
   )
 }

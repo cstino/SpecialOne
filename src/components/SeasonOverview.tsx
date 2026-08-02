@@ -1,18 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useSeasonData } from '../lib/useSeasonData'
-import { supabase } from '../lib/supabase'
 import type { League, Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { Crest } from './Crest'
 import { FixtureScore, Forma, formaPerSquadra, formatMatchDate, SeasonState, TeamLabel } from './SeasonUI'
+import { LeagueNews } from './LeagueNews'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; onOpenMatch: (matchId: number) => void; onOpenTeam: (teamId: number) => void }
 
 export function SeasonOverview({ membership, onNavigate, onOpenMatch, onOpenTeam }: Props) {
   const league = membership.league as League
   const data = useSeasonData(membership)
-  const [simulating, setSimulating] = useState(false)
-  const [simulationError, setSimulationError] = useState<string | null>(null)
   const forma = useMemo(() => formaPerSquadra(data.fixtures, data.matchByFixture), [data.fixtures, data.matchByFixture])
   const miaSquadra = data.teamById.get(membership.id)
   const miaClassifica = data.standings.find((riga) => riga.team_id === membership.id)
@@ -29,28 +27,11 @@ export function SeasonOverview({ membership, onNavigate, onOpenMatch, onOpenTeam
     return propri > subiti ? 'V' : propri < subiti ? 'P' : 'N'
   })()
 
-  async function simulateNextRound() {
-    if (!window.confirm(`Simulare ora la giornata ${data.currentGiornata}? I risultati diventeranno definitivi.`)) return
-    setSimulating(true)
-    setSimulationError(null)
-    const { error } = await supabase.functions.invoke('simula-giornata', { body: { league_id: league.id } })
-    if (error) {
-      let message = error.message
-      if ('context' in error && error.context instanceof Response) {
-        const payload = await error.context.clone().json().catch(() => null) as { error?: string; message?: string } | null
-        message = payload?.error ?? payload?.message ?? message
-      }
-      setSimulationError(message)
-    } else await data.reload()
-    setSimulating(false)
-  }
-
   return <main className="app-shell season-shell">
     <GameNav league={league} active="overview" onNavigate={onNavigate} />
     <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>Stagione {league.stagione_corrente}</span></header>
     <SeasonState loading={data.loading} error={data.error} onRetry={data.reload} />
     {!data.loading && !data.error && <div className="season-page">
-      {simulationError && <p className="notice notice--error season-notice" role="alert">{simulationError}</p>}
       {/* L'eroe porta l'identita' della squadra, non uno slogan: posizione,
           punti e forma sono le tre cose che si cercano per prime. */}
       <section className="season-hero">
@@ -88,12 +69,7 @@ export function SeasonOverview({ membership, onNavigate, onOpenMatch, onOpenTeam
           <div className="season-card__actions"><button className="button button--primary" type="button" onClick={() => onNavigate('squad')}>Prepara formazione</button><button className="season-link" type="button" onClick={() => onNavigate('matches')}>Tutto il calendario →</button></div>
         </article>
 
-        <article className="season-card season-card--progress">
-          <p className="kicker">Campionato</p><div className="season-progress-number"><strong>{data.fixtures.filter((fixture) => fixture.stato === 'simulata').length}</strong><span>/ {data.fixtures.length}<small>partite giocate</small></span></div>
-          <div className="season-progress"><i style={{ width: `${data.fixtures.length ? data.fixtures.filter((fixture) => fixture.stato === 'simulata').length / data.fixtures.length * 100 : 0}%` }} /></div>
-          <button className="season-link" type="button" onClick={() => onNavigate('matches')}>Apri Partite</button>
-          {league.admin_id === membership.user_id && data.nextFixture && <button className="simulate-round-button" type="button" disabled={simulating} onClick={simulateNextRound}>{simulating ? 'Simulazione…' : `Simula giornata ${data.currentGiornata}`}</button>}
-        </article>
+        <LeagueNews leagueId={league.id} fixtures={data.fixtures} matches={data.matches} teamById={data.teamById} crestUrlByTeamId={data.crestUrlByTeamId} onOpenMatch={onOpenMatch} onOpenTeam={onOpenTeam} />
 
         <article className="season-card season-card--table">
           <div className="season-card__heading"><div><p className="kicker">Classifica</p><h2>La vetta</h2></div><button className="season-link" type="button" onClick={() => onNavigate('table')}>Vedi tutta →</button></div>

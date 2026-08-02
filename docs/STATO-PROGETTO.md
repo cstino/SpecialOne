@@ -7,41 +7,29 @@ repository ed è il punto di partenza per il prossimo agent (Claude o Codex).
 
 ## ▶ CONSEGNA A CODEX — leggi prima questo
 
-Il lavoro passa a Codex a partire dal 2 agosto 2026, sera. Ultimo commit: `f5bc91e`.
+Il lavoro passa a Codex a partire dal 2 agosto 2026, sera. Ultimo commit pubblicato: `5003e99`.
 
-### La prossima task, in concreto
+### Stato corrente, in concreto
 
-**Svincolo (design §9.5)** — è l'ultimo pezzo del mercato e il più piccolo. Cosa serve:
+Il flusso completo di **off-season e seconda stagione** è implementato e applicato al database
+remoto fino alla migrazione `20260802235500_fix_lint_calendario_23.sql`. L'off-season dura 24 ore,
+si chiude automaticamente, completa a 21 le rose corte e programma la prima giornata alle prime
+23:00 di Roma utili. Per il dettaglio più recente fa fede l'ultima sezione di questo documento.
 
-- **Nessuna tabella nuova.** `player_instances.team_id` è già nullable e il commento in
-  `20260731120500_rose.sql` dice già «null = svincolato». Svincolare = metterlo a `null`.
-- Una RPC `public.svincola_giocatore(p_instance_id bigint)` che verifichi, nell'ordine:
-  utente autenticato → il giocatore è suo → mercato aperto (`private.mercato_aperto()`) →
-  la rosa resta valida dopo (≥ 11 giocatori e ≥ `portieri_minimi` portieri: le stesse due
-  soglie usate in `rispondi_a_proposta`, che puoi copiare da lì).
-- **Nessun rimborso** (design §9.5). Il giocatore esce dal monte ingaggi della stagione
-  **successiva**, non di questa: quindi nessun movimento in `transactions`.
-- **Cancellare le formazioni** delle giornate non ancora simulate che contenevano quel
-  giocatore, ed emettere una notifica. Il blocco è già scritto in `rispondi_a_proposta`
-  (`delete from public.lineups … where titolari && … or panchina && … or tribuna && …`):
-  va riusato tale e quale, non reinventato.
-- Il giocatore svincolato torna nel pool delle aste **automaticamente**: la query del pool in
-  `private.estrai_svincolati_lega()` esclude solo chi ha `team_id is not null`.
-- UI: un pulsante nella scheda giocatore o nella rosa, con conferma. Non nel mercato.
+### Prossima verifica manuale
 
-### Poi, se resta tempo
+Provare da mobile il drawer, la cancellazione degli avvisi, l'animazione degli spin e il carosello
+news; poi lasciare scadere o anticipare in ambiente di test un'off-season per osservare il passaggio
+automatico alla nuova stagione. Build, lint, lint DB e test SQL automatizzato sono già verdi.
 
-Le schermate non ancora ridisegnate: **Lobby, Draft, Onboarding, Login**. È in gran parte
-riuso dei mattoni già esistenti, elencati più sotto.
+### Decisioni ferme
 
-### Decisioni ferme in attesa dell'utente — non deciderle da solo
-
-1. **Off-season, come pesca un nuovo partecipante**: rollate sui club (versione utente) o draft
-   dagli svincolati (versione design §10.5). Vedi `design.md` §10.6, dove il conflitto è scritto
-   per esteso con i numeri.
-2. Gli altri quattro punti scoperti dell'off-season, sempre in §10.6.
-3. **Cartellini**: il motore non li ha affatto. Due strade descritte in fondo a questo documento.
-4. Se le **offerte perdenti** delle aste debbano diventare pubbliche dopo le 21:00. Oggi restano
+1. I nuovi partecipanti dell'off-season costruiscono la rosa con le **rollate sui club**.
+2. I giocatori delle squadre rimosse diventano tutti svincolati; un rinnovo senza risposta
+   scade e libera il giocatore; gli scambi diretti restano aperti durante l'off-season.
+3. Le squadre entranti ricevono l'intero budget iniziale della lega.
+4. **Cartellini**: il motore non li ha affatto. Due strade descritte in fondo a questo documento.
+5. Se le **offerte perdenti** delle aste debbano diventare pubbliche dopo le 21:00. Oggi restano
    private per sempre; l'utente ha chiesto che si rivelino «le vincenti», ed è ciò che accade.
 
 ### Come si verifica il lavoro su questo progetto
@@ -120,6 +108,22 @@ d'ambiente della Edge Function e nel Vault.
 ---
 
 ## Funzionalità completate
+
+### Off-season e nuova stagione
+
+- Le leghe concluse aprono ora una schermata `Off-season` invece di restare senza avanzamento.
+- L'admin conferma le squadre, può rimuoverne e riservare nuovi posti; la squadra admin resta.
+- Premi stagione, premio classifica e sponsor vengono accreditati prima dei rinnovi.
+- Età, progressione/declino e ritiri seguono il design §10.2; il motore partita non è stato toccato.
+- Richieste di rinnovo con intervallo pubblico, offerta 1–4 anni, accettazione/rifiuto server-side.
+- Mancata risposta alla chiusura = contratto scaduto e giocatore svincolato.
+- Nuove squadre entrano col codice durante l'off-season, budget pieno e draft indipendente a club.
+- Mercato e aste restano disponibili; le squadre rimosse sono bloccate anche lato database.
+- L'avvio della stagione successiva valida rose da 21–30, budget e draft, addebita gli
+  ingaggi e genera il calendario usando soltanto le squadre attive.
+- Test transazionale versionato in `tools/validazione/test_offseason.sql`: tutte le verifiche OK,
+  incluso avvio stagione 2 e nuova classifica; il `ROLLBACK` preserva i dati reali.
+- `npm run build` e `supabase db lint --linked --level warning`: OK.
 
 ### Fondamenta e dati
 
@@ -317,16 +321,31 @@ Sul ritratto in "Rosa", in alto a sinistra, c'è la **percentuale di energia**: 
 gialla fra 55 e 75, rossa sotto 55 — la soglia oltre cui il motore sostituisce da solo — e una
 croce rossa per gli infortunati, con le giornate mancanti nel titolo.
 
+#### Gestione infortuni completa — 2 agosto 2026
+
+- Ogni nuovo infortunio prodotto dalla simulazione genera una notifica `infortunio` per il
+  proprietario, con nome e giornate residue. Toccandola si apre direttamente "Rosa".
+- Un infortunato non può essere salvato fra titolari o panchina, ma resta correttamente ammesso
+  in tribuna. Il controllo è sia nella UI sia nella RPC `salva_formazione`.
+- Sostituendo manualmente un titolare infortunato con una riserva, l'infortunato viene mandato
+  direttamente in tribuna. Se l'allenatore non interviene, `buildLineup` lo rimpiazza prima
+  della simulazione e completa la panchina fino a 9 con i migliori sani disponibili.
+- La scheda giocatore contiene ora una sezione "Forma fisica": percentuale e barra quando è
+  disponibile, stato infortunato e giornate al rientro quando non lo è.
+- Migrazione `20260802214000_gestione_infortuni.sql` applicata e Edge Function
+  `simula-giornata` distribuita. Test transazionale remoto superato: tribuna accettata,
+  panchina respinta, tipo notifica accettato, rollback finale.
+
 Le sostituzioni sono già leggibili nel tabellino senza lavoro aggiuntivo: `match_stats.minuti` è
 calcolato sui blocchi giocati, quindi chi esce ha 45' e chi entra il resto.
 
 ### Simulazione notturna automatica — attiva
 
 Job `simula-giornata-notturna` in `cron.job`, **attivo**. Gira **ogni ora**; è la funzione
-`private.simula_giornata_notturna()` a decidere se a Roma è mezzanotte.
+`private.simula_giornata_notturna()` a decidere se a Roma sono le **23:00**.
 
-**Perché ogni ora e non alle 23:00 UTC.** pg_cron pianifica in UTC: un orario fisso sarebbe a
-mezzanotte d'inverno e all'una d'estate. Il controllo sull'ora italiana dentro la funzione
+**Perché ogni ora e non a un orario UTC fisso.** pg_cron pianifica in UTC: l'equivalente delle
+23:00 cambia con l'ora legale. Il controllo sull'ora italiana dentro la funzione
 attraversa il cambio dell'ora legale senza saltare né duplicare una giornata — è la trappola
 annunciata in `CLAUDE.md` §2.
 
@@ -501,9 +520,10 @@ chi riceve un giocatore ne paga il pro-rata, **chi lo cede se lo vede accreditat
 a runtime che i due saldi sommino a zero e solleva un errore interno se non lo fanno.
 `giornate_rimanenti` conta le fixture ancora `programmata`.
 
-Vincoli all'accettazione, per **entrambe** le squadre: rosa ≤ `slot_rosa`, rosa ≥ 11 (sotto gli
-undici il motore non saprebbe schierare), portieri ≥ `portieri_minimi`. La proprietà dei giocatori
-è ricontrollata all'accettazione: fra proposta e risposta possono passare ore e un altro scambio.
+Vincoli all'accettazione, per **entrambe** le squadre: rosa tra 21 e 30 giocatori.
+`slot_rosa` resta l'obiettivo del draft iniziale, non il tetto del mercato.
+La proprietà dei giocatori è ricontrollata all'accettazione: fra proposta e risposta possono
+passare ore e un altro scambio.
 
 Uno scambio **cancella le formazioni già salvate** delle giornate non ancora simulate che
 contenevano un giocatore coinvolto, e lo dice nella notifica. Senza, si scenderebbe in campo con
@@ -564,6 +584,7 @@ offerta su una certa asta: quella vecchia non va contata contro la nuova.
 
 `public.budget_disponibile(league_id)` è il wrapper che il browser chiama per sapere quanto gli
 resta; la schermata mostra il disponibile al posto del budget quando c'è qualcosa di impegnato.
+Gli slot liberi sono calcolati rispetto al massimo permanente di 30 giocatori.
 
 I controlli su budget e slot restano anche alla risoluzione, ma ora sono una rete e non la regola:
 l'impegno li ha già garantiti.
@@ -578,6 +599,19 @@ che le rendeva non verificabili (a qualunque altra ora restituiscono 0). Una sec
 separato la guardia dalla logica — `estrai_svincolati_lega(lega, giorno)` e
 `risolvi_aste_giorno(giorno)` — senza cambiare il comportamento in produzione. Se si toccano le
 aste, si provano da lì.
+
+### Mercato — svincolo (design §9.5)
+
+Completato il 2 agosto 2026. `public.svincola_giocatore(instance_id)` mette `team_id` a null senza
+toccare budget o `transactions`, quindi non rimborsa l'ingaggio già pagato. La RPC verifica
+autenticazione, proprietà, stagione attiva, finestra 07:00–21:00 e almeno 21 giocatori residui.
+Le formazioni future che contengono il giocatore vengono cancellate e
+l'utente riceve una notifica.
+
+L'azione è nella scheda giocatore della propria squadra, con una conferma esplicita; non compare
+nel mercato né sui profili avversari. Il test in `tools/validazione/test_svincola_giocatore.sql`
+copre i controlli in `begin/rollback`, inclusi proprietà, minimi rosa, budget invariato,
+formazione rimossa, riacquisto della stessa istanza all'asta e privilegi RPC.
 
 ### Una lega conclusa non è più scambiata per una lega vuota
 
@@ -602,17 +636,57 @@ giornata dell'intera lega**. Non era un difetto vivo finché `team_id` non cambi
 draft: lo sarebbe diventato al primo scambio. Ora un ceduto è trattato come un indisponibile
 qualsiasi e viene rimpiazzato; si solleva un errore solo se non si arriva a undici.
 
+### Limiti permanenti della rosa
+
+Completato il 2 agosto 2026. Il draft iniziale resta configurabile tramite `slot_rosa`, ora tra
+21 e 30 giocatori (default 25). Dopo il draft il mercato può far variare la rosa, ma svincoli,
+scambi e aste devono conservarla tra **21 e 30 giocatori**. Le offerte aperte prenotano uno dei
+30 posti; il resolver delle 21:00 ricontrolla il massimo prima dell'assegnazione.
+
+Le funzioni `private.rosa_minima()` e `private.rosa_massima()` centralizzano i due valori lato
+database. La UI esporta gli equivalenti `ROSA_MINIMA` e `ROSA_MASSIMA` da `src/lib/league.ts`.
+Il test transazionale dello svincolo copre ora 14 verifiche, inclusi minimo 21, contatore a 30,
+offerta per il trentunesimo giocatore e rete finale del resolver.
+
+### Galleria stemmi squadra
+
+Completata il 2 agosto 2026. I sei stemmi SVG provvisori sono stati rimossi dal selettore e
+sostituiti con 34 PNG in `public/stemmi-squadra/`. L'app usa copie 320×320 leggere in
+`public/stemmi-squadra/thumbs/` e le carica in lazy loading; gli originali restano disponibili
+come sorgenti. Il caricamento di uno stemma personale su Storage resta invariato.
+
+I codici accettati sono centralizzati lato frontend in `src/lib/teamCrests.ts` e validati lato
+database da `private.stemma_valido`. La migrazione converte gli eventuali sei preset storici nel
+nuovo default `preset:1`. Verifica remota: 34/34 nuovi preset validi, 0 vecchi ancora validi e
+0 squadre con stemma non valido.
+
+### Realtime notifiche compatibile con supabase-js 2.111
+
+Corretto il 2 agosto 2026 un crash che lasciava la pagina della lega completamente nera.
+`GameNav` monta sia la campanella desktop sia quella mobile; realtime-js 2.111 riusa il canale
+quando il topic coincide e vieta di aggiungere callback `postgres_changes` dopo `subscribe()`.
+Ogni istanza usa ora un topic univoco e gli errori sincroni della sottoscrizione restano confinati
+alle notifiche, senza interrompere il gioco.
+
 ---
 
 ## Database remoto
 
-Migrazioni applicate fino a `20260802200000_aste_messaggi_leggibili.sql`.
+Migrazioni applicate fino a `20260802214000_gestione_infortuni.sql`. Il file dello
+svincolo era stato generato
+dal CLI alle 09:50, ma è stato spostato dopo le migrazioni del mercato perché dipende da quelle
+funzioni e ne corregge il resolver delle aste; la cronologia remota è stata riallineata.
 
-Le nove del 2 agosto, in ordine e con il perché di ciascuna:
+Le migrazioni principali del 2 agosto e il perché di ciascuna:
 
 | Migrazione | Perché |
 |---|---|
 | `094000_persisti_condizione_rosa` | condizione e infortuni riscritti dopo la giornata |
+| `210000_svincola_giocatore` | RPC di svincolo e riuso della stessa istanza se torna dall'asta |
+| `211000_limiti_rosa` | draft 21–30 e limiti permanenti 21–30 su svincoli, scambi e aste |
+| `212000_pulisci_budget_disponibile` | rimuove una lettura della lega diventata inutile |
+| `213000_stemmi_squadra_preset` | abilita i 34 stemmi nuovi e ritira i sei preset provvisori |
+| `214000_gestione_infortuni` | notifiche dedicate e indisponibili ammessi soltanto in tribuna |
 | `120000_notifiche` | tabella notifiche, RLS, RPC, realtime |
 | `133000_chiudi_privilegi_scrittura` | revoca write ad `authenticated`, elenco a mano — **ne mancava tre** |
 | `134500_chiudi_privilegi_tabelle_draft` | rifatto iterando su `pg_class`, più le default privileges |
@@ -624,7 +698,7 @@ Le nove del 2 agosto, in ordine e con il perché di ciascuna:
 | `200000_aste_messaggi_leggibili` | `private.in_milioni()`, messaggi d'errore leggibili |
 
 **Cron registrati**, tutti ogni ora, ciascuno decide da sé se a Roma è l'ora giusta:
-`simulazione-notturna` 00:00 · `estrazione-svincolati` 07:00 · `chiusura-mercato` 21:00 ·
+`simulazione-notturna` 23:00 · `estrazione-svincolati` 07:00 · `chiusura-mercato` 21:00 ·
 `risoluzione-aste` 21:00.
 
 **Nessuna lega è in stato `stagione`**: due in `setup` con una sola squadra, una `conclusa` con
@@ -706,6 +780,10 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
   alla pari che lascerebbe una squadra senza portieri è respinto dal controllo giusto — la prima
   versione della prova era stata respinta dal vincolo sugli slot, che scatta prima, quindi è stata
   rifatta a parità di numeri per esercitare davvero la regola sui portieri.
+- **Svincolo, percorso completo** (11 controlli, rollback): proprietà verificata, minimo 11 e
+  minimo portieri protetti, istanza resa libera, budget invariato, formazione futura rimossa,
+  notifica creata, doppio svincolo respinto, riacquisto all'asta sulla stessa istanza e privilegi
+  `anon`/`authenticated` corretti.
 
 ## Cosa NON è verificato
 
@@ -787,22 +865,21 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
 
 ## Prossime task consigliate
 
-1. **Svincolo (design §9.5)** — la prossima, descritta in concreto in cima a questo documento.
-2. **Completare la grafica**: il menu di stagione è finito. Restano **Lobby**, **Draft**,
+1. **Completare la grafica**: il menu di stagione è finito. Restano **Lobby**, **Draft**,
    **Onboarding** e **Login**. I mattoni condivisi esistono già (`.esito`, `.esito-riga`,
    `.stat-guida`, `.giornata-card`, `.sezione-testa`, `.button-fantasma`, `.pillola-stato`,
    `.menu-azione`, `.forma-chip`, `.pannello-laterale`): è in gran parte riuso.
-3. **Decidere il disallineamento del calendario** descritto sopra: il cron rispetta le date, ma le
+2. **Decidere il disallineamento del calendario** descritto sopra: il cron rispetta le date, ma le
    simulazioni manuali sono andate avanti rispetto ad esse.
-4. **Fallback formazione alle 23:00**: oggi l'ereditarietà avviene dentro la simulazione, cioè alle
+3. **Fallback formazione alle 23:00**: oggi l'ereditarietà avviene dentro la simulazione, cioè alle
    00:00. L'utente non ha modo di vedere e correggere la formazione automatica prima della partita,
    che è lo scopo dell'orario anticipato (design §6.7).
-5. **Test end-to-end** con più account reali: turni di riposo, fine calendario, controlli RLS.
-6. **Mercato**: fuori dallo scope Fase 1, deciso dall'utente. Dei tre sottosistemi di design §9
-   ne restano **uno**:
+4. **Test end-to-end** con più account reali: turni di riposo, fine calendario, controlli RLS.
+5. **Mercato**: fuori dallo scope Fase 1, deciso dall'utente. Tutti e tre i sottosistemi di design
+   §9 sono completati:
    - ~~trattative fra squadre (§9.2)~~ — **fatte**, database e interfaccia;
    - ~~aste svincolati (§9.4)~~ — **fatte**, database e interfaccia;
-   - **svincolo (§9.5)** — da fare, è la task 1 qui sopra.
+   - ~~svincolo (§9.5)~~ — **fatto**, database e interfaccia.
 
    **Due cose da sapere prima di scrivere codice**, entrambe verificate nel codice:
 
@@ -813,17 +890,15 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
    - `transactions` è già append-only con `saldo_dopo`: i trasferimenti ci entrano senza toccare
      nulla. I premi partita vanno normalizzati (design §5.2), mai valori assoluti.
 
-   **Stato**: **trattative e aste svincolati sono fatte, database e interfaccia**, con finestra
-   07:00–21:00. Resta **lo svincolo** (design §9.5), che è il pezzo più piccolo: `team_id` è già
-   nullable e serve una RPC che libera lo slot senza rimborso.
+   **Stato**: mercato completo a livello di database e interfaccia, con finestra 07:00–21:00.
 
    Per provare il mercato dall'app serve una lega in stato `stagione`: al 2 agosto 2026 non ce ne
    sono (due in `setup` con una sola squadra, una `conclusa`).
 
-7. **Push del browser**, sopra la tabella `notifications` che ora esiste. Vedi il limite iOS
+6. **Push del browser**, sopra la tabella `notifications` che ora esiste. Vedi il limite iOS
    descritto nella sezione delle notifiche.
 
-8. **Off-season** (Fase 3): specificato dall'utente il 2 agosto 2026 e scritto in `design.md`
+7. **Off-season** (Fase 3): specificato dall'utente il 2 agosto 2026 e scritto in `design.md`
    **§10.6**, che vince sul resto della sezione 10. In sintesi: a fine stagione l'admin sceglie fra
    terminare la lega, rimuovere partecipanti o aggiungerne; poi **una settimana** prima del via, in
    cui i nuovi fanno il draft, le vecchie squadre trattano i rinnovi (tutti i giocatori presi al
@@ -848,3 +923,76 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
   applica anche agli pseudo-elementi, quindi un `drop-shadow` sul contenitore proietta l'ombra dei
   loro riquadri invece della sagoma del giocatore. L'ombra va sull'`img`.
 - Logo squadra sempre quadrato, e senza cornice attorno.
+
+## Aggiornamento rapido 2 agosto 2026
+
+- Loading screen: usa `specialone-mark.svg` invece del vecchio scudo `S1`.
+- Onboarding: dal menu nuovo, il tasto Indietro di "Crea lega" e "Entra con un codice" torna al menu nuovo.
+- Join lega: ora e' in due step, prima codice invito e poi nome/stemma squadra.
+- Stemmi: picker ingrandito; quelli gia' usati nella lega sono disabilitati nel join.
+- Database: migrazione `20260802221000_offseason_un_giorno_stemmi_unici.sql` applicata. Aggiunge `anteprima_invito`, respinge stemmi duplicati in `entra_in_lega` e `aggiorna_profilo_squadra`, e forza l'off-season a 1 giorno tramite trigger su `offseasons`.
+- Off-season spin: migrazioni `20260802222000_offseason_spin_mercato.sql` e `20260802223000_fix_offseason_spin_lint.sql` applicate. Ogni squadra attiva in off-season ha 5 spin. Uno spin propone un giocatore libero sostenibile: la squadra puo' ingaggiarlo subito oppure mandarlo nella lista svincolati del giorno. Gli spin mandati al mercato creano aste `origine = 'spin_offseason'` e non consumano i 20 estratti giornalieri `origine = 'estrazione'`.
+- UI Mercato: in off-season compare il pannello "Spin mercato" con contatore, proposta aperta, azioni "Ingaggia" e "Manda al mercato", piu' log degli spin gia' risolti.
+- Verifiche eseguite: `npm.cmd run build`, `npm.cmd run lint`, `npx.cmd supabase db lint --linked --level warning`, `tools/validazione/test_offseason_spins.sql` via `supabase db query --linked --file ...` con rollback. Tutto OK.
+
+## Aggiornamento rinnovi 2 agosto 2026
+
+- Migrazione `20260802224000_rinnovi_controproposta.sql` applicata. Un rinnovo non viene piu' rifiutato al primo tentativo sotto la richiesta reale: passa a `controproposta`, mostra la cifra esatta come ultima richiesta e resta trattabile. Se anche la seconda offerta non basta, allora il giocatore viene svincolato.
+- UI rinnovi: input offerta passato da `type=number` a `type=text` con `inputMode=decimal`, quindi su mobile si puo' cancellare il campo e usare la virgola italiana senza trasformazioni automatiche a `0`.
+- UI rinnovi: se un rinnovo e' accettato, accanto allo stato viene mostrato il nuovo contratto, es. `2,5 M€/stag · 3 anni`.
+- Verifiche eseguite: `npm.cmd run build`, `npm.cmd run lint`, `npx.cmd supabase db lint --linked --level warning`, `tools/validazione/test_rinnovi_controproposta.sql` via `supabase db query --linked --file ...` con rollback. Tutto OK.
+
+## Fix rinnovi 2 agosto 2026
+
+- Migrazione `20260802225000_rinnovi_ingaggio_netto_mobile.sql` applicata. La durata del rinnovo non maggiora piu' l'ingaggio: l'offerta accettata e' l'ingaggio annuo firmato. La durata serve solo a bloccare quella cifra per piu' stagioni.
+- La migration riallinea anche i rinnovi gia' accettati: `player_instances.ingaggio = contract_renewals.offerta`. Verifica diretta su `sdsDas`: Olise 12,0M/anno e Bruno Varela 1,3M/anno.
+- UI mobile rinnovi: layout a colonna singola sotto i 720px; richiesta/controproposta e azioni non finiscono piu' nella colonna desktop compressa.
+- Test `tools/validazione/test_rinnovi_controproposta.sql` reso dinamico: non dipende piu' da ID fissi gia' risolti manualmente. Verifica rollback OK per controproposta, rifiuto finale e accettazione con ingaggio netto.
+
+## Aggiornamento mercato svincolati 2 agosto 2026
+
+- Migrazione `20260802230000_svincolati_per_ruolo.sql` applicata. L'estrazione giornaliera non pesca piu' un numero totale generico: in stagione normale crea 12 aste, cioe' 3 portieri, 3 difensori, 3 centrocampisti e 3 attaccanti; in off-season crea 40 aste, cioe' 10 per macro-ruolo.
+- Classificazione macro-ruolo centralizzata in `private.macro_ruolo(posizioni)`: GK, DEF (`CB/LB/RB/LWB/RWB`), MID (`CDM/CM/CAM/LM/RM`), ATT (`ST/CF/LW/RW`).
+- UI Mercato: la sezione svincolati e' ora divisa in "Nuovi oggi" con card fotografiche e "Archivio" con tutti gli svincolati caricati dalle aste recenti. L'archivio ha filtri per ruolo, eta', ingaggio e overall.
+- Verifiche eseguite: `npm.cmd run build`, `npm.cmd run lint`, `npx.cmd supabase db lint --linked --level warning`, `tools/validazione/test_svincolati_per_ruolo.sql` via `supabase db query --linked --file ...` con rollback. Tutto OK.
+
+## Fix archivio svincolati 2 agosto 2026
+
+- Migrazioni `20260802231000_svincolati_archivio_rioffribili.sql`, `20260802232000_fix_lint_svincolati_archivio.sql` e `20260802233000_fix_trigger_squadra_attiva_bids.sql` applicate.
+- Regola definitiva: "Nuovi oggi" e' solo la vetrina giornaliera. I vecchi svincolati non ingaggiati restano rioffribili dall'Archivio. Quando una squadra offre su un vecchio svincolato, `public.offri_per_svincolato_archivio(league_id, player_id, ingaggio)` crea/usa un'asta aperta per oggi con `origine = 'archivio'` e poi passa dalla stessa validazione di `offri_per_svincolato`.
+- `origine = 'archivio'` non conta come estrazione giornaliera: non blocca i 12/40 nuovi del giorno.
+- Il test ha scoperto e corretto un bug nel trigger `private.verifica_squadra_mercato_attiva()`: su `free_agent_bids` poteva leggere `da_team_id` invece di `team_id`. Ora il trigger usa `to_jsonb(new)` e sceglie il campo presente.
+- UI Archivio: i giocatori sotto contratto sono esclusi; gli svincolati storici mostrano il bottone `Rioffri`, che apre l'asta odierna lato server.
+- Verifiche eseguite: `npm.cmd run build`, `npm.cmd run lint`, `npx.cmd supabase db lint --linked --level warning`, `tools/validazione/test_svincolati_archivio_rioffribili.sql` con rollback. Tutto OK.
+
+## Aggiornamento limiti rosa 2 agosto 2026
+
+- Il minimo portieri e' stato rimosso come regola di gioco. La colonna `leagues.portieri_minimi`
+  resta per compatibilita' con RPC e codice storico, ma deve essere sempre `0`.
+- I limiti vincolanti restano solo **minimo 21** e **massimo 30** giocatori in rosa.
+- Conseguenza off-season: alla scadenza delle 24 ore una squadra sotto il minimo viene completata
+  automaticamente fino a 21 con gli svincolati piu' economici sostenibili. Non e' richiesto alcun
+  numero minimo di portieri.
+- Verifiche eseguite: `npm.cmd run build`, `npm.cmd run lint`, `npx.cmd supabase db lint --linked --level warning`,
+  query remota su `public.leagues` (`min=max=0`) e `tools/validazione/test_minimo_portieri_rimosso.sql`
+  con rollback.
+
+## Timer off-season, navigazione e news — 2 agosto 2026
+
+- Migrazione `20260802235000_offseason_timer_notifiche.sql` applicata. L'off-season dura 24 ore
+  effettive e non puo' essere chiusa prima dall'admin. Un cron la finalizza automaticamente alla
+  scadenza; il bottone admin resta solo come recupero dopo la deadline.
+- Alla chiusura i rinnovi irrisolti scadono, gli spin ancora aperti tornano fra gli svincolati e
+  ogni rosa sotto il limite viene completata automaticamente fino a 21 giocatori con opzioni
+  sostenibili. I posti espansione rimasti vuoti non entrano nel calendario.
+- La prima giornata e' fissata alle prime 23:00 `Europe/Rome` strettamente successive alla
+  scadenza; anche le giornate seguenti vengono simulate alle 23:00.
+- Navigazione mobile: rimossa la doppia barra inferiore. Tutte le sezioni e gli avvisi sono ora in
+  un drawer laterale aperto dal menu in alto a destra. Ogni avviso puo' essere eliminato con la X.
+- Mercato: lo spin off-season ha una sequenza animata fluida con nomi in rotazione e reveal
+  fotografico, senza ricaricare l'intera pagina.
+- Overview: la vecchia card tecnica "Campionato" e' stata sostituita da un carosello di notizie
+  giornaliere costruite da risultati, acquisti e scambi reali della lega.
+- Verifiche: build e lint frontend OK; lint del database remoto senza errori né warning. Il test transazionale
+  `tools/validazione/test_offseason_timer_24h.sql` verifica timer, blocco della chiusura anticipata,
+  completamento automatico a 21, primo calcio alle 23:00 e cancellazione degli avvisi.

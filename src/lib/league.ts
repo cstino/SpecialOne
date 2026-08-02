@@ -11,6 +11,9 @@ export const CAMPIONATI = [
   'EFL Championship',
 ] as const
 
+export const ROSA_MINIMA = 21
+export const ROSA_MASSIMA = 30
+
 export function calcolaGiornateTotali(squadre: number, gironi: number) {
   return (squadre - 1 + (squadre % 2)) * gironi
 }

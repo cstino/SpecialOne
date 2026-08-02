@@ -25,6 +25,7 @@ type Proposta = {
 
 type Giocatore = {
   id: number
+  player_id: number
   team_id: number
   overall: number
   eta: number
@@ -39,11 +40,37 @@ type Asta = {
   player_id: number
   ingaggio_teorico: number
   stato: 'aperta' | 'assegnata' | 'deserta'
+  origine: 'estrazione' | 'spin_offseason' | 'archivio'
   vincitore_team_id: number | null
   ingaggio_finale: number | null
 }
 
-type Anagrafica = { nome: string; ruolo: string; overall: number; eta: number }
+type MacroRuolo = 'ALL' | 'GK' | 'DEF' | 'MID' | 'ATT'
+type Anagrafica = {
+  nome: string
+  club: string
+  ruolo: string
+  posizioni: string[]
+  overall: number
+  eta: number
+  foto_url: string | null
+  foto_firmata?: string
+}
+type SpinOffseason = {
+  id: number
+  player_id: number
+  stato: 'proposto' | 'ingaggiato' | 'asta'
+  ingaggio: number
+  nome: string
+  club: string
+  ruolo: string
+  overall: number
+  eta: number
+  foto_url?: string | null
+  foto_firmata?: string
+}
+type StatoSpinOffseason = { attivo: boolean; rimasti: number; usati: number; spin: SpinOffseason[] }
+type AnimazioneSpin = { fase: 'giro' | 'reveal'; nome: string; overall?: number; ruolo?: string; foto?: string }
 
 // Il mercato apre alle 07:00 e chiude alle 21:00 (design §9.1, orario deciso
 // il 2 agosto 2026). Qui serve solo a non far comporre una proposta che il
@@ -62,6 +89,22 @@ function mercatoAperto() {
 
 function milioni(euro: number) {
   return `${(euro / 1_000_000).toFixed(1).replace('.', ',')} M€`
+}
+
+function macroRuolo(posizioni: string[] = []): MacroRuolo {
+  if (posizioni.includes('GK')) return 'GK'
+  if (posizioni.some((r) => ['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(r))) return 'DEF'
+  if (posizioni.some((r) => ['CDM', 'CM', 'CAM', 'LM', 'RM'].includes(r))) return 'MID'
+  if (posizioni.some((r) => ['ST', 'CF', 'LW', 'RW'].includes(r))) return 'ATT'
+  return 'MID'
+}
+
+const MACRO_LABEL: Record<MacroRuolo, string> = {
+  ALL: 'Tutti',
+  GK: 'Portieri',
+  DEF: 'Difensori',
+  MID: 'Centrocampisti',
+  ATT: 'Attaccanti',
 }
 
 const ETICHETTE_STATO: Record<StatoProposta, string> = {
@@ -84,6 +127,8 @@ export function Mercato({ membership, onNavigate }: Props) {
   // Solo le proprie: la RLS non consegna quelle altrui, ed e' il punto.
   const [mieOfferte, setMieOfferte] = useState<Map<number, number>>(new Map())
   const [bozzaOfferta, setBozzaOfferta] = useState<Record<number, string>>({})
+  const [spinOffseason, setSpinOffseason] = useState<StatoSpinOffseason | null>(null)
+  const [animazioneSpin, setAnimazioneSpin] = useState<AnimazioneSpin | null>(null)
   // Offrire impegna il denaro: quello che conta non e' il budget ma cio' che
   // resta dopo aver messo da parte le offerte ancora in gioco.
   const [conti, setConti] = useState<{ disponibile: number; impegnato: number; slot_liberi: number } | null>(null)
@@ -95,27 +140,35 @@ export function Mercato({ membership, onNavigate }: Props) {
   const [offerti, setOfferti] = useState<number[]>([])
   const [conguaglio, setConguaglio] = useState('0')
   const [messaggio, setMessaggio] = useState('')
+  const [filtroRuolo, setFiltroRuolo] = useState<MacroRuolo>('ALL')
+  const [filtroEta, setFiltroEta] = useState<[number, number]>([16, 45])
+  const [filtroIngaggio, setFiltroIngaggio] = useState<[number, number]>([0, 30])
+  const [filtroOverall, setFiltroOverall] = useState<[number, number]>([50, 99])
   const [inCorso, setInCorso] = useState(false)
   const [esito, setEsito] = useState<string | null>(null)
 
   const aperto = mercatoAperto()
+  const mostraListaLegacySvincolati = false
 
-  const carica = useCallback(async () => {
-    setCaricamento(true)
+  const carica = useCallback(async (silenzioso = false) => {
+    if (!silenzioso) setCaricamento(true)
     setErrore(null)
-    const [istanzeRes, proposteRes, asteRes, offerteRes, contiRes] = await Promise.all([
+    const [istanzeRes, proposteRes, asteRes, offerteRes, contiRes, spinRes] = await Promise.all([
       supabase.from('player_instances')
         .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio')
         .eq('league_id', league.id).not('team_id', 'is', null),
       supabase.from('trade_proposals').select('*')
         .eq('league_id', league.id).order('creata_il', { ascending: false }),
       supabase.from('free_agent_auctions')
-        .select('id, giorno, player_id, ingaggio_teorico, stato, vincitore_team_id, ingaggio_finale')
-        .eq('league_id', league.id).order('giorno', { ascending: false }).order('id').limit(60),
+        .select('id, giorno, player_id, ingaggio_teorico, stato, origine, vincitore_team_id, ingaggio_finale')
+        .eq('league_id', league.id).order('giorno', { ascending: false }).order('id').limit(500),
       supabase.from('free_agent_bids').select('auction_id, ingaggio_offerto'),
       supabase.rpc('budget_disponibile', { p_league_id: league.id }),
+      league.fase_carriera === 'offseason'
+        ? supabase.rpc('stato_spin_offseason', { p_league_id: league.id })
+        : Promise.resolve({ data: null, error: null }),
     ])
-    const primoErrore = istanzeRes.error ?? proposteRes.error ?? asteRes.error ?? offerteRes.error
+    const primoErrore = istanzeRes.error ?? proposteRes.error ?? asteRes.error ?? offerteRes.error ?? spinRes.error
     if (primoErrore) { setErrore(primoErrore.message); setCaricamento(false); return }
 
     const istanze = istanzeRes.data ?? []
@@ -125,27 +178,50 @@ export function Mercato({ membership, onNavigate }: Props) {
     const daCercare = [...new Set([
       ...istanze.map((i) => i.player_id),
       ...asteRighe.map((a) => a.player_id),
+      ...((spinRes.data as StatoSpinOffseason | null)?.spin ?? []).map((spin) => spin.player_id),
     ])]
     const { data: anagrafica, error: erroreAnagrafica } = daCercare.length
-      ? await supabase.from('players').select('id, nome, posizioni, overall, eta').in('id', daCercare)
+      ? await supabase.from('players').select('id, nome, club, posizioni, overall, eta, foto_url').in('id', daCercare)
       : { data: [], error: null }
     if (erroreAnagrafica) { setErrore(erroreAnagrafica.message); setCaricamento(false); return }
 
+    const fotoFirmate = await Promise.all((anagrafica ?? [])
+      .filter((p) => p.foto_url)
+      .map(async (p) => {
+        if (p.foto_url?.startsWith('http')) return [p.id, p.foto_url] as const
+        const { data } = await supabase.storage.from('player-photos').createSignedUrl(p.foto_url!, 3600)
+        return [p.id, data?.signedUrl] as const
+      }))
+    const fotoPerId = new Map(fotoFirmate.filter((entry): entry is readonly [number, string] => Boolean(entry[1])))
     const perId = new Map((anagrafica ?? []).map((p) => [p.id, p as
-      { id: number; nome: string; posizioni: string[]; overall: number; eta: number }]))
+      { id: number; nome: string; club: string; posizioni: string[]; overall: number; eta: number; foto_url: string | null }]))
     setProposte((proposteRes.data ?? []) as Proposta[])
     setAste(asteRighe)
     setMieOfferte(new Map((offerteRes.data ?? []).map((o) => [o.auction_id, o.ingaggio_offerto])))
+    const statoSpin = spinRes.data as StatoSpinOffseason | null
+    setSpinOffseason(statoSpin ? {
+      ...statoSpin,
+      spin: statoSpin.spin.map((spin) => ({
+        ...spin,
+        foto_url: perId.get(spin.player_id)?.foto_url ?? null,
+        foto_firmata: fotoPerId.get(spin.player_id),
+      })),
+    } : null)
     // Un errore qui non deve impedire di usare il mercato: e' un indicatore.
     setConti(contiRes.error ? null : contiRes.data as typeof conti)
     setSvincolati(new Map(asteRighe.map((a) => [a.player_id, {
       nome: cognome(perId.get(a.player_id)?.nome ?? '—'),
       ruolo: perId.get(a.player_id)?.posizioni?.[0] ?? '—',
+      club: perId.get(a.player_id)?.club ?? '—',
+      posizioni: perId.get(a.player_id)?.posizioni ?? [],
       overall: perId.get(a.player_id)?.overall ?? 0,
       eta: perId.get(a.player_id)?.eta ?? 0,
+      foto_url: perId.get(a.player_id)?.foto_url ?? null,
+      foto_firmata: fotoPerId.get(a.player_id),
     }])))
     setRose(istanze.map((i) => ({
       id: i.id,
+      player_id: i.player_id,
       team_id: i.team_id as number,
       overall: i.overall_corrente,
       eta: i.eta_corrente,
@@ -185,6 +261,21 @@ export function Mercato({ membership, onNavigate }: Props) {
   // e' l'estrazione piu' recente, e sono quelle le uniche su cui si offre.
   const giornoAste = aste[0]?.giorno ?? null
   const asteDelGiorno = aste.filter((a) => a.giorno === giornoAste)
+  const nuoviDelGiorno = asteDelGiorno.filter((a) => a.origine === 'estrazione')
+  const giocatoriSottoContratto = new Set(rose.map((g) => g.player_id))
+  const archivioSvincolati = Array.from(new Map(aste
+    .filter((a) => !giocatoriSottoContratto.has(a.player_id))
+    .map((a) => [a.player_id, a])).values())
+    .filter((a) => {
+      const g = svincolati.get(a.player_id)
+      if (!g) return false
+      const macro = macroRuolo(g.posizioni)
+      return (filtroRuolo === 'ALL' || macro === filtroRuolo)
+        && g.eta >= filtroEta[0] && g.eta <= filtroEta[1]
+        && g.overall >= filtroOverall[0] && g.overall <= filtroOverall[1]
+        && a.ingaggio_teorico / 1_000_000 >= filtroIngaggio[0]
+        && a.ingaggio_teorico / 1_000_000 <= filtroIngaggio[1]
+    })
 
   async function offri(asta: Asta) {
     const grezzo = bozzaOfferta[asta.id] ?? ''
@@ -193,6 +284,86 @@ export function Mercato({ membership, onNavigate }: Props) {
     await chiama(
       () => supabase.rpc('offri_per_svincolato', { p_auction_id: asta.id, p_ingaggio: valore }),
       'Offerta registrata. Si apre alle 21:00.',
+    )
+  }
+
+  async function offriArchivio(asta: Asta) {
+    const grezzo = bozzaOfferta[asta.id] ?? ''
+    const valore = Math.round(Number(grezzo.replace(',', '.')) * 1_000_000)
+    if (!grezzo || Number.isNaN(valore)) { setEsito('Ingaggio non valido.'); return }
+    await chiama(
+      () => supabase.rpc('offri_per_svincolato_archivio', {
+        p_league_id: league.id,
+        p_player_id: asta.player_id,
+        p_ingaggio: valore,
+      }),
+      'Offerta registrata. Il giocatore rientra nelle aste di oggi.',
+    )
+  }
+
+  async function usaSpin() {
+    if (inCorso || animazioneSpin) return
+    setInCorso(true)
+    setEsito(null)
+    const nomi = [...new Set([
+      ...rose.map((giocatore) => giocatore.nome),
+      ...Array.from(svincolati.values()).map((giocatore) => giocatore.nome),
+    ].filter(Boolean))]
+    const partenza = performance.now()
+    let indice = Math.floor(Math.random() * Math.max(nomi.length, 1))
+    setAnimazioneSpin({ fase: 'giro', nome: nomi[indice] ?? 'Scouting in corso' })
+    const rotazione = window.setInterval(() => {
+      indice = (indice + 1 + Math.floor(Math.random() * 5)) % Math.max(nomi.length, 1)
+      setAnimazioneSpin({ fase: 'giro', nome: nomi[indice] ?? 'Analisi del mercato' })
+    }, 85)
+
+    const risultato = await supabase.rpc('spin_offseason', { p_league_id: league.id })
+    const attesa = Math.max(0, 1750 - (performance.now() - partenza))
+    await new Promise((resolve) => window.setTimeout(resolve, attesa))
+    window.clearInterval(rotazione)
+
+    if (risultato.error) {
+      setAnimazioneSpin(null)
+      setEsito(risultato.error.message)
+      setInCorso(false)
+      return
+    }
+
+    const nuovoStato = risultato.data as StatoSpinOffseason
+    const estratto = nuovoStato.spin.find((spin) => spin.stato === 'proposto')
+    let fotoFirmata: string | undefined
+    let fotoUrl: string | null = null
+    if (estratto) {
+      const { data: giocatore } = await supabase.from('players').select('foto_url').eq('id', estratto.player_id).maybeSingle()
+      fotoUrl = giocatore?.foto_url ?? null
+      if (fotoUrl?.startsWith('http')) fotoFirmata = fotoUrl
+      else if (fotoUrl) {
+        const { data } = await supabase.storage.from('player-photos').createSignedUrl(fotoUrl, 3600)
+        fotoFirmata = data?.signedUrl
+      }
+      setAnimazioneSpin({ fase: 'reveal', nome: estratto.nome, overall: estratto.overall, ruolo: estratto.ruolo, foto: fotoFirmata })
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 850))
+    setSpinOffseason({
+      ...nuovoStato,
+      spin: nuovoStato.spin.map((spin) => spin.id === estratto?.id ? { ...spin, foto_url: fotoUrl, foto_firmata: fotoFirmata } : spin),
+    })
+    setAnimazioneSpin(null)
+    setEsito('Nuovo giocatore estratto.')
+    setInCorso(false)
+  }
+
+  async function ingaggiaSpin(spin: SpinOffseason) {
+    await chiama(
+      () => supabase.rpc('ingaggia_spin_offseason', { p_spin_id: spin.id }),
+      `${cognome(spin.nome)} ingaggiato.`,
+    )
+  }
+
+  async function mandaSpinAlMercato(spin: SpinOffseason) {
+    await chiama(
+      () => supabase.rpc('manda_spin_al_mercato', { p_spin_id: spin.id }),
+      `${cognome(spin.nome)} aggiunto agli svincolati del giorno.`,
     )
   }
 
@@ -225,6 +396,44 @@ export function Mercato({ membership, onNavigate }: Props) {
       'Proposta inviata.',
     )
     setChiesti([]); setOfferti([]); setConguaglio('0'); setMessaggio('')
+  }
+
+  const cardSvincolato = (a: Asta, compatta = false) => {
+    const g = svincolati.get(a.player_id)
+    const mia = a.stato === 'aperta' ? mieOfferte.get(a.id) : undefined
+    const macro = macroRuolo(g?.posizioni ?? [])
+    return <article key={a.id} className={`free-agent-card ${compatta ? 'is-compact' : ''} ${a.stato !== 'aperta' ? 'is-closed' : ''}`}>
+      <div className="free-agent-card__portrait">
+        {g?.foto_firmata ? <img src={g.foto_firmata} alt="" loading="lazy" /> : <span aria-hidden="true">?</span>}
+        <b>{g?.overall ?? '—'}</b>
+      </div>
+      <div className="free-agent-card__body">
+        <header>
+          <span className={`role-pill role-pill--${macro.toLowerCase()}`}>{g?.ruolo ?? '—'}</span>
+          <small>{MACRO_LABEL[macro]}</small>
+        </header>
+        <strong>{g?.nome ?? `#${a.player_id}`}</strong>
+        <p>{g?.club ?? '—'} · {g?.eta ?? '—'} anni · {g?.posizioni?.join(' / ') ?? '—'}</p>
+        <footer>
+          <em>Valore {milioni(a.ingaggio_teorico)}</em>
+          {a.origine === 'spin_offseason' && <i>Spin</i>}
+          {a.stato !== 'aperta' && <i>{a.stato === 'assegnata' ? 'Assegnato' : 'Svincolato storico'}</i>}
+        </footer>
+      </div>
+      <div className="free-agent-card__bid">
+        <input
+          type="text" inputMode="decimal"
+          placeholder={mia ? (mia / 1_000_000).toFixed(1).replace('.', ',') : 'M€'}
+          value={bozzaOfferta[a.id] ?? ''}
+          onChange={(e) => setBozzaOfferta({ ...bozzaOfferta, [a.id]: e.target.value })}
+        />
+        <button className="button button--secondary" type="button"
+          disabled={inCorso || !aperto} onClick={() => void (a.stato === 'aperta' ? offri(a) : offriArchivio(a))}>
+          {mia ? 'Modifica' : a.stato === 'aperta' ? 'Offri' : 'Rioffri'}
+        </button>
+        {mia && <small>Hai offerto {milioni(mia)}</small>}
+      </div>
+    </article>
   }
 
   const listaGiocatori = (
@@ -301,6 +510,47 @@ export function Mercato({ membership, onNavigate }: Props) {
 
       {esito && <p className="notice">{esito}</p>}
 
+      {league.fase_carriera === 'offseason' && spinOffseason?.attivo && <section className="mercato-blocco mercato-spin">
+        <div className="sezione-testa">
+          <div><p className="kicker">Off-season</p><h2>Spin mercato</h2></div>
+          <span>{spinOffseason.rimasti} / 5 rimasti</span>
+        </div>
+        <p className="mercato-nota">
+          Ogni squadra ha 5 occasioni extra: lo spin propone un giocatore libero. Puoi prenderlo subito
+          oppure mandarlo nella lista svincolati, dove tutta la lega puo fare offerta.
+        </p>
+        <div className={`mercato-spin-stage ${animazioneSpin ? 'is-running' : ''}`}>
+        {animazioneSpin
+          ? <div className={`spin-reel spin-reel--${animazioneSpin.fase}`}>
+              <div className="spin-reel__portrait">
+                {animazioneSpin.foto ? <img src={animazioneSpin.foto} alt="" /> : <span aria-hidden="true">S1</span>}
+                {animazioneSpin.overall && <b>{animazioneSpin.overall}</b>}
+              </div>
+              <div><small>{animazioneSpin.fase === 'giro' ? 'DATABASE GIOCATORI' : 'PROFILO TROVATO'}</small><strong>{animazioneSpin.nome}</strong>{animazioneSpin.ruolo && <em>{animazioneSpin.ruolo}</em>}</div>
+              <i aria-hidden="true" />
+            </div>
+          : spinOffseason.spin.filter((spin) => spin.stato === 'proposto').length === 0
+          ? <button className="button button--primary" type="button" disabled={inCorso || spinOffseason.rimasti <= 0} onClick={() => void usaSpin()}>
+              {spinOffseason.rimasti <= 0 ? 'Spin esauriti' : 'Usa uno spin'}
+            </button>
+          : spinOffseason.spin.filter((spin) => spin.stato === 'proposto').map((spin) => <article className="mercato-spin-card" key={spin.id}>
+              <div className="mercato-spin-card__portrait">{spin.foto_firmata ? <img src={spin.foto_firmata} alt="" /> : <span aria-hidden="true">?</span>}<b>{spin.overall}</b></div>
+              <span><strong>{spin.nome}</strong><small>{spin.ruolo} Â· {spin.eta} anni Â· {spin.club}</small></span>
+              <em>{milioni(spin.ingaggio)}</em>
+              <footer>
+                <button className="button button--primary" type="button" disabled={inCorso} onClick={() => void ingaggiaSpin(spin)}>Ingaggia</button>
+                <button className="button button--secondary" type="button" disabled={inCorso} onClick={() => void mandaSpinAlMercato(spin)}>Manda al mercato</button>
+              </footer>
+            </article>)}
+        </div>
+        {spinOffseason.spin.some((spin) => spin.stato !== 'proposto') && <ul className="mercato-spin-log">
+          {spinOffseason.spin.filter((spin) => spin.stato !== 'proposto').slice(0, 5).map((spin) => <li key={spin.id}>
+            <strong>{cognome(spin.nome)}</strong>
+            <span>{spin.stato === 'ingaggiato' ? 'Ingaggiato' : 'Negli svincolati'}</span>
+          </li>)}
+        </ul>}
+      </section>}
+
       {/* ---- Ricevute: la cosa piu' urgente, quindi per prima ---- */}
       <section className="mercato-blocco">
         <div className="sezione-testa"><div><p className="kicker">In arrivo</p><h2>Proposte ricevute</h2></div></div>
@@ -322,6 +572,48 @@ export function Mercato({ membership, onNavigate }: Props) {
             </article>)}
       </section>
 
+      {/* ---- Mercato svincolati: nuovi + archivio filtrabile ---- */}
+      <section className="mercato-blocco mercato-svincolati">
+        <div className="sezione-testa">
+          <div><p className="kicker">Asta a busta chiusa</p><h2>Mercato svincolati</h2></div>
+          <span>{league.fase_carriera === 'offseason' ? '10 per ruolo' : '3 per ruolo'}</span>
+        </div>
+        <p className="mercato-nota">
+          Ogni giorno escono nuovi giocatori bilanciati per ruolo: portieri, difensori, centrocampisti
+          e attaccanti. Offri l'ingaggio annuale: nessuno vede le offerte altrui e alle 21:00 vince
+          l'offerta piu alta sopra la richiesta nascosta. A parita vince chi ha offerto prima.
+        </p>
+
+        <div className="free-agent-daily">
+          <div className="free-agent-heading">
+            <div><p className="kicker">Nuovi oggi</p><h3>{nuoviDelGiorno.length} occasioni</h3></div>
+            <small>{giornoAste ?? 'nessuna estrazione'}</small>
+          </div>
+          {nuoviDelGiorno.length === 0
+            ? <p className="season-empty">Nessuna estrazione ancora. I nuovi svincolati escono ogni giorno alle 07:00.</p>
+            : <div className="free-agent-grid">{nuoviDelGiorno.map((a) => cardSvincolato(a))}</div>}
+        </div>
+
+        <div className="free-agent-archive">
+          <div className="free-agent-heading">
+            <div><p className="kicker">Archivio</p><h3>Tutti gli svincolati</h3></div>
+            <small>{archivioSvincolati.length} filtrati</small>
+          </div>
+          <div className="free-agent-filters">
+            <label><span>Ruolo</span><select value={filtroRuolo} onChange={(e) => setFiltroRuolo(e.target.value as MacroRuolo)}>
+              {(['ALL', 'GK', 'DEF', 'MID', 'ATT'] as MacroRuolo[]).map((r) => <option key={r} value={r}>{MACRO_LABEL[r]}</option>)}
+            </select></label>
+            <RangeFilter label="Eta" value={filtroEta} min={16} max={45} onChange={setFiltroEta} />
+            <RangeFilter label="Ingaggio M€" value={filtroIngaggio} min={0} max={30} onChange={setFiltroIngaggio} />
+            <RangeFilter label="Overall" value={filtroOverall} min={50} max={99} onChange={setFiltroOverall} />
+          </div>
+          {archivioSvincolati.length === 0
+            ? <p className="season-empty">Nessun giocatore con questi filtri.</p>
+            : <div className="free-agent-list">{archivioSvincolati.map((a) => cardSvincolato(a, true))}</div>}
+        </div>
+      </section>
+
+      {mostraListaLegacySvincolati && <>
       {/* ---- Svincolati del giorno: a busta chiusa ---- */}
       <section className="mercato-blocco">
         <div className="sezione-testa"><div><p className="kicker">Asta a busta chiusa</p><h2>Svincolati del giorno</h2></div></div>
@@ -369,6 +661,8 @@ export function Mercato({ membership, onNavigate }: Props) {
               })}
             </ul>}
       </section>
+
+      </>}
 
       {/* ---- Compositore ---- */}
       <section className="mercato-blocco">
@@ -460,4 +754,31 @@ export function Mercato({ membership, onNavigate }: Props) {
       </section>
     </div>}
   </main>
+}
+
+function RangeFilter({ label, value, min, max, onChange }: {
+  label: string
+  value: [number, number]
+  min: number
+  max: number
+  onChange: (value: [number, number]) => void
+}) {
+  const [from, to] = value
+  return <fieldset className="range-filter">
+    <legend>{label}</legend>
+    <input
+      type="number"
+      min={min}
+      max={to}
+      value={from}
+      onChange={(e) => onChange([Math.max(min, Math.min(Number(e.target.value), to)), to])}
+    />
+    <input
+      type="number"
+      min={from}
+      max={max}
+      value={to}
+      onChange={(e) => onChange([from, Math.min(max, Math.max(Number(e.target.value), from))])}
+    />
+  </fieldset>
 }

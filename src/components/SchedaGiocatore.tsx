@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export type StatsStagione = {
   presenze: number
@@ -24,6 +24,7 @@ export type DatiScheda = {
   piede?: string | null
   altezza?: number | null
   condizione?: number
+  infortunatoFinoA?: number
   /** Ingaggio annuo in euro (design §5.1: la scala e' annuale). */
   ingaggio?: number
   attributi: Record<string, number | null>
@@ -33,6 +34,13 @@ type Props = {
   giocatore: DatiScheda
   fotoUrl?: string
   stagione?: StatsStagione
+  azionePericolosa?: {
+    etichetta: string
+    descrizione: string
+    inCorso?: boolean
+    errore?: string | null
+    onConferma: () => void
+  }
   onClose: () => void
 }
 
@@ -58,7 +66,8 @@ function percentuale(parte: number, totale: number) {
   return `${Math.round(parte / totale * 100)}%`
 }
 
-export function SchedaGiocatore({ giocatore, fotoUrl, stagione, onClose }: Props) {
+export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa, onClose }: Props) {
+  const [confermaAperta, setConfermaAperta] = useState(false)
   useEffect(() => {
     const chiudiConEsc = (evento: KeyboardEvent) => { if (evento.key === 'Escape') onClose() }
     document.addEventListener('keydown', chiudiConEsc)
@@ -90,9 +99,20 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, onClose }: Props
         <div><dt>Ruoli</dt><dd>{giocatore.posizioni.join(' · ') || '—'}</dd></div>
         <div><dt>Piede</dt><dd>{giocatore.piede ?? '—'}</dd></div>
         <div><dt>Altezza</dt><dd>{giocatore.altezza ? `${giocatore.altezza} cm` : '—'}</dd></div>
-        {typeof giocatore.condizione === 'number' && <div><dt>Condizione</dt><dd>{giocatore.condizione}%</dd></div>}
         {typeof giocatore.ingaggio === 'number' && <div className="fatto-ingaggio"><dt>Ingaggio</dt><dd>{(giocatore.ingaggio / 1_000_000).toFixed(1)} M€ <small>/ anno</small></dd></div>}
       </dl>
+
+      {typeof giocatore.condizione === 'number' && <section className={`player-modal__fitness ${(giocatore.infortunatoFinoA ?? 0) > 0 ? 'is-injured' : ''}`}>
+        <div>
+          <span>Forma fisica</span>
+          {(giocatore.infortunatoFinoA ?? 0) > 0
+            ? <strong>Infortunato</strong>
+            : <strong>{giocatore.condizione}%</strong>}
+        </div>
+        {(giocatore.infortunatoFinoA ?? 0) > 0
+          ? <p>Rientro previsto tra {giocatore.infortunatoFinoA} {giocatore.infortunatoFinoA === 1 ? 'giornata' : 'giornate'}.</p>
+          : <><div className="player-modal__fitness-bar"><i style={{ width: `${giocatore.condizione}%` }} /></div><p>{giocatore.condizione >= 75 ? 'Pronto per giocare.' : giocatore.condizione >= 55 ? 'Condizione da gestire.' : 'Rischio elevato di sostituzione.'}</p></>}
+      </section>}
 
       {stagione && <div className="player-modal__stats">
         <h3>Stagione</h3>
@@ -127,6 +147,19 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, onClose }: Props
           })}
         </div>
       </div>
+
+      {azionePericolosa && <div className="player-modal__danger">
+        {!confermaAperta
+          ? <button className="button button--danger-ghost" type="button" onClick={() => setConfermaAperta(true)}>{azionePericolosa.etichetta}</button>
+          : <div className="player-modal__confirm">
+              <div><strong>Confermi lo svincolo?</strong><p>{azionePericolosa.descrizione}</p></div>
+              {azionePericolosa.errore && <p className="notice notice--error">{azionePericolosa.errore}</p>}
+              <div>
+                <button className="button button--danger" type="button" disabled={azionePericolosa.inCorso} onClick={azionePericolosa.onConferma}>{azionePericolosa.inCorso ? 'Svincolo…' : 'Svincola definitivamente'}</button>
+                <button className="button button--secondary" type="button" disabled={azionePericolosa.inCorso} onClick={() => setConfermaAperta(false)}>Annulla</button>
+              </div>
+            </div>}
+      </div>}
     </section>
   </div>
 }

@@ -56,7 +56,7 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
     setPending(false)
   }
 
-  if (loading) return <main className="loading-screen"><span className="loading-mark">S1</span><p>Preparo il draft…</p></main>
+  if (loading) return <main className="loading-screen"><img className="loading-mark" src="/specialone-mark.svg" alt="" /><p>Preparo il draft…</p></main>
   if (error && !state) return <main className="fatal-state"><h1>Draft non disponibile</h1><p>{error}</p></main>
 
   const picks = state?.pick_numero ?? 0

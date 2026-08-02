@@ -3,12 +3,15 @@ import type { User } from '@supabase/supabase-js'
 import { formatoStemma, generaUuidV4, preparaStemma } from '../lib/crest'
 import {
   CAMPIONATI,
+  ROSA_MASSIMA,
+  ROSA_MINIMA,
   calcolaGiornateTotali,
   calcolaPartitePerSquadra,
   dataFineStagione,
   normalizzaCodice,
 } from '../lib/league'
 import { supabase } from '../lib/supabase'
+import { STEMMA_SQUADRA_DEFAULT, STEMMI_SQUADRA } from '../lib/teamCrests'
 import type { CrestChoice, RpcResult } from '../types'
 import { CrestPicker } from './CrestPicker'
 
@@ -25,12 +28,21 @@ type TeamFields = {
   crest: CrestChoice
 }
 
-const DEFAULT_CREST: CrestChoice = { type: 'preset', value: 'preset:scudo' }
+type InvitePreview = {
+  league_id: number
+  nome_lega: string
+  posti_disponibili: number
+  fase_carriera?: string
+  stemmi_usati: string[]
+}
 
-function TeamIdentity({ fields, onChange, disabled }: {
+const DEFAULT_CREST: CrestChoice = { type: 'preset', value: STEMMA_SQUADRA_DEFAULT }
+
+function TeamIdentity({ fields, onChange, disabled, disabledCrests = [] }: {
   fields: TeamFields
   onChange: (fields: TeamFields) => void
   disabled: boolean
+  disabledCrests?: string[]
 }) {
   return (
     <div className="team-identity">
@@ -47,7 +59,7 @@ function TeamIdentity({ fields, onChange, disabled }: {
           disabled={disabled}
         />
       </label>
-      <CrestPicker value={fields.crest} onChange={(crest) => onChange({ ...fields, crest })} disabled={disabled} />
+      <CrestPicker value={fields.crest} onChange={(crest) => onChange({ ...fields, crest })} disabled={disabled} disabledValues={disabledCrests} />
     </div>
   )
 }
@@ -77,6 +89,10 @@ async function eliminaStemmaSeOrfano(path: string) {
 
 export function Onboarding({ user, onComplete, onCancel, modoIniziale = 'choose' }: OnboardingProps) {
   const [mode, setMode] = useState<'choose' | 'create' | 'join'>(modoIniziale)
+  const tornaIndietro = () => {
+    if (modoIniziale !== 'choose' && onCancel && mode === modoIniziale) onCancel()
+    else setMode('choose')
+  }
 
   return (
     <main className="app-shell onboarding-shell">
@@ -113,8 +129,8 @@ export function Onboarding({ user, onComplete, onCancel, modoIniziale = 'choose'
         </section>
       )}
 
-      {mode === 'create' && <CreateLeague user={user} onBack={() => setMode('choose')} onComplete={onComplete} />}
-      {mode === 'join' && <JoinLeague user={user} onBack={() => setMode('choose')} onComplete={onComplete} />}
+      {mode === 'create' && <CreateLeague user={user} onBack={tornaIndietro} onComplete={onComplete} />}
+      {mode === 'join' && <JoinLeague user={user} onBack={tornaIndietro} onComplete={onComplete} />}
     </main>
   )
 }
@@ -126,7 +142,6 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
   const [budget, setBudget] = useState(100)
   const [rerolls, setRerolls] = useState(12)
   const [rosterSlots, setRosterSlots] = useState(25)
-  const [minKeepers, setMinKeepers] = useState(3)
   const [competitions, setCompetitions] = useState<string[]>([...CAMPIONATI])
   const [identity, setIdentity] = useState<TeamFields>({ teamName: '', crest: DEFAULT_CREST })
   const [pending, setPending] = useState(false)
@@ -163,7 +178,7 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
         p_budget_iniziale: budget * 1_000_000,
         p_reroll_draft: rerolls,
         p_slot_rosa: rosterSlots,
-        p_portieri_minimi: minKeepers,
+        p_portieri_minimi: 0,
         p_campionati_attivi: competitions,
       })
       if (rpcError) throw rpcError
@@ -204,8 +219,7 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
           <h2>Risorse del draft</h2>
           <RangeField label="Budget iniziale" value={budget} min={50} max={200} step={10} suffix=" M€" onChange={setBudget} disabled={pending} />
           <RangeField label="Reroll" value={rerolls} min={0} max={30} onChange={setRerolls} disabled={pending} />
-          <RangeField label="Slot rosa" value={rosterSlots} min={20} max={30} onChange={setRosterSlots} disabled={pending} />
-          <RangeField label="Portieri minimi" value={minKeepers} min={2} max={4} onChange={setMinKeepers} disabled={pending} />
+          <RangeField label="Slot rosa" value={rosterSlots} min={ROSA_MINIMA} max={ROSA_MASSIMA} onChange={setRosterSlots} disabled={pending} />
         </div>
 
         <fieldset className="form-section competitions" disabled={pending}>
@@ -235,7 +249,7 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
           <div><dt>Partite / squadra</dt><dd>{matches}</dd></div>
           <div><dt>Fine prevista</dt><dd>{dataFineStagione(matchdays)}</dd></div>
         </dl>
-        <p>Una giornata viene simulata ogni notte alle 00:00, ora di Roma.</p>
+        <p>Una giornata viene simulata ogni sera alle 23:00, ora di Roma.</p>
         <button className="button button--light" type="submit" disabled={pending}>
           {pending ? 'Creazione in corso…' : 'Crea lega e squadra'}
         </button>
@@ -246,16 +260,38 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
 
 function JoinLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCancel'> & { onBack: () => void }) {
   const [code, setCode] = useState('')
+  const [step, setStep] = useState<'code' | 'team'>('code')
+  const [preview, setPreview] = useState<InvitePreview | null>(null)
   const [identity, setIdentity] = useState<TeamFields>({ teamName: '', crest: DEFAULT_CREST })
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function submit(event: FormEvent) {
+  async function verifyCode(event: FormEvent) {
     event.preventDefault()
     if (code.length !== 6) {
       setError('Inserisci tutte le 6 lettere del codice invito.')
       return
     }
+    setPending(true)
+    setError(null)
+    const { data, error: rpcError } = await supabase.rpc('anteprima_invito', { p_codice: code })
+    if (rpcError) {
+      setError(rpcError.message)
+      setPending(false)
+      return
+    }
+    const nextPreview = data as InvitePreview
+    setPreview(nextPreview)
+    if (identity.crest.type === 'preset' && nextPreview.stemmi_usati.includes(identity.crest.value)) {
+      const libero = STEMMI_SQUADRA.map((stemma) => `preset:${stemma.id}`).find((value) => !nextPreview.stemmi_usati.includes(value))
+      setIdentity((current) => ({ ...current, crest: { type: 'preset', value: libero ?? STEMMA_SQUADRA_DEFAULT } }))
+    }
+    setStep('team')
+    setPending(false)
+  }
+
+  async function submit(event: FormEvent) {
+    event.preventDefault()
     setPending(true)
     setError(null)
     let uploadedPath: string | null = null
@@ -278,9 +314,9 @@ function JoinLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCance
 
   return (
     <section className="join-stage">
-      <button className="back-button" type="button" onClick={onBack}>← Indietro</button>
-      <div className="join-grid">
-        <div className="join-code-panel">
+      <button className="back-button" type="button" onClick={step === 'team' ? () => { setStep('code'); setPreview(null); setError(null) } : onBack}>← Indietro</button>
+      <div className={`join-grid ${step === 'team' ? 'join-grid--team' : ''}`}>
+        {step === 'code' && <form className="join-code-panel" onSubmit={verifyCode}>
           <p className="kicker">Codice invito</p>
           <h1>Sei convocato.</h1>
           <p>Chiedi all’admin il codice a sei caratteri. Non contiene O, 0, I o 1.</p>
@@ -298,18 +334,22 @@ function JoinLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCance
               required
             />
           </label>
-        </div>
-        <form className="join-team-panel" onSubmit={submit}>
+          {error && <p className="notice notice--error" role="alert">{error}</p>}
+          <button className="button button--primary" type="submit" disabled={pending}>
+            {pending ? 'Controllo codice…' : 'Continua'}
+          </button>
+        </form>}
+        {step === 'team' && <form className="join-team-panel" onSubmit={submit}>
           <div className="form-heading">
             <h2>Registra la squadra</h2>
-            <p>Nome e stemma saranno visibili a tutti i partecipanti della lega.</p>
+            <p>{preview ? `${preview.nome_lega} · ${preview.posti_disponibili} posti disponibili` : 'Nome e stemma saranno visibili a tutti i partecipanti della lega.'}</p>
           </div>
-          <TeamIdentity fields={identity} onChange={setIdentity} disabled={pending} />
+          <TeamIdentity fields={identity} onChange={setIdentity} disabled={pending} disabledCrests={preview?.stemmi_usati ?? []} />
           {error && <p className="notice notice--error" role="alert">{error}</p>}
           <button className="button button--primary" type="submit" disabled={pending}>
             {pending ? 'Ingresso in corso…' : 'Entra nella lega'}
           </button>
-        </form>
+        </form>}
       </div>
     </section>
   )

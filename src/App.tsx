@@ -14,6 +14,7 @@ import { Rosa } from './components/Rosa'
 import { Matches } from './components/Matches'
 import { MatchDetail } from './components/MatchDetail'
 import { Mercato } from './components/Mercato'
+import { Offseason } from './components/Offseason'
 import { SeasonOverview } from './components/SeasonOverview'
 import { Standings } from './components/Standings'
 import { TeamProfile } from './components/TeamProfile'
@@ -53,7 +54,7 @@ export default function App() {
     setActiveLeagueId(legaId)
     setNelMenu(false)
     setViewedTeamId(null)
-    setGameView('overview')
+    setGameView(notifica.dati?.view === 'squad' ? 'squad' : 'overview')
     const partita = notifica.dati?.match_id
     setOpenMatch(typeof partita === 'number' ? { id: partita, from: 'overview' } : null)
   }, [])
@@ -136,9 +137,9 @@ export default function App() {
   if (configurationError) {
     return <main className="fatal-state"><img src="/specialone-mark.svg" alt="" /><h1>Configurazione incompleta</h1><p>{configurationError}</p></main>
   }
-  if (authLoading) return <main className="loading-screen"><span className="loading-mark">S1</span><p>Ingresso in campo…</p></main>
+  if (authLoading) return <main className="loading-screen"><img className="loading-mark" src="/specialone-mark.svg" alt="" /><p>Ingresso in campo…</p></main>
   if (!session) return <AuthScreen />
-  if (dataLoading && memberships.length === 0) return <main className="loading-screen"><span className="loading-mark">S1</span><p>Preparo la distinta…</p></main>
+  if (dataLoading && memberships.length === 0) return <main className="loading-screen"><img className="loading-mark" src="/specialone-mark.svg" alt="" /><p>Preparo la distinta…</p></main>
   if (error) return <main className="fatal-state"><h1>Qualcosa non torna</h1><p>{error}</p><button className="button button--primary" type="button" onClick={() => loadMemberships()}>Riprova</button></main>
   if (showOnboarding || memberships.length === 0) {
     return <Onboarding
@@ -154,7 +155,8 @@ export default function App() {
   function selezionaLega(leagueId: number) {
     setActiveLeagueId(leagueId)
     setNelMenu(false)
-    setGameView('overview')
+    const selected = memberships.find(item => item.league_id === leagueId)
+    setGameView(selected?.league?.stato === 'conclusa' || selected?.league?.fase_carriera === 'offseason' ? 'offseason' : 'overview')
     setOpenMatch(null)
     setViewedTeamId(null)
   }
@@ -210,6 +212,14 @@ export default function App() {
 
   if (active.league?.stato === 'draft') {
     if (gameView === 'squad') return conContesti(<Rosa membership={active} onNavigate={setGameView} />)
+    return conContesti(<Draft user={session.user} membership={active} onNavigate={setGameView} />)
+  }
+
+  if (gameView === 'offseason') {
+    return conContesti(<Offseason user={session.user} membership={active} onNavigate={setGameView} onRefresh={loadMemberships} />)
+  }
+
+  if (active.league?.fase_carriera === 'offseason' && gameView === 'draft') {
     return conContesti(<Draft user={session.user} membership={active} onNavigate={setGameView} />)
   }
 

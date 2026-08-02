@@ -14,6 +14,8 @@ export type League = {
   giornate_totali: number
   stato: 'setup' | 'draft' | 'stagione' | 'conclusa'
   stagione_corrente: number
+  fase_carriera: 'normale' | 'offseason' | 'terminata'
+  offseason_fine: string | null
 }
 
 export type Team = {
@@ -25,6 +27,9 @@ export type Team = {
   budget: number
   reroll_rimasti: number
   ordine_draft: number | null
+  attiva: boolean
+  entrata_stagione: number
+  uscita_stagione: number | null
 }
 
 export type Membership = Team & { league?: League }

@@ -1,17 +1,17 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { rimuoviSfondoStemma } from '../lib/crest'
+import { STEMMI_SQUADRA } from '../lib/teamCrests'
 import type { CrestChoice } from '../types'
 import { Crest } from './Crest'
-
-const PRESET = ['scudo', 'diagonale', 'torre', 'stella', 'quartieri', 'corona'] as const
 
 type CrestPickerProps = {
   value: CrestChoice
   onChange: (value: CrestChoice) => void
   disabled?: boolean
+  disabledValues?: string[]
 }
 
-export function CrestPicker({ value, onChange, disabled }: CrestPickerProps) {
+export function CrestPicker({ value, onChange, disabled, disabledValues = [] }: CrestPickerProps) {
   const inputId = useId()
   const previousPreview = useRef<string | null>(null)
   const [processing, setProcessing] = useState(false)
@@ -41,22 +41,6 @@ export function CrestPicker({ value, onChange, disabled }: CrestPickerProps) {
     <fieldset className="crest-picker" disabled={disabled}>
       <legend>Stemma squadra</legend>
       <div className="crest-grid">
-        {PRESET.map((preset) => {
-          const presetValue = `preset:${preset}`
-          const selected = value.type === 'preset' && value.value === presetValue
-          return (
-            <button
-              className="crest-option"
-              type="button"
-              key={preset}
-              aria-pressed={selected}
-              aria-label={`Scegli stemma ${preset}`}
-              onClick={() => onChange({ type: 'preset', value: presetValue })}
-            >
-              <Crest value={presetValue} />
-            </button>
-          )
-        })}
         <label className="crest-upload" htmlFor={inputId}>
           {value.type === 'upload' || value.type === 'existing' ? (
             <img src={value.previewUrl} alt="Anteprima stemma caricato" />
@@ -65,6 +49,24 @@ export function CrestPicker({ value, onChange, disabled }: CrestPickerProps) {
           )}
           <span className="sr-only">Carica uno stemma personalizzato</span>
         </label>
+        {STEMMI_SQUADRA.map((stemma) => {
+          const presetValue = `preset:${stemma.id}`
+          const selected = value.type === 'preset' && value.value === presetValue
+          const used = disabledValues.includes(presetValue)
+          return (
+            <button
+              className={`crest-option ${used ? 'is-unavailable' : ''}`}
+              type="button"
+              key={stemma.id}
+              aria-pressed={selected}
+              aria-label={used ? `Stemma ${stemma.nome} gia' usato` : `Scegli stemma ${stemma.nome}`}
+              disabled={disabled || used}
+              onClick={() => onChange({ type: 'preset', value: presetValue })}
+            >
+              <Crest value={presetValue} />
+            </button>
+          )
+        })}
         <input
           className="sr-only"
           id={inputId}
@@ -74,7 +76,7 @@ export function CrestPicker({ value, onChange, disabled }: CrestPickerProps) {
         />
       </div>
       {value.type === 'upload' && <button className="crest-background-tool" type="button" disabled={disabled || processing} onClick={removeBackground}>{processing ? 'Rimozione…' : '✦ Rimuovi sfondo'}</button>}
-      <p className="field-help">PNG/JPEG, massimo 2 MB. L’immagine viene ritagliata automaticamente in formato quadrato.</p>
+      <p className="field-help">Scegli uno stemma oppure caricane uno PNG/JPEG, massimo 2 MB. L’immagine personale viene ritagliata automaticamente in formato quadrato.</p>
       {error && <p className="crest-tool-error" role="alert">{error}</p>}
     </fieldset>
   )

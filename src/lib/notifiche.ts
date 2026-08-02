@@ -4,6 +4,7 @@ import { supabase } from './supabase'
 export type TipoNotifica =
   | 'giornata_simulata'
   | 'formazione_mancante'
+  | 'infortunio'
   | 'mercato_proposta'
   | 'mercato_esito'
   | 'mercato_asta'
@@ -23,6 +24,7 @@ export type Notifica = {
 // Quante se ne tengono in memoria. La campanella non e' un archivio: oltre
 // questa soglia si scorre la cronologia della lega, non le notifiche.
 const LIMITE = 30
+let sequenzaCanali = 0
 
 export function useNotifiche(userId: string | undefined) {
   const [notifiche, setNotifiche] = useState<Notifica[]>([])
@@ -53,20 +55,33 @@ export function useNotifiche(userId: string | undefined) {
   // scoprirebbe scaduta.
   useEffect(() => {
     if (!userId) return
-    const canale = supabase
-      .channel(`notifiche:${userId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
-        (payload) => {
-          const nuova = payload.new as Notifica
-          setNotifiche((precedenti) => precedenti.some((n) => n.id === nuova.id)
-            ? precedenti
-            : [nuova, ...precedenti].slice(0, LIMITE))
-        },
-      )
-      .subscribe()
-    return () => { void supabase.removeChannel(canale) }
+    // GameNav monta contemporaneamente la campanella desktop e quella mobile.
+    // Da realtime-js 2.111 channel() riusa un canale con lo stesso topic:
+    // il secondo .on() arriverebbe quindi dopo subscribe() e lancerebbe un
+    // errore sincrono, abbattendo tutta la pagina. Anche StrictMode esegue
+    // setup-cleanup-setup in sviluppo, prima che removeChannel sia terminato.
+    // Ogni effetto usa percio' un topic distinto.
+    const topic = `notifiche:${userId}:${Date.now()}:${++sequenzaCanali}`
+    try {
+      const canale = supabase
+        .channel(topic)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+          (payload) => {
+            const nuova = payload.new as Notifica
+            setNotifiche((precedenti) => precedenti.some((n) => n.id === nuova.id)
+              ? precedenti
+              : [nuova, ...precedenti].slice(0, LIMITE))
+          },
+        )
+        .subscribe()
+      return () => { void supabase.removeChannel(canale) }
+    } catch {
+      // Le notifiche sono accessorie: un errore Realtime non deve mai rendere
+      // inutilizzabile il gioco. Il riallineamento al visibilitychange resta.
+      return
+    }
   }, [userId])
 
   // Rete di sicurezza: se il socket cade mentre il telefono e' in tasca,
@@ -90,7 +105,23 @@ export function useNotifiche(userId: string | undefined) {
     await supabase.rpc('segna_notifiche_lette', { p_ids: ids ?? null })
   }, [userId])
 
-  return { notifiche, nonLette, caricamento, ricarica: carica, segnaLette }
+  const elimina = useCallback(async (id: number) => {
+    if (!userId) return false
+    const precedente = notifiche.find((notifica) => notifica.id === id)
+    setNotifiche((correnti) => correnti.filter((notifica) => notifica.id !== id))
+    const { data, error } = await supabase.rpc('elimina_notifica', { p_notifica_id: id })
+    if (error || !data) {
+      if (precedente) {
+        setNotifiche((correnti) => [...correnti, precedente]
+          .sort((a, b) => b.creata_il.localeCompare(a.creata_il) || b.id - a.id)
+          .slice(0, LIMITE))
+      }
+      return false
+    }
+    return true
+  }, [userId, notifiche])
+
+  return { notifiche, nonLette, caricamento, ricarica: carica, segnaLette, elimina }
 }
 
 const MINUTO = 60_000

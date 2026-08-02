@@ -235,15 +235,59 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     setSaved(false)
     if (!selected) {
       setSelected(location)
-      setOpenZone(location.zone === 'starter' ? 'bench' : 'starter')
+      const player = players.find((item) => item.id === playerAt(location))
+      setOpenZone(player?.infortunato_fino_a && location.zone === 'bench' ? 'tribuna' : location.zone === 'starter' ? 'bench' : 'starter')
       return
     }
     if (selected.zone === location.zone && selected.index === location.index) { setSelected(null); return }
     const firstId = playerAt(selected)
     const secondId = playerAt(location)
+    const firstPlayer = players.find((player) => player.id === firstId)
+    const secondPlayer = players.find((player) => player.id === secondId)
+
+    // Se si sostituisce un titolare infortunato con una riserva sana,
+    // l'infortunato va direttamente in tribuna e lascia libero il suo posto
+    // in panchina: non deve servire un secondo scambio manuale.
+    const injuredStarter = (firstPlayer?.infortunato_fino_a ?? 0) > 0 && selected.zone === 'starter'
+      ? selected
+      : (secondPlayer?.infortunato_fino_a ?? 0) > 0 && location.zone === 'starter'
+        ? location
+        : null
+    const healthyBench = injuredStarter === selected && location.zone === 'bench'
+      ? location
+      : injuredStarter === location && selected.zone === 'bench'
+        ? selected
+        : null
+    if (injuredStarter && healthyBench) {
+      const injuredId = playerAt(injuredStarter)
+      const replacementId = playerAt(healthyBench)
+      const benchReplacement = tribuna
+        .map((id, index) => ({ id, index, player: players.find((item) => item.id === id) }))
+        .filter((item) => (item.player?.infortunato_fino_a ?? 0) === 0)
+        .sort((left, right) => (right.player?.overall_corrente ?? 0) - (left.player?.overall_corrente ?? 0))[0]
+      setTitolari((current) => current.map((value, index) => index === injuredStarter.index ? replacementId : value))
+      setPanchina((current) => benchReplacement
+        ? current.map((value, index) => index === healthyBench.index ? benchReplacement.id : value)
+        : current.filter((_value, index) => index !== healthyBench.index))
+      setTribuna((current) => benchReplacement
+        ? current.map((value, index) => index === benchReplacement.index ? injuredId : value)
+        : current.includes(injuredId) ? current : [...current, injuredId])
+      setSelected(null)
+      setError(null)
+      return
+    }
+
+    const firstDestination = location.zone
+    const secondDestination = selected.zone
+    if (((firstPlayer?.infortunato_fino_a ?? 0) > 0 && firstDestination !== 'tribuna')
+      || ((secondPlayer?.infortunato_fino_a ?? 0) > 0 && secondDestination !== 'tribuna')) {
+      setError('Un giocatore infortunato può essere spostato soltanto in tribuna.')
+      return
+    }
     setPlayerAt(selected, secondId)
     setPlayerAt(location, firstId)
     setSelected(null)
+    setError(null)
   }
 
   function handlePlayerClick(event: ReactMouseEvent<HTMLButtonElement>, location: PlayerLocation, player: Player | undefined) {
@@ -264,6 +308,12 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   async function save() {
     setSaving(true); setSaved(false); setError(null)
     const cleanBench = panchina.filter((id) => !titolari.includes(id)).slice(0, 9)
+    const indisponibili = [...titolari, ...cleanBench].filter((id) => (players.find((player) => player.id === id)?.infortunato_fino_a ?? 0) > 0)
+    if (indisponibili.length) {
+      setError('Sposta tutti i giocatori infortunati in tribuna prima di salvare.')
+      setSaving(false)
+      return
+    }
     const { error: saveError } = await supabase.rpc('salva_formazione', {
       p_league_id: league.id, p_giornata: giornata, p_modulo: modulo,
       p_titolari: titolari, p_panchina: cleanBench, p_tribuna: tribuna,
@@ -281,7 +331,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     setModuleMenuOpen(false)
   }
 
-  if (loading) return <main className="loading-screen"><span className="loading-mark">S1</span><p>Preparo la formazione…</p></main>
+  if (loading) return <main className="loading-screen"><img className="loading-mark" src="/specialone-mark.svg" alt="" /><p>Preparo la formazione…</p></main>
 
   return (
     <main className="app-shell formation-shell">
@@ -352,6 +402,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           piede: detailPlayer.piede,
           altezza: detailPlayer.altezza,
           condizione: detailPlayer.condizione,
+          infortunatoFinoA: detailPlayer.infortunato_fino_a,
           attributi: detailPlayer.attributi,
         }}
         fotoUrl={imageUrls[detailPlayer.id]}

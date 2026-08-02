@@ -72,8 +72,8 @@ Quando servirà:
 | Budget iniziale `B` | 50–200 M€ | 100 M€ |
 | Reroll draft | 0–30 | 12 |
 | Campionati attivi | subset dei 10 | tutti |
-| Slot rosa | 20–30 | 25 |
-| Portieri minimi | 2–4 | 3 |
+| Slot rosa iniziali | 21–30 | 25 |
+| Portieri minimi | rimosso | nessun minimo |
 
 **Partite per squadra** `P = (N − 1) × G`. Con N dispari il sistema genera un turno di riposo per giornata usando il **metodo del cerchio** (una squadra fittizia "riposo" aggiunta per rendere pari il numero, poi ruotata).
 
@@ -130,8 +130,9 @@ Se il vincolo non regge, quel giocatore è **visibile ma non selezionabile**, co
 
 ### 4.5 Vincoli di rosa
 
-- 25 slot totali
-- Minimo 3 portieri
+- Il draft iniziale termina al numero di slot scelto dall'admin (21–30, default 25)
+- Durante la stagione la rosa può variare, ma deve restare sempre tra **21 e 30 giocatori**
+- Nessun minimo portieri: vale solo il limite rosa 21–30. Una squadra può restare senza portieri, assumendosi la penalità tecnica in formazione.
 - Nessun vincolo su difensori/centrocampisti/attaccanti (chi si costruisce una rosa sbilanciata ne paga le conseguenze in campo)
 
 ---
@@ -523,10 +524,9 @@ A piena condizione: 2,5%. A condizione 40: 5,5%. Risultato atteso: ~0,7 infortun
 
 | Orario (Europe/Rome) | Evento |
 |---|---|
-| 00:00 | Simulazione di **una** giornata |
-| 07:00 | Apertura mercato + estrazione 10 svincolati |
+| 07:00 | Apertura mercato + estrazione 12 svincolati (3 per macro-ruolo) |
 | 21:00 | Chiusura mercato + rivelazione buste chiuse + scadenza proposte |
-| 23:00 | Deadline formazioni (poi fallback automatico) |
+| 23:00 | Fallback formazioni non valide + simulazione di **una** giornata |
 
 > **Chiusura spostata dalle 17:00 alle 21:00** — decisione dell'utente, 2 agosto 2026.
 > Vince sulla versione precedente di questa tabella.
@@ -548,7 +548,8 @@ Tre tipi di proposta:
 ```
 budget >= costo_trasferimento + ingaggio_pro_rata_giornate_rimanenti
 ```
-E la rosa deve restare valida (≤ slot massimi, ≥ 3 portieri) per **entrambe** le squadre.
+E la rosa deve restare valida (**21–30 giocatori**)
+per **entrambe** le squadre.
 
 Le proposte scadono alla chiusura del mercato del giorno.
 
@@ -558,7 +559,10 @@ Le proposte scadono alla chiusura del mercato del giorno.
 
 ### 9.4 Svincolati — asta a busta chiusa
 
-Ogni giorno alle 07:00 il sistema estrae **10 giocatori** dal pool disponibile, con vincolo di **almeno 3 giocatori sotto i 20 anni**.
+Ogni giorno alle 07:00 il sistema estrae **12 giocatori** dal pool disponibile: 3 portieri,
+3 difensori, 3 centrocampisti e 3 attaccanti, includendo tutti i rispettivi sottoruoli. I nuovi
+restano evidenziati per un giorno; se non vengono ingaggiati rimangono nell'archivio svincolati e
+possono ricevere nuove offerte nei giorni successivi.
 
 Ogni squadra può fare **una offerta per giocatore**, in ingaggio annuale offerto.
 
@@ -592,7 +596,9 @@ Alla chiusura **le offerte vincenti vengono rivelate** a tutta la lega: chi ha p
 
 ### 9.5 Svincolo
 
-Libera lo slot immediatamente. Nessun rimborso. Il giocatore esce dal monte ingaggi della **stagione successiva** ed entra nel pool svincolati.
+Libera lo slot immediatamente, purché la squadra conservi almeno **21 giocatori** e il
+numero minimo di giocatori. Nessun rimborso. Il giocatore esce dal monte ingaggi della
+**stagione successiva** ed entra nel pool svincolati.
 
 ---
 
@@ -652,7 +658,7 @@ Contratto lungo costa di più ma **blocca l'ingaggio**: legare un 19enne con pot
 
 L'admin può rimuovere squadre e aggiungerne di nuove. Una squadra entrante riceve la dotazione `B` completa e fa un draft di ingresso dal pool svincolati (non dal pool club, che è già stato distribuito).
 
-### 10.6 Off-season — la settimana di preparazione
+### 10.6 Off-season — 24 ore di preparazione
 
 > Aggiunta dell'utente, 2 agosto 2026. Vince su quanto scritto altrove in questa sezione.
 
@@ -666,18 +672,30 @@ Quando una stagione finisce, la lega **non riparte subito**. Si apre un off-seas
 
 Fatta la scelta, l'admin avvia la nuova stagione.
 
-**Secondo: una settimana di tempo prima che la stagione cominci.** È il periodo in cui le squadre
-si organizzano, e contiene tre cose che accadono insieme:
+**Secondo: 24 ore esatte prima che la stagione cominci.** Il timer parte quando l'admin apre
+l'off-season e non può essere saltato manualmente. È il periodo in cui le squadre si organizzano,
+e contiene queste attività contemporanee:
 
 - **I nuovi partecipanti fanno il draft.** *(Vedi la nota sul conflitto, sotto.)*
 - **Le squadre già presenti trattano i rinnovi.** I giocatori presi al draft hanno un contratto di
   **un anno**, quindi alla fine della prima stagione **vanno tutti a rinnovo**. Ciascuno formula la
   propria richiesta di ingaggio (§10.4); la squadra accetta o rifiuta. **Chi viene rifiutato
   finisce fra gli svincolati.**
-- **Il mercato degli svincolati gira al doppio del ritmo**: durante la settimana di off-season il
-  sorteggio giornaliero estrae **20 giocatori invece di 10** (§9.4).
+- **Il mercato degli svincolati accelera**: durante l'off-season il sorteggio giornaliero estrae
+  **10 giocatori per macro-ruolo** — 10 portieri, 10 difensori, 10 centrocampisti e 10 attaccanti.
+- **Ogni squadra riceve 5 spin mercato.** Il giocatore estratto può essere ingaggiato subito;
+  se viene scartato, alimenta il mercato svincolati.
 
-#### Conflitto aperto con §10.5 — da decidere
+Alla scadenza delle 24 ore il server chiude automaticamente l'off-season. I rinnovi ancora senza
+risposta scadono e i relativi giocatori diventano svincolati. Se una squadra è rimasta sotto il
+minimo di **21 giocatori**, il sistema la completa automaticamente scegliendo gli svincolati più
+economici e sostenibili per il suo budget. Non esiste un minimo obbligatorio di portieri.
+
+Il primo calcio d'inizio è fissato alle prime **23:00 Europe/Rome strettamente successive** alla
+scadenza. Quindi un'off-season che termina alle 22:59 gioca alle 23:00 dello stesso giorno; se
+termina alle 23:00 o più tardi, la prima giornata si gioca alle 23:00 del giorno seguente.
+
+#### Ingresso di nuovi partecipanti
 
 L'utente dice che i nuovi partecipanti «effettuano le rollate», cioè lo **spin sui club** come nel
 draft iniziale. §10.5 dice invece che un entrante pesca **dal pool svincolati**, motivandolo con il
@@ -688,20 +706,13 @@ assegna 200, cioè il **3,7%**. Il pool club resta intatto al 96%. Il vero probl
 di equità: un entrante che rolla sui club accede a campioni che i veterani non possono più toccare,
 mentre loro possono solo pescare fra gli scarti. Chi entra dopo sarebbe avvantaggiato.
 
-Le due opzioni sono entrambe difendibili e vanno scelte esplicitamente:
-- **rollate sui club** (versione utente): l'entrante è competitivo da subito, ma è avvantaggiato;
-- **draft dagli svincolati** (versione §10.5): nessun vantaggio, ma chi entra parte molto indietro
-  e rischia di non divertirsi.
+La decisione definitiva è **rollate sui club**: l'entrante costruisce una rosa competitiva con lo
+stesso draft indipendente usato all'inizio. Gli eventuali posti aggiuntivi non occupati alla
+scadenza vengono eliminati e il calendario usa soltanto le squadre realmente attive.
 
-#### Punti non ancora specificati
-
-- Cosa succede ai giocatori di un partecipante **rimosso**: presumibilmente tutti svincolati.
-- Cosa succede se una squadra **non risponde** a un rinnovo entro la settimana: rifiuto tacito
-  (il giocatore se ne va) o accettazione tacita.
-- Se durante la settimana restano attive anche le **trattative fra squadre** (§9.2).
-- Il **budget dell'entrante**: §10.5 gli dà `B` intero. Ma `B` è una dotazione una tantum, e i
-  veterani vivono su un deficit strutturale del 15% (§5.3). Un entrante alla stagione 3 sarebbe
-  quindi più ricco di tutti, e ogni ingresso inietta denaro nuovo nella lega.
+I giocatori di una squadra rimossa diventano svincolati. Le trattative fra squadre restano aperte
+durante l'off-season. Un nuovo partecipante riceve il budget iniziale previsto dalle regole della
+lega, necessario per completare il draft d'ingresso.
 
 ---
 
