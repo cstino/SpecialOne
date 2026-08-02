@@ -34,11 +34,14 @@ export default function App() {
   const [gameView, setGameView] = useState<GameView>('overview')
   const [openMatch, setOpenMatch] = useState<{ id: number; from: GameView } | null>(null)
   const [viewedTeamId, setViewedTeamId] = useState<number | null>(null)
-  const [inLobby, setInLobby] = useState(false)
+  // Si atterra sempre nel menu iniziale: da li' si sceglie in quale lega
+  // entrare, o se crearne una. Entrare d'ufficio nell'ultima lega toglieva
+  // all'utente la scelta, e con piu' leghe era anche la scelta sbagliata.
+  const [nelMenu, setNelMenu] = useState(true)
   const [modoOnboarding, setModoOnboarding] = useState<'choose' | 'create' | 'join'>('choose')
   const [error, setError] = useState<string | null>(null)
 
-  const apriLobby = useCallback(() => setInLobby(true), [])
+  const apriMenu = useCallback(() => setNelMenu(true), [])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -106,7 +109,7 @@ export default function App() {
     setActiveLeagueId(result.league_id)
     setShowOnboarding(false)
     setModoOnboarding('choose')
-    setInLobby(false)
+    setNelMenu(false)
     await loadMemberships()
   }
 
@@ -130,7 +133,7 @@ export default function App() {
 
   function selezionaLega(leagueId: number) {
     setActiveLeagueId(leagueId)
-    setInLobby(false)
+    setNelMenu(false)
     setGameView('overview')
     setOpenMatch(null)
     setViewedTeamId(null)
@@ -141,9 +144,10 @@ export default function App() {
     setShowOnboarding(true)
   }
 
-  // Menu iniziale: si arriva qui dal marchio in alto a sinistra. La Lobby resta
-  // la sala d'attesa della singola lega prima del draft, non la schermata di casa.
-  if (inLobby) {
+  // Menu iniziale: e' la schermata di atterraggio dopo il login, e ci si torna
+  // dal marchio in alto a sinistra. La Lobby resta la sala d'attesa della
+  // singola lega prima del draft, non la schermata di casa.
+  if (nelMenu) {
     return (
       <MenuIniziale
         user={session.user}
@@ -158,13 +162,13 @@ export default function App() {
 
   if (active.league?.stato !== 'draft' && active.league?.stato !== 'stagione') {
     return (
-      <ContestoHome.Provider value={apriLobby}>
+      <ContestoHome.Provider value={apriMenu}>
         <Lobby
           user={session.user}
           membership={active}
           memberships={memberships}
           onSelectLeague={selezionaLega}
-          onNewLeague={apriLobby}
+          onNewLeague={apriMenu}
           onRefresh={loadMemberships}
         />
       </ContestoHome.Provider>
@@ -172,8 +176,8 @@ export default function App() {
   }
 
   if (active.league?.stato === 'draft') {
-    if (gameView === 'squad') return <ContestoHome.Provider value={apriLobby}><Rosa membership={active} onNavigate={setGameView} /></ContestoHome.Provider>
-    return <ContestoHome.Provider value={apriLobby}><Draft user={session.user} membership={active} onNavigate={setGameView} /></ContestoHome.Provider>
+    if (gameView === 'squad') return <ContestoHome.Provider value={apriMenu}><Rosa membership={active} onNavigate={setGameView} /></ContestoHome.Provider>
+    return <ContestoHome.Provider value={apriMenu}><Draft user={session.user} membership={active} onNavigate={setGameView} /></ContestoHome.Provider>
   }
 
   function navigateGame(view: GameView) {
@@ -187,7 +191,7 @@ export default function App() {
     setGameView('team')
   }
   return (
-    <ContestoHome.Provider value={apriLobby}>
+    <ContestoHome.Provider value={apriMenu}>
       {openMatch
         ? <MatchDetail membership={active} matchId={openMatch.id} onBack={() => { setOpenMatch(null); setGameView(openMatch.from) }} onNavigate={navigateGame} onOpenTeam={openTeam} />
         : gameView === 'squad' ? <Formazione membership={active} onNavigate={navigateGame} />
