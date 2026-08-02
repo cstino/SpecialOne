@@ -621,6 +621,22 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
 7. **Push del browser**, sopra la tabella `notifications` che ora esiste. Vedi il limite iOS
    descritto nella sezione delle notifiche.
 
+8. **Off-season** (Fase 3): specificato dall'utente il 2 agosto 2026 e scritto in `design.md`
+   **§10.6**, che vince sul resto della sezione 10. In sintesi: a fine stagione l'admin sceglie fra
+   terminare la lega, rimuovere partecipanti o aggiungerne; poi **una settimana** prima del via, in
+   cui i nuovi fanno il draft, le vecchie squadre trattano i rinnovi (tutti i giocatori presi al
+   draft hanno **un anno** di contratto, quindi vanno tutti a rinnovo insieme) e il sorteggio
+   giornaliero degli svincolati passa da 10 a **20**.
+
+   Due cose da NON dare per risolte, entrambe elencate in §10.6: un **conflitto** su come pesca un
+   nuovo partecipante (rollate sui club, versione utente, contro draft dagli svincolati, versione
+   §10.5) e **quattro punti non specificati** (sorte dei giocatori di un rimosso, silenzio-assenso
+   sui rinnovi, trattative attive o no durante la settimana, budget dell'entrante contro la regola
+   della dotazione una tantum).
+
+   Conseguenza pratica sul lavoro in corso: **le aste svincolati vanno scritte con il numero di
+   estratti come parametro**, non come `10` fisso.
+
 ## Stato UX deciso dall'utente
 
 - Deve sembrare un videogioco manageriale, non un sito minimale.

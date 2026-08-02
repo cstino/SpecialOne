@@ -634,6 +634,57 @@ Contratto lungo costa di più ma **blocca l'ingaggio**: legare un 19enne con pot
 
 L'admin può rimuovere squadre e aggiungerne di nuove. Una squadra entrante riceve la dotazione `B` completa e fa un draft di ingresso dal pool svincolati (non dal pool club, che è già stato distribuito).
 
+### 10.6 Off-season — la settimana di preparazione
+
+> Aggiunta dell'utente, 2 agosto 2026. Vince su quanto scritto altrove in questa sezione.
+
+Quando una stagione finisce, la lega **non riparte subito**. Si apre un off-season in due tempi.
+
+**Primo: la decisione dell'admin.** Tre strade, esclusive:
+
+1. **terminare la lega** — il campionato finisce qui e non ci sono altre stagioni;
+2. **rimuovere uno o più partecipanti**;
+3. **aggiungere nuovi partecipanti**.
+
+Fatta la scelta, l'admin avvia la nuova stagione.
+
+**Secondo: una settimana di tempo prima che la stagione cominci.** È il periodo in cui le squadre
+si organizzano, e contiene tre cose che accadono insieme:
+
+- **I nuovi partecipanti fanno il draft.** *(Vedi la nota sul conflitto, sotto.)*
+- **Le squadre già presenti trattano i rinnovi.** I giocatori presi al draft hanno un contratto di
+  **un anno**, quindi alla fine della prima stagione **vanno tutti a rinnovo**. Ciascuno formula la
+  propria richiesta di ingaggio (§10.4); la squadra accetta o rifiuta. **Chi viene rifiutato
+  finisce fra gli svincolati.**
+- **Il mercato degli svincolati gira al doppio del ritmo**: durante la settimana di off-season il
+  sorteggio giornaliero estrae **20 giocatori invece di 10** (§9.4).
+
+#### Conflitto aperto con §10.5 — da decidere
+
+L'utente dice che i nuovi partecipanti «effettuano le rollate», cioè lo **spin sui club** come nel
+draft iniziale. §10.5 dice invece che un entrante pesca **dal pool svincolati**, motivandolo con il
+fatto che il pool club «è già stato distribuito».
+
+**Quella motivazione non regge ai numeri.** Il dataset ha 5.416 giocatori; una lega da 8 squadre ne
+assegna 200, cioè il **3,7%**. Il pool club resta intatto al 96%. Il vero problema è un altro, ed è
+di equità: un entrante che rolla sui club accede a campioni che i veterani non possono più toccare,
+mentre loro possono solo pescare fra gli scarti. Chi entra dopo sarebbe avvantaggiato.
+
+Le due opzioni sono entrambe difendibili e vanno scelte esplicitamente:
+- **rollate sui club** (versione utente): l'entrante è competitivo da subito, ma è avvantaggiato;
+- **draft dagli svincolati** (versione §10.5): nessun vantaggio, ma chi entra parte molto indietro
+  e rischia di non divertirsi.
+
+#### Punti non ancora specificati
+
+- Cosa succede ai giocatori di un partecipante **rimosso**: presumibilmente tutti svincolati.
+- Cosa succede se una squadra **non risponde** a un rinnovo entro la settimana: rifiuto tacito
+  (il giocatore se ne va) o accettazione tacita.
+- Se durante la settimana restano attive anche le **trattative fra squadre** (§9.2).
+- Il **budget dell'entrante**: §10.5 gli dà `B` intero. Ma `B` è una dotazione una tantum, e i
+  veterani vivono su un deficit strutturale del 15% (§5.3). Un entrante alla stagione 3 sarebbe
+  quindi più ricco di tutti, e ogni ingresso inietta denaro nuovo nella lega.
+
 ---
 
 ## 11. Modello dati (bozza Supabase)
