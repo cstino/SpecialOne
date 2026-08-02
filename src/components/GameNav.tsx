@@ -3,7 +3,7 @@ import { useNotificheContesto, useTornaAllaHome } from '../lib/navigazione'
 import type { League } from '../types'
 import { Notifiche } from './Notifiche'
 
-export type GameView = 'overview' | 'draft' | 'squad' | 'team' | 'matches' | 'table'
+export type GameView = 'overview' | 'draft' | 'squad' | 'team' | 'mercato' | 'matches' | 'table'
 type GameNavProps = { league: League; active: GameView; onNavigate?: (view: GameView) => void }
 
 // Icone disegnate a mano: i glifi Unicode di prima (▦ ♜ ♙ ◆ ◉ ≡) venivano resi dal
@@ -15,6 +15,7 @@ const ICONE: Record<string, ReactNode> = {
   team: <><path d="M12 3 20 6v6.5c0 4.6-3.3 7.7-8 9-4.7-1.3-8-4.4-8-9V6z" /></>,
   matches: <><circle cx="12" cy="12" r="9" /><path d="m12 7 4.3 3.1-1.6 5h-5.4l-1.6-5z" /></>,
   table: <><path d="M5 20V11M12 20V4M19 20v-6" /></>,
+  mercato: <><path d="M4 8.5h12m0 0-3-3m3 3-3 3" /><path d="M20 15.5H8m0 0 3-3m-3 3 3 3" /></>,
 }
 
 function Icona({ nome }: { nome: string }) {
@@ -35,12 +36,19 @@ const seasonItems = [
   ['overview', 'Overview'],
   ['squad', 'Rosa'],
   ['team', 'Squadra'],
+  ['mercato', 'Mercato'],
   ['matches', 'Partite'],
   ['table', 'Classifica'],
 ] as const
 
 export function GameNav({ league, active, onNavigate }: GameNavProps) {
-  const items = league.stato === 'draft' ? draftItems : seasonItems
+  // A campionato concluso il mercato non ha piu' senso: non ci sono giornate
+  // su cui schierare chi si compra, e le RPC lo rifiuterebbero comunque.
+  const items = league.stato === 'draft'
+    ? draftItems
+    : league.stato === 'conclusa'
+      ? seasonItems.filter(([chiave]) => chiave !== 'mercato')
+      : seasonItems
   const tornaAllaHome = useTornaAllaHome()
   const notifiche = useNotificheContesto()
 
@@ -54,7 +62,7 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
     <>
       <aside className="game-sidebar">
         {marchio('desktop')}
-        <div className="game-sidebar__league"><small>LEGA ATTIVA</small><strong>{league.nome}</strong><span>{league.stato === 'draft' ? 'Draft in corso' : `Stagione ${league.stagione_corrente} in corso`}</span>{notifiche && <Notifiche userId={notifiche.userId} onApriNotifica={notifiche.apri} />}</div>
+        <div className="game-sidebar__league"><small>LEGA ATTIVA</small><strong>{league.nome}</strong><span>{league.stato === 'draft' ? 'Draft in corso' : league.stato === 'conclusa' ? `Stagione ${league.stagione_corrente} conclusa` : `Stagione ${league.stagione_corrente} in corso`}</span>{notifiche && <Notifiche userId={notifiche.userId} onApriNotifica={notifiche.apri} />}</div>
         <nav aria-label="Navigazione lega">
           {items.map(([key, label]) => <button className={`game-nav-item ${active === key ? 'is-active' : ''}`} key={key} type="button" onClick={() => onNavigate?.(key)} aria-current={active === key ? 'page' : undefined}><i aria-hidden="true"><Icona nome={key} /></i><span>{label}</span>{key === active && <b />}</button>)}
         </nav>

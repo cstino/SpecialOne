@@ -426,7 +426,31 @@ Uno scambio **cancella le formazioni già salvate** delle giornate non ancora si
 contenevano un giocatore coinvolto, e lo dice nella notifica. Senza, si scenderebbe in campo con
 una scelta del computer al posto della propria.
 
-**Manca la UI**: nessuna schermata di mercato esiste ancora. Il backend è completo e verificato.
+**UI**: `Mercato.tsx`, voce di navigazione fra «Squadra» e «Partite». Contiene, in quest'ordine:
+proposte ricevute (per prime, sono la cosa urgente), compositore di una nuova proposta, proposte
+inviate, log pubblico delle concluse. Il compositore mostra le due rose affiancate e si seleziona
+per tocco; il conguaglio si scrive in M€ ed è con segno. Fuori orario la schermata resta navigabile
+ma il pulsante d'invio è disattivato — la regola vera resta nella RPC, dove non è aggirabile
+cambiando l'orologio del telefono. Squadre e stemmi vengono da `useSeasonData`, che risolve già la
+firma delle URL: rifarla a mano avrebbe prodotto una seconda verità.
+
+La voce «Mercato» **sparisce a campionato concluso**: non ci sono giornate su cui schierare chi si
+compra, e le RPC rifiuterebbero comunque.
+
+### Una lega conclusa non è più scambiata per una lega vuota
+
+Segnalato dall'utente: la lega di prova mostrava «la lega partirà quando l'admin avrà completato i
+posti e aperto il draft» pur avendo 4 squadre su 4. Non mancava nessuno — **quella lega è finita**:
+24 giornate su 24 simulate, stagione 1 conclusa, 100 giocatori assegnati.
+
+La causa era l'instradamento: `App.tsx` mandava allo spogliatoio **tutto ciò che non era `draft`
+né `stagione`**, e lo spogliatoio è scritto per il *prima* del draft. Una lega `conclusa` ci finiva
+dentro e veniva descritta come in attesa di partecipanti. Nella barra laterale lo stesso equivoco
+al contrario: «Stagione 1 in corso», perché `GameNav` trattava come in corso tutto ciò che non era
+draft.
+
+Ora `conclusa` va alle schermate di stagione — classifica, partite e rose restano da guardare — e
+l'etichetta dice «Stagione N conclusa».
 
 ### Il motore non muore più per una formazione stantia
 
@@ -588,9 +612,11 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
    - `transactions` è già append-only con `saldo_dopo`: i trasferimenti ci entrano senza toccare
      nulla. I premi partita vanno normalizzati (design §5.2), mai valori assoluti.
 
-   **Stato**: le **trattative sono fatte lato database** (vedi sopra) e la finestra è stata portata
-   a 07:00–21:00 dall'utente. Restano **la UI delle trattative**, **le aste svincolati** e **lo
-   svincolo**.
+   **Stato**: le **trattative sono fatte, database e interfaccia**, con finestra 07:00–21:00.
+   Restano **le aste svincolati** e **lo svincolo**.
+
+   Per provare il mercato dall'app serve una lega in stato `stagione`: al 2 agosto 2026 non ce ne
+   sono (due in `setup` con una sola squadra, una `conclusa`).
 
 7. **Push del browser**, sopra la tabella `notifications` che ora esiste. Vedi il limite iOS
    descritto nella sezione delle notifiche.

@@ -13,6 +13,7 @@ import { Formazione } from './components/Formazione'
 import { Rosa } from './components/Rosa'
 import { Matches } from './components/Matches'
 import { MatchDetail } from './components/MatchDetail'
+import { Mercato } from './components/Mercato'
 import { SeasonOverview } from './components/SeasonOverview'
 import { Standings } from './components/Standings'
 import { TeamProfile } from './components/TeamProfile'
@@ -188,7 +189,13 @@ export default function App() {
     )
   }
 
-  if (active.league?.stato !== 'draft' && active.league?.stato !== 'stagione') {
+  // Una lega conclusa va alle schermate di stagione, non allo spogliatoio:
+  // il campionato e' finito, ma classifica, partite e rose restano da
+  // guardare. Prima finiva nel ramo della Lobby, che e' scritta per il
+  // PRIMA del draft e diceva «la lega partira' quando l'admin avra'
+  // completato i posti» a un campionato gia' giocato per intero.
+  const legaGiocabile = active.league?.stato === 'stagione' || active.league?.stato === 'conclusa'
+  if (active.league?.stato !== 'draft' && !legaGiocabile) {
     return conContesti(
       <Lobby
         user={session.user}
@@ -221,6 +228,7 @@ export default function App() {
       ? <MatchDetail membership={active} matchId={openMatch.id} onBack={() => { setOpenMatch(null); setGameView(openMatch.from) }} onNavigate={navigateGame} onOpenTeam={openTeam} />
       : gameView === 'squad' ? <Formazione membership={active} onNavigate={navigateGame} />
       : gameView === 'team' ? <TeamProfile membership={active} teamId={viewedTeamId ?? active.id} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'team' })} onTeamUpdated={loadMemberships} />
+      : gameView === 'mercato' ? <Mercato membership={active} onNavigate={navigateGame} />
       : gameView === 'matches' ? <Matches membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'matches' })} onOpenTeam={openTeam} />
       : gameView === 'table' ? <Standings membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
       : <SeasonOverview membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'overview' })} onOpenTeam={openTeam} />,

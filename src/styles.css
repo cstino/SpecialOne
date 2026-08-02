@@ -1205,3 +1205,76 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .game-mobilebar .notifiche__pannello button { width: auto; height: auto; border: 0; border-radius: 10px; background: transparent; font-size: inherit; }
   .game-mobilebar .notifiche__chiudi { width: 28px; height: 28px; border: 1px solid #332c40; border-radius: 50%; font-size: 1.05rem; }
 }
+
+/* ============================================================
+   MERCATO
+   ============================================================ */
+.mercato-finestra { padding: 5px 11px; border: 1px solid #40364e; border-radius: 999px; color: #9791a6; font-size: .68rem; font-weight: 800; letter-spacing: .04em; }
+.mercato-finestra.e-aperto { color: #8fe8b0; border-color: #2c6a45; background: #14301f; }
+
+.mercato-blocco { display: grid; gap: 14px; margin-top: 26px; padding: 20px; border: 1px solid #292536; border-radius: 16px; background: #15141e; }
+.mercato-blocco h3 { margin: 0 0 9px; color: #cfc6e0; font-size: .74rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.mercato-nota { margin: -4px 0 0; color: #7f7789; font-size: .72rem; line-height: 1.5; }
+
+/* --- Scelta della squadra con cui trattare --- */
+.mercato-scelta-squadra { display: flex; flex-wrap: wrap; gap: 9px; }
+.mercato-scelta-squadra button { display: flex; align-items: center; gap: 9px; padding: 8px 13px 8px 9px; border: 1px solid #332c40; border-radius: 12px; color: #d5cce4; background: #1b1826; font-family: inherit; font-size: .8rem; font-weight: 750; cursor: pointer; transition: border-color .16s ease, background .16s ease; }
+.mercato-scelta-squadra button:hover { border-color: #7a45c0; }
+.mercato-scelta-squadra button.is-scelto { color: #fff; border-color: #9b4cff; background: linear-gradient(135deg, #40208a, #26134f); }
+.mercato-scelta-squadra .crest { width: 26px; }
+
+/* --- Le due rose affiancate --- */
+.mercato-colonne { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.mercato-rosa { max-height: 340px; margin: 0; padding: 0; display: grid; gap: 4px; list-style: none; overflow-y: auto; }
+.mercato-rosa button { width: 100%; display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: center; gap: 9px; padding: 7px 9px; border: 1px solid transparent; border-radius: 9px; color: #d5cce4; background: #1b1826; font-family: inherit; text-align: left; cursor: pointer; }
+.mercato-rosa button:hover { border-color: #4a3d63; }
+.mercato-rosa button.is-scelto { border-color: #9b4cff; background: linear-gradient(135deg, #3a1c7d, #23113f); }
+.mercato-rosa b { display: grid; place-items: center; height: 26px; border-radius: 7px; color: #e8d9ff; background: #2e2444; font-size: .74rem; font-weight: 900; }
+.mercato-rosa button.is-scelto b { color: #fff; background: #6c2fc4; }
+.mercato-rosa span { min-width: 0; display: grid; gap: 1px; }
+.mercato-rosa strong { overflow: hidden; font-size: .78rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.mercato-rosa small { color: #877e97; font-size: .64rem; }
+.mercato-rosa em { color: #9b92ac; font-size: .66rem; font-style: normal; white-space: nowrap; }
+
+/* --- Conguaglio e messaggio --- */
+.mercato-conguaglio-riga { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 13px; }
+.mercato-conguaglio-riga label { display: grid; gap: 5px; }
+.mercato-conguaglio-riga label > span { color: #cfc6e0; font-size: .72rem; font-weight: 800; }
+.mercato-conguaglio-riga small { color: #7f7789; font-size: .64rem; }
+
+/* --- Card di una proposta --- */
+.mercato-card { display: grid; gap: 12px; padding: 15px; border: 1px solid #2d2739; border-radius: 13px; background: #1a1825; }
+.mercato-card > header { display: flex; align-items: center; gap: 10px; }
+.mercato-card > header .crest { width: 28px; }
+.mercato-card > header strong { font-size: .86rem; }
+.mercato-card > footer { display: flex; flex-wrap: wrap; gap: 9px; }
+.mercato-card > footer .button { flex: 1; min-width: 130px; }
+
+.mercato-scambio { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 12px; border-radius: 10px; background: #14121c; }
+.mercato-scambio > div { min-width: 0; display: grid; gap: 3px; }
+.mercato-scambio small { color: #7f7789; font-size: .62rem; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+.mercato-scambio span { overflow: hidden; color: #e6dff3; font-size: .78rem; font-weight: 750; text-overflow: ellipsis; }
+.mercato-scambio i { color: #9b6cff; font-size: 1.1rem; font-style: normal; }
+.mercato-nessuno { color: #6c6579 !important; font-style: italic; font-weight: 500 !important; }
+.mercato-conguaglio { margin: 0; color: #b9aecb; font-size: .76rem; }
+.mercato-messaggio { margin: 0; color: #8c839c; font-size: .74rem; font-style: italic; }
+
+/* --- Log pubblico --- */
+.mercato-log { margin: 0; padding: 0; display: grid; gap: 6px; list-style: none; }
+.mercato-log li { display: grid; grid-template-columns: auto auto auto 1fr auto; align-items: center; gap: 9px; padding: 10px 12px; border-radius: 10px; background: #1a1825; }
+.mercato-log strong { font-size: .78rem; white-space: nowrap; }
+.mercato-log i { color: #9b6cff; font-style: normal; }
+.mercato-log span { min-width: 0; overflow: hidden; color: #8c839c; font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
+.mercato-log em { color: #7fe0a4; font-size: .64rem; font-style: normal; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; }
+
+@media (max-width: 780px) {
+  .mercato-colonne { grid-template-columns: 1fr; }
+  .mercato-conguaglio-riga { grid-template-columns: 1fr; }
+  .mercato-blocco { padding: 15px; }
+  .mercato-rosa { max-height: 280px; }
+  /* Il log a cinque colonne su un telefono diventa illeggibile: le due
+     squadre sopra, il dettaglio sotto. */
+  .mercato-log li { grid-template-columns: auto auto 1fr; }
+  .mercato-log span { grid-column: 1 / -1; white-space: normal; }
+  .mercato-finestra { display: none; }
+}
