@@ -437,6 +437,39 @@ firma delle URL: rifarla a mano avrebbe prodotto una seconda verità.
 La voce «Mercato» **sparisce a campionato concluso**: non ci sono giornate su cui schierare chi si
 compra, e le RPC rifiuterebbero comunque.
 
+### Mercato — aste a busta chiusa sugli svincolati (design §9.4)
+
+Estrazione alle 07:00, risoluzione alle 21:00, entrambe con la solita forma: job ogni ora, la
+funzione decide se a Roma è l'ora giusta.
+
+**La soglia non è in `public`.** La RLS filtra le righe, non le colonne: se la soglia stesse in
+`free_agent_auctions`, chiunque possa leggere l'asta la leggerebbe e offrirebbe un euro sopra. Sta
+in `private.auction_thresholds`, che PostgREST non espone. Verificato: un partecipante che prova a
+leggerla riceve `permission denied`.
+
+**Busta chiusa**: la policy su `free_agent_bids` consegna solo le proprie offerte, anche dopo la
+risoluzione — ciò che viene rivelato è *chi ha preso chi*, non quanto avevano offerto gli altri.
+Verificato: con 5 offerte in tabella, una squadra ne vede 1.
+
+Il pool è «catalogo meno chi ha già una squadra in questa lega», filtrato per `campionati_attivi`.
+Gli under 20 vengono estratti **per primi** (3 su N): un sorteggio uniforme su migliaia di nomi non
+ne pescherebbe quasi mai tre.
+
+Il tetto di 3 aste vinte al giorno rende l'assegnazione **sequenziale** — chi ha già vinto tre volte
+esce dalla contesa per le aste successive — quindi si procede in ordine di id. Alla risoluzione si
+ricontrollano budget e slot: fra l'offerta e le 21:00 la squadra può aver comprato altrove.
+
+**Il numero di estratti è un parametro**, `private.svincolati_da_estrarre()`: 10 normalmente, 20 con
+`leagues.stato = 'offseason'` (design §10.6). Quello stato non esiste ancora nel CHECK, quindi il
+ramo è per ora inerte — è scritto adesso perché la regola è già decisa e per non lasciare in giro
+un `10` da ritrovare.
+
+**Nota di metodo**: la prima stesura aveva la guardia sull'ora dentro il corpo delle funzioni, il
+che le rendeva non verificabili (a qualunque altra ora restituiscono 0). Una seconda migrazione ha
+separato la guardia dalla logica — `estrai_svincolati_lega(lega, giorno)` e
+`risolvi_aste_giorno(giorno)` — senza cambiare il comportamento in produzione. Se si toccano le
+aste, si provano da lì.
+
 ### Una lega conclusa non è più scambiata per una lega vuota
 
 Segnalato dall'utente: la lega di prova mostrava «la lega partirà quando l'admin avrà completato i
@@ -612,8 +645,9 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
    - `transactions` è già append-only con `saldo_dopo`: i trasferimenti ci entrano senza toccare
      nulla. I premi partita vanno normalizzati (design §5.2), mai valori assoluti.
 
-   **Stato**: le **trattative sono fatte, database e interfaccia**, con finestra 07:00–21:00.
-   Restano **le aste svincolati** e **lo svincolo**.
+   **Stato**: **trattative e aste svincolati sono fatte, database e interfaccia**, con finestra
+   07:00–21:00. Resta **lo svincolo** (design §9.5), che è il pezzo più piccolo: `team_id` è già
+   nullable e serve una RPC che libera lo slot senza rimborso.
 
    Per provare il mercato dall'app serve una lega in stato `stagione`: al 2 agosto 2026 non ce ne
    sono (due in `setup` con una sola squadra, una `conclusa`).

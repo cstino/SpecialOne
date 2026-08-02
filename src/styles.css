@@ -1278,3 +1278,25 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .mercato-log span { grid-column: 1 / -1; white-space: normal; }
   .mercato-finestra { display: none; }
 }
+
+/* --- Aste svincolati --- */
+.mercato-aste { margin: 0; padding: 0; display: grid; gap: 6px; list-style: none; }
+.mercato-aste li { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 11px; padding: 10px 12px; border: 1px solid #262233; border-radius: 11px; background: #1a1825; }
+.mercato-aste li.e-chiusa { opacity: .72; }
+.mercato-aste b { display: grid; place-items: center; height: 28px; border-radius: 8px; color: #e8d9ff; background: #2e2444; font-size: .76rem; font-weight: 900; }
+.mercato-aste > li > span { min-width: 0; display: grid; gap: 2px; }
+.mercato-aste strong { overflow: hidden; font-size: .8rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.mercato-aste small { color: #877e97; font-size: .65rem; }
+.mercato-aste em { color: #9b92ac; font-size: .7rem; font-style: normal; font-weight: 750; text-align: right; }
+.mercato-aste em.e-presa { color: #7fe0a4; }
+.mercato-asta-offerta { display: flex; align-items: center; gap: 7px; }
+.mercato-asta-offerta input { width: 84px; padding: 7px 9px; font-size: .78rem; }
+.mercato-asta-offerta .button { padding: 7px 13px; font-size: .72rem; }
+.mercato-asta-mia { grid-column: 2 / -1; color: #c99cff; font-size: .66rem; font-style: normal; }
+
+@media (max-width: 780px) {
+  .mercato-aste li { grid-template-columns: 30px minmax(0, 1fr); }
+  .mercato-asta-offerta, .mercato-aste > li > em { grid-column: 1 / -1; }
+  .mercato-aste > li > em { text-align: left; }
+  .mercato-asta-offerta input { flex: 1; width: auto; }
+}

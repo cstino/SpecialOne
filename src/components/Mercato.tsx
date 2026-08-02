@@ -33,6 +33,18 @@ type Giocatore = {
   ruolo: string
 }
 
+type Asta = {
+  id: number
+  giorno: string
+  player_id: number
+  ingaggio_teorico: number
+  stato: 'aperta' | 'assegnata' | 'deserta'
+  vincitore_team_id: number | null
+  ingaggio_finale: number | null
+}
+
+type Anagrafica = { nome: string; ruolo: string; overall: number; eta: number }
+
 // Il mercato apre alle 07:00 e chiude alle 21:00 (design §9.1, orario deciso
 // il 2 agosto 2026). Qui serve solo a non far comporre una proposta che il
 // database rifiuterebbe: la regola vera sta nella RPC, dove non e' aggirabile
@@ -67,6 +79,11 @@ export function Mercato({ membership, onNavigate }: Props) {
   const dati = useSeasonData(membership)
   const [rose, setRose] = useState<Giocatore[]>([])
   const [proposte, setProposte] = useState<Proposta[]>([])
+  const [aste, setAste] = useState<Asta[]>([])
+  const [svincolati, setSvincolati] = useState<Map<number, Anagrafica>>(new Map())
+  // Solo le proprie: la RLS non consegna quelle altrui, ed e' il punto.
+  const [mieOfferte, setMieOfferte] = useState<Map<number, number>>(new Map())
+  const [bozzaOfferta, setBozzaOfferta] = useState<Record<number, string>>({})
   const [caricamento, setCaricamento] = useState(true)
   const [errore, setErrore] = useState<string | null>(null)
 
@@ -83,25 +100,44 @@ export function Mercato({ membership, onNavigate }: Props) {
   const carica = useCallback(async () => {
     setCaricamento(true)
     setErrore(null)
-    const [istanzeRes, proposteRes] = await Promise.all([
+    const [istanzeRes, proposteRes, asteRes, offerteRes] = await Promise.all([
       supabase.from('player_instances')
         .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio')
         .eq('league_id', league.id).not('team_id', 'is', null),
       supabase.from('trade_proposals').select('*')
         .eq('league_id', league.id).order('creata_il', { ascending: false }),
+      supabase.from('free_agent_auctions')
+        .select('id, giorno, player_id, ingaggio_teorico, stato, vincitore_team_id, ingaggio_finale')
+        .eq('league_id', league.id).order('giorno', { ascending: false }).order('id').limit(60),
+      supabase.from('free_agent_bids').select('auction_id, ingaggio_offerto'),
     ])
-    const primoErrore = istanzeRes.error ?? proposteRes.error
+    const primoErrore = istanzeRes.error ?? proposteRes.error ?? asteRes.error ?? offerteRes.error
     if (primoErrore) { setErrore(primoErrore.message); setCaricamento(false); return }
 
     const istanze = istanzeRes.data ?? []
-    const { data: anagrafica, error: erroreAnagrafica } = istanze.length
-      ? await supabase.from('players').select('id, nome, posizioni')
-          .in('id', [...new Set(istanze.map((i) => i.player_id))])
+    const asteRighe = (asteRes.data ?? []) as Asta[]
+    // Una sola interrogazione per l'anagrafica: i giocatori delle rose e
+    // quelli all'asta vengono dalla stessa tabella.
+    const daCercare = [...new Set([
+      ...istanze.map((i) => i.player_id),
+      ...asteRighe.map((a) => a.player_id),
+    ])]
+    const { data: anagrafica, error: erroreAnagrafica } = daCercare.length
+      ? await supabase.from('players').select('id, nome, posizioni, overall, eta').in('id', daCercare)
       : { data: [], error: null }
     if (erroreAnagrafica) { setErrore(erroreAnagrafica.message); setCaricamento(false); return }
 
-    const perId = new Map((anagrafica ?? []).map((p) => [p.id, p as { id: number; nome: string; posizioni: string[] }]))
+    const perId = new Map((anagrafica ?? []).map((p) => [p.id, p as
+      { id: number; nome: string; posizioni: string[]; overall: number; eta: number }]))
     setProposte((proposteRes.data ?? []) as Proposta[])
+    setAste(asteRighe)
+    setMieOfferte(new Map((offerteRes.data ?? []).map((o) => [o.auction_id, o.ingaggio_offerto])))
+    setSvincolati(new Map(asteRighe.map((a) => [a.player_id, {
+      nome: cognome(perId.get(a.player_id)?.nome ?? '—'),
+      ruolo: perId.get(a.player_id)?.posizioni?.[0] ?? '—',
+      overall: perId.get(a.player_id)?.overall ?? 0,
+      eta: perId.get(a.player_id)?.eta ?? 0,
+    }])))
     setRose(istanze.map((i) => ({
       id: i.id,
       team_id: i.team_id as number,
@@ -138,6 +174,21 @@ export function Mercato({ membership, onNavigate }: Props) {
   const ricevute = proposte.filter((p) => p.a_team_id === membership.id && p.stato === 'in_attesa')
   const inviate = proposte.filter((p) => p.da_team_id === membership.id && p.stato === 'in_attesa')
   const concluse = proposte.filter((p) => p.stato === 'accettata')
+
+  // Le aste arrivano ordinate per giorno decrescente: la prima riga dice qual
+  // e' l'estrazione piu' recente, e sono quelle le uniche su cui si offre.
+  const giornoAste = aste[0]?.giorno ?? null
+  const asteDelGiorno = aste.filter((a) => a.giorno === giornoAste)
+
+  async function offri(asta: Asta) {
+    const grezzo = bozzaOfferta[asta.id] ?? ''
+    const valore = Math.round(Number(grezzo.replace(',', '.')) * 1_000_000)
+    if (!grezzo || Number.isNaN(valore)) { setEsito('Ingaggio non valido.'); return }
+    await chiama(
+      () => supabase.rpc('offri_per_svincolato', { p_auction_id: asta.id, p_ingaggio: valore }),
+      'Offerta registrata. Si apre alle 21:00.',
+    )
+  }
 
   function alterna(elenco: number[], id: number, imposta: (v: number[]) => void) {
     imposta(elenco.includes(id) ? elenco.filter((x) => x !== id) : [...elenco, id])
@@ -255,6 +306,51 @@ export function Mercato({ membership, onNavigate }: Props) {
                 </button>
               </footer>
             </article>)}
+      </section>
+
+      {/* ---- Svincolati del giorno: a busta chiusa ---- */}
+      <section className="mercato-blocco">
+        <div className="sezione-testa"><div><p className="kicker">Asta a busta chiusa</p><h2>Svincolati del giorno</h2></div></div>
+        <p className="mercato-nota">
+          Offri l’ingaggio annuale che sei disposto a pagare. <strong>Nessuno vede le offerte altrui</strong>,
+          e nemmeno tu vedi quanto chiede davvero il giocatore: se lo sapessi offriresti sempre un euro sopra.
+          Alle 21:00 vince l’offerta più alta che supera la sua richiesta. Massimo 3 aste vinte al giorno.
+        </p>
+
+        {asteDelGiorno.length === 0
+          ? <p className="season-empty">Nessuna estrazione ancora. I nuovi svincolati escono ogni giorno alle 07:00.</p>
+          : <ul className="mercato-aste">
+              {asteDelGiorno.map((a) => {
+                const g = svincolati.get(a.player_id)
+                const mia = mieOfferte.get(a.id)
+                return <li key={a.id} className={a.stato !== 'aperta' ? 'e-chiusa' : ''}>
+                  <b>{g?.overall ?? '—'}</b>
+                  <span>
+                    <strong>{g?.nome ?? `#${a.player_id}`}</strong>
+                    <small>{g?.ruolo} · {g?.eta} anni · valore {milioni(a.ingaggio_teorico)}</small>
+                  </span>
+                  {a.stato === 'aperta'
+                    ? <div className="mercato-asta-offerta">
+                        <input
+                          type="text" inputMode="decimal"
+                          placeholder={mia ? (mia / 1_000_000).toFixed(1).replace('.', ',') : 'M€'}
+                          value={bozzaOfferta[a.id] ?? ''}
+                          onChange={(e) => setBozzaOfferta({ ...bozzaOfferta, [a.id]: e.target.value })}
+                        />
+                        <button className="button button--secondary" type="button"
+                          disabled={inCorso || !aperto} onClick={() => void offri(a)}>
+                          {mia ? 'Modifica' : 'Offri'}
+                        </button>
+                      </div>
+                    : <em className={a.stato === 'assegnata' ? 'e-presa' : ''}>
+                        {a.stato === 'assegnata'
+                          ? `${nomeSquadra(a.vincitore_team_id ?? 0)} · ${milioni(a.ingaggio_finale ?? 0)}`
+                          : 'Nessuno l’ha preso'}
+                      </em>}
+                  {a.stato === 'aperta' && mia && <i className="mercato-asta-mia">Hai offerto {milioni(mia)}</i>}
+                </li>
+              })}
+            </ul>}
       </section>
 
       {/* ---- Compositore ---- */}
