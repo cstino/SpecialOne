@@ -1300,3 +1300,4 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .mercato-aste > li > em { text-align: left; }
   .mercato-asta-offerta input { flex: 1; width: auto; }
 }
+.mercato-impegno { margin: 14px 0 0; padding: 11px 13px; border: 1px solid #4a3a1c; border-radius: 10px; color: #e2cf9a; background: #241d0f; font-size: .75rem; line-height: 1.5; }

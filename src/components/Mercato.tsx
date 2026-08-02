@@ -84,6 +84,9 @@ export function Mercato({ membership, onNavigate }: Props) {
   // Solo le proprie: la RLS non consegna quelle altrui, ed e' il punto.
   const [mieOfferte, setMieOfferte] = useState<Map<number, number>>(new Map())
   const [bozzaOfferta, setBozzaOfferta] = useState<Record<number, string>>({})
+  // Offrire impegna il denaro: quello che conta non e' il budget ma cio' che
+  // resta dopo aver messo da parte le offerte ancora in gioco.
+  const [conti, setConti] = useState<{ disponibile: number; impegnato: number; slot_liberi: number } | null>(null)
   const [caricamento, setCaricamento] = useState(true)
   const [errore, setErrore] = useState<string | null>(null)
 
@@ -100,7 +103,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   const carica = useCallback(async () => {
     setCaricamento(true)
     setErrore(null)
-    const [istanzeRes, proposteRes, asteRes, offerteRes] = await Promise.all([
+    const [istanzeRes, proposteRes, asteRes, offerteRes, contiRes] = await Promise.all([
       supabase.from('player_instances')
         .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio')
         .eq('league_id', league.id).not('team_id', 'is', null),
@@ -110,6 +113,7 @@ export function Mercato({ membership, onNavigate }: Props) {
         .select('id, giorno, player_id, ingaggio_teorico, stato, vincitore_team_id, ingaggio_finale')
         .eq('league_id', league.id).order('giorno', { ascending: false }).order('id').limit(60),
       supabase.from('free_agent_bids').select('auction_id, ingaggio_offerto'),
+      supabase.rpc('budget_disponibile', { p_league_id: league.id }),
     ])
     const primoErrore = istanzeRes.error ?? proposteRes.error ?? asteRes.error ?? offerteRes.error
     if (primoErrore) { setErrore(primoErrore.message); setCaricamento(false); return }
@@ -132,6 +136,8 @@ export function Mercato({ membership, onNavigate }: Props) {
     setProposte((proposteRes.data ?? []) as Proposta[])
     setAste(asteRighe)
     setMieOfferte(new Map((offerteRes.data ?? []).map((o) => [o.auction_id, o.ingaggio_offerto])))
+    // Un errore qui non deve impedire di usare il mercato: e' un indicatore.
+    setConti(contiRes.error ? null : contiRes.data as typeof conti)
     setSvincolati(new Map(asteRighe.map((a) => [a.player_id, {
       nome: cognome(perId.get(a.player_id)?.nome ?? '—'),
       ruolo: perId.get(a.player_id)?.posizioni?.[0] ?? '—',
@@ -282,8 +288,16 @@ export function Mercato({ membership, onNavigate }: Props) {
           <h1>Mercato.</h1>
           <p>Si tratta dalle 07:00 alle 21:00. Le proposte non accettate entro la chiusura scadono.</p>
         </div>
-        <div className="season-total"><strong>{milioni(membership.budget)}</strong><span>budget</span></div>
+        <div className="season-total">
+          <strong>{milioni(conti ? conti.disponibile : membership.budget)}</strong>
+          <span>{conti && conti.impegnato > 0 ? 'disponibile' : 'budget'}</span>
+        </div>
       </section>
+
+      {conti && conti.impegnato > 0 && <p className="mercato-impegno">
+        <strong>{milioni(conti.impegnato)}</strong> sono impegnati in offerte ancora aperte e tornano
+        disponibili se le perdi o le ritiri. Posti liberi in rosa: <strong>{conti.slot_liberi}</strong>.
+      </p>}
 
       {esito && <p className="notice">{esito}</p>}
 
@@ -316,7 +330,8 @@ export function Mercato({ membership, onNavigate }: Props) {
           e nemmeno tu vedi quanto chiede davvero il giocatore: se lo sapessi offriresti sempre un euro sopra.
           Alle 21:00 vince l’offerta più alta che supera la sua richiesta, e <strong>a parità vince chi ha
           offerto prima</strong> — modificare l’offerta fa ripartire il tuo turno. Nessun limite al numero di
-          aste vinte: contano solo il budget e gli slot liberi in rosa.
+          aste vinte: contano solo il budget e gli slot liberi in rosa. <strong>Offrire impegna il
+          denaro</strong> finché l’asta non si chiude, così non puoi promettere più di quanto hai.
         </p>
 
         {asteDelGiorno.length === 0

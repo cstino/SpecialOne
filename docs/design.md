@@ -586,7 +586,9 @@ Alla chiusura **le offerte vincenti vengono rivelate** a tutta la lega: chi ha p
 > altrimenti si piazzerebbe il minimo su tutto alle 07:00 solo per prenotarsi, alzando poi alle
 > 20:59.
 
-**Unico limite rimasto: il budget e gli slot di rosa**, ricontrollati al momento dell'assegnazione. Quando il budget finisce a metà risoluzione, quali aste si vincono dipende dall'ordine in cui vengono processate, cioè dall'ordine di estrazione.
+**Offrire impegna il budget e uno slot di rosa** (decisione dell'utente, 2 agosto 2026). Il denaro non viene scalato per davvero: si sottrae la somma delle offerte ancora in gioco dal budget disponibile. Ritirare l'offerta lo libera all'istante; a risoluzione avvenuta l'asta non è più aperta e sparisce dal conto.
+
+È questo che rende coerente l'assenza di tetto: non potendosi impegnare oltre le proprie possibilità, tutto ciò su cui si è offerto è anche tutto ciò che si può pagare. Senza l'impegno si sarebbe potuto offrire su dieci giocatori avendo i soldi per quattro, e alle 21:00 se ne sarebbero vinti quattro **arbitrari**, scelti dall'ordine di estrazione invece che da una decisione del giocatore.
 
 ### 9.5 Svincolo
 

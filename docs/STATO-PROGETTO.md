@@ -466,11 +466,24 @@ Modificare l'offerta riazzera `free_agent_bids.aggiornata_il` — la colonna si 
 ma veniva già riscritta a ogni modifica, e il nome mentiva. Senza questa regola si piazzerebbe il
 minimo su tutto alle 07:00 solo per prenotare la precedenza, alzando poi alle 20:59.
 
-Restano i due limiti reali — budget e slot di rosa — ricontrollati al momento dell'assegnazione,
-perché fra l'offerta e le 21:00 la squadra può aver comprato altrove. **Dettaglio non deciso**:
-quando il budget finisce a metà risoluzione, quali aste si vincono dipende dall'ordine di
-estrazione, non dalla cifra offerta. Se l'utente preferisce che vincano prima quelle su cui ha
-puntato di più, è un `order by` da cambiare.
+**Offrire impegna budget e slot** (decisione dell'utente, stesso giorno). È ciò che rende coerente
+l'assenza di tetto: non potendosi impegnare oltre le proprie possibilità, tutto ciò su cui si è
+offerto è anche tutto ciò che si può pagare. Senza, si sarebbe potuto offrire su dieci giocatori
+avendo i soldi per quattro, e alle 21:00 se ne sarebbero vinti quattro **arbitrari**, scelti
+dall'ordine di estrazione. Questo chiude il dettaglio che era rimasto aperto.
+
+**Impegno calcolato, non denaro spostato**: `private.budget_impegnato()` e
+`private.slot_impegnati()` sommano le offerte su aste ancora `aperta`; il budget resta intatto.
+Scalare e rimborsare avrebbe richiesto un percorso di rimborso affidabile per ogni asta persa,
+ritirata o deserta, e un solo difetto lì distruggerebbe denaro. Un impegno calcolato si annulla da
+solo. Entrambe le funzioni accettano un `p_escludi`, che serve quando si **sostituisce** la propria
+offerta su una certa asta: quella vecchia non va contata contro la nuova.
+
+`public.budget_disponibile(league_id)` è il wrapper che il browser chiama per sapere quanto gli
+resta; la schermata mostra il disponibile al posto del budget quando c'è qualcosa di impegnato.
+
+I controlli su budget e slot restano anche alla risoluzione, ma ora sono una rete e non la regola:
+l'impegno li ha già garantiti.
 
 **Il numero di estratti è un parametro**, `private.svincolati_da_estrarre()`: 10 normalmente, 20 con
 `leagues.stato = 'offseason'` (design §10.6). Quello stato non esiste ancora nel CHECK, quindi il
