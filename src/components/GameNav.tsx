@@ -3,7 +3,7 @@ import { useNotificheContesto, useTornaAllaHome } from '../lib/navigazione'
 import type { League } from '../types'
 import { Notifiche } from './Notifiche'
 
-export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'matches' | 'table'
+export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'matches' | 'table' | 'admin'
 type GameNavProps = { league: League; active: GameView; onNavigate?: (view: GameView) => void }
 
 // Icone disegnate a mano: i glifi Unicode di prima (▦ ♜ ♙ ◆ ◉ ≡) venivano resi dal
@@ -17,6 +17,7 @@ const ICONE: Record<string, ReactNode> = {
   table: <><path d="M5 20V11M12 20V4M19 20v-6" /></>,
   mercato: <><path d="M4 8.5h12m0 0-3-3m3 3-3 3" /><path d="M20 15.5H8m0 0 3-3m-3 3 3 3" /></>,
   offseason: <><path d="M4 7h16M6 3v4m12-4v4" /><path d="M5 11h14v9H5z" /><path d="m9 15 2 2 4-4" /></>,
+  admin: <><path d="M12 3.5 5 6.5v5c0 4.5 3 7.2 7 9 4-1.8 7-4.5 7-9v-5z" /><path d="m9.2 12 1.9 1.9 3.7-3.9" /></>,
 }
 
 function Icona({ nome }: { nome: string }) {
@@ -61,15 +62,22 @@ const concludedItems = [
 export function GameNav({ league, active, onNavigate }: GameNavProps) {
   // A campionato concluso il mercato non ha piu' senso: non ci sono giornate
   // su cui schierare chi si compra, e le RPC lo rifiuterebbero comunque.
-  const items = league.fase_carriera === 'offseason'
+  const tornaAllaHome = useTornaAllaHome()
+  const notifiche = useNotificheContesto()
+  const baseItems = league.fase_carriera === 'offseason'
     ? offseasonItems
     : league.stato === 'draft'
     ? draftItems
     : league.stato === 'conclusa'
       ? concludedItems
       : seasonItems
-  const tornaAllaHome = useTornaAllaHome()
-  const notifiche = useNotificheContesto()
+  // Pannello admin: fallback manuale se pg_cron non parte (simulare la
+  // giornata, aprire/chiudere il mercato). Solo per l'amministratore della
+  // lega, e solo a stagione avviata: e' li' che servono davvero.
+  const eAdmin = league.admin_id === notifiche?.userId
+  const items = eAdmin && league.stato === 'stagione' && league.fase_carriera !== 'offseason'
+    ? [...baseItems, ['admin', 'Admin'] as const]
+    : baseItems
   const [menuMobileAperto, setMenuMobileAperto] = useState(false)
 
   useEffect(() => {

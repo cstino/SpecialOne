@@ -1,7 +1,37 @@
 # Stato progetto e handoff
 
-Ultimo aggiornamento: **3 agosto 2026**. Questo documento descrive lo stato reale del
+Ultimo aggiornamento: **3 agosto 2026, sera**. Questo documento descrive lo stato reale del
 repository ed è il punto di partenza per il prossimo agent (Claude o Codex).
+
+### Pannello admin — fallback manuale se pg_cron non parte
+
+Decisione utente. Tre azioni, visibili solo all'amministratore della lega (voce "Admin" nel
+menu laterale, solo a `stato='stagione'` e fuori dall'off-season), pensate come rete di
+sicurezza e non come meccanica di gioco:
+
+- **Simula giornata**: chiama direttamente la Edge Function `simula-giornata` dal browser.
+  Non è stato scritto nulla di nuovo lato server — la funzione accettava già il JWT
+  dell'admin (`auth: ['user','secret']`) e verifica da sola che l'utente sia
+  `league.admin_id` quando non è il cron a chiamare. Mancava solo il collegamento frontend.
+- **Apri mercato**: `public.admin_apri_mercato(league_id)`, chiama
+  `private.estrai_svincolati_lega`. Nessun vincolo orario, richiamabile a piacere; una
+  seconda apertura lo stesso giorno è un no-op (guardia già esistente).
+- **Chiudi mercato**: `public.admin_chiudi_mercato(league_id)`, risolve le aste del giorno e
+  fa scadere le proposte in attesa **solo per questa lega**. Ha richiesto due modifiche:
+  `private.risolvi_aste_giorno` non aveva un filtro di lega (il cron risolve tutte le leghe
+  insieme, non aveva bisogno di isolarle) — aggiunto un parametro opzionale
+  `p_league_id default null`, che non cambia il comportamento del cron. La scadenza delle
+  proposte era dentro `chiudi_mercato_giornaliero` senza mai essere stata spezzata dalla
+  guardia oraria come le aste — estratta in `private.scadi_proposte_giorno(p_league_id)` con
+  lo stesso schema di oggi pomeriggio.
+
+Tutte e tre le RPC ricontrollano `auth.uid() = leagues.admin_id` lato server: la voce di menu
+nascosta e il guard in `Admin.tsx` sono comodità, non la difesa vera. Verificato in un
+rollback su una lega reale: un non-admin viene respinto col messaggio giusto, l'admin estrae
+correttamente, una doppia apertura non duplica, la chiusura tocca solo le aste della propria
+lega.
+
+---
 
 ---
 

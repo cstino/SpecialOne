@@ -7,6 +7,7 @@ FORM: direzione “lavagna gara”, settima opzione grounded; staging registrati
 */
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { Admin } from './components/Admin'
 import { AuthScreen } from './components/AuthScreen'
 import { Draft } from './components/Draft'
 import { Formazione } from './components/Formazione'
@@ -241,6 +242,7 @@ export default function App() {
       : gameView === 'mercato' ? <Mercato membership={active} onNavigate={navigateGame} />
       : gameView === 'matches' ? <Matches membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'matches' })} onOpenTeam={openTeam} />
       : gameView === 'table' ? <Standings membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
+      : gameView === 'admin' ? <Admin membership={active} onNavigate={navigateGame} />
       : <SeasonOverview membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'overview' })} onOpenTeam={openTeam} />,
   )
 }
