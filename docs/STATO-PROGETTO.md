@@ -72,6 +72,26 @@ ancora una condizione di ingresso, va cambiata in tutt'e due, o va estratta in u
 condiviso (`private.lega_accetta_ingressi(league)` ad esempio) per non ricadere nello
 stesso errore una terza volta.
 
+**Quarto difetto, stessa sera, più serio dei primi tre**: completare l'ultimo pacchetto del
+proprio draft falliva con «Il numero di squadre attive non coincide con le impostazioni», e
+**la scelta non veniva salvata affatto** — non solo un messaggio fastidioso, una perdita di
+progresso vera. Causa: `draft_scegli_pacchetto` porta la lega a `stato='stagione'` quando
+nessuna `draft_team_state` è più `'in_corso'`. Prima dell'ingresso indipendente questo
+equivaleva sempre a "la lega è piena", perché `avvia_draft` richiedeva tutte le `n_squadre`
+PRIMA di creare qualunque `draft_team_state`. Con l'ingresso indipendente quell'equivalenza
+si è rotta: 5 squadre su 8 possono finire tutte il proprio draft mentre mancano ancora 3
+posti, il vecchio controllo scattava lo stesso, e il trigger `leagues_avvia_stagione`
+(AFTER UPDATE, chiama `private.inizializza_stagione`, che pretende
+`count(teams) = n_squadre`) falliva — annullando per `AFTER UPDATE` **l'intera transazione**,
+comprese le due `player_instances` appena inserite. Corretto in
+`20260803180000_fix_stagione_solo_a_lega_piena.sql` aggiungendo la condizione mancante:
+la stagione parte solo quando la lega è piena *e* tutte hanno finito, non solo quando tutte
+le iscritte hanno finito. Verificato prima con i dati reali della lega segnalata (id 32,
+codice `N2YE6X`): dopo il fix l'utente ha ripetuto la scelta con successo, tutte le 6 squadre
+allora iscritte sono `concluso` e la lega è correttamente rimasta in `draft` in attesa delle
+ultime 2. **Nessun dato perso**: il pick fallito non aveva scritto nulla (rollback completo),
+il giocatore ha solo dovuto riprovare dopo il deploy del fix.
+
 ---
 
 ## ▶ CONSEGNA A CODEX — leggi prima questo
