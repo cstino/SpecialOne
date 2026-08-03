@@ -320,6 +320,7 @@ function JoinLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCance
           <label className="code-field">
             <span className="sr-only">Codice invito</span>
             <input
+              type="text"
               autoCapitalize="characters"
               autoComplete="off"
               inputMode="text"
