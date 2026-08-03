@@ -58,6 +58,10 @@ const NOME_RUOLO: Record<DraftCard['ruolo'], string> = {
   ATT: 'Attaccante',
 }
 
+// Un pacchetto ha sempre esattamente questi 4 ruoli, in quest'ordine: e' la
+// struttura fissa usata anche per mostrare i segnaposto prima di aprirlo.
+const ORDINE_RUOLI_PACCHETTO: DraftCard['ruolo'][] = ['GK', 'DEF', 'MID', 'ATT']
+
 // Nomi decorativi per la fase di rotazione del pacchetto: mai reali, servono
 // solo alla suspense visiva. Cambiano troppo in fretta per essere letti.
 const NOMI_SPIN = [
@@ -82,7 +86,7 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
   const [payload, setPayload] = useState<DraftPacchetto | null>(null)
   const [fotoCarte, setFotoCarte] = useState<Map<number, string>>(new Map())
   const [selezionati, setSelezionati] = useState<number[]>([])
-  const [fase, setFase] = useState<'idle' | 'girando' | 'rivelato'>('idle')
+  const [fase, setFase] = useState<'vuoto' | 'girando' | 'rivelato'>('vuoto')
   const [budgetAttuale, setBudgetAttuale] = useState<number>(membership.budget)
   const [rosaAperta, setRosaAperta] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -115,7 +119,7 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
           setFase('rivelato')
           setFotoCarte(await firmaTutte(dati.carte))
         }
-      } else { setPayload(null); setFase('idle') }
+      } else { setPayload(null); setFase('vuoto') }
       setLoading(false)
     }
     void load()
@@ -176,7 +180,7 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
       p_player_id_2: selezionati[1],
     })
     if (result.error) setError(result.error.message)
-    else { setPayload(null); setFase('idle'); setSelezionati([]); setRefresh((value) => value + 1) }
+    else { setPayload(null); setFase('vuoto'); setSelezionati([]); setRefresh((value) => value + 1) }
     setPending(false)
   }
 
@@ -209,58 +213,71 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
         </button>
       </section>
       {error && <p className="notice notice--error" role="alert">{error}</p>}
-      {state?.stato !== 'concluso' && fase === 'idle' && (
-        <section className="draft-action-panel">
-          <p className="kicker">Il tuo prossimo pacchetto</p>
-          <h2>Apri un pacchetto: 4 carte, una per ruolo.</h2>
-          <p>Ne terrai 2, le altre 2 restano nel pool per tutti — anche per un tuo pacchetto futuro. Non devi aspettare nessuno.</p>
-          <button className="button button--primary" type="button" disabled={pending} onClick={apriPacchetto}>APRI PACCHETTO</button>
-        </section>
-      )}
-      {payload && state?.stato !== 'concluso' && (fase === 'girando' || fase === 'rivelato') && (
+      {state?.stato === 'concluso' ? (
+        <section className="draft-action-panel"><p className="kicker">Draft concluso</p><h2>La rosa è pronta.</h2><p>Il prossimo passaggio sarà la scelta della formazione.</p></section>
+      ) : (
         <section className="draft-club-panel">
           <div className="section-heading-row">
-            <div><p className="kicker">{fase === 'girando' ? 'Apertura in corso…' : 'Pacchetto aperto'}</p><h2>{fase === 'girando' ? 'Scouting il pool attivo.' : 'Scegli 2 carte su 4.'}</h2></div>
-            <button className="button button--secondary" type="button" disabled={pending || fase === 'girando' || payload.reroll_rimasti < 1} onClick={reroll}>Reroll · {payload.reroll_rimasti}</button>
+            <div>
+              <p className="kicker">{fase === 'vuoto' ? 'Pronto per il prossimo spin' : fase === 'girando' ? 'Apertura in corso…' : 'Pacchetto aperto'}</p>
+              <h2>{fase === 'vuoto' ? '4 carte, una per ruolo.' : fase === 'girando' ? 'Scouting il pool attivo.' : 'Scegli 2 carte su 4.'}</h2>
+            </div>
+            {fase === 'vuoto' ? (
+              <button className="draft-spin-viola" type="button" disabled={pending} onClick={apriPacchetto}>SPIN</button>
+            ) : (
+              <button className="draft-reroll-oro" type="button" disabled={pending || fase === 'girando' || (payload?.reroll_rimasti ?? 0) < 1} onClick={reroll}>Reroll · {payload?.reroll_rimasti ?? 0}</button>
+            )}
           </div>
-          {fase === 'rivelato' && <p>Le carte non ingaggiabili sono in grigio: superano il tetto o lascerebbero la rosa insostenibile.</p>}
+          <p>
+            {fase === 'vuoto' && 'Selezionane 2, gli altri sono scartati.'}
+            {fase === 'rivelato' && 'Le carte non ingaggiabili sono in grigio: superano il tetto o lascerebbero la rosa insostenibile.'}
+          </p>
           <div className="draft-pacchetto-grid">
-            {payload.carte.map((carta, indice) => (
-              <div key={carta.ruolo} className={`draft-carta-slot draft-carta-slot--${carta.ruolo.toLowerCase()}`}>
-                <span className={`draft-ruolo-badge draft-ruolo-badge--${carta.ruolo.toLowerCase()}`}>{NOME_RUOLO[carta.ruolo]}</span>
-                {fase === 'girando' ? (
-                  <div className="draft-carta draft-carta--spin">
-                    <div className="draft-carta__foto draft-carta__foto--spin" aria-hidden="true" />
-                    <strong className="draft-carta__nome-spin">{nomiSpin[indice]}</strong>
-                    <span className="draft-carta__ovr-spin">{40 + Math.floor(Math.random() * 55)}</span>
-                  </div>
-                ) : (
-                  <motion.button
-                    type="button"
-                    className={`draft-carta${selezionati.includes(carta.id) ? ' draft-carta--selezionata' : ''}`}
-                    disabled={pending || !carta.ingaggiabile}
-                    onClick={() => toggleCarta(carta)}
-                    initial={{ opacity: 0, scale: 0.88, y: 8 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ type: 'spring', stiffness: 340, damping: 22, delay: indice * 0.08 }}
-                  >
-                    <div className="draft-carta__foto">
-                      {fotoCarte.get(carta.id) ? <img src={fotoCarte.get(carta.id)} alt="" loading="lazy" /> : <span aria-hidden="true">{carta.nome.charAt(0)}</span>}
+            {(fase === 'vuoto' ? ORDINE_RUOLI_PACCHETTO : payload?.carte.map((c) => c.ruolo) ?? ORDINE_RUOLI_PACCHETTO).map((ruolo, indice) => {
+              const carta = payload?.carte.find((c) => c.ruolo === ruolo)
+              return (
+                <div key={ruolo} className={`draft-carta-slot draft-carta-slot--${ruolo.toLowerCase()}`}>
+                  <span className={`draft-ruolo-badge draft-ruolo-badge--${ruolo.toLowerCase()}`}>{NOME_RUOLO[ruolo]}</span>
+                  {fase === 'vuoto' && (
+                    <div className="draft-carta draft-carta--vuota" aria-hidden="true">
+                      <span className="draft-carta__punto-vuoto">?</span>
+                    </div>
+                  )}
+                  {fase === 'girando' && (
+                    <div className="draft-carta draft-carta--spin">
+                      <div className="draft-carta__foto draft-carta__foto--spin" aria-hidden="true" />
+                      <strong className="draft-carta__nome-spin">{nomiSpin[indice]}</strong>
+                      <span className="draft-carta__ovr-spin">{40 + Math.floor(Math.random() * 55)}</span>
+                    </div>
+                  )}
+                  {fase === 'rivelato' && carta && (
+                    <motion.button
+                      type="button"
+                      className={`draft-carta${selezionati.includes(carta.id) ? ' draft-carta--selezionata' : ''}`}
+                      disabled={pending || !carta.ingaggiabile}
+                      onClick={() => toggleCarta(carta)}
+                      initial={{ opacity: 0, scale: 0.88, y: 8 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      transition={{ type: 'spring', stiffness: 340, damping: 22, delay: indice * 0.08 }}
+                    >
+                      <div className="draft-carta__foto">
+                        {fotoCarte.get(carta.id) ? <img src={fotoCarte.get(carta.id)} alt="" loading="lazy" /> : <span aria-hidden="true">{carta.nome.charAt(0)}</span>}
+                      </div>
+                      <div className="draft-carta__info">
+                        <strong>{carta.nome}</strong>
+                        <small>{carta.club} · {carta.eta} anni</small>
+                        <small className="draft-carta__posizioni">{carta.posizioni.join(' · ')}</small>
+                      </div>
                       <b className="draft-carta__ovr">{carta.overall}</b>
-                    </div>
-                    <div className="draft-carta__info">
-                      <strong>{carta.nome}</strong>
-                      <small>{carta.club} · {carta.eta} anni</small>
-                      <small className="draft-carta__posizioni">{carta.posizioni.join(' · ')}</small>
-                    </div>
-                    <div className="draft-carta__wage">
-                      {(carta.ingaggio / 1_000_000).toFixed(1)} M€
-                      <small>{!carta.ingaggiabile ? 'Non sostenibile' : selezionati.includes(carta.id) ? 'Selezionata ✓' : 'Tocca per scegliere'}</small>
-                    </div>
-                  </motion.button>
-                )}
-              </div>
-            ))}
+                      <div className="draft-carta__wage">
+                        {(carta.ingaggio / 1_000_000).toFixed(1)} M€
+                        <small>{!carta.ingaggiabile ? 'Non sostenibile' : selezionati.includes(carta.id) ? 'Selezionata ✓' : 'Tocca per scegliere'}</small>
+                      </div>
+                    </motion.button>
+                  )}
+                </div>
+              )
+            })}
           </div>
           {fase === 'rivelato' && (
             <button className="button button--primary draft-conferma" type="button" disabled={pending || selezionati.length !== 2} onClick={confermaScelta}>
@@ -269,8 +286,7 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
           )}
         </section>
       )}
-      {state?.stato === 'concluso' && <section className="draft-action-panel"><p className="kicker">Draft concluso</p><h2>La rosa è pronta.</h2><p>Il prossimo passaggio sarà la scelta della formazione.</p></section>}
-      {state?.stato !== 'concluso' && fase === 'idle' && !payload && <button className="text-button draft-refresh" type="button" onClick={() => setRefresh((value) => value + 1)}>Aggiorna stato</button>}
+      {state?.stato !== 'concluso' && fase === 'vuoto' && <button className="text-button draft-refresh" type="button" onClick={() => setRefresh((value) => value + 1)}>Aggiorna stato</button>}
       {rosaAperta && <RosaModale league={league} membership={membership} onClose={() => setRosaAperta(false)} />}
     </main>
   )
@@ -335,9 +351,9 @@ function RosaModale({ league, membership, onClose }: { league: League; membershi
                     <div className="modale-rosa__riga" key={g.id}>
                       <div className="draft-carta__foto draft-carta__foto--small">
                         {foto.get(g.id) ? <img src={foto.get(g.id)} alt="" loading="lazy" /> : <span aria-hidden="true">{g.nome.charAt(0)}</span>}
-                        <b>{g.overall}</b>
                       </div>
-                      <div><strong>{g.nome}</strong><small>{g.club} · {g.eta} anni</small></div>
+                      <div><strong>{g.nome}</strong><small>{g.posizioni[0] ?? '—'} · {g.eta} anni</small></div>
+                      <b className="modale-rosa__ovr">{g.overall}</b>
                       <b className="modale-rosa__ingaggio">{(g.ingaggio / 1_000_000).toFixed(1)} M€</b>
                     </div>
                   ))}
