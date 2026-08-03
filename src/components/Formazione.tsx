@@ -196,7 +196,13 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
             ? [['GK'], ['CB'], ['LWB', 'CM', 'RWB'], ['ST']]
             : modulo === '5-3-2'
               ? [['GK'], ['LB', 'CB', 'RB'], ['CM'], ['ST']]
-              : [['GK'], ['LB', 'CB', 'RB', 'LWB', 'RWB'], ['CDM', 'CM', 'CAM', 'LM', 'RM'], ['LW', 'RW', 'ST', 'CF']]
+              : modulo === '4-2-4'
+                // Senza questo caso il modulo cadeva nel gruppo generico
+                // ['LW','RW','ST','CF'], che ordina RW prima di entrambi gli
+                // ST: sul campo comparivano scambiati, con l'ala destra
+                // stretta al centro invece che larga sulla fascia.
+                ? [['GK'], ['LB', 'CB', 'RB'], ['CM'], ['LW', 'ST', 'RW']]
+                : [['GK'], ['LB', 'CB', 'RB', 'LWB', 'RWB'], ['CDM', 'CM', 'CAM', 'LM', 'RM'], ['LW', 'RW', 'ST', 'CF']]
   const rows = rowGroups.map((group) => slots
     .map((slot, index) => ({ slot, index }))
     .filter((item) => group.includes(item.slot))

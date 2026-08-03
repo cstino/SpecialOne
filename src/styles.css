@@ -314,7 +314,7 @@ input:disabled { opacity: 0.65; }
 .join-grid--team { max-width: 720px; margin: 0 auto; }
 .join-code-panel { padding: 2rem 0; }
 .join-code-panel > p:last-of-type { max-width: 42ch; color: var(--ink-muted); }
-.code-field { margin-top: 2.5rem; }
+.code-field { margin-top: 2.5rem; margin-bottom: 2rem; }
 .code-field input {
   height: 78px;
   border: 0;
@@ -502,17 +502,48 @@ input:disabled { opacity: 0.65; }
 .draft-carta--vuota:hover { transform: none; border-color: rgba(178,140,220,.22); }
 .draft-carta__punto-vuoto { color: #6b6178; font-size: 2.5rem; font-weight: 900; }
 
+/* Spin e reroll: stessa sagoma esatta, cambia solo il colore. Prima avevano
+   solo min-height, quindi "Reroll · 4" andando a capo su due righe cresceva
+   in altezza e disallineava il bottone rispetto a "SPIN" su una riga sola.
+   Qui la dimensione e' fissa e il testo non va mai a capo. */
+.draft-reroll-oro, .draft-spin-viola {
+  position: relative;
+  width: 118px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  padding: 0 8px;
+  overflow: hidden;
+  border-radius: 10px;
+  background-size: 280% 100%;
+  white-space: nowrap;
+}
+
 /* Reroll: dorato, con un riempimento a gradiente che scorre di continuo */
-.draft-reroll-oro { position: relative; padding: 12px 22px; min-height: 50px; overflow: hidden; color: #241a04; font-weight: 900; border: 1px solid #8a6a1f; border-radius: 10px; background: linear-gradient(120deg, #f4c15a, #fff3d0 35%, #bd932a 60%, #f4c15a); background-size: 280% 100%; animation: draft-oro-scorre 3.4s linear infinite; box-shadow: 0 8px 20px rgba(189,147,42,.28); }
+.draft-reroll-oro { color: #241a04; border: 1px solid #8a6a1f; background-image: linear-gradient(120deg, #f4c15a, #fff3d0 35%, #bd932a 60%, #f4c15a); animation: draft-oro-scorre 3.4s linear infinite; box-shadow: 0 8px 20px rgba(189,147,42,.28); }
 .draft-reroll-oro:disabled { color: #6b5f4a; opacity: .55; animation-play-state: paused; box-shadow: none; cursor: not-allowed; }
 @keyframes draft-oro-scorre { from { background-position: 0% 0; } to { background-position: 280% 0; } }
 @media (prefers-reduced-motion: reduce) { .draft-reroll-oro { animation: none; } }
 
 /* Spin: gradiente viola brillante animato, stesso principio del reroll dorato */
-.draft-spin-viola { position: relative; padding: 12px 22px; min-height: 50px; overflow: hidden; color: #fff; font-weight: 900; border: 1px solid #a257ed; border-radius: 10px; background: linear-gradient(120deg, #7b2ff0, #c68aff 35%, #9b4cff 60%, #7b2ff0); background-size: 280% 100%; animation: draft-viola-scorre 3.4s linear infinite; box-shadow: 0 8px 22px rgba(139,66,239,.4); }
+.draft-spin-viola { color: #fff; border: 1px solid #a257ed; background-image: linear-gradient(120deg, #7b2ff0, #c68aff 35%, #9b4cff 60%, #7b2ff0); animation: draft-viola-scorre 3.4s linear infinite; box-shadow: 0 8px 22px rgba(139,66,239,.4); }
 .draft-spin-viola:disabled { color: #cabde0; opacity: .5; animation-play-state: paused; box-shadow: none; cursor: not-allowed; }
 @keyframes draft-viola-scorre { from { background-position: 0% 0; } to { background-position: 280% 0; } }
 @media (prefers-reduced-motion: reduce) { .draft-spin-viola { animation: none; } }
+
+/* Etichetta di SPIN e REROLL: un font condensato e spigoloso, non quello del
+   resto dell'interfaccia. Impact/Haettenschweiler esistono solo su Windows;
+   sugli altri sistemi il fallback e' comunque un grottesco condensato in
+   maiuscolo con lo skew a dare il taglio angolare, cosi' l'effetto regge
+   anche senza il font specifico. */
+.draft-azione-testo {
+  display: inline-block;
+  font: 900 1.02rem/1 Impact, Haettenschweiler, "Arial Narrow", "Roboto Condensed", sans-serif;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(0,0,0,.18);
+  transform: skewX(-8deg);
+}
 
 /* Modale rosa (aperta dalla card "la tua squadra") */
 .modale-sfondo { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom)); background: rgba(8,7,13,.72); backdrop-filter: blur(3px); }
@@ -529,14 +560,29 @@ input:disabled { opacity: 0.65; }
 .modale-rosa__reparto-titolo--def { color: #6fc3f2; }
 .modale-rosa__reparto-titolo--mid { color: #5fe0c6; }
 .modale-rosa__reparto-titolo--att { color: #ff9d6e; }
-.modale-rosa__riga { display: grid; grid-template-columns: 44px 1fr 44px auto; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #201c2a; }
-.modale-rosa__riga:last-child { border-bottom: none; }
-.modale-rosa__riga strong, .modale-rosa__riga small { display: block; }
-.modale-rosa__riga small { color: #9792a9; font-size: .74rem; }
-.modale-rosa__ovr { width: 44px; text-align: center; color: #c68aff; font-size: 1.35rem; font-weight: 900; font-variant-numeric: tabular-nums; }
-.modale-rosa__ingaggio { white-space: nowrap; font-weight: 800; }
-.draft-carta__foto--small { position: relative; width: 44px; height: 52px; display: grid; place-items: center; overflow: hidden; border-radius: 9px; background: radial-gradient(circle at 50% 35%, #503767, #17131f 72%); color: #8c7c9b; font-size: 1rem; font-weight: 950; }
-.draft-carta__foto--small img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }
+
+/* Un rettangolo per giocatore: foto a sinistra, nome subito dopo (eta' e
+   ruolo sotto), overall e ingaggio a destra. Flexbox e non grid di
+   proposito: la versione a grid usava `.draft-carta__foto`, che porta con
+   se' un `grid-area: foto` pensato per un altro layout a grid-template-areas
+   (le card del pacchetto) e in questo contesto, senza quelle aree definite,
+   spostava la foto fuori posto invece di lasciarla nella prima colonna. */
+.modale-rosa__riga { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; padding: 10px; border: 1px solid #262133; border-radius: 12px; background: #1a1825; }
+.modale-rosa__riga:last-child { margin-bottom: 0; }
+
+.modale-rosa__foto { flex: 0 0 auto; position: relative; width: 48px; height: 56px; display: grid; place-items: center; overflow: hidden; border-radius: 9px; background: radial-gradient(circle at 50% 35%, #503767, #17131f 72%); color: #8c7c9b; font-size: 1rem; font-weight: 950; }
+.modale-rosa__foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }
+
+/* min-width:0 e' cio' che permette al nome di troncare con l'ellissi invece
+   di spingere il rettangolo a espandersi o di andare a capo. */
+.modale-rosa__nome { flex: 1 1 auto; min-width: 0; display: grid; gap: 2px; }
+.modale-rosa__nome strong, .modale-rosa__nome small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.modale-rosa__nome strong { font-size: .92rem; }
+.modale-rosa__nome small { color: #9792a9; font-size: .74rem; }
+
+.modale-rosa__destra { flex: 0 0 auto; display: grid; justify-items: end; gap: 3px; }
+.modale-rosa__ovr { color: #c68aff; font-size: 1.3rem; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1; }
+.modale-rosa__ingaggio { white-space: nowrap; color: #d8cfe6; font-size: .78rem; font-weight: 800; }
 .crest:is(img) { clip-path: none; border-radius: 12px; background: transparent; }
 
 /* Game UI direction: console manageriale dark, densa e orientata allo stato */
@@ -625,13 +671,10 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .roster-summary span, .roster-summary small { color: #9990aa; }
 .roster-summary strong { font-size: 1.6rem; }
 .roster-panel { width: min(100% - 68px, 1100px); margin: 22px auto; padding: 28px; }
-.roster-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 22px; }
-.roster-card { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 12px; min-height: 74px; padding: 12px; background: #1a1825; border: 1px solid #332c43; border-radius: 10px; }
-.roster-card__ovr { color: #c68aff; font-size: 1.6rem; font-weight: 900; }
-.roster-card div { display: grid; gap: 3px; min-width: 0; }
-.roster-card strong, .roster-card span, .roster-card small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.roster-card span, .roster-card small { color: #9990aa; font-size: .76rem; }
-.roster-card b { color: #d9b6ff; font-size: .8rem; white-space: nowrap; }
+/* La lista dei giocatori dentro .roster-panel usa RosaElenco, quindi le
+   classi .modale-rosa__* (definite piu' sopra): qui non servono regole
+   proprie, .roster-panel resta solo la cornice della pagina. */
+.roster-panel .modale-rosa__lista { margin-top: 18px; padding: 0; }
 .formation-panel--tactical { overflow: hidden; }
 .formation-toolbar { position: relative; margin-bottom: 22px; }
 .formation-module-selector { position: relative; width: max-content; max-width: 100%; }
@@ -809,7 +852,11 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .roster-hero { display: block; padding: 32px 20px 24px; }
   .roster-summary { margin-top: 20px; }
   .roster-panel { width: calc(100% - 32px); padding: 20px; }
-  .roster-cards { grid-template-columns: 1fr; }
+  .modale-rosa__riga { gap: 9px; padding: 8px; }
+  .modale-rosa__foto { width: 42px; height: 50px; }
+  .modale-rosa__nome strong { font-size: .86rem; }
+  .modale-rosa__ovr { font-size: 1.15rem; }
+  .modale-rosa__ingaggio { font-size: .74rem; }
   .formation-module-trigger { min-width: 0; }.formation-module-menu { width: min(360px, calc(100vw - 64px)); grid-template-columns: 1fr 1fr; }
   .formation-swapper { top: 61px; margin-inline: -8px; }.formation-swapper__status { grid-template-columns: 1fr; }.formation-swapper__status small { grid-column: auto; }.formation-zone-tabs button { grid-template-columns: 1fr auto; padding: 7px; }.formation-zone-tabs button i { display: none; }
   .pitch-field { width: 100%; aspect-ratio: .66; }.pitch-grid { inset: 6% 2.5%; }.pitch-row { gap: 1px; }.pitch-slot .lineup-player { width: min(100%, 82px); }.lineup-player__portrait { width: clamp(39px, 11vw, 52px); }.lineup-player__plate { gap: 2px; padding: 4px 3px 4px; }.lineup-player__plate strong { font-size: clamp(.48rem, 1.75vw, .59rem); }.lineup-player__position { font-size: .48rem; min-width: 19px; height: 16px; padding: 0 2px; }.lineup-player__plate b { font-size: .68rem; }.lineup-player__meta { gap: 4px; }.bench-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1640,3 +1687,21 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 
 @keyframes drawer-fade { from { opacity:0; } }
 @keyframes drawer-enter { from { transform:translateX(100%); } }
+
+/* Banner codice invito nella schermata di draft: visibile finche' la lega
+   non e' piena, unico posto dove condividere il codice ora che chi entra
+   comincia subito a draftare invece di passare dalla Lobby. */
+.draft-invito-banner { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 0 auto 24px; padding: 18px 22px; width: min(100% - 32px, 980px); border: 1px solid #4a3a7a; border-radius: 14px; background: linear-gradient(120deg, #241a45, #150f28); }
+.draft-invito-banner .kicker { color: #b79eec; }
+.draft-invito-banner h2 { margin: 4px 0 6px; font-size: 1.05rem; }
+.draft-invito-banner p { margin: 0; color: #9c92b3; font-size: .82rem; }
+.draft-invito-banner > button { flex-shrink: 0; display: grid; justify-items: center; gap: 3px; padding: 10px 20px; border: 1px solid #6c4fc4; border-radius: 12px; background: rgba(139,66,239,.14); cursor: pointer; transition: border-color .16s ease, background .16s ease; }
+.draft-invito-banner > button:hover { border-color: #a257ed; background: rgba(139,66,239,.24); }
+.draft-invito-banner > button small { color: #b79eec; font-size: .6rem; font-weight: 900; letter-spacing: .1em; }
+.draft-invito-banner > button strong { font: 900 1.5rem/1 "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .1em; color: #fff; }
+.draft-invito-banner > button span { color: #9c92b3; font-size: .66rem; }
+
+@media (max-width: 640px) {
+  .draft-invito-banner { flex-direction: column; align-items: stretch; text-align: center; padding: 16px; }
+  .draft-invito-banner > button { padding: 12px; }
+}

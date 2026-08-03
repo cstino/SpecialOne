@@ -316,7 +316,7 @@ function JoinLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCance
         {step === 'code' && <form className="join-code-panel" onSubmit={verifyCode}>
           <p className="kicker">Codice invito</p>
           <h1>Sei convocato.</h1>
-          <p>Chiedi all’admin il codice a sei caratteri. Non contiene O, 0, I o 1.</p>
+          <p>Inserisci il codice fornito dall’admin.</p>
           <label className="code-field">
             <span className="sr-only">Codice invito</span>
             <input

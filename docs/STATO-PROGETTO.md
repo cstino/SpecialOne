@@ -1,32 +1,61 @@
 # Stato progetto e handoff
 
-Ultimo aggiornamento: **2 agosto 2026, sera**. Questo documento descrive lo stato reale del
+Ultimo aggiornamento: **3 agosto 2026**. Questo documento descrive lo stato reale del
 repository ed è il punto di partenza per il prossimo agent (Claude o Codex).
 
 ---
 
-## ▶ NOTA 3 agosto 2026 — lavoro in corso su branch separato
+## ▶ NOTA 3 agosto 2026 — draft a pacchetti in produzione, due correzioni dello stesso giorno
 
-Esiste un branch `pack_draft_exploration` (allineato a `main` alla creazione) con una
-migrazione **scritta e testata ma non applicata al database remoto**:
-`supabase/migrations/20260803120000_draft_pacchetti.sql`, che sostituisce il draft a
-spin-club con un draft a pacchetti (design §4.1, `docs/decisioni-fase1.md` §8). Motivo:
-playtest reale ha mostrato che lo spin-club permette di svuotare un club specifico prima
-che un altro partecipante lo estragga.
+Il branch `pack_draft_exploration` menzionato in una versione precedente di questa nota è
+stato **integralmente unito a `main` e applicato al database remoto** (commit `5b665d5`,
+`04930a5`, poi rifiniture). Il draft a spin-club non esiste più: ogni squadra apre pacchetti
+di 4 carte per macro-ruolo (GK/DEF/MID/ATT) dal pool attivo intero, non da un club, e sceglie
+2 carte su 4. Motivo del cambio: lo spin-club permetteva di svuotare un club specifico prima
+che un altro partecipante lo estraesse — vedi design §4.1 e `docs/decisioni-fase1.md` §8.
 
-Verificata con script transazionali `begin;…rollback;` contro il database remoto (stesso
-metodo descritto piu' sotto in questo documento): apertura pacchetto, reroll, scelta di 2
-carte, scarti non istanziati, completamento dei 12 pacchetti, transizione a "concluso",
-soglia di sostenibilita' con ripescaggio forzato, funzioni vecchie rimosse, percorso di
-ingresso off-season. **Nulla di questo è ancora su `main` né sul database remoto**: se
-riprendi questo lavoro, il prossimo passo è `git checkout pack_draft_exploration` e decidere
-se applicare la migrazione con `db push`.
+**Due difetti reali trovati e corretti oggi**, entrambi mentre si usava davvero il sistema
+(non in un test isolato):
 
-Toccato anche: `src/components/Draft.tsx` (interfaccia a pacchetti), `src/components/Onboarding.tsx`
-(rimossa la configurabilità di `slot_rosa`, ora fisso a 24), `src/styles.css`, `docs/design.md`
-§3.1/§4.1/§4.5, `docs/decisioni-fase1.md` §8, `CLAUDE.md`/`AGENTS.md`. Build e lint frontend
-verdi. Non ancora provato da un utente reale nell'interfaccia, e non ancora verificato con
-`supabase db lint` (richiede la migrazione applicata).
+1. **`draft_scegli_pacchetto` scriveva il pick_numero sbagliato in `draft_picks`.**
+   `draft_picks` ha `UNIQUE (league_id, pick_numero)`: è una numerazione **globale di lega**
+   (lo dimostra il codice off-season, che semina il contatore leggendo
+   `max(draft_picks.pick_numero)+1` su tutta la lega). La funzione di ieri scriveva invece
+   `draft_team_state.pick_numero`, il contatore **per squadra** che riparte da 0 per ognuna.
+   Effetto: la prima squadra a completare il draft in una lega andava benissimo (nessuna
+   collisione, è sola); **la seconda squadra falliva già al primo pacchetto** con una chiave
+   duplicata. Non un caso limite: il caso normale di qualunque lega con più di un
+   partecipante. Corretto in `20260803150000_fix_draft_picks_numerazione_globale.sql`
+   usando `v_global.pick_numero` (già letto e lockato in testa alla funzione), verificato
+   completando 5 squadre in una lega di prova (120 giocatori assegnati, zero collisioni).
+
+2. **Il modulo 4-2-4 mostrava RW e uno dei due ST scambiati sul campo.** Non era il motore
+   (che ordina i giocatori correttamente): `Formazione.tsx` non aveva un caso esplicito per
+   4-2-4 nel raggruppamento in righe della formazione, quindi cadeva nel ramo generico che
+   ordina la linea offensiva come `['LW','RW','ST','CF']` — mette RW prima di entrambi gli
+   ST. Aggiunto un caso dedicato in `src/components/Formazione.tsx` (solo frontend, nessuna
+   migrazione) con l'ordine corretto `['LW','ST','RW']`. Controllati tutti gli altri moduli:
+   nessun altro cade più nel ramo generico.
+
+**Novità dello stesso giorno**: ogni squadra ora **comincia il draft appena entra**, senza
+aspettare che la lega sia piena (`20260803160000_draft_indipendente_dall_ingresso.sql`).
+Prima serviva un `avvia_draft` manuale dell'admin una volta raggiunte tutte le `n_squadre`.
+Design §4.1 diceva già «nessun ordine di turno, ogni squadra pesca per conto proprio, senza
+aspettare le altre»: mancava solo togliere il cancello sull'*inizio*. `crea_lega` ora crea la
+lega direttamente in stato `draft` con `draft_state` + `draft_team_state` per la squadra
+dell'admin; `entra_in_lega` accetta l'ingresso anche a `stato='draft'` (oltre a `'setup'` e
+all'ingresso off-season) e crea `draft_team_state` per il nuovo entrante, stesso pattern già
+usato per l'ingresso off-season. **Retrocompatibile di proposito**: le leghe già ferme in
+`'setup'` (due, di prova) continuano col vecchio flusso — `avvia_draft` non è stato toccato
+né droppato, sarebbe stato un cambiamento distruttivo su dati esistenti per un problema che
+non hanno. Verificato in un rollback: lega creata già in `draft`, admin apre un pacchetto da
+solo (1 squadra su 8), un secondo utente entra a lega quasi vuota ed apre subito un
+pacchetto, entrambi scelgono senza collisione di pick_numero.
+
+Conseguenza UI: chi entra per primo non passa più dalla Lobby (route diretta alla schermata
+di Draft), quindi il codice invito non aveva più un posto dove essere mostrato dopo la
+creazione. Aggiunto un banner in `Draft.tsx`, visibile finché `squadre_iscritte < n_squadre`,
+con lo stesso gesto "tocca per copiare" già usato in Lobby.
 
 ---
 

@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
-import { MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
+import { ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
 import type { League, Membership } from '../types'
 import { GameNav } from './GameNav'
 import type { GameView } from './GameNav'
+import { firmaFoto, RosaElenco, type RosterPlayer } from './RosaElenco'
 
 type DraftTeamState = {
   pick_numero: number
@@ -38,16 +39,6 @@ type DraftPacchetto = {
   slot_occupati: number
   carte: DraftCard[]
 }
-type RosterPlayer = {
-  id: number
-  nome: string
-  club: string
-  overall: number
-  eta: number
-  posizioni: string[]
-  foto_url: string | null
-  ingaggio: number
-}
 type DraftProps = { user: User; membership: Membership; onNavigate: (view: GameView) => void }
 
 const NOME_RUOLO: Record<DraftCard['ruolo'], string> = {
@@ -74,12 +65,6 @@ function milioni(euro: number) {
   return `${(euro / 1_000_000).toFixed(1).replace('.', ',')} M€`
 }
 
-async function firmaFoto(path: string | null | undefined): Promise<string | undefined> {
-  if (!path) return undefined
-  const { data } = await supabase.storage.from('player-photos').createSignedUrl(path, 3600)
-  return data?.signedUrl
-}
-
 export function Draft({ user, membership, onNavigate }: DraftProps) {
   const league = membership.league as League
   const [state, setState] = useState<DraftTeamState | null>(null)
@@ -95,17 +80,24 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
   const [refresh, setRefresh] = useState(0)
   const spinRef = useRef<number | null>(null)
   const [nomiSpin, setNomiSpin] = useState<string[]>(['', '', '', ''])
+  // Con il draft che parte squadra per squadra, chi entra per primo non vede
+  // piu' la Lobby: senza questo pezzo perderebbe l'unico posto dove il
+  // codice invito era mostrato dopo la creazione della lega.
+  const [squadreIscritte, setSquadreIscritte] = useState<number | null>(null)
+  const [copiato, setCopiato] = useState(false)
 
   useEffect(() => {
     let active = true
     async function load() {
       setLoading(true); setError(null); setSelezionati([])
-      const [{ data: teamState, error: stateError }, { data: team }] = await Promise.all([
+      const [{ data: teamState, error: stateError }, { data: team }, { count: iscritte }] = await Promise.all([
         supabase.from('draft_team_state').select('*').eq('team_id', membership.id).maybeSingle(),
         supabase.from('teams').select('budget').eq('id', membership.id).maybeSingle(),
+        supabase.from('teams').select('id', { count: 'exact', head: true }).eq('league_id', league.id),
       ])
       if (!active) return
       if (team) setBudgetAttuale(team.budget)
+      setSquadreIscritte(iscritte ?? null)
       if (stateError || !teamState) { setError(stateError?.message ?? 'Stato del tuo draft non disponibile.'); setLoading(false); return }
       const nextState = teamState as DraftTeamState
       setState(nextState)
@@ -212,6 +204,19 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
           <span className="draft-turn-board__hint">Tocca per vedere la rosa →</span>
         </button>
       </section>
+      {squadreIscritte !== null && squadreIscritte < league.n_squadre && (
+        <section className="draft-invito-banner">
+          <div><p className="kicker">Posti liberi</p><h2>{squadreIscritte} / {league.n_squadre} squadre iscritte</h2><p>Chi entra ora comincia subito il proprio draft, senza aspettare gli altri.</p></div>
+          <button
+            type="button"
+            onClick={() => { void navigator.clipboard.writeText(league.codice_invito); setCopiato(true); window.setTimeout(() => setCopiato(false), 1800) }}
+          >
+            <small>CODICE INVITO</small>
+            <strong>{league.codice_invito}</strong>
+            <span>{copiato ? 'Copiato' : 'Tocca per copiare'}</span>
+          </button>
+        </section>
+      )}
       {error && <p className="notice notice--error" role="alert">{error}</p>}
       {state?.stato === 'concluso' ? (
         <section className="draft-action-panel"><p className="kicker">Draft concluso</p><h2>La rosa è pronta.</h2><p>Il prossimo passaggio sarà la scelta della formazione.</p></section>
@@ -220,18 +225,15 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
           <div className="section-heading-row">
             <div>
               <p className="kicker">{fase === 'vuoto' ? 'Pronto per il prossimo spin' : fase === 'girando' ? 'Apertura in corso…' : 'Pacchetto aperto'}</p>
-              <h2>{fase === 'vuoto' ? '4 carte, una per ruolo.' : fase === 'girando' ? 'Scouting il pool attivo.' : 'Scegli 2 carte su 4.'}</h2>
+              <h2>{fase === 'vuoto' ? '4 giocatori, uno per ruolo.' : fase === 'girando' ? 'Scouting il pool attivo.' : 'Scegli 2 carte su 4.'}</h2>
             </div>
             {fase === 'vuoto' ? (
-              <button className="draft-spin-viola" type="button" disabled={pending} onClick={apriPacchetto}>SPIN</button>
+              <button className="draft-spin-viola" type="button" disabled={pending} onClick={apriPacchetto}><span className="draft-azione-testo">Spin</span></button>
             ) : (
-              <button className="draft-reroll-oro" type="button" disabled={pending || fase === 'girando' || (payload?.reroll_rimasti ?? 0) < 1} onClick={reroll}>Reroll · {payload?.reroll_rimasti ?? 0}</button>
+              <button className="draft-reroll-oro" type="button" disabled={pending || fase === 'girando' || (payload?.reroll_rimasti ?? 0) < 1} onClick={reroll}><span className="draft-azione-testo">Reroll · {payload?.reroll_rimasti ?? 0}</span></button>
             )}
           </div>
-          <p>
-            {fase === 'vuoto' && 'Selezionane 2, gli altri sono scartati.'}
-            {fase === 'rivelato' && 'Le carte non ingaggiabili sono in grigio: superano il tetto o lascerebbero la rosa insostenibile.'}
-          </p>
+          {fase === 'vuoto' && <p>Selezionane 2, gli altri sono scartati.</p>}
           <div className="draft-pacchetto-grid">
             {(fase === 'vuoto' ? ORDINE_RUOLI_PACCHETTO : payload?.carte.map((c) => c.ruolo) ?? ORDINE_RUOLI_PACCHETTO).map((ruolo, indice) => {
               const carta = payload?.carte.find((c) => c.ruolo === ruolo)
@@ -339,29 +341,7 @@ function RosaModale({ league, membership, onClose }: { league: League; membershi
           <div><p className="kicker">{membership.nome}</p><h2>{giocatori.length} / {league.slot_rosa} giocatori</h2><small>{milioni(speso)} di ingaggi complessivi</small></div>
           <button className="button-icona" type="button" onClick={onClose} aria-label="Chiudi">✕</button>
         </div>
-        {loading ? <p className="empty-state">Carico la rosa…</p> : giocatori.length === 0 ? <p className="empty-state">Non hai ancora scelto giocatori.</p> : (
-          <div className="modale-rosa__lista">
-            {ORDINE_MACRO_RUOLO.map((ruolo) => {
-              const delReparto = giocatori.filter((g) => macroRuolo(g.posizioni) === ruolo)
-              if (delReparto.length === 0) return null
-              return (
-                <div className="modale-rosa__reparto" key={ruolo}>
-                  <p className={`modale-rosa__reparto-titolo modale-rosa__reparto-titolo--${ruolo.toLowerCase()}`}>{MACRO_LABEL[ruolo]} · {delReparto.length}</p>
-                  {delReparto.map((g) => (
-                    <div className="modale-rosa__riga" key={g.id}>
-                      <div className="draft-carta__foto draft-carta__foto--small">
-                        {foto.get(g.id) ? <img src={foto.get(g.id)} alt="" loading="lazy" /> : <span aria-hidden="true">{g.nome.charAt(0)}</span>}
-                      </div>
-                      <div><strong>{g.nome}</strong><small>{g.posizioni[0] ?? '—'} · {g.eta} anni</small></div>
-                      <b className="modale-rosa__ovr">{g.overall}</b>
-                      <b className="modale-rosa__ingaggio">{(g.ingaggio / 1_000_000).toFixed(1)} M€</b>
-                    </div>
-                  ))}
-                </div>
-              )
-            })}
-          </div>
-        )}
+        <RosaElenco giocatori={giocatori} foto={foto} loading={loading} />
       </div>
     </div>
   )

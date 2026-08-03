@@ -17,6 +17,7 @@ type LobbyProps = {
 export function Lobby({ user, membership, memberships, onSelectLeague, onNewLeague, onRefresh }: LobbyProps) {
   const league = membership.league as League
   const [teams, setTeams] = useState<Team[]>([])
+  const [allenatori, setAllenatori] = useState<Record<string, string>>({})
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -38,6 +39,20 @@ export function Lobby({ user, membership, memberships, onSelectLeague, onNewLeag
       }
       const loadedTeams = (data ?? []) as Team[]
       setTeams(loadedTeams)
+
+      // Leggibile solo fra chi condivide una lega (policy profiles_lettura):
+      // chi non ha ancora scelto un nome semplicemente non compare nella mappa.
+      if (loadedTeams.length) {
+        const { data: profili } = await supabase.from('profiles')
+          .select('user_id, nome_allenatore')
+          .in('user_id', loadedTeams.map((team) => team.user_id))
+        if (active) {
+          setAllenatori((profili ?? []).reduce<Record<string, string>>((result, riga) => {
+            result[riga.user_id] = riga.nome_allenatore
+            return result
+          }, {}))
+        }
+      }
 
       const uploaded = loadedTeams.filter((team) => team.stemma_url && !team.stemma_url.startsWith('preset:'))
       const signed = await Promise.all(
@@ -122,7 +137,7 @@ export function Lobby({ user, membership, memberships, onSelectLeague, onNewLeag
                 <li key={team.id}>
                   <span className="roster-number">{String(index + 1).padStart(2, '0')}</span>
                   <Crest value={team.stemma_url} imageUrl={team.stemma_url ? imageUrls[team.stemma_url] : null} />
-                  <div><strong>{team.nome}</strong><span>{team.user_id === league.admin_id ? 'Admin della lega' : 'Partecipante'}</span></div>
+                  <div><strong>{team.nome}</strong><span>{allenatori[team.user_id] ? `${allenatori[team.user_id]} · ` : ''}{team.user_id === league.admin_id ? 'Admin' : 'Partecipante'}</span></div>
                   {team.user_id === user.id && <span className="status-chip">La tua</span>}
                 </li>
               ))}
