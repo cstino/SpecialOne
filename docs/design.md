@@ -72,7 +72,7 @@ Quando servirà:
 | Budget iniziale `B` | 50–200 M€ | 100 M€ |
 | Reroll draft | 0–30 | 12 |
 | Campionati attivi | subset dei 10 | tutti |
-| Slot rosa iniziali | 21–30 | 25 |
+| Slot rosa iniziali | fisso | 24 (12 pacchetti × 2 carte, §4.1) |
 | Portieri minimi | rimosso | nessun minimo |
 
 **Partite per squadra** `P = (N − 1) × G`. Con N dispari il sistema genera un turno di riposo per giornata usando il **metodo del cerchio** (una squadra fittizia "riposo" aggiunta per rendere pari il numero, poi ruotata).
@@ -96,12 +96,27 @@ Codice invito a 6 caratteri. `N − 1` posti disponibili oltre l'admin. Ogni par
 
 ### 4.1 Meccanica
 
-1. Il giocatore preme SPIN → il sistema estrae casualmente un club tra quelli dei campionati attivi
-2. Vengono mostrati tutti i giocatori di quel club
-3. Il giocatore ne sceglie **uno** e lo ingaggia, oppure usa un **reroll** per rifare lo spin
-4. Si ripete fino a riempire tutti gli slot
+> **Sostituito il draft a spin-club con un draft a pacchetti.** Decisione utente,
+> vedi `docs/decisioni-fase1.md` §8. Il testo sotto descrive il meccanismo attuale;
+> il resto della sezione 4 (unicità, tetto, solvibilità) resta valido invariato.
 
-Ordine di draft: **serpentina** (1→N, poi N→1, poi 1→N…) per non svantaggiare sistematicamente chi pesca per ultimo.
+1. Il giocatore preme "Apri pacchetto" → il sistema pesca **4 carte, una per
+   macro-ruolo** (GK, DEF, MID, ATT) da tutto il pool attivo — non da un club
+2. Il giocatore ne sceglie **2** e le ingaggia; le altre 2 non vengono prese:
+   restano semplicemente non-draftate, ripescabili da un pacchetto futuro
+   (anche proprio) o dalle aste a stagione iniziata
+3. Se meno di 2 carte su 4 sono ingaggiabili, quelle ingaggiabili restano ferme
+   e solo le altre vengono ripescate automaticamente, senza consumare reroll,
+   finché il pacchetto non ha almeno 2 carte giocabili
+4. Il giocatore può anche consumare un **reroll** per sostituire l'intero
+   pacchetto mostrato (anche le carte ingaggiabili)
+5. Si ripete fino a riempire tutti gli slot
+
+**Nessun ordine di turno.** Ogni squadra pesca per conto proprio, senza
+aspettare le altre. Misurato: con più campionati attivi il vantaggio atteso di
+chi pesca più in fretta è statisticamente trascurabile, perché pescando dal
+pool intero per ruolo (non da un singolo club) lo scarso si diluisce — vedi
+`docs/decisioni-fase1.md` §8 per i numeri e i limiti della misura.
 
 ### 4.2 Unicità
 
@@ -130,10 +145,11 @@ Se il vincolo non regge, quel giocatore è **visibile ma non selezionabile**, co
 
 ### 4.5 Vincoli di rosa
 
-- Il draft iniziale termina al numero di slot scelto dall'admin (21–30, default 25)
+- Il draft iniziale termina a **24 giocatori fissi** (12 pacchetti da 2 carte,
+  zero resto). Non più configurabile dall'admin — vedi `decisioni-fase1.md` §8.
 - Durante la stagione la rosa può variare, ma deve restare sempre tra **21 e 30 giocatori**
 - Nessun minimo portieri: vale solo il limite rosa 21–30. Una squadra può restare senza portieri, assumendosi la penalità tecnica in formazione.
-- Nessun vincolo su difensori/centrocampisti/attaccanti (chi si costruisce una rosa sbilanciata ne paga le conseguenze in campo)
+- Nessun vincolo su difensori/centrocampisti/attaccanti (chi si costruisce una rosa sbilanciata ne paga le conseguenze in campo). Col draft a pacchetti è anche possibile, in teoria, non tenere mai una carta di un ruolo intero: stessa filosofia, nessun correttivo.
 
 ---
 

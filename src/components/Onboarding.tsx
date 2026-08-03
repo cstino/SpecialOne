@@ -3,8 +3,6 @@ import type { User } from '@supabase/supabase-js'
 import { formatoStemma, generaUuidV4, preparaStemma } from '../lib/crest'
 import {
   CAMPIONATI,
-  ROSA_MASSIMA,
-  ROSA_MINIMA,
   calcolaGiornateTotali,
   calcolaPartitePerSquadra,
   dataFineStagione,
@@ -141,7 +139,6 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
   const [rounds, setRounds] = useState(4)
   const [budget, setBudget] = useState(100)
   const [rerolls, setRerolls] = useState(12)
-  const [rosterSlots, setRosterSlots] = useState(25)
   const [competitions, setCompetitions] = useState<string[]>([...CAMPIONATI])
   const [identity, setIdentity] = useState<TeamFields>({ teamName: '', crest: DEFAULT_CREST })
   const [pending, setPending] = useState(false)
@@ -177,7 +174,7 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
         p_n_gironi: rounds,
         p_budget_iniziale: budget * 1_000_000,
         p_reroll_draft: rerolls,
-        p_slot_rosa: rosterSlots,
+        p_slot_rosa: 24,
         p_portieri_minimi: 0,
         p_campionati_attivi: competitions,
       })
@@ -219,7 +216,7 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
           <h2>Risorse del draft</h2>
           <RangeField label="Budget iniziale" value={budget} min={50} max={200} step={10} suffix=" M€" onChange={setBudget} disabled={pending} />
           <RangeField label="Reroll" value={rerolls} min={0} max={30} onChange={setRerolls} disabled={pending} />
-          <RangeField label="Slot rosa" value={rosterSlots} min={ROSA_MINIMA} max={ROSA_MASSIMA} onChange={setRosterSlots} disabled={pending} />
+          <p className="field-help">Rosa fissata a 24 giocatori: 12 pacchetti da 2 carte a testa, senza resto.</p>
         </div>
 
         <fieldset className="form-section competitions" disabled={pending}>

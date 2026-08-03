@@ -138,8 +138,9 @@ registrazione squadra.
 - Codice invito e ingresso partecipanti
 - Registrazione squadra: nome + stemma (galleria prefatta o upload su Supabase Storage)
 - Import del dataset giocatori (FC 26, 10 campionati) in Postgres
-- Draft: spin casuale del club, selezione giocatore, reroll, unicità globale,
-  tetto ingaggi all'80% del budget, vincolo di solvibilità, ordine a serpentina
+- Draft: pacchetti a 4 carte per ruolo, scelta di 2, reroll, unicità globale,
+  tetto ingaggi all'80% del budget, vincolo di solvibilità, nessun ordine di turno
+  (`docs/decisioni-fase1.md` §8)
 - Schieramento formazione: 7 moduli, titolari + panchina + tribuna, penalità fuori ruolo
 - Generazione calendario (metodo del cerchio, gestione squadre dispari con turni di riposo)
 - Cron notturno che simula **una** giornata (vedi `docs/decisioni-fase1.md` §7)
@@ -190,11 +191,13 @@ Fase 1 chiamalo con `{ usaCondizione: false }`. Non rimuovere quel codice.
 
 Cose che sono già state analizzate. Non riaprirle senza un motivo nuovo.
 
-- **Il draft può andare in deadlock.** Se un partecipante riempie 22 slot su 25 senza
-  portieri e resta senza budget, non può finire. Il vincolo di solvibilità (design doc 4.4)
+- **Il draft può andare in deadlock.** Se un partecipante riempie i suoi slot senza
+  portieri e resta senza budget, non può finire. Il vincolo di solvibilità (design doc §4.4)
   serve esattamente a questo, e va implementato **prima** del draft, non dopo.
-- **Se il club estratto non ha nessun giocatore ingaggiabile**, lo spin si ripete
-  automaticamente senza consumare un reroll. Senza questa regola la sfortuna blocca il draft.
+- **Il draft è a pacchetti, non più a spin-club** (`docs/decisioni-fase1.md` §8): 4 carte per
+  ruolo, se ne tengono 2. Se meno di 2 carte su 4 sono ingaggiabili, quelle ingaggiabili
+  restano ferme e solo le altre si ripescano automaticamente, senza consumare reroll. Stessa
+  ragione di prima: senza questa regola la sfortuna blocca il draft.
 - **L'economia si rompe se i premi partita sono valori assoluti.** Il numero di partite
   dipende dalle impostazioni dell'admin. I premi vanno normalizzati come frazione del budget
   diviso il numero di partite (design doc 5.2).

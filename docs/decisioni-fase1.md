@@ -212,6 +212,83 @@ di −0,23 punti di overall a 14 giornate. Trascurabile, nessuna azione. Segnala
 
 ---
 
+## 8. Draft a pacchetti al posto dello spin-club. Rosa fissa a 24.
+
+**Decisione: il draft non estrae più un club.** Estrae **4 carte, una per macro-ruolo**
+(GK/DEF/MID/ATT) da tutto il pool delle leghe attive, non da un club. Il giocatore ne tiene
+**2**; le altre 2 restano semplicemente non-draftate — nessuno stato di "scarto", nessuna
+tabella nuova: `player_instances` nasce solo al pick (già vero prima di questa decisione),
+quindi una carta non scelta è indistinguibile da una mai pescata.
+
+### Motivo
+
+Playtest reale: chi arriva prima al draft può svuotare un club specifico prima che un altro
+partecipante lo estragga, che si è manifestato esattamente così ("ho estratto il Real Madrid
+già svuotato dei migliori"). Il problema non è l'ordine di turno in sé, è che lo spin-club
+concentra lo scarso in poche decine di nomi per club: chi arriva prima su quel club specifico
+vince. Pescando per ruolo da tutto il pool quel bersaglio specifico sparisce.
+
+### Il vantaggio di velocità è stato misurato, non assunto — e la prima stima era sbagliata
+
+Prima ipotesi (sbagliata): "pescare dal pool intero non cambia il principio, chi pesca prima
+ha comunque un vantaggio". Misurato con una simulazione in scratchpad (pool di quality ~N(67,7)
+per ruolo, dimensioni proporzionate al dataset reale, 800 prove):
+
+| Configurazione | Scarto overall 1ª−ultima squadra, senza turno | Con turno a serpentina |
+|---|---|---|
+| 10 campionati, 8 squadre (tipico) | 0,22 | 0,16 |
+| 2 campionati, 8 squadre | 0,92 | 0,16 |
+| 2 campionati, 16 squadre | 2,60 | −0,02 |
+| 1 campionato, 20 squadre | pool esaurito a metà draft | — |
+
+Nella configurazione tipica lo scarto è rumore statistico: **non serve un vincolo di turno**.
+Il problema torna solo con pochi campionati attivi e molte squadre (scarto 2,60, più del bonus
+casa del motore). Decisione: **niente vincolo di turno per ora**, backlog a bassa priorità da
+riaprire solo se qualcuno gioca davvero in quella configurazione estrema. Il caso limite di
+pool esaurito va gestito con un errore leggibile (come "nessun giocatore ingaggiabile nel pool
+attivo" già esistente), non è mai stato un problema pratico.
+
+### Meccanica esatta
+
+- Pacchetto giocabile = **almeno 2 carte su 4 ingaggiabili** (design §4.4, stessa formula di
+  solvibilità di prima, senza il termine `portieri_minimi` che è sempre 0).
+- Sotto soglia: le carte già ingaggiabili restano ferme, **solo le altre** vengono ripescate
+  automaticamente — stile slot machine, i rulli buoni si fermano — finché il pacchetto non è
+  giocabile. Non consuma reroll: è un'azione di sistema, non una scelta (stesso principio dello
+  spin-a-vuoto sul club, design §4.4).
+- Il reroll manuale resta, stessa granularità di prima: brucia **l'intero** pacchetto mostrato
+  (anche le carte ingaggiabili) e ne apre uno nuovo.
+- `draft_picks.club_estratto` ora contiene il **macro-ruolo** della carta (GK/DEF/MID/ATT), non
+  più un nome di club. Il nome della colonna resta per non rompere lo storico.
+
+### Rosa fissata a 24, non più configurabile
+
+12 pacchetti da 2 tenute = 24, zero resto. Prima l'admin poteva scegliere 21-30: con 2 tenute a
+pacchetto un obiettivo dispari lascerebbe un ultimo pick spaiato. Si è scelto di fissare il
+numero piuttosto che complicare l'ultimo pacchetto con una regola speciale. Il tetto permanente
+di stagione (21–30, `private.rosa_minima()`/`rosa_massima()`, usato da mercato e aste) **non
+cambia**: riguarda la rosa dopo il draft, non l'obiettivo del draft stesso.
+
+### Stesso meccanismo per il draft iniziale e per gli ingressi in off-season
+
+`draft_team_state` e il trio di RPC (rinominate `draft_apri_pacchetto` / `draft_pacchetto_reroll`
+/ `draft_scegli_pacchetto`) servivano già a entrambi i flussi prima di questa decisione — l'utente
+ha scelto di mantenerli unificati per coerenza col resto del sistema di gioco, invece di forkare
+un'infrastruttura a parte solo per il draft iniziale.
+
+### Verificato
+
+Migrazione `20260803120000_draft_pacchetti.sql`, testata con script transazionali
+`begin; … rollback;` contro il database remoto (metodo già in uso nel progetto, vedi
+`docs/STATO-PROGETTO.md`): apertura pacchetto, reroll, scelta di 2 carte, scarti non
+istanziati, completamento di tutti i 12 pacchetti con transizione a "concluso", lega che resta
+in `draft` finché non finiscono tutte le squadre, soglia di sostenibilità con ripescaggio
+forzato, funzioni vecchie (`draft_spin`/`draft_reroll`/`draft_pick`) rimosse, percorso di
+ingresso off-season verificato a parte. **Non ancora applicata al database remoto**: le
+migrazioni restano da eseguire con `db push` quando si deciderà di procedere.
+
+---
+
 ## Ordine di lavoro confermato
 
 Schema Supabase + migrazioni + RLS per primo, con la forma di `lineups` decisa al punto 1.

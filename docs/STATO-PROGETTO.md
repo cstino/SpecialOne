@@ -5,6 +5,31 @@ repository ed è il punto di partenza per il prossimo agent (Claude o Codex).
 
 ---
 
+## ▶ NOTA 3 agosto 2026 — lavoro in corso su branch separato
+
+Esiste un branch `pack_draft_exploration` (allineato a `main` alla creazione) con una
+migrazione **scritta e testata ma non applicata al database remoto**:
+`supabase/migrations/20260803120000_draft_pacchetti.sql`, che sostituisce il draft a
+spin-club con un draft a pacchetti (design §4.1, `docs/decisioni-fase1.md` §8). Motivo:
+playtest reale ha mostrato che lo spin-club permette di svuotare un club specifico prima
+che un altro partecipante lo estragga.
+
+Verificata con script transazionali `begin;…rollback;` contro il database remoto (stesso
+metodo descritto piu' sotto in questo documento): apertura pacchetto, reroll, scelta di 2
+carte, scarti non istanziati, completamento dei 12 pacchetti, transizione a "concluso",
+soglia di sostenibilita' con ripescaggio forzato, funzioni vecchie rimosse, percorso di
+ingresso off-season. **Nulla di questo è ancora su `main` né sul database remoto**: se
+riprendi questo lavoro, il prossimo passo è `git checkout pack_draft_exploration` e decidere
+se applicare la migrazione con `db push`.
+
+Toccato anche: `src/components/Draft.tsx` (interfaccia a pacchetti), `src/components/Onboarding.tsx`
+(rimossa la configurabilità di `slot_rosa`, ora fisso a 24), `src/styles.css`, `docs/design.md`
+§3.1/§4.1/§4.5, `docs/decisioni-fase1.md` §8, `CLAUDE.md`/`AGENTS.md`. Build e lint frontend
+verdi. Non ancora provato da un utente reale nell'interfaccia, e non ancora verificato con
+`supabase db lint` (richiede la migrazione applicata).
+
+---
+
 ## ▶ CONSEGNA A CODEX — leggi prima questo
 
 Il lavoro passa a Codex a partire dal 2 agosto 2026, sera. Ultimo commit pubblicato: `5003e99`.

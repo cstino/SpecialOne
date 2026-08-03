@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { cognome } from '../lib/nomi'
+import { MACRO_LABEL, macroRuolo, type MacroRuolo } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
 import { useSeasonData } from '../lib/useSeasonData'
 import type { League, Membership } from '../types'
@@ -45,7 +46,6 @@ type Asta = {
   ingaggio_finale: number | null
 }
 
-type MacroRuolo = 'ALL' | 'GK' | 'DEF' | 'MID' | 'ATT'
 type Anagrafica = {
   nome: string
   club: string
@@ -89,22 +89,6 @@ function mercatoAperto() {
 
 function milioni(euro: number) {
   return `${(euro / 1_000_000).toFixed(1).replace('.', ',')} M€`
-}
-
-function macroRuolo(posizioni: string[] = []): MacroRuolo {
-  if (posizioni.includes('GK')) return 'GK'
-  if (posizioni.some((r) => ['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(r))) return 'DEF'
-  if (posizioni.some((r) => ['CDM', 'CM', 'CAM', 'LM', 'RM'].includes(r))) return 'MID'
-  if (posizioni.some((r) => ['ST', 'CF', 'LW', 'RW'].includes(r))) return 'ATT'
-  return 'MID'
-}
-
-const MACRO_LABEL: Record<MacroRuolo, string> = {
-  ALL: 'Tutti',
-  GK: 'Portieri',
-  DEF: 'Difensori',
-  MID: 'Centrocampisti',
-  ATT: 'Attaccanti',
 }
 
 const ETICHETTE_STATO: Record<StatoProposta, string> = {
