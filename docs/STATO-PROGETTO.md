@@ -57,6 +57,21 @@ di Draft), quindi il codice invito non aveva più un posto dove essere mostrato 
 creazione. Aggiunto un banner in `Draft.tsx`, visibile finché `squadre_iscritte < n_squadre`,
 con lo stesso gesto "tocca per copiare" già usato in Lobby.
 
+**Terzo difetto, scoperto in produzione dall'utente poche ore dopo il deploy**: gli amici
+invitati ricevevano «Questa lega non accetta nuovi partecipanti» subito dopo aver digitato
+il codice, prima ancora di scegliere nome e stemma squadra. Causa: `anteprima_invito`, la
+RPC chiamata dal passo "Continua" sul codice (`Onboarding.tsx` → `verifyCode`), **duplica**
+lo stesso controllo di stato di `entra_in_lega` invece di condividerlo — e non era stata
+toccata dalla migrazione precedente, che aveva sistemato solo `entra_in_lega`. Corretto in
+`20260803170000_fix_anteprima_invito_stato_draft.sql` con lo stesso identico cambiamento
+(`stato in ('setup','draft')`). Verificato sulla lega reale segnalata dall'utente
+(codice `N2YE6X`, id 32): prima falliva su entrambe le chiamate, dopo il fix passa su
+entrambe. **Nota per chi tocca ancora questo flusso**: `anteprima_invito` ed
+`entra_in_lega` hanno lo stesso gate ripetuto due volte in due funzioni diverse — se cambia
+ancora una condizione di ingresso, va cambiata in tutt'e due, o va estratta in un helper
+condiviso (`private.lega_accetta_ingressi(league)` ad esempio) per non ricadere nello
+stesso errore una terza volta.
+
 ---
 
 ## ▶ CONSEGNA A CODEX — leggi prima questo
