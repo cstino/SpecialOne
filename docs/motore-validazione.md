@@ -168,6 +168,42 @@ DAMPING_MARCATORE   = 0.45
 
 ---
 
+## Nota successiva — troppa varianza sui tiri per partita (4 agosto 2026)
+
+Segnalato dall'utente guardando i tabellini reali di "Lega di Prova": alcune partite
+registravano 35-37 tiri per una squadra, contro un target medio di 11-14. La media validata
+in Fase 0 (`docs/risultati-fase0.txt`) era corretta — il difetto era nella **varianza**, che
+`tools/validazione/simulate.js` non misura (controlla solo la media su migliaia di partite).
+
+**Causa**: `tiri = xG_totale / conversione`, con `conversione ~ N(0.105, 0.03)` clampata fra
+0,07 e 0,17 (punto 3 sopra). Con sigma 0,03 la gaussiana finisce sul tetto basso (0,07) circa
+il **12% delle volte** — quasi una partita su otto — e dividere per 0,07 invece che per la
+media 0,105 moltiplica i tiri per oltre 2 volte a parità di xG. Non serviva nemmeno un xG
+anomalo: xG_totale = 2,5 (una prestazione offensiva normale) con conversione al tetto basso fa
+già 36 tiri.
+
+**Corretto**: `CONVERSIONE_SIGMA` ridotta da `0.03` a `0.015` in `engine/config.js`. Dimezzando
+la sigma la gaussiana finisce sul tetto basso solo l'1% delle volte circa, senza spostare la
+media (`CONVERSIONE_MEDIA` resta 0,105, invariata). Verificato su 10.000 partite simulate con
+`creaRosa`: la quota di prestazioni-squadra con 30+ tiri scende dal ~12% teorico (coerente con
+la quota di partite sul tetto basso) allo 0,14% osservato — un evento raro come nel calcio
+vero, non più un caso ogni 8 partite.
+
+**Rilanciata la suite completa** (`node tools/validazione/simulate.js`): tutti gli altri 12
+target restano invariati byte per byte rispetto a `docs/risultati-fase0.txt` — `conversione`
+alimenta solo `tiri` e `inPorta`, non gol, risultati, punti o equilibrio moduli. Il file dei
+risultati grezzi è stato aggiornato con il nuovo output (tiri per squadra: 12,4 → 12,1, sempre
+dentro 11-14).
+
+Nota per chi tocca ancora questa costante: il paragrafo "Cosa NON è stato validato" qui sotto
+avvertiva che le rose reali avrebbero potuto spostare la **media** dei tiri, con
+`XG_BASE_BLOCCO` come unica leva prevista. Questo non è quel caso — la media era ed è corretta,
+il problema era la coda della distribuzione. Se in futuro dovesse spostarsi anche la media coi
+dati reali, la leva resta `XG_BASE_BLOCCO`; per la sola varianza dei tiri, la leva è
+`CONVERSIONE_SIGMA`.
+
+---
+
 ## Cosa NON è stato validato
 
 - **Rose reali.** Le rose sintetiche hanno distribuzioni ragionevoli ma non sono il dataset FC 26. Quando importerai i dati veri, rilancia `test1` e `test3`: se i numeri si spostano, l'unica costante da ritoccare è `XG_BASE_BLOCCO`.

@@ -69,7 +69,7 @@ export function SeasonOverview({ membership, onNavigate, onOpenMatch, onOpenTeam
           <div className="season-card__actions"><button className="button button--primary" type="button" onClick={() => onNavigate('squad')}>Prepara formazione</button><button className="season-link" type="button" onClick={() => onNavigate('matches')}>Tutto il calendario →</button></div>
         </article>
 
-        <LeagueNews leagueId={league.id} fixtures={data.fixtures} matches={data.matches} teamById={data.teamById} crestUrlByTeamId={data.crestUrlByTeamId} onOpenMatch={onOpenMatch} onOpenTeam={onOpenTeam} />
+        <LeagueNews leagueId={league.id} fixtures={data.fixtures} matches={data.matches} standings={data.standings} teamById={data.teamById} crestUrlByTeamId={data.crestUrlByTeamId} onOpenMatch={onOpenMatch} onOpenTeam={onOpenTeam} />
 
         <article className="season-card season-card--table">
           <div className="season-card__heading"><div><p className="kicker">Classifica</p><h2>La vetta</h2></div><button className="season-link" type="button" onClick={() => onNavigate('table')}>Vedi tutta →</button></div>

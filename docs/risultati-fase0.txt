@@ -8,7 +8,7 @@ Gol per partita                        2.50   target 2.50–2.90    OK
 Vittorie casa %                        45.3   target 43.0–47.0    OK 
 Pareggi %                              26.4   target 23.0–27.0    OK 
 Vittorie ospite %                      28.3   target 28.0–33.0    OK 
-Tiri per squadra                       12.4   target 11.0–14.0    OK 
+Tiri per squadra                       12.1   target 11.0–14.0    OK 
 % passaggi riusciti                    80.0   target 76.0–88.0    OK 
 Possesso casa %                        52.8   target 49.0–54.0    OK 
 
@@ -104,8 +104,8 @@ TEST 5 — TABELLINO DI ESEMPIO   (Casa OVR83 4-3-3  vs  Ospite OVR80 3-5-2)
 
   RISULTATO:  3 - 0
 
-  CASA       poss 58%  tiri 16 (5 in porta)  pass 436/553 (79%)  contr 15  drib 14
-  OSPITE     poss 42%  tiri 10 (3 in porta)  pass 317/407 (78%)  contr 21  drib 10
+  CASA       poss 58%  tiri 19 (6 in porta)  pass 436/553 (79%)  contr 15  drib 14
+  OSPITE     poss 42%  tiri  8 (3 in porta)  pass 317/407 (78%)  contr 21  drib 10
 
   Marcatori casa:   CM-5076015, RW-5076022, RW-5076022
   Marcatori ospite: -

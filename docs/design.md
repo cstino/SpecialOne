@@ -438,7 +438,7 @@ Volumi di squadra per partita, poi ripartiti tra i giocatori:
 
 | Statistica | Formula squadra |
 |---|---|
-| Tiri | `xG_totale / conv`, con `conv ~ N(0.105, 0.03)` clampato [0,07; 0,17] |
+| Tiri | `xG_totale / conv`, con `conv ~ N(0.105, 0.015)` clampato [0,07; 0,17] |
 | Tiri in porta | `tiri × N(0.36, 0.07)`, mai meno dei gol |
 | Passaggi tentati | `480 × ctrl_adj × 2` |
 | % riuscita | `0.78 + 0.0025 × (MID_squadra − 75)` |
@@ -449,6 +449,13 @@ Volumi di squadra per partita, poi ripartiti tra i giocatori:
 > `gol / conv`: la disuguaglianza di Jensen faceva esplodere la media (conversione estratta
 > a 0,05 con 2 gol = 40 tiri in una partita), portando la media a 15,6 contro un target di
 > 11-14. E anche piu corretto concettualmente: una squadra puo tirare 20 volte e non segnare.
+>
+> **Correzione del 4 agosto 2026**: la sigma di `conv` era 0,03, che portava la gaussiana sul
+> tetto basso del clamp (0,07) circa 1 partita su 8 — dividere per 0,07 invece che per la
+> media raddoppiava abbondantemente i tiri anche con un xG normale, producendo partite reali
+> con 35+ tiri per squadra. Ridotta a 0,015 (vedi `docs/motore-validazione.md`): la media
+> validata non cambia (resta 12,1-12,4, target 11-14), la coda si normalizza (30+ tiri passa
+> dal ~12% teorico allo 0,14% osservato su 10.000 partite).
 
 **Ripartizione per giocatore**: peso = `peso_ruolo_statistica × (attributo_rilevante / 100)`, normalizzato sulla squadra.
 

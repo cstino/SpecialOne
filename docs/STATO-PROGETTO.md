@@ -3,6 +3,19 @@
 Ultimo aggiornamento: **4 agosto 2026**. Questo documento descrive lo stato reale del
 repository ed è il punto di partenza per il prossimo agent (Claude o Codex).
 
+### Motore — varianza dei tiri per partita corretta (unica modifica al motore finora)
+
+Segnalato dall'utente sui dati reali di "Lega di Prova": alcune partite avevano 35-37 tiri per
+una squadra contro il target validato di 11-14. La media era ed è corretta (`tools/validazione/
+simulate.js` misura solo quella); il difetto era nella varianza di `CONVERSIONE_SIGMA`
+(0,03 in `engine/config.js`), che mandava la conversione sul tetto basso del clamp (0,07)
+circa 1 partita su 8, raddoppiando i tiri anche con un xG normale. Ridotta a `0.015`: media
+tiri invariata (12,1-12,4), quota di partite con 30+ tiri scesa dal ~12% teorico allo 0,14%
+osservato su 10.000 simulazioni. Suite di validazione rilanciata per intero: gli altri 12
+target restano identici a `docs/risultati-fase0.txt`, che è stato aggiornato col nuovo output.
+Dettagli in `docs/motore-validazione.md` (nuova sezione "Nota successiva") e `docs/design.md`
+§7.3. Prima modifica al motore dopo la Fase 0, fatta seguendo il protocollo di CLAUDE.md §4.
+
 ### Mercato — chiarezza ingaggio, richiesta di rinnovo ancorata, archivio nascosto
 
 Quattro correzioni volute dall'utente dopo aver provato il mercato con dati reali, migrazione
