@@ -1,17 +1,31 @@
 import { useEffect, useRef } from 'react'
 
-// Gesto "torna indietro" in stile iOS/Android: si parte col dito vicino al
-// bordo sinistro dello schermo e si trascina verso destra. Attivo solo da
-// quel bordo per non entrare in conflitto con gli scroll orizzontali interni
-// (panchina in formazione, tabelle classifica, ecc.), che non partono mai li'.
+// Gesto "torna indietro" custom, tenuto solo per i contesti senza equivalente
+// nativo. Sia Android (gesture navigation di Android 10+, o il tasto back
+// nella nav a 3 pulsanti) sia iOS 16.4+ (che dalla stessa versione ha esteso
+// lo swipe-back nativo di Safari anche alle web app aggiunte alla Home)
+// intercettano gia' da soli lo swipe dal bordo e chiamano history.back().
+// Se anche il nostro handler risponde allo stesso tocco si ottiene un doppio
+// back sulla stessa cronologia: la pagina "corretta" appare per un istante,
+// resta bloccata mentre l'animazione nativa e' ancora in corso, poi quando
+// quella finisce esegue il suo back e si finisce un passo oltre il previsto
+// (a poche schermate dall'inizio, dritti al menu di scelta lega). Va quindi
+// disattivato su entrambe le piattaforme e lasciato solo dove non esiste un
+// gesto nativo equivalente (desktop, iOS vecchie prima della 16.4).
 const SOGLIA_BORDO_PX = 24
 const SOGLIA_TRASCINAMENTO_PX = 70
 const TOLLERANZA_VERTICALE = 0.6
+
+function haGestoNativo() {
+  const ua = navigator.userAgent
+  return /Android/i.test(ua) || /iPad|iPhone|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1)
+}
 
 export function useSwipeIndietro(alTornaIndietro: () => void) {
   const partenza = useRef<{ x: number; y: number; valido: boolean } | null>(null)
 
   useEffect(() => {
+    if (haGestoNativo()) return
     function alTouchStart(evento: TouchEvent) {
       const tocco = evento.touches[0]
       if (!tocco) return

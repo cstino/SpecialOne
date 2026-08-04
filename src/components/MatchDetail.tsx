@@ -49,6 +49,7 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
   const [players, setPlayers] = useState<Map<number, PlayerIdentity>>(new Map())
   const [statsLoading, setStatsLoading] = useState(true)
   const [statsError, setStatsError] = useState<string | null>(null)
+  const [titolariByTeam, setTitolariByTeam] = useState<Map<number, Set<number>>>(new Map())
   const match = data.matches.find((item) => item.id === matchId)
   const fixture = match ? data.fixtures.find((item) => item.id === match.fixture_id) : undefined
 
@@ -82,6 +83,23 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
     return () => { active = false }
   }, [matchId])
 
+  // Serve solo a sapere chi era titolare, per dividere la lista sotto.
+  useEffect(() => {
+    let active = true
+    async function loadLineups() {
+      if (!fixture) return
+      const { data: rows } = await supabase.from('lineups').select('team_id, titolari')
+        .eq('league_id', fixture.league_id).eq('giornata', fixture.giornata)
+        .in('team_id', [fixture.home_team_id, fixture.away_team_id])
+      if (!active) return
+      const mappa = new Map<number, Set<number>>()
+      for (const row of rows ?? []) mappa.set(row.team_id, new Set(row.titolari as number[]))
+      setTitolariByTeam(mappa)
+    }
+    void loadLineups()
+    return () => { active = false }
+  }, [fixture])
+
   // Le partite simulate prima dell'introduzione della cronaca hanno blocchi vuoto.
   const eventi = useMemo(() => {
     const registrati = match?.blocchi
@@ -96,7 +114,37 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
     return grouped
   }, [stats])
 
+  // Titolari e subentrati in due gruppi separati, ciascuno gia' ordinato come
+  // sopra. Chi e' uscito si riconosce senza ambiguita' solo fra i titolari
+  // (minuti < 90): per un subentrato gli stessi minuti ridotti potrebbero
+  // significare solo che e' entrato tardi, non che sia uscito a sua volta.
+  const gruppiByTeam = useMemo(() => {
+    const risultato = new Map<number, { titolari: MatchPlayerStat[]; subentrati: MatchPlayerStat[] }>()
+    for (const [teamId, rows] of byTeam) {
+      const titolariSet = titolariByTeam.get(teamId) ?? new Set<number>()
+      risultato.set(teamId, {
+        titolari: rows.filter((row) => titolariSet.has(row.player_instance_id)),
+        subentrati: rows.filter((row) => !titolariSet.has(row.player_instance_id)),
+      })
+    }
+    return risultato
+  }, [byTeam, titolariByTeam])
+
   function navigate(view: GameView) { onNavigate(view) }
+
+  // mostraUscita e' vero solo per i titolari: e' l'unico caso in cui minuti
+  // ridotti significano senza ambiguita' "sostituito", non "entrato tardi".
+  function rigaGiocatore(row: MatchPlayerStat, mostraUscita: boolean) {
+    const identita = players.get(row.player_instance_id)
+    return <div key={row.id}>
+      <span><strong>{identita?.nome ?? `Giocatore ${row.player_instance_id}`}</strong><small>{identita?.posizioni.join(' · ')}</small></span>
+      <b>{row.minuti}{mostraUscita && row.minuti < 90 && <i className="match-player-uscita" title={`Uscito al ${row.minuti}'`}>↓</i>}</b>
+      <b className={row.gol ? 'is-highlight' : ''}>{row.gol}</b>
+      <b className={row.assist ? 'is-assist' : ''}>{row.assist}</b>
+      <b>{row.tiri}</b>
+      <b>{row.passaggi_riusciti}/{row.passaggi_tentati}</b>
+    </div>
+  }
 
   return <main className="app-shell season-shell">
     <GameNav league={league} active="matches" onNavigate={navigate} />
@@ -137,12 +185,23 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
         <div className="match-report-heading"><p className="kicker">Prestazioni</p><h2>Statistiche giocatori</h2></div>
         {statsError && <p className="notice notice--error">{statsError}</p>}
         {statsLoading ? <p className="season-empty">Carico le prestazioni…</p> : <div className="match-player-columns">
-          {[fixture.home_team_id, fixture.away_team_id].map((teamId) => <div className="match-player-team" key={teamId}>
-            <h3>{data.teamById.get(teamId)?.nome ?? 'Squadra'}</h3>
-            <div className="match-player-table"><div className="match-player-table__head"><span>Giocatore</span><span>MIN</span><span>G</span><span>A</span><span>T</span><span>PASS</span></div>
-              {(byTeam.get(teamId) ?? []).map((row) => <div key={row.id}><span><strong>{players.get(row.player_instance_id)?.nome ?? `Giocatore ${row.player_instance_id}`}</strong><small>{players.get(row.player_instance_id)?.posizioni.join(' · ')}</small></span><b>{row.minuti}</b><b className={row.gol ? 'is-highlight' : ''}>{row.gol}</b><b className={row.assist ? 'is-assist' : ''}>{row.assist}</b><b>{row.tiri}</b><b>{row.passaggi_riusciti}/{row.passaggi_tentati}</b></div>)}
+          {[fixture.home_team_id, fixture.away_team_id].map((teamId) => {
+            const gruppi = gruppiByTeam.get(teamId)
+            return <div className="match-player-team" key={teamId}>
+              <h3>{data.teamById.get(teamId)?.nome ?? 'Squadra'}</h3>
+              <div className="match-player-table">
+                <div className="match-player-table__head"><span>Giocatore</span><span>MIN</span><span>G</span><span>A</span><span>T</span><span>PASS</span></div>
+                {gruppi && gruppi.titolari.length > 0 && <>
+                  <p className="match-player-group">Titolari</p>
+                  {gruppi.titolari.map((row) => rigaGiocatore(row, true))}
+                </>}
+                {gruppi && gruppi.subentrati.length > 0 && <>
+                  <p className="match-player-group">Subentrati</p>
+                  {gruppi.subentrati.map((row) => rigaGiocatore(row, false))}
+                </>}
+              </div>
             </div>
-          </div>)}
+          })}
         </div>}
       </section>
     </div>}

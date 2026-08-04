@@ -6,6 +6,7 @@ export type League = {
   n_squadre: number
   n_gironi: number
   budget_iniziale: number
+  budget_draft: number
   reroll_draft: number
   slot_rosa: number
   portieri_minimi: number

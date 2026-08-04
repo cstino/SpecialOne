@@ -200,7 +200,28 @@ export function LeagueNews({ leagueId, fixtures, matches, standings, teamById, c
 
   const matchByFixture = useMemo(() => new Map(matches.map((match) => [match.fixture_id, match])), [matches])
   const forma = useMemo(() => formaPerSquadra(fixtures, matchByFixture), [fixtures, matchByFixture])
-  const partiteOggi = useMemo(() => matches.filter((match) => giornoRoma(match.simulata_il) === oggi), [matches, oggi])
+  const fixtureById = useMemo(() => new Map(fixtures.map((fixture) => [fixture.id, fixture])), [fixtures])
+
+  // Solo l'ultima giornata effettivamente giocata, non "tutto cio' che e'
+  // stato simulato oggi": con piu' giornate simulate nello stesso giorno di
+  // calendario (capita spesso in test, recuperando piu' turni di fila) il
+  // filtro sulla sola data faceva vedere insieme i risultati di TUTTE quelle
+  // giornate invece che solo dell'ultima.
+  const ultimaGiornataGiocata = useMemo(() => {
+    let max: number | null = null
+    for (const match of matches) {
+      const giornata = fixtureById.get(match.fixture_id)?.giornata
+      if (giornata != null && (max === null || giornata > max)) max = giornata
+    }
+    return max
+  }, [matches, fixtureById])
+
+  const partiteGiornata = useMemo(
+    () => ultimaGiornataGiocata == null
+      ? []
+      : matches.filter((match) => fixtureById.get(match.fixture_id)?.giornata === ultimaGiornataGiocata),
+    [matches, fixtureById, ultimaGiornataGiocata],
+  )
 
   useEffect(() => {
     let annullato = false
@@ -267,7 +288,7 @@ export function LeagueNews({ leagueId, fixtures, matches, standings, teamById, c
   useEffect(() => {
     let annullato = false
     async function caricaMarcatori() {
-      const ids = [...new Set(partiteOggi.flatMap((match) => match.blocchi.map((evento) => evento.marcatore)))]
+      const ids = [...new Set(partiteGiornata.flatMap((match) => match.blocchi.map((evento) => evento.marcatore)))]
       if (ids.length === 0) { setMarcatori(new Map()); return }
       const { data } = await supabase.from('player_instances').select('id,players(nome)').in('id', ids)
       if (annullato) return
@@ -275,7 +296,7 @@ export function LeagueNews({ leagueId, fixtures, matches, standings, teamById, c
     }
     void caricaMarcatori()
     return () => { annullato = true }
-  }, [partiteOggi])
+  }, [partiteGiornata])
 
   // Forza di rosa (media dei migliori 11 per overall) e giocatore di punta per
   // squadra: servono all'anteprima della prossima giornata (favorita, stelle).
@@ -309,8 +330,7 @@ export function LeagueNews({ leagueId, fixtures, matches, standings, teamById, c
   }, [leagueId])
 
   const risultati = useMemo(() => {
-    const fixtureById = new Map(fixtures.map((fixture) => [fixture.id, fixture]))
-    return partiteOggi.map((match): NewsItem | null => {
+    return partiteGiornata.map((match): NewsItem | null => {
       const fixture = fixtureById.get(match.fixture_id)
       if (!fixture) return null
       const home = teamById.get(fixture.home_team_id)
@@ -328,7 +348,7 @@ export function LeagueNews({ leagueId, fixtures, matches, standings, teamById, c
         action: () => onOpenMatch(match.id),
       }
     }).filter((item): item is NewsItem => Boolean(item))
-  }, [fixtures, partiteOggi, marcatori, teamById, crestUrlByTeamId, onOpenMatch])
+  }, [fixtureById, partiteGiornata, marcatori, teamById, crestUrlByTeamId, onOpenMatch])
 
   // Anteprima della prossima giornata: come arrivano le due squadre, chi
   // parte favorita (forza di rosa) e chi sono le stelle da tenere d'occhio.

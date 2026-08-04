@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { formatoStemma, generaUuidV4, preparaStemma } from '../lib/crest'
 import {
@@ -138,6 +138,7 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
   const [teams, setTeams] = useState(8)
   const [rounds, setRounds] = useState(4)
   const [budget, setBudget] = useState(100)
+  const [budgetDraft, setBudgetDraft] = useState(80)
   const [rerolls, setRerolls] = useState(12)
   const [competitions, setCompetitions] = useState<string[]>([...CAMPIONATI])
   const [identity, setIdentity] = useState<TeamFields>({ teamName: '', crest: DEFAULT_CREST })
@@ -146,6 +147,11 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
 
   const matchdays = useMemo(() => calcolaGiornateTotali(teams, rounds), [teams, rounds])
   const matches = useMemo(() => calcolaPartitePerSquadra(teams, rounds), [teams, rounds])
+
+  // Il budget draft non puo' superare il budget iniziale (design §4.3): se
+  // l'admin abbassa il budget iniziale sotto al valore gia' scelto per il
+  // draft, lo si segue giu' invece di lasciare un valore non piu' valido.
+  useEffect(() => { setBudgetDraft((current) => Math.min(current, budget)) }, [budget])
 
   function toggleCompetition(competition: string) {
     setCompetitions((current) =>
@@ -173,6 +179,7 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
         p_n_squadre: teams,
         p_n_gironi: rounds,
         p_budget_iniziale: budget * 1_000_000,
+        p_budget_draft: budgetDraft * 1_000_000,
         p_reroll_draft: rerolls,
         p_slot_rosa: 24,
         p_portieri_minimi: 0,
@@ -215,6 +222,8 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
         <div className="form-section">
           <h2>Risorse del draft</h2>
           <RangeField label="Budget iniziale" value={budget} min={50} max={200} step={10} suffix=" M€" onChange={setBudget} disabled={pending} />
+          <RangeField label="Budget draft" value={budgetDraft} min={20} max={budget} step={10} suffix=" M€" onChange={setBudgetDraft} disabled={pending} />
+          <p className="field-help">Monte ingaggi utilizzabile nel draft. Il resto del budget iniziale resta liquido per il mercato della stagione 1. Abbassalo rispetto al budget iniziale per rose più equilibrate.</p>
           <RangeField label="Reroll" value={rerolls} min={0} max={30} onChange={setRerolls} disabled={pending} />
           <p className="field-help">Rosa fissata a 24 giocatori: 12 pacchetti da 2 carte a testa, senza resto.</p>
         </div>

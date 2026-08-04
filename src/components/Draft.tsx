@@ -181,7 +181,7 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
 
   const picks = state?.pick_numero ?? 0
   const total = league.slot_rosa
-  const tetto = Math.round(league.budget_iniziale * 0.8)
+  const tetto = league.budget_draft
   const speso = league.budget_iniziale - budgetAttuale
   const disponibile = Math.max(0, tetto - speso)
   const progressoSpesa = tetto > 0 ? Math.min(100, (speso / tetto) * 100) : 0
@@ -199,7 +199,7 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
           <div className="draft-budget">
             <div className="draft-budget__bar"><div className="draft-budget__fill" style={{ width: `${progressoSpesa}%` }} /></div>
             <div className="draft-budget__cifre"><span>{milioni(speso)} speso</span><span>{milioni(disponibile)} disponibile</span></div>
-            <small>Tetto draft: 80% del budget ({milioni(tetto)} su {milioni(league.budget_iniziale)})</small>
+            <small>Tetto draft: {milioni(tetto)} su {milioni(league.budget_iniziale)} di budget iniziale</small>
           </div>
           <span className="draft-turn-board__hint">Tocca per vedere la rosa →</span>
         </button>
