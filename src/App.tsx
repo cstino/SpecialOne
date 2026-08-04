@@ -5,7 +5,7 @@ STORY: l’utente accede, crea o raggiunge una lega, registra la squadra e vede 
 FIRST VIEWPORT: su mobile domina il compito corrente; su desktop una grande fascia campo porta identità e stato.
 FORM: direzione “lavagna gara”, settima opzione grounded; staging registration console, seed 459346e4.
 */
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Admin } from './components/Admin'
 import { AuthScreen } from './components/AuthScreen'
@@ -26,7 +26,22 @@ import { Onboarding } from './components/Onboarding'
 import { ContestoHome, ContestoNotifiche } from './lib/navigazione'
 import type { Notifica } from './lib/notifiche'
 import { configurationError, supabase } from './lib/supabase'
+import { useSwipeIndietro } from './lib/swipeIndietro'
 import type { League, Membership, RpcResult, Team } from './types'
+
+// Istantanea di "dove sono" nell'app: viene spinta nella cronologia del
+// browser a ogni cambio, cosi' il tasto/gesto indietro nativo (e lo swipe dal
+// bordo, per chi usa l'app installata sulla home senza barra del browser)
+// riporta esattamente alla schermata precedente invece di non fare nulla.
+type IstantaneaNavigazione = {
+  nelMenu: boolean
+  showOnboarding: boolean
+  modoOnboarding: 'choose' | 'create' | 'join'
+  activeLeagueId: number | null
+  gameView: GameView
+  openMatch: { id: number; from: GameView } | null
+  viewedTeamId: number | null
+}
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -46,6 +61,52 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
 
   const apriMenu = useCallback(() => setNelMenu(true), [])
+
+  // Ogni cambio di schermata diventa una voce della cronologia del browser:
+  // e' quello che permette al gesto di swipe (e al back nativo Android) di
+  // tornare esattamente alla schermata precedente, non solo alla home.
+  const primaVoltaStorico = useRef(true)
+  const ripristinoStoricoInCorso = useRef(false)
+  useEffect(() => {
+    const istantanea: IstantaneaNavigazione = { nelMenu, showOnboarding, modoOnboarding, activeLeagueId, gameView, openMatch, viewedTeamId }
+    if (primaVoltaStorico.current) {
+      primaVoltaStorico.current = false
+      window.history.replaceState({ indice: 0, istantanea }, '')
+      return
+    }
+    if (ripristinoStoricoInCorso.current) {
+      ripristinoStoricoInCorso.current = false
+      return
+    }
+    const indicePrecedente = (window.history.state as { indice?: number } | null)?.indice ?? 0
+    window.history.pushState({ indice: indicePrecedente + 1, istantanea }, '')
+  }, [nelMenu, showOnboarding, modoOnboarding, activeLeagueId, gameView, openMatch, viewedTeamId])
+
+  useEffect(() => {
+    function alPopstate(evento: PopStateEvent) {
+      const istantanea = (evento.state as { istantanea?: IstantaneaNavigazione } | null)?.istantanea
+      if (!istantanea) return
+      ripristinoStoricoInCorso.current = true
+      setNelMenu(istantanea.nelMenu)
+      setShowOnboarding(istantanea.showOnboarding)
+      setModoOnboarding(istantanea.modoOnboarding)
+      setActiveLeagueId(istantanea.activeLeagueId)
+      setGameView(istantanea.gameView)
+      setOpenMatch(istantanea.openMatch)
+      setViewedTeamId(istantanea.viewedTeamId)
+    }
+    window.addEventListener('popstate', alPopstate)
+    return () => window.removeEventListener('popstate', alPopstate)
+  }, [])
+
+  // Nulla da fare se siamo gia' alla schermata piu' esterna: evita che lo
+  // swipe richiami history.back() a vuoto e finisca per uscire dalla PWA.
+  const tornaIndietroConGesto = useCallback(() => {
+    const indice = (window.history.state as { indice?: number } | null)?.indice ?? 0
+    if (indice <= 0) return
+    window.history.back()
+  }, [])
+  useSwipeIndietro(tornaIndietroConGesto)
 
   // Toccare una notifica deve portare dove e' successa la cosa, non sulla
   // home: e' la differenza fra un avviso e un collegamento.
