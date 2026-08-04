@@ -18,7 +18,7 @@ SOURCE_SNAPSHOT = "2025-09-21"
 
 # Gli id evitano collisioni di nome (es. Bundesliga tedesca/austriaca,
 # Serie A italiana/ecuadoriana, Premier League inglese/ucraina).
-CAMPIONATI = {
+CAMPIONATI_BASE = {
     "13": "Premier League",
     "53": "La Liga",
     "31": "Serie A",
@@ -105,8 +105,14 @@ def normalizza_ruoli(riga: dict[str, str]) -> list[str]:
     return ruoli
 
 
-def normalizza_riga(riga: dict[str, str]) -> dict[str, object]:
-    if riga["league_id"] not in CAMPIONATI:
+def normalizza_riga(riga: dict[str, str], elite_globale: bool = False) -> dict[str, object]:
+    if elite_globale:
+        campionato = riga.get("league_name", "").strip()
+        if not campionato:
+            raise ErroreDataset(f"player_id={riga['player_id']}: campionato esterno mancante")
+    elif riga["league_id"] in CAMPIONATI_BASE:
+        campionato = CAMPIONATI_BASE[riga["league_id"]]
+    else:
         raise ErroreDataset(f"Campionato non selezionato: {riga['league_id']}")
     if riga["fifa_version"].strip() != "26":
         raise ErroreDataset(f"player_id={riga['player_id']}: snapshot non FC 26")
@@ -151,7 +157,8 @@ def normalizza_riga(riga: dict[str, str]) -> dict[str, object]:
         "nome": nome,
         "nazionalita": riga["nationality_name"].strip() or None,
         "club": club,
-        "campionato": CAMPIONATI[riga["league_id"]],
+        "campionato": campionato,
+        "elite_globale": elite_globale,
         "overall": overall,
         "potential": potential,
         "eta": intero(riga, "age", 15, 45),
@@ -163,27 +170,38 @@ def normalizza_riga(riga: dict[str, str]) -> dict[str, object]:
     }
 
 
-def righe_selezionate(percorso: Path) -> Iterator[dict[str, str]]:
+def righe_selezionate(percorso: Path, elite_globale: bool = False) -> Iterator[dict[str, str]]:
     with percorso.open(encoding="utf-8-sig", newline="") as file_csv:
         lettore = csv.DictReader(file_csv)
         mancanti = COLONNE_OBBLIGATORIE - set(lettore.fieldnames or [])
         if mancanti:
             raise ErroreDataset(f"Colonne mancanti: {sorted(mancanti)}")
         for riga in lettore:
-            if riga["league_id"] in CAMPIONATI:
+            if not elite_globale and riga["league_id"] in CAMPIONATI_BASE:
+                yield riga
+            elif (
+                elite_globale
+                and riga["league_id"] not in CAMPIONATI_BASE
+                and riga.get("league_name", "").strip()
+                and int(float(riga["overall"])) >= 75
+            ):
                 yield riga
 
 
-def leggi_giocatori(percorso: Path) -> list[dict[str, object]]:
-    giocatori = [normalizza_riga(riga) for riga in righe_selezionate(percorso)]
+def leggi_giocatori(percorso: Path, elite_globale: bool = False) -> list[dict[str, object]]:
+    giocatori = [normalizza_riga(riga, elite_globale) for riga in righe_selezionate(percorso, elite_globale)]
     ids = [giocatore["fc_id"] for giocatore in giocatori]
     if len(ids) != len(set(ids)):
         duplicati = [fc_id for fc_id, n in Counter(ids).items() if n > 1]
         raise ErroreDataset(f"fc_id duplicati: {duplicati[:10]}")
+    if elite_globale:
+        if not 1 <= len(giocatori) <= 1000:
+            raise ErroreDataset(f"Volume elite inatteso: {len(giocatori)} giocatori")
+        return giocatori
     if not 5000 <= len(giocatori) <= 6500:
         raise ErroreDataset(f"Volume inatteso: {len(giocatori)} giocatori")
     presenti = {giocatore["campionato"] for giocatore in giocatori}
-    attesi = set(CAMPIONATI.values())
+    attesi = set(CAMPIONATI_BASE.values())
     if presenti != attesi:
         raise ErroreDataset(f"Campionati mancanti: {sorted(attesi - presenti)}")
     return giocatori
@@ -209,6 +227,7 @@ def sql_riga(giocatore: dict[str, object]) -> str:
         sql_testo(giocatore["nazionalita"]),
         sql_testo(giocatore["club"]),
         sql_testo(giocatore["campionato"]),
+        "true" if giocatore["elite_globale"] else "false",
         str(giocatore["overall"]),
         str(giocatore["potential"]),
         str(giocatore["eta"]),
@@ -228,12 +247,12 @@ def scrivi_batch(
         vecchio.unlink()
 
     colonne = (
-        "fc_id,nome,nazionalita,club,campionato,overall,potential,eta,"
+        "fc_id,nome,nazionalita,club,campionato,elite_globale,overall,potential,eta,"
         "data_nascita,posizioni,piede,altezza,attributi"
     )
     aggiornamenti = (
         "nome=excluded.nome,nazionalita=excluded.nazionalita,club=excluded.club,"
-        "campionato=excluded.campionato,overall=excluded.overall,"
+        "campionato=excluded.campionato,elite_globale=excluded.elite_globale,overall=excluded.overall,"
         "potential=excluded.potential,eta=excluded.eta,"
         "data_nascita=excluded.data_nascita,posizioni=excluded.posizioni,"
         "piede=excluded.piede,altezza=excluded.altezza,attributi=excluded.attributi"
@@ -267,11 +286,13 @@ def main() -> None:
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--batch-size", type=int, default=250)
+    parser.add_argument("--elite-globale", action="store_true",
+                        help="Importa solo giocatori OVR 75+ dai campionati non inclusi nel pool base.")
     args = parser.parse_args()
     if not 1 <= args.batch_size <= 1000:
         parser.error("--batch-size deve essere tra 1 e 1000")
 
-    giocatori = leggi_giocatori(args.input)
+    giocatori = leggi_giocatori(args.input, args.elite_globale)
     numero_batch = scrivi_batch(giocatori, args.output_dir, args.batch_size)
     conteggi = Counter(str(g["campionato"]) for g in giocatori)
     manifest = {
@@ -283,6 +304,7 @@ def main() -> None:
         "clubs": len({str(g["club"]) for g in giocatori}),
         "leagues": dict(sorted(conteggi.items())),
         "batches": numero_batch,
+        "elite_globale": args.elite_globale,
     }
     (args.output_dir / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"

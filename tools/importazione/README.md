@@ -25,6 +25,19 @@ done
 
 L'upsert non modifica `foto_url`, quindi un reimport non cancella immagini già ospitate.
 
+### Pool élite globale
+
+Per aggiungere soltanto gli esterni da `overall >= 75` dei campionati non presenti
+nel pool base, usa lo stesso CSV con l'opzione seguente. I giocatori conservano il
+campionato reale ma vengono marcati come disponibili in ogni lega.
+
+```bash
+python3 tools/importazione/normalizza.py \
+  --input /tmp/fc26-player-data/FC26_20250921.csv \
+  --output-dir /tmp/specialone-fc26-elite-sql \
+  --elite-globale
+```
+
 ## Foto (opzionale, separato)
 
 ```bash

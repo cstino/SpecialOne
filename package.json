@@ -7,7 +7,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint src",
     "test:engine": "node tools/validazione/simulate.js",
-    "test:import": "python3 -m unittest discover -s tools/importazione -p 'test_*.py'"
+    "test:import": "python -m unittest discover -s tools/importazione -p test_*.py"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.111.0",

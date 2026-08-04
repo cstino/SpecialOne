@@ -25,3 +25,10 @@ appartenenti a 192 club:
 
 Il file grezzo non viene distribuito nel repository. Le foto non sono usate in hotlink:
 lo script separato le ridimensiona e le carica nel bucket privato Supabase.
+
+## Pool élite globale
+
+Il 4 agosto 2026 sono stati aggiunti **355** giocatori con overall `>= 75` da
+24 campionati non inclusi nel pool base. Restano etichettati con il campionato
+reale, ma il flag `elite_globale` li rende estraibili in ogni lega. Le 20 righe
+del dataset senza campionato non sono state importate.

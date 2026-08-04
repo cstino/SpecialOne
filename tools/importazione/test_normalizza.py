@@ -52,6 +52,15 @@ class NormalizzazioneTest(unittest.TestCase):
         with self.assertRaises(ErroreDataset):
             normalizza_riga(riga)
 
+    def test_elite_globale_accetta_campionato_esterno_da_75(self):
+        riga = riga_valida()
+        riga["league_id"] = "39"
+        riga["league_name"] = "Major League Soccer"
+        riga["overall"] = "75"
+        giocatore = normalizza_riga(riga, elite_globale=True)
+        self.assertEqual(giocatore["campionato"], "Major League Soccer")
+        self.assertTrue(giocatore["elite_globale"])
+
     def test_rifiuta_ruolo_sconosciuto(self):
         riga = riga_valida()
         riga["player_positions"] = "CAM, XYZ"

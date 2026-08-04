@@ -1,5 +1,16 @@
 # Stato progetto e handoff
 
+### Pool élite globale — 355 giocatori esterni da OVR 75+
+
+Richiesta dell'utente: aggiungere i migliori giocatori dei campionati non
+presenti nel pool base. La pipeline `normalizza.py --elite-globale` legge lo
+stesso snapshot FC 26, esclude le 10 leghe già importate e le 20 righe senza
+campionato, quindi seleziona solo `overall >= 75`. Importati **355** giocatori
+da 24 campionati/117 club, tutti con `players.elite_globale = true` (catalogo:
+5.771 giocatori). La migrazione `20260804210000_pool_elite_globale.sql` li
+mantiene col campionato originale ma li rende idonei a draft, estrazioni mercato
+e spin in ogni lega, senza cambiare le liste di campionati configurabili.
+
 ### Filtro temporaneo del pool giocatori
 
 Per il test richiesto dall'utente, la migrazione
