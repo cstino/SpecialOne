@@ -176,16 +176,32 @@ def righe_selezionate(percorso: Path, elite_globale: bool = False) -> Iterator[d
         mancanti = COLONNE_OBBLIGATORIE - set(lettore.fieldnames or [])
         if mancanti:
             raise ErroreDataset(f"Colonne mancanti: {sorted(mancanti)}")
-        for riga in lettore:
-            if not elite_globale and riga["league_id"] in CAMPIONATI_BASE:
-                yield riga
-            elif (
-                elite_globale
-                and riga["league_id"] not in CAMPIONATI_BASE
-                and riga.get("league_name", "").strip()
-                and int(float(riga["overall"])) >= 75
-            ):
-                yield riga
+        righe = list(lettore)
+
+    if not elite_globale:
+        yield from (riga for riga in righe if riga["league_id"] in CAMPIONATI_BASE)
+        return
+
+    # Gli under 22 vengono presi dagli stessi campionati che già ospitano un
+    # giocatore 75+: evita di allargare il pool a decine di leghe minori.
+    leghe_elite = {
+        riga["league_id"]
+        for riga in righe
+        if riga["league_id"] not in CAMPIONATI_BASE
+        and riga.get("league_name", "").strip()
+        and int(float(riga["overall"])) >= 75
+    }
+    for riga in righe:
+        overall = int(float(riga["overall"]))
+        eta = int(float(riga["age"]))
+        elite_affermato = riga["league_id"] in leghe_elite and overall >= 75
+        giovane_promettente = (
+            riga["league_id"] in leghe_elite
+            and eta < 22
+            and 66 < overall < 75
+        )
+        if elite_affermato or giovane_promettente:
+            yield riga
 
 
 def leggi_giocatori(percorso: Path, elite_globale: bool = False) -> list[dict[str, object]]:
@@ -287,7 +303,7 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--batch-size", type=int, default=250)
     parser.add_argument("--elite-globale", action="store_true",
-                        help="Importa solo giocatori OVR 75+ dai campionati non inclusi nel pool base.")
+                        help="Importa OVR 75+ e under 22 OVR 67-74 dalle leghe esterne qualificate.")
     args = parser.parse_args()
     if not 1 <= args.batch_size <= 1000:
         parser.error("--batch-size deve essere tra 1 e 1000")

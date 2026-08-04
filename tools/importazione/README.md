@@ -27,9 +27,11 @@ L'upsert non modifica `foto_url`, quindi un reimport non cancella immagini già 
 
 ### Pool élite globale
 
-Per aggiungere soltanto gli esterni da `overall >= 75` dei campionati non presenti
-nel pool base, usa lo stesso CSV con l'opzione seguente. I giocatori conservano il
-campionato reale ma vengono marcati come disponibili in ogni lega.
+Per aggiungere gli esterni da `overall >= 75` e i giovani under 22 con overall
+`67–74` dei campionati non presenti nel pool base, usa lo stesso CSV con l'opzione
+seguente. I giovani vengono presi solo dalle leghe esterne che hanno già almeno un
+giocatore da 75+. Tutti conservano il campionato reale ma diventano disponibili in
+ogni lega.
 
 ```bash
 python3 tools/importazione/normalizza.py \

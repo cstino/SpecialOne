@@ -28,7 +28,9 @@ lo script separato le ridimensiona e le carica nel bucket privato Supabase.
 
 ## Pool élite globale
 
-Il 4 agosto 2026 sono stati aggiunti **355** giocatori con overall `>= 75` da
-24 campionati non inclusi nel pool base. Restano etichettati con il campionato
-reale, ma il flag `elite_globale` li rende estraibili in ogni lega. Le 20 righe
-del dataset senza campionato non sono state importate.
+Il 4 agosto 2026 sono stati aggiunti **576** giocatori dai campionati non
+inclusi nel pool base: **355** con overall `>= 75` e **221** under 22 con
+overall `67–74`. I giovani sono limitati alle stesse leghe esterne che hanno
+almeno un giocatore da 75+. Restano etichettati con il campionato reale, ma il
+flag `elite_globale` li rende estraibili in ogni lega. Le 20 righe del dataset
+senza campionato non sono state importate.
