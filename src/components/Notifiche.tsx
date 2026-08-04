@@ -19,6 +19,14 @@ const ICONE: Record<TipoNotifica, string> = {
   sistema: 'M12 8.5v4.2m0 3.1v.2M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17',
 }
 
+export function IconaNotifica({ tipo }: { tipo: TipoNotifica }) {
+  return <i aria-hidden="true" data-tipo={tipo}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d={ICONE[tipo] ?? ICONE.sistema} />
+    </svg>
+  </i>
+}
+
 export function Notifiche({ userId, onApriNotifica, embedded = false }: NotificheProps) {
   const { notifiche, nonLette, caricamento, segnaLette, elimina } = useNotifiche(userId)
   const [aperto, setAperto] = useState(false)
@@ -87,11 +95,7 @@ export function Notifiche({ userId, onApriNotifica, embedded = false }: Notifich
                   type="button"
                   onClick={() => { setAperto(false); onApriNotifica?.(notifica) }}
                 >
-                  <i aria-hidden="true" data-tipo={notifica.tipo}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d={ICONE[notifica.tipo] ?? ICONE.sistema} />
-                    </svg>
-                  </i>
+                  <IconaNotifica tipo={notifica.tipo} />
                   <span>
                     <strong>{notifica.titolo}</strong>
                     {notifica.corpo && <small>{notifica.corpo}</small>}

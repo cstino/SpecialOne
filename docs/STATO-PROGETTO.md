@@ -1,5 +1,24 @@
 # Stato progetto e handoff
 
+### Albo d'oro della lega
+
+La navigazione della lega include la sezione **Albo d'oro**, disponibile in
+draft, stagione, off-season e a campionato concluso. Legge le sole stagioni
+`conclusa` della lega corrente, individua la riga di classifica in posizione
+1 e mostra squadra campione, stemma, punti e record. Non introduce nuove
+tabelle: `seasons`, `standings` e `teams` erano gia' protetti dalle policy RLS
+per i membri della lega. La card principale celebra il campione in carica; in
+assenza di stagioni concluse mostra uno stato vuoto esplicativo.
+
+### Centro Avvisi nella navigazione della lega
+
+Gli avvisi non sono piu' un pannello a comparsa nella sidebar o nel drawer.
+La nuova voce **Avvisi** apre una pagina dedicata con badge delle non lette,
+apertura dell'evento collegato, cancellazione della singola riga e stato vuoto.
+Lo stato di `useNotifiche` ora vive una sola volta in `App` e viene condiviso
+dal menu e dalla pagina tramite contesto: nessuna doppia sottoscrizione Realtime
+e il badge si aggiorna immediatamente quando arriva un avviso.
+
 ### Pool élite globale — 576 giocatori esterni
 
 Richiesta dell'utente: aggiungere i migliori giocatori dei campionati non

@@ -1,9 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useNotificheContesto, useTornaAllaHome } from '../lib/navigazione'
 import type { League } from '../types'
-import { Notifiche } from './Notifiche'
 
-export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'matches' | 'table' | 'admin'
+export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'matches' | 'table' | 'honors' | 'notifications' | 'admin'
 type GameNavProps = { league: League; active: GameView; onNavigate?: (view: GameView) => void }
 
 // Icone disegnate a mano: i glifi Unicode di prima (▦ ♜ ♙ ◆ ◉ ≡) venivano resi dal
@@ -15,6 +14,8 @@ const ICONE: Record<string, ReactNode> = {
   team: <><path d="M12 3 20 6v6.5c0 4.6-3.3 7.7-8 9-4.7-1.3-8-4.4-8-9V6z" /></>,
   matches: <><circle cx="12" cy="12" r="9" /><path d="m12 7 4.3 3.1-1.6 5h-5.4l-1.6-5z" /></>,
   table: <><path d="M5 20V11M12 20V4M19 20v-6" /></>,
+  honors: <><path d="M8 4h8v4.5a4 4 0 0 1-8 0z" /><path d="M8 6H5.5v1.5A3 3 0 0 0 8.5 10M16 6h2.5v1.5a3 3 0 0 1-3 2.5M12 12.5V17M8.5 21h7M9.5 17h5" /></>,
+  notifications: <><path d="M18 9a6 6 0 1 0-12 0c0 4.5-1.5 5.6-2 6.5h16c-.5-.9-2-2-2-6.5" /><path d="M10 19a2.2 2.2 0 0 0 4 0" /></>,
   mercato: <><path d="M4 8.5h12m0 0-3-3m3 3-3 3" /><path d="M20 15.5H8m0 0 3-3m-3 3 3 3" /></>,
   offseason: <><path d="M4 7h16M6 3v4m12-4v4" /><path d="M5 11h14v9H5z" /><path d="m9 15 2 2 4-4" /></>,
   admin: <><path d="M12 3.5 5 6.5v5c0 4.5 3 7.2 7 9 4-1.8 7-4.5 7-9v-5z" /><path d="m9.2 12 1.9 1.9 3.7-3.9" /></>,
@@ -32,6 +33,8 @@ const draftItems = [
   ['overview', 'Overview'],
   ['draft', 'Draft'],
   ['squad', 'La mia rosa'],
+  ['honors', "Albo d'oro"],
+  ['notifications', 'Avvisi'],
 ] as const
 
 const seasonItems = [
@@ -41,6 +44,8 @@ const seasonItems = [
   ['mercato', 'Mercato'],
   ['matches', 'Partite'],
   ['table', 'Classifica'],
+  ['honors', "Albo d'oro"],
+  ['notifications', 'Avvisi'],
 ] as const
 
 const offseasonItems = [
@@ -49,6 +54,8 @@ const offseasonItems = [
   ['mercato', 'Mercato'],
   ['matches', 'Partite'],
   ['table', 'Classifica'],
+  ['honors', "Albo d'oro"],
+  ['notifications', 'Avvisi'],
 ] as const
 
 const concludedItems = [
@@ -57,6 +64,8 @@ const concludedItems = [
   ['team', 'Squadra'],
   ['matches', 'Partite'],
   ['table', 'Classifica'],
+  ['honors', "Albo d'oro"],
+  ['notifications', 'Avvisi'],
 ] as const
 
 export function GameNav({ league, active, onNavigate }: GameNavProps) {
@@ -109,9 +118,9 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
     <>
       <aside className="game-sidebar">
         {marchio('desktop')}
-        <div className="game-sidebar__league"><small>LEGA ATTIVA</small><strong>{league.nome}</strong><span>{league.fase_carriera === 'offseason' ? `Off-season · verso la S${league.stagione_corrente + 1}` : league.stato === 'draft' ? 'Draft in corso' : league.stato === 'conclusa' ? `Stagione ${league.stagione_corrente} conclusa` : `Stagione ${league.stagione_corrente} in corso`}</span>{notifiche && <Notifiche userId={notifiche.userId} onApriNotifica={notifiche.apri} />}</div>
+        <div className="game-sidebar__league"><small>LEGA ATTIVA</small><strong>{league.nome}</strong><span>{league.fase_carriera === 'offseason' ? `Off-season · verso la S${league.stagione_corrente + 1}` : league.stato === 'draft' ? 'Draft in corso' : league.stato === 'conclusa' ? `Stagione ${league.stagione_corrente} conclusa` : `Stagione ${league.stagione_corrente} in corso`}</span></div>
         <nav aria-label="Navigazione lega">
-          {items.map(([key, label]) => <button className={`game-nav-item ${active === key ? 'is-active' : ''}`} key={key} type="button" onClick={() => vai(key)} aria-current={active === key ? 'page' : undefined}><i aria-hidden="true"><Icona nome={key} /></i><span>{label}</span>{key === active && <b />}</button>)}
+          {items.map(([key, label]) => <button className={`game-nav-item ${active === key ? 'is-active' : ''}`} key={key} type="button" onClick={() => vai(key)} aria-current={active === key ? 'page' : undefined}><i aria-hidden="true"><Icona nome={key} /></i><span>{label}</span>{key === 'notifications' && notifiche && notifiche.nonLette > 0 && <em className="game-nav-item__badge">{notifiche.nonLette > 9 ? '9+' : notifiche.nonLette}</em>}{key === active && <b />}</button>)}
         </nav>
         <div className="game-sidebar__footer"><span className="game-online-dot" /> Server online<span className="game-version">S1 · BETA</span></div>
       </aside>
@@ -129,9 +138,8 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
             <button type="button" onClick={() => setMenuMobileAperto(false)} aria-label="Chiudi menu">×</button>
           </header>
           <nav className="game-drawer__nav" aria-label="Navigazione lega mobile">
-            {items.map(([key, label]) => <button className={`game-nav-item ${active === key ? 'is-active' : ''}`} key={key} type="button" onClick={() => vai(key)} aria-current={active === key ? 'page' : undefined}><i aria-hidden="true"><Icona nome={key} /></i><span>{key === 'squad' ? 'Rosa' : label}</span>{key === active && <b />}</button>)}
+            {items.map(([key, label]) => <button className={`game-nav-item ${active === key ? 'is-active' : ''}`} key={key} type="button" onClick={() => vai(key)} aria-current={active === key ? 'page' : undefined}><i aria-hidden="true"><Icona nome={key} /></i><span>{key === 'squad' ? 'Rosa' : label}</span>{key === 'notifications' && notifiche && notifiche.nonLette > 0 && <em className="game-nav-item__badge">{notifiche.nonLette > 9 ? '9+' : notifiche.nonLette}</em>}{key === active && <b />}</button>)}
           </nav>
-          {notifiche && <div className="game-drawer__alerts"><Notifiche embedded userId={notifiche.userId} onApriNotifica={(notifica) => { setMenuMobileAperto(false); notifiche.apri(notifica) }} /></div>}
           {tornaAllaHome && <button className="game-drawer__home" type="button" onClick={() => { setMenuMobileAperto(false); tornaAllaHome() }}>Torna alle mie leghe <span>→</span></button>}
           <footer><span className="game-online-dot" /> Server online <small>S1 · BETA</small></footer>
         </aside>

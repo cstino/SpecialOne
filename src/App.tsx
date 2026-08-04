@@ -8,6 +8,8 @@ FORM: direzione “lavagna gara”, settima opzione grounded; staging registrati
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { Admin } from './components/Admin'
+import { AlboDOro } from './components/AlboDOro'
+import { Avvisi } from './components/Avvisi'
 import { AuthScreen } from './components/AuthScreen'
 import { Draft } from './components/Draft'
 import { Formazione } from './components/Formazione'
@@ -24,7 +26,7 @@ import { Lobby } from './components/Lobby'
 import { MenuIniziale } from './components/MenuIniziale'
 import { Onboarding } from './components/Onboarding'
 import { ContestoHome, ContestoNotifiche } from './lib/navigazione'
-import type { Notifica } from './lib/notifiche'
+import { useNotifiche, type Notifica } from './lib/notifiche'
 import { configurationError, supabase } from './lib/supabase'
 import { useSwipeIndietro } from './lib/swipeIndietro'
 import type { League, Membership, RpcResult, Team } from './types'
@@ -59,6 +61,7 @@ export default function App() {
   const [nelMenu, setNelMenu] = useState(true)
   const [modoOnboarding, setModoOnboarding] = useState<'choose' | 'create' | 'join'>('choose')
   const [error, setError] = useState<string | null>(null)
+  const centroNotifiche = useNotifiche(session?.user.id)
 
   const apriMenu = useCallback(() => setNelMenu(true), [])
 
@@ -122,8 +125,8 @@ export default function App() {
   }, [])
 
   const contestoNotifiche = useMemo(
-    () => session?.user ? { userId: session.user.id, apri: apriNotifica } : null,
-    [session, apriNotifica],
+    () => session?.user ? { userId: session.user.id, ...centroNotifiche, apri: apriNotifica } : null,
+    [session, centroNotifiche, apriNotifica],
   )
 
   useEffect(() => {
@@ -303,6 +306,8 @@ export default function App() {
       : gameView === 'mercato' ? <Mercato membership={active} onNavigate={navigateGame} />
       : gameView === 'matches' ? <Matches membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'matches' })} onOpenTeam={openTeam} />
       : gameView === 'table' ? <Standings membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
+      : gameView === 'honors' ? <AlboDOro membership={active} onNavigate={navigateGame} />
+      : gameView === 'notifications' ? <Avvisi membership={active} onNavigate={navigateGame} />
       : gameView === 'admin' ? <Admin membership={active} onNavigate={navigateGame} />
       : <SeasonOverview membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'overview' })} onOpenTeam={openTeam} />,
   )
