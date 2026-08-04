@@ -183,7 +183,9 @@ export function Mercato({ membership, onNavigate }: Props) {
   const [schedaApertaId, setSchedaApertaId] = useState<number | null>(null)
   const [paginaRumor, setPaginaRumor] = useState(0)
 
-  const aperto = mercatoAperto()
+  // Un'asta aperta dal pannello admin resta utilizzabile anche fuori dalla
+  // finestra automatica: lo stato server delle aste è la seconda fonte di verità.
+  const aperto = mercatoAperto() || aste.some((asta) => asta.stato === 'aperta')
   const mostraListaLegacySvincolati = false
   // Nascosto su richiesta dell'utente per provare il mercato senza: resta
   // tutto il codice, basta rimettere a true per riportarlo visibile.

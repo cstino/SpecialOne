@@ -53,8 +53,16 @@ export function Admin({ membership, onNavigate }: AdminProps) {
     const { data, error } = await supabase.rpc('admin_apri_mercato', { p_league_id: league.id })
     setAprendo(false)
     if (error) { setEsitoApri({ tono: 'errore', testo: error.message }); return }
-    const n = data as number
-    setEsitoApri({ tono: 'ok', testo: n > 0 ? `${n} svincolati estratti per oggi.` : 'Il mercato di oggi era già stato aperto: nessun nuovo estratto.' })
+    const risultato = data as { riaperte?: number; estratti?: number; totale_aperto?: number }
+    const riaperte = risultato?.riaperte ?? 0
+    const estratti = risultato?.estratti ?? 0
+    const totale = risultato?.totale_aperto ?? riaperte + estratti
+    setEsitoApri({
+      tono: 'ok',
+      testo: totale > 0
+        ? `Mercato riaperto: ${riaperte} ${riaperte === 1 ? 'asta riaperta' : 'aste riaperte'}, ${estratti} ${estratti === 1 ? 'nuovo estratto' : 'nuovi estratti'}.`
+        : 'Non ci sono nuovi giocatori disponibili da estrarre o riaprire.',
+    })
   }
 
   async function chiudiMercato() {
@@ -76,8 +84,8 @@ export function Admin({ membership, onNavigate }: AdminProps) {
           <div>
             <p className="kicker">Solo amministratore · {league.nome}</p>
             <h1>Pannello admin.</h1>
-            <p>Tre azioni di riserva, per quando pg_cron non parte da solo. Non servono a niente se i cron
-              funzionano — usale solo se una giornata o un mercato sono rimasti fermi oltre l'orario previsto.</p>
+            <p>Tre azioni di riserva, per quando pg_cron non parte da solo. L'apertura manuale abilita
+              anche le offerte fuori dalla finestra automatica, finché il mercato non viene richiuso.</p>
           </div>
         </section>
 
