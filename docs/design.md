@@ -586,7 +586,9 @@ Ogni squadra può fare **una offerta per giocatore**, in ingaggio annuale offert
 ```
 soglia = ingaggio_teorico × uniform(0.90, 1.10)
 ```
-Non visibile alle squadre. Offerte sotto soglia vengono scartate.
+Non visibile alle squadre. Offerte sotto soglia vengono scartate. L'interfaccia mostra
+comunque `ingaggio_teorico` come riferimento pubblico, etichettato **"ingaggio minimo"**: è un
+riferimento, non una garanzia — la soglia vera può salire fino al 10% sopra quel numero.
 
 **Assegnazione**: alle 21:00 vince l'offerta più alta sopra soglia. **A parità vince chi ha offerto prima.** Il giocatore entra in rosa con contratto di 1 anno all'ingaggio offerto. Se nessuna offerta supera la soglia, il giocatore torna nel pool.
 
@@ -651,19 +653,31 @@ Off-season, prima della nuova stagione. Ogni contratto in scadenza va rinnovato 
 
 **Richiesta del giocatore**:
 ```
-richiesta = ingaggio_teorico(OVR_nuovo, età_nuova)
-          × mod_rendimento    (0.85 – 1.35, da percentile di rendimento nel ruolo)
-          × mod_ambizione     (0.90 top-3 · 1.00 metà · 1.15 ultimo terzo)
-          × uniform(0.95, 1.05)
+richiesta = max(
+  ingaggio_attuale,
+  ingaggio_teorico(OVR_nuovo, età_nuova)
+    × mod_rendimento    (0.85 – 1.35, da percentile di rendimento nel ruolo)
+    × mod_ambizione     (0.90 top-3 · 1.00 metà · 1.15 ultimo terzo)
+    × uniform(0.95, 1.05)
+)
 ```
+
+> **Pavimento aggiunto dall'utente, 4 agosto 2026.** Un giocatore non chiede mai meno di quanto
+> sta già percependo. Senza questo pavimento, un giocatore aggiudicato all'asta o al draft molto
+> sopra il suo valore teorico (es. pagato 15 M€ per un profilo che "vale" teoricamente 10 M€)
+> tornerebbe a chiedere 10 M€ al primo rinnovo, cancellando il sovrapprezzo pagato. Il margine di
+> trattativa verso il basso resta quello di sempre — il range mostrato e la soglia di
+> accettazione qui sotto — solo calcolato sopra il nuovo pavimento invece che sopra il teorico.
 
 Mostrata al giocatore come **range con ±12% di incertezza** ("chiede circa 4,2–5,3 M€"). Il numero esatto non è visibile: se lo fosse, offriresti sempre quello e la meccanica sparirebbe.
 
-**Offerta della squadra**: ingaggio + durata 1–4 anni.
-```
-costo_annuo = offerta × (1 + 0.08 × (durata − 1))
-```
-Contratto lungo costa di più ma **blocca l'ingaggio**: legare un 19enne con potential 88 per 4 anni a 2,5 M€ è la mossa più redditizia del gioco. Contratto corto è economico ma ti espone al rinnovo a prezzo di mercato l'anno dopo.
+**Offerta della squadra**: ingaggio + durata **1–4 stagioni** (il gioco scandisce il tempo in
+stagioni, non in anni solari — vale per ogni durata di contratto in questo documento).
+L'ingaggio offerto e accettato è quello che il giocatore percepisce ogni stagione, senza
+maggiorazioni: la durata **blocca** quella cifra per più stagioni, non la aumenta. Contratto
+lungo conviene alla squadra perché rimanda il prossimo rinnovo (e il rischio che nel frattempo
+salga di valore); contratto corto è più prudente ma espone al rinnovo a prezzo di mercato la
+stagione dopo.
 
 **Accettazione**:
 - offerta ≥ richiesta → accetta

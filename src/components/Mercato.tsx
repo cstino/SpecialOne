@@ -133,6 +133,9 @@ export function Mercato({ membership, onNavigate }: Props) {
 
   const aperto = mercatoAperto()
   const mostraListaLegacySvincolati = false
+  // Nascosto su richiesta dell'utente per provare il mercato senza: resta
+  // tutto il codice, basta rimettere a true per riportarlo visibile.
+  const mostraArchivioSvincolati = false
 
   const carica = useCallback(async (silenzioso = false) => {
     if (!silenzioso) setCaricamento(true)
@@ -399,7 +402,7 @@ export function Mercato({ membership, onNavigate }: Props) {
         <strong>{g?.nome ?? `#${a.player_id}`}</strong>
         <p>{g?.club ?? '—'} · {g?.eta ?? '—'} anni · {g?.posizioni?.join(' / ') ?? '—'}</p>
         <footer>
-          <em>Valore {milioni(a.ingaggio_teorico)}</em>
+          <em>Ingaggio minimo {milioni(a.ingaggio_teorico)}</em>
           {a.origine === 'spin_offseason' && <i>Spin</i>}
           {a.stato !== 'aperta' && <i>{a.stato === 'assegnata' ? 'Assegnato' : 'Svincolato storico'}</i>}
         </footer>
@@ -578,7 +581,7 @@ export function Mercato({ membership, onNavigate }: Props) {
             : <div className="free-agent-grid">{nuoviDelGiorno.map((a) => cardSvincolato(a))}</div>}
         </div>
 
-        <div className="free-agent-archive">
+        {mostraArchivioSvincolati && <div className="free-agent-archive">
           <div className="free-agent-heading">
             <div><p className="kicker">Archivio</p><h3>Tutti gli svincolati</h3></div>
             <small>{archivioSvincolati.length} filtrati</small>
@@ -594,7 +597,7 @@ export function Mercato({ membership, onNavigate }: Props) {
           {archivioSvincolati.length === 0
             ? <p className="season-empty">Nessun giocatore con questi filtri.</p>
             : <div className="free-agent-list">{archivioSvincolati.map((a) => cardSvincolato(a, true))}</div>}
-        </div>
+        </div>}
       </section>
 
       {mostraListaLegacySvincolati && <>
@@ -620,7 +623,7 @@ export function Mercato({ membership, onNavigate }: Props) {
                   <b>{g?.overall ?? '—'}</b>
                   <span>
                     <strong>{g?.nome ?? `#${a.player_id}`}</strong>
-                    <small>{g?.ruolo} · {g?.eta} anni · valore {milioni(a.ingaggio_teorico)}</small>
+                    <small>{g?.ruolo} · {g?.eta} anni · ingaggio minimo {milioni(a.ingaggio_teorico)}</small>
                   </span>
                   {a.stato === 'aperta'
                     ? <div className="mercato-asta-offerta">

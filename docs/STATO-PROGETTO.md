@@ -1,7 +1,34 @@
 # Stato progetto e handoff
 
-Ultimo aggiornamento: **3 agosto 2026, sera**. Questo documento descrive lo stato reale del
+Ultimo aggiornamento: **4 agosto 2026**. Questo documento descrive lo stato reale del
 repository ed è il punto di partenza per il prossimo agent (Claude o Codex).
+
+### Mercato — chiarezza ingaggio, richiesta di rinnovo ancorata, archivio nascosto
+
+Quattro correzioni volute dall'utente dopo aver provato il mercato con dati reali, migrazione
+`20260804120000_rinnovo_ancorato_e_stagioni.sql`:
+
+1. **Label "Valore" → "Ingaggio minimo"** nelle card degli svincolati (`Mercato.tsx`). L'utente
+   la leggeva come un cartellino di trasferimento, che nel gioco non esiste — l'asta è sempre e
+   solo ingaggio annuale (design §9.4). Il numero mostrato resta `ingaggio_teorico`: è un
+   riferimento pubblico, non una garanzia, perché la soglia vera nascosta può salire fino al 10%
+   sopra (vedi nota aggiunta in design.md §9.4).
+2. **Vocabolario "stagioni" invece di "anni"** per la durata dei contratti, sia in
+   `Offseason.tsx` (select e riepilogo del rinnovo accettato) sia nei messaggi generati dal
+   server (`rispondi_rinnovo`, `risolvi_aste_giorno`).
+3. **La richiesta di rinnovo si ancora all'ingaggio attuale** (design §10.4): prima ripartiva
+   ogni volta dal solo `ingaggio_teorico(OVR, età)`, quindi un giocatore aggiudicato molto sopra
+   il suo valore teorico (asta cara, o pick di draft fortunato) tornava a chiedere il teorico più
+   basso al primo rinnovo, cancellando il sovrapprezzo pagato. Ora
+   `richiesta = max(ingaggio_attuale, formula teorica)`. Il range ±12% mostrato e la soglia di
+   accettazione al 90% restano identici, applicati sopra il nuovo pavimento: è lì che sta il
+   margine di trattativa verso il basso. Verificato in un rollback su una lega reale (id 32):
+   ingaggio forzato a 3× il teorico (13,5 M€ contro 4,5 M€), la richiesta esatta generata da
+   `prepara_offseason` è risultata 13,5 M€, non il teorico più basso.
+4. **Archivio svincolati nascosto**, non rimosso: l'utente vuole provare il mercato senza prima
+   di decidere se tenerlo. `Mercato.tsx` ha un flag `mostraArchivioSvincolati = false` (stesso
+   pattern già usato per `mostraListaLegacySvincolati`) che nasconde il blocco via rendering
+   condizionale — codice, funzioni e stato restano tutti al loro posto, si riattiva con `true`.
 
 ### Pannello admin — fallback manuale se pg_cron non parte
 

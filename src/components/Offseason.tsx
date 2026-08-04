@@ -190,7 +190,7 @@ function RenewalRow({ item, disabled, onSubmit }: { item: Rinnovo; disabled: boo
   const offer = parseMilioni(offerText)
   const trattabile = item.stato === 'in_attesa' || item.stato === 'controproposta'
   const dettaglioAccettato = item.stato === 'accettato' && player && item.durata
-    ? `${milioni(player.ingaggio)} M€/stag · ${item.durata} ${item.durata === 1 ? 'anno' : 'anni'}`
+    ? `${milioni(player.ingaggio)} M€/stag · ${item.durata} ${item.durata === 1 ? 'stagione' : 'stagioni'}`
     : null
   return <article className={`renewal-row renewal-row--${item.stato}`}>
     <div><strong>{player?.players?.nome ?? 'Giocatore'}</strong><small>{player?.players?.posizioni?.join(' · ')} · OVR {player?.overall_corrente} · {player?.eta_corrente} anni</small></div>
@@ -198,7 +198,7 @@ function RenewalRow({ item, disabled, onSubmit }: { item: Rinnovo; disabled: boo
     {trattabile ? <div className="renewal-actions">
       {item.stato === 'controproposta' && <small className="renewal-counter">Ultima proposta</small>}
       <input aria-label="Offerta" type="text" inputMode="decimal" value={offerText} onChange={e => setOfferText(e.target.value.replace(/[^\d,.]/g, ''))} />
-      <select aria-label="Durata" value={duration} onChange={e => setDuration(Number(e.target.value))}>{[1,2,3,4].map(y => <option key={y} value={y}>{y} {y === 1 ? 'anno' : 'anni'}</option>)}</select>
+      <select aria-label="Durata" value={duration} onChange={e => setDuration(Number(e.target.value))}>{[1,2,3,4].map(y => <option key={y} value={y}>{y} {y === 1 ? 'stagione' : 'stagioni'}</option>)}</select>
       <button disabled={disabled || offer === null || offer < 500000} onClick={() => offer !== null && onSubmit(item, offer, duration)}>Offri</button>
     </div> : <b className={`renewal-status renewal-status--${item.stato}`}>{item.stato}{dettaglioAccettato && <small>{dettaglioAccettato}</small>}</b>}
   </article>
