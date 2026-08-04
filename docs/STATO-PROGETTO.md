@@ -3,18 +3,65 @@
 Ultimo aggiornamento: **4 agosto 2026**. Questo documento descrive lo stato reale del
 repository ed è il punto di partenza per il prossimo agent (Claude o Codex).
 
-### Motore — varianza dei tiri per partita corretta (unica modifica al motore finora)
+### Ritiro dei giocatori — nuova tabella di probabilità, annuncio in due fasi
 
-Segnalato dall'utente sui dati reali di "Lega di Prova": alcune partite avevano 35-37 tiri per
-una squadra contro il target validato di 11-14. La media era ed è corretta (`tools/validazione/
-simulate.js` misura solo quella); il difetto era nella varianza di `CONVERSIONE_SIGMA`
-(0,03 in `engine/config.js`), che mandava la conversione sul tetto basso del clamp (0,07)
-circa 1 partita su 8, raddoppiando i tiri anche con un xG normale. Ridotta a `0.015`: media
-tiri invariata (12,1-12,4), quota di partite con 30+ tiri scesa dal ~12% teorico allo 0,14%
-osservato su 10.000 simulazioni. Suite di validazione rilanciata per intero: gli altri 12
-target restano identici a `docs/risultati-fase0.txt`, che è stato aggiornato col nuovo output.
-Dettagli in `docs/motore-validazione.md` (nuova sezione "Nota successiva") e `docs/design.md`
-§7.3. Prima modifica al motore dopo la Fase 0, fatta seguendo il protocollo di CLAUDE.md §4.
+Sostituisce integralmente il vecchio meccanismo (formula lineare `(età−33)×0.12`, ritiro tirato
+e applicato nello stesso istante a fine stagione). Decisione dell'utente, dettagli e tabella
+completa in `docs/design.md` §10.3. Migrazione `20260804150000_ritiro_giocatori.sql`.
+
+- **`private.probabilita_ritiro(età)`**: nuova tabella 34→10% ... 41→99%, 42+ automatico.
+- **Annuncio a inizio stagione (`finalizza_offseason`), uscita a fine stagione
+  (`prepara_offseason`)**: prima erano lo stesso istante. Ora chi annuncia gioca tutta la
+  stagione ma non è più cedibile (`player_instances.ritiro_annunciato`); alla transizione
+  successiva `prepara_offseason` lo rimuove per davvero, **prima** di invecchiare gli altri (il
+  roll del ritiro non c'è più in quel loop: si decide solo a inizio stagione).
+- **`svincola_giocatore`**: se il giocatore aveva già annunciato, lo svincolo è definitivo (non
+  torna disponibile), non un normale passaggio nel pool.
+- **`proponi_scambio` e `rispondi_a_proposta`**: rifiutano qualunque proposta che coinvolga un
+  giocatore con l'annuncio attivo, in offerta o in richiesta.
+- **Giocatori mai scelti da nessuno**: stesso calcolo ogni inizio stagione, età derivata (età
+  di catalogo + stagioni passate nella lega, perché il pool svincolati non fa mai invecchiare
+  le istanze non possedute). Se il dado dice ritiro finiscono nella nuova tabella
+  `public.retired_players(league_id, player_id)`, esclusi per sempre da quella lega **senza
+  essere mai passati da una squadra**.
+- **`retired_players` come controllo unico**, aggiunto a tutte le query che pescano un pool:
+  `estrai_svincolati_lega`, `offri_per_svincolato_archivio`, `pesca_carta_ruolo` (draft),
+  `spin_offseason`. Bug di rimbalzo sistemato di riflesso: prima un giocatore già ritirato
+  poteva ricomparire nel mercato, perché quelle query controllavano solo "è posseduto da
+  qualcuno?", mai `ritirato`.
+- **Domanda dell'utente sull'età, verificata e confermata corretta**: una stagione avanza
+  l'età di 1 anno per ogni giocatore a ogni transizione (`prepara_offseason`), indipendente dai
+  giorni reali trascorsi. Non serviva nessuna modifica.
+- **Verificato in un rollback su dati reali** (lega 32): tabella di probabilità su tutte le età
+  di riferimento, finalizzazione di un annuncio precedente, annuncio deterministico a 45 anni
+  (p=1.0), nessun annuncio sotto i 34, ritiro di un giocatore mai scelto (età derivata forzata a
+  45), esclusione dal pool di estrazione, svincolo normale vs svincolo definitivo di un
+  annunciato, rifiuto di `proponi_scambio` su un giocatore annunciato. Nove verifiche, tutte OK.
+
+### Motore — due correzioni dopo la Fase 0, entrambe segnalate dall'utente su dati reali
+
+Prime modifiche al motore dopo la Fase 0, entrambe fatte seguendo il protocollo di CLAUDE.md
+§4: descritte, applicate, suite rilanciata per intero, confrontate con
+`docs/risultati-fase0.txt` (aggiornato dopo ciascuna).
+
+1. **Varianza dei tiri per partita.** Alcune partite reali avevano 35-37 tiri per una squadra
+   contro il target validato di 11-14. La media era ed è corretta (`tools/validazione/
+   simulate.js` misura solo quella); il difetto era nella varianza di `CONVERSIONE_SIGMA`
+   (0,03 in `engine/config.js`), che mandava la conversione sul tetto basso del clamp (0,07)
+   circa 1 partita su 8, raddoppiando i tiri anche con un xG normale. Ridotta a `0.015`: media
+   tiri invariata (12,1-12,4), quota di partite con 30+ tiri scesa dal ~12% teorico allo 0,14%
+   osservato su 10.000 simulazioni. Dettagli in `docs/motore-validazione.md` e `docs/design.md`
+   §7.3.
+2. **Il portiere si stancava come un giocatore di movimento.** Segnalato dall'utente: dopo una
+   partita il proprio portiere era il più stanco della rosa, all'80%. Il consumo di condizione
+   per blocco si applicava a tutti i titolari senza eccezioni — l'unica eccezione per il
+   portiere era nelle sostituzioni (non viene mai cambiato per stanchezza, dal 2 agosto), non
+   nel consumo stesso. Corretto in `engine.js`: il portiere non consuma più condizione, resta
+   stabile salvo infortuni. Unico target che si sposta: "Condizione titolari a fine stagione"
+   sale da 88,5 a 90,4 (target 75-95, resta OK) — atteso, il portiere è sempre uno degli 11
+   titolari. Dettagli in `docs/motore-validazione.md`; anche la sezione "Costanti finali" di
+   `docs/design.md` era ferma ai valori pre-2-agosto (`CONSUMO_BASE`, `REC_*`) ed è stata
+   allineata nella stessa occasione.
 
 ### Mercato — chiarezza ingaggio, richiesta di rinnovo ancorata, archivio nascosto
 

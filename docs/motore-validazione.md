@@ -204,6 +204,34 @@ dati reali, la leva resta `XG_BASE_BLOCCO`; per la sola varianza dei tiri, la le
 
 ---
 
+## Nota successiva — il portiere non doveva stancarsi come un giocatore di movimento (4 agosto 2026)
+
+Segnalato dall'utente: dopo la prima partita il proprio portiere risultava il giocatore più
+stanco della rosa, all'80% di condizione. Nel calcio vero un portiere copre una frazione minima
+della distanza di un giocatore di movimento e non si stanca in modo paragonabile in una singola
+partita.
+
+**Causa**: il consumo di condizione per blocco di gioco (`CONSUMO_BASE - CONSUMO_MOD_STAMINA *
+stamina/100`, punto "Modello di fatica «da partita»" in `docs/STATO-PROGETTO.md`) si applicava a
+**tutti** i titolari senza distinzione di ruolo. L'unica eccezione per il portiere esisteva nelle
+sostituzioni (non viene mai cambiato per stanchezza, dal 2 agosto) — ma quella riga evitava solo
+il cambio, non il calo del numero.
+
+**Corretto**: il portiere non consuma più condizione per stanchezza (`engine.js`, loop di consumo
+condizione — esclude lo slot `GK`). Resta stabile per tutta la partita salvo infortuni, che sono
+un meccanismo separato e non toccato.
+
+**Suite rilanciata per intero**: gli unici target che si spostano sono quelli di TEST 3 (stagioni
+complete), perché è l'unico test con `usaCondizione: true`. "Condizione titolari a fine
+stagione" sale da 88,5 a **90,4** (target 75-95, resta OK) — atteso, dato che il portiere è
+sempre uno degli 11 titolari e ora non degrada più. Gli altri quattro target di TEST 3 restano
+dentro banda con scarti minimi (rumore statistico della singola esecuzione, non un effetto
+sistemico: la simulazione è a seme fisso, rieseguita due volte produce output identico). TEST 1,
+2 e 4 sono byte-per-byte identici: il portiere non entra nel calcolo di gol, tiri o equilibrio
+moduli. `docs/risultati-fase0.txt` aggiornato col nuovo output.
+
+---
+
 ## Cosa NON è stato validato
 
 - **Rose reali.** Le rose sintetiche hanno distribuzioni ragionevoli ma non sono il dataset FC 26. Quando importerai i dati veri, rilancia `test1` e `test3`: se i numeri si spostano, l'unica costante da ritoccare è `XG_BASE_BLOCCO`.

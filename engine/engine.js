@@ -231,12 +231,16 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     golO += nGolO;
     golPerBlocco.push({ blocco: b + 1, casa: nGolC, ospite: nGolO });
 
-    // consumo condizione + conteggio blocchi
+    // consumo condizione + conteggio blocchi. Il portiere non consuma
+    // condizione: nel calcio vero non si stanca come un giocatore di movimento,
+    // resta stabile salvo infortuni (stesso spirito dell'esclusione dai cambi
+    // per stanchezza, poco sopra).
     for (const L of [lc, lo]) {
-      for (const g of L.titolari) {
+      for (let i = 0; i < L.titolari.length; i++) {
+        const g = L.titolari[i];
         if (!g) continue;
         inCampo.set(g.id, (inCampo.get(g.id) || 0) + 1);
-        if (usaCondizione) {
+        if (usaCondizione && L.slots[i] !== 'GK') {
           g.condizione = Math.max(0, g.condizione - (CFG.CONSUMO_BASE - CFG.CONSUMO_MOD_STAMINA * (g.stamina / 100)));
         }
       }

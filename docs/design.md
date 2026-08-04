@@ -649,10 +649,35 @@ L'overall non supera mai `potential`. Il `potential` stesso può variare di ±1 
 
 ### 10.3 Ritiro
 
-```
-p_ritiro = max(0, (età − 33) × 0.12)
-```
-36 anni → 36%. 38 anni → 60%. 40 anni → 84%. Ritiro forzato a 42.
+> **Riscritto dall'utente, 4 agosto 2026.** Sostituisce la formula lineare precedente
+> (`p_ritiro = max(0, (età−33)×0.12)`) e il meccanismo a evento unico (si tirava il dado e si
+> rimuoveva il giocatore nello stesso istante, a fine stagione).
+
+**Tabella di probabilità annua**, dai 34 anni in su:
+
+| Età | 34 | 35 | 36 | 37 | 38 | 39 | 40 | 41 | 42+ |
+|---|---|---|---|---|---|---|---|---|---|
+| p_ritiro | 10% | 20% | 35% | 50% | 65% | 80% | 95% | 99% | 100% |
+
+**Annuncio a inizio stagione, uscita a fine stagione — due fasi distinte:**
+
+1. **Annuncio.** A inizio stagione si tira il dado per ogni giocatore di rosa ≥ 34 anni con
+   la tabella sopra. Chi lo annuncia **gioca comunque tutta la stagione appena iniziata**, ma
+   **non può più essere ceduto** in nessuna trattativa (né offerto né richiesto) per il resto
+   della stagione.
+2. **Uscita.** A fine di quella stessa stagione (transizione alla successiva) chi aveva
+   annunciato viene rimosso per davvero: esce dalla rosa, il posto libero conta per il minimo
+   di 21.
+
+**Svincolo di un giocatore che ha già annunciato**: non torna disponibile per nessuna squadra.
+L'uscita è immediata e definitiva, non un normale passaggio nel pool degli svincolati.
+
+**Giocatori mai scelti da nessuno**: lo stesso calcolo si applica anche a loro, a inizio di ogni
+stagione, sui campionati attivi della lega. Non avendo un contratto a cui appendere lo stato, il
+ritiro va in una tabella di esclusione permanente (`retired_players`) — se il dado dice ritiro,
+il giocatore sparisce dal pool degli svincolati **senza mai essere passato da una squadra**. La
+loro età è derivata (età del catalogo + stagioni passate in questa lega), perché il pool degli
+svincolati pesca sempre fresco dal catalogo e non fa invecchiare le istanze non possedute.
 
 ### 10.4 Rinnovi contrattuali
 
@@ -809,7 +834,7 @@ BONUS_CASA_ATT         = 2.0    // PUNTI di overall
 BONUS_CASA_MID         = 2.0
 DIVISORE_PORTIERE      = 180
 CONVERSIONE_MEDIA      = 0.105
-CONVERSIONE_SIGMA      = 0.03
+CONVERSIONE_SIGMA      = 0.015  // 0.03 originaria, ridotta il 4 agosto 2026 (vedi motore-validazione.md)
 DAMPING_MARCATORE      = 0.45
 
 // Tattica
@@ -818,12 +843,13 @@ STRUTT_CLAMP           = 3.5
 FAM_MALUS_MAX          = 3.5    // PUNTI di overall al primo utilizzo
 FAM_PARTITE_PIENA      = 15
 
-// Condizione
-CONSUMO_BASE           = 3.4
-CONSUMO_MOD_STAMINA    = 1.6
-REC_TRIBUNA            = 38
-REC_PANCHINA           = 30
-REC_GIOCATO            = 8
+// Condizione — modello "da partita", non di stagione (rivisto il 2 agosto 2026)
+CONSUMO_BASE           = 10.5   // 3.4 originaria: col vecchio valore nessuno si stancava mai
+CONSUMO_MOD_STAMINA    = 4.0    // 1.6 originaria
+SOGLIA_CAMBIO_COND     = 75     // sotto questa soglia scatta la sostituzione automatica
+REC_TRIBUNA            = 45     // 38 originaria
+REC_PANCHINA           = 40     // 30 originaria
+REC_GIOCATO            = 36     // 8 originaria
 
 // Infortuni
 INFORTUNIO_BASE        = 0.025

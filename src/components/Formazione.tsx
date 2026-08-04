@@ -27,7 +27,7 @@ const MODULO_DESCRIZIONI: Record<string, string> = {
 }
 
 type PlayerStats = Record<string, number | null>
-type Player = { id: number; fc_id: number; nome: string; club: string; nazionalita: string | null; overall_corrente: number; eta_corrente: number; posizioni: string[]; piede: string | null; altezza: number | null; condizione: number; infortunato_fino_a: number; attributi: PlayerStats; foto_url: string | null }
+type Player = { id: number; fc_id: number; nome: string; club: string; nazionalita: string | null; overall_corrente: number; eta_corrente: number; posizioni: string[]; piede: string | null; altezza: number | null; condizione: number; infortunato_fino_a: number; ritiro_annunciato: boolean; attributi: PlayerStats; foto_url: string | null }
 type SavedLineup = { modulo: string; titolari: number[]; panchina: number[]; tribuna: number[] }
 
 type FormazioneProps = { membership: Membership; onNavigate: (view: GameView) => void }
@@ -134,7 +134,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     async function load() {
       const { data: instances, error: rosterError } = await supabase
         .from('player_instances')
-        .select('id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, player_id')
+        .select('id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ritiro_annunciato, player_id')
         .eq('league_id', league.id)
         .eq('team_id', membership.id)
         .order('overall_corrente', { ascending: false })
@@ -409,6 +409,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           altezza: detailPlayer.altezza,
           condizione: detailPlayer.condizione,
           infortunatoFinoA: detailPlayer.infortunato_fino_a,
+          ritiroAnnunciato: detailPlayer.ritiro_annunciato,
           attributi: detailPlayer.attributi,
         }}
         fotoUrl={imageUrls[detailPlayer.id]}

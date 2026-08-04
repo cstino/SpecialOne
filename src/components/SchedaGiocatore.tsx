@@ -27,6 +27,8 @@ export type DatiScheda = {
   infortunatoFinoA?: number
   /** Ingaggio annuo in euro (design §5.1: la scala e' annuale). */
   ingaggio?: number
+  /** Ha annunciato il ritiro a inizio stagione: gioca ancora, ma non e' cedibile. */
+  ritiroAnnunciato?: boolean
   attributi: Record<string, number | null>
 }
 
@@ -93,6 +95,8 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
         </div>
         <strong className="player-modal__overall"><span>OVR</span>{giocatore.overall}</strong>
       </div>
+
+      {giocatore.ritiroAnnunciato && <p className="player-modal__ritiro">Si ritira a fine stagione — non può essere ceduto.</p>}
 
       <dl className="player-modal__facts">
         <div><dt>Età</dt><dd>{giocatore.eta}</dd></div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ROSA_MASSIMA } from '../lib/league'
 import { cognome } from '../lib/nomi'
 import { MACRO_LABEL, macroRuolo, type MacroRuolo } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
@@ -6,6 +7,7 @@ import { useSeasonData } from '../lib/useSeasonData'
 import type { League, Membership } from '../types'
 import { Crest } from './Crest'
 import { GameNav, type GameView } from './GameNav'
+import { SchedaGiocatore } from './SchedaGiocatore'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
@@ -33,6 +35,16 @@ type Giocatore = {
   ingaggio: number
   nome: string
   ruolo: string
+  club?: string
+  nazionalita?: string | null
+  posizioni?: string[]
+  piede?: string | null
+  altezza?: number | null
+  attributi?: Record<string, number | null>
+  foto_firmata?: string
+  condizione?: number
+  infortunatoFinoA?: number
+  ritiroAnnunciato?: boolean
 }
 
 type Asta = {
@@ -99,6 +111,43 @@ const ETICHETTE_STATO: Record<StatoProposta, string> = {
   scaduta: 'Scaduta',
 }
 
+type GiocatoreMini = { nome: string; foto?: string }
+
+type RigaRumor =
+  | { tipo: 'svincolato'; key: string; nome: string; foto?: string; destinazioneId: number }
+  | { tipo: 'scambio'; key: string; daTeamId: number; aTeamId: number; offerti: GiocatoreMini[]; richiesti: GiocatoreMini[] }
+
+type TrattativaPubblica = {
+  id: number
+  da_team_id: number
+  a_team_id: number
+  giocatori_offerti: number[]
+  giocatori_richiesti: number[]
+}
+
+const PAGINA_RUMOR = 4
+
+// Numero deterministico in [0,1) da un seme intero: stessa scelta ogni volta
+// per lo stesso giocatore/asta, cambia solo se cambia il seme (non e' un
+// generatore crittografico, serve solo a non ripescare a caso a ogni render).
+function pseudoCasuale(seme: number) {
+  const x = Math.sin(seme * 12.9898) * 43758.5453
+  return x - Math.floor(x)
+}
+
+// Estrazione pesata deterministica: usata per scegliere la squadra "rumor" di
+// uno svincolato, mai per calcoli su dati reali della busta chiusa.
+function scegliPesato<T>(seme: number, opzioni: { valore: T; peso: number }[]) {
+  const totale = opzioni.reduce((somma, o) => somma + o.peso, 0)
+  if (totale <= 0 || opzioni.length === 0) return undefined
+  let resto = pseudoCasuale(seme) * totale
+  for (const opzione of opzioni) {
+    resto -= opzione.peso
+    if (resto <= 0) return opzione.valore
+  }
+  return opzioni[opzioni.length - 1].valore
+}
+
 export function Mercato({ membership, onNavigate }: Props) {
   const league = membership.league as League
   // Squadre e stemmi arrivano da qui: firmare le URL degli stemmi e' gia'
@@ -106,6 +155,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   const dati = useSeasonData(membership)
   const [rose, setRose] = useState<Giocatore[]>([])
   const [proposte, setProposte] = useState<Proposta[]>([])
+  const [trattativePubbliche, setTrattativePubbliche] = useState<TrattativaPubblica[]>([])
   const [aste, setAste] = useState<Asta[]>([])
   const [svincolati, setSvincolati] = useState<Map<number, Anagrafica>>(new Map())
   // Solo le proprie: la RLS non consegna quelle altrui, ed e' il punto.
@@ -130,6 +180,8 @@ export function Mercato({ membership, onNavigate }: Props) {
   const [filtroOverall, setFiltroOverall] = useState<[number, number]>([50, 99])
   const [inCorso, setInCorso] = useState(false)
   const [esito, setEsito] = useState<string | null>(null)
+  const [schedaApertaId, setSchedaApertaId] = useState<number | null>(null)
+  const [paginaRumor, setPaginaRumor] = useState(0)
 
   const aperto = mercatoAperto()
   const mostraListaLegacySvincolati = false
@@ -140,12 +192,16 @@ export function Mercato({ membership, onNavigate }: Props) {
   const carica = useCallback(async (silenzioso = false) => {
     if (!silenzioso) setCaricamento(true)
     setErrore(null)
-    const [istanzeRes, proposteRes, asteRes, offerteRes, contiRes, spinRes] = await Promise.all([
+    const [istanzeRes, proposteRes, trattativeRes, asteRes, offerteRes, contiRes, spinRes] = await Promise.all([
       supabase.from('player_instances')
-        .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio')
+        .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato')
         .eq('league_id', league.id).not('team_id', 'is', null),
       supabase.from('trade_proposals').select('*')
         .eq('league_id', league.id).order('creata_il', { ascending: false }),
+      // Per la card "Rumors": chi tratta con chi, su tutta la lega. RPC
+      // dedicata che espone solo squadre e giocatori coinvolti, mai
+      // conguaglio ne' messaggio (restano privati alle due squadre).
+      supabase.rpc('trattative_pubbliche', { p_league_id: league.id }),
       supabase.from('free_agent_auctions')
         .select('id, giorno, player_id, ingaggio_teorico, stato, origine, vincitore_team_id, ingaggio_finale')
         .eq('league_id', league.id).order('giorno', { ascending: false }).order('id').limit(500),
@@ -168,7 +224,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       ...((spinRes.data as StatoSpinOffseason | null)?.spin ?? []).map((spin) => spin.player_id),
     ])]
     const { data: anagrafica, error: erroreAnagrafica } = daCercare.length
-      ? await supabase.from('players').select('id, nome, club, posizioni, overall, eta, foto_url').in('id', daCercare)
+      ? await supabase.from('players').select('id, nome, club, nazionalita, posizioni, piede, altezza, attributi, overall, eta, foto_url').in('id', daCercare)
       : { data: [], error: null }
     if (erroreAnagrafica) { setErrore(erroreAnagrafica.message); setCaricamento(false); return }
 
@@ -180,9 +236,13 @@ export function Mercato({ membership, onNavigate }: Props) {
         return [p.id, data?.signedUrl] as const
       }))
     const fotoPerId = new Map(fotoFirmate.filter((entry): entry is readonly [number, string] => Boolean(entry[1])))
-    const perId = new Map((anagrafica ?? []).map((p) => [p.id, p as
-      { id: number; nome: string; club: string; posizioni: string[]; overall: number; eta: number; foto_url: string | null }]))
+    const perId = new Map((anagrafica ?? []).map((p) => [p.id, p as {
+      id: number; nome: string; club: string; nazionalita: string | null; posizioni: string[]
+      piede: string | null; altezza: number | null; attributi: Record<string, number | null>
+      overall: number; eta: number; foto_url: string | null
+    }]))
     setProposte((proposteRes.data ?? []) as Proposta[])
+    setTrattativePubbliche(trattativeRes.error ? [] : (trattativeRes.data ?? []) as TrattativaPubblica[])
     setAste(asteRighe)
     setMieOfferte(new Map((offerteRes.data ?? []).map((o) => [o.auction_id, o.ingaggio_offerto])))
     const statoSpin = spinRes.data as StatoSpinOffseason | null
@@ -215,6 +275,16 @@ export function Mercato({ membership, onNavigate }: Props) {
       ingaggio: i.ingaggio,
       nome: cognome(perId.get(i.player_id)?.nome ?? '—'),
       ruolo: perId.get(i.player_id)?.posizioni?.[0] ?? '—',
+      club: perId.get(i.player_id)?.club,
+      nazionalita: perId.get(i.player_id)?.nazionalita,
+      posizioni: perId.get(i.player_id)?.posizioni,
+      piede: perId.get(i.player_id)?.piede,
+      altezza: perId.get(i.player_id)?.altezza,
+      attributi: perId.get(i.player_id)?.attributi,
+      foto_firmata: fotoPerId.get(i.player_id),
+      condizione: i.condizione,
+      infortunatoFinoA: i.infortunato_fino_a,
+      ritiroAnnunciato: i.ritiro_annunciato,
     })))
     setCaricamento(false)
   }, [league.id])
@@ -230,6 +300,67 @@ export function Mercato({ membership, onNavigate }: Props) {
     imageUrl={dati.crestUrlByTeamId.get(id) ?? null}
   />, [dati.teamById, dati.crestUrlByTeamId])
   const giocatore = useCallback((id: number) => rose.find((g) => g.id === id), [rose])
+
+  // Quanti giocatori per macro-ruolo ha ciascuna squadra: e' l'unico segnale
+  // che uso per il "rumor" degli svincolati (chi sembra scoperto in quel
+  // ruolo). Nessun dato riservato: la rosa delle altre squadre e' gia'
+  // pubblica in questa schermata (si vede scegliendo l'avversaria sotto).
+  const conteggioRuoli = useMemo(() => {
+    const mappa = new Map<number, Record<MacroRuolo, number>>()
+    for (const g of rose) {
+      const mr = macroRuolo(g.posizioni ?? [g.ruolo])
+      const voce = mappa.get(g.team_id) ?? { ALL: 0, GK: 0, DEF: 0, MID: 0, ATT: 0 }
+      voce[mr]++
+      voce.ALL++
+      mappa.set(g.team_id, voce)
+    }
+    return mappa
+  }, [rose])
+
+  // Trattative reali di tutta la lega, non solo le mie (decisione
+  // dell'utente): chi offre cosa a chi, mai il conguaglio ne' il messaggio.
+  const righeScambio = useMemo<RigaRumor[]>(() => trattativePubbliche.map((t): RigaRumor => ({
+    tipo: 'scambio', key: `scambio-${t.id}`,
+    daTeamId: t.da_team_id, aTeamId: t.a_team_id,
+    offerti: t.giocatori_offerti.map((id) => giocatore(id)).filter((g): g is NonNullable<typeof g> => Boolean(g))
+      .map((g) => ({ nome: g.nome, foto: g.foto_firmata })),
+    richiesti: t.giocatori_richiesti.map((id) => giocatore(id)).filter((g): g is NonNullable<typeof g> => Boolean(g))
+      .map((g) => ({ nome: g.nome, foto: g.foto_firmata })),
+  })), [trattativePubbliche, giocatore])
+
+  // Rumor speculativi sugli svincolati piu' quotati: la squadra di
+  // destinazione NON viene dalle offerte reali (busta chiusa, non si tocca),
+  // ma da un peso pubblico su slot liberi e scopertura nel ruolo. Puo'
+  // anche sbagliare, come i rumor veri.
+  const righeRumorSvincolati = useMemo<RigaRumor[]>(() => {
+    const aperte = aste.filter((a) => a.stato === 'aperta')
+      .sort((a, b) => b.ingaggio_teorico - a.ingaggio_teorico)
+      .slice(0, 8)
+    return aperte.map((a): RigaRumor | null => {
+      const anagrafica = svincolati.get(a.player_id)
+      if (!anagrafica) return null
+      const mr = macroRuolo(anagrafica.posizioni)
+      const opzioni = dati.teams
+        .filter((t) => (conteggioRuoli.get(t.id)?.ALL ?? 0) < ROSA_MASSIMA)
+        .map((t) => ({ valore: t.id, peso: 1 / (1 + (conteggioRuoli.get(t.id)?.[mr] ?? 0)) }))
+      const destinazioneId = scegliPesato(a.id, opzioni)
+      if (destinazioneId == null) return null
+      return {
+        tipo: 'svincolato', key: `rumor-${a.id}`,
+        nome: anagrafica.nome, foto: anagrafica.foto_firmata,
+        destinazioneId,
+      }
+    }).filter((r): r is RigaRumor => r !== null)
+  }, [aste, svincolati, dati.teams, conteggioRuoli])
+
+  const righeRumor = useMemo(() => [...righeScambio, ...righeRumorSvincolati], [righeScambio, righeRumorSvincolati])
+  const paginaRumorMax = Math.max(0, Math.ceil(righeRumor.length / PAGINA_RUMOR) - 1)
+  useEffect(() => { setPaginaRumor((p) => Math.min(p, paginaRumorMax)) }, [paginaRumorMax])
+  useEffect(() => {
+    if (paginaRumorMax < 1) return
+    const timer = window.setInterval(() => setPaginaRumor((p) => (p + 1) % (paginaRumorMax + 1)), 6000)
+    return () => window.clearInterval(timer)
+  }, [paginaRumorMax])
 
   const miaRosa = useMemo(
     () => rose.filter((g) => g.team_id === membership.id).sort((a, b) => b.overall - a.overall),
@@ -448,14 +579,14 @@ export function Mercato({ membership, onNavigate }: Props) {
         <small>{p.da_team_id === membership.id ? 'Offri' : 'Ti offre'}</small>
         {p.giocatori_offerti.length === 0
           ? <span className="mercato-nessuno">nessun giocatore</span>
-          : p.giocatori_offerti.map((id) => <span key={id}>{giocatore(id)?.nome ?? `#${id}`}</span>)}
+          : p.giocatori_offerti.map((id) => <button key={id} type="button" className="mercato-nome-giocatore" onClick={() => setSchedaApertaId(id)}>{giocatore(id)?.nome ?? `#${id}`}</button>)}
       </div>
       <i aria-hidden="true">⇄</i>
       <div>
         <small>{p.da_team_id === membership.id ? 'Chiedi' : 'Ti chiede'}</small>
         {p.giocatori_richiesti.length === 0
           ? <span className="mercato-nessuno">nessun giocatore</span>
-          : p.giocatori_richiesti.map((id) => <span key={id}>{giocatore(id)?.nome ?? `#${id}`}</span>)}
+          : p.giocatori_richiesti.map((id) => <button key={id} type="button" className="mercato-nome-giocatore" onClick={() => setSchedaApertaId(id)}>{giocatore(id)?.nome ?? `#${id}`}</button>)}
       </div>
     </div>
     {p.conguaglio !== 0 && <p className="mercato-conguaglio">
@@ -464,6 +595,8 @@ export function Mercato({ membership, onNavigate }: Props) {
     </p>}
     {p.messaggio && <p className="mercato-messaggio">«{p.messaggio}»</p>}
   </>
+
+  const schedaAperta = schedaApertaId != null ? giocatore(schedaApertaId) : undefined
 
   return <main className="app-shell season-shell">
     <GameNav league={league} active="mercato" onNavigate={onNavigate} />
@@ -491,8 +624,9 @@ export function Mercato({ membership, onNavigate }: Props) {
       </section>
 
       {conti && conti.impegnato > 0 && <p className="mercato-impegno">
-        <strong>{milioni(conti.impegnato)}</strong> sono impegnati in offerte ancora aperte e tornano
-        disponibili se le perdi o le ritiri. Posti liberi in rosa: <strong>{conti.slot_liberi}</strong>.
+        <strong>{milioni(conti.impegnato)}</strong> sono impegnati in offerte ancora aperte (ingaggio
+        pro-rata sulle giornate rimanenti, non l'importo pieno offerto) e tornano disponibili se le
+        perdi o le ritiri. Posti liberi in rosa: <strong>{conti.slot_liberi}</strong>.
       </p>}
 
       {esito && <p className="notice">{esito}</p>}
@@ -598,6 +732,70 @@ export function Mercato({ membership, onNavigate }: Props) {
             ? <p className="season-empty">Nessun giocatore con questi filtri.</p>
             : <div className="free-agent-list">{archivioSvincolati.map((a) => cardSvincolato(a, true))}</div>}
         </div>}
+      </section>
+
+      <section className="mercato-blocco mercato-rumors">
+        <div className="sezione-testa">
+          <div><p className="kicker">Voci di mercato</p><h2>Rumors</h2></div>
+          <img className="rumors-logo" src="/loghi/Transfermarkt_logo.svg" alt="" />
+        </div>
+        {righeRumor.length === 0
+          ? <p className="season-empty">Nessuna voce di mercato al momento.</p>
+          : <>
+            {/* Tutte le pagine restano montate (solo quella attiva e' visibile):
+                cosi' il browser carica le foto una volta sola in background,
+                invece di doverle ripescare ogni volta che il carosello
+                cambia pagina. */}
+            {Array.from({ length: paginaRumorMax + 1 }, (_, pagina) => <ul key={pagina} className={`rumors-lista ${pagina === paginaRumor ? '' : 'is-nascosta'}`}>
+              {righeRumor.slice(pagina * PAGINA_RUMOR, pagina * PAGINA_RUMOR + PAGINA_RUMOR).map((riga) => riga.tipo === 'svincolato'
+                ? <li key={riga.key} className="rumors-riga rumors-riga--svincolato">
+                    <div className="rumors-foto">
+                      {riga.foto ? <img src={riga.foto} alt="" /> : <span className="rumors-foto-vuota" aria-hidden="true" />}
+                    </div>
+                    <div className="rumors-info">
+                      <strong>{riga.nome}</strong>
+                      <span className="rumors-etichetta rumors-etichetta--svincolato">Rumor</span>
+                    </div>
+                    <i aria-hidden="true">→</i>
+                    <div className="rumors-destinazione">{stemma(riga.destinazioneId)}</div>
+                  </li>
+                : <li key={riga.key} className="rumors-riga rumors-riga--scambio">
+                    <div className="rumors-scambio-lato">
+                      <span className="rumors-scambio-stemma">{stemma(riga.daTeamId)}</span>
+                      <div className="rumors-scambio-giocatore">
+                        <div className="rumors-foto">
+                          {riga.offerti[0]?.foto ? <img src={riga.offerti[0].foto} alt="" />
+                            : riga.offerti[0] ? <span className="rumors-foto-vuota" aria-hidden="true" />
+                            : <span className="rumors-foto-conguaglio" aria-hidden="true">€</span>}
+                          {riga.offerti.length > 1 && <b className="rumors-extra">+{riga.offerti.length - 1}</b>}
+                        </div>
+                        <small>{riga.offerti[0]?.nome ?? 'Conguaglio'}</small>
+                      </div>
+                    </div>
+                    <div className="rumors-scambio-centro">
+                      <span className="rumors-etichetta rumors-etichetta--scambio">Trattativa</span>
+                      <i aria-hidden="true">⇄</i>
+                    </div>
+                    <div className="rumors-scambio-lato rumors-scambio-lato--destra">
+                      <div className="rumors-scambio-giocatore">
+                        <div className="rumors-foto">
+                          {riga.richiesti[0]?.foto ? <img src={riga.richiesti[0].foto} alt="" />
+                            : riga.richiesti[0] ? <span className="rumors-foto-vuota" aria-hidden="true" />
+                            : <span className="rumors-foto-conguaglio" aria-hidden="true">€</span>}
+                          {riga.richiesti.length > 1 && <b className="rumors-extra">+{riga.richiesti.length - 1}</b>}
+                        </div>
+                        <small>{riga.richiesti[0]?.nome ?? 'Conguaglio'}</small>
+                      </div>
+                      <span className="rumors-scambio-stemma">{stemma(riga.aTeamId)}</span>
+                    </div>
+                  </li>)}
+            </ul>)}
+            {righeRumor.length > PAGINA_RUMOR && <div className="rumors-paginazione">
+              <button type="button" disabled={paginaRumor === 0} onClick={() => setPaginaRumor((p) => Math.max(0, p - 1))} aria-label="Pagina precedente">‹</button>
+              <span>{paginaRumor + 1} / {paginaRumorMax + 1}</span>
+              <button type="button" disabled={paginaRumor === paginaRumorMax} onClick={() => setPaginaRumor((p) => Math.min(paginaRumorMax, p + 1))} aria-label="Pagina successiva">›</button>
+            </div>}
+          </>}
       </section>
 
       {mostraListaLegacySvincolati && <>
@@ -739,6 +937,26 @@ export function Mercato({ membership, onNavigate }: Props) {
               </li>)}
             </ul>}
       </section>
+
+      {schedaAperta && <SchedaGiocatore
+        giocatore={{
+          nome: schedaAperta.nome,
+          club: schedaAperta.club,
+          nazionalita: schedaAperta.nazionalita,
+          posizioni: schedaAperta.posizioni ?? [schedaAperta.ruolo],
+          overall: schedaAperta.overall,
+          eta: schedaAperta.eta,
+          piede: schedaAperta.piede,
+          altezza: schedaAperta.altezza,
+          ingaggio: schedaAperta.ingaggio,
+          condizione: schedaAperta.condizione,
+          infortunatoFinoA: schedaAperta.infortunatoFinoA,
+          ritiroAnnunciato: schedaAperta.ritiroAnnunciato,
+          attributi: schedaAperta.attributi ?? {},
+        }}
+        fotoUrl={schedaAperta.foto_firmata}
+        onClose={() => setSchedaApertaId(null)}
+      />}
     </div>}
   </main>
 }

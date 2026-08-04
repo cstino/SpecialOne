@@ -34,6 +34,7 @@ type RosterPlayer = {
   altezza: number | null
   attributi: Record<string, number | null>
   foto_url: string | null
+  ritiroAnnunciato: boolean
   minuti: number
   gol: number
   assist: number
@@ -115,7 +116,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       setRosterLoading(true)
       setRosterError(null)
       const [instancesResult, statsResult] = await Promise.all([
-        supabase.from('player_instances').select('id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a').eq('league_id', league.id).eq('team_id', teamId),
+        supabase.from('player_instances').select('id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato').eq('league_id', league.id).eq('team_id', teamId),
         supabase.from('match_stats').select('match_id, player_instance_id, minuti, gol, assist, tiri, tiri_porta, passaggi_tentati, passaggi_riusciti, contrasti_vinti, dribbling').eq('league_id', league.id).eq('team_id', teamId),
       ])
       const firstError = instancesResult.error ?? statsResult.error
@@ -142,6 +143,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           overall: instance.overall_corrente, eta: instance.eta_corrente, ingaggio: instance.ingaggio,
           condizione: instance.condizione, infortunatoFinoA: instance.infortunato_fino_a, piede: info?.piede ?? null, altezza: info?.altezza ?? null,
           attributi: (info?.attributi ?? {}) as Record<string, number | null>, foto_url: info?.foto_url ?? null,
+          ritiroAnnunciato: instance.ritiro_annunciato,
           ...total,
         }
       }).sort((left, right) => ROLE_ORDER[department(left.posizioni[0])] - ROLE_ORDER[department(right.posizioni[0])] || right.overall - left.overall || left.nome.localeCompare(right.nome, 'it'))
@@ -338,6 +340,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           ingaggio: schedaAperta.ingaggio,
           condizione: schedaAperta.condizione,
           infortunatoFinoA: schedaAperta.infortunatoFinoA,
+          ritiroAnnunciato: schedaAperta.ritiroAnnunciato,
           attributi: schedaAperta.attributi,
         }}
         fotoUrl={fotoScheda}
@@ -347,7 +350,9 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         }}
         azionePericolosa={ownTeam && league.stato === 'stagione' ? {
           etichetta: 'Svincola giocatore',
-          descrizione: `${schedaAperta.nome} uscirà subito dalla rosa. Devi mantenere almeno ${ROSA_MINIMA} giocatori. Non riceverai alcun rimborso e le formazioni future che lo contengono dovranno essere salvate di nuovo.`,
+          descrizione: schedaAperta.ritiroAnnunciato
+            ? `${schedaAperta.nome} ha già annunciato il ritiro: lo svincolo è definitivo, non tornerà disponibile per nessuna squadra. Non riceverai alcun rimborso e le formazioni future che lo contengono dovranno essere salvate di nuovo.`
+            : `${schedaAperta.nome} uscirà subito dalla rosa. Devi mantenere almeno ${ROSA_MINIMA} giocatori. Non riceverai alcun rimborso e le formazioni future che lo contengono dovranno essere salvate di nuovo.`,
           inCorso: releasePending,
           errore: releaseError,
           onConferma: releasePlayer,
