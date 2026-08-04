@@ -53,15 +53,13 @@ export function Admin({ membership, onNavigate }: AdminProps) {
     const { data, error } = await supabase.rpc('admin_apri_mercato', { p_league_id: league.id })
     setAprendo(false)
     if (error) { setEsitoApri({ tono: 'errore', testo: error.message }); return }
-    const risultato = data as { riaperte?: number; estratti?: number; totale_aperto?: number }
-    const riaperte = risultato?.riaperte ?? 0
+    const risultato = data as { estratti?: number; tornata?: number }
     const estratti = risultato?.estratti ?? 0
-    const totale = risultato?.totale_aperto ?? riaperte + estratti
     setEsitoApri({
       tono: 'ok',
-      testo: totale > 0
-        ? `Mercato riaperto: ${riaperte} ${riaperte === 1 ? 'asta riaperta' : 'aste riaperte'}, ${estratti} ${estratti === 1 ? 'nuovo estratto' : 'nuovi estratti'}.`
-        : 'Non ci sono nuovi giocatori disponibili da estrarre o riaprire.',
+      testo: estratti > 0
+        ? `Mercato live aperto: ${estratti} ${estratti === 1 ? 'nuovo svincolato' : 'nuovi svincolati'} nella tornata ${risultato?.tornata ?? ''}.`
+        : 'Non ci sono altri giocatori disponibili da estrarre.',
     })
   }
 

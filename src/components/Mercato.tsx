@@ -50,6 +50,7 @@ type Giocatore = {
 type Asta = {
   id: number
   giorno: string
+  tornata: number
   player_id: number
   ingaggio_teorico: number
   stato: 'aperta' | 'assegnata' | 'deserta'
@@ -189,7 +190,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   const mostraListaLegacySvincolati = false
   // Nascosto su richiesta dell'utente per provare il mercato senza: resta
   // tutto il codice, basta rimettere a true per riportarlo visibile.
-  const mostraArchivioSvincolati = false
+  const mostraArchivioSvincolati = true
 
   const carica = useCallback(async (silenzioso = false) => {
     if (!silenzioso) setCaricamento(true)
@@ -205,7 +206,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       // conguaglio ne' messaggio (restano privati alle due squadre).
       supabase.rpc('trattative_pubbliche', { p_league_id: league.id }),
       supabase.from('free_agent_auctions')
-        .select('id, giorno, player_id, ingaggio_teorico, stato, origine, vincitore_team_id, ingaggio_finale')
+        .select('id, giorno, tornata, player_id, ingaggio_teorico, stato, origine, vincitore_team_id, ingaggio_finale')
         .eq('league_id', league.id).order('giorno', { ascending: false }).order('id').limit(500),
       supabase.from('free_agent_bids').select('auction_id, ingaggio_offerto'),
       supabase.rpc('budget_disponibile', { p_league_id: league.id }),
@@ -377,14 +378,18 @@ export function Mercato({ membership, onNavigate }: Props) {
   const inviate = proposte.filter((p) => p.da_team_id === membership.id && p.stato === 'in_attesa')
   const concluse = proposte.filter((p) => p.stato === 'accettata')
 
-  // Le aste arrivano ordinate per giorno decrescente: la prima riga dice qual
-  // e' l'estrazione piu' recente, e sono quelle le uniche su cui si offre.
+  // Il live e' l'ultima tornata di estrazione della giornata corrente, mai
+  // l'unione delle tornate manuali gia' chiuse nello stesso giorno.
   const giornoAste = aste[0]?.giorno ?? null
   const asteDelGiorno = aste.filter((a) => a.giorno === giornoAste)
-  const nuoviDelGiorno = asteDelGiorno.filter((a) => a.origine === 'estrazione')
+  const tornataLive = Math.max(0, ...asteDelGiorno
+    .filter((a) => a.origine === 'estrazione')
+    .map((a) => a.tornata))
+  const nuoviDelGiorno = asteDelGiorno.filter((a) =>
+    a.origine === 'estrazione' && a.tornata === tornataLive && a.stato === 'aperta')
   const giocatoriSottoContratto = new Set(rose.map((g) => g.player_id))
   const archivioSvincolati = Array.from(new Map(aste
-    .filter((a) => !giocatoriSottoContratto.has(a.player_id))
+    .filter((a) => a.stato === 'deserta' && !giocatoriSottoContratto.has(a.player_id))
     .map((a) => [a.player_id, a])).values())
     .filter((a) => {
       const g = svincolati.get(a.player_id)
@@ -698,7 +703,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       {/* ---- Mercato svincolati: nuovi + archivio filtrabile ---- */}
       <section className="mercato-blocco mercato-svincolati">
         <div className="sezione-testa">
-          <div><p className="kicker">Asta a busta chiusa</p><h2>Mercato svincolati</h2></div>
+          <div><p className="kicker">Asta a busta chiusa</p><h2>Mercato svincolati live</h2></div>
           <span>{league.fase_carriera === 'offseason' ? '10 per ruolo' : '3 per ruolo'}</span>
         </div>
         <p className="mercato-nota">
@@ -709,7 +714,7 @@ export function Mercato({ membership, onNavigate }: Props) {
 
         <div className="free-agent-daily">
           <div className="free-agent-heading">
-            <div><p className="kicker">Nuovi oggi</p><h3>{nuoviDelGiorno.length} occasioni</h3></div>
+            <div><p className="kicker">Asta a busta chiusa</p><h3>{nuoviDelGiorno.length} occasioni</h3></div>
             <small>{giornoAste ?? 'nessuna estrazione'}</small>
           </div>
           {nuoviDelGiorno.length === 0
