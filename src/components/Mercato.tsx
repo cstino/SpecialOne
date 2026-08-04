@@ -190,7 +190,9 @@ export function Mercato({ membership, onNavigate }: Props) {
   const mostraListaLegacySvincolati = false
   // Nascosto su richiesta dell'utente per provare il mercato senza: resta
   // tutto il codice, basta rimettere a true per riportarlo visibile.
-  const mostraArchivioSvincolati = true
+  // L'archivio resta attivo lato server ma, per ora, non è una schermata
+  // giocabile: si riattiva senza migrazioni cambiando solo questo flag.
+  const mostraArchivioSvincolati = false
 
   const carica = useCallback(async (silenzioso = false) => {
     if (!silenzioso) setCaricamento(true)
