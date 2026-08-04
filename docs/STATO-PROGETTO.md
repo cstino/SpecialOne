@@ -4,9 +4,10 @@
 
 Per il test richiesto dall'utente, la migrazione
 `20260804204000_filtro_pool_giocatori_test.sql` marca come non estraibili i
-giocatori con overall inferiore a 66 ed età superiore a 22 anni. Sono **410**
-record: restano integralmente nel catalogo e nelle rose esistenti, ma non
-possono comparire in nuovo draft, aste svincolati o spin off-season. Il flag
+giocatori con overall inferiore a 66 ed età superiore a 22 anni, oltre a tutti
+gli overall inferiori a 60 indipendentemente dall'età. Sono **831** record:
+restano integralmente nel catalogo e nelle rose esistenti, ma non possono
+comparire in nuovo draft, aste svincolati o spin off-season. Il flag
 `players.disponibile_estrazione` è reversibile: per riattivarli basta impostarlo
 a `true`, senza importare o ricreare dati.
 
