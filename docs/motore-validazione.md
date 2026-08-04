@@ -232,6 +232,39 @@ moduli. `docs/risultati-fase0.txt` aggiornato col nuovo output.
 
 ---
 
+## Nota successiva — un subentrato poteva segnare prima di entrare in campo (4 agosto 2026)
+
+Segnalato dall'utente su una lega reale: nel tabellino di una partita, Batshuayi risultava
+marcatore al minuto 36 pur essendo partito in panchina e avendo giocato solo 45 minuti (i dati
+mostravano che era entrato solo a inizio ripresa). Verificato sui dati reali: la formazione
+salvata lo aveva davvero in panchina, e le finestre cambio (`FINESTRE_CAMBI = [3,4,5]`, cioè fine
+blocco 3/4/5) escludono che potesse essere in campo prima del blocco 4 (46').
+
+**Causa, non nell'engine ma nella Edge Function**: `engine.js` restituisce i marcatori come
+lista **aggregata per squadra a fine partita**, senza legame con il blocco in cui è caduto
+ciascun gol — è un limite di modellazione già documentato in
+`supabase/functions/simula-giornata/index.ts` ("il motore non modella il singolo gol"). La
+Edge Function, che costruisce il tabellino minuto per minuto, abbinava marcatori ed eventi
+**in ordine cronologico puro**, senza verificare che il marcatore assegnato a un blocco fosse
+davvero in campo in quel momento. Un giocatore subentrato tardi, se incluso dal motore fra i
+marcatori di fine partita (pesato per `finishing` sulla formazione finale), poteva quindi
+"segnare" in un blocco precedente al proprio ingresso — o, stesso difetto, risultare assistman
+di un gol caduto prima che entrasse.
+
+**Corretto senza toccare nessuna formula validata**: `engine.js` ora espone anche
+`presenzePerBlocco` (chi era davvero in campo in ciascuna squadra, blocco per blocco) — un dato
+aggiuntivo in uscita, non un nuovo calcolo: zero estrazioni RNG in più, zero formule toccate.
+Verificato rilanciando `node tools/validazione/simulate.js`: output byte-per-byte identico a
+`docs/risultati-fase0.txt`. La Edge Function ora sceglie, fra i marcatori rimasti di un lato,
+chi era presente nel blocco dell'evento; se per un caso raro nessuno dei rimasti lo era, ripiega
+sul primo pur di non perdere il gol. **Il totale di gol e assist per giocatore a fine partita
+non cambia mai** (resta quello deciso dal motore): cambia solo in quale blocco viene mostrata
+ciascuna occorrenza. Verificato anche in isolamento con uno script Node che riproduce lo
+scenario reale (marcatore assegnato a un blocco precedente al proprio ingresso) su 500 semi
+diversi: zero violazioni dopo la correzione.
+
+---
+
 ## Cosa NON è stato validato
 
 - **Rose reali.** Le rose sintetiche hanno distribuzioni ragionevoli ma non sono il dataset FC 26. Quando importerai i dati veri, rilancia `test1` e `test3`: se i numeri si spostano, l'unica costante da ritoccare è `XG_BASE_BLOCCO`.

@@ -199,6 +199,12 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   const ctrlStorico = [];
   const inCampo = new Map(); // id -> blocchi giocati
   const golPerBlocco = []; // solo bookkeeping: quanti gol cadono in quale blocco
+  // Chi era davvero in campo in ciascun blocco, squadra per squadra: serve a
+  // chi presenta la partita (Edge Function) per non attribuire un gol a un
+  // giocatore che a quel blocco non era ancora entrato. Non influenza nessun
+  // calcolo di questa funzione, e' solo dato esposto in piu'.
+  const presenzeCasaPerBlocco = [];
+  const presenzeOspitePerBlocco = [];
 
   for (let b = 0; b < CFG.BLOCCHI_PARTITA; b++) {
     const fc = forzeLinee(lc), fo = forzeLinee(lo);
@@ -235,15 +241,18 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     // condizione: nel calcio vero non si stanca come un giocatore di movimento,
     // resta stabile salvo infortuni (stesso spirito dell'esclusione dai cambi
     // per stanchezza, poco sopra).
-    for (const L of [lc, lo]) {
+    for (const [L, presenzeBlocco] of [[lc, presenzeCasaPerBlocco], [lo, presenzeOspitePerBlocco]]) {
+      const idsBlocco = [];
       for (let i = 0; i < L.titolari.length; i++) {
         const g = L.titolari[i];
         if (!g) continue;
         inCampo.set(g.id, (inCampo.get(g.id) || 0) + 1);
+        idsBlocco.push(g.id);
         if (usaCondizione && L.slots[i] !== 'GK') {
           g.condizione = Math.max(0, g.condizione - (CFG.CONSUMO_BASE - CFG.CONSUMO_MOD_STAMINA * (g.stamina / 100)));
         }
       }
+      presenzeBlocco.push(idsBlocco);
     }
 
     if (CFG.FINESTRE_CAMBI.includes(b + 1)) { sostituzioni(lc); sostituzioni(lo); }
@@ -322,7 +331,10 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   rosaCasa.esperienzaModulo[modCasa] = (rosaCasa.esperienzaModulo[modCasa] || 0) + 1;
   rosaOspite.esperienzaModulo[modOspite] = (rosaOspite.esperienzaModulo[modOspite] || 0) + 1;
 
-  return { golC, golO, statsCasa: sC, statsOspite: sO, perGiocatore, golPerBlocco };
+  return {
+    golC, golO, statsCasa: sC, statsOspite: sO, perGiocatore, golPerBlocco,
+    presenzePerBlocco: { casa: presenzeCasaPerBlocco, ospite: presenzeOspitePerBlocco },
+  };
 }
 
 // ---------- Calendario (metodo del cerchio) ----------

@@ -3,6 +3,18 @@
 Ultimo aggiornamento: **4 agosto 2026**. Questo documento descrive lo stato reale del
 repository ed è il punto di partenza per il prossimo agent (Claude o Codex).
 
+### Tabellino — un subentrato non può più segnare prima di entrare in campo
+
+Segnalato dall'utente su una lega reale (Batshuayi marcatore al 36' pur partito in panchina,
+entrato solo a inizio ripresa). Causa in `supabase/functions/simula-giornata/index.ts`, non
+nell'engine: i marcatori arrivano dal motore come lista aggregata di fine partita senza legame
+col blocco, e l'abbinamento a un evento cronologico era puramente in ordine, senza controllare
+la presenza in campo. `engine.js` ora espone anche `presenzePerBlocco` (dato aggiuntivo, zero
+formule toccate — suite di validazione byte-per-byte identica dopo la modifica); la Edge
+Function sceglie fra i marcatori rimasti chi era davvero presente nel blocco dell'evento. Il
+totale di gol/assist per giocatore a fine partita resta quello del motore, cambia solo in quale
+blocco viene mostrata l'occorrenza. Dettagli e verifica in `docs/motore-validazione.md`.
+
 ### Ritiro dei giocatori — nuova tabella di probabilità, annuncio in due fasi
 
 Sostituisce integralmente il vecchio meccanismo (formula lineare `(età−33)×0.12`, ritiro tirato

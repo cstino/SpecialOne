@@ -155,13 +155,24 @@ function scalaInfortunio(giornateOriginali: number, giornateTotali: number) {
 // ============================================================
 //  MINUTI E ASSIST
 //
-//  Il motore decide i gol e i marcatori; non modella ne' il minuto esatto
-//  ne' l'ultimo passaggio. Minuto e assist sono quindi un'attribuzione di
-//  presentazione, calcolata qui e non nell'engine: cosi' il motore validato
-//  resta intatto e il suo stream RNG non viene consumato.
+//  Il motore decide i gol e i marcatori (chi segna, in totale); non modella
+//  ne' il minuto esatto ne' l'ultimo passaggio. Minuto e assist sono quindi
+//  un'attribuzione di presentazione, calcolata qui e non nell'engine: cosi'
+//  il motore validato resta intatto e il suo stream RNG non viene consumato.
 //  L'RNG e' lo stesso LCG di engine/random.js, ma con stato locale e seme
 //  derivato da quello della partita: gli assist sono riproducibili quanto
 //  il risultato.
+//
+//  Correzione del 4 agosto 2026 (segnalazione utente, lega reale): un
+//  giocatore subentrato a partita in corso poteva risultare marcatore o
+//  assistman di un gol caduto in un blocco precedente al suo ingresso —
+//  il motore restituisce i marcatori come lista aggregata di fine partita,
+//  senza legame col blocco, quindi l'abbinamento a un blocco specifico era
+//  del tutto arbitrario. Ora l'engine espone anche `presenzePerBlocco` (chi
+//  era davvero in campo in ciascun blocco) e l'abbinamento sceglie, fra i
+//  marcatori rimasti, chi era presente in quel blocco. Il totale di gol e
+//  assist per giocatore a fine partita resta identico a quello del motore:
+//  cambia solo in quale blocco viene mostrato ciascuna occorrenza.
 // ============================================================
 
 const MINUTI_PER_BLOCCO = 15
@@ -195,14 +206,17 @@ function scegliPesatoLocale<T>(items: T[], pesi: number[], rnd: () => number): T
   return items[items.length - 1]
 }
 
-// Sceglie l'uomo assist fra i titolari, escluso il marcatore.
-function scegliAssist(lineup: EngineLineup, marcatore: number, rnd: () => number): number | null {
+// Sceglie l'uomo assist fra i titolari presenti in campo in quel blocco,
+// escluso il marcatore. Senza il filtro di presenza un giocatore subentrato
+// solo dopo poteva risultare assistman di un gol segnato prima del suo ingresso.
+function scegliAssist(lineup: EngineLineup, marcatore: number, presenti: number[], rnd: () => number): number | null {
   if (rnd() < QUOTA_GOL_SENZA_ASSIST) return null
   const candidati: number[] = []
   const pesi: number[] = []
   for (let i = 0; i < lineup.slots.length; i++) {
     const giocatore = lineup.titolari[i]
     if (!giocatore || giocatore.id === marcatore) continue
+    if (!presenti.includes(giocatore.id)) continue
     candidati.push(giocatore.id)
     pesi.push((PESO_ASSIST[lineup.slots[i]] ?? 0.5) * (giocatore.short_passing / 100))
   }
@@ -213,7 +227,7 @@ function scegliAssist(lineup: EngineLineup, marcatore: number, rnd: () => number
 // Trasforma i gol per blocco in eventi cronologici con minuto, marcatore e assist.
 function costruisciEventiGol(
   golPerBlocco: GolBlocco[],
-  lati: Array<{ lato: 'casa' | 'ospite'; teamId: number; lineup: EngineLineup; marcatori: number[] }>,
+  lati: Array<{ lato: 'casa' | 'ospite'; teamId: number; lineup: EngineLineup; marcatori: number[]; presenzePerBlocco: number[][] }>,
   seed: number,
 ): EventoGol[] {
   const rnd = creaRng(seed)
@@ -239,17 +253,27 @@ function costruisciEventiGol(
   eventi.sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.blocco - destra.blocco)
 
   // I marcatori arrivano dal motore come lista per squadra, senza legame con il
-  // blocco: li assegniamo in ordine cronologico. Qualunque abbinamento sarebbe
-  // arbitrario, perche' il motore non modella il singolo gol.
-  const prossimo = new Map<string, number>()
+  // blocco: il totale a fine partita e' gia' deciso dal motore (validato) e non
+  // cambia qui. Scegliamo pero' CHI, fra i marcatori rimasti, viene assegnato a
+  // QUESTO blocco preferendo chi era davvero in campo in quel momento — un
+  // subentrato non puo' risultare marcatore di un gol segnato prima del suo
+  // ingresso. Se per caso nessuno dei rimasti era presente in quel blocco
+  // (evento raro), si ripiega sul primo rimasto pur di non perdere il gol: il
+  // totale per giocatore a fine partita resta comunque quello del motore,
+  // cambia solo in quale blocco viene mostrato.
+  const rimasti = new Map<string, number[]>()
+  for (const lato of lati) rimasti.set(lato.lato, [...lato.marcatori])
+
   for (const evento of eventi) {
     const lato = lati.find((item) => item.lato === evento.lato)!
-    const indice = prossimo.get(evento.lato) ?? 0
-    prossimo.set(evento.lato, indice + 1)
-    const marcatore = lato.marcatori[indice]
+    const pool = rimasti.get(evento.lato)!
+    const presenti = lato.presenzePerBlocco[evento.blocco - 1] ?? []
+    let indice = pool.findIndex((id) => presenti.includes(id))
+    if (indice === -1) indice = 0
+    const marcatore = pool.splice(indice, 1)[0]
     if (marcatore === undefined) continue
     evento.marcatore = marcatore
-    evento.assist = scegliAssist(lato.lineup, marcatore, rnd)
+    evento.assist = scegliAssist(lato.lineup, marcatore, presenti, rnd)
   }
 
   return eventi.filter((evento) => evento.marcatore !== 0)
@@ -414,9 +438,10 @@ export default {
           lineupCasa: homeLineup,
           lineupOspite: awayLineup,
         })
+        const presenzePerBlocco = result.presenzePerBlocco as { casa: number[][]; ospite: number[][] }
         const eventi = costruisciEventiGol(result.golPerBlocco as GolBlocco[], [
-          { lato: 'casa', teamId: fixture.home_team_id, lineup: homeLineup, marcatori: result.perGiocatore.casa.marcatoriIds as number[] },
-          { lato: 'ospite', teamId: fixture.away_team_id, lineup: awayLineup, marcatori: result.perGiocatore.ospite.marcatoriIds as number[] },
+          { lato: 'casa', teamId: fixture.home_team_id, lineup: homeLineup, marcatori: result.perGiocatore.casa.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.casa },
+          { lato: 'ospite', teamId: fixture.away_team_id, lineup: awayLineup, marcatori: result.perGiocatore.ospite.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.ospite },
         ], seed)
         const assistPerGiocatore = new Map<number, number>()
         for (const evento of eventi) {
