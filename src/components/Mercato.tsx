@@ -506,7 +506,10 @@ export function Mercato({ membership, onNavigate }: Props) {
     const { error } = await azione()
     setInCorso(false)
     setEsito(error ? error.message : successo)
-    if (!error) await carica()
+    // Dopo un'offerta, uno scambio o un ritiro aggiorniamo solo i dati: il
+    // loader dell'intera pagina farebbe sembrare un refresh e spezzerebbe il
+    // contesto dell'azione appena compiuta.
+    if (!error) await carica(true)
   }
 
   async function invia() {
