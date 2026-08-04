@@ -637,6 +637,11 @@ Vittoria 3 punti, pareggio 1.
 
 ### 10.2 Progressione giocatori
 
+L'overall viene aggiornato alla conclusione di ogni quarto della stagione
+(25%, 50%, 75% e 100% delle giornate reali). Le formule annuali sotto sono
+distribuite in quattro quote: non sono quattro progressioni complete. Età e
+contratti si aggiornano invece nella successiva off-season.
+
 | Età | Variazione overall |
 |---|---|
 | ≤ 22 | `+(potential − OVR) × uniform(0.15, 0.45)` |

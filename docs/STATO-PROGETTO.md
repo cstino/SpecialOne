@@ -1,5 +1,16 @@
 # Stato progetto e handoff
 
+### Progressione overall — quattro checkpoint stagionali
+
+Decisione dell'utente: gli overall non aspettano più la sola off-season. La migrazione
+`20260804200000_progressione_overall_trimestrale.sql` distribuisce la formula annuale
+di `design.md` §10.2 alla conclusione del 25%, 50%, 75% e 100% delle giornate reali.
+La Edge Function `simula-giornata` chiama la RPC dopo avere registrato il turno. Il
+registro `season_progression_checkpoints` la rende idempotente; per le stagioni già
+avviate recupera al massimo un checkpoint arretrato per giornata, evitando salti multipli.
+L'off-season ora aumenta soltanto l'età, recupera condizione/infortuni e apre i rinnovi:
+non applica un quinto cambio OVR.
+
 Ultimo aggiornamento: **4 agosto 2026**. Questo documento descrive lo stato reale del
 repository ed è il punto di partenza per il prossimo agent (Claude o Codex).
 

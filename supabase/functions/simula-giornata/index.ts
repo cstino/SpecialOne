@@ -501,6 +501,15 @@ export default {
       })
       if (condizioneError) throw condizioneError
 
+      // Ogni quarto della stagione aggiorna gli overall di tutte le rose. La
+      // RPC è idempotente e recupera anche un checkpoint rimasto in sospeso
+      // dopo un eventuale ritentativo del cron.
+      const { data: progressione, error: progressioneError } = await ctx.supabaseAdmin.rpc('applica_progressione_trimestrale', {
+        p_league_id: leagueId,
+        p_giornata: giornata,
+      })
+      if (progressioneError) throw progressioneError
+
       // Notifiche: la giornata si gioca alle 00:00, quando tutti dormono.
       // Senza un avviso, il risultato lo si scopre solo riaprendo l'app.
       //
@@ -576,7 +585,7 @@ export default {
         console.error('Notifiche non inviate:', errore)
       }
 
-      return Response.json({ league_id: leagueId, giornata, modo: ctx.authMode, rose_aggiornate: valoriCondizione.length, notifiche: notificheInviate, partite: summaries })
+      return Response.json({ league_id: leagueId, giornata, modo: ctx.authMode, rose_aggiornate: valoriCondizione.length, progressione, notifiche: notificheInviate, partite: summaries })
     } catch (error) {
       console.error(error)
       return Response.json({ error: error instanceof Error ? error.message : 'Errore durante la simulazione.' }, { status: 500 })
