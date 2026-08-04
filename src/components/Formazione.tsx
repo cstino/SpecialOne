@@ -170,7 +170,20 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       if (lineupError) { setError(lineupError.message); setLoading(false); return }
       if (lineup) {
         const current = lineup as SavedLineup
-        setModulo(current.modulo); setTitolari(current.titolari); setPanchina(current.panchina); setTribuna(current.tribuna)
+        // La distinta salvata e' una fotografia della rosa al momento del
+        // salvataggio. Dopo un'asta o uno scambio puo' mancare un nuovo
+        // acquisto (o restare l'id di un ceduto): la riallineiamo alla rosa
+        // corrente senza toccare titolari e panchina gia' scelti.
+        const idsRosa = new Set(loaded.map((player) => player.id))
+        const titolariSalvati = current.titolari.filter((id) => idsRosa.has(id))
+        const panchinaSalvata = current.panchina.filter((id) => idsRosa.has(id))
+        const tribunaSalvata = current.tribuna.filter((id) => idsRosa.has(id))
+        const giaInDistinta = new Set([...titolariSalvati, ...panchinaSalvata, ...tribunaSalvata])
+        const nuoviArrivi = loaded.filter((player) => !giaInDistinta.has(player.id)).map((player) => player.id)
+        setModulo(current.modulo)
+        setTitolari(titolariSalvati)
+        setPanchina(panchinaSalvata)
+        setTribuna([...tribunaSalvata, ...nuoviArrivi])
       } else {
         const keeper = loaded.find((player) => player.posizioni[0] === 'GK') ?? loaded[0]
         const starters = [keeper, ...loaded.filter((player) => player.id !== keeper?.id).slice(0, 10)].map((player) => player.id)
