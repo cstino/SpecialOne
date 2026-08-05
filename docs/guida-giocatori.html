@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>SpecialOne — Guida per i partecipanti</title>
+  <style>
+    @page { size: A4; margin: 16mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #211c29; background: #fff; font: 10.3pt/1.42 Arial, sans-serif; }
+    header { padding: 22px 25px; border-radius: 16px; color: #fff; background: linear-gradient(135deg, #2a0b52, #7e26cb); }
+    .brand { margin: 0 0 7px; color: #e2c6ff; font-size: 8pt; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: 26pt; line-height: 1; letter-spacing: -.04em; }
+    header p { max-width: 600px; margin: 10px 0 0; color: #f1e9fa; }
+    section { margin-top: 18px; page-break-inside: avoid; }
+    h2 { margin: 0 0 6px; color: #52208e; font-size: 14pt; }
+    h3 { margin: 10px 0 4px; color: #51218c; font-size: 10.3pt; }
+    p { margin: 6px 0; }
+    .note { padding: 9px 12px; border-left: 4px solid #9a50e8; border-radius: 7px; background: #f4edfb; }
+    table { width: 100%; margin: 8px 0; border-collapse: collapse; overflow: hidden; border: 1px solid #ddd2e7; border-radius: 10px; font-size: 9.2pt; }
+    th { padding: 7px 9px; color: #fff; background: #54218f; text-align: left; }
+    td { padding: 6px 9px; border-top: 1px solid #e7dfed; }
+    tbody tr:nth-child(even) { background: #faf7fc; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .formula { display: inline-block; margin: 7px 0; padding: 8px 11px; border-radius: 8px; color: #322241; background: #f1edf4; font-family: Consolas, monospace; font-size: 9.2pt; }
+    .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .columns3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .card { padding: 11px; border: 1px solid #dfd4e7; border-radius: 10px; background: #fcfaff; }
+    .card h3 { margin: 0 0 5px; }
+    ul { margin: 6px 0; padding-left: 19px; }
+    li { margin: 2px 0; }
+    footer { margin-top: 20px; padding-top: 9px; border-top: 1px solid #ddd5e3; color: #756c7d; font-size: 8pt; }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="brand">SpecialOne · guida per partecipanti</p>
+    <h1>Come funziona il gioco</h1>
+    <p>Tutti i valori percentuali che influenzano overall e morale, per giocare sapendo davvero cosa succede dietro le quinte.</p>
+  </header>
+
+  <section>
+    <h2>1. Overall efficace: quello che conta in partita</h2>
+    <p>Il motore non usa mai l'overall "di carta": lo moltiplica sempre per due fattori.</p>
+    <div class="formula">OVR efficace = OVR base × compatibilità ruolo × fattore condizione</div>
+
+    <h3>Compatibilità ruolo — quanto pesa schierare fuori posizione</h3>
+    <table>
+      <thead><tr><th>Situazione</th><th class="num">Moltiplicatore</th><th class="num">Esempio: OVR 80</th></tr></thead>
+      <tbody>
+        <tr><td>Ruolo naturale (prima posizione)</td><td class="num">1,00</td><td class="num">80,0</td></tr>
+        <tr><td>Ruolo secondario dichiarato</td><td class="num">0,98</td><td class="num">78,4</td></tr>
+        <tr><td>Stesso reparto, ruolo non dichiarato</td><td class="num">0,91</td><td class="num">72,8</td></tr>
+        <tr><td>Reparto adiacente</td><td class="num">0,80</td><td class="num">64,0</td></tr>
+        <tr><td>Reparto opposto</td><td class="num">0,65</td><td class="num">52,0</td></tr>
+      </tbody>
+    </table>
+    <p class="note"><strong>Reparti:</strong> difesa ↔ centrocampo e centrocampo ↔ attacco sono adiacenti; difesa ↔ attacco sono opposti. Un giocatore di movimento in porta arriva al massimo a 45 OVR; un portiere schierato in movimento al massimo a 48 OVR.</p>
+
+    <h3>Fattore condizione — quanto pesa la stanchezza</h3>
+    <table>
+      <thead><tr><th>Condizione</th><th class="num">Moltiplicatore</th></tr></thead>
+      <tbody>
+        <tr><td>85 – 100</td><td class="num">1,000</td></tr>
+        <tr><td>70 – 84</td><td class="num">0,975</td></tr>
+        <tr><td>55 – 69</td><td class="num">0,940</td></tr>
+        <tr><td>40 – 54</td><td class="num">0,890</td></tr>
+        <tr><td>0 – 39</td><td class="num">0,820</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>2. Progressione: come cambia l'overall a fine stagione</h2>
+    <p>Quattro volte a stagione (ogni quarto delle giornate) ogni giocatore in rosa attiva prova a crescere o calare, in base all'età. Il tetto massimo è sempre il <strong>potenziale</strong> del giocatore; il minimo assoluto è 40.</p>
+    <table>
+      <thead><tr><th>Età</th><th>Tendenza</th><th class="num">Variazione per quarto</th></tr></thead>
+      <tbody>
+        <tr><td>Fino a 22</td><td>Crescita rapida verso il potenziale</td><td class="num">15–45% dello scarto dal potenziale, /4</td></tr>
+        <tr><td>23 – 26</td><td>Crescita lenta verso il potenziale</td><td class="num">5–25% dello scarto dal potenziale, /4</td></tr>
+        <tr><td>27 – 31</td><td>Sostanzialmente stabile</td><td class="num">da −0,25 a +0,25</td></tr>
+        <tr><td>32 – 35</td><td>Calo leggero</td><td class="num">da −0,63 a −0,13</td></tr>
+        <tr><td>36+</td><td>Calo marcato</td><td class="num">da −1,00 a −0,38</td></tr>
+      </tbody>
+    </table>
+    <p class="note">Un giocatore già al proprio potenziale non cresce oltre, anche se giovane. Le frazioni non arrotondate si accumulano da un quarto all'altro, quindi anche piccole tendenze si vedono nel tempo.</p>
+  </section>
+
+  <section>
+    <h2>3. Mentalità: chi è ogni giocatore, prima ancora di giocare</h2>
+    <p>Ogni giocatore ha una personalità fissa, generata dal suo id (identica in ogni lega, per sempre): tre rami che <strong>sommano sempre 100</strong>.</p>
+    <div class="columns3">
+      <div class="card"><h3>Bandiera</h3><p>Attaccamento alla maglia. Alto = si lamenta meno di soldi e risultati.</p></div>
+      <div class="card"><h3>Economia</h3><p>Quanto guarda l'ingaggio. Alto = più sensibile a essere pagato sotto il suo valore.</p></div>
+      <div class="card"><h3>Vittorie</h3><p>Quanto guarda la classifica. Alto = più sensibile a una squadra che perde.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. Morale: come si forma e a cosa serve</h2>
+    <p>Il morale (0–100, si parte da 70) <strong>non influenza mai il rendimento in campo</strong>: conta solo nei rinnovi. Si ricalcola insieme all'overall, ogni quarto di stagione, su tre fronti:</p>
+    <ul>
+      <li><strong>Minutaggio</strong> — vale per tutti: un giocatore forte rispetto alla media della rosa si aspetta di giocare di più; se gioca meno del previsto il morale scende, se gioca di più sale (ma scendere pesa più che salire).</li>
+      <li><strong>Economia</strong> — pesata dal ramo economia: essere pagati sotto l'ingaggio teorico abbassa il morale, sopra lo alza; chi ha economia alta lo sente di più.</li>
+      <li><strong>Vittorie</strong> — pesata dal ramo vittorie: la posizione in classifica alza o abbassa il morale in proporzione a quanto quel giocatore ci tiene.</li>
+    </ul>
+    <p class="note"><strong>Bandiera non è un quarto fronte</strong>: attenua soltanto le insoddisfazioni degli altri tre. Una bandiera alta (es. 60) assorbe fino al 30% del malcontento su economia e vittorie — non aiuta mai a salire, solo a scendere meno.</p>
+  </section>
+
+  <section>
+    <h2>5. Rinnovo del contratto: cosa decide un sì o un no</h2>
+    <p>Il giocatore chiede sempre un ingaggio pari o superiore a quello attuale — mai uno sconto — con una maggiorazione fino al 12% sopra il suo valore teorico. La durata richiesta dipende dall'età (fino a 4 stagioni per gli under 24, una sola oltre i 35).</p>
+    <p>Quanto è disposto a scendere da quella richiesta (lo <strong>sconto</strong>) dipende, in modo del tutto deterministico — la stessa offerta dà sempre lo stesso esito, mai a caso — da morale, mentalità e posizione in classifica. Parte da una base del 5%, resta sempre fra 0% e 25%:</p>
+    <table>
+      <thead><tr><th>Fattore</th><th class="num">Effetto sullo sconto</th></tr></thead>
+      <tbody>
+        <tr><td>Base</td><td class="num">+5%</td></tr>
+        <tr><td>Morale (0–100)</td><td class="num">da −10% a +10%</td></tr>
+        <tr><td>Bandiera (0–100)</td><td class="num">fino a +10%</td></tr>
+        <tr><td>Economia (0–100)</td><td class="num">fino a −10%</td></tr>
+        <tr><td>Classifica, pesata dal ramo vittorie</td><td class="num">da −10% a +10%</td></tr>
+      </tbody>
+    </table>
+    <p>Offrire una durata diversa da quella richiesta svaluta l'offerta del 7% per ogni stagione di differenza, compensabile alzando l'ingaggio.</p>
+    <p class="note">Tre tentativi per giocatore: un rifiuto è informativo ("ci siamo quasi" o "troppo poco") ma consuma un tentativo. Esauriti i tre, il giocatore non rinnova più con quella squadra e andrà a scadenza.</p>
+  </section>
+
+  <section>
+    <h2>6. Mercato: il numero mostrato non è la soglia vera</h2>
+    <p>Nelle aste sugli svincolati, l'ingaggio teorico mostrato in ogni scheda è solo un riferimento pubblico. La soglia reale per aggiudicarsi il giocatore è nascosta e può cadere ovunque <strong>tra il 90% e il 110%</strong> di quel numero: offrire esattamente il valore mostrato non garantisce di vincere l'asta.</p>
+  </section>
+
+  <section>
+    <h2>7. Ritiro</h2>
+    <p>All'inizio di ogni stagione si controllano i giocatori dai 34 anni in su. Chi annuncia il ritiro gioca ancora tutta la stagione ma non può essere ceduto; lascia la rosa alla transizione successiva.</p>
+    <table>
+      <thead><tr><th>Età</th><th class="num">Probabilità annua</th><th>Età</th><th class="num">Probabilità annua</th></tr></thead>
+      <tbody>
+        <tr><td>Fino a 33</td><td class="num">0%</td><td>38</td><td class="num">65%</td></tr>
+        <tr><td>34</td><td class="num">10%</td><td>39</td><td class="num">80%</td></tr>
+        <tr><td>35</td><td class="num">20%</td><td>40</td><td class="num">95%</td></tr>
+        <tr><td>36</td><td class="num">35%</td><td>41</td><td class="num">99%</td></tr>
+        <tr><td>37</td><td class="num">50%</td><td>42+</td><td class="num">100%</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>8. Infortuni</h2>
+    <div class="formula">p = 2,5% × (1 + (100 − condizione) / 50) × fattore età</div>
+    <div class="columns">
+      <div class="card"><h3>Fattore età</h3><ul><li>Under 24: ×0,85</li><li>24–30: ×1,00</li><li>31–33: ×1,25</li><li>34+: ×1,50</li></ul></div>
+      <div class="card"><h3>Durata dell'assenza</h3><ul><li>60%: 1–2 giornate</li><li>30%: 3–6 giornate</li><li>10%: 8–15 giornate</li></ul></div>
+    </div>
+    <p class="note">La durata estratta viene adattata alla lunghezza effettiva della stagione (tetto al 40% delle giornate totali): in una lega corta un infortunio lungo non diventa una condanna fino a fine campionato.</p>
+  </section>
+
+  <footer>SpecialOne · Regole attualmente in uso · aggiornato il 6 agosto 2026</footer>
+</body>
+</html>

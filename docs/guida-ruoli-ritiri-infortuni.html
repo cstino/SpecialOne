@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>SpecialOne — Ruoli, ritiri e infortuni</title>
+  <style>
+    @page { size: A4; margin: 16mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #211c29; background: #fff; font: 10.5pt/1.45 Arial, sans-serif; }
+    header { padding: 22px 25px; border-radius: 16px; color: #fff; background: linear-gradient(135deg, #2a0b52, #7e26cb); }
+    .brand { margin: 0 0 7px; color: #e2c6ff; font-size: 8pt; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: 27pt; line-height: 1; letter-spacing: -.04em; }
+    header p { max-width: 580px; margin: 10px 0 0; color: #f1e9fa; }
+    section { margin-top: 22px; page-break-inside: avoid; }
+    h2 { margin: 0 0 8px; color: #52208e; font-size: 15pt; }
+    p { margin: 7px 0; }
+    .note { padding: 10px 13px; border-left: 4px solid #9a50e8; border-radius: 7px; background: #f4edfb; }
+    table { width: 100%; margin: 10px 0; border-collapse: collapse; overflow: hidden; border: 1px solid #ddd2e7; border-radius: 10px; font-size: 9.4pt; }
+    th { padding: 8px 10px; color: #fff; background: #54218f; text-align: left; }
+    td { padding: 7px 10px; border-top: 1px solid #e7dfed; }
+    tbody tr:nth-child(even) { background: #faf7fc; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .formula { display: inline-block; margin: 8px 0; padding: 9px 12px; border-radius: 8px; color: #322241; background: #f1edf4; font-family: Consolas, monospace; font-size: 9.5pt; }
+    .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .card { padding: 13px; border: 1px solid #dfd4e7; border-radius: 10px; background: #fcfaff; }
+    .card h3 { margin: 0 0 5px; color: #51218c; font-size: 10.5pt; }
+    ul { margin: 8px 0; padding-left: 20px; }
+    footer { margin-top: 24px; padding-top: 9px; border-top: 1px solid #ddd5e3; color: #756c7d; font-size: 8pt; }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="brand">SpecialOne · guida per partecipanti</p>
+    <h1>Ruoli, ritiri e infortuni</h1>
+    <p>Come incidono le scelte di formazione e quali regole governano la disponibilità dei calciatori.</p>
+  </header>
+
+  <section>
+    <h2>1. Giocare fuori posizione</h2>
+    <p>L'overall usato dal motore nella partita è l'<strong>overall efficace</strong>: l'overall di base viene moltiplicato per la compatibilità del ruolo e poi per la condizione fisica.</p>
+    <div class="formula">OVR efficace = OVR base × compatibilità ruolo × fattore condizione</div>
+    <table>
+      <thead><tr><th>Situazione</th><th class="num">Moltiplicatore</th><th class="num">Esempio: OVR 80</th></tr></thead>
+      <tbody>
+        <tr><td>Ruolo naturale</td><td class="num">1,00</td><td class="num">80</td></tr>
+        <tr><td>Ruolo secondario dichiarato</td><td class="num">0,96</td><td class="num">76,8</td></tr>
+        <tr><td>Stesso reparto, ruolo non dichiarato</td><td class="num">0,86</td><td class="num">68,8</td></tr>
+        <tr><td>Reparto adiacente</td><td class="num">0,72</td><td class="num">57,6</td></tr>
+        <tr><td>Reparto opposto</td><td class="num">0,58</td><td class="num">46,4</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><strong>Reparti:</strong> difesa ↔ centrocampo e centrocampo ↔ attacco sono adiacenti; difesa ↔ attacco sono opposti. Un giocatore di movimento in porta arriva al massimo a 45 OVR; un portiere schierato in movimento al massimo a 48 OVR.</div>
+  </section>
+
+  <section>
+    <h2>2. Ritiri</h2>
+    <p>All'inizio di ogni stagione si controllano i giocatori dai 34 anni in su. Chi annuncia il ritiro gioca ancora tutta la stagione, ma non può essere ceduto; lascia la rosa alla transizione successiva.</p>
+    <table>
+      <thead><tr><th>Età</th><th class="num">Probabilità annua di ritiro</th><th>Età</th><th class="num">Probabilità annua di ritiro</th></tr></thead>
+      <tbody>
+        <tr><td>Fino a 33</td><td class="num">0%</td><td>38</td><td class="num">65%</td></tr>
+        <tr><td>34</td><td class="num">10%</td><td>39</td><td class="num">80%</td></tr>
+        <tr><td>35</td><td class="num">20%</td><td>40</td><td class="num">95%</td></tr>
+        <tr><td>36</td><td class="num">35%</td><td>41</td><td class="num">99%</td></tr>
+        <tr><td>37</td><td class="num">50%</td><td>42+</td><td class="num">100%</td></tr>
+      </tbody>
+    </table>
+    <p>La stessa tabella viene applicata anche agli svincolati mai posseduti: un giocatore ritirato non potrà più comparire nel pool di quella lega.</p>
+  </section>
+
+  <section>
+    <h2>3. Infortuni</h2>
+    <p>Gli infortuni non sono completamente casuali: il sorteggio è casuale, ma la probabilità dipende da <strong>condizione</strong> ed <strong>età</strong> del giocatore che ha preso parte alla partita.</p>
+    <div class="formula">p = 2,5% × (1 + (100 − condizione) / 50) × fattore età</div>
+    <div class="columns">
+      <div class="card"><h3>Fattore età</h3><ul><li>Under 24: ×0,85</li><li>24–30: ×1,00</li><li>31–33: ×1,25</li><li>34+: ×1,50</li></ul></div>
+      <div class="card"><h3>Durata dell'assenza</h3><ul><li>60%: 1–2 giornate</li><li>30%: 3–6 giornate</li><li>10%: 8–15 giornate</li></ul></div>
+    </div>
+    <table>
+      <thead><tr><th>Età</th><th class="num">Condizione 100</th><th class="num">Condizione 40</th></tr></thead>
+      <tbody>
+        <tr><td>Under 24</td><td class="num">2,125%</td><td class="num">4,675%</td></tr>
+        <tr><td>24–30</td><td class="num">2,5%</td><td class="num">5,5%</td></tr>
+        <tr><td>31–33</td><td class="num">3,125%</td><td class="num">6,875%</td></tr>
+        <tr><td>34+</td><td class="num">3,75%</td><td class="num">8,25%</td></tr>
+      </tbody>
+    </table>
+    <p class="note">La durata estratta viene adattata alla lunghezza effettiva della stagione, con un massimo pari al 40% delle giornate: in una lega corta un infortunio lungo non diventa automaticamente una condanna fino a fine campionato.</p>
+  </section>
+
+  <footer>SpecialOne · Regole attualmente in uso · aggiornato il 5 agosto 2026</footer>
+</body>
+</html>
