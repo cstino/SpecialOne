@@ -85,8 +85,31 @@ async function eliminaStemmaSeOrfano(path: string) {
   if (!error && !data) await supabase.storage.from('team-crests').remove([path])
 }
 
+// Su mobile il sistema puo' scaricare la pagina dalla memoria quando si
+// cambia app: al ritorno il browser la ricarica da zero e lo stato React
+// (a che passo del modulo si era arrivati) sparisce. Non e' stato di gioco
+// (quello resta su Supabase, CLAUDE.md §6) ma solo l'avanzamento di un
+// modulo non ancora inviato: sessionStorage lo fa sopravvivere al reload
+// senza persistere nulla oltre la sessione del browser.
+const CHIAVE_SESSIONE_MODO = 'onboarding_modo'
+
 export function Onboarding({ user, onComplete, onCancel, modoIniziale = 'choose' }: OnboardingProps) {
-  const [mode, setMode] = useState<'choose' | 'create' | 'join'>(modoIniziale)
+  const [mode, setMode] = useState<'choose' | 'create' | 'join'>(() => {
+    if (modoIniziale !== 'choose') return modoIniziale
+    try {
+      const salvato = sessionStorage.getItem(CHIAVE_SESSIONE_MODO)
+      if (salvato === 'join' || salvato === 'create') return salvato
+    } catch { /* storage non disponibile (privacy mode e simili) */ }
+    return 'choose'
+  })
+
+  useEffect(() => {
+    try {
+      if (mode === 'choose') sessionStorage.removeItem(CHIAVE_SESSIONE_MODO)
+      else sessionStorage.setItem(CHIAVE_SESSIONE_MODO, mode)
+    } catch { /* storage non disponibile */ }
+  }, [mode])
+
   const tornaIndietro = () => {
     if (modoIniziale !== 'choose' && onCancel && mode === modoIniziale) onCancel()
     else setMode('choose')
@@ -264,26 +287,53 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
   )
 }
 
+// Stesso motivo del modo scelto sopra: il codice gia' digitato (e a che
+// passo si era arrivati) sopravvive a un reload dell'app, non a una vera
+// uscita dal modulo (chiusura esplicita, o registrazione completata).
+const CHIAVE_SESSIONE_JOIN = 'onboarding_join'
+
+function leggiProgressoSalvato(): { code: string; step: 'code' | 'team' } | null {
+  try {
+    const grezzo = sessionStorage.getItem(CHIAVE_SESSIONE_JOIN)
+    if (!grezzo) return null
+    const letto = JSON.parse(grezzo) as { code?: unknown; step?: unknown }
+    if (typeof letto.code === 'string' && (letto.step === 'code' || letto.step === 'team')) {
+      return { code: letto.code, step: letto.step }
+    }
+  } catch { /* storage non disponibile o valore corrotto */ }
+  return null
+}
+
 function JoinLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCancel'> & { onBack: () => void }) {
-  const [code, setCode] = useState('')
-  const [step, setStep] = useState<'code' | 'team'>('code')
+  const progressoSalvato = useMemo(() => leggiProgressoSalvato(), [])
+  const [code, setCode] = useState(progressoSalvato?.code ?? '')
+  const [step, setStep] = useState<'code' | 'team'>(
+    progressoSalvato?.step === 'team' && progressoSalvato.code.length === 6 ? 'team' : 'code',
+  )
   const [preview, setPreview] = useState<InvitePreview | null>(null)
   const [identity, setIdentity] = useState<TeamFields>({ teamName: '', crest: DEFAULT_CREST })
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function verifyCode(event: FormEvent) {
-    event.preventDefault()
-    if (code.length !== 6) {
-      setError('Inserisci tutte le 6 lettere del codice invito.')
-      return
-    }
+  useEffect(() => {
+    try {
+      if (code) sessionStorage.setItem(CHIAVE_SESSIONE_JOIN, JSON.stringify({ code, step }))
+      else sessionStorage.removeItem(CHIAVE_SESSIONE_JOIN)
+    } catch { /* storage non disponibile */ }
+  }, [code, step])
+
+  // Chiude il modulo per davvero (non un reload): il progresso salvato non
+  // deve riproporsi la prossima volta che si entra in una lega diversa.
+  useEffect(() => () => { try { sessionStorage.removeItem(CHIAVE_SESSIONE_JOIN) } catch { /* noop */ } }, [])
+
+  async function caricaAnteprima(codiceDaVerificare: string) {
     setPending(true)
     setError(null)
-    const { data, error: rpcError } = await supabase.rpc('anteprima_invito', { p_codice: code })
+    const { data, error: rpcError } = await supabase.rpc('anteprima_invito', { p_codice: codiceDaVerificare })
     if (rpcError) {
       setError(rpcError.message)
       setPending(false)
+      setStep('code')
       return
     }
     const nextPreview = data as InvitePreview
@@ -294,6 +344,22 @@ function JoinLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCance
     }
     setStep('team')
     setPending(false)
+  }
+
+  // Se si riparte dal passo "team" dopo un reload, l'anteprima (posti
+  // liberi, stemmi gia' usati) va ripescata: non era salvata, ed e' comunque
+  // meglio ricontrollarla che fidarsi di un dato di prima del reload.
+  useEffect(() => {
+    if (progressoSalvato?.step === 'team' && progressoSalvato.code.length === 6) void caricaAnteprima(progressoSalvato.code)
+  }, [])
+
+  async function verifyCode(event: FormEvent) {
+    event.preventDefault()
+    if (code.length !== 6) {
+      setError('Inserisci tutte le 6 lettere del codice invito.')
+      return
+    }
+    await caricaAnteprima(code)
   }
 
   async function submit(event: FormEvent) {
@@ -310,6 +376,7 @@ function JoinLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCance
         p_stemma_url: crest.path,
       })
       if (rpcError) throw rpcError
+      try { sessionStorage.removeItem(CHIAVE_SESSIONE_JOIN) } catch { /* noop */ }
       onComplete(data as RpcResult)
     } catch (caught) {
       if (uploadedPath) await eliminaStemmaSeOrfano(uploadedPath)
