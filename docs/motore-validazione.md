@@ -265,6 +265,38 @@ diversi: zero violazioni dopo la correzione.
 
 ---
 
+## Nota successiva — moltiplicatori fuori ruolo alleggeriti, scarto target accettato (6 agosto 2026)
+
+Richiesta esplicita dell'utente: la penalità per un ruolo secondario dichiarato (0,96) e
+soprattutto per lo stesso reparto non dichiarato (0,86) gli sembravano troppo pesanti — un
+giocatore che conosce comunque quel ruolo secondario non dovrebbe perdere quasi 4 punti di
+overall solo per non essere la sua prima posizione.
+
+`engine/config.js`, `penalitaRuolo()`:
+
+| Situazione | Prima | Ora |
+|---|---|---|
+| Ruolo naturale | 1,00 | 1,00 |
+| Ruolo secondario dichiarato | 0,96 | 0,98 |
+| Stesso reparto, non dichiarato | 0,86 | 0,91 |
+| Reparto adiacente | 0,72 | 0,80 |
+| Reparto opposto | 0,58 | 0,65 |
+
+**Suite rilanciata** (`node tools/validazione/simulate.js`, seed fisso): due metriche del Test 1
+escono dal target — gol per partita 2,49 (target 2,50–2,90) e vittorie ospite 27,7%
+(target 28,0–33,0%). Lo scarto è minimo perché il baseline originale era già appoggiato al
+bordo inferiore di entrambi i target (2,50 e 28,3%): rendere le posizioni fuori ruolo più
+efficaci comprime leggermente il vantaggio di una formazione ben schierata, quindi tira giù di
+poco sia i gol totali sia le vittorie in trasferta. Tutte le altre metriche (Test 1-5) restano
+dentro target, incluso l'equilibrio fra moduli.
+
+**Segnalato all'utente, tenuto comunque per scelta esplicita** (non un'eccezione silenziosa a
+CLAUDE.md §4): ha confermato di volere quei valori anche dopo aver visto lo scarto. Numeri
+aggiornati in `docs/risultati-fase0.txt`, segnati `FUORI (voluto)` invece di `OK` così restano
+visibili come deviazione intenzionale, non come regressione da correggere in futuro.
+
+---
+
 ## Cosa NON è stato validato
 
 - **Rose reali.** Le rose sintetiche hanno distribuzioni ragionevoli ma non sono il dataset FC 26. Quando importerai i dati veri, rilancia `test1` e `test3`: se i numeri si spostano, l'unica costante da ritoccare è `XG_BASE_BLOCCO`.

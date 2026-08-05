@@ -87,10 +87,10 @@ export function penalitaRuolo(posizioni, slot) {
   if (repSlot === 'GK' || repNat === 'GK') return null;
 
   if (posizioni[0] === slot) return 1.00;
-  if (posizioni.includes(slot)) return 0.96;
-  if (repNat === repSlot) return 0.86;
-  if (ADIACENTI[repNat] && ADIACENTI[repNat].includes(repSlot)) return 0.72;
-  return 0.58;
+  if (posizioni.includes(slot)) return 0.98;
+  if (repNat === repSlot) return 0.91;
+  if (ADIACENTI[repNat] && ADIACENTI[repNat].includes(repSlot)) return 0.80;
+  return 0.65;
 }
 
 // ============================================================

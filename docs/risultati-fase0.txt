@@ -4,13 +4,19 @@ CONFIG:  SENSIBILITA_FORZA=0.09   XG_BASE_BLOCCO=0.252   AMPLIFICA_CONTROLLO=1.4
 ==============================================================================
 TEST 1 — BASELINE: due squadre identiche (OVR 81), 4-3-3 vs 4-3-3
 ==============================================================================
-Gol per partita                        2.50   target 2.50–2.90    OK 
-Vittorie casa %                        45.3   target 43.0–47.0    OK 
-Pareggi %                              26.4   target 23.0–27.0    OK 
-Vittorie ospite %                      28.3   target 28.0–33.0    OK 
-Tiri per squadra                       12.1   target 11.0–14.0    OK 
-% passaggi riusciti                    80.0   target 76.0–88.0    OK 
-Possesso casa %                        52.8   target 49.0–54.0    OK 
+-- Aggiornato dopo l'alleggerimento dei moltiplicatori fuori ruolo (6 agosto
+-- 2026, decisione esplicita dell'utente dopo aver visto lo scarto: vedi
+-- docs/motore-validazione.md). Gol per partita e vittorie ospite escono dal
+-- target per un margine minimo (il baseline precedente era gia' appoggiato
+-- al bordo, 2.50 e 28.3): scarto accettato consapevolmente, non un difetto
+-- da correggere.
+Gol per partita                        2.49   target 2.50–2.90   FUORI (voluto)
+Vittorie casa %                        46.1   target 43.0–47.0    OK
+Pareggi %                              26.2   target 23.0–27.0    OK
+Vittorie ospite %                      27.7   target 28.0–33.0   FUORI (voluto)
+Tiri per squadra                       12.0   target 11.0–14.0    OK
+% passaggi riusciti                    80.2   target 76.0–88.0    OK
+Possesso casa %                        52.8   target 49.0–54.0    OK
 
 Distribuzione gol totali per partita
   0 |################## 9.1%
