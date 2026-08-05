@@ -467,6 +467,11 @@ export default {
           p_blocchi: eventi,
           p_stats_squadra: { home: result.statsCasa, away: result.statsOspite },
           p_player_stats: stats,
+          // Chi e' sceso in campo davvero, non chi era stato scelto prima
+          // della partita: buildLineup() puo' aver gia' rimpiazzato un
+          // titolare infortunato con un giocatore di panchina.
+          p_titolari_home: homeLineup.titolari.map((player) => player.id),
+          p_titolari_away: awayLineup.titolari.map((player) => player.id),
         })
         if (saveError) throw saveError
         summaries.push(saved)

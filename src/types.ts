@@ -63,6 +63,8 @@ export type Match = {
   gol_away: number
   modulo_home: string
   modulo_away: string
+  titolari_home: number[]
+  titolari_away: number[]
   stats_squadra: {
     home: MatchTeamStats
     away: MatchTeamStats

@@ -49,7 +49,7 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
   const [players, setPlayers] = useState<Map<number, PlayerIdentity>>(new Map())
   const [statsLoading, setStatsLoading] = useState(true)
   const [statsError, setStatsError] = useState<string | null>(null)
-  const [titolariByTeam, setTitolariByTeam] = useState<Map<number, Set<number>>>(new Map())
+  const [titolariLineupByTeam, setTitolariLineupByTeam] = useState<Map<number, Set<number>>>(new Map())
   const match = data.matches.find((item) => item.id === matchId)
   const fixture = match ? data.fixtures.find((item) => item.id === match.fixture_id) : undefined
 
@@ -83,7 +83,9 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
     return () => { active = false }
   }, [matchId])
 
-  // Serve solo a sapere chi era titolare, per dividere la lista sotto.
+  // Fallback per le partite simulate prima che matches.titolari_home/away
+  // fotografasse chi e' davvero sceso in campo: la scelta salvata prima
+  // della partita e' il meglio che si puo' mostrare per quelle vecchie.
   useEffect(() => {
     let active = true
     async function loadLineups() {
@@ -94,11 +96,28 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
       if (!active) return
       const mappa = new Map<number, Set<number>>()
       for (const row of rows ?? []) mappa.set(row.team_id, new Set(row.titolari as number[]))
-      setTitolariByTeam(mappa)
+      setTitolariLineupByTeam(mappa)
     }
     void loadLineups()
     return () => { active = false }
   }, [fixture])
+
+  // Chi e' davvero sceso in campo dal minuto 0, non chi era stato scelto
+  // prima della partita: la Edge Function puo' aver gia' rimpiazzato un
+  // titolare infortunato con un giocatore di panchina (buildLineup), e quel
+  // rimpiazzante puo' a sua volta uscire durante la partita per stanchezza
+  // -- indistinguibile da un vero subentrato guardando solo i minuti.
+  const titolariByTeam = useMemo(() => {
+    const mappa = new Map<number, Set<number>>()
+    if (!match || !fixture) return mappa
+    for (const [teamId, effettivi] of [
+      [fixture.home_team_id, match.titolari_home],
+      [fixture.away_team_id, match.titolari_away],
+    ] as const) {
+      mappa.set(teamId, effettivi.length ? new Set(effettivi) : (titolariLineupByTeam.get(teamId) ?? new Set()))
+    }
+    return mappa
+  }, [match, fixture, titolariLineupByTeam])
 
   // Le partite simulate prima dell'introduzione della cronaca hanno blocchi vuoto.
   const eventi = useMemo(() => {
@@ -122,15 +141,9 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
     const risultato = new Map<number, { titolari: MatchPlayerStat[]; subentrati: MatchPlayerStat[] }>()
     for (const [teamId, rows] of byTeam) {
       const titolariSet = titolariByTeam.get(teamId) ?? new Set<number>()
-      // Chi ha giocato tutti i 90' non puo' essere un vero subentrato: succede
-      // quando il titolare designato era infortunato al fischio d'inizio e il
-      // motore lo ha rimpiazzato dalla panchina prima che la partita iniziasse,
-      // uno scambio che "lineups.titolari" (la scelta salvata prima della
-      // partita) non registra mai.
-      const eTitolare = (row: MatchPlayerStat) => titolariSet.has(row.player_instance_id) || row.minuti === 90
       risultato.set(teamId, {
-        titolari: rows.filter(eTitolare),
-        subentrati: rows.filter((row) => !eTitolare(row)),
+        titolari: rows.filter((row) => titolariSet.has(row.player_instance_id)),
+        subentrati: rows.filter((row) => !titolariSet.has(row.player_instance_id)),
       })
     }
     return risultato
