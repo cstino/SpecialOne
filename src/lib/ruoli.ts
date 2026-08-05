@@ -1,10 +1,16 @@
 export type MacroRuolo = 'ALL' | 'GK' | 'DEF' | 'MID' | 'ATT'
 
+// La prima voce di "posizioni" e' sempre la posizione primaria di EA (FC 26):
+// l'ordine viene preservato cosi' com'e' fin dall'importazione, mai riordinato.
+// Guardare solo quella (invece di controllare se una qualsiasi delle posizioni
+// ricade in un reparto) evita di classificare come difensore un centrocampista
+// che sa anche giocare terzino. Stessa logica di private.macro_ruolo lato DB.
 export function macroRuolo(posizioni: string[] = []): MacroRuolo {
-  if (posizioni.includes('GK')) return 'GK'
-  if (posizioni.some((r) => ['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(r))) return 'DEF'
-  if (posizioni.some((r) => ['CDM', 'CM', 'CAM', 'LM', 'RM'].includes(r))) return 'MID'
-  if (posizioni.some((r) => ['ST', 'CF', 'LW', 'RW'].includes(r))) return 'ATT'
+  const primaria = posizioni[0]
+  if (primaria === 'GK') return 'GK'
+  if (['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(primaria)) return 'DEF'
+  if (['CDM', 'CM', 'CAM', 'LM', 'RM'].includes(primaria)) return 'MID'
+  if (['ST', 'CF', 'LW', 'RW'].includes(primaria)) return 'ATT'
   return 'MID'
 }
 

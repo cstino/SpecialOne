@@ -277,6 +277,7 @@ export default function App() {
 
   if (active.league?.stato === 'draft') {
     if (gameView === 'squad') return conContesti(<Rosa membership={active} onNavigate={setGameView} />)
+    if (gameView === 'admin') return conContesti(<Admin membership={active} onNavigate={setGameView} />)
     return conContesti(<Draft user={session.user} membership={active} onNavigate={setGameView} />)
   }
 

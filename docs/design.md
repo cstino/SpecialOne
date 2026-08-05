@@ -167,11 +167,23 @@ Se il vincolo non regge, quel giocatore è **visibile ma non selezionabile**, co
 
 **mod_età**:
 
+> **Invertito, decisione utente del 5 agosto 2026.** La scala precedente (16-20 a 0,35,
+> picco 1,00 a 27-30) rendeva un giovane già forte un affare enorme rispetto a un adulto di
+> pari overall attuale — e la progressione verso il potenziale (§6.2/§10.2) lo fa anche
+> crescere **gratis** per anni sotto lo stesso contratto scontato: un doppio vantaggio, non
+> uno solo. Ora chi è giovane e già forte **paga il potenziale**, non solo l'overall attuale:
+> il modificatore più alto è a 16-20 anni, non a 27-30. Il picco si sposta a 24-26 (esperienza
+> consolidata, prima del premio-potenziale e prima del calo). Gli over 30 restano scontati
+> verso fine carriera, coerente col resto del gioco (rinnovi §10.4, ritiro §10.3).
+
 | Età | 16-20 | 21-23 | 24-26 | 27-30 | 31-32 | 33-34 | 35+ |
 |---|---|---|---|---|---|---|---|
-| Mod | 0,35 | 0,65 | 0,90 | 1,00 | 0,90 | 0,70 | 0,50 |
+| Mod | 1,25 | 1,10 | 1,00 | 0,95 | 0,80 | 0,60 | 0,40 |
 
-Verifica: 28enne da 86 → 10,0 M€. 18enne da 72 → 0,5 M€ (floor). 19enne da 84 → 2,6 M€ (i giovani forti sono affari — voluto). 30enne da 91 → 17,0 M€.
+Verifica: 25enne da 86 → 10,0 M€ (nuovo riferimento centrale). 19enne da 84 → 9,4 M€ (prima
+2,6 M€ con la scala vecchia: un giovane forte ora costa **di più**, non meno, dello stesso
+giocatore a 28 anni). 18enne da 72 → 1,5 M€ (prima finiva sul floor a 0,5 M€). 34enne da 86 →
+6,0 M€. 37enne da 80 → 1,3 M€.
 
 Monte ingaggi tipico di una rosa da 25 costruita col tetto: **75–80 M€**.
 
@@ -367,6 +379,58 @@ Se alle **23:00 (Europe/Rome)** non è stata salvata una formazione valida, il s
 - Undici: massimizza la somma di `OVR_eff` con assegnazione ottimale ruolo/giocatore (algoritmo ungherese o greedy con backtracking)
 - Panchina: 9 migliori residui garantendo almeno 1 portiere
 
+### 6.8 Stile di gioco
+
+Leva tattica **indipendente dal modulo**, scelta insieme ad esso prima di ogni giornata.
+Entra nella stessa somma additiva di §6.4/§6.6 (profilo strutturale, bonus casa), come un
+ulteriore termine in punti di overall:
+
+```
+ATT_eff += stile_ATT
+MID_eff += stile_MID
+DEF_eff += stile_DEF
+```
+
+Ogni stile è una **redistribuzione a somma zero** tra le tre linee — nessuno stile è un buff
+netto, solo uno spostamento di enfasi — con magnitudine paragonabile agli altri termini
+additivi (bonus casa ±2, familiarità max 3,5, clamp strutturale ±3,5):
+
+| Stile | DEF | MID | ATT |
+|---|---|---|---|
+| Equilibrato | 0 | 0 | 0 |
+| Contropiede | +3,0 | −3,0 | 0 |
+| Possesso palla | −1,5 | +3,0 | −1,5 |
+| Gioco sulle fasce | −1,5 | −1,0 | +2,5 |
+| Recupero veloce | −3,0 | +1,5 | +1,5 |
+| Gioco diretto | 0 | −3,0 | +3,0 |
+| Difesa a oltranza | +4,0 | −2,0 | −2,0 |
+
+`equilibrato` è il default: senza una voce neutra, la prima formazione di ogni squadra
+partirebbe comunque con uno stile scelto arbitrariamente.
+
+**Verifica direzionale** (squadra col dato stile, in casa, OVR 81, 4-3-3, contro una
+squadra equilibrata di pari livello, 4000 partite, `usaCondizione: false`):
+
+| Stile | Gol fatti | Gol subiti | Possesso |
+|---|---|---|---|
+| Equilibrato (controllo) | 1,42 | 1,04 | 52,8% |
+| Contropiede | 1,33 | 0,86 | 48,6% |
+| Possesso palla | 1,34 | 1,11 | 57,0% |
+| Gioco sulle fasce | 1,71 | 1,28 | 51,4% |
+| Recupero veloce | 1,73 | 1,33 | 55,0% |
+| Gioco diretto | 1,72 | 1,20 | 48,6% |
+| Difesa a oltranza | 1,14 | 0,79 | 50,0% |
+
+Ogni stile mostra il trade-off atteso dalla sua descrizione (chi attacca di più concede di
+più, chi si chiude segna meno) e nessuno domina strettamente gli altri. Non fa parte della
+suite ufficiale di Fase 0 (quella resta `docs/risultati-fase0.txt`, verificata identica
+prima e dopo questa modifica): è solo una verifica di buon senso sulla nuova leva.
+
+**Consapevolmente fuori scope**: nessuna familiarità/curva di apprendimento per lo stile, a
+differenza del modulo (§6.5) — aggiungerla vorrebbe dire un'altra dimensione di
+bilanciamento (7 moduli × 7 stili) da validare. Si può aggiungere in un secondo momento se
+emerge la necessità.
+
 ---
 
 ## 7. Motore di simulazione
@@ -382,12 +446,13 @@ La partita è divisa in **6 blocchi da 15 minuti**. Per ogni blocco si ricalcola
 **Passo 1 — Forze di linea** (tutto additivo, in punti di overall)
 
 ```
-ATT_C = media_ATT_C + strutt_ATT_C + malus_fam_C + BONUS_CASA_ATT
-MID_C = media_MID_C + strutt_MID_C + malus_fam_C + BONUS_CASA_MID
-DEF_C = media_DEF_C + strutt_DEF_C
+ATT_C = media_ATT_C + strutt_ATT_C + malus_fam_C + BONUS_CASA_ATT + stile_ATT_C
+MID_C = media_MID_C + strutt_MID_C + malus_fam_C + BONUS_CASA_MID + stile_MID_C
+DEF_C = media_DEF_C + strutt_DEF_C + stile_DEF_C
 ```
 
-(la squadra ospite senza i bonus casa)
+(la squadra ospite senza i bonus casa; lo stile di gioco, §6.8, è l'ultimo addendo aggiunto
+a questa somma già additiva)
 
 **Passo 2 — Controllo del gioco**
 
@@ -619,6 +684,27 @@ Alla chiusura **le offerte vincenti vengono rivelate** a tutta la lega: chi ha p
 
 È questo che rende coerente l'assenza di tetto: non potendosi impegnare oltre le proprie possibilità, tutto ciò su cui si è offerto è anche tutto ciò che si può pagare. Senza l'impegno si sarebbe potuto offrire su dieci giocatori avendo i soldi per quattro, e alle 21:00 se ne sarebbero vinti quattro **arbitrari**, scelti dall'ordine di estrazione invece che da una decisione del giocatore.
 
+### 9.4 bis Lista trasferimenti — "Mercato della lega"
+
+> **Aggiunto dall'utente, 5 agosto 2026.**
+
+Dalla scheda di un proprio giocatore si può metterlo **in lista**
+(`player_instances.sul_mercato`), e nella pagina Mercato compare la vetrina **Mercato della
+lega** con tutti quelli messi in lista dalle squadre, filtrabile per ruolo, età e overall.
+
+**È una vetrina, non un canale di trattativa nuovo**: serve a dire "questo lo cedo" senza
+doverlo scrivere in chat. Chi vede un giocatore interessante usa la proposta di scambio di
+§9.2, che esiste già. Per questo la scheda aperta dalla vetrina non mostra alcun bottone di
+gestione: sono giocatori altrui.
+
+Nessuna policy RLS nuova: `player_instances_lettura` permette già a ogni membro della lega di
+leggere tutte le rose (è così che funziona la pagina Squadra sugli avversari), quindi basta
+filtrare sul flag. Solo il proprietario può alzarlo o abbassarlo.
+
+**Il flag non sopravvive a un cambio di squadra**: un trigger lo azzera quando `team_id`
+cambia. Un giocatore appena acquistato non deve risultare già in vetrina per il nuovo
+proprietario, che quella scelta non l'ha mai fatta.
+
 ### 9.5 Svincolo
 
 Libera lo slot immediatamente, purché la squadra conservi almeno **21 giocatori** e il
@@ -684,7 +770,22 @@ il giocatore sparisce dal pool degli svincolati **senza mai essere passato da un
 loro età è derivata (età del catalogo + stagioni passate in questa lega), perché il pool degli
 svincolati pesca sempre fresco dal catalogo e non fa invecchiare le istanze non possedute.
 
-### 10.4 Rinnovi contrattuali
+### 10.4 Rinnovi contrattuali — RIMOSSO
+
+> **Rimosso dall'utente, 5 agosto 2026.** Esistevano due canali di rinnovo: questo, in
+> off-season, e quello a stagione in corso (§10.4 bis). Resta solo il secondo.
+>
+> **Cosa succede adesso**: chi arriva alla chiusura dell'off-season con il contratto scaduto
+> lascia semplicemente la squadra ed entra nel pool degli svincolati, pescabile dal mercato
+> come tutti gli altri. Nessuna trattativa di giugno.
+>
+> **Perché conta**: rende definitiva la regola dei tre tentativi di §10.4 bis. Finché il
+> rinnovo di off-season esisteva, un giocatore che aveva chiuso la trattativa poteva essere
+> recuperato aspettando giugno, e la conseguenza era aggirabile.
+>
+> Le tabelle `contract_renewals` e `private.contract_renewal_terms` restano come archivio
+> storico (contengono dati di una lega reale) ma non vengono più scritte. Il testo sotto è
+> conservato perché documenta come funzionava.
 
 Off-season, prima della nuova stagione. Ogni contratto in scadenza va rinnovato o il giocatore diventa svincolato.
 
@@ -720,6 +821,75 @@ stagione dopo.
 - offerta ≥ richiesta → accetta
 - 0,90 ≤ offerta/richiesta < 1,00 → probabilità lineare da 0 a 1
 - offerta < 0,90 × richiesta → rifiuta, diventa svincolato
+
+### 10.4 bis Rinnovo a stagione in corso
+
+> **Aggiunto dall'utente, 5 agosto 2026.** Il rinnovo di §10.4 resta quello dell'off-season,
+> su contratti **scaduti**. Questo è un canale separato, dalla scheda giocatore, su contratti
+> **ancora in corso**.
+
+**È il giocatore ad aprire**, con una cifra e una durata. Da lì **si tratta su due assi**,
+ingaggio e durata, e l'esito dipende da mentalità e morale (§10 bis).
+
+**I due assi si compensano**: allontanarsi dalla durata che il giocatore chiede svaluta
+l'offerta del 7% per stagione di scarto, e va compensato con l'ingaggio. Senza questo la
+durata sarebbe una scelta finta — converrebbe sempre il massimo — invece che un secondo asse
+di trattativa.
+
+```
+soglia   = richiesta × (1 − tolleranza)
+valore   = ingaggio_offerto × (1 − |durata_offerta − durata_voluta| × 0.07)
+accetta se valore ≥ soglia
+```
+
+**La tolleranza** è quanto il giocatore è disposto a scendere sotto la sua richiesta, fra
+0% e 25%, e non è mai mostrata: se lo fosse, si calcolerebbe la soglia esatta e la trattativa
+diventerebbe un'operazione aritmetica.
+
+```
+tolleranza = 0.05                                  base, la concede chiunque
+           + (morale − 50) / 500                   morale 100 → +0,10 · morale 0 → −0,10
+           + bandiera / 1000                       chi ama la maglia fa uno sconto
+           − economia / 1000                       chi guarda i soldi non lo fa
+           + (0.5 − posizione_norm) × vittorie/500 chi vuole vincere sconta se si vince
+```
+
+Misurato: una bandiera serena in una squadra prima in classifica concede il **20%**; un
+giocatore avido, scontento e ultimo in classifica concede **zero**.
+
+**Tre tentativi**, poi basta. Il rifiuto è **informativo** ("ci siamo quasi" sopra il 95%,
+"è troppo poco" sopra l'85%, "non se ne parla nemmeno" sotto) ma consuma un tentativo.
+Esauriti i tre, **il giocatore non rinnova più con quella squadra e va a scadenza**: a fine
+off-season lascia la rosa ed entra nel pool svincolati. È definitivo — non c'è più il rinnovo
+di off-season con cui aggirarlo (§10.4).
+
+**Il contatore non si azzera mai**, se non quando il giocatore firma.
+
+```
+richiesta = max(ingaggio_attuale, ingaggio_teorico(OVR, età) × uniform(1.00, 1.12))
+```
+
+Nessuno chiede meno di quanto già percepisce.
+
+**Durata proposta**, coerente con l'età — un 36enne non chiede quattro stagioni:
+
+| Età | ≤23 | 24-29 | 30-31 | 32-33 | 34-35 | 36+ |
+|---|---|---|---|---|---|---|
+| Stagioni | 4 | 3-4 | 2-3 | 2 | 1-2 | 1 |
+
+**La proposta è deterministica** su `(istanza, overall, età, ingaggio)`: riaprire la scheda
+mostra sempre la stessa cifra. Senza questo, con un `random()` vero basterebbe chiudere e
+riaprire finché non esce un numero comodo. Cambia solo quando cambia il giocatore, cioè ai
+checkpoint di progressione del 25% (§10.2) o dopo un rinnovo. Per lo stesso motivo non serve
+nessuna tabella di stato: la proposta si ricalcola identica, e firmare scrive direttamente su
+`player_instances`.
+
+**Decorrenza**: il nuovo ingaggio parte dalle stagioni successive — quella corrente è già
+stata addebitata per intero a inizio stagione (§5.4), quindi rinnovare oggi non muove denaro
+oggi. Il costo è l'impegno futuro. La nuova scadenza è
+`max(scadenza_attuale, stagione_corrente + durata)`: un rinnovo non accorcia mai un contratto.
+
+Chi ha annunciato il ritiro (§10.3) non rinnova.
 
 ### 10.5 Nuova stagione
 
@@ -780,6 +950,115 @@ scadenza vengono eliminati e il calendario usa soltanto le squadre realmente att
 I giocatori di una squadra rimossa diventano svincolati. Le trattative fra squadre restano aperte
 durante l'off-season. Un nuovo partecipante riceve il budget iniziale previsto dalle regole della
 lega, necessario per completare il draft d'ingresso.
+
+---
+
+## 10 bis. Mentalità e morale
+
+> **Aggiunto dall'utente, 5 agosto 2026.** Numerata "10 bis" e non "11" perché §11 è il
+> modello dati, citato per numero in sei migrazioni storiche: rinumerarlo romperebbe quei
+> riferimenti.
+
+### 10bis.1 Mentalità — tratto permanente
+
+Tre rami che si dividono **100 punti**: dicono *cosa viene prima* per quel giocatore, non
+quanto vale.
+
+| Ramo | Significato |
+|---|---|
+| **Bandiera** | Prima la maglia: soldi e vittorie vengono dopo |
+| **Economia** | Prima il contratto: punta sempre all'ingaggio più alto, mai irrealistico |
+| **Vittorie** | Prima i risultati: vuole vincere, il resto conta meno |
+
+Il dataset FC 26 **non contiene nulla di simile** — le colonne `mentality_*` non sono
+importate e comunque misurano altro (compostezza, aggressività, visione di gioco). La
+mentalità è quindi **generata deterministicamente dall'id del giocatore**: lo stesso giocatore
+ha la stessa personalità in ogni lega e per sempre, così i partecipanti possono costruirsi
+un'intuizione stabile ("quello è uno che guarda i soldi").
+
+Implementata come **colonne generate** su `players`, non come colonne riempite da un UPDATE:
+così non esiste il caso "giocatore importato dopo, senza mentalità" — è già successo davvero
+con i 576 del pool élite globale del 4 agosto — e non può andare fuori sincrono. Richiede una
+funzione `IMMUTABLE`, quindi aritmetica pura: `hashtext()` è solo `STABLE`.
+
+> **Trappola già incontrata**: i tre rami usano tre **moltiplicatori diversi**. Un primo
+> tentativo usava lo stesso moltiplicatore con un offset per ramo, e produceva rami correlati
+> (`r2 = r1 + costante`): misurato sui 5.992 giocatori dava "bandiera" dominante solo 1.123
+> volte contro le ~2.434 delle altre due. Con moltiplicatori distinti: **1.908 / 1.996 /
+> 1.897**, cioè un terzo ciascuno.
+
+### 10bis.2 Quanto un giocatore ritiene di dover giocare
+
+Dal confronto fra il suo overall e la **media della propria rosa** — non un valore assoluto:
+lo stesso giocatore è titolare inamovibile in una squadra modesta e riserva in una forte.
+
+| Overall rispetto alla media rosa | Quota di minuti attesa |
+|---|---|
+| ≥ +6 | 90% |
+| da +3 a +6 | 75% |
+| da −1 a +3 | 55% |
+| da −4 a −1 | 30% |
+| < −4 | 10% |
+
+### 10bis.3 Morale
+
+Valore **0–100** per istanza di giocatore, parte da **70**, ricalcolato **a ogni quarto di
+stagione** (25/50/75/100% delle giornate), con lo stesso meccanismo di recupero graduale della
+progressione overall (§10.2) ma registro e funzione separati, così si può correggerne uno
+senza toccare l'altro.
+
+```
+delta_minutaggio = clamp((quota_giocata − quota_attesa) × 30, −12, +8)
+delta_economia   = clamp((ingaggio / ingaggio_teorico − 1) × 20, −10, +6) × (economia / 33)
+delta_vittorie   = (0.5 − posizione_normalizzata) × 16 × (vittorie / 33)
+
+attenuazione     = 1 − bandiera / 200
+morale += (somma dei delta positivi) + (somma dei delta negativi) × attenuazione
+```
+
+Tre scelte da spiegare:
+
+- **Il minutaggio vale per tutti**, non è pesato da un ramo: nessuno è contento di non giocare.
+  È **asimmetrico di proposito** (−12 contro +8): giocare meno del previsto delude più di
+  quanto giocare tanto gratifichi.
+- **Il peso dei rami è normalizzato su 33** (la media, essendo la somma 100): un ramo a 33 pesa
+  1,0, a 66 pesa 2,0, a 10 pesa 0,3.
+- **La bandiera non è un contributo a sé, attenua le insoddisfazioni.** È esattamente la
+  definizione data dall'utente ("soldi e vittorie vengono dopo"): chi è bandiera si lamenta
+  meno, non è più felice a prescindere. Un bandiera 60 assorbe il 30% del malcontento.
+
+**Il morale non tocca il rendimento in campo** (decisione dell'utente): `engine/` resta intatto
+e non serve il protocollo di CLAUDE.md §4. Serve ai rinnovi e alle richieste economiche.
+
+Verificato su dati reali (lega 29, un checkpoint): chi gioca ha morale medio **77** contro
+**62** di chi non gioca; a parità di zero minuti, chi ha bandiera > 40 sta a **65** contro
+**60** di chi ce l'ha < 25.
+
+---
+
+### Eliminazione lega
+
+> **Aggiunto dall'utente, 5 agosto 2026.** Pannello admin.
+
+L'amministratore può eliminare definitivamente la propria lega. Conferma **più severa** di un
+semplice "sei sicuro?": bisogna ridigitare il nome esatto della lega, stesso pattern di
+sicurezza usato altrove per le cancellazioni irreversibili (es. repository su GitHub) — un
+doppio clic distratto non deve poter cancellare la lega di sette persone, visto che l'impatto
+è su tutti i partecipanti, non solo su chi elimina.
+
+`public.elimina_lega(p_league_id, p_conferma_nome)`: verifica che il chiamante sia
+`leagues.admin_id`, che il nome digitato corrisponda esattamente, poi cancella. Ogni tabella
+con `league_id` ha `ON DELETE CASCADE` **tranne due**, volutamente `RESTRICT` a protezione
+dell'uso normale (CLAUDE.md: *"Registro append-only... non è opzionale"*):
+`match_stats.player_instance_id` e `transactions.team_id`. La funzione le svuota
+esplicitamente per quella lega prima della cancellazione generale, invece di allentare il
+vincolo (che resta a protezione di ogni altro percorso).
+
+> **Difetto trovato durante la verifica, non causato da questa modifica**: la tabella
+> `season_morale_checkpoints` (§10bis.3) non aveva alcuna foreign key, né su `season_id` né su
+> `league_id` — a differenza di `season_progression_checkpoints`, che le ha entrambe cascade.
+> Non bloccava l'eliminazione (senza FK non c'è nulla da controllare) ma avrebbe lasciato
+> righe orfane per sempre. Corretto nella stessa migrazione.
 
 ---
 
@@ -847,6 +1126,17 @@ K_STRUTTURA            = 2.2
 STRUTT_CLAMP           = 3.5
 FAM_MALUS_MAX          = 3.5    // PUNTI di overall al primo utilizzo
 FAM_PARTITE_PIENA      = 15
+
+// Stile di gioco — redistribuzione a somma zero, PUNTI di overall (§6.8, aggiunto 5 agosto 2026)
+STILI = {
+  equilibrato:     { DEF:  0,    MID:  0,    ATT:  0   },
+  contropiede:     { DEF:  3.0,  MID: -3.0,  ATT:  0   },
+  possesso_palla:  { DEF: -1.5,  MID:  3.0,  ATT: -1.5 },
+  fasce:           { DEF: -1.5,  MID: -1.0,  ATT:  2.5 },
+  recupero_veloce: { DEF: -3.0,  MID:  1.5,  ATT:  1.5 },
+  diretto:         { DEF:  0,    MID: -3.0,  ATT:  3.0 },
+  blocco_basso:    { DEF:  4.0,  MID: -2.0,  ATT: -2.0 },
+}
 
 // Condizione — modello "da partita", non di stagione (rivisto il 2 agosto 2026)
 CONSUMO_BASE           = 10.5   // 3.4 originaria: col vecchio valore nessuno si stancava mai

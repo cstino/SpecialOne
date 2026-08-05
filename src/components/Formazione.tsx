@@ -26,9 +26,37 @@ const MODULO_DESCRIZIONI: Record<string, string> = {
   '4-2-4': '4 dif · 2 cen · 4 att',
 }
 
+// Le stesse 7 chiavi di engine/config.js STILI e private.stili_validi() lato DB
+// (sync a mano, stesso pattern gia' in uso per MODULI/moduli_validi()).
+const STILI: string[] = ['equilibrato', 'contropiede', 'possesso_palla', 'fasce', 'recupero_veloce', 'diretto', 'blocco_basso']
+
+const STILE_LABEL: Record<string, string> = {
+  equilibrato: 'EQUILIBRATO',
+  contropiede: 'CONTROPIEDE',
+  possesso_palla: 'POSSESSO PALLA',
+  fasce: 'GIOCO SULLE FASCE',
+  recupero_veloce: 'RECUPERO VELOCE',
+  diretto: 'GIOCO DIRETTO',
+  blocco_basso: 'DIFESA A OLTRANZA',
+}
+
+const STILE_DESCRIZIONI: Record<string, string> = {
+  equilibrato: 'Nessun aggiustamento tattico.',
+  contropiede: 'Difensivo e attendista, sfrutta le occasioni in ripartenza.',
+  possesso_palla: 'Dominio del centrocampo e del possesso.',
+  fasce: 'Veloce sulle corsie, cross e ampiezza.',
+  recupero_veloce: 'Difesa alta e pressing per riconquistare la palla.',
+  diretto: 'Verticale, salta il centrocampo, punta sulla profondità.',
+  blocco_basso: 'Massima solidità difensiva, rischia il minimo indispensabile.',
+}
+
 type PlayerStats = Record<string, number | null>
 type Player = { id: number; fc_id: number; nome: string; club: string; nazionalita: string | null; overall_corrente: number; eta_corrente: number; posizioni: string[]; piede: string | null; altezza: number | null; condizione: number; infortunato_fino_a: number; ritiro_annunciato: boolean; attributi: PlayerStats; foto_url: string | null }
-type SavedLineup = { modulo: string; titolari: number[]; panchina: number[]; tribuna: number[] }
+type SavedLineup = { modulo: string; stile_gioco: string; titolari: number[]; panchina: number[]; tribuna: number[]; salvata_il: string }
+
+const formatSalvataIl = (iso: string) => new Intl.DateTimeFormat('it-IT', {
+  timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+}).format(new Date(iso)).replace(',', ' alle')
 
 type FormazioneProps = { membership: Membership; onNavigate: (view: GameView) => void }
 type PlayerZone = 'starter' | 'bench' | 'tribuna'
@@ -107,11 +135,14 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [imageUrls, setImageUrls] = useState<Record<number, string>>({})
   const [modulo, setModulo] = useState('4-3-3')
   const [moduleMenuOpen, setModuleMenuOpen] = useState(false)
+  const [stile, setStile] = useState('equilibrato')
+  const [stileMenuOpen, setStileMenuOpen] = useState(false)
+  const [salvataIl, setSalvataIl] = useState<string | null>(null)
   const [titolari, setTitolari] = useState<number[]>([])
   const [panchina, setPanchina] = useState<number[]>([])
   const [tribuna, setTribuna] = useState<number[]>([])
   const [selected, setSelected] = useState<PlayerLocation | null>(null)
-  const [openZone, setOpenZone] = useState<PlayerZone | null>('bench')
+  const [openZone, setOpenZone] = useState<PlayerZone>('starter')
   const [detailPlayer, setDetailPlayer] = useState<Player | null>(null)
   const [playerAction, setPlayerAction] = useState<PlayerAction | null>(null)
   const [loading, setLoading] = useState(true)
@@ -159,7 +190,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       const targetGiornata = nextFixture?.giornata ?? league.giornate_totali
       if (active) setGiornata(targetGiornata)
       const { data: lineup, error: lineupError } = await supabase.from('lineups')
-        .select('modulo, titolari, panchina, tribuna')
+        .select('modulo, stile_gioco, titolari, panchina, tribuna, salvata_il')
         .eq('league_id', league.id)
         .eq('team_id', membership.id)
         .lte('giornata', targetGiornata)
@@ -181,6 +212,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         const giaInDistinta = new Set([...titolariSalvati, ...panchinaSalvata, ...tribunaSalvata])
         const nuoviArrivi = loaded.filter((player) => !giaInDistinta.has(player.id)).map((player) => player.id)
         setModulo(current.modulo)
+        setStile(current.stile_gioco)
+        setSalvataIl(current.salvata_il)
         setTitolari(titolariSalvati)
         setPanchina(panchinaSalvata)
         setTribuna([...tribunaSalvata, ...nuoviArrivi])
@@ -226,7 +259,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     bench: panchina.map((id, index) => ({ zone: 'bench', index, id })),
     tribuna: tribuna.map((id, index) => ({ zone: 'tribuna', index, id })),
   }
-  const visibleLocations = openZone ? [...locations[openZone]].sort((left, right) => {
+  const visibleLocations = [...locations[openZone]].sort((left, right) => {
     if (openZone === 'starter') return left.index - right.index
     const leftPlayer = players.find((player) => player.id === left.id)
     const rightPlayer = players.find((player) => player.id === right.id)
@@ -235,7 +268,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     const overallDifference = (rightPlayer?.overall_corrente ?? 0) - (leftPlayer?.overall_corrente ?? 0)
     if (overallDifference !== 0) return overallDifference
     return (leftPlayer?.nome ?? '').localeCompare(rightPlayer?.nome ?? '', 'it')
-  }) : []
+  })
   const selectedPlayer = selected ? players.find((player) => player.id === playerAt(selected)) : undefined
 
   function playerAt(location: PlayerLocation) {
@@ -253,9 +286,11 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   function selectPlayer(location: PlayerLocation) {
     setSaved(false)
     if (!selected) {
+      // Non cambiamo vista da soli: non e' detto che il sostituto stia nella
+      // zona "opposta" (es. si puo' scambiare un titolare con un altro
+      // titolare). Sceglie l'utente quale scheda aprire dopo aver armato
+      // la sostituzione.
       setSelected(location)
-      const player = players.find((item) => item.id === playerAt(location))
-      setOpenZone(player?.infortunato_fino_a && location.zone === 'bench' ? 'tribuna' : location.zone === 'starter' ? 'bench' : 'starter')
       return
     }
     if (selected.zone === location.zone && selected.index === location.index) { setSelected(null); return }
@@ -336,9 +371,10 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     const { error: saveError } = await supabase.rpc('salva_formazione', {
       p_league_id: league.id, p_giornata: giornata, p_modulo: modulo,
       p_titolari: titolari, p_panchina: cleanBench, p_tribuna: tribuna,
+      p_stile_gioco: stile,
     })
     if (saveError) setError(saveError.message)
-    else { setPanchina(cleanBench); setSaved(true) }
+    else { setPanchina(cleanBench); setSaved(true); setSalvataIl(new Date().toISOString()) }
     setSaving(false)
   }
 
@@ -348,6 +384,12 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     setSelected(null)
     setPlayerAction(null)
     setModuleMenuOpen(false)
+  }
+
+  function chooseStile(nextStile: string) {
+    setStile(nextStile)
+    setSaved(false)
+    setStileMenuOpen(false)
   }
 
   if (loading) return <main className="loading-screen"><img className="loading-mark" src="/specialone-mark.svg" alt="" /><p>Preparo la formazione…</p></main>
@@ -361,40 +403,52 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       {players.length < 11 ? <section className="formation-panel"><h2>Rosa incompleta</h2><p>Servono almeno 11 giocatori prima di poter salvare una formazione.</p></section> : (
         <section className="formation-panel formation-panel--tactical">
           <div className="formation-toolbar">
-            <div className="formation-module-selector">
-              <p className="kicker">Modulo tattico</p>
-              <button className="formation-module-trigger" type="button" aria-haspopup="listbox" aria-expanded={moduleMenuOpen} onClick={() => setModuleMenuOpen((open) => !open)}><strong>{modulo}</strong><span>{moduleMenuOpen ? '×' : '⌄'}</span></button>
-              {moduleMenuOpen && <><button className="formation-module-scrim" type="button" aria-label="Chiudi selezione modulo" onClick={() => setModuleMenuOpen(false)} /><div className="formation-module-menu" role="listbox" aria-label="Scegli il modulo">{Object.keys(MODULI).map((name) => <button className={name === modulo ? 'is-active' : ''} type="button" role="option" aria-selected={name === modulo} key={name} onClick={() => chooseModule(name)}><strong>{name}</strong><small>{MODULO_DESCRIZIONI[name]}</small><span>{name === modulo ? '✓' : '›'}</span></button>)}</div></>}
+            <div className="formation-toolbar__top">
+              <div className="formation-module-selector">
+                <p className="kicker">Modulo tattico</p>
+                <button className="formation-module-trigger" type="button" aria-haspopup="listbox" aria-expanded={moduleMenuOpen} onClick={() => { setModuleMenuOpen((open) => !open); setStileMenuOpen(false) }}><strong>{modulo}</strong><span>{moduleMenuOpen ? '×' : '⌄'}</span></button>
+                {moduleMenuOpen && <><button className="formation-module-scrim" type="button" aria-label="Chiudi selezione modulo" onClick={() => setModuleMenuOpen(false)} /><div className="formation-module-menu" role="listbox" aria-label="Scegli il modulo">{Object.keys(MODULI).map((name) => <button className={name === modulo ? 'is-active' : ''} type="button" role="option" aria-selected={name === modulo} key={name} onClick={() => chooseModule(name)}><strong>{name}</strong><small>{MODULO_DESCRIZIONI[name]}</small><span>{name === modulo ? '✓' : '›'}</span></button>)}</div></>}
+              </div>
+              <div className="formation-save">
+                <button className="formation-save-button button button--primary" type="button" disabled={saving} onClick={save}>{saving ? 'Salvo…' : 'Salva'}</button>
+                {saved && <span>Formazione salvata</span>}
+                {salvataIl && <small>Salvata il {formatSalvataIl(salvataIl)}</small>}
+              </div>
+            </div>
+            <div className="formation-stile-selector">
+              <p className="kicker">Stile di gioco</p>
+              <button className="formation-stile-trigger" type="button" aria-haspopup="listbox" aria-expanded={stileMenuOpen} onClick={() => { setStileMenuOpen((open) => !open); setModuleMenuOpen(false) }}><strong>{STILE_LABEL[stile]}</strong><span>{stileMenuOpen ? '×' : '⌄'}</span></button>
+              {stileMenuOpen && <><button className="formation-stile-scrim" type="button" aria-label="Chiudi selezione stile di gioco" onClick={() => setStileMenuOpen(false)} /><div className="formation-stile-menu" role="listbox" aria-label="Scegli lo stile di gioco">{STILI.map((key) => <button className={key === stile ? 'is-active' : ''} type="button" role="option" aria-selected={key === stile} key={key} onClick={() => chooseStile(key)}><strong>{STILE_LABEL[key]}</strong><small>{STILE_DESCRIZIONI[key]}</small><span>{key === stile ? '✓' : '›'}</span></button>)}</div></>}
             </div>
           </div>
-          <div className={`formation-swapper ${selected ? 'has-selection' : ''}`}>
-            <div className="formation-swapper__status">
-              <span>{selected ? 'Sostituisci' : 'Gestione rosa'}</span>
-              <strong>{selectedPlayer ? selectedPlayer.nome : 'Seleziona un giocatore'}</strong>
-              <small>{selected ? 'Ora tocca il giocatore con cui vuoi scambiarlo.' : 'Tocca un giocatore per sostituirlo o vedere i dettagli.'}</small>
-            </div>
-            <div className="formation-zone-tabs" role="tablist" aria-label="Gruppi della formazione">
-              {([['starter', 'Titolari'], ['bench', 'Panchina'], ['tribuna', 'Tribuna']] as const).map(([zone, label]) => <button className={openZone === zone ? 'is-active' : ''} type="button" role="tab" aria-selected={openZone === zone} aria-expanded={openZone === zone} key={zone} onClick={() => setOpenZone((current) => current === zone ? null : zone)}><span>{label}</span><b>{locations[zone].length}</b><i>{openZone === zone ? '−' : '+'}</i></button>)}
-            </div>
-            {openZone && <div className="formation-player-tray" role="tabpanel">
-              {visibleLocations.filter((location) => !(selected?.zone === location.zone && selected.index === location.index)).map((location) => {
-                const player = players.find((item) => item.id === location.id)
-                const position = location.zone === 'starter' ? slots[location.index] : player?.posizioni[0] ?? '—'
-                return <PlayerPortrait compact key={`${location.zone}-${location.index}-${location.id}`} player={player} imageUrl={imageUrls[location.id]} position={position} selected={selected?.zone === location.zone && selected.index === location.index} onClick={(event) => handlePlayerClick(event, location, player)} />
-              })}
-            </div>}
+          <div className="formation-zone-tabs" role="tablist" aria-label="Vista formazione">
+            {([['starter', 'Titolari'], ['bench', 'Panchina'], ['tribuna', 'Tribuna']] as const).map(([zone, label]) => <button className={openZone === zone ? 'is-active' : ''} type="button" role="tab" aria-selected={openZone === zone} key={zone} onClick={() => setOpenZone(zone)}><span>{label}</span><b>{locations[zone].length}</b></button>)}
           </div>
-          <div className="formation-poster-heading"><span>Dream Team</span><small>{league.nome} · Giornata {giornata}</small></div>
-          <div className="pitch-field" aria-label={`Campo con modulo ${modulo}`}>
-            <div className="pitch-field__line pitch-field__line--half" />
-            <div className="pitch-field__circle" />
-            <div className="pitch-field__box pitch-field__box--top" /><div className="pitch-field__box pitch-field__box--bottom" />
-            <div className="pitch-grid">
-              {rows.map((row, rowIndex) => <div className={`pitch-row pitch-row--${rowIndex}`} style={{ '--row-count': row.length } as CSSProperties} key={rowIndex}>{row.map(({ slot, index }) => { const player = players.find((item) => item.id === titolari[index]); const location = { zone: 'starter', index, id: titolari[index] ?? 0 } as PlayerLocation; return <div className={`pitch-slot pitch-slot--${reparto(slot)}`} key={`${slot}-${index}`}><PlayerPortrait player={player} imageUrl={imageUrls[player?.id ?? 0]} position={slot} selected={selected?.zone === 'starter' && selected.index === index} onClick={(event) => handlePlayerClick(event, location, player)} /></div> })}</div>)}
-            </div>
+          {selected && <p className="formation-swap-hint">Tocca il giocatore con cui vuoi scambiare {selectedPlayer?.nome ?? ''}.</p>}
+          <div className="formation-view-card">
+            {openZone === 'starter' ? (
+              <div className="pitch-field" aria-label={`Campo con modulo ${modulo}`}>
+                <div className="pitch-field__line pitch-field__line--half" />
+                <div className="pitch-field__circle" />
+                <div className="pitch-field__box pitch-field__box--top" /><div className="pitch-field__box pitch-field__box--bottom" />
+                <div className="pitch-grid">
+                  {rows.map((row, rowIndex) => <div className={`pitch-row pitch-row--${rowIndex}`} style={{ '--row-count': row.length } as CSSProperties} key={rowIndex}>{row.map(({ slot, index }) => { const player = players.find((item) => item.id === titolari[index]); const location = { zone: 'starter', index, id: titolari[index] ?? 0 } as PlayerLocation; return <div className={`pitch-slot pitch-slot--${reparto(slot)}`} key={`${slot}-${index}`}><PlayerPortrait player={player} imageUrl={imageUrls[player?.id ?? 0]} position={slot} selected={selected?.zone === 'starter' && selected.index === index} onClick={(event) => handlePlayerClick(event, location, player)} /></div> })}</div>)}
+                </div>
+              </div>
+            ) : (
+              <div className="formation-player-tray formation-player-tray--standalone" role="tabpanel">
+                {visibleLocations.filter((location) => !(selected?.zone === location.zone && selected.index === location.index)).map((location) => {
+                  const player = players.find((item) => item.id === location.id)
+                  const position = player?.posizioni[0] ?? '—'
+                  return <PlayerPortrait compact key={`${location.zone}-${location.index}-${location.id}`} player={player} imageUrl={imageUrls[location.id]} position={position} selected={selected?.zone === location.zone && selected.index === location.index} onClick={(event) => handlePlayerClick(event, location, player)} />
+                })}
+              </div>
+            )}
           </div>
           <div className="role-legend"><span><i className="role-bar role-bar--GK" />Portiere</span><span><i className="role-bar role-bar--DEF" />Difensori</span><span><i className="role-bar role-bar--MID" />Centrocampisti</span><span><i className="role-bar role-bar--ATT" />Attaccanti</span></div>
-          <div className="formation-footer"><span>{saved ? 'Formazione salvata' : `${titolari.length} titolari · ${panchina.length} panchina · ${tribuna.length} tribuna`}</span><button className="button button--primary" type="button" disabled={saving} onClick={save}>{saving ? 'Salvataggio…' : 'Salva formazione'}</button></div>
+          <div className="formation-footer">
+            <span>{titolari.length} titolari · {panchina.length} panchina · {tribuna.length} tribuna</span>
+          </div>
         </section>
       )}
       {playerAction && <div className="player-action-layer" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setPlayerAction(null) }}>

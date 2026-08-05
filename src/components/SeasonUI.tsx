@@ -17,7 +17,7 @@ export function TeamLabel({ team, imageUrl, reversed = false, onClick }: { team?
 
 export function FixtureScore({ fixture, match }: { fixture: Fixture; match?: Match }) {
   if (fixture.stato === 'simulata' && match) {
-    return <span className="fixture-score"><b>{match.gol_home}</b><i>:</i><b>{match.gol_away}</b></span>
+    return <span className="fixture-score"><b>{match.gol_home}</b><i>-</i><b>{match.gol_away}</b></span>
   }
   if (fixture.stato === 'in_corso') return <span className="fixture-status fixture-status--live">LIVE</span>
   if (fixture.stato === 'annullata') return <span className="fixture-status">ANN.</span>

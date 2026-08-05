@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ROSA_MASSIMA } from '../lib/league'
 import { cognome } from '../lib/nomi'
 import { MACRO_LABEL, macroRuolo, type MacroRuolo } from '../lib/ruoli'
@@ -42,6 +42,7 @@ type Giocatore = {
   altezza?: number | null
   attributi?: Record<string, number | null>
   foto_firmata?: string
+  sulMercato?: boolean
   condizione?: number
   infortunatoFinoA?: number
   ritiroAnnunciato?: boolean
@@ -175,6 +176,9 @@ export function Mercato({ membership, onNavigate }: Props) {
   const [offerti, setOfferti] = useState<number[]>([])
   const [conguaglio, setConguaglio] = useState('0')
   const [messaggio, setMessaggio] = useState('')
+  const [vetrinaRuolo, setVetrinaRuolo] = useState<MacroRuolo>('ALL')
+  const [vetrinaEta, setVetrinaEta] = useState<[number, number]>([16, 45])
+  const [vetrinaOverall, setVetrinaOverall] = useState<[number, number]>([50, 99])
   const [filtroRuolo, setFiltroRuolo] = useState<MacroRuolo>('ALL')
   const [filtroEta, setFiltroEta] = useState<[number, number]>([16, 45])
   const [filtroIngaggio, setFiltroIngaggio] = useState<[number, number]>([0, 30])
@@ -182,6 +186,15 @@ export function Mercato({ membership, onNavigate }: Props) {
   const [inCorso, setInCorso] = useState(false)
   const [esito, setEsito] = useState<string | null>(null)
   const [schedaApertaId, setSchedaApertaId] = useState<number | null>(null)
+  const compositoreRef = useRef<HTMLElement>(null)
+
+  // Dalla vetrina si salta dritti alla proposta, gia' compilata: e' il modo
+  // piu' veloce per dire "questo lo voglio" senza passare dalla scheda.
+  function proponiPerGiocatore(g: Giocatore) {
+    setAvversaria(g.team_id)
+    setChiesti([g.id])
+    compositoreRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
   const [paginaRumor, setPaginaRumor] = useState(0)
 
   // Un'asta aperta dal pannello admin resta utilizzabile anche fuori dalla
@@ -199,7 +212,7 @@ export function Mercato({ membership, onNavigate }: Props) {
     setErrore(null)
     const [istanzeRes, proposteRes, trattativeRes, asteRes, offerteRes, contiRes, spinRes] = await Promise.all([
       supabase.from('player_instances')
-        .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato')
+        .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato, sul_mercato')
         .eq('league_id', league.id).not('team_id', 'is', null),
       supabase.from('trade_proposals').select('*')
         .eq('league_id', league.id).order('creata_il', { ascending: false }),
@@ -290,6 +303,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       condizione: i.condizione,
       infortunatoFinoA: i.infortunato_fino_a,
       ritiroAnnunciato: i.ritiro_annunciato,
+      sulMercato: i.sul_mercato,
     })))
     setCaricamento(false)
   }, [league.id])
@@ -390,6 +404,20 @@ export function Mercato({ membership, onNavigate }: Props) {
   const nuoviDelGiorno = asteDelGiorno.filter((a) =>
     a.origine === 'estrazione' && a.tornata === tornataLive && a.stato === 'aperta')
   const giocatoriSottoContratto = new Set(rose.map((g) => g.player_id))
+
+  // Vetrina "Mercato della lega": i giocatori messi in lista dalle squadre.
+  // Filtri indipendenti da quelli dell'archivio svincolati: sono due elenchi
+  // diversi e chi cerca un difensore qui non sta cercando lo stesso di là.
+  const vetrinaMercato = useMemo(() => rose
+    .filter((g) => g.sulMercato && g.team_id !== membership.id)
+    .filter((g) => {
+      const macro = macroRuolo(g.posizioni ?? [])
+      return (vetrinaRuolo === 'ALL' || macro === vetrinaRuolo)
+        && g.eta >= vetrinaEta[0] && g.eta <= vetrinaEta[1]
+        && g.overall >= vetrinaOverall[0] && g.overall <= vetrinaOverall[1]
+    })
+    .sort((a, b) => b.overall - a.overall),
+    [rose, vetrinaRuolo, vetrinaEta, vetrinaOverall, membership.id])
   const archivioSvincolati = Array.from(new Map(aste
     .filter((a) => a.stato === 'deserta' && !giocatoriSottoContratto.has(a.player_id))
     .map((a) => [a.player_id, a])).values())
@@ -746,6 +774,47 @@ export function Mercato({ membership, onNavigate }: Props) {
         </div>}
       </section>
 
+      {/* ---- Vetrina: chi le squadre hanno messo in lista ---- */}
+      <section className="mercato-blocco">
+        <div className="sezione-testa">
+          <div><p className="kicker">Lista trasferimenti</p><h2>Mercato della lega</h2></div>
+          <small>{vetrinaMercato.length} in lista</small>
+        </div>
+        <p className="mercato-nota">
+          I giocatori che le squadre hanno messo sul mercato. È una vetrina: per trattare
+          davvero, manda una proposta di scambio alla squadra proprietaria.
+        </p>
+        <div className="free-agent-filters free-agent-filters--vetrina">
+          <label><span>Ruolo</span><select value={vetrinaRuolo} onChange={(e) => setVetrinaRuolo(e.target.value as MacroRuolo)}>
+            {(['ALL', 'GK', 'DEF', 'MID', 'ATT'] as MacroRuolo[]).map((r) => <option key={r} value={r}>{MACRO_LABEL[r]}</option>)}
+          </select></label>
+          <RangeFilter label="Eta" value={vetrinaEta} min={16} max={45} onChange={setVetrinaEta} />
+          <RangeFilter label="Overall" value={vetrinaOverall} min={50} max={99} onChange={setVetrinaOverall} />
+        </div>
+        {vetrinaMercato.length === 0
+          ? <p className="season-empty">Nessun giocatore in lista con questi filtri.</p>
+          : <div className="vetrina-list">{vetrinaMercato.map((g) => <button
+              className="vetrina-card"
+              type="button"
+              key={g.id}
+              onClick={() => proponiPerGiocatore(g)}
+              aria-label={`Proponi uno scambio per ${g.nome}`}
+            >
+              <span className="vetrina-card__foto">
+                {g.foto_firmata ? <img src={g.foto_firmata} alt="" loading="lazy" /> : <i aria-hidden="true">{g.nome.charAt(0)}</i>}
+              </span>
+              <span className="vetrina-card__info">
+                <strong>{g.nome}</strong>
+                <small>{(g.posizioni ?? [g.ruolo]).join(' · ')} · {g.eta} anni</small>
+                <em>{nomeSquadra(g.team_id)}</em>
+              </span>
+              <span className="vetrina-card__numeri">
+                <b>{g.overall}</b>
+                <small>{(g.ingaggio / 1_000_000).toFixed(1)} M€</small>
+              </span>
+            </button>)}</div>}
+      </section>
+
       <section className="mercato-blocco mercato-rumors">
         <div className="sezione-testa">
           <div><p className="kicker">Voci di mercato</p><h2>Rumors</h2></div>
@@ -862,7 +931,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       </>}
 
       {/* ---- Compositore ---- */}
-      <section className="mercato-blocco">
+      <section className="mercato-blocco" ref={compositoreRef}>
         <div className="sezione-testa"><div><p className="kicker">Tratta</p><h2>Nuova proposta</h2></div></div>
         {!aperto && <p className="notice">Il mercato è chiuso: puoi preparare la proposta ma potrai inviarla dalle 07:00.</p>}
 
@@ -871,9 +940,11 @@ export function Mercato({ membership, onNavigate }: Props) {
             key={s.id} type="button"
             className={avversaria === s.id ? 'is-scelto' : ''}
             onClick={() => { setAvversaria(s.id); setChiesti([]) }}
+            aria-label={s.nome}
+            aria-pressed={avversaria === s.id}
+            title={s.nome}
           >
             {stemma(s.id)}
-            <span>{s.nome}</span>
           </button>)}
         </div>
 

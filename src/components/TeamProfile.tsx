@@ -8,7 +8,7 @@ import type { CrestChoice, Fixture, League, MatchPlayerStat, Membership, Team } 
 import { Crest } from './Crest'
 import { CrestPicker } from './CrestPicker'
 import { GameNav, type GameView } from './GameNav'
-import { SchedaGiocatore, type StatsStagione } from './SchedaGiocatore'
+import { SchedaGiocatore, type EsitoRinnovo, type PropostaRinnovo, type StatsStagione } from './SchedaGiocatore'
 import { FixtureScore, SeasonState, TeamLabel } from './SeasonUI'
 
 type Props = {
@@ -35,6 +35,11 @@ type RosterPlayer = {
   attributi: Record<string, number | null>
   foto_url: string | null
   ritiroAnnunciato: boolean
+  morale: number
+  contrattoScadenza: number
+  rinnovoStagione: number | null
+  sulMercato: boolean
+  mentalita: { bandiera: number; economia: number; vittorie: number }
   minuti: number
   gol: number
   assist: number
@@ -52,6 +57,15 @@ function department(position = '') {
 }
 
 function money(value: number) { return `${(value / 1_000_000).toFixed(1)} M€` }
+
+// Durata residua del contratto. Rosso quando la squadra sta per perdere il
+// giocatore: ultima stagione utile, o ritiro annunciato.
+function contratto(player: RosterPlayer, stagioneCorrente: number) {
+  if (player.ritiroAnnunciato) return { testo: 'ritiro a termine stag.', urgente: true }
+  const residue = player.contrattoScadenza - stagioneCorrente
+  if (residue <= 0) return { testo: 'ultima stagione', urgente: true }
+  return { testo: `ancora ${residue} ${residue === 1 ? 'stagione' : 'stagioni'}`, urgente: false }
+}
 
 export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTeamUpdated }: Props) {
   const league = membership.league as League
@@ -116,7 +130,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       setRosterLoading(true)
       setRosterError(null)
       const [instancesResult, statsResult] = await Promise.all([
-        supabase.from('player_instances').select('id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato').eq('league_id', league.id).eq('team_id', teamId),
+        supabase.from('player_instances').select('id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato, morale, contratto_scadenza, rinnovo_stagione, sul_mercato').eq('league_id', league.id).eq('team_id', teamId),
         supabase.from('match_stats').select('match_id, player_instance_id, minuti, gol, assist, tiri, tiri_porta, passaggi_tentati, passaggi_riusciti, contrasti_vinti, dribbling').eq('league_id', league.id).eq('team_id', teamId),
       ])
       const firstError = instancesResult.error ?? statsResult.error
@@ -124,7 +138,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       const instances = instancesResult.data ?? []
       const playerIds = instances.map((item) => item.player_id)
       const { data: catalog, error: catalogError } = playerIds.length
-        ? await supabase.from('players').select('id, nome, club, nazionalita, posizioni, piede, altezza, attributi, foto_url').in('id', playerIds)
+        ? await supabase.from('players').select('id, nome, club, nazionalita, posizioni, piede, altezza, attributi, foto_url, mentalita_bandiera, mentalita_economia, mentalita_vittorie').in('id', playerIds)
         : { data: [], error: null }
       if (catalogError) { if (active) { setRosterError(catalogError.message); setRosterLoading(false) }; return }
       const catalogById = new Map((catalog ?? []).map((item) => [item.id, item]))
@@ -144,6 +158,15 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           condizione: instance.condizione, infortunatoFinoA: instance.infortunato_fino_a, piede: info?.piede ?? null, altezza: info?.altezza ?? null,
           attributi: (info?.attributi ?? {}) as Record<string, number | null>, foto_url: info?.foto_url ?? null,
           ritiroAnnunciato: instance.ritiro_annunciato,
+          morale: instance.morale,
+          contrattoScadenza: instance.contratto_scadenza,
+          rinnovoStagione: instance.rinnovo_stagione,
+          sulMercato: instance.sul_mercato,
+          mentalita: {
+            bandiera: info?.mentalita_bandiera ?? 33,
+            economia: info?.mentalita_economia ?? 33,
+            vittorie: info?.mentalita_vittorie ?? 34,
+          },
           ...total,
         }
       }).sort((left, right) => ROLE_ORDER[department(left.posizioni[0])] - ROLE_ORDER[department(right.posizioni[0])] || right.overall - left.overall || left.nome.localeCompare(right.nome, 'it'))
@@ -325,7 +348,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         <div className="season-card__heading"><div><p className="kicker">Rosa completa</p><h2>Dal portiere all’attacco</h2></div><span>{players.length} giocatori · min {ROSA_MINIMA} · max {ROSA_MASSIMA}</span></div>
         {rosterNotice && <p className="notice notice--success">{rosterNotice}</p>}
         {rosterError && <p className="notice notice--error">{rosterError}</p>}
-        {rosterLoading ? <p className="season-empty">Carico la rosa…</p> : <div className="team-roster-list">{players.map((player) => <button className={`team-roster-player team-roster-player--${department(player.posizioni[0])}`} type="button" key={player.id} onClick={() => openPlayer(player)} aria-label={`Scheda di ${player.nome}`}><i /><span className="team-roster-role">{player.posizioni[0] ?? '—'}</span><div><strong>{player.nome}</strong><small>{player.posizioni.join(' · ')} · {player.eta} anni · <em>{money(player.ingaggio)}/anno</em></small></div><b>{player.overall}</b><dl><span>{player.minuti}<small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span></dl></button>)}</div>}
+        {rosterLoading ? <p className="season-empty">Carico la rosa…</p> : <div className="team-roster-list">{players.map((player) => <button className={`team-roster-player team-roster-player--${department(player.posizioni[0])}`} type="button" key={player.id} onClick={() => openPlayer(player)} aria-label={`Scheda di ${player.nome}`}><i /><span className="team-roster-role">{player.posizioni[0] ?? '—'}</span><div><strong>{player.nome}</strong><small>{player.posizioni.join(' · ')} · {player.eta} anni · <em>{money(player.ingaggio)}/stagione</em> · <em className={contratto(player, league.stagione_corrente).urgente ? 'contratto-urgente' : 'contratto-residuo'}>{contratto(player, league.stagione_corrente).testo}</em></small></div><b>{player.overall}</b><dl><span>{player.minuti}<small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span></dl></button>)}</div>}
       </section>
 
       {schedaAperta && <SchedaGiocatore
@@ -341,6 +364,10 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           condizione: schedaAperta.condizione,
           infortunatoFinoA: schedaAperta.infortunatoFinoA,
           ritiroAnnunciato: schedaAperta.ritiroAnnunciato,
+          morale: ownTeam ? schedaAperta.morale : undefined,
+          contrattoScadenza: ownTeam ? schedaAperta.contrattoScadenza : undefined,
+          stagioneCorrente: ownTeam ? league.stagione_corrente : undefined,
+          mentalita: ownTeam ? schedaAperta.mentalita : undefined,
           attributi: schedaAperta.attributi,
         }}
         fotoUrl={fotoScheda}
@@ -356,6 +383,38 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           inCorso: releasePending,
           errore: releaseError,
           onConferma: releasePlayer,
+        } : undefined}
+        rinnovo={ownTeam && league.stato === 'stagione' && !schedaAperta.ritiroAnnunciato ? {
+          nomeAllenatore: allenatore,
+          bloccato: schedaAperta.rinnovoStagione === league.stagione_corrente
+            ? 'Ha già rinnovato in questa stagione: se ne riparla dalla prossima.'
+            : undefined,
+          onCarica: async () => {
+            const { data, error } = await supabase.rpc('proposta_rinnovo', { p_instance_id: schedaAperta.id })
+            if (error) throw new Error(error.message)
+            return data as PropostaRinnovo
+          },
+          onOffri: async (ingaggio, durata) => {
+            const { data, error } = await supabase.rpc('offri_rinnovo', {
+              p_instance_id: schedaAperta.id, p_ingaggio: ingaggio, p_durata: durata,
+            })
+            if (error) throw new Error(error.message)
+            const risposta = data as EsitoRinnovo
+            if (risposta.esito === 'accettato') {
+              setPlayers((current) => current.map((item) => item.id === schedaAperta.id
+                ? { ...item, ingaggio, contrattoScadenza: risposta.contratto_scadenza ?? item.contrattoScadenza, rinnovoStagione: league.stagione_corrente }
+                : item))
+            }
+            return risposta
+          },
+        } : undefined}
+        listaMercato={ownTeam && league.stato === 'stagione' ? {
+          inLista: schedaAperta.sulMercato,
+          onCambia: async (valore) => {
+            const { error } = await supabase.rpc('imposta_sul_mercato', { p_instance_id: schedaAperta.id, p_valore: valore })
+            if (error) throw new Error(error.message)
+            setPlayers((current) => current.map((item) => item.id === schedaAperta.id ? { ...item, sulMercato: valore } : item))
+          },
         } : undefined}
         onClose={() => setSchedaAperta(null)}
       />}

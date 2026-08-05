@@ -1,5 +1,330 @@
 # Stato progetto e handoff
 
+### Pannello admin raggiungibile anche in draft
+
+Richiesta dell'utente. Puramente frontend, nessuna migrazione.
+
+Il pannello era riservato a `stato = 'stagione'`, perché le tre azioni di riserva (simula
+giornata, apri/chiudi mercato) hanno senso solo lì. Ma "Elimina lega" no — anzi serve
+soprattutto **in draft**, dove una lega può restare bloccata (è successo davvero: Fampionato,
+vedi la voce sul fix della solvibilità draft più sotto) e l'unica via d'uscita era cancellarla
+a mano dal database.
+
+Due punti separati, entrambi necessari:
+
+- **`GameNav.tsx`**: la voce "Admin" ora compare per l'amministratore in ogni fase tranne
+  l'off-season (che ha già un pannello dedicato), non solo a `stato = 'stagione'`.
+- **`App.tsx`**: bug trovato mentre verificavo il primo punto — il routing per `stato =
+  'draft'` reindirizzava **sempre** a `Draft` (o `Rosa` per `squad`), ignorando qualunque
+  altra vista scelta. Aggiungere la voce di menu da sola non sarebbe bastata: cliccarla non
+  avrebbe portato da nessuna parte. Aggiunto il ramo `gameView === 'admin'` allo stesso modo
+  di `squad`.
+- **`Admin.tsx`**: le tre card stagionali (Simula giornata, Mercato) sono condizionate a
+  `stato === 'stagione'`; "Elimina lega" resta sempre visibile. Fuori stagione il testo in
+  cima lo dice esplicitamente, invece di mostrare card che fallirebbero cliccandole.
+
+### Elimina lega — pannello admin
+
+Richiesta dell'utente. Migrazioni `20260805230000_elimina_lega.sql` e
+`20260805240000_fix_elimina_lega_restrict.sql`. Dettagli in `docs/design.md`, fine §9.
+
+**Conferma testuale, non un semplice OK/Annulla**: bisogna ridigitare il nome esatto della
+lega — l'impatto è su tutti i partecipanti, non solo su chi elimina, quindi la frizione
+richiesta è più alta di un doppio clic.
+
+**Trovato e corretto un bug reale durante la prima verifica**: la funzione falliva sempre,
+bloccata da due foreign key `RESTRICT` non coperte da cascade — `match_stats.player_instance_id`
+e `transactions.team_id`, entrambe volute (sono i registri append-only che CLAUDE.md protegge
+esplicitamente). Non ho allentato quei vincoli (proteggono ogni altro percorso dell'app): la
+funzione ora svuota esplicitamente le due tabelle per quella lega prima della cascade generale.
+
+**Secondo difetto trovato nella stessa verifica, preesistente e non causato da questa
+richiesta**: `season_morale_checkpoints` (di ieri) non aveva **nessuna** foreign key, né su
+`season_id` né su `league_id` — a differenza di `season_progression_checkpoints`, che le ha
+entrambe cascade. Non bloccava l'eliminazione (senza FK non c'è nulla da controllare) ma
+avrebbe lasciato righe orfane per sempre in ogni lega eliminata. Corretto nella stessa
+migrazione.
+
+**Verificato in rollback su una lega reale** (id 29, 5 squadre, 120 giocatori, 1 stagione, 2
+checkpoint morale): un non-admin respinto, nome di conferma sbagliato respinto, e con la
+conferma corretta la lega **sparisce davvero** — squadre, giocatori, stagioni e checkpoint
+morale tutti a zero — poi tutto annullato dal `rollback` finale, nessun dato reale perso.
+
+**UI**: nuova card rosso-bordata in fondo al pannello Admin. Il bottone di conferma resta
+disabilitato finché il testo digitato non coincide esattamente col nome della lega. Dopo
+l'eliminazione si torna al menu iniziale (non c'è più una pagina di lega a cui tornare).
+
+### Lista trasferimenti — "Mercato della lega"
+
+Richiesta dell'utente. Migrazione `20260805220000_lista_trasferimenti.sql`, dettagli in
+`docs/design.md` §9.4 bis.
+
+Dalla scheda di un proprio giocatore, sotto "Svincola" e "Rinnovo", un bottone a piena
+larghezza **"Metti sul mercato"** (che diventa "Rimuovi dal mercato"), con messaggio di
+conferma verde. Nella pagina Mercato, subito dopo l'asta a busta chiusa, la card **"Mercato
+della lega"** con la vetrina di tutti i giocatori in lista, filtrabile per ruolo, età e
+overall — filtri **indipendenti** da quelli dell'archivio svincolati, sono due elenchi diversi.
+
+**È una vetrina che porta dritta alla proposta**: cliccando una card non si apre la scheda
+del giocatore ma il compositore "Nuova proposta" più sotto nella stessa pagina, con
+l'avversaria e il giocatore richiesto già pre-selezionati — un solo tocco invece di tre
+(scegli squadra → scegli giocatore → scorri). Non è un vero modale sopra la pagina: è la
+sezione esistente di §9.2, pre-compilata e portata in vista con `scrollIntoView`. Nessun nuovo
+componente, stessa logica di invio già in uso per le proposte di scambio manuali.
+
+Nessuna policy RLS nuova: `player_instances_lettura` permette già a ogni membro di leggere
+tutte le rose della lega, basta filtrare sul flag. Un **trigger azzera il flag al cambio di
+squadra**: un giocatore appena acquistato non deve risultare già in vetrina per il nuovo
+proprietario, che quella scelta non l'ha mai fatta.
+
+**Verificato in rollback su dati reali** (lega 29): messo in lista dal proprietario, visibile
+agli altri membri della lega, **non rimovibile da chi non lo possiede**, e flag azzerato dal
+trasferimento.
+
+### Un rinnovo per stagione, e contratti leggibili nella rosa
+
+Richieste dell'utente. Migrazione `20260805210000_un_rinnovo_per_stagione.sql`.
+
+**Un solo rinnovo per stagione.** Chi ha appena firmato non può ritrattare subito: se ne
+riparla dalla stagione successiva. Nuova colonna `player_instances.rinnovo_stagione`, scritta
+alla firma; `offri_rinnovo` respinge un secondo rinnovo nella stessa stagione e
+`proposta_rinnovo` espone il flag `gia_rinnovato` così la UI può disabilitare il bottone col
+motivo. Senza questo vincolo il rinnovo era ripetibile all'infinito nella stessa stagione — e
+siccome firmare azzera i tentativi, si sarebbe azzerato anche il costo della trattativa,
+rendendo di nuovo aggirabile il limite dei tre tentativi.
+
+**Chi ha annunciato il ritiro non tratta**: era già così (guardia UI + server), verificato.
+
+**Riepilogo rosa**: l'ingaggio è ora espresso `/stagione` (non `/anno` — il gioco scandisce il
+tempo in stagioni, coerente col resto del vocabolario) e accanto compare la durata residua.
+In rosso quando la squadra sta per perdere il giocatore: "ultima stagione" o "ritiro a termine
+stag.". Il colore resta un segnale, non decorazione.
+
+**Verificato in rollback su dati reali** (lega 29): 6 controlli tutti OK — flag basso prima
+del rinnovo, firma accettata, flag alzato dopo, secondo rinnovo respinto lato server anche
+raddoppiando l'offerta, stagione della firma memorizzata, e chi si ritira non apre nemmeno la
+trattativa.
+
+### Trattativa sul rinnovo, e i rinnovi di off-season eliminati
+
+Due decisioni dell'utente nella stessa richiesta. Migrazioni
+`20260805170000_via_rinnovi_offseason.sql`, `20260805180000_trattativa_rinnovo.sql`,
+`20260805190000_fix_cast_offri_rinnovo.sql`, `20260805200000_fix_lint_proposta_rinnovo_2.sql`.
+Dettagli in `docs/design.md` §10.4 (rimosso) e §10.4 bis.
+
+**Via i rinnovi di off-season.** Restava un canale doppio: quello di giugno (§10.4) e quello
+in stagione. Ora chi arriva a fine off-season col contratto scaduto lascia semplicemente la
+squadra ed entra nel pool svincolati. `prepara_offseason` non genera più `contract_renewals`;
+`finalizza_offseason` legge direttamente `contratto_scadenza` invece delle trattative aperte.
+Le tabelle `contract_renewals` e `contract_renewal_terms` **non sono state droppate**:
+contengono 195 righe di una lega reale e restano come archivio storico, semplicemente non si
+scrive più. Anche `rispondi_rinnovo` resta in piedi ma non ha più nulla da leggere — droppare
+una funzione ancora referenziata darebbe un errore peggiore di una lista vuota; è il frontend
+che ha smesso di chiamarla.
+
+> **Effetto collaterale voluto**: rende definitiva la regola dei tre tentativi. Finché il
+> rinnovo di off-season esisteva, chi aveva chiuso la trattativa era recuperabile aspettando
+> giugno — la conseguenza era aggirabile. Era il problema aperto segnalato ieri.
+
+**Trattativa su due assi.** Il giocatore apre con cifra e durata, poi si tratta su entrambe.
+I due assi **si compensano**: allontanarsi dalla durata che chiede svaluta l'offerta del 7%
+per stagione di scarto, da compensare con l'ingaggio — senza questo la durata sarebbe una
+scelta finta (converrebbe sempre il massimo). La **tolleranza** (0-25%, quanto scende sotto la
+sua richiesta) dipende da morale e mentalità e **non è mai mostrata**: se lo fosse si
+calcolerebbe la soglia esatta e la trattativa diventerebbe aritmetica. Misurato: una bandiera
+serena in una squadra prima concede il 20%, un avido scontento e ultimo concede zero.
+
+**Tre tentativi**, rifiuto informativo ma che consuma un tentativo; esauriti, il giocatore va
+a scadenza. Il contatore (`player_instances.rinnovo_tentativi`) si azzera **solo** firmando.
+
+**Verificato in rollback su dati reali** (lega 29): 8 controlli tutti OK — offerta minima
+rifiutata col tentativo consumato, messaggi informativi diversi per distanza, offerta piena
+accettata con contatore azzerato, firma scritta su `player_instances`, terzo rifiuto che
+chiude, e nessuna trattativa possibile dopo la chiusura **nemmeno triplicando l'offerta**.
+
+> **Difetto trovato e corretto durante la verifica**: `coalesce(v_posizione, 1)` restituiva un
+> `integer` (il letterale 1 non è `smallint`), quindi la chiamata a `rinnovo_tolleranza` non
+> trovava la firma e `offri_rinnovo` falliva a ogni invocazione. Corretto col cast esplicito.
+
+**UI**: la vista rinnovo ha ora due campi (ingaggio in M€, durata 1-4), il contatore dei
+tentativi rimasti, e la risposta del giocatore virgolettata. La card ingaggio della scheda
+mostra anche la durata residua del contratto ("ancora 2 stagioni dopo questa" / "In scadenza a
+fine stagione"). Rimossa la card rinnovi da `Offseason.tsx` e tutto il codice morto collegato.
+
+### Mentalità e morale — base pronta
+
+Richiesta dell'utente, dettagli in `docs/design.md` §10 bis. Migrazioni
+`20260805150000_mentalita_e_morale.sql` e `20260805160000_fix_riferimenti_mentalita.sql`.
+
+**Mentalità**: tre rami che si dividono 100 punti (bandiera / economia / vittorie) — dicono
+*cosa viene prima*, non quanto vale il giocatore. Il dataset FC 26 non contiene nulla di
+simile, quindi è **generata deterministicamente dall'id**: stesso giocatore, stessa
+personalità in ogni lega e per sempre. Implementata come **colonne generate** su `players`,
+non riempite da un UPDATE: così non può esistere il caso "importato dopo, senza mentalità"
+(è già successo coi 576 del pool élite globale) né andare fuori sincrono. Serve una funzione
+`IMMUTABLE`, quindi aritmetica pura — `hashtext()` è solo `STABLE`.
+
+> **Trappola incontrata e risolta**: i tre rami devono usare tre moltiplicatori **diversi**.
+> Il primo tentativo usava lo stesso moltiplicatore con un offset per ramo, producendo rami
+> correlati (`r2 = r1 + costante`): "bandiera" risultava dominante solo 1.123 volte sui 5.992
+> giocatori contro le ~2.434 delle altre due. Con moltiplicatori distinti: 1.908 / 1.996 /
+> 1.897, un terzo ciascuno.
+
+**Morale**: 0-100 per istanza, parte da 70, ricalcolato a ogni quarto di stagione da
+`applica_morale_checkpoint`, chiamata dalla Edge Function subito dopo la progressione overall.
+Funzione e registro (`season_morale_checkpoints`) **separati** dalla progressione: stesso
+ritmo, ma si può correggere una senza toccare l'altra. Componenti: minutaggio (vale per tutti,
+asimmetrico — deludere pesa più che gratificare), economia e vittorie (pesate dal rispettivo
+ramo), e la **bandiera che non è un contributo a sé ma attenua le insoddisfazioni** — che è
+la definizione data dall'utente: chi è bandiera si lamenta meno, non è più felice a prescindere.
+
+**Il morale non tocca il rendimento in campo** (decisione dell'utente): `engine/` intatto,
+nessun protocollo di validazione richiesto. Serve ai rinnovi.
+
+**UI**: card "Morale" sotto quella della forma fisica nella scheda giocatore, con etichetta
+parlata (Entusiasta → In rotta con la squadra), barra colorata per fascia, e i tre rami della
+mentalità col dominante evidenziato. Visibile solo sulla propria rosa.
+
+**Verificato in rollback su dati reali**: somma dei rami sempre 100 su tutti i 5.992 giocatori,
+distribuzione del dominante equilibrata, idempotenza del checkpoint, morale sempre in 0-100,
+chi gioca sta meglio di chi non gioca (77 vs 62) e a parità di zero minuti chi ha bandiera
+alta sta meglio di chi ce l'ha bassa (65 vs 60). `db lint` pulito.
+
+> **Fatto il 5 agosto**: la trattativa è stata implementata (vedi la sezione in cima) e i
+> rinnovi di off-season sono stati eliminati, il che ha risolto anche il problema
+> dell'aggiramento aspettando giugno.
+
+### Rinnovo contrattuale a stagione in corso
+
+Richiesta dell'utente: finora si rinnovava solo in off-season (`rispondi_rinnovo`, legata a
+`contract_renewals.offseason_id` NOT NULL). Ora c'è un canale separato dalla scheda giocatore,
+su contratti ancora in corso. Migrazioni `20260805130000_rinnovo_in_stagione.sql` e
+`20260805140000_fix_lint_proposta_rinnovo.sql`. Dettagli in `docs/design.md` §10.4 bis.
+
+- **È il giocatore a proporre**, non la squadra a offrire: cifra secca + durata, da prendere o
+  lasciare. Niente range ±12% né soglia al 90% — quella meccanica esiste perché in off-season
+  il contratto è scaduto e la squadra ha leva; qui il giocatore è sotto contratto e non ha
+  bisogno di firmare.
+- **Proposta deterministica** su `(istanza, overall, età, ingaggio)`: riaprire la scheda mostra
+  sempre la stessa cifra. Senza, con un `random()` vero basterebbe chiudere e riaprire finché
+  non esce un numero comodo. Per lo stesso motivo **non serve una tabella di stato**: si
+  ricalcola identica, e firmare scrive direttamente su `player_instances`.
+- **Durata coerente con l'età** (4 stagioni fino a 23 anni, 1 sola dai 36 in su).
+- **Decorrenza dalle stagioni successive**: quella corrente è già stata addebitata a inizio
+  stagione (§5.4), quindi rinnovare oggi non muove denaro oggi — il costo è l'impegno futuro.
+  Nuova scadenza `max(scadenza_attuale, stagione_corrente + durata)`: non accorcia mai.
+- **La cifra è ricalcolata server-side** in `accetta_rinnovo_stagione`: il browser non decide
+  mai quanto si paga, una proposta ritoccata viene respinta.
+- **UI**: bottone "Rinnovo" accanto a "Svincola" nella scheda giocatore; apre una vista con
+  ritratto grande e la proposta scritta in prima persona dal giocatore, rivolta al mister (il
+  nome dell'allenatore arriva da `profiles`).
+- **Verificato in un rollback su dati reali** (lega 32): 10 controlli, tutti OK — determinismo
+  su due letture, pavimento all'ingaggio attuale, cifra ritoccata respinta, firma valida,
+  ingaggio e scadenza aggiornati, scadenza mai accorciata, transazione registrata, durata ≤1
+  per tutti gli over 36 della lega, durata sempre in 1..4 su tutta la rosa. `db lint` pulito.
+
+**Non ancora fatto, discusso con l'utente nella stessa sessione**: la meccanica del **morale**
+e la statistica **MENTALITÀ** (tre rami: bandiera / economia / vittorie), con card sotto quella
+della forma fisica e check a ogni 25% di stagione. Decisioni già prese: il morale inciderà
+**solo su rinnovi e richieste economiche, mai sul rendimento in campo** (così non tocca
+`engine/` e non serve il protocollo di CLAUDE.md §4), e la MENTALITÀ sarà **generata in modo
+deterministico dall'id del giocatore** (stessa in ogni lega, per sempre) — il dataset FC 26
+non la contiene: le colonne `mentality_*` non sono importate e comunque non misurano
+attaccamento o avidità. Il morale terrà conto anche di quanto un giocatore gioca rispetto a
+quanto ritiene di dover giocare, calcolato dalla sua posizione rispetto all'overall medio
+della rosa.
+
+### Ingaggi — mod_età invertito, premio ai giovani forti
+
+Decisione dell'utente dopo aver giocato: un giovane già forte costava un terzo di un adulto
+di pari overall (design §5.1, scala precedente: 16-20 a ×0,35, picco ×1,00 a 27-30) — ed è
+anche l'unico che cresce **gratis** per anni verso il potenziale sotto lo stesso contratto
+scontato (progressione trimestrale, §6.2/§10.2). Doppio vantaggio, non uno solo: un 19enne da
+84 OVR costava 2,6 M€ contro i 10,0 M€ di un 28enne di pari livello.
+
+Filosofia ribaltata: chi è giovane e già forte ora **paga il potenziale**, non solo
+l'overall attuale. Nuova scala (`20260805120000_ingaggio_premio_giovani.sql`, solo
+`private.ingaggio_teorico`, `base(overall)` invariato):
+
+| Età | 16-20 | 21-23 | 24-26 | 27-30 | 31-32 | 33-34 | 35+ |
+|---|---|---|---|---|---|---|---|
+| Mod | 1,25 | 1,10 | 1,00 | 0,95 | 0,80 | 0,60 | 0,40 |
+
+Il picco si sposta da 27-30 a 24-26; gli over 30 restano scontati verso fine carriera,
+coerente col resto del gioco (rinnovi, ritiro). Un giovane da 84 OVR ora costa 9,4 M€ (prima
+2,6 M€). Nessun chiamante toccato: la funzione è definita una sola volta e richiamata per
+nome da draft, aste, rinnovi e off-season. Verificato sui valori d'esempio del design doc via
+`db query`; `db lint` invariato.
+
+### Stile di gioco — nuova leva tattica indipendente dal modulo
+
+Richiesta dell'utente: oltre al modulo, scegliere anche uno stile di gioco con effetto reale
+sul risultato. Sette voci (design §6.8): `equilibrato` (default), `contropiede`,
+`possesso_palla`, `fasce`, `recupero_veloce`, `diretto`, `blocco_basso` — le quattro chieste
+dall'utente più tre proposte per completare le coppie filosofiche (possesso↔diretto,
+contropiede↔pressing) e il neutro obbligatorio.
+
+**Aggancio al motore, senza toccare formule protette da CLAUDE.md §4**: `engine/engine.js`
+calcola già le tre linee ATT/MID/DEF come somma additiva in punti di overall (forza media +
+profilo strutturale + familiarità + bonus casa). Lo stile entra come un ulteriore addendo
+della stessa somma (`stileTattico()`, nuova funzione pura, stesso stile di `familiarita()`) —
+l'xG esponenziale, il profilo strutturale e il calcolo del controllo restano bit-per-bit
+identici. `opt.stileCasa`/`opt.stileOspite` sono due nuove chiavi dentro l'oggetto `opt` già
+esistente di `simulaPartita`, non nuovi parametri posizionali: nessuna chiamata esistente (7
+in `tools/validazione/simulate.js`, la Edge Function) le passava, quindi risolvono tutte a
+`equilibrato` = `{0,0,0}`. **Verificato**: `node tools/validazione/simulate.js` produce un
+diff zero contro `docs/risultati-fase0.txt` dopo la modifica.
+
+Ogni stile è una redistribuzione **a somma zero** tra DEF/MID/ATT (nessuno è un buff netto),
+magnitudine paragonabile a bonus casa/familiarità/clamp strutturale già esistenti. Valori e
+verifica direzionale (4000 partite per stile, contro una squadra equilibrata di pari livello)
+in design.md §6.8: ogni stile mostra il trade-off atteso (chi attacca di più concede di più,
+chi si chiude segna meno), nessuno domina. Deliberatamente **senza** familiarità/curva di
+apprendimento per lo stile (a differenza del modulo) — non richiesta, avrebbe aggiunto
+un'altra dimensione di bilanciamento (7 moduli × 7 stili) da validare.
+
+**Schema**: `20260805110000_stile_di_gioco.sql`. Stesso pattern già in uso per il modulo:
+`private.stili_validi()` (vocabolario controllato, sync a mano con `engine/config.js STILI`),
+colonna `lineups.stile_gioco` (default `'equilibrato'`, così le formazioni già salvate
+restano invariate), colonne `matches.stile_home`/`stile_away` a fotografia (specchio di
+`modulo_home`/`modulo_away`). `salva_formazione` e `registra_risultato_partita` estese con
+`p_stile_gioco`/`p_stile_home`/`p_stile_away`, stesso trattamento del `modulo` in ogni
+validazione. `db lint` invariato.
+
+**UI**: `Formazione.tsx`, nuovo selettore a tendina a destra di quello del modulo, stessa
+struttura trigger/menu/scrim ma volutamente più piccolo (i nomi degli stili sono più lunghi,
+non deve competere con il font enorme del modulo che resta la card dominante). Descrizione
+breve sotto al nome di ciascuno stile nel menu, come richiesto.
+
+### Fix — il vincolo di solvibilità del draft controllava il budget iniziale, non il tetto draft
+
+Segnalato dall'utente su una lega reale (Fampionato, id 34, budget iniziale 70M / tetto
+draft 40M, configurato separatamente dal 4 agosto): il draft si è bloccato con due squadre
+su cinque arrivate senza più margine sotto il tetto per completare i 24 slot a 0,5M minimo,
+impedendo l'avvio della stagione.
+
+`private.pick_sostenibile` (design §4.4) confrontava la riserva per gli slot rimanenti col
+**portafoglio della squadra** (`budget_iniziale - speso`) invece che col **tetto draft
+residuo** (`budget_draft - speso`). Quando il tetto era vicino all'80% di default del budget
+iniziale il bug quasi non si vedeva; con un tetto scelto molto più stretto (com'è possibile
+dalla configurabilità del 4 agosto) il portafoglio residuo resta sempre ampiamente
+sufficiente anche col tetto ormai esaurito, e il vincolo non blocca mai nulla in pratica —
+esattamente il deadlock descritto in `CLAUDE.md` §7. Verificato sui dati reali: Amburgo a
+22/24 aveva speso 39,5M dei 40M di tetto (margine 0,5M, ne servivano 1,0M per 2 slot); Team
+AS Turbo a 16/24 aveva speso 38,8M (margine 1,2M, ne servivano 4,0M per 8 slot). In entrambi
+i casi il portafoglio (30-31M sui 70M iniziali) copriva ampiamente il vecchio controllo.
+
+Corretto in `20260805090000_fix_solvibilita_tetto_draft.sql` riscrivendo la riserva sul
+tetto draft residuo, che assorbe anche il vecchio secondo controllo (all'ultimo slot la
+condizione equivale a `speso + ingaggio <= tetto`). Dato che `budget_draft` ha un minimo di
+20M già vincolato in DB e 24 slot al floor di 0,5M richiedono 12M, il draft è ora
+completabile per costruzione qualunque sia la combinazione budget_iniziale/budget_draft.
+Aggiunta anche in `Draft.tsx` la cifra "puoi spendere fino a X sul prossimo giocatore" nella
+barra budget, calcolata con la stessa formula del vincolo server-side.
+
+**Lega 34 non recuperata**: l'utente ha scelto di cancellarla e ricrearla invece di
+sbloccare le due squadre incastrate con spese già registrate sopra il nuovo tetto corretto.
+
 ### Albo d'oro della lega
 
 La navigazione della lega include la sezione **Albo d'oro**, disponibile in
@@ -54,7 +379,7 @@ avviate recupera al massimo un checkpoint arretrato per giornata, evitando salti
 L'off-season ora aumenta soltanto l'età, recupera condizione/infortuni e apre i rinnovi:
 non applica un quinto cambio OVR.
 
-Ultimo aggiornamento: **4 agosto 2026**. Questo documento descrive lo stato reale del
+Ultimo aggiornamento: **5 agosto 2026**. Questo documento descrive lo stato reale del
 repository ed è il punto di partenza per il prossimo agent (Claude o Codex).
 
 ### Tabellino — un subentrato non può più segnare prima di entrare in campo

@@ -17,7 +17,7 @@ type DbPlayer = { id: number; nome: string; posizioni: string[]; attributi: Reco
 type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number }
 type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; gk: number; condizione: number; infortunatoFinoA: number }
 type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number> }
-type DbLineup = { team_id: number; giornata?: number; modulo: string; titolari: number[]; panchina: number[]; tribuna: number[]; automatica: boolean }
+type DbLineup = { team_id: number; giornata?: number; modulo: string; titolari: number[]; panchina: number[]; tribuna: number[]; stile_gioco: string; automatica: boolean }
 type EngineLineup = { modulo: string; slots: string[]; titolari: EnginePlayer[]; panchina: EnginePlayer[]; cambiFatti: number }
 type Fixture = { id: number; season_id: number; league_id: number; giornata: number; home_team_id: number; away_team_id: number; stato: string }
 
@@ -355,8 +355,8 @@ export default {
       const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult] = await Promise.all([
         ctx.supabaseAdmin.from('teams').select('id, nome, user_id').eq('league_id', leagueId).in('id', teamIds),
         ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a').eq('league_id', leagueId).in('team_id', teamIds),
-        ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, automatica').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
-        ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, automatica').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
+        ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
+        ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
         ctx.supabaseAdmin.from('formation_xp').select('team_id, modulo, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),
       ])
       const loadError = teamsResult.error ?? instancesResult.error ?? lineupsResult.error ?? previousLineupsResult.error ?? xpResult.error
@@ -400,13 +400,13 @@ export default {
         formazioniAutomatiche.set(teamId, inherited ? 'ereditata' : 'generata')
         let fallback: DbLineup
         if (inherited) {
-          fallback = { team_id: teamId, modulo: inherited.modulo, titolari: inherited.titolari, panchina: inherited.panchina, tribuna: inherited.tribuna, automatica: true }
+          fallback = { team_id: teamId, modulo: inherited.modulo, titolari: inherited.titolari, panchina: inherited.panchina, tribuna: inherited.tribuna, stile_gioco: inherited.stile_gioco, automatica: true }
         } else {
           const automatic = schiera(roster, '4-3-3')
           const starters = automatic.titolari.map((player: EnginePlayer) => player.id)
           const bench = automatic.panchina.map((player: EnginePlayer) => player.id)
           const tribuna = roster.giocatori.filter((player) => !starters.includes(player.id) && !bench.includes(player.id)).map((player) => player.id)
-          fallback = { team_id: teamId, modulo: '4-3-3', titolari: starters, panchina: bench, tribuna, automatica: true }
+          fallback = { team_id: teamId, modulo: '4-3-3', titolari: starters, panchina: bench, tribuna, stile_gioco: 'equilibrato', automatica: true }
         }
         const { error: lineupError } = await ctx.supabaseAdmin.from('lineups').insert({ league_id: leagueId, giornata, ...fallback })
         if (lineupError) throw lineupError
@@ -437,6 +437,8 @@ export default {
           statsGiocatori: true,
           lineupCasa: homeLineup,
           lineupOspite: awayLineup,
+          stileCasa: homeDbLineup.stile_gioco,
+          stileOspite: awayDbLineup.stile_gioco,
         })
         const presenzePerBlocco = result.presenzePerBlocco as { casa: number[][]; ospite: number[][] }
         const eventi = costruisciEventiGol(result.golPerBlocco as GolBlocco[], [
@@ -458,6 +460,8 @@ export default {
           p_seed: seed,
           p_modulo_home: homeDbLineup.modulo,
           p_modulo_away: awayDbLineup.modulo,
+          p_stile_home: homeDbLineup.stile_gioco,
+          p_stile_away: awayDbLineup.stile_gioco,
           p_gol_home: result.golC,
           p_gol_away: result.golO,
           p_blocchi: eventi,
@@ -509,6 +513,15 @@ export default {
         p_giornata: giornata,
       })
       if (progressioneError) throw progressioneError
+
+      // Stesso ritmo (un quarto di stagione) ma registro e funzione separati
+      // dalla progressione overall: sono due meccaniche distinte e tenerle
+      // separate permette di correggerne una senza toccare l'altra.
+      const { data: morale, error: moraleError } = await ctx.supabaseAdmin.rpc('applica_morale_checkpoint', {
+        p_league_id: leagueId,
+        p_giornata: giornata,
+      })
+      if (moraleError) throw moraleError
 
       // Notifiche: la giornata si gioca alle 00:00, quando tutti dormono.
       // Senza un avviso, il risultato lo si scopre solo riaprendo l'app.
@@ -585,7 +598,7 @@ export default {
         console.error('Notifiche non inviate:', errore)
       }
 
-      return Response.json({ league_id: leagueId, giornata, modo: ctx.authMode, rose_aggiornate: valoriCondizione.length, progressione, notifiche: notificheInviate, partite: summaries })
+      return Response.json({ league_id: leagueId, giornata, modo: ctx.authMode, rose_aggiornate: valoriCondizione.length, progressione, morale, notifiche: notificheInviate, partite: summaries })
     } catch (error) {
       console.error(error)
       return Response.json({ error: error instanceof Error ? error.message : 'Errore durante la simulazione.' }, { status: 500 })

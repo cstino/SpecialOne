@@ -5,13 +5,8 @@ import type { League, Membership, Team } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { Crest } from './Crest'
 
-type StatoTeam = { id: number; nome: string; attiva: boolean; entrante: boolean; rosa: number; rinnovi_in_attesa: number; draft: string | null; budget: number }
+type StatoTeam = { id: number; nome: string; attiva: boolean; entrante: boolean; rosa: number; draft: string | null; budget: number }
 type StatoOffseason = { fase: string; stagione_corrente: number; stagione_prossima: number; scade_il: string | null; posti_nuovi: number; squadre_attese: number; squadre: StatoTeam[] }
-type Rinnovo = {
-  id: number; richiesta_min: number; richiesta_max: number; offerta: number | null; durata: number | null; stato: string
-  player_instances: { players: { nome: string; posizioni: string[] } | null; overall_corrente: number; eta_corrente: number; ingaggio: number } | null
-}
-
 type Props = { user: User; membership: Membership; onNavigate: (view: GameView) => void; onRefresh: () => Promise<void> }
 
 export function Offseason({ user, membership, onNavigate, onRefresh }: Props) {
@@ -20,7 +15,6 @@ export function Offseason({ user, membership, onNavigate, onRefresh }: Props) {
   const [teams, setTeams] = useState<Team[]>([])
   const [crestUrls, setCrestUrls] = useState<Record<number, string>>({})
   const [status, setStatus] = useState<StatoOffseason | null>(null)
-  const [renewals, setRenewals] = useState<Rinnovo[]>([])
   const [removed, setRemoved] = useState<number[]>([])
   const [newSlots, setNewSlots] = useState(0)
   const [pending, setPending] = useState(false)
@@ -40,15 +34,9 @@ export function Offseason({ user, membership, onNavigate, onRefresh }: Props) {
     }))
     setCrestUrls(Object.fromEntries(signed.filter((entry): entry is readonly [number, string] => Boolean(entry[1]))))
     if (league.fase_carriera !== 'offseason') return
-    const [stateResult, renewalResult] = await Promise.all([
-      supabase.rpc('stato_offseason', { p_league_id: league.id }),
-      supabase.from('contract_renewals')
-        .select('id,richiesta_min,richiesta_max,offerta,durata,stato,player_instances(overall_corrente,eta_corrente,ingaggio,players(nome,posizioni))')
-        .eq('team_id', membership.id).order('id'),
-    ])
-    if (stateResult.error || renewalResult.error) { setError(stateResult.error?.message ?? renewalResult.error?.message ?? 'Dati non disponibili.'); return }
+    const stateResult = await supabase.rpc('stato_offseason', { p_league_id: league.id })
+    if (stateResult.error) { setError(stateResult.error.message); return }
     setStatus(stateResult.data as StatoOffseason)
-    setRenewals((renewalResult.data ?? []) as unknown as Rinnovo[])
   }
 
   useEffect(() => { void load() }, [league.id, league.fase_carriera, membership.id])
@@ -82,12 +70,8 @@ export function Offseason({ user, membership, onNavigate, onRefresh }: Props) {
   function openOffseason() {
     void run(
       () => supabase.rpc('prepara_offseason', { p_league_id: league.id, p_squadre_rimosse: removed, p_posti_nuovi: newSlots }),
-      'Off-season aperta. Premi, progressione e richieste di rinnovo sono stati calcolati.',
+      'Off-season aperta. Premi e progressione sono stati calcolati.',
     )
-  }
-
-  function renew(item: Rinnovo, offer: number, duration: number) {
-    void run(() => supabase.rpc('rispondi_rinnovo', { p_rinnovo_id: item.id, p_offerta: offer, p_durata: duration }), 'Risposta del giocatore registrata.')
   }
 
   const entrant = membership.entrata_stagione === league.stagione_corrente + 1
@@ -141,7 +125,7 @@ export function Offseason({ user, membership, onNavigate, onRefresh }: Props) {
 
       {league.fase_carriera === 'offseason' && <>
         <section className={`offseason-countdown ${scaduta ? 'is-expired' : ''}`}>
-          <div><p className="kicker">Finestra di preparazione</p><h2>{scaduta ? 'Tempo scaduto.' : 'Il mercato non aspetta.'}</h2><p>{scaduta ? 'Il server sta completando le rose corte e preparando il calendario.' : 'Hai 24 ore dall’apertura per rinnovi, spin, mercato e sistemazione della rosa.'}</p></div>
+          <div><p className="kicker">Finestra di preparazione</p><h2>{scaduta ? 'Tempo scaduto.' : 'Il mercato non aspetta.'}</h2><p>{scaduta ? 'Il server sta completando le rose corte e preparando il calendario.' : 'Hai 24 ore dall’apertura per spin, mercato e sistemazione della rosa.'}</p></div>
           <time dateTime={status?.scade_il ?? undefined}><span>{scaduta ? 'CHIUSURA' : 'TEMPO RIMASTO'}</span><strong>{scaduta ? 'IN CORSO' : countdown}</strong></time>
         </section>
         <section className="offseason-summary">
@@ -150,11 +134,8 @@ export function Offseason({ user, membership, onNavigate, onRefresh }: Props) {
           <div><small>INVITO</small><strong>{league.codice_invito}</strong></div>
         </section>
         {entrant && <section className="offseason-card offseason-card--accent"><p className="kicker">Nuova squadra</p><h2>Completa il draft</h2><p>Hai il budget iniziale completo e puoi scegliere senza attendere gli altri.</p><button className="button button--primary" onClick={() => onNavigate('draft')}>Vai al draft</button></section>}
-        {!entrant && <section className="offseason-card"><p className="kicker">Contratti</p><h2>Rinnovi della rosa</h2><p>La richiesta iniziale è un intervallo. Se la prima offerta non basta, il giocatore fa una sola controproposta con la cifra esatta. Se rifiuti anche quella, diventa svincolato.</p>
-          <div className="renewal-list">{renewals.map(item => <RenewalRow key={item.id} item={item} disabled={pending || !['in_attesa', 'controproposta'].includes(item.stato)} onSubmit={renew} />)}</div>
-          {!renewals.length && <p>Nessun rinnovo in attesa.</p>}
-        </section>}
-        <section className="offseason-card"><p className="kicker">Stato lega</p><h2>Squadre pronte</h2><p>Alla scadenza le rose sotto quota 21 saranno completate automaticamente con gli svincolati più economici sostenibili.</p><div className="offseason-readiness">{status?.squadre.filter(t => t.attiva).map(team => <div key={team.id}><strong>{team.nome}</strong><span>{team.rosa} giocatori · {team.rinnovi_in_attesa} rinnovi</span></div>)}</div>
+        {!entrant && <section className="offseason-card"><p className="kicker">Contratti</p><h2>Chi è in scadenza</h2><p>I rinnovi si trattano durante la stagione, dalla scheda del giocatore. Chi arriva a fine off-season col contratto scaduto lascia la squadra ed entra nel pool degli svincolati.</p></section>}
+        <section className="offseason-card"><p className="kicker">Stato lega</p><h2>Squadre pronte</h2><p>Alla scadenza le rose sotto quota 21 saranno completate automaticamente con gli svincolati più economici sostenibili.</p><div className="offseason-readiness">{status?.squadre.filter(t => t.attiva).map(team => <div key={team.id}><strong>{team.nome}</strong><span>{team.rosa} giocatori</span></div>)}</div>
           {admin && !scaduta && <button className="button button--secondary" disabled type="button">Avvio automatico tra {countdown}</button>}
           {admin && scaduta && <button className="button button--primary" disabled={pending} onClick={() => void run(() => supabase.rpc('avvia_prossima_stagione', { p_league_id: league.id }), 'Nuova stagione avviata.')}>{pending ? 'Preparazione…' : 'Riprova avvio adesso'}</button>}
         </section>
@@ -171,35 +152,4 @@ function formatCountdown(milliseconds: number) {
   return [ore, minuti, secondi].map((parte) => String(parte).padStart(2, '0')).join(':')
 }
 
-function milioni(value: number) {
-  return (value / 1e6).toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-}
 
-function parseMilioni(value: string) {
-  const normalizzato = value.trim().replace(',', '.')
-  if (!normalizzato) return null
-  const parsed = Number(normalizzato)
-  if (!Number.isFinite(parsed)) return null
-  return Math.round(parsed * 10) * 100000
-}
-
-function RenewalRow({ item, disabled, onSubmit }: { item: Rinnovo; disabled: boolean; onSubmit: (item: Rinnovo, offer: number, duration: number) => void }) {
-  const player = item.player_instances
-  const [offerText, setOfferText] = useState(milioni(item.richiesta_max))
-  const [duration, setDuration] = useState(item.durata ?? 1)
-  const offer = parseMilioni(offerText)
-  const trattabile = item.stato === 'in_attesa' || item.stato === 'controproposta'
-  const dettaglioAccettato = item.stato === 'accettato' && player && item.durata
-    ? `${milioni(player.ingaggio)} M€/stag · ${item.durata} ${item.durata === 1 ? 'stagione' : 'stagioni'}`
-    : null
-  return <article className={`renewal-row renewal-row--${item.stato}`}>
-    <div><strong>{player?.players?.nome ?? 'Giocatore'}</strong><small>{player?.players?.posizioni?.join(' · ')} · OVR {player?.overall_corrente} · {player?.eta_corrente} anni</small></div>
-    <span className="renewal-range">{item.richiesta_min === item.richiesta_max ? `${milioni(item.richiesta_max)} M€` : `${milioni(item.richiesta_min)}–${milioni(item.richiesta_max)} M€`}</span>
-    {trattabile ? <div className="renewal-actions">
-      {item.stato === 'controproposta' && <small className="renewal-counter">Ultima proposta</small>}
-      <input aria-label="Offerta" type="text" inputMode="decimal" value={offerText} onChange={e => setOfferText(e.target.value.replace(/[^\d,.]/g, ''))} />
-      <select aria-label="Durata" value={duration} onChange={e => setDuration(Number(e.target.value))}>{[1,2,3,4].map(y => <option key={y} value={y}>{y} {y === 1 ? 'stagione' : 'stagioni'}</option>)}</select>
-      <button disabled={disabled || offer === null || offer < 500000} onClick={() => offer !== null && onSubmit(item, offer, duration)}>Offri</button>
-    </div> : <b className={`renewal-status renewal-status--${item.stato}`}>{item.stato}{dettaglioAccettato && <small>{dettaglioAccettato}</small>}</b>}
-  </article>
-}

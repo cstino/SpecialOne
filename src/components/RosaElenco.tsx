@@ -47,7 +47,7 @@ export function RosaElenco({ giocatori, foto, loading }: RosaElencoProps) {
                 </div>
                 <div className="modale-rosa__nome">
                   <strong>{g.nome}</strong>
-                  <small>{g.eta} anni · {g.posizioni[0] ?? '—'}</small>
+                  <small>{g.eta} anni · {g.posizioni.length ? g.posizioni.join(' · ') : '—'}</small>
                 </div>
                 <div className="modale-rosa__destra">
                   <b className="modale-rosa__ovr">{g.overall}</b>

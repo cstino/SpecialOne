@@ -2,7 +2,7 @@
 //  MOTORE DI SIMULAZIONE — MODELLO A BLOCCHI
 // ============================================================
 
-import { CFG, MODULI, CONTEGGI, PESI_SLOT, REPARTO, penalitaRuolo, pesoStat } from './config.js';
+import { CFG, MODULI, CONTEGGI, PESI_SLOT, REPARTO, STILI, penalitaRuolo, pesoStat } from './config.js';
 import { rnd, gauss, poisson, scegliPesato } from './random.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -119,6 +119,14 @@ export function familiarita(rosa, modulo) {
   return -CFG.FAM_MALUS_MAX * (1 - Math.min(1, n / CFG.FAM_PARTITE_PIENA));
 }
 
+// ---------- Stile di gioco ----------
+
+// redistribuzione a somma zero in PUNTI di overall tra DEF/MID/ATT.
+// 'equilibrato' o stile mancante/sconosciuto -> nessun aggiustamento.
+export function stileTattico(stile) {
+  return STILI[stile] || STILI.equilibrato;
+}
+
 // ---------- Sostituzioni automatiche ----------
 
 function sostituzioni(lineup) {
@@ -194,6 +202,8 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
 
   const famC = familiarita(rosaCasa, modCasa);
   const famO = familiarita(rosaOspite, modOspite);
+  const stC = stileTattico(opt.stileCasa);
+  const stO = stileTattico(opt.stileOspite);
 
   let golC = 0, golO = 0, xgTotC = 0, xgTotO = 0;
   const ctrlStorico = [];
@@ -211,12 +221,12 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
 
     // tutto in PUNTI di overall: bonus e malus sono additivi, non moltiplicativi
     const sc = strutturale(fc), so = strutturale(fo);
-    const ATT_C = fc.ATT + sc.ATT + famC + CFG.BONUS_CASA_ATT;
-    const MID_C = fc.MID + sc.MID + famC + CFG.BONUS_CASA_MID;
-    const DEF_C = fc.DEF + sc.DEF;
-    const ATT_O = fo.ATT + so.ATT + famO;
-    const MID_O = fo.MID + so.MID + famO;
-    const DEF_O = fo.DEF + so.DEF;
+    const ATT_C = fc.ATT + sc.ATT + famC + CFG.BONUS_CASA_ATT + stC.ATT;
+    const MID_C = fc.MID + sc.MID + famC + CFG.BONUS_CASA_MID + stC.MID;
+    const DEF_C = fc.DEF + sc.DEF + stC.DEF;
+    const ATT_O = fo.ATT + so.ATT + famO + stO.ATT;
+    const MID_O = fo.MID + so.MID + famO + stO.MID;
+    const DEF_O = fo.DEF + so.DEF + stO.DEF;
 
     const ctrlC = clamp(0.5 + CFG.AMPLIFICA_CONTROLLO * (MID_C - MID_O) / 100, CFG.CTRL_MIN, CFG.CTRL_MAX);
     const ctrlO = 1 - ctrlC;

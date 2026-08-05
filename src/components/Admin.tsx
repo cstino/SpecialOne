@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useTornaAllaHome } from '../lib/navigazione'
 import type { League, Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 
@@ -13,12 +14,17 @@ type EsitoAzione = { tono: 'ok' | 'errore'; testo: string }
 // l'automatismo: l'admin lo usa solo se qualcosa e' rimasto fermo.
 export function Admin({ membership, onNavigate }: AdminProps) {
   const league = membership.league as League
+  const tornaAllaHome = useTornaAllaHome()
   const [simulando, setSimulando] = useState(false)
   const [aprendo, setAprendo] = useState(false)
   const [chiudendo, setChiudendo] = useState(false)
   const [esitoSimula, setEsitoSimula] = useState<EsitoAzione | null>(null)
   const [esitoApri, setEsitoApri] = useState<EsitoAzione | null>(null)
   const [esitoChiudi, setEsitoChiudi] = useState<EsitoAzione | null>(null)
+  const [confermaEliminazione, setConfermaEliminazione] = useState(false)
+  const [nomeDigitato, setNomeDigitato] = useState('')
+  const [eliminando, setEliminando] = useState(false)
+  const [erroreEliminazione, setErroreEliminazione] = useState<string | null>(null)
 
   // Difesa in profondità: la voce di menu è già nascosta a chi non è admin, e
   // ogni RPC lo ricontrolla comunque lato server. Questo evita solo che chi
@@ -73,6 +79,20 @@ export function Admin({ membership, onNavigate }: AdminProps) {
     setEsitoChiudi({ tono: 'ok', testo: `${aste} ${aste === 1 ? 'asta risolta' : 'aste risolte'}, ${proposte} ${proposte === 1 ? 'proposta scaduta' : 'proposte scadute'}.` })
   }
 
+  async function eliminaLega() {
+    setEliminando(true); setErroreEliminazione(null)
+    const { error } = await supabase.rpc('elimina_lega', { p_league_id: league.id, p_conferma_nome: nomeDigitato })
+    setEliminando(false)
+    if (error) { setErroreEliminazione(error.message); return }
+    // La lega non esiste più: non c'è una pagina a cui tornare dentro di essa.
+    tornaAllaHome?.()
+  }
+
+  // Le tre azioni di riserva sostituiscono il cron notturno: hanno senso
+  // solo a stagione avviata. "Elimina lega" invece serve in ogni fase —
+  // anche in draft, dove una lega puo' restare bloccata e vada rifatta.
+  const stagioneAvviata = league.stato === 'stagione'
+
   return (
     <main className="app-shell season-shell">
       <GameNav league={league} active="admin" onNavigate={onNavigate} />
@@ -82,11 +102,13 @@ export function Admin({ membership, onNavigate }: AdminProps) {
           <div>
             <p className="kicker">Solo amministratore · {league.nome}</p>
             <h1>Pannello admin.</h1>
-            <p>Tre azioni di riserva, per quando pg_cron non parte da solo. L'apertura manuale abilita
-              anche le offerte fuori dalla finestra automatica, finché il mercato non viene richiuso.</p>
+            <p>{stagioneAvviata
+              ? "Tre azioni di riserva, per quando pg_cron non parte da solo. L'apertura manuale abilita anche le offerte fuori dalla finestra automatica, finché il mercato non viene richiuso."
+              : 'La lega non è ancora avviata: le azioni di riserva sul cron compariranno quando la stagione parte. Da qui puoi comunque eliminare la lega.'}</p>
           </div>
         </section>
 
+        {stagioneAvviata && <>
         <section className="mercato-blocco">
           <div className="sezione-testa"><div><p className="kicker">00:00</p><h2>Simula la giornata</h2></div></div>
           <p className="mercato-nota">Simula la prossima giornata programmata, la stessa cosa che fa il cron ogni notte. Non fa nulla se non ci sono partite da giocare.</p>
@@ -110,6 +132,40 @@ export function Admin({ membership, onNavigate }: AdminProps) {
           </div>
           {esitoApri && <p className={esitoApri.tono === 'errore' ? 'notice notice--error' : 'notice'}>{esitoApri.testo}</p>}
           {esitoChiudi && <p className={esitoChiudi.tono === 'errore' ? 'notice notice--error' : 'notice'}>{esitoChiudi.testo}</p>}
+        </section>
+        </>}
+
+        <section className="mercato-blocco admin-zona-pericolo">
+          <div className="sezione-testa"><div><p className="kicker">Irreversibile</p><h2>Elimina lega</h2></div></div>
+          <p className="mercato-nota">
+            Cancella per sempre <strong>{league.nome}</strong>: squadre, rose, calendario, stagioni, mercato e
+            notifiche di tutti i partecipanti, non solo le tue. Non si può annullare.
+          </p>
+          {!confermaEliminazione
+            ? <button className="button button--danger-ghost" type="button" onClick={() => setConfermaEliminazione(true)}>Elimina lega</button>
+            : <div className="player-modal__confirm">
+                <div>
+                  <strong>Confermi l'eliminazione?</strong>
+                  <p>Per confermare, scrivi esattamente il nome della lega: <strong>{league.nome}</strong></p>
+                </div>
+                <input
+                  type="text"
+                  value={nomeDigitato}
+                  onChange={(evento) => setNomeDigitato(evento.target.value)}
+                  placeholder={league.nome}
+                  aria-label="Digita il nome della lega per confermare"
+                  disabled={eliminando}
+                />
+                {erroreEliminazione && <p className="notice notice--error">{erroreEliminazione}</p>}
+                <div>
+                  <button className="button button--danger" type="button" disabled={eliminando || nomeDigitato !== league.nome} onClick={() => void eliminaLega()}>
+                    {eliminando ? 'Elimino…' : 'Elimina definitivamente'}
+                  </button>
+                  <button className="button button--secondary" type="button" disabled={eliminando} onClick={() => { setConfermaEliminazione(false); setNomeDigitato(''); setErroreEliminazione(null) }}>
+                    Annulla
+                  </button>
+                </div>
+              </div>}
         </section>
       </div>
     </main>

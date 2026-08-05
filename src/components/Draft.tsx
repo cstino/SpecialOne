@@ -185,6 +185,12 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
   const speso = league.budget_iniziale - budgetAttuale
   const disponibile = Math.max(0, tetto - speso)
   const progressoSpesa = tetto > 0 ? Math.min(100, (speso / tetto) * 100) : 0
+  // Stessa formula del vincolo di solvibilita' server-side (private.pick_sostenibile,
+  // design §4.4), applicata ai DUE pick del turno insieme: quanto si puo' spendere in
+  // totale sulle due carte scelte ora, una volta accantonato il minimo di 0,5M per
+  // ognuno degli slot che restano da riempire DOPO questo turno.
+  const slotLiberiDopoTurno = Math.max(0, total - picks - 2)
+  const massimoSpesaTurno = Math.max(0, disponibile - slotLiberiDopoTurno * 500_000)
 
   return (
     <main className="app-shell draft-shell">
@@ -204,6 +210,12 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
           <span className="draft-turn-board__hint">Tocca per vedere la rosa →</span>
         </button>
       </section>
+      {state?.stato !== 'concluso' && (
+        <section className="draft-max-spesa">
+          <span className="draft-max-spesa__etichetta">Max spesa turno</span>
+          <strong className="draft-max-spesa__cifra">{milioni(massimoSpesaTurno)}</strong>
+        </section>
+      )}
       {squadreIscritte !== null && squadreIscritte < league.n_squadre && (
         <section className="draft-invito-banner">
           <div><p className="kicker">Posti liberi</p><h2>{squadreIscritte} / {league.n_squadre} squadre iscritte</h2><p>Chi entra ora comincia subito il proprio draft, senza aspettare gli altri.</p></div>

@@ -452,6 +452,18 @@ input:disabled { opacity: 0.65; }
 .draft-budget__cifre { display: flex; justify-content: space-between; font-size: .78rem; font-weight: 700; color: var(--ink); }
 .draft-budget small { color: #8f889e !important; font-size: .68rem; font-weight: 600; }
 
+/* Cifra prominente: quanto si puo' spendere sui due giocatori del turno in corso,
+   stessa formula del vincolo di solvibilita' server-side. Palette oro, coerente
+   col reroll: e' un avviso economico, non un'azione. */
+.draft-max-spesa {
+  display: grid; justify-items: center; gap: 4px; width: min(100% - 32px, 980px); margin: 16px auto;
+  padding: 16px 20px; box-sizing: border-box; text-align: center; border-radius: 16px;
+  border: 1px solid #8a6a1f; background: linear-gradient(145deg, #2b2109, #1a1508);
+  box-shadow: 0 10px 26px rgba(189,147,42,.18);
+}
+.draft-max-spesa__etichetta { font-size: .72rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; color: #f4c15a; }
+.draft-max-spesa__cifra { font-size: 2.1rem; font-weight: 950; line-height: 1.1; color: #ffdd8a; text-shadow: 0 0 22px rgba(244,193,90,.35); }
+
 /* Griglia dei 4 slot del pacchetto: fissa, una carta per ruolo */
 .draft-pacchetto-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
 .draft-carta-slot { display: grid; gap: 8px; align-content: start; }
@@ -683,7 +695,17 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    proprie, .roster-panel resta solo la cornice della pagina. */
 .roster-panel .modale-rosa__lista { margin-top: 18px; padding: 0; }
 .formation-panel--tactical { overflow: hidden; }
-.formation-toolbar { position: relative; margin-bottom: 22px; }
+/* Riga superiore: modulo a sinistra, salva a destra, stessa altezza,
+   ad ogni larghezza di schermo. Lo stile di gioco resta sotto, a se',
+   allineato a sinistra come il modulo. flex-wrap come rete di sicurezza
+   sui telefoni piu' stretti, dove "4-2-3-1" al font enorme del modulo puo'
+   non lasciare spazio al bottone sulla stessa riga. */
+.formation-toolbar { position: relative; display: flex; flex-direction: column; gap: 18px; margin-bottom: 22px; }
+.formation-toolbar__top { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 18px; }
+.formation-save { display: grid; justify-items: end; gap: 4px; text-align: right; }
+.formation-save-button { min-height: 40px; padding: .6rem 1.3rem; }
+.formation-save span { font-size: .74rem; font-weight: 800; color: #cbb98a; }
+.formation-save small { color: #9990aa; font-size: .66rem; }
 .formation-module-selector { position: relative; width: max-content; max-width: 100%; }
 .formation-module-trigger { position: relative; z-index: 1; display: flex; align-items: center; gap: 13px; min-width: 190px; padding: 2px 0 4px; color: #f7f4fc; border: 0; background: transparent; text-align: left; cursor: pointer; }
 .formation-module-trigger strong { font-size: clamp(2.5rem, 7vw, 4.4rem); font-weight: 900; letter-spacing: -.055em; line-height: .95; }
@@ -696,22 +718,46 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .formation-module-menu > button:hover, .formation-module-menu > button.is-active { color: #fff; border-color: #a354e8; background: linear-gradient(135deg, #4d2668, #291c35); }
 .formation-module-menu > button strong { font-size: 1rem; }.formation-module-menu > button small { overflow: hidden; color: #958b9e; font-size: .57rem; text-overflow: ellipsis; white-space: nowrap; }.formation-module-menu > button span { grid-column: 2; grid-row: 1 / 3; align-self: center; color: #c57dff; font-size: .9rem; }
 @keyframes module-menu-in { from { opacity: 0; transform: translateY(-6px) scale(.98); } }
-.formation-swapper { position: sticky; z-index: 8; top: 10px; margin: 0 0 22px; padding: 12px; border: 1px solid #373047; border-radius: 14px; background: rgba(20,18,29,.96); box-shadow: 0 12px 30px rgba(0,0,0,.32); backdrop-filter: blur(14px); }
-.formation-swapper.has-selection { border-color: #7d3dc3; box-shadow: 0 0 0 1px rgba(181,91,255,.22), 0 16px 36px rgba(0,0,0,.4); }
-.formation-swapper__status { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: baseline; margin: 0 2px 10px; }
-.formation-swapper__status > span { color: #c88cff; font-size: .62rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
-.formation-swapper__status strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .88rem; }
-.formation-swapper__status small { grid-column: 1 / -1; color: #8f879d; font-size: .7rem; }
-.formation-zone-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
-.formation-zone-tabs button { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 7px; min-width: 0; min-height: 42px; padding: 8px 11px; color: #aaa2b7; border: 1px solid #373143; border-radius: 9px; background: #1a1825; text-align: left; cursor: pointer; }
+
+/* Stile di gioco: stessa struttura trigger/menu del modulo, ma volutamente
+   secondaria — nomi piu' lunghi (es. "DIFESA A OLTRANZA") e non deve
+   competere col font enorme del modulo, che resta la card dominante. */
+.formation-stile-selector { position: relative; width: 188px; max-width: 100%; }
+.formation-stile-trigger { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 14px; color: #f7f4fc; border: 1px solid #4a3568; border-radius: 12px; background: #1c1726; text-align: left; cursor: pointer; box-sizing: border-box; }
+.formation-stile-trigger strong { min-width: 0; flex: 1 1 auto; font-size: clamp(.82rem, 2vw, .98rem); font-weight: 900; letter-spacing: -.005em; line-height: 1.25; white-space: normal; }
+.formation-stile-trigger span { flex-shrink: 0; width: 26px; height: 26px; display: grid; place-items: center; color: #cf92ff; border: 1px solid #664182; border-radius: 50%; background: #24192e; font-size: 1rem; line-height: 1; transition: transform .16s ease, background .16s ease; }
+.formation-stile-trigger:hover span, .formation-stile-trigger[aria-expanded="true"] span { background: #4e256c; transform: translateY(2px); }
+.formation-stile-trigger[aria-expanded="true"] { z-index: 28; border-color: #a354e8; }
+.formation-stile-scrim { position: fixed; z-index: 25; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; background: rgba(5,4,8,.42); cursor: default; }
+.formation-stile-menu { position: absolute; z-index: 29; top: calc(100% + 10px); left: 0; width: min(300px, calc(100vw - 48px)); display: grid; gap: 7px; padding: 10px; border: 1px solid #68478a; border-radius: 14px; background: rgba(23,19,31,.98); box-shadow: 0 22px 60px rgba(0,0,0,.62), 0 0 0 1px rgba(193,112,255,.1); backdrop-filter: blur(18px); animation: module-menu-in .16s ease-out; }
+.formation-stile-menu > button { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; min-width: 0; padding: 11px; color: #ddd5e5; border: 1px solid #393141; border-radius: 9px; background: #201b28; text-align: left; cursor: pointer; }
+.formation-stile-menu > button:hover, .formation-stile-menu > button.is-active { color: #fff; border-color: #a354e8; background: linear-gradient(135deg, #4d2668, #291c35); }
+.formation-stile-menu > button strong { font-size: .84rem; letter-spacing: .01em; }
+.formation-stile-menu > button small { color: #958b9e; font-size: .68rem; line-height: 1.35; }
+.formation-stile-menu > button span { grid-column: 2; grid-row: 1 / 3; align-self: center; color: #c57dff; font-size: .9rem; }
+/* Vista formazione: tre tab sopra la card col campo, che scelgono cosa
+   mostrare (campo per i titolari, lista per panchina/tribuna) invece di
+   aprire un pannello aggiuntivo. Sostituiscono la vecchia card "Gestione
+   rosa". */
+.formation-zone-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-bottom: 16px; }
+.formation-zone-tabs button { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 7px; min-width: 0; min-height: 42px; padding: 8px 11px; color: #aaa2b7; border: 1px solid #373143; border-radius: 9px; background: #1a1825; text-align: left; cursor: pointer; }
 .formation-zone-tabs button:hover, .formation-zone-tabs button.is-active { color: #fff; border-color: #8e47d6; background: linear-gradient(135deg, #49236f, #241833); }
 .formation-zone-tabs button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .76rem; font-weight: 800; }
 .formation-zone-tabs button b { display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; color: #e9d6ff; background: #312540; font-size: .65rem; }
-.formation-zone-tabs button i { color: #bc7aff; font-size: 1rem; font-style: normal; }
+.formation-swap-hint { margin: -8px 0 16px; color: #c88cff; font-size: .78rem; font-weight: 700; text-align: center; }
 .formation-player-tray { display: flex; gap: 9px; margin-top: 10px; padding: 10px 3px 4px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-color: #7540a5 transparent; }
-.formation-poster-heading { width: min(100%, 720px); display: grid; justify-items: center; gap: 7px; margin: 8px auto 16px; text-align: center; text-transform: uppercase; }
-.formation-poster-heading span { color: #f5f4f1; font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; font-size: clamp(2.4rem, 8vw, 5rem); font-weight: 500; letter-spacing: .045em; line-height: .88; text-shadow: 0 5px 22px rgba(0,0,0,.65); }
-.formation-poster-heading small { width: min(78%, 420px); padding-top: 8px; color: #b7b8ba; border-top: 1px solid #595b60; font-size: .65rem; font-weight: 900; letter-spacing: .3em; }
+/* Contenitore ad altezza fissa condiviso da campo e liste panchina/tribuna:
+   stessa formula di dimensionamento che il campo aveva per conto suo (prima
+   determinava l'altezza della card da solo), cosi' cambiare vista non fa
+   piu' saltare l'altezza della card. Le liste, piu' corte del campo, restano
+   dentro scorrendo se servisse invece di allungare la card. */
+.formation-view-card { position: relative; width: min(100%, 720px); aspect-ratio: .73; margin: 0 auto; }
+.formation-view-card .pitch-field,
+.formation-view-card .formation-player-tray--standalone { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; }
+/* Rimpiazza il campo quando la vista e' su panchina/tribuna: una griglia che
+   si dispone a piu' righe, stesso peso visivo del campo che sostituisce. */
+.formation-player-tray--standalone { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); align-content: center; justify-items: center; gap: 18px 10px; padding: 18px 4px; overflow-x: visible; overflow-y: auto; }
+.formation-player-tray--standalone .lineup-player--compact { flex: none; width: 100%; }
 .pitch-field { position: relative; width: min(100%, 720px); aspect-ratio: .73; margin: 0 auto; overflow: hidden; border: 1px solid #31343a; border-radius: 3px; background: radial-gradient(ellipse at 50% 22%, rgba(72,99,106,.28), transparent 34%), radial-gradient(circle at 8% 58%, rgba(45,113,123,.17), transparent 25%), radial-gradient(circle at 92% 68%, rgba(104,55,119,.18), transparent 29%), repeating-linear-gradient(97deg, rgba(255,255,255,.018) 0 1px, transparent 1px 7px), linear-gradient(180deg, #171a1d, #090a0c 70%, #121417); box-shadow: inset 0 0 100px #050607, 0 24px 70px rgba(0,0,0,.55); }
 .pitch-field::before, .pitch-field::after { content: ''; position: absolute; pointer-events: none; }
 .pitch-field::before { inset: 5% 7% 3%; border: 2px solid rgba(208,215,217,.43); clip-path: polygon(16% 0, 84% 0, 100% 100%, 0 100%); }
@@ -812,6 +858,31 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .player-modal__fitness-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #f0c44d, #39d381); }
 .player-modal__fitness.is-injured { border-color: #753041; background: linear-gradient(135deg, rgba(151,29,55,.24), rgba(24,20,31,.94)); }
 .player-modal__fitness.is-injured strong { color: #ff7188; }
+/* Morale: stessa sagoma della card forma fisica (le si legge in sequenza),
+   ma colore che cambia con lo stato d'animo invece che fisso. */
+.player-modal__morale { display: grid; gap: 9px; margin: 0 0 18px; padding: 14px 16px; border: 1px solid #4a3568; border-radius: 12px; background: linear-gradient(135deg, rgba(93,45,138,.2), rgba(24,20,31,.92)); }
+.player-modal__morale > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.player-modal__morale > div:first-child > span { color: #b5a9c4; font-size: .65rem; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+.player-modal__morale strong { font-size: 1rem; }
+.player-modal__morale-bar { height: 7px; overflow: hidden; border-radius: 999px; background: #2b2632; }
+.player-modal__morale-bar i { display: block; height: 100%; border-radius: inherit; }
+.morale--ottimo { border-color: #2f6a4c; } .morale--ottimo strong { color: #65e69a; } .morale--ottimo .player-modal__morale-bar i { background: linear-gradient(90deg, #39d381, #7ef0b0); }
+.morale--buono { border-color: #4a3568; } .morale--buono strong { color: #c9a6ff; } .morale--buono .player-modal__morale-bar i { background: linear-gradient(90deg, #8e45f0, #c9a6ff); }
+.morale--medio { border-color: #6b5a26; } .morale--medio strong { color: #f0c44d; } .morale--medio .player-modal__morale-bar i { background: linear-gradient(90deg, #c99a2c, #f0c44d); }
+.morale--basso { border-color: #74452c; } .morale--basso strong { color: #ffa06b; } .morale--basso .player-modal__morale-bar i { background: linear-gradient(90deg, #d1642a, #ffa06b); }
+.morale--critico { border-color: #753041; } .morale--critico strong { color: #ff7188; } .morale--critico .player-modal__morale-bar i { background: linear-gradient(90deg, #b72943, #ff7188); }
+.player-modal__mentalita-nota { margin: 2px 0 0; color: #a8a0b0; font-size: .72rem; line-height: 1.5; }
+.player-modal__mentalita-nota b { color: #e6dcf0; }
+.player-modal__mentalita { display: grid; gap: 6px; margin-top: 4px; }
+.player-modal__mentalita > div { display: grid; grid-template-columns: 74px minmax(0, 1fr) 26px; align-items: center; gap: 8px; }
+.player-modal__mentalita span { color: #958b9e; font-size: .68rem; font-weight: 700; }
+.player-modal__mentalita i { height: 5px; overflow: hidden; border-radius: 999px; background: #2b2632; }
+.player-modal__mentalita i span { display: block; height: 100%; border-radius: inherit; background: #5c4a72; }
+.player-modal__mentalita b { color: #958b9e; font-size: .68rem; text-align: right; font-variant-numeric: tabular-nums; }
+.player-modal__mentalita .is-dominante span { color: #e6dcf0; }
+.player-modal__mentalita .is-dominante i span { background: linear-gradient(90deg, #8e45f0, #c9a6ff); }
+.player-modal__mentalita .is-dominante b { color: #c9a6ff; }
+
 .player-modal__stats h3 { margin: 0 0 12px; font-size: 1rem; }
 .player-modal__danger { margin-top: 18px; padding-top: 16px; border-top: 1px solid #3d2935; }
 .button--danger-ghost { color: #f08b9a; border: 1px solid #6b3441; background: rgba(104,35,51,.14); }
@@ -820,6 +891,60 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .player-modal__confirm strong { color: #fff; font-size: .9rem; }
 .player-modal__confirm p { margin: 5px 0 0; color: #bcaab3; font-size: .74rem; line-height: 1.55; }
 .player-modal__confirm > div:last-child { display: flex; flex-wrap: wrap; gap: 8px; }
+.player-modal__confirm input { min-height: 44px; padding: 0 12px; color: #fff; border: 1px solid #713746; border-radius: 9px; background: #1d1720; font-size: .9rem; }
+.player-modal__confirm input:focus-visible { outline: 2px solid #ca4058; outline-offset: 1px; }
+/* Card admin col bordo rosso a segnalare la zona irreversibile, coerente
+   col resto del pannello ma visivamente separata dalle azioni di routine. */
+.admin-zona-pericolo { border-color: #5a2a35; }
+.player-modal__azioni { display: flex; flex-wrap: wrap; gap: 8px; }
+.player-modal__azioni .button { flex: 1 1 auto; }
+/* "Metti sul mercato" sta sotto agli altri due e ne occupa l'intera larghezza:
+   e' un'azione di natura diversa (annuncio pubblico, reversibile), non una
+   variante di svincola/rinnovo. */
+.player-modal__lista { flex: 1 0 100%; }
+.player-modal__lista-esito { flex: 1 0 100%; margin: 2px 0 0; padding: 10px 12px; border: 1px solid #2f6a4c; border-radius: 10px; color: #9ff0c4; background: rgba(47,106,76,.16); font-size: .78rem; font-weight: 700; text-align: center; animation: lista-esito-in .18s ease-out; }
+.player-modal__lista-esito.notice--error { border-color: #86384d; color: #ffc7d0; background: #4b1d2b; }
+@keyframes lista-esito-in { from { opacity: 0; transform: translateY(-4px); } }
+
+/* Vista rinnovo: e' una trattativa, non una scheda dati. Ritratto grande al
+   centro e la proposta scritta in prima persona dal giocatore — il tono
+   cambia apposta rispetto al resto della scheda. */
+.player-modal--rinnovo { display: grid; justify-items: center; gap: 14px; text-align: center; }
+.rinnovo-ritratto { position: relative; width: 132px; aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; border: 3px solid #a354e8; border-radius: 50%; color: #fff; background: radial-gradient(circle at 50% 35%, #71647e, #2f2440 72%); font-weight: 950; box-shadow: 0 0 0 7px rgba(163,84,232,.12), 0 14px 32px rgba(0,0,0,.45); }
+.rinnovo-ritratto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+.rinnovo-kicker { margin: 0; color: #c88cff; }
+.rinnovo-lettera { margin: 0; padding: 16px 18px; border: 1px solid #4a3568; border-left: 3px solid #a354e8; border-radius: 12px; background: linear-gradient(145deg, rgba(77,38,104,.24), rgba(23,19,31,.9)); text-align: left; }
+.rinnovo-lettera p { margin: 0 0 8px; color: #e6dcf0; font-size: .9rem; line-height: 1.6; }
+.rinnovo-lettera p:last-child { margin-bottom: 0; }
+.rinnovo-lettera__firma { color: #9990aa !important; font-size: .76rem !important; font-style: italic; }
+.rinnovo-lettera--firmata { border-left-color: #55dd91; }
+.rinnovo-cifre { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.rinnovo-cifre > div { display: grid; gap: 2px; padding: 14px 10px; border: 1px solid #393141; border-radius: 12px; background: #1c1726; }
+.rinnovo-cifre span { color: #958b9e; font-size: .64rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.rinnovo-cifre strong { color: #ffdd8a; font-size: 1.5rem; font-weight: 950; line-height: 1.15; }
+.rinnovo-cifre small { color: #9990aa; font-size: .66rem; }
+.rinnovo-nota { margin: 0; color: #a49bb3; font-size: .76rem; line-height: 1.6; }
+.rinnovo-risposta { width: 100%; margin: 0; padding: 12px 14px; border-radius: 11px; font-size: .88rem; font-style: italic; line-height: 1.5; }
+.rinnovo-risposta--rifiutato { color: #ffc79a; border: 1px solid #74452c; background: rgba(116,69,44,.18); }
+.rinnovo-risposta--chiusa { color: #ffc7d0; border: 1px solid #753041; background: rgba(117,48,65,.2); }
+.rinnovo-risposta--accettato { color: #9ff0c4; border: 1px solid #2f6a4c; background: rgba(47,106,76,.18); }
+.rinnovo-offerta { width: 100%; padding: 14px; border: 1px solid #4a3568; border-radius: 12px; background: #1c1726; text-align: left; }
+.rinnovo-offerta .kicker { margin: 0 0 10px; color: #c88cff; }
+.rinnovo-offerta > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.rinnovo-offerta label { display: grid; gap: 4px; min-width: 0; }
+.rinnovo-offerta label > span { color: #958b9e; font-size: .64rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.rinnovo-offerta input, .rinnovo-offerta select { min-height: 44px; width: 100%; box-sizing: border-box; padding: .5rem .7rem; color: #fff; border: 1px solid #4a3e5d; border-radius: 9px; background: #1d1827; font-size: 1rem; font-weight: 800; }
+.rinnovo-offerta small { color: #7f7690; font-size: .64rem; }
+.rinnovo-tentativi { margin: 0; color: #a49bb3; font-size: .74rem; }
+.rinnovo-tentativi b { color: #ffdd8a; }
+.fatto-contratto { display: block; margin-top: 3px; color: #9990aa; font-size: .66rem; font-weight: 600; }
+/* Durata residua nella riga della rosa: rosso solo quando la squadra sta per
+   perdere il giocatore (ultima stagione o ritiro annunciato), cosi' il colore
+   resta un segnale e non decorazione. */
+.team-roster-player em.contratto-residuo { color: #7f7789; font-style: normal; }
+.team-roster-player em.contratto-urgente { color: #ff7188; font-style: normal; font-weight: 800; }
+.rinnovo-azioni { width: 100%; display: flex; flex-wrap: wrap; gap: 8px; }
+.rinnovo-azioni .button { flex: 1 1 140px; }
 .player-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 18px; }
 .player-stat { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 5px 10px; min-width: 0; }
 .player-stat > span { overflow: hidden; color: #b6adbf; font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
@@ -856,7 +981,12 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .game-mobile-nav button.is-active::before { content: ""; position: absolute; top: -7px; width: 26px; height: 3px; border-radius: 0 0 3px 3px; background: #c77dff; box-shadow: 0 0 12px #8b3dff; }
   /* Lo spazio per la barra: senza, l'ultimo blocco di ogni pagina resta coperto. */
   .app-shell { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
-  .lobby-hero, .draft-hero, .formation-hero { padding: 32px 20px 24px; }
+  .lobby-hero, .formation-hero { padding: 32px 20px 24px; }
+  /* Solo verticale: a differenza di lobby-hero/formation-hero, dentro c'e' la
+     card "La tua squadra" che deve allinearsi in larghezza con gli altri
+     blocchi della pagina (invito, max spesa turno, pacchetto), tutti sulla
+     stessa formula min(100% - 32px, 980px) senza padding proprio. */
+  .draft-hero { padding: 32px 0 24px; }
   .roster-hero { display: block; padding: 32px 20px 24px; }
   .roster-summary { margin-top: 20px; }
   .roster-panel { width: calc(100% - 32px); padding: 20px; }
@@ -866,8 +996,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .modale-rosa__ovr { font-size: 1.15rem; }
   .modale-rosa__ingaggio { font-size: .74rem; }
   .formation-module-trigger { min-width: 0; }.formation-module-menu { width: min(360px, calc(100vw - 64px)); grid-template-columns: 1fr 1fr; }
-  .formation-swapper { top: 61px; margin-inline: -8px; }.formation-swapper__status { grid-template-columns: 1fr; }.formation-swapper__status small { grid-column: auto; }.formation-zone-tabs button { grid-template-columns: 1fr auto; padding: 7px; }.formation-zone-tabs button i { display: none; }
-  .pitch-field { width: 100%; aspect-ratio: .66; }.pitch-grid { inset: 6% 2.5%; }.pitch-row { gap: 1px; }.pitch-slot .lineup-player { width: min(100%, 82px); }.lineup-player__portrait { width: clamp(39px, 11vw, 52px); }.lineup-player__plate { gap: 2px; padding: 4px 3px 4px; }.lineup-player__plate strong { font-size: clamp(.48rem, 1.75vw, .59rem); }.lineup-player__position { font-size: .48rem; min-width: 19px; height: 16px; padding: 0 2px; }.lineup-player__plate b { font-size: .68rem; }.lineup-player__meta { gap: 4px; }.bench-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .formation-stile-menu { width: min(280px, calc(100vw - 64px)); }
+  .formation-zone-tabs button { padding: 7px; }
+  .formation-view-card { width: 100%; aspect-ratio: .66; }.pitch-grid { inset: 6% 2.5%; }.pitch-row { gap: 1px; }.pitch-slot .lineup-player { width: min(100%, 82px); }.lineup-player__portrait { width: clamp(39px, 11vw, 52px); }.lineup-player__plate { gap: 2px; padding: 4px 3px 4px; }.lineup-player__plate strong { font-size: clamp(.48rem, 1.75vw, .59rem); }.lineup-player__position { font-size: .48rem; min-width: 19px; height: 16px; padding: 0 2px; }.lineup-player__plate b { font-size: .68rem; }.lineup-player__meta { gap: 4px; }.bench-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .player-modal-backdrop { place-items: end center; padding: 0; }.player-modal { width: 100%; max-height: 88dvh; padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); border-width: 1px 0 0; border-radius: 20px 20px 0 0; }.player-modal__hero { grid-template-columns: 82px minmax(0, 1fr) auto; gap: 11px; padding-right: 34px; }.player-modal__photo { width: 82px; }.player-modal__overall { min-width: 58px; padding: 10px 7px; font-size: 1.55rem; }.player-modal__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }.player-modal__facts div:last-child:nth-child(odd) { grid-column: 1 / -1; }.player-stats-grid { gap: 9px 13px; }
   .lobby-grid { padding: 16px; grid-template-columns: 1fr; }
   .squad-list, .league-sheet, .draft-action-panel, .draft-club-panel, .formation-panel { padding: 20px; }
@@ -886,11 +1017,10 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .formation-bench { border-top: 1px solid var(--line); padding-top: 20px; }
 .formation-bench select { min-height: 150px; }
 .formation-bench small { color: var(--ink-muted); }
-.formation-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-top: 1px solid var(--line); padding-top: 20px; margin-top: 24px; }
+.formation-footer { display: grid; gap: 4px; border-top: 1px solid var(--line); padding-top: 20px; margin-top: 24px; }
+.formation-footer small { color: #9990aa; }
 @media (max-width: 640px) {
   .formation-slots { grid-template-columns: 1fr; }
-  .formation-footer { display: grid; }
-  .formation-footer .button { width: 100%; }
 }
 
 /* Stagione */
@@ -940,9 +1070,12 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .next-match-duel .season-team strong { max-width: 180px; font-size: 1rem; white-space: normal; }
 /* "VS" e' un separatore, non un risultato: non deve competere con i punteggi. */
 .fixture-time { color: #8a80a0; font-size: 1rem; font-weight: 900; letter-spacing: .12em; }
+/* Stesso font "da tabellone" gia' usato per SPIN/REROLL nel draft
+   (Impact/Haettenschweiler, solo Windows: sugli altri sistemi il fallback
+   condensato regge comunque bene). "-" al posto di ":" tra i due punteggi. */
 .fixture-score { min-width: 84px; display: flex; align-items: center; justify-content: center; gap: 8px; color: #fff; }
-.fixture-score b { font-family: "Aptos Narrow", "Arial Narrow", sans-serif; font-size: 2.4rem; }
-.fixture-score i { color: #846b99; font-style: normal; font-weight: 900; }
+.fixture-score b { font-family: Impact, Haettenschweiler, "Arial Narrow", "Roboto Condensed", sans-serif; font-size: 2.4rem; }
+.fixture-score i { color: #846b99; font-family: Impact, Haettenschweiler, "Arial Narrow", "Roboto Condensed", sans-serif; font-style: normal; font-weight: 900; }
 .fixture-status { padding: 7px 9px; border-radius: 6px; color: #aaa1b6; background: #2a2632; font-size: .65rem; font-weight: 900; }
 .fixture-status--live { color: #12251a; background: #5cdf86; box-shadow: 0 0 18px rgba(92,223,134,.3); }
 .season-card__actions { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
@@ -1008,8 +1141,14 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .season-hero__squadra .crest { flex-shrink: 0; filter: drop-shadow(0 12px 26px rgba(0,0,0,.45)); }
 .season-hero__squadra h1 { margin: 4px 0 0; font-size: clamp(2.2rem, 6vw, 4.2rem); letter-spacing: -.03em; line-height: 1; overflow-wrap: break-word; word-break: break-word; }
 .season-hero__stato { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 13px; }
-.season-hero__posizione { display: flex; align-items: baseline; gap: 1px; color: #fff; font-size: 1.7rem; font-weight: 850; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
-.season-hero__posizione sup { color: #c77dff; font-size: .58rem; font-weight: 800; }
+/* Prima era solo un numero grande con una "a" minuscola in apice: senza
+   etichetta, fuori dal contesto di una classifica, si leggeva ambiguo
+   ("1a" sembrava un refuso, non un ordinale). Ora c'e' una didascalia sopra,
+   stessa formula lessicale del timbro GIORNATA a destra nello stesso eroe. */
+.season-hero__posizione { display: grid; justify-items: start; gap: 1px; }
+.season-hero__posizione small { color: #c77dff; font-size: .58rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
+.season-hero__posizione b { display: flex; align-items: baseline; gap: 2px; color: #fff; font-size: 1.7rem; font-weight: 850; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.season-hero__posizione sup { color: #c77dff; font-size: .52em; font-weight: 800; }
 .season-hero__punti { color: #a79db8; font-size: .8rem; font-weight: 750; }
 .forma-chip { display: inline-flex; gap: 4px; }
 
@@ -1259,7 +1398,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .match-report-score .crest { width: 78px; filter: drop-shadow(0 14px 20px rgba(0,0,0,.35)); }
 .match-report-score .season-team strong { max-width: 220px; font-size: 1.05rem; white-space: normal; }
 .match-report-score > div > small { color: #9e93aa; font-size: .68rem; font-weight: 850; letter-spacing: .08em; }
-.match-report-score > strong { display: flex; justify-content: center; align-items: center; gap: 13px; color: #fff; font-family: "Aptos Narrow", "Arial Narrow", sans-serif; font-size: clamp(3.8rem,8vw,6.5rem); line-height: .8; }
+.match-report-score > strong { display: flex; justify-content: center; align-items: center; gap: 13px; color: #fff; font-family: Impact, Haettenschweiler, "Arial Narrow", "Roboto Condensed", sans-serif; font-size: clamp(3.8rem,8vw,6.5rem); line-height: .8; }
 .match-report-score > strong i { color: #9c65c1; font-size: .55em; font-style: normal; }
 .match-report-final { display: inline-flex; padding: 7px 11px; border: 1px solid #5d426e; border-radius: 999px; color: #c596e7; background: #1c1524; font-size: .57rem; font-weight: 900; letter-spacing: .14em; }
 .match-report-panel { padding: 26px; border: 1px solid #332c40; border-radius: 17px; background: #17151f; }
@@ -1653,8 +1792,26 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .free-agent-filters label, .range-filter { min-width:0; display:grid; gap:5px; margin:0; padding:0; border:0; }
 .free-agent-filters span, .range-filter legend { color:#9e8bb5; font-size:.6rem; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
 .free-agent-filters select, .range-filter input { min-width:0; height:40px; border:1px solid #40324f; border-radius:10px; color:#fff; background:#17131f; padding:0 9px; }
+.free-agent-filters--vetrina { grid-template-columns:1fr repeat(2,minmax(120px,auto)); }
 .range-filter { grid-template-columns:1fr 1fr; }
 .range-filter legend { grid-column:1/-1; }
+
+/* Vetrina "Mercato della lega": i giocatori messi in lista dalle squadre.
+   Card piu' compatte di quelle degli svincolati — qui non si offre nulla,
+   si guarda e basta, la trattativa passa dalla proposta di scambio. */
+.vetrina-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(232px,1fr)); gap:9px; margin-top:14px; max-height:520px; overflow:auto; padding-right:4px; }
+.vetrina-card { display:flex; align-items:center; gap:11px; min-width:0; padding:10px; border:1px solid #322a42; border-radius:12px; background:#1a1825; color:inherit; font:inherit; text-align:left; cursor:pointer; transition:border-color .16s ease, transform .16s ease; }
+.vetrina-card:hover { border-color:#a354e8; transform:translateY(-1px); }
+.vetrina-card__foto { position:relative; flex:0 0 auto; width:44px; height:52px; display:grid; place-items:center; overflow:hidden; border-radius:9px; background:radial-gradient(circle at 50% 35%,#503767,#17131f 72%); color:#8c7c9b; font-size:1rem; font-weight:950; }
+.vetrina-card__foto img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center top; }
+.vetrina-card__foto i { font-style:normal; }
+.vetrina-card__info { flex:1 1 auto; min-width:0; display:grid; gap:1px; }
+.vetrina-card__info strong { overflow:hidden; color:#ede7f2; font-size:.88rem; text-overflow:ellipsis; white-space:nowrap; }
+.vetrina-card__info small { overflow:hidden; color:#8a8199; font-size:.66rem; text-overflow:ellipsis; white-space:nowrap; }
+.vetrina-card__info em { overflow:hidden; color:#c9a6ff; font-size:.64rem; font-style:normal; font-weight:800; text-overflow:ellipsis; white-space:nowrap; }
+.vetrina-card__numeri { flex:0 0 auto; display:grid; justify-items:end; gap:1px; }
+.vetrina-card__numeri b { color:#fff; font-size:1.15rem; }
+.vetrina-card__numeri small { color:#9990aa; font-size:.66rem; font-weight:700; }
 
 /* Rinnovi: override finale per evitare che il layout desktop nasconda
    controproposte e azioni sui telefoni stretti. */
@@ -1713,11 +1870,16 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 }
 
 /* --- Scelta della squadra con cui trattare --- */
-.mercato-scelta-squadra { display: flex; flex-wrap: wrap; gap: 9px; }
-.mercato-scelta-squadra button { display: flex; align-items: center; gap: 9px; padding: 8px 13px 8px 9px; border: 1px solid #332c40; border-radius: 12px; color: #d5cce4; background: #1b1826; font-family: inherit; font-size: .8rem; font-weight: 750; cursor: pointer; transition: border-color .16s ease, background .16s ease; }
-.mercato-scelta-squadra button:hover { border-color: #7a45c0; }
-.mercato-scelta-squadra button.is-scelto { color: #fff; border-color: #9b4cff; background: linear-gradient(135deg, #40208a, #26134f); }
-.mercato-scelta-squadra .crest { width: 26px; }
+/* Card quadrate e uniformi, solo stemma dentro: prima il nome in testo
+   allungava le card a lunghezze diverse ("CPU Aquile" vs "CPU Lupi"), che
+   sembrava disordinato. Il nome resta leggibile via aria-label/title
+   (tooltip al passaggio) e torna visibile appena scelta, nell'intestazione
+   "Cosa chiedi a {nome}" subito sotto. */
+.mercato-scelta-squadra { display: grid; grid-template-columns: repeat(auto-fill, 76px); justify-content: start; gap: 10px; }
+.mercato-scelta-squadra button { aspect-ratio: 1; display: grid; place-items: center; padding: 14px; border: 1px solid #332c40; border-radius: 18px; background: #1b1826; cursor: pointer; transition: border-color .16s ease, background .16s ease, transform .16s ease; }
+.mercato-scelta-squadra button:hover { border-color: #7a45c0; transform: translateY(-2px); }
+.mercato-scelta-squadra button.is-scelto { border-color: #9b4cff; background: linear-gradient(135deg, #40208a, #26134f); box-shadow: 0 0 0 1px rgba(155,76,255,.35), 0 8px 20px rgba(90,30,180,.3); }
+.mercato-scelta-squadra .crest { width: 100%; height: 100%; object-fit: contain; }
 
 /* --- Le due rose affiancate --- */
 .mercato-colonne { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }

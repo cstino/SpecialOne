@@ -80,11 +80,14 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
     : league.stato === 'conclusa'
       ? concludedItems
       : seasonItems
-  // Pannello admin: fallback manuale se pg_cron non parte (simulare la
-  // giornata, aprire/chiudere il mercato). Solo per l'amministratore della
-  // lega, e solo a stagione avviata: e' li' che servono davvero.
+  // Pannello admin: prima solo a stagione avviata (le tre azioni di
+  // fallback su cron servono solo li'), ma "Elimina lega" ha senso in
+  // qualunque fase — anche in draft, dove capita che una lega resti
+  // bloccata e vada rifatta da capo. La voce di menu compare quindi sempre
+  // per l'admin tranne in off-season, che ha gia' un pannello dedicato;
+  // e' Admin.tsx a mostrare solo le azioni sensate per lo stato corrente.
   const eAdmin = league.admin_id === notifiche?.userId
-  const items = eAdmin && league.stato === 'stagione' && league.fase_carriera !== 'offseason'
+  const items = eAdmin && league.fase_carriera !== 'offseason'
     ? [...baseItems, ['admin', 'Admin'] as const]
     : baseItems
   const [menuMobileAperto, setMenuMobileAperto] = useState(false)

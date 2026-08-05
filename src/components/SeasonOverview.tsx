@@ -41,7 +41,7 @@ export function SeasonOverview({ membership, onNavigate, onOpenMatch, onOpenTeam
             <p className="kicker">{league.nome} · Stagione {league.stagione_corrente}</p>
             <h1>{miaSquadra?.nome ?? 'La tua squadra'}</h1>
             <div className="season-hero__stato">
-              <span className="season-hero__posizione">{miaClassifica?.posizione ?? '—'}<sup>ª</sup></span>
+              <span className="season-hero__posizione"><small>Posizione</small><b>{miaClassifica?.posizione ?? '—'}<sup>ª</sup></b></span>
               <span className="season-hero__punti">{miaClassifica?.punti ?? 0} punti</span>
               <Forma esiti={forma.get(membership.id)} />
             </div>

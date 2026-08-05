@@ -158,7 +158,7 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
             sulla seconda: cosi' la lista puo' crescere senza spostare gli stemmi. */}
         <div className="match-report-score">
           <div><TeamLabel team={data.teamById.get(fixture.home_team_id)} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} onClick={() => onOpenTeam(fixture.home_team_id)} /></div>
-          <strong><span>{match.gol_home}</span><i>:</i><span>{match.gol_away}</span></strong>
+          <strong><span>{match.gol_home}</span><i>-</i><span>{match.gol_away}</span></strong>
           <div><TeamLabel team={data.teamById.get(fixture.away_team_id)} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} reversed onClick={() => onOpenTeam(fixture.away_team_id)} /></div>
           <ScorerList eventi={eventi} lato="casa" players={players} />
           <ScorerList eventi={eventi} lato="ospite" players={players} />

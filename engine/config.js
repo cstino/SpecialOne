@@ -140,6 +140,26 @@ for (const [nome, slots] of Object.entries(MODULI)) {
 }
 
 // ============================================================
+//  STILI DI GIOCO
+//  Leva tattica indipendente dal modulo: redistribuzione a somma zero tra
+//  DEF/MID/ATT, in punti di overall, stessa unita' del profilo strutturale
+//  e del bonus casa. Nessuno stile e' un buff netto, solo uno spostamento
+//  di enfasi. Chiavi tenute in sync a mano con private.stili_validi() lato
+//  DB e con STILE_LABEL/STILE_DESCRIZIONI nel frontend (design.md §6.8) —
+//  stesso pattern gia' in uso per MODULI/moduli_validi().
+// ============================================================
+
+export const STILI = {
+  equilibrato:     { DEF: 0,    MID: 0,    ATT: 0 },
+  contropiede:     { DEF: 3.0,  MID: -3.0, ATT: 0 },
+  possesso_palla:  { DEF: -1.5, MID: 3.0,  ATT: -1.5 },
+  fasce:           { DEF: -1.5, MID: -1.0, ATT: 2.5 },
+  recupero_veloce: { DEF: -3.0, MID: 1.5,  ATT: 1.5 },
+  diretto:         { DEF: 0,    MID: -3.0, ATT: 3.0 },
+  blocco_basso:    { DEF: 4.0,  MID: -2.0, ATT: -2.0 },
+};
+
+// ============================================================
 //  PESI STATISTICHE PER RUOLO
 // ============================================================
 
