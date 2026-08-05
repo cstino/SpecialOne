@@ -122,9 +122,15 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
     const risultato = new Map<number, { titolari: MatchPlayerStat[]; subentrati: MatchPlayerStat[] }>()
     for (const [teamId, rows] of byTeam) {
       const titolariSet = titolariByTeam.get(teamId) ?? new Set<number>()
+      // Chi ha giocato tutti i 90' non puo' essere un vero subentrato: succede
+      // quando il titolare designato era infortunato al fischio d'inizio e il
+      // motore lo ha rimpiazzato dalla panchina prima che la partita iniziasse,
+      // uno scambio che "lineups.titolari" (la scelta salvata prima della
+      // partita) non registra mai.
+      const eTitolare = (row: MatchPlayerStat) => titolariSet.has(row.player_instance_id) || row.minuti === 90
       risultato.set(teamId, {
-        titolari: rows.filter((row) => titolariSet.has(row.player_instance_id)),
-        subentrati: rows.filter((row) => !titolariSet.has(row.player_instance_id)),
+        titolari: rows.filter(eTitolare),
+        subentrati: rows.filter((row) => !eTitolare(row)),
       })
     }
     return risultato
