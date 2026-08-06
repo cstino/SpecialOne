@@ -23,3 +23,18 @@ export const MACRO_LABEL: Record<MacroRuolo, string> = {
 }
 
 export const ORDINE_MACRO_RUOLO: MacroRuolo[] = ['GK', 'DEF', 'MID', 'ATT']
+
+// Ordine di reparto fine, GK -> ST, per liste che vogliono seguire la
+// progressione classica del campo invece dei soli 4 macro-reparti (es. il
+// tabellino partita). Le posizioni non elencate finiscono in coda.
+const ORDINE_RUOLO_FINE = [
+  'GK',
+  'CB', 'LB', 'RB', 'LWB', 'RWB',
+  'CDM', 'CM', 'LM', 'RM', 'CAM',
+  'LW', 'RW', 'CF', 'ST',
+]
+
+export function ordineRuolo(posizioni: string[] = []): number {
+  const indice = ORDINE_RUOLO_FINE.indexOf(posizioni[0])
+  return indice === -1 ? ORDINE_RUOLO_FINE.length : indice
+}

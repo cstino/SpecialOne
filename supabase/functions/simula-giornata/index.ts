@@ -430,6 +430,14 @@ export default {
         const awayDbLineup = lineups.get(fixture.away_team_id)!
         const homeLineup = buildLineup(homeDbLineup, homeRoster)
         const awayLineup = buildLineup(awayDbLineup, awayRoster)
+        // Fotografia dell'undici di partenza PRIMA del fischio d'inizio: le
+        // sostituzioni dentro simulaPartita() mutano lineup.titolari in
+        // posto (il subentrato prende il posto dell'uscito nello stesso
+        // array), quindi leggerlo dopo la simulazione restituirebbe l'undici
+        // di fine partita, non quello di inizio — esattamente lo scambio fra
+        // titolari e subentrati segnalato nel tabellino.
+        const titolariHomeIds = homeLineup.titolari.map((player: EnginePlayer) => player.id)
+        const titolariAwayIds = awayLineup.titolari.map((player: EnginePlayer) => player.id)
         const seed = seedFor(fixture)
         setSeed(seed)
         const result = simulaPartita(homeRoster, awayRoster, homeDbLineup.modulo, awayDbLineup.modulo, {
@@ -467,11 +475,13 @@ export default {
           p_blocchi: eventi,
           p_stats_squadra: { home: result.statsCasa, away: result.statsOspite },
           p_player_stats: stats,
-          // Chi e' sceso in campo davvero, non chi era stato scelto prima
-          // della partita: buildLineup() puo' aver gia' rimpiazzato un
-          // titolare infortunato con un giocatore di panchina.
-          p_titolari_home: homeLineup.titolari.map((player) => player.id),
-          p_titolari_away: awayLineup.titolari.map((player) => player.id),
+          // Chi e' sceso in campo davvero all'inizio, non chi era stato
+          // scelto prima della partita: buildLineup() puo' aver gia'
+          // rimpiazzato un titolare infortunato con un giocatore di
+          // panchina. Presi PRIMA della simulazione (vedi sopra), non dopo:
+          // dopo, l'array e' gia' stato mutato dalle sostituzioni.
+          p_titolari_home: titolariHomeIds,
+          p_titolari_away: titolariAwayIds,
         })
         if (saveError) throw saveError
         summaries.push(saved)

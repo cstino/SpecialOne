@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
+import { ordineRuolo } from '../lib/ruoli'
 import { useSeasonData } from '../lib/useSeasonData'
 import type { EventoGol, League, MatchPlayerStat, MatchTeamStats, Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
@@ -126,12 +127,18 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
     return [...registrati].sort((sinistra, destra) => sinistra.minuto - destra.minuto)
   }, [match])
 
+  // Ordinati per reparto (GK -> ST) prima ancora che per prestazione: e' cosi'
+  // che si legge un tabellino, non per gol fatti.
   const byTeam = useMemo(() => {
     const grouped = new Map<number, MatchPlayerStat[]>()
     for (const row of stats) grouped.set(row.team_id, [...(grouped.get(row.team_id) ?? []), row])
-    for (const rows of grouped.values()) rows.sort((left, right) => right.gol - left.gol || right.assist - left.assist || right.tiri_porta - left.tiri_porta || right.minuti - left.minuti)
+    for (const rows of grouped.values()) {
+      rows.sort((left, right) =>
+        ordineRuolo(players.get(left.player_instance_id)?.posizioni) - ordineRuolo(players.get(right.player_instance_id)?.posizioni)
+        || right.gol - left.gol || right.assist - left.assist || right.tiri_porta - left.tiri_porta || right.minuti - left.minuti)
+    }
     return grouped
-  }, [stats])
+  }, [stats, players])
 
   // Titolari e subentrati in due gruppi separati, ciascuno gia' ordinato come
   // sopra. Chi e' uscito si riconosce senza ambiguita' solo fra i titolari
