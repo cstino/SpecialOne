@@ -11,6 +11,7 @@ const ETICHETTA_TIPO: Record<string, string> = {
   dotazione_iniziale: 'Dotazione iniziale',
   sponsor: 'Sponsor',
   premi_partite: 'Premi partita',
+  rettifica_premi_partite: 'Rettifica premi partita',
   premio_classifica: 'Premio posizione',
   draft_pick: 'Ingaggi draft',
   ingaggi_stagione: 'Monte ingaggi stagionale',
