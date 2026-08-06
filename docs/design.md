@@ -612,18 +612,32 @@ A piena condizione: 2,5%. A condizione 40: 5,5%. Risultato atteso: ~0,7 infortun
 
 | Orario (Europe/Rome) | Evento |
 |---|---|
-| 07:00 | Apertura mercato + estrazione 12 svincolati (3 per macro-ruolo) |
 | 21:00 | Chiusura mercato + rivelazione buste chiuse + scadenza proposte |
 | 23:00 | Fallback formazioni non valide + simulazione di **una** giornata |
+| 23:30 | Apertura mercato + estrazione 12 svincolati (3 per macro-ruolo) |
 
-> **Chiusura spostata dalle 17:00 alle 21:00** — decisione dell'utente, 2 agosto 2026.
+> **Apertura spostata dalle 07:00 alle 23:30** — decisione dell'utente, 7 agosto 2026.
 > Vince sulla versione precedente di questa tabella.
 >
-> Le 17:00 cadevano in orario di lavoro: chi apriva l'app solo la sera trovava le proposte
-> già scadute e le aste già assegnate, cioè non giocava il mercato. Con le 21:00 la finestra
-> copre la serata, e resta comunque il margine giusto prima della deadline formazioni: alle
-> 21:00 si scopre chi si è preso all'asta, e ci sono **due ore** per rifare la formazione
-> tenendone conto prima che alle 23:00 scatti il fallback.
+> Aprire alle 07:00 significava restare chiusi per tutta la sera, proprio quando le partite
+> della notte sono appena state simulate (23:00) e i partecipanti sono online a guardare i
+> risultati. Con l'apertura alle 23:30 il mercato riparte **30 minuti dopo** le partite,
+> invece che 8 ore dopo. La chiusura resta alle 21:00: la finestra chiusa si riduce a **due
+> ore e mezza** (21:00–23:30), il tempo di vedere i risultati e sistemare la formazione prima
+> del fallback delle 23:00.
+>
+> La finestra di trattativa scavalca la mezzanotte (aperta da 23:30 a 21:00 del giorno dopo):
+> il confronto orario non è più un intervallo `[apertura, chiusura)` ma un OR (`ora ≥ 23:30
+> oppure ora < 21:00`), verificato in `private.mercato_aperto()`/`mercato_aperto_lega()`.
+>
+> **Bug corretto nella stessa occasione**: `svincola_giocatore`, `proponi_scambio` e
+> `rispondi_a_proposta` controllavano il solo orario fisso (`private.mercato_aperto()`), non
+> l'apertura manuale dell'admin (`private.mercato_aperto_lega()`, che considera anche
+> `mercato_override_admin`) — a differenza delle aste sugli svincolati, che usavano già la
+> versione corretta. Effetto pratico: l'admin apriva il mercato a mano, le aste si
+> sbloccavano ma svincolare un giocatore o proporre uno scambio no. Ora tutte e sei le RPC del
+> mercato (aste, svincolo, proposte) rispettano allo stesso modo sia l'orario sia l'apertura
+> manuale.
 
 ### 9.2 Trattative tra squadre
 
@@ -647,7 +661,7 @@ Le proposte scadono alla chiusura del mercato del giorno.
 
 ### 9.4 Svincolati — asta a busta chiusa
 
-Ogni giorno alle 07:00 il sistema estrae **12 giocatori** dal pool disponibile: 3 portieri,
+Ogni giorno alle 23:30 il sistema estrae **12 giocatori** dal pool disponibile: 3 portieri,
 3 difensori, 3 centrocampisti e 3 attaccanti, includendo tutti i rispettivi sottoruoli. I nuovi
 restano evidenziati per un giorno; se non vengono ingaggiati rimangono nell'archivio svincolati e
 possono ricevere nuove offerte nei giorni successivi.
@@ -865,7 +879,6 @@ di off-season con cui aggirarlo (§10.4).
 
 **Il contatore non si azzera mai**, se non quando il giocatore firma.
 
-```
 richiesta = max(ingaggio_attuale, ingaggio_teorico(OVR, età) × uniform(1.00, 1.12))
 ```
 

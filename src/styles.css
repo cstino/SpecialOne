@@ -1780,14 +1780,24 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .free-agent-card__body em, .free-agent-card__body i { padding:4px 7px; border-radius:999px; color:#d8c7ea; background:#261c33; font-size:.6rem; font-style:normal; font-weight:850; }
 .role-pill { display:inline-grid; place-items:center; min-width:36px; min-height:25px; padding:0 7px; border-radius:7px; color:#101016; font-size:.64rem; font-weight:950; }
 .role-pill--gk { background:#ffa33f; }.role-pill--def { background:#55c7ee; }.role-pill--mid { background:#5be08c; }.role-pill--att { background:#ff5972; }
-.free-agent-card__bid { grid-column:1/-1; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; }
+.free-agent-card__bid { grid-column:1/-1; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; }
 .free-agent-card__bid input { min-width:0; min-height:42px; border:1px solid #443557; border-radius:10px; color:#fff; background:#17131f; padding:0 11px; }
 .free-agent-card__bid small { grid-column:1/-1; color:#b78ee4; font-size:.65rem; font-weight:850; }
+.free-agent-card__bid-azioni { display:flex; gap:6px; }
+.free-agent-card__bid-azioni .button { padding:0 11px; font-size:.72rem; white-space:nowrap; }
 .free-agent-card.is-compact { grid-template-columns:62px minmax(0,1fr) auto; align-items:center; padding:9px; border-radius:13px; box-shadow:none; }
 .free-agent-card.is-compact .free-agent-card__portrait { width:62px; height:70px; border-radius:11px; }
 .free-agent-card.is-compact .free-agent-card__portrait b { min-width:28px; height:22px; font-size:.65rem; }
 .free-agent-card.is-compact .free-agent-card__body strong { font-size:.84rem; }
 .free-agent-card.is-compact .free-agent-card__bid { grid-column:auto; min-width:150px; }
+.free-agent-card.is-compact .free-agent-card__bid-azioni { flex-direction:column; }
+
+/* Titoletto di reparto dentro la griglia svincolati, stesso principio delle
+   sezioni per ruolo nella rosa (RosaElenco): GK/DEF/MID/ATT nell'ordine in
+   cui si gioca, non nell'ordine casuale dell'estrazione. */
+.free-agent-gruppo { margin-bottom:16px; }
+.free-agent-gruppo:last-child { margin-bottom:0; }
+.free-agent-gruppo__titolo { margin:0 0 8px; color:#b78ee4; font-size:.66rem; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
 .free-agent-filters { display:grid; grid-template-columns:1fr repeat(3,minmax(120px,auto)); gap:9px; align-items:end; }
 .free-agent-filters label, .range-filter { min-width:0; display:grid; gap:5px; margin:0; padding:0; border:0; }
 .free-agent-filters span, .range-filter legend { color:#9e8bb5; font-size:.6rem; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
@@ -1836,6 +1846,14 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .free-agent-card.is-compact .free-agent-card__bid {
     grid-column:1/-1;
     min-width:0;
+  }
+
+  /* A piena larghezza c'e' gia' spazio per input + due bottoni affiancati:
+     l'impilamento verticale serviva solo alla riga compatta stretta da
+     desktop, qui produceva solo un input stiracchiato in altezza per
+     eguagliare due bottoni impilati. */
+  .free-agent-card.is-compact .free-agent-card__bid-azioni {
+    flex-direction:row;
   }
 
   .renewal-row {
@@ -1949,7 +1967,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .mercato-aste small { color: #877e97; font-size: .65rem; }
 .mercato-aste em { color: #9b92ac; font-size: .7rem; font-style: normal; font-weight: 750; text-align: right; }
 .mercato-aste em.e-presa { color: #7fe0a4; }
-.mercato-asta-offerta { display: flex; align-items: center; gap: 7px; }
+.mercato-asta-offerta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
 .mercato-asta-offerta input { width: 84px; padding: 7px 9px; font-size: .78rem; }
 .mercato-asta-offerta .button { padding: 7px 13px; font-size: .72rem; }
 .mercato-asta-mia { grid-column: 2 / -1; color: #c99cff; font-size: .66rem; font-style: normal; }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ROSA_MASSIMA } from '../lib/league'
 import { cognome } from '../lib/nomi'
-import { MACRO_LABEL, macroRuolo, type MacroRuolo } from '../lib/ruoli'
+import { MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
 import { useSeasonData } from '../lib/useSeasonData'
 import type { League, Membership } from '../types'
@@ -86,19 +86,24 @@ type SpinOffseason = {
 type StatoSpinOffseason = { attivo: boolean; rimasti: number; usati: number; spin: SpinOffseason[] }
 type AnimazioneSpin = { fase: 'giro' | 'reveal'; nome: string; overall?: number; ruolo?: string; foto?: string }
 
-// Il mercato apre alle 07:00 e chiude alle 21:00 (design §9.1, orario deciso
-// il 2 agosto 2026). Qui serve solo a non far comporre una proposta che il
-// database rifiuterebbe: la regola vera sta nella RPC, dove non e' aggirabile
-// cambiando l'orologio del telefono.
-function oraDiRoma() {
-  return Number(new Intl.DateTimeFormat('it-IT', {
-    timeZone: 'Europe/Rome', hour: '2-digit', hour12: false,
-  }).format(new Date()))
+// Il mercato apre alle 23:30 e chiude alle 21:00 (design §9.1, apertura
+// spostata dalle 07:00 il 7 agosto 2026 per aprire subito dopo le partite,
+// simulate alle 23:00). Qui serve solo a non far comporre una proposta che
+// il database rifiuterebbe: la regola vera sta nella RPC, dove non e'
+// aggirabile cambiando l'orologio del telefono.
+function minutiDalMezzanotteRoma() {
+  const [ore, minuti] = new Intl.DateTimeFormat('it-IT', {
+    timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit', hour12: false,
+  }).format(new Date()).split(':').map(Number)
+  return ore * 60 + minuti
 }
 
 function mercatoAperto() {
-  const ora = oraDiRoma()
-  return ora >= 7 && ora < 21
+  const ora = minutiDalMezzanotteRoma()
+  // La finestra scavalca la mezzanotte (23:30 -> 21:00 del giorno dopo):
+  // aperto se siamo oltre le 23:30 oppure prima delle 21:00. Chiuso solo
+  // nelle due ore e mezza fra la chiusura e la riapertura.
+  return ora >= 23 * 60 + 30 || ora < 21 * 60
 }
 
 function milioni(euro: number) {
@@ -394,15 +399,29 @@ export function Mercato({ membership, onNavigate }: Props) {
   const inviate = proposte.filter((p) => p.da_team_id === membership.id && p.stato === 'in_attesa')
   const concluse = proposte.filter((p) => p.stato === 'accettata')
 
+  // ECCEZIONE UNA TANTUM, richiesta dall'utente il 6 agosto 2026: l'admin ha
+  // aperto il mercato a mano la sera del 5, e il cron delle 07:00 (ancora sul
+  // vecchio orario, non aveva ancora preso il fix di apertura alle 23:30) ne
+  // ha aperto un secondo la mattina del 6 senza mai chiudere il primo. Le due
+  // tornate sono entrambe ancora aperte lato database (si puo' gia' offrire su
+  // entrambe): si mostrano insieme solo oggi, cosi' chi doveva ancora offrire
+  // su quelle di ieri sera non le perde prima che stasera alle 23:30 le
+  // sostituisca. Il confronto sulla data la rende inerte da sola da domani in
+  // poi: non toglierla a mano, si spegne da sola.
+  const GIORNI_ECCEZIONE_6AGOSTO = ['2026-08-05', '2026-08-06']
+
   // Il live e' l'ultima tornata di estrazione della giornata corrente, mai
   // l'unione delle tornate manuali gia' chiuse nello stesso giorno.
   const giornoAste = aste[0]?.giorno ?? null
-  const asteDelGiorno = aste.filter((a) => a.giorno === giornoAste)
+  const asteDelGiorno = giornoAste && GIORNI_ECCEZIONE_6AGOSTO.includes(giornoAste)
+    ? aste.filter((a) => GIORNI_ECCEZIONE_6AGOSTO.includes(a.giorno))
+    : aste.filter((a) => a.giorno === giornoAste)
   const tornataLive = Math.max(0, ...asteDelGiorno
     .filter((a) => a.origine === 'estrazione')
     .map((a) => a.tornata))
   const nuoviDelGiorno = asteDelGiorno.filter((a) =>
     a.origine === 'estrazione' && a.tornata === tornataLive && a.stato === 'aperta')
+  const mieProposteAperte = nuoviDelGiorno.filter((a) => a.stato === 'aperta' && mieOfferte.has(a.id))
   const giocatoriSottoContratto = new Set(rose.map((g) => g.player_id))
 
   // Vetrina "Mercato della lega": i giocatori messi in lista dalle squadre.
@@ -439,6 +458,16 @@ export function Mercato({ membership, onNavigate }: Props) {
     await chiama(
       () => supabase.rpc('offri_per_svincolato', { p_auction_id: asta.id, p_ingaggio: valore }),
       'Offerta registrata. Si apre alle 21:00.',
+    )
+  }
+
+  // La RPC esisteva già (controlla proprietà e finestra di mercato lato
+  // server) ma nessun bottone la richiamava: ci si poteva solo pentire
+  // modificando l'offerta, mai ritirandola del tutto.
+  async function ritiraOfferta(asta: Asta) {
+    await chiama(
+      () => supabase.rpc('ritira_offerta', { p_auction_id: asta.id }),
+      'Offerta ritirata.',
     )
   }
 
@@ -585,13 +614,33 @@ export function Mercato({ membership, onNavigate }: Props) {
           value={bozzaOfferta[a.id] ?? ''}
           onChange={(e) => setBozzaOfferta({ ...bozzaOfferta, [a.id]: e.target.value })}
         />
-        <button className="button button--secondary" type="button"
-          disabled={inCorso || !aperto} onClick={() => void (a.stato === 'aperta' ? offri(a) : offriArchivio(a))}>
-          {mia ? 'Modifica' : a.stato === 'aperta' ? 'Offri' : 'Rioffri'}
-        </button>
+        <div className="free-agent-card__bid-azioni">
+          <button className="button button--secondary" type="button"
+            disabled={inCorso || !aperto} onClick={() => void (a.stato === 'aperta' ? offri(a) : offriArchivio(a))}>
+            {mia ? 'Modifica' : a.stato === 'aperta' ? 'Offri' : 'Rioffri'}
+          </button>
+          {mia !== undefined && a.stato === 'aperta' && <button className="button button--danger-ghost" type="button"
+            disabled={inCorso || !aperto} onClick={() => void ritiraOfferta(a)}>
+            Ritira
+          </button>}
+        </div>
         {mia && <small>Hai offerto {milioni(mia)}</small>}
       </div>
     </article>
+  }
+
+  // Stessa sagoma di card, per ruolo GK/DEF/MID/ATT nell'ordine in cui si
+  // gioca a calcio: piu' facile trovare "quel difensore" in un elenco di 24
+  // che scorrere l'ordine casuale con cui escono dall'estrazione.
+  const perRuolo = (elenco: Asta[]) => {
+    const gruppi = new Map<MacroRuolo, Asta[]>()
+    for (const a of elenco) {
+      const macro = macroRuolo(svincolati.get(a.player_id)?.posizioni ?? [])
+      gruppi.set(macro, [...(gruppi.get(macro) ?? []), a])
+    }
+    return ORDINE_MACRO_RUOLO
+      .filter((ruolo) => (gruppi.get(ruolo) ?? []).length > 0)
+      .map((ruolo) => ({ ruolo, aste: gruppi.get(ruolo)! }))
   }
 
   const listaGiocatori = (
@@ -643,7 +692,7 @@ export function Mercato({ membership, onNavigate }: Props) {
     <header className="topbar season-topbar">
       <div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div>
       <span className={`mercato-finestra ${aperto ? 'e-aperto' : ''}`}>
-        {aperto ? 'Mercato aperto · chiude alle 21:00' : 'Mercato chiuso · apre alle 07:00'}
+        {aperto ? 'Mercato aperto · chiude alle 21:00' : 'Mercato chiuso · apre alle 23:30'}
       </span>
     </header>
 
@@ -655,7 +704,7 @@ export function Mercato({ membership, onNavigate }: Props) {
         <div>
           <p className="kicker">Stagione {league.stagione_corrente} · {league.nome}</p>
           <h1>Mercato.</h1>
-          <p>Si tratta dalle 07:00 alle 21:00. Le proposte non accettate entro la chiusura scadono.</p>
+          <p>Si tratta dalle 23:30 alle 21:00. Le proposte non accettate entro la chiusura scadono.</p>
         </div>
         <div className="season-total">
           <strong>{milioni(conti ? conti.disponibile : membership.budget)}</strong>
@@ -751,8 +800,11 @@ export function Mercato({ membership, onNavigate }: Props) {
             <small>{giornoAste ?? 'nessuna estrazione'}</small>
           </div>
           {nuoviDelGiorno.length === 0
-            ? <p className="season-empty">Nessuna estrazione ancora. I nuovi svincolati escono ogni giorno alle 07:00.</p>
-            : <div className="free-agent-grid">{nuoviDelGiorno.map((a) => cardSvincolato(a))}</div>}
+            ? <p className="season-empty">Nessuna estrazione ancora. I nuovi svincolati escono ogni giorno alle 23:30.</p>
+            : perRuolo(nuoviDelGiorno).map(({ ruolo, aste: asteRuolo }) => <div className="free-agent-gruppo" key={ruolo}>
+                <p className="free-agent-gruppo__titolo">{MACRO_LABEL[ruolo]} · {asteRuolo.length}</p>
+                <div className="free-agent-grid">{asteRuolo.map((a) => cardSvincolato(a))}</div>
+              </div>)}
         </div>
 
         {mostraArchivioSvincolati && <div className="free-agent-archive">
@@ -772,6 +824,20 @@ export function Mercato({ membership, onNavigate }: Props) {
             ? <p className="season-empty">Nessun giocatore con questi filtri.</p>
             : <div className="free-agent-list">{archivioSvincolati.map((a) => cardSvincolato(a, true))}</div>}
         </div>}
+      </section>
+
+      {/* ---- Le mie proposte: solo le aste su cui ho gia' offerto, per
+          ritirarle o modificarle senza dover ripescare la carta giusta nella
+          griglia grande qui sopra. ---- */}
+      <section className="mercato-blocco">
+        <div className="sezione-testa">
+          <div><p className="kicker">Asta a busta chiusa</p><h2>Le mie proposte</h2></div>
+          <span>{mieProposteAperte.length} {mieProposteAperte.length === 1 ? 'offerta' : 'offerte'}</span>
+        </div>
+        <p className="mercato-nota">Solo gli svincolati per cui hai già fatto un'offerta. Da qui la modifichi o la ritiri.</p>
+        {mieProposteAperte.length === 0
+          ? <p className="season-empty">Non hai ancora offerto per nessuno svincolato oggi.</p>
+          : <div className="free-agent-grid">{mieProposteAperte.map((a) => cardSvincolato(a, true))}</div>}
       </section>
 
       {/* ---- Vetrina: chi le squadre hanno messo in lista ---- */}
@@ -893,7 +959,7 @@ export function Mercato({ membership, onNavigate }: Props) {
         </p>
 
         {asteDelGiorno.length === 0
-          ? <p className="season-empty">Nessuna estrazione ancora. I nuovi svincolati escono ogni giorno alle 07:00.</p>
+          ? <p className="season-empty">Nessuna estrazione ancora. I nuovi svincolati escono ogni giorno alle 23:30.</p>
           : <ul className="mercato-aste">
               {asteDelGiorno.map((a) => {
                 const g = svincolati.get(a.player_id)
@@ -916,6 +982,10 @@ export function Mercato({ membership, onNavigate }: Props) {
                           disabled={inCorso || !aperto} onClick={() => void offri(a)}>
                           {mia ? 'Modifica' : 'Offri'}
                         </button>
+                        {mia !== undefined && <button className="button button--danger-ghost" type="button"
+                          disabled={inCorso || !aperto} onClick={() => void ritiraOfferta(a)}>
+                          Ritira
+                        </button>}
                       </div>
                     : <em className={a.stato === 'assegnata' ? 'e-presa' : ''}>
                         {a.stato === 'assegnata'
@@ -933,7 +1003,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       {/* ---- Compositore ---- */}
       <section className="mercato-blocco" ref={compositoreRef}>
         <div className="sezione-testa"><div><p className="kicker">Tratta</p><h2>Nuova proposta</h2></div></div>
-        {!aperto && <p className="notice">Il mercato è chiuso: puoi preparare la proposta ma potrai inviarla dalle 07:00.</p>}
+        {!aperto && <p className="notice">Il mercato è chiuso: puoi preparare la proposta ma potrai inviarla dalle 23:30.</p>}
 
         <div className="mercato-scelta-squadra">
           {dati.teams.filter((s) => s.id !== membership.id).map((s) => <button

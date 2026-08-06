@@ -1,5 +1,89 @@
 # Stato progetto e handoff
 
+### Il bottone "Ritira" era stato aggiunto alla sezione sbagliata
+
+Nella sessione precedente il bottone "Ritira offerta" (RPC `ritira_offerta`, già esistente e
+funzionante) era stato aggiunto alla lista `<ul className="mercato-aste">` — che sta dentro
+`{mostraListaLegacySvincolati && <>...}`, un flag **fermo a `false`** da prima (nascosto su
+richiesta dell'utente, stesso pattern di `mostraArchivioSvincolati`). Il bottone non era mai
+visibile: bug trovato perché l'utente ha chiesto "come si ritira un'offerta?" e non lo trovava.
+
+Il componente davvero mostrato in "Asta a busta chiusa" è `cardSvincolato` (griglia
+`free-agent-grid`). Il bottone "Ritira" è stato spostato lì, insieme a due richieste
+correlate:
+
+- **Svincolati raggruppati per ruolo** (portieri/difensori/centrocampisti/attaccanti, nuovo
+  helper `perRuolo`), invece dell'ordine casuale dell'estrazione.
+- **Nuova card "Le mie proposte"**, subito sotto "Asta a busta chiusa": mostra solo gli
+  svincolati per cui hai già offerto, per modificare o ritirare l'offerta senza dover
+  ripescare la carta giusta in una griglia di 24.
+
+La sezione legacy con l'aggiunta della sessione precedente resta al suo posto (dormiente,
+dietro il flag) invece di essere ripulita: stesso principio già in uso nel progetto per il
+codice dietro un flag spento.
+
+### Eccezione una tantum — le due tornate del 5/6 agosto unite per un giorno
+
+Conseguenza diretta del bug appena corretto qui sotto. Sequenza reale su Real Fampionato (id
+37): l'admin apre il mercato a mano la sera del 5 agosto (~23:30), poi il mattino del 6 il
+vecchio cron delle 07:00 (non ancora corretto) ne apre un altro **senza chiudere il primo**.
+Risultato: 12 svincolati del 5 e 12 del 6, tutti ancora `aperta` nel database — ci si può già
+offrire su entrambi i gruppi, semplicemente la UI mostra solo il giorno più recente
+(`asteDelGiorno` filtrava su un solo `giorno`).
+
+Non è un problema di dati (nessun giocatore in comune fra i due giorni, verificato), solo di
+visualizzazione. Soluzione scelta dall'utente: unire i due giorni **solo per oggi** invece di
+correggere lato database (che avrebbe riscritto la data reale di un'estrazione già avvenuta).
+In `Mercato.tsx`, `GIORNI_ECCEZIONE_6AGOSTO = ['2026-08-05', '2026-08-06']`: quando il giorno
+più recente è uno di questi due, `asteDelGiorno` li unisce entrambi. **Si disattiva da sola**
+il 7 agosto, quando il giorno più recente non è più nell'elenco — non va tolta a mano, ma se
+si vuole ripulire il codice si può rimuovere dopo quella data senza alcun effetto.
+
+### Mercato: apertura spostata a 23:30, e tre RPC che ignoravano l'apertura admin
+
+Quattro segnalazioni dell'utente su una lega reale (Real Fampionato, id 37), dopo aver aperto
+il mercato a mano la sera prima intorno alle 23:30. Migrazione
+`20260807090000_mercato_apertura_2330.sql`. Dettagli in `docs/design.md` §9.1.
+
+**Bug sistemico, non isolato**: `svincola_giocatore`, `proponi_scambio` e
+`rispondi_a_proposta` controllavano `private.mercato_aperto()` (solo l'orario fisso), non
+`private.mercato_aperto_lega(league_id)` (che considera anche `mercato_override_admin`, la
+tabella dell'apertura manuale). Solo le tre RPC sulle aste svincolati usavano già la versione
+corretta. Effetto pratico segnalato dall'utente: apri il mercato a mano, le aste si
+sbloccano, **ma non puoi svincolare né proporre uno scambio** — stesso identico bug in tre
+punti diversi, trovato cercando sistematicamente ogni funzione che chiama
+`mercato_aperto()` invece di `mercato_aperto_lega()`. Tutte e sei le RPC del mercato ora si
+comportano allo stesso modo.
+
+**Apertura automatica spostata da 07:00 a 23:30**: le partite si simulano alle 23:00 (non a
+mezzanotte), quindi 23:30 è davvero "30 minuti dopo le partite". Chiusura invariata alle
+21:00. La finestra ora scavalca la mezzanotte (aperta 23:30→21:00 del giorno dopo, chiusa solo
+nelle due ore e mezza 21:00–23:30): il confronto orario è diventato un OR (`ora ≥ 23:30 OR ora
+< 21:00`) invece di un intervallo semplice, sia lato server sia nella copia JS del frontend
+(`Mercato.tsx`, usata solo per non far comporre una proposta che il database rifiuterebbe).
+
+**L'estrazione dei nuovi svincolati segue la stessa apertura.** Con un cron che gira una
+volta l'ora non si può intercettare un confine a mezz'ora in modo affidabile: il job
+`estrazione-svincolati` passa da un giro l'ora a quattro (ogni 15 minuti,
+`cron.alter_job`), e la guardia interna diventa una finestra di 15 minuti (23:30–23:45)
+invece di un'ora esatta — scatta una volta sola al giorno anche col fuso che scivola con
+l'ora legale (CLAUDE.md §2). Gli altri cron (chiusura 21:00, simulazione 23:00) restano su
+un giro l'ora: cadono su un'ora esatta, non serve altro.
+
+**Ritira offerta**: la RPC `ritira_offerta` esisteva già (controlla proprietà e finestra di
+mercato lato server) ma nessun bottone la richiamava — ci si poteva solo pentire *modificando*
+un'offerta su uno svincolato, mai ritirandola. Aggiunto il bottone "Ritira" accanto a
+"Modifica" nella card dell'asta.
+
+**Messaggio di svincolo che restava fisso**: ora sparisce da solo dopo 2 secondi, stesso
+pattern già usato per la lista trasferimenti (cleanup del timer se arriva un altro avviso o
+si cambia pagina).
+
+**Verificato in rollback su dati reali** (Real Fampionato): 12 controlli tutti OK — la nuova
+finestra oraria su 7 orari campione, le tre RPC che non chiamano più `mercato_aperto()` nudo,
+e lo svincolo di un giocatore vero con l'override admin attivo che **riesce indipendentemente
+dall'ora reale** (prima falliva sempre). `db lint` invariato.
+
 ### Pannello admin raggiungibile anche in draft
 
 Richiesta dell'utente. Puramente frontend, nessuna migrazione.
