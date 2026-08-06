@@ -879,10 +879,22 @@ di off-season con cui aggirarlo (§10.4).
 
 **Il contatore non si azzera mai**, se non quando il giocatore firma.
 
-richiesta = max(ingaggio_attuale, ingaggio_teorico(OVR, età) × uniform(1.00, 1.12))
+```
+centro     = 1.06 + (economia − bandiera) / 500
+richiesta  = max(ingaggio_attuale, ingaggio_teorico(OVR, età) × uniform(centro − 0.06, centro + 0.06))
 ```
 
-Nessuno chiede meno di quanto già percepisce.
+**Aggiunto il 7 agosto 2026.** Il moltiplicatore non è più fisso per tutti: si sposta col
+bilancio mentalità del giocatore (§10 bis). A bandiera ed economia pari — il caso medio —
+`centro` resta 1.06 e il range è `[1.00, 1.12)`, identico a prima: nessun giocatore "medio"
+cambia comportamento. Chi ha bandiera dominante scende sotto 1.00 (può arrivare a chiedere
+**meno** del teorico); chi ha economia dominante sale oltre 1.12. Prima della modifica un
+veterano bandiera in declino (es. 34 anni, sempre meno overall) finiva comunque a chiedere
+di più a ogni rinnovo, il che non aveva senso per la sua mentalità né per il suo trend: ora
+la richiesta di un bandiera marcato può restare ferma sul suo ingaggio attuale (il pavimento
+`ingaggio_attuale` non cambia — resta la protezione contro il sovrapprezzo pagato in asta) o
+persino tendere a scendere se in futuro il pavimento venisse rimosso. Nessuno chiede meno di
+quanto già percepisce, per ora — questo vincolo resta.
 
 **Durata proposta**, coerente con l'età — un 36enne non chiede quattro stagioni:
 

@@ -38,6 +38,7 @@ type RosterPlayer = {
   morale: number
   contrattoScadenza: number
   rinnovoStagione: number | null
+  rinnovoTentativi: number
   sulMercato: boolean
   mentalita: { bandiera: number; economia: number; vittorie: number }
   minuti: number
@@ -62,6 +63,7 @@ function money(value: number) { return `${(value / 1_000_000).toFixed(1)} M€` 
 // giocatore: ultima stagione utile, o ritiro annunciato.
 function contratto(player: RosterPlayer, stagioneCorrente: number) {
   if (player.ritiroAnnunciato) return { testo: 'ritiro a termine stag.', urgente: true }
+  if (player.rinnovoTentativi >= 3) return { testo: 'Non intende rinnovare.', urgente: true }
   const residue = player.contrattoScadenza - stagioneCorrente
   if (residue <= 0) return { testo: 'ultima stagione', urgente: true }
   return { testo: `ancora ${residue} ${residue === 1 ? 'stagione' : 'stagioni'}`, urgente: false }
@@ -89,6 +91,15 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [rosterNotice, setRosterNotice] = useState<string | null>(null)
   const team = teamOverride?.id === teamId ? teamOverride : seasonData.teamById.get(teamId)
   const ownTeam = teamId === membership.id
+
+  // Notifica di successo (svincolo): sparisce da sola dopo 2 secondi. Il
+  // cleanup annulla il timer se nel frattempo arriva un altro avviso o si
+  // cambia pagina, altrimenti un timer vecchio spegnerebbe quello nuovo.
+  useEffect(() => {
+    if (!rosterNotice) return
+    const timer = window.setTimeout(() => setRosterNotice(null), 2000)
+    return () => window.clearTimeout(timer)
+  }, [rosterNotice])
 
   // Il nome dell'allenatore e' leggibile solo fra chi condivide una lega
   // (policy profiles_lettura): fuori dalla lega la query non restituisce nulla.
@@ -130,7 +141,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       setRosterLoading(true)
       setRosterError(null)
       const [instancesResult, statsResult] = await Promise.all([
-        supabase.from('player_instances').select('id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato, morale, contratto_scadenza, rinnovo_stagione, sul_mercato').eq('league_id', league.id).eq('team_id', teamId),
+        supabase.from('player_instances').select('id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato, morale, contratto_scadenza, rinnovo_stagione, rinnovo_tentativi, sul_mercato').eq('league_id', league.id).eq('team_id', teamId),
         supabase.from('match_stats').select('match_id, player_instance_id, minuti, gol, assist, tiri, tiri_porta, passaggi_tentati, passaggi_riusciti, contrasti_vinti, dribbling').eq('league_id', league.id).eq('team_id', teamId),
       ])
       const firstError = instancesResult.error ?? statsResult.error
@@ -161,6 +172,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           morale: instance.morale,
           contrattoScadenza: instance.contratto_scadenza,
           rinnovoStagione: instance.rinnovo_stagione,
+          rinnovoTentativi: instance.rinnovo_tentativi,
           sulMercato: instance.sul_mercato,
           mentalita: {
             bandiera: info?.mentalita_bandiera ?? 33,
@@ -386,9 +398,11 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         } : undefined}
         rinnovo={ownTeam && league.stato === 'stagione' && !schedaAperta.ritiroAnnunciato ? {
           nomeAllenatore: allenatore,
-          bloccato: schedaAperta.rinnovoStagione === league.stagione_corrente
-            ? 'Ha già rinnovato in questa stagione: se ne riparla dalla prossima.'
-            : undefined,
+          bloccato: schedaAperta.rinnovoTentativi >= 3
+            ? 'Non intende rinnovare: andrà a scadenza a fine stagione.'
+            : schedaAperta.rinnovoStagione === league.stagione_corrente
+              ? 'Ha già rinnovato in questa stagione: se ne riparla dalla prossima.'
+              : undefined,
           onCarica: async () => {
             const { data, error } = await supabase.rpc('proposta_rinnovo', { p_instance_id: schedaAperta.id })
             if (error) throw new Error(error.message)

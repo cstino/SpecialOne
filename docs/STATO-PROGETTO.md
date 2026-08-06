@@ -1,5 +1,32 @@
 # Stato progetto e handoff
 
+### La richiesta di rinnovo ora tiene conto della mentalità (§10.4 bis)
+
+Segnalato dall'utente su un caso reale: M. Silvestri (istanza 1138), 34 anni, OVR 72,
+bandiera 55 dominante, ingaggio 700k€. Alla trattativa chiedeva 800k€ — un aumento, per un
+veterano in declino la cui mentalità dice "la maglia viene prima dei soldi". Il moltiplicatore
+casuale sulla richiesta era fisso `uniform(1.00, 1.12)` per chiunque: mai uno sconto,
+indipendentemente da età, declino o mentalità.
+
+Fix scelto dall'utente fra tre opzioni proposte: **la mentalità sposta il centro del
+moltiplicatore**, non il pavimento. `centro = 1.06 + (economia − bandiera) / 500`, range
+`uniform(centro − 0.06, centro + 0.06)`. A mentalità equilibrata (33/33) il range resta
+identico a prima (`[1.00, 1.12)` sul teorico) — verificato su 2000 semi via query diretta,
+nessun giocatore medio cambia comportamento. Con Silvestri il centro scende a ~0,98: su 2000
+semi la richiesta è rimasta **sempre e solo 700.000€** (il pavimento sull'ingaggio attuale,
+mai toccato da questa modifica, ha sempre vinto sul calcolo). Con un giocatore economia-
+dominante di controprova (10/60) il range è salito a `[800k, 900k]`, sopra il vecchio tetto
+di 800k — conferma che la direzione economica funziona nei due sensi.
+
+Migrazione `20260807100000_richiesta_rinnovo_da_mentalita.sql`: `private.rinnovo_proposta`
+guadagna due parametri (`p_bandiera`, `p_economia`); `public.proposta_rinnovo` e
+`public.offri_rinnovo` passano `v_player.mentalita_bandiera/economia`, già disponibili prima
+della chiamata in entrambi. `db lint` invariato (solo i 2 warning di baseline pre-esistenti).
+
+Deliberatamente **non toccato**: il pavimento `greatest(ingaggio_attuale, ...)` — l'utente ha
+scelto l'opzione che lascia questa protezione (contro il sovrapprezzo pagato in asta) intatta,
+non quella che l'avrebbe dissolta per permettere sconti reali sotto l'ingaggio attuale.
+
 ### Il bottone "Ritira" era stato aggiunto alla sezione sbagliata
 
 Nella sessione precedente il bottone "Ritira offerta" (RPC `ritira_offerta`, già esistente e
