@@ -126,7 +126,12 @@ Un giocatore ingaggiato da una squadra è **globalmente non selezionabile** per 
 
 L'ingaggio annuale viene **scalato dal budget al momento del pick**.
 
-**Tetto draft**: massimo **80% di `B`** in monte ingaggi. Il restante 20% garantisce liquidità per il mercato della stagione 1, che altrimenti sarebbe morto per tutti.
+**Tetto draft**: `budget_draft`, scelto liberamente dall'admin alla creazione della lega
+(`Onboarding.tsx`, slider 20–`B` a step di 10), con un solo vincolo — non può mai superare
+`B`. Il default proposto è l'80% di `B`, che era il valore fisso della versione precedente di
+questa regola: il restante 20% resta liquido per il mercato della stagione 1, che altrimenti
+sarebbe morto per tutti. Abbassarlo sotto il default produce rose più equilibrate fra squadre;
+il vincolo si scala automaticamente se l'admin abbassa `B` dopo aver già alzato `budget_draft`.
 
 > Dalla stagione 2 in poi il tetto sparisce: la pressione economica strutturale lo rende superfluo.
 
@@ -236,7 +241,7 @@ I trasferimenti tra squadre sono a somma zero: non alterano la massa monetaria d
 
 - **Inizio stagione**: addebito del monte ingaggi completo della rosa
 - **Acquisto a stagione in corso**: costo trasferimento + ingaggio **pro-rata** sulle giornate rimanenti
-- **Svincolo**: nessun rimborso. Libera lo slot e rimuove il giocatore dal monte ingaggi **della stagione successiva**
+- **Svincolo**: nessun rimborso. Se il contratto ha stagioni residue oltre a quella in corso, richiede una **buonuscita** (aggiunta dall'utente, 7 agosto 2026 — vedi §9.5). Libera lo slot e rimuove il giocatore dal monte ingaggi **della stagione successiva**
 
 ### 5.5 Insolvenza
 
@@ -724,6 +729,21 @@ proprietario, che quella scelta non l'ha mai fatta.
 Libera lo slot immediatamente, purché la squadra conservi almeno **21 giocatori** e il
 numero minimo di giocatori. Nessun rimborso. Il giocatore esce dal monte ingaggi della
 **stagione successiva** ed entra nel pool svincolati.
+
+> **Buonuscita, aggiunta dall'utente, 7 agosto 2026.** Prima lo svincolo era gratuito a
+> prescindere dalle stagioni residue sul contratto: si poteva rinnovare a 4 stagioni e
+> disfarsi del giocatore dopo la prima senza mai pagare le altre tre. Ora, se
+> `contratto_scadenza > stagione_corrente`, lo svincolo costa una buonuscita:
+> ```
+> stagioni_residue = contratto_scadenza − stagione_corrente
+> buonuscita = ⌊stagioni_residue × ingaggio / 2⌋
+> ```
+> Zero se è l'ultima stagione di contratto (`stagioni_residue <= 0`) o se il giocatore ha
+> già annunciato il ritiro — in quel caso esce comunque a fine stagione per conto suo
+> (§10.3), quindi non c'è nessun impegno futuro da comprare. Se il budget non copre la
+> buonuscita lo svincolo viene rifiutato (il budget non può mai andare sotto zero, §5.5).
+> La buonuscita è registrata in `transactions` (`tipo = 'svincolo_buonuscita'`), come ogni
+> movimento economico.
 
 ---
 

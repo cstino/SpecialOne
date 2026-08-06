@@ -69,6 +69,17 @@ function contratto(player: RosterPlayer, stagioneCorrente: number) {
   return { testo: `ancora ${residue} ${residue === 1 ? 'stagione' : 'stagioni'}`, urgente: false }
 }
 
+// Anteprima della buonuscita che chiederà svincola_giocatore: meta' (per
+// difetto) dell'ingaggio delle stagioni residue dopo quella in corso, zero
+// se e' l'ultimo anno o se ha gia' annunciato il ritiro. La cifra vera la
+// ricalcola comunque il server: questa e' solo per mostrarla prima di
+// chiedere conferma.
+function buonuscita(player: RosterPlayer, stagioneCorrente: number) {
+  if (player.ritiroAnnunciato) return 0
+  const residue = Math.max(0, player.contrattoScadenza - stagioneCorrente)
+  return Math.floor((residue * player.ingaggio) / 2)
+}
+
 export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTeamUpdated }: Props) {
   const league = membership.league as League
   const seasonData = useSeasonData(membership)
@@ -391,7 +402,13 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           etichetta: 'Svincola giocatore',
           descrizione: schedaAperta.ritiroAnnunciato
             ? `${schedaAperta.nome} ha già annunciato il ritiro: lo svincolo è definitivo, non tornerà disponibile per nessuna squadra. Non riceverai alcun rimborso e le formazioni future che lo contengono dovranno essere salvate di nuovo.`
-            : `${schedaAperta.nome} uscirà subito dalla rosa. Devi mantenere almeno ${ROSA_MINIMA} giocatori. Non riceverai alcun rimborso e le formazioni future che lo contengono dovranno essere salvate di nuovo.`,
+            : (() => {
+                const costo = buonuscita(schedaAperta, league.stagione_corrente)
+                const base = `${schedaAperta.nome} uscirà subito dalla rosa. Devi mantenere almeno ${ROSA_MINIMA} giocatori. Le formazioni future che lo contengono dovranno essere salvate di nuovo.`
+                return costo > 0
+                  ? `${base} Ha ancora ${schedaAperta.contrattoScadenza - league.stagione_corrente} stagioni di contratto: per svincolarlo in anticipo dovrai pagargli una buonuscita di ${money(costo)}.`
+                  : `${base} Non riceverai alcun rimborso.`
+              })(),
           inCorso: releasePending,
           errore: releaseError,
           onConferma: releasePlayer,
