@@ -131,6 +131,30 @@ export default function App() {
     [session, centroNotifiche, apriNotifica],
   )
 
+  // Un tocco su una notifica push (public/sw.js) arriva qui come messaggio,
+  // non come cambio di URL: la app era gia' aperta (o appena aperta sulla
+  // home) e il service worker le passa dove andare. Stessa destinazione di
+  // una notifica aperta dalla campanella in-app.
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    function alMessaggio(evento: MessageEvent) {
+      if (evento.data?.tipo !== 'notifica-push-click') return
+      const dati = (evento.data.dati ?? {}) as Record<string, unknown>
+      apriNotifica({
+        id: Number(dati.notification_id) || 0,
+        league_id: typeof dati.league_id === 'number' ? dati.league_id : null,
+        tipo: 'sistema',
+        titolo: '',
+        corpo: null,
+        dati,
+        letta_il: null,
+        creata_il: new Date().toISOString(),
+      })
+    }
+    navigator.serviceWorker.addEventListener('message', alMessaggio)
+    return () => navigator.serviceWorker.removeEventListener('message', alMessaggio)
+  }, [apriNotifica])
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)

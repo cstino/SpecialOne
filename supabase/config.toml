@@ -12,3 +12,11 @@ entrypoint = "./functions/simula-giornata/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/simula-giornata/*.html" ]
+
+[functions.invia-push]
+enabled = true
+# Chiamata solo dal trigger su notifications via pg_net, mai da un browser:
+# stessa autenticazione a chiave segreta di simula-giornata.
+verify_jwt = false
+import_map = "./functions/invia-push/deno.json"
+entrypoint = "./functions/invia-push/index.ts"

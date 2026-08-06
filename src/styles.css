@@ -1649,6 +1649,11 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .notifiche__chiudi { flex-shrink: 0; width: 28px; height: 28px; padding: 0; border: 1px solid #332c40; border-radius: 50%; color: #b9aecb; background: transparent; font-size: 1.05rem; line-height: 1; cursor: pointer; }
 .notifiche__chiudi:focus-visible { outline: 2px solid #c77dff; outline-offset: 2px; }
 .notifiche__pannello ul { margin: 0; padding: 6px; display: grid; gap: 2px; list-style: none; overflow-y: auto; }
+.notifiche__push { flex-shrink: 0; width: calc(100% - 24px); margin: 10px 12px 0; padding: 9px 12px; color: #d9cfe2; border: 1px solid #4a3a63; border-radius: 9px; background: #241c33; font-size: .72rem; font-weight: 700; text-align: center; cursor: pointer; }
+.notifiche__push:hover { border-color: #8e47d6; }
+.notifiche__push.e-attivo { color: #b6f0cc; border-color: #2c6b47; background: #16281f; }
+.notifiche__push:disabled { opacity: .6; cursor: default; }
+.notifiche__push-negato { flex-shrink: 0; margin: 10px 12px 0; padding: 9px 12px; color: #d99; border: 1px solid #5c2e2e; border-radius: 9px; background: #2a1717; font-size: .68rem; line-height: 1.4; text-align: center; }
 .notifiche__vuoto { margin: 0; padding: 26px 18px; color: #7f7789; font-size: .76rem; line-height: 1.55; text-align: center; }
 
 .notifiche__voce { position: relative; width: 100%; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: start; gap: 10px; padding: 10px; border: 0; border-radius: 10px; background: transparent; font-family: inherit; text-align: left; cursor: pointer; }

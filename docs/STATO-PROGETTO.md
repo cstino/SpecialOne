@@ -1,5 +1,42 @@
 # Stato progetto e handoff
 
+### Notifiche push del browser
+
+Richiesta dell'utente. Secondo canale di consegna sopra `public.notifications`, esattamente
+come anticipato nel commento di `20260802120000_notifiche.sql`: non si tocca la tabella
+esistente, si aggiunge solo la sottoscrizione e un trigger.
+
+- **`push_subscriptions`**: una riga per dispositivo/browser (endpoint + chiavi p256dh/auth),
+  scritta direttamente dal client — a differenza di `notifications`, qui e' l'utente ad
+  autogestire le proprie righe (RLS `user_id = auth.uid()` su tutte le operazioni).
+- **Trigger `notifications_invia_push`** (`AFTER INSERT` su `notifications`): chiama via
+  `pg_net` la nuova Edge Function `invia-push`, stesso schema gia' in uso per il cron
+  notturno (chiave dal vault, header `apikey`). Fire-and-forget: un push service lento o
+  irraggiungibile non fa mai fallire l'insert su `notifications` (verificato in rollback).
+  Effetto pratico: ogni RPC che gia' notifica in-app (mercato, infortuni, giornata simulata)
+  ottiene la push gratis, senza essere toccata.
+- **Edge Function `invia-push`** (Deno, libreria `npm:web-push`): legge le sottoscrizioni
+  dell'utente destinatario e invia a ciascuna. Una sottoscrizione revocata (404/410, es.
+  disinstallazione o dati del browser cancellati) viene rimossa automaticamente invece di
+  essere ritentata.
+- **Service worker** (`public/sw.js`, gia' esistente per l'installabilita' PWA): ora gestisce
+  anche `push` (mostra la notifica) e `notificationclick` (porta alla lega giusta se l'app e'
+  gia' aperta, tramite `postMessage` intercettato in `App.tsx`; altrimenti apre `/`).
+- **UI**: pulsante "Attiva le notifiche push" nel pannello Notifiche (`Notifiche.tsx`),
+  visibile solo se il browser supporta l'API Push; nasconde il pulsante e mostra un avviso se
+  il permesso e' stato negato dal browser.
+- **Chiavi VAPID**: generate una volta, la privata sta solo nei secret della Edge Function
+  (`VAPID_PRIVATE_KEY`, mai nel database), la pubblica e' anche in `VITE_VAPID_PUBLIC_KEY`
+  (frontend, sia `.env.local` sia variabile d'ambiente Vercel di produzione).
+
+**iOS**: le push funzionano solo se l'app e' stata aggiunta alla schermata Home (limite di
+Safari, non di questo progetto) — su Android funzionano anche nel semplice browser.
+
+**Verificato in rollback su dati reali**: RLS respinge l'inserimento di una sottoscrizione a
+nome di un altro utente e accetta la propria; l'insert su `notifications` con il trigger
+attivo si completa comunque. Non verificabile da qui: la consegna reale su un dispositivo,
+che richiede una sottoscrizione vera generata da un browser — da provare in app.
+
 ### Pagina "Finanza": entrate/uscite del club con grafici
 
 Nuova voce di menu (solo a stagione avviata: `seasonItems`/`offseasonItems`/`concludedItems`

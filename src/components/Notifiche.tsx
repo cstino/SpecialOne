@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { quandoRelativo, useNotifiche, type Notifica, type TipoNotifica } from '../lib/notifiche'
+import { attivaPush, disattivaPush, permessoPush, sottoscrizioneAttuale } from '../lib/pushNotifiche'
 
 type NotificheProps = {
   userId: string
@@ -27,10 +28,39 @@ export function IconaNotifica({ tipo }: { tipo: TipoNotifica }) {
   </i>
 }
 
+type StatoPush = 'assente' | 'non-supportato' | 'negato' | 'inattivo' | 'attivo' | 'in-corso'
+
 export function Notifiche({ userId, onApriNotifica, embedded = false }: NotificheProps) {
   const { notifiche, nonLette, caricamento, segnaLette, elimina } = useNotifiche(userId)
   const [aperto, setAperto] = useState(false)
+  const [statoPush, setStatoPush] = useState<StatoPush>('assente')
   const contenitore = useRef<HTMLDivElement>(null)
+
+  // Controllato solo quando il pannello si apre: pushManager.getSubscription
+  // e' asincrono, non serve rifarlo a ogni render della campanella.
+  useEffect(() => {
+    if (!aperto) return
+    let attivo = true
+    async function controlla() {
+      const permesso = permessoPush()
+      if (permesso === 'non-supportato') { if (attivo) setStatoPush('non-supportato'); return }
+      if (permesso === 'denied') { if (attivo) setStatoPush('negato'); return }
+      const sottoscrizione = await sottoscrizioneAttuale()
+      if (attivo) setStatoPush(sottoscrizione ? 'attivo' : 'inattivo')
+    }
+    void controlla()
+    return () => { attivo = false }
+  }, [aperto])
+
+  async function alternaPush() {
+    setStatoPush('in-corso')
+    const esito = statoPush === 'attivo' ? await disattivaPush() : await attivaPush()
+    if (!esito.ok) { window.alert(esito.errore ?? 'Operazione non riuscita.'); }
+    const permesso = permessoPush()
+    if (permesso === 'denied') { setStatoPush('negato'); return }
+    const sottoscrizione = await sottoscrizioneAttuale()
+    setStatoPush(sottoscrizione ? 'attivo' : 'inattivo')
+  }
 
   // Aprire il pannello vale come averle viste: e' il gesto con cui si guarda
   // cosa e' arrivato, e chiedere un secondo tocco per spegnere il pallino
@@ -80,6 +110,22 @@ export function Notifiche({ userId, onApriNotifica, embedded = false }: Notifich
             <strong>Notifiche</strong>
             <button className="notifiche__chiudi" type="button" onClick={() => setAperto(false)} aria-label="Chiudi le notifiche">×</button>
           </header>
+
+          {(statoPush === 'inattivo' || statoPush === 'attivo' || statoPush === 'in-corso') && (
+            <button
+              className={`notifiche__push ${statoPush === 'attivo' ? 'e-attivo' : ''}`}
+              type="button"
+              disabled={statoPush === 'in-corso'}
+              onClick={() => void alternaPush()}
+            >
+              {statoPush === 'in-corso' ? 'Un momento…'
+                : statoPush === 'attivo' ? 'Notifiche push attive — tocca per disattivare'
+                : 'Attiva le notifiche push su questo dispositivo'}
+            </button>
+          )}
+          {statoPush === 'negato' && (
+            <p className="notifiche__push-negato">Notifiche push bloccate dal browser: riattivale dalle impostazioni del sito.</p>
+          )}
 
           {caricamento && <p className="notifiche__vuoto">Carico…</p>}
 
