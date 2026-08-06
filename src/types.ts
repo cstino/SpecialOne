@@ -65,6 +65,7 @@ export type Fixture = {
   away_team_id: number
   data_sim: string
   stato: 'programmata' | 'in_corso' | 'simulata' | 'annullata'
+  campo_neutro: boolean
 }
 
 export type Match = {

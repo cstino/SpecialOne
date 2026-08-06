@@ -221,8 +221,14 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
 
     // tutto in PUNTI di overall: bonus e malus sono additivi, non moltiplicativi
     const sc = strutturale(fc), so = strutturale(fo);
-    const ATT_C = fc.ATT + sc.ATT + famC + CFG.BONUS_CASA_ATT + stC.ATT;
-    const MID_C = fc.MID + sc.MID + famC + CFG.BONUS_CASA_MID + stC.MID;
+    // Campo neutro (ultimo girone di un campionato a gironi dispari, vedi
+    // Edge Function): azzera il fattore campo, non lo tocca per nessuno.
+    // Flag opzionale, di default assente -> comportamento identico a prima
+    // per ogni chiamata che non lo passa esplicitamente.
+    const bonusCasaAtt = opt.campoNeutro ? 0 : CFG.BONUS_CASA_ATT;
+    const bonusCasaMid = opt.campoNeutro ? 0 : CFG.BONUS_CASA_MID;
+    const ATT_C = fc.ATT + sc.ATT + famC + bonusCasaAtt + stC.ATT;
+    const MID_C = fc.MID + sc.MID + famC + bonusCasaMid + stC.MID;
     const DEF_C = fc.DEF + sc.DEF + stC.DEF;
     const ATT_O = fo.ATT + so.ATT + famO + stO.ATT;
     const MID_O = fo.MID + so.MID + famO + stO.MID;

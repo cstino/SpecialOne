@@ -19,7 +19,7 @@ type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number
 type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number> }
 type DbLineup = { team_id: number; giornata?: number; modulo: string; titolari: number[]; panchina: number[]; tribuna: number[]; stile_gioco: string; automatica: boolean }
 type EngineLineup = { modulo: string; slots: string[]; titolari: EnginePlayer[]; panchina: EnginePlayer[]; cambiFatti: number }
-type Fixture = { id: number; season_id: number; league_id: number; giornata: number; home_team_id: number; away_team_id: number; stato: string }
+type Fixture = { id: number; season_id: number; league_id: number; giornata: number; home_team_id: number; away_team_id: number; stato: string; campo_neutro: boolean }
 
 function requiredNumber(attributes: Record<string, number>, field: string, playerId: number) {
   const value = attributes[field]
@@ -442,6 +442,7 @@ export default {
           lineupOspite: awayLineup,
           stileCasa: homeDbLineup.stile_gioco,
           stileOspite: awayDbLineup.stile_gioco,
+          campoNeutro: fixture.campo_neutro,
         })
         const presenzePerBlocco = result.presenzePerBlocco as { casa: number[][]; ospite: number[][] }
         const eventi = costruisciEventiGol(result.golPerBlocco as GolBlocco[], [
@@ -551,20 +552,17 @@ export default {
           squadreConPartitaNuova.add(fixture.home_team_id)
           squadreConPartitaNuova.add(fixture.away_team_id)
 
-          const lati = [
-            { teamId: fixture.home_team_id, avversario: fixture.away_team_id, fatti: esito.gol_home, subiti: esito.gol_away },
-            { teamId: fixture.away_team_id, avversario: fixture.home_team_id, fatti: esito.gol_away, subiti: esito.gol_home },
-          ]
-          for (const lato of lati) {
-            const userId = teamUsers.get(lato.teamId)
+          // Niente risultato nel testo: si spoilerebbe l'esito prima ancora
+          // di aprire l'app. Il punteggio si scopre solo entrando.
+          for (const teamId of [fixture.home_team_id, fixture.away_team_id]) {
+            const userId = teamUsers.get(teamId)
             if (!userId) continue
-            const verdetto = lato.fatti > lato.subiti ? 'Vittoria' : lato.fatti < lato.subiti ? 'Sconfitta' : 'Pareggio'
             righe.push({
               user_id: userId,
               league_id: leagueId,
               tipo: 'giornata_simulata',
-              titolo: `${verdetto} ${lato.fatti}-${lato.subiti}`,
-              corpo: `Giornata ${giornata} contro ${teamNames.get(lato.avversario) ?? 'l’avversario'}`,
+              titolo: `Giornata ${giornata} terminata`,
+              corpo: 'Entra per controllare il risultato!',
               dati: { match_id: esito.match_id, giornata },
             })
           }

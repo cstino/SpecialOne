@@ -119,7 +119,9 @@ export const PESI_SLOT = {
 // ============================================================
 
 export const MODULI = {
-  '4-3-3':   ['GK','LB','CB','CB','RB','CM','CM','CM','LW','ST','RW'],
+  '4-3-3':            ['GK','LB','CB','CB','RB','CM','CM','CM','LW','ST','RW'],
+  '4-3-3 offensivo':  ['GK','LB','CB','CB','RB','CM','CM','CAM','LW','ST','RW'],
+  '4-3-3 difensivo':  ['GK','LB','CB','CB','RB','CM','CM','CDM','LW','ST','RW'],
   '4-4-2':   ['GK','LB','CB','CB','RB','LM','CM','CM','RM','ST','ST'],
   '4-2-3-1': ['GK','LB','CB','CB','RB','CDM','CDM','CAM','LW','RW','ST'],
   '3-5-2':   ['GK','CB','CB','CB','LWB','CM','CM','CM','RWB','ST','ST'],
