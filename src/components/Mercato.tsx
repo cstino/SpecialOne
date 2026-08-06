@@ -202,9 +202,6 @@ export function Mercato({ membership, onNavigate }: Props) {
   }
   const [paginaRumor, setPaginaRumor] = useState(0)
 
-  // Un'asta aperta dal pannello admin resta utilizzabile anche fuori dalla
-  // finestra automatica: lo stato server delle aste è la seconda fonte di verità.
-  const aperto = mercatoAperto() || aste.some((asta) => asta.stato === 'aperta')
   const mostraListaLegacySvincolati = false
   // Nascosto su richiesta dell'utente per provare il mercato senza: resta
   // tutto il codice, basta rimettere a true per riportarlo visibile.
@@ -399,28 +396,19 @@ export function Mercato({ membership, onNavigate }: Props) {
   const inviate = proposte.filter((p) => p.da_team_id === membership.id && p.stato === 'in_attesa')
   const concluse = proposte.filter((p) => p.stato === 'accettata')
 
-  // ECCEZIONE UNA TANTUM, richiesta dall'utente il 6 agosto 2026: l'admin ha
-  // aperto il mercato a mano la sera del 5, e il cron delle 07:00 (ancora sul
-  // vecchio orario, non aveva ancora preso il fix di apertura alle 23:30) ne
-  // ha aperto un secondo la mattina del 6 senza mai chiudere il primo. Le due
-  // tornate sono entrambe ancora aperte lato database (si puo' gia' offrire su
-  // entrambe): si mostrano insieme solo oggi, cosi' chi doveva ancora offrire
-  // su quelle di ieri sera non le perde prima che stasera alle 23:30 le
-  // sostituisca. Il confronto sulla data la rende inerte da sola da domani in
-  // poi: non toglierla a mano, si spegne da sola.
-  const GIORNI_ECCEZIONE_6AGOSTO = ['2026-08-05', '2026-08-06']
-
   // Il live e' l'ultima tornata di estrazione della giornata corrente, mai
   // l'unione delle tornate manuali gia' chiuse nello stesso giorno.
   const giornoAste = aste[0]?.giorno ?? null
-  const asteDelGiorno = giornoAste && GIORNI_ECCEZIONE_6AGOSTO.includes(giornoAste)
-    ? aste.filter((a) => GIORNI_ECCEZIONE_6AGOSTO.includes(a.giorno))
-    : aste.filter((a) => a.giorno === giornoAste)
+  const asteDelGiorno = aste.filter((a) => a.giorno === giornoAste)
   const tornataLive = Math.max(0, ...asteDelGiorno
     .filter((a) => a.origine === 'estrazione')
     .map((a) => a.tornata))
   const nuoviDelGiorno = asteDelGiorno.filter((a) =>
     a.origine === 'estrazione' && a.tornata === tornataLive && a.stato === 'aperta')
+  // Un'apertura manuale e' valida anche fuori orario, ma solo per le aste
+  // dell'ultima estrazione: aste residue di giorni precedenti non devono
+  // tenere artificialmente aperta tutta la pagina.
+  const aperto = mercatoAperto() || nuoviDelGiorno.length > 0
   const mieProposteAperte = nuoviDelGiorno.filter((a) => a.stato === 'aperta' && mieOfferte.has(a.id))
   const giocatoriSottoContratto = new Set(rose.map((g) => g.player_id))
 
