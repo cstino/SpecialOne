@@ -25,6 +25,9 @@ export function Admin({ membership, onNavigate }: AdminProps) {
   const [nomeDigitato, setNomeDigitato] = useState('')
   const [eliminando, setEliminando] = useState(false)
   const [erroreEliminazione, setErroreEliminazione] = useState<string | null>(null)
+  const [annuncioTesto, setAnnuncioTesto] = useState('')
+  const [inviandoAnnuncio, setInviandoAnnuncio] = useState(false)
+  const [esitoAnnuncio, setEsitoAnnuncio] = useState<EsitoAzione | null>(null)
 
   // Difesa in profondità: la voce di menu è già nascosta a chi non è admin, e
   // ogni RPC lo ricontrolla comunque lato server. Questo evita solo che chi
@@ -77,6 +80,16 @@ export function Admin({ membership, onNavigate }: AdminProps) {
     const aste = data?.aste_risolte ?? 0
     const proposte = data?.proposte_scadute ?? 0
     setEsitoChiudi({ tono: 'ok', testo: `${aste} ${aste === 1 ? 'asta risolta' : 'aste risolte'}, ${proposte} ${proposte === 1 ? 'proposta scaduta' : 'proposte scadute'}.` })
+  }
+
+  async function inviaAnnuncio() {
+    setInviandoAnnuncio(true); setEsitoAnnuncio(null)
+    const { data, error } = await supabase.rpc('invia_annuncio_lega', { p_league_id: league.id, p_messaggio: annuncioTesto })
+    setInviandoAnnuncio(false)
+    if (error) { setEsitoAnnuncio({ tono: 'errore', testo: error.message }); return }
+    const inviate = (data as number | null) ?? 0
+    setEsitoAnnuncio({ tono: 'ok', testo: `Inviato a ${inviate} ${inviate === 1 ? 'partecipante' : 'partecipanti'}.` })
+    setAnnuncioTesto('')
   }
 
   async function eliminaLega() {
@@ -134,6 +147,24 @@ export function Admin({ membership, onNavigate }: AdminProps) {
           {esitoChiudi && <p className={esitoChiudi.tono === 'errore' ? 'notice notice--error' : 'notice'}>{esitoChiudi.testo}</p>}
         </section>
         </>}
+
+        <section className="mercato-blocco">
+          <div className="sezione-testa"><div><p className="kicker">In-app + push</p><h2>Annuncio alla lega</h2></div></div>
+          <p className="mercato-nota">Manda un messaggio a tutti i partecipanti della lega, come notifica in-app e push (chi l'ha attivata). Toccando la notifica si apre l'app.</p>
+          <textarea
+            value={annuncioTesto}
+            onChange={(evento) => setAnnuncioTesto(evento.target.value)}
+            placeholder="Scrivi un messaggio per tutti i partecipanti…"
+            maxLength={240}
+            rows={3}
+            disabled={inviandoAnnuncio}
+            aria-label="Messaggio da inviare a tutta la lega"
+          />
+          {esitoAnnuncio && <p className={esitoAnnuncio.tono === 'errore' ? 'notice notice--error' : 'notice'}>{esitoAnnuncio.testo}</p>}
+          <button className="button button--primary" type="button" disabled={inviandoAnnuncio || !annuncioTesto.trim()} onClick={() => void inviaAnnuncio()}>
+            {inviandoAnnuncio ? 'Invio…' : 'Invia a tutti'}
+          </button>
+        </section>
 
         <section className="mercato-blocco admin-zona-pericolo">
           <div className="sezione-testa"><div><p className="kicker">Irreversibile</p><h2>Elimina lega</h2></div></div>
