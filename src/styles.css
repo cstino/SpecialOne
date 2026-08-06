@@ -755,8 +755,14 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .formation-view-card .pitch-field,
 .formation-view-card .formation-player-tray--standalone { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; }
 /* Rimpiazza il campo quando la vista e' su panchina/tribuna: una griglia che
-   si dispone a piu' righe, stesso peso visivo del campo che sostituisce. */
-.formation-player-tray--standalone { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); align-content: center; justify-items: center; gap: 18px 10px; padding: 18px 4px; overflow-x: visible; overflow-y: auto; }
+   si dispone a piu' righe, stesso peso visivo del campo che sostituisce.
+   "safe center": su schermi stretti (meno colonne, piu' righe) il contenuto
+   puo' superare l'altezza del box e servire scroll. Con "center" puro, Chrome
+   (a differenza di Safari) non lascia scorrere fino alla parte superiore
+   spinta fuori dal centraggio: resta tagliata per sempre. "safe" dice al
+   browser di centrare solo se il contenuto ci sta, altrimenti allineare
+   dall'inizio, cosi' tutto resta raggiungibile scorrendo. */
+.formation-player-tray--standalone { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); align-content: safe center; justify-items: center; gap: 18px 10px; padding: 18px 4px; overflow-x: visible; overflow-y: auto; }
 .formation-player-tray--standalone .lineup-player--compact { flex: none; width: 100%; }
 .pitch-field { position: relative; width: min(100%, 720px); aspect-ratio: .73; margin: 0 auto; overflow: hidden; border: 1px solid #31343a; border-radius: 3px; background: radial-gradient(ellipse at 50% 22%, rgba(72,99,106,.28), transparent 34%), radial-gradient(circle at 8% 58%, rgba(45,113,123,.17), transparent 25%), radial-gradient(circle at 92% 68%, rgba(104,55,119,.18), transparent 29%), repeating-linear-gradient(97deg, rgba(255,255,255,.018) 0 1px, transparent 1px 7px), linear-gradient(180deg, #171a1d, #090a0c 70%, #121417); box-shadow: inset 0 0 100px #050607, 0 24px 70px rgba(0,0,0,.55); }
 .pitch-field::before, .pitch-field::after { content: ''; position: absolute; pointer-events: none; }
