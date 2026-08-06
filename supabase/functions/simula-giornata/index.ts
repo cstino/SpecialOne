@@ -389,15 +389,10 @@ export default {
       for (const lineup of previousLineupsResult.data ?? []) {
         if (!inheritedLineups.has(lineup.team_id)) inheritedLineups.set(lineup.team_id, lineup as DbLineup)
       }
-      // Chi non ha schierato entro le 23:00 va avvisato: ha giocato con una
-      // formazione che non ha scelto, ed e' un'informazione che cambia il
-      // comportamento della giornata dopo.
-      const formazioniAutomatiche = new Map<number, 'ereditata' | 'generata'>()
       for (const teamId of teamIds) {
         if (lineups.has(teamId)) continue
         const roster = rosters.get(teamId)!
         const inherited = inheritedLineups.get(teamId)
-        formazioniAutomatiche.set(teamId, inherited ? 'ereditata' : 'generata')
         let fallback: DbLineup
         if (inherited) {
           fallback = { team_id: teamId, modulo: inherited.modulo, titolari: inherited.titolari, panchina: inherited.panchina, tribuna: inherited.tribuna, stile_gioco: inherited.stile_gioco, automatica: true }
@@ -586,21 +581,6 @@ export default {
             titolo: `${infortunio.nome} si è infortunato`,
             corpo: `Sarà indisponibile per ${infortunio.giornate} ${infortunio.giornate === 1 ? 'giornata' : 'giornate'}. Controlla la formazione.`,
             dati: { view: 'squad', player_instance_id: infortunio.playerId, giornata },
-          })
-        }
-
-        for (const [teamId, origine] of formazioniAutomatiche) {
-          const userId = teamUsers.get(teamId)
-          if (!userId) continue
-          righe.push({
-            user_id: userId,
-            league_id: leagueId,
-            tipo: 'formazione_mancante',
-            titolo: `Formazione automatica alla giornata ${giornata}`,
-            corpo: origine === 'ereditata'
-              ? 'Non hai schierato entro le 23:00: e’ stata riproposta la tua ultima formazione.'
-              : 'Non hai schierato entro le 23:00: e’ stato schierato il miglior 4-3-3 disponibile.',
-            dati: { giornata },
           })
         }
 
