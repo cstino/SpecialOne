@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
+import { isEventoGol } from '../types'
 import type { Fixture, Match, Standing, Team } from '../types'
 import { Crest } from './Crest'
 import { formaPerSquadra, type Esito } from './SeasonUI'
@@ -101,14 +102,15 @@ function raccontaPartita(match: Match, homeNome: string, awayNome: string, marca
 
   const nomeMarcatore = (id: number) => cognome(marcatori.get(id) ?? 'un giocatore')
 
+  const gol = match.blocchi.filter(isEventoGol)
   const conteggio = new Map<number, number>()
-  for (const evento of match.blocchi) conteggio.set(evento.marcatore, (conteggio.get(evento.marcatore) ?? 0) + 1)
+  for (const evento of gol) conteggio.set(evento.marcatore, (conteggio.get(evento.marcatore) ?? 0) + 1)
   const tripletta = [...conteggio.entries()].find(([, volte]) => volte >= 3)
 
-  const eventiLatoVincente = match.blocchi
+  const eventiLatoVincente = gol
     .filter((evento) => evento.lato === (homeVince ? 'casa' : 'ospite'))
     .sort((a, b) => a.minuto - b.minuto)
-  const primoTempo = match.blocchi.filter((evento) => evento.minuto <= 45)
+  const primoTempo = gol.filter((evento) => evento.minuto <= 45)
   const casaAlloIntervallo = primoTempo.filter((evento) => evento.lato === 'casa').length
   const ospiteAlloIntervallo = primoTempo.filter((evento) => evento.lato === 'ospite').length
   const vincenteSottoAlloIntervallo = homeVince
@@ -288,7 +290,7 @@ export function LeagueNews({ leagueId, fixtures, matches, standings, teamById, c
   useEffect(() => {
     let annullato = false
     async function caricaMarcatori() {
-      const ids = [...new Set(partiteGiornata.flatMap((match) => match.blocchi.map((evento) => evento.marcatore)))]
+      const ids = [...new Set(partiteGiornata.flatMap((match) => match.blocchi.filter(isEventoGol).map((evento) => evento.marcatore)))]
       if (ids.length === 0) { setMarcatori(new Map()); return }
       const { data } = await supabase.from('player_instances').select('id,players(nome)').in('id', ids)
       if (annullato) return

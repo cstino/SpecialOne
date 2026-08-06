@@ -15,6 +15,7 @@ export type League = {
   giornate_totali: number
   stato: 'setup' | 'draft' | 'stagione' | 'conclusa'
   stagione_corrente: number
+  reveal_dalla_giornata: number
   fase_carriera: 'normale' | 'offseason' | 'terminata'
   offseason_fine: string | null
 }
@@ -26,6 +27,7 @@ export type Team = {
   nome: string
   stemma_url: string | null
   budget: number
+  budget_ingaggi_riservato: number
   reroll_rimasti: number
   ordine_draft: number | null
   attiva: boolean
@@ -82,19 +84,48 @@ export type Match = {
     home: MatchTeamStats
     away: MatchTeamStats
   }
-  blocchi: EventoGol[]
+  blocchi: EventoPartita[]
   simulata_il: string
 }
 
 // Minuto e assist sono un'attribuzione della Edge Function: il motore decide
 // gol e marcatori, non il singolo passaggio.
-export type EventoGol = {
+type EventoBase = {
   minuto: number
   blocco: number
   lato: 'casa' | 'ospite'
   team_id: number
+}
+
+export type EventoGol = EventoBase & {
+  // Le partite giocate prima della cronaca estesa non hanno `tipo`: restano
+  // gol legacy e devono continuare a comparire nel tabellino.
+  tipo?: 'gol'
   marcatore: number
   assist: number | null
+}
+
+export type EventoTiro = EventoBase & {
+  tipo: 'tiro_parato' | 'tiro_fuori'
+  giocatore: number
+}
+
+export type EventoSostituzione = EventoBase & {
+  tipo: 'sostituzione'
+  esce: number
+  entra: number
+}
+
+export type EventoInfortunio = EventoBase & {
+  tipo: 'infortunio'
+  esce: number
+  entra: number
+}
+
+export type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio
+
+export function isEventoGol(evento: EventoPartita): evento is EventoGol {
+  return evento.tipo === 'gol' || 'marcatore' in evento
 }
 
 export type MatchTeamStats = {

@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
 import { ordineRuolo } from '../lib/ruoli'
 import { useSeasonData } from '../lib/useSeasonData'
-import type { EventoGol, League, MatchPlayerStat, MatchTeamStats, Membership } from '../types'
+import { isEventoGol, type EventoGol, type EventoPartita, type League, type MatchPlayerStat, type MatchTeamStats, type Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { SeasonState, TeamLabel } from './SeasonUI'
 
@@ -18,8 +18,8 @@ type Props = {
 type PlayerIdentity = { id: number; nome: string; posizioni: string[] }
 
 // Come sul tabellone di uno stadio: i marcatori stanno sotto la propria squadra.
-function ScorerList({ eventi, lato, players }: { eventi: EventoGol[]; lato: 'casa' | 'ospite'; players: Map<number, PlayerIdentity> }) {
-  const propri = eventi.filter((evento) => evento.lato === lato)
+function ScorerList({ eventi, lato, players }: { eventi: EventoPartita[]; lato: 'casa' | 'ospite'; players: Map<number, PlayerIdentity> }) {
+  const propri = eventi.filter((evento): evento is EventoGol => isEventoGol(evento) && evento.lato === lato)
   if (propri.length === 0) return null
   return <ul className={`match-scorers match-scorers--${lato}`}>
     {propri.map((evento, indice) => {
@@ -213,8 +213,9 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
         {statsLoading ? <p className="season-empty">Carico le prestazioni…</p> : <div className="match-player-columns">
           {[fixture.home_team_id, fixture.away_team_id].map((teamId) => {
             const gruppi = gruppiByTeam.get(teamId)
+            const modulo = teamId === fixture.home_team_id ? match.modulo_home : match.modulo_away
             return <div className="match-player-team" key={teamId}>
-              <h3>{data.teamById.get(teamId)?.nome ?? 'Squadra'}</h3>
+              <h3><span>{data.teamById.get(teamId)?.nome ?? 'Squadra'}</span><small>{modulo}</small></h3>
               <div className="match-player-table">
                 <div className="match-player-table__head"><span>Giocatore</span><span>MIN</span><span>G</span><span>A</span><span>T</span><span>PASS</span></div>
                 {gruppi && gruppi.titolari.length > 0 && <>

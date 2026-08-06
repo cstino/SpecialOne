@@ -61,9 +61,9 @@ export function TeamLabel({ team, imageUrl, reversed = false, onClick }: { team?
   return <span className={`season-team ${reversed ? 'season-team--reversed' : ''}`}>{content}</span>
 }
 
-export function FixtureScore({ fixture, match }: { fixture: Fixture; match?: Match }) {
+export function FixtureScore({ fixture, match, reveal = false }: { fixture: Fixture; match?: Match; reveal?: boolean }) {
   const esito = fixture.stato === 'simulata' && match
-    ? <span className="fixture-score"><b>{match.gol_home}</b><i>-</i><b>{match.gol_away}</b></span>
+    ? reveal ? <span className="fixture-reveal">VEDI<br />RISULTATO</span> : <span className="fixture-score"><b>{match.gol_home}</b><i>-</i><b>{match.gol_away}</b></span>
     : fixture.stato === 'in_corso' ? <span className="fixture-status fixture-status--live">LIVE</span>
     : fixture.stato === 'annullata' ? <span className="fixture-status">ANN.</span>
     // L'orario e' gia' nell'intestazione della giornata: qui serve solo il

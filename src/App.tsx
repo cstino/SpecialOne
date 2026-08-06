@@ -18,6 +18,7 @@ import { Help } from './components/Help'
 import { Rosa } from './components/Rosa'
 import { Matches } from './components/Matches'
 import { MatchDetail } from './components/MatchDetail'
+import { MatchReveal } from './components/MatchReveal'
 import { Mercato } from './components/Mercato'
 import { Offseason } from './components/Offseason'
 import { SeasonOverview } from './components/SeasonOverview'
@@ -56,6 +57,8 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [gameView, setGameView] = useState<GameView>('overview')
   const [openMatch, setOpenMatch] = useState<{ id: number; from: GameView } | null>(null)
+  const [revealMatch, setRevealMatch] = useState<{ id: number; from: GameView } | null>(null)
+  const [partiteViste, setPartiteViste] = useState<Set<number>>(new Set())
   const [viewedTeamId, setViewedTeamId] = useState<number | null>(null)
   // Si atterra sempre nel menu iniziale: da li' si sceglie in quale lega
   // entrare, o se crearne una. Entrare d'ufficio nell'ultima lega toglieva
@@ -217,6 +220,29 @@ export default function App() {
 
   useEffect(() => { void loadMemberships() }, [loadMemberships])
 
+  useEffect(() => {
+    if (!session) { setPartiteViste(new Set()); return }
+    let attivo = true
+    async function caricaPartiteViste() {
+      const { data } = await supabase.from('match_reveals').select('match_id')
+      if (attivo) setPartiteViste(new Set((data ?? []).map((riga) => riga.match_id as number)))
+    }
+    void caricaPartiteViste()
+    return () => { attivo = false }
+  }, [session])
+
+  const segnaPartitaVista = useCallback(async (matchId: number) => {
+    // La UI passa subito allo stato "visto"; il database lo rende poi
+    // persistente tra refresh e dispositivi appena la migrazione e' attiva.
+    setPartiteViste((precedenti) => new Set(precedenti).add(matchId))
+    if (!session) return
+    const { error: revealError } = await supabase.from('match_reveals').upsert(
+      { user_id: session.user.id, match_id: matchId },
+      { onConflict: 'user_id,match_id', ignoreDuplicates: true },
+    )
+    if (revealError) console.warn('Impossibile salvare il reveal della partita:', revealError.message)
+  }, [session])
+
   async function completed(result: RpcResult) {
     setActiveLeagueId(result.league_id)
     setShowOnboarding(false)
@@ -318,27 +344,31 @@ export default function App() {
 
   function navigateGame(view: GameView) {
     setOpenMatch(null)
+    setRevealMatch(null)
     setViewedTeamId(null)
     setGameView(view)
   }
   function openTeam(teamId: number) {
     setOpenMatch(null)
+    setRevealMatch(null)
     setViewedTeamId(teamId)
     setGameView('team')
   }
-  return conContesti(
-    openMatch
+  const schermata = openMatch
       ? <MatchDetail membership={active} matchId={openMatch.id} onBack={() => { setOpenMatch(null); setGameView(openMatch.from) }} onNavigate={navigateGame} onOpenTeam={openTeam} />
       : gameView === 'squad' ? <Formazione membership={active} onNavigate={navigateGame} />
       : gameView === 'team' ? <TeamProfile membership={active} teamId={viewedTeamId ?? active.id} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'team' })} onTeamUpdated={loadMemberships} />
       : gameView === 'mercato' ? <Mercato membership={active} onNavigate={navigateGame} />
-      : gameView === 'matches' ? <Matches membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'matches' })} onOpenTeam={openTeam} />
+      : gameView === 'matches' ? <Matches membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} onOpenMatch={(id) => setOpenMatch({ id, from: 'matches' })} onRevealMatch={(id) => setRevealMatch({ id, from: 'matches' })} onOpenTeam={openTeam} />
       : gameView === 'table' ? <Standings membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
       : gameView === 'honors' ? <AlboDOro membership={active} onNavigate={navigateGame} />
       : gameView === 'notifications' ? <Avvisi membership={active} onNavigate={navigateGame} />
       : gameView === 'admin' ? <Admin membership={active} onNavigate={navigateGame} />
       : gameView === 'help' ? <Help membership={active} onNavigate={navigateGame} />
       : gameView === 'finanza' ? <Finanza membership={active} onNavigate={navigateGame} />
-      : <SeasonOverview membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'overview' })} onOpenTeam={openTeam} />,
-  )
+      : <SeasonOverview membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} onOpenMatch={(id) => setOpenMatch({ id, from: 'overview' })} onRevealMatch={(id) => setRevealMatch({ id, from: 'overview' })} onOpenTeam={openTeam} />
+  return conContesti(<>
+    {schermata}
+    {revealMatch && <MatchReveal membership={active} matchId={revealMatch.id} onClose={() => setRevealMatch(null)} onRevealed={segnaPartitaVista} onOpenReport={() => { setOpenMatch(revealMatch); setRevealMatch(null) }} />}
+  </>)
 }

@@ -154,6 +154,38 @@ function sostituzioni(lineup) {
   }
 }
 
+// Un infortunio non aspetta il fischio finale: se c'e' una riserva e un cambio
+// disponibile, il giocatore esce nello stesso slot e il cambio conta nei 5.
+// A differenza del cambio per stanchezza, qui entra la migliore alternativa
+// disponibile anche se non migliora l'overall dello slot.
+function sostituisciInfortunato(lineup, slot) {
+  if (lineup.cambiFatti >= CFG.MAX_CAMBI || !lineup.titolari[slot]) return null;
+  let bestIdx = -1, bestVal = -Infinity;
+  for (let j = 0; j < lineup.panchina.length; j++) {
+    const valore = ovrEfficace(lineup.panchina[j], lineup.slots[slot]);
+    if (valore > bestVal) { bestVal = valore; bestIdx = j; }
+  }
+  if (bestIdx < 0) return null;
+  const esce = lineup.titolari[slot];
+  const entra = lineup.panchina.splice(bestIdx, 1)[0];
+  lineup.titolari[slot] = entra;
+  entra._entrato = true;
+  lineup.cambiFatti++;
+  return { esce: esce.id, entra: entra.id };
+}
+
+function creaRngInfortuni(seme) {
+  let stato = seme >>> 0;
+  return () => { stato = (stato * 1664525 + 1013904223) >>> 0; return stato / 4294967296; };
+}
+
+function durataInfortunio(rng) {
+  const r = rng();
+  return r < 0.60 ? 1 + Math.floor(rng() * 2)
+       : r < 0.90 ? 3 + Math.floor(rng() * 4)
+       : 8 + Math.floor(rng() * 8);
+}
+
 // ---------- Statistiche individuali ----------
 
 function distribuisci(lineup, tipo, totale, attributo) {
@@ -204,6 +236,15 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   const famO = familiarita(rosaOspite, modOspite);
   const stC = stileTattico(opt.stileCasa);
   const stO = stileTattico(opt.stileOspite);
+  // Separato dal RNG dei gol: l'introduzione degli infortuni in partita non
+  // deve cambiare lo stream validato di xG/gol. L'Edge Function passa il seed
+  // della fixture; il fallback rende riproducibili anche i test standalone.
+  const seedInfortuni = opt.seedInfortuni ?? ((rosaCasa.giocatori[0]?.id || 1) * 1103515245 + (rosaOspite.giocatori[0]?.id || 1));
+  const rndInfortunio = creaRngInfortuni(seedInfortuni);
+  // La condizione e' un valore persistente fra le giornate: il rischio della
+  // gara parte da quella fotografata al calcio d'inizio, non dall'usura dei
+  // singoli blocchi di questa stessa partita.
+  for (const rosa of [rosaCasa, rosaOspite]) for (const g of rosa.giocatori) g._condizioneInizioPartita = g.condizione;
 
   let golC = 0, golO = 0, xgTotC = 0, xgTotO = 0;
   const ctrlStorico = [];
@@ -215,6 +256,7 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   // calcolo di questa funzione, e' solo dato esposto in piu'.
   const presenzeCasaPerBlocco = [];
   const presenzeOspitePerBlocco = [];
+  const infortuniInPartita = [];
 
   for (let b = 0; b < CFG.BLOCCHI_PARTITA; b++) {
     const fc = forzeLinee(lc), fo = forzeLinee(lo);
@@ -269,6 +311,26 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
         }
       }
       presenzeBlocco.push(idsBlocco);
+    }
+
+    // La probabilita' configurata e' per partita giocata. La distribuiamo sui
+    // sei blocchi, usando la condizione reale maturata fino a questo momento:
+    // un infortunio produce un cambio forzato prima dei cambi per stanchezza.
+    if (usaCondizione) {
+      for (const [lato, L] of [['casa', lc], ['ospite', lo]]) {
+        for (let i = 0; i < L.titolari.length; i++) {
+          const g = L.titolari[i];
+          if (!g || L.cambiFatti >= CFG.MAX_CAMBI || L.panchina.length === 0) continue;
+          const modEta = g.eta < 24 ? 0.85 : g.eta <= 30 ? 1.0 : g.eta <= 33 ? 1.25 : 1.5;
+          const pPartita = CFG.INFORTUNIO_BASE * (1 + (100 - g._condizioneInizioPartita) / CFG.INFORTUNIO_DIV_COND) * modEta;
+          if (rndInfortunio() >= pPartita / CFG.BLOCCHI_PARTITA) continue;
+          const cambio = sostituisciInfortunato(L, i);
+          if (!cambio) continue;
+          g.infortunatoFinoA = durataInfortunio(rndInfortunio);
+          g._nuovoInfortunio = true;
+          infortuniInPartita.push({ lato, blocco: b + 1, ...cambio, giornate: g.infortunatoFinoA });
+        }
+      }
     }
 
     if (CFG.FINESTRE_CAMBI.includes(b + 1)) { sostituzioni(lc); sostituzioni(lo); }
@@ -326,17 +388,14 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
       const inLineup = new Set(L.titolari.filter(Boolean).map(g => g.id));
       const inPanca = new Set(L.panchina.map(g => g.id));
       for (const g of rosa.giocatori) {
-        if (g.infortunatoFinoA > 0) { g.infortunatoFinoA--; if (g.infortunatoFinoA === 0) g.condizione = 65; continue; }
+        if (g.infortunatoFinoA > 0) {
+          // Un infortunio avvenuto in questa gara non perde gia' una giornata
+          // nel recupero immediatamente successivo al match.
+          if (g._nuovoInfortunio) { g._nuovoInfortunio = false; continue; }
+          g.infortunatoFinoA--; if (g.infortunatoFinoA === 0) g.condizione = 65; continue;
+        }
         if (inLineup.has(g.id) || g._entrato) {
           g.condizione = Math.min(100, g.condizione + CFG.REC_GIOCATO);
-          const modEta = g.eta < 24 ? 0.85 : g.eta <= 30 ? 1.0 : g.eta <= 33 ? 1.25 : 1.5;
-          const p = CFG.INFORTUNIO_BASE * (1 + (100 - g.condizione) / CFG.INFORTUNIO_DIV_COND) * modEta;
-          if (rnd() < p) {
-            const r = rnd();
-            g.infortunatoFinoA = r < 0.60 ? 1 + Math.floor(rnd() * 2)
-                               : r < 0.90 ? 3 + Math.floor(rnd() * 4)
-                               : 8 + Math.floor(rnd() * 8);
-          }
         } else if (inPanca.has(g.id)) g.condizione = Math.min(100, g.condizione + CFG.REC_PANCHINA);
         else g.condizione = Math.min(100, g.condizione + CFG.REC_TRIBUNA);
         g._entrato = false;
@@ -346,10 +405,12 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
 
   rosaCasa.esperienzaModulo[modCasa] = (rosaCasa.esperienzaModulo[modCasa] || 0) + 1;
   rosaOspite.esperienzaModulo[modOspite] = (rosaOspite.esperienzaModulo[modOspite] || 0) + 1;
+  for (const rosa of [rosaCasa, rosaOspite]) for (const g of rosa.giocatori) delete g._condizioneInizioPartita;
 
   return {
     golC, golO, statsCasa: sC, statsOspite: sO, perGiocatore, golPerBlocco,
     presenzePerBlocco: { casa: presenzeCasaPerBlocco, ospite: presenzeOspitePerBlocco },
+    infortuniInPartita,
   };
 }
 
