@@ -1,5 +1,51 @@
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { Fixture, Match, Team } from '../types'
 import { Crest } from './Crest'
+
+// Canvas condiviso solo per misurare il testo (mai disegnato/allegato al
+// DOM): measureText e' molto piu' economico di un reflow reale, e un solo
+// canvas basta per tutte le misurazioni della sessione.
+let canvasMisura: HTMLCanvasElement | null = null
+function larghezzaTesto(testo: string, font: string) {
+  if (!canvasMisura) canvasMisura = document.createElement('canvas')
+  const ctx = canvasMisura.getContext('2d')
+  if (!ctx) return testo.length * 20
+  ctx.font = font
+  return ctx.measureText(testo).width
+}
+
+// Titolo che sta sempre su una riga, riducendo la dimensione del carattere
+// finche' non entra nel contenitore (con un margine di sicurezza), invece
+// di andare a capo o uscire dai bordi come un h1 a clamp() fisso. Pensato
+// per nomi squadra di lunghezza qualsiasi.
+export function TitoloAdattivo({ testo, className, taglioMassimo = 67, taglioMinimo = 22 }: { testo: string; className?: string; taglioMassimo?: number; taglioMinimo?: number }) {
+  const ref = useRef<HTMLHeadingElement>(null)
+  const [taglia, setTaglia] = useState<number | null>(null)
+
+  useLayoutEffect(() => {
+    const nodo = ref.current
+    const contenitore = nodo?.parentElement
+    if (!nodo || !contenitore) return
+
+    function adatta() {
+      const larghezzaDisponibile = contenitore!.clientWidth * 0.96 // margine di sicurezza
+      if (larghezzaDisponibile <= 0) return
+      const stile = getComputedStyle(nodo!)
+      let candidata = taglioMassimo
+      while (candidata > taglioMinimo && larghezzaTesto(testo, `${stile.fontWeight} ${candidata}px ${stile.fontFamily}`) > larghezzaDisponibile) {
+        candidata -= 1
+      }
+      setTaglia(candidata)
+    }
+
+    adatta()
+    const osservatore = new ResizeObserver(adatta)
+    osservatore.observe(contenitore)
+    return () => osservatore.disconnect()
+  }, [testo, taglioMassimo, taglioMinimo])
+
+  return <h1 ref={ref} className={className} style={taglia ? { fontSize: taglia, whiteSpace: 'nowrap' } : { whiteSpace: 'nowrap', visibility: 'hidden' }}>{testo}</h1>
+}
 
 export function formatMatchDate(value: string, withTime = true) {
   return new Intl.DateTimeFormat('it-IT', {
@@ -16,14 +62,19 @@ export function TeamLabel({ team, imageUrl, reversed = false, onClick }: { team?
 }
 
 export function FixtureScore({ fixture, match }: { fixture: Fixture; match?: Match }) {
-  if (fixture.stato === 'simulata' && match) {
-    return <span className="fixture-score"><b>{match.gol_home}</b><i>-</i><b>{match.gol_away}</b></span>
-  }
-  if (fixture.stato === 'in_corso') return <span className="fixture-status fixture-status--live">LIVE</span>
-  if (fixture.stato === 'annullata') return <span className="fixture-status">ANN.</span>
-  // L'orario e' gia' nell'intestazione della giornata: qui serve solo il segno
-  // che separa le due squadre.
-  return <span className="fixture-time">VS</span>
+  const esito = fixture.stato === 'simulata' && match
+    ? <span className="fixture-score"><b>{match.gol_home}</b><i>-</i><b>{match.gol_away}</b></span>
+    : fixture.stato === 'in_corso' ? <span className="fixture-status fixture-status--live">LIVE</span>
+    : fixture.stato === 'annullata' ? <span className="fixture-status">ANN.</span>
+    // L'orario e' gia' nell'intestazione della giornata: qui serve solo il
+    // segno che separa le due squadre.
+    : <span className="fixture-time">VS</span>
+  // Ultimo girone di un campionato a gironi dispari (design.md §6.6): niente
+  // vantaggio casa. Un solo elemento radice anche in questo caso (mai un
+  // Fragment con due figli), perche' i contenitori chiamanti sono griglie a
+  // 3 colonne fisse che si aspettano esattamente un elemento qui in mezzo.
+  if (!fixture.campo_neutro) return esito
+  return <span className="fixture-score-wrap">{esito}<em className="fixture-neutral" title="Ultimo girone di un campionato a gironi dispari: nessun vantaggio casa">Campo neutro</em></span>
 }
 
 export type Esito = 'V' | 'N' | 'P'

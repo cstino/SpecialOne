@@ -3,7 +3,7 @@ import { useSeasonData } from '../lib/useSeasonData'
 import type { League, Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { Crest } from './Crest'
-import { FixtureScore, Forma, formaPerSquadra, formatMatchDate, SeasonState, TeamLabel } from './SeasonUI'
+import { FixtureScore, Forma, formaPerSquadra, formatMatchDate, SeasonState, TeamLabel, TitoloAdattivo } from './SeasonUI'
 import { LeagueNews } from './LeagueNews'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; onOpenMatch: (matchId: number) => void; onOpenTeam: (teamId: number) => void }
@@ -39,7 +39,7 @@ export function SeasonOverview({ membership, onNavigate, onOpenMatch, onOpenTeam
           <Crest value={miaSquadra?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(membership.id)} size="large" />
           <div>
             <p className="kicker">{league.nome} · Stagione {league.stagione_corrente}</p>
-            <h1>{miaSquadra?.nome ?? 'La tua squadra'}</h1>
+            <TitoloAdattivo testo={miaSquadra?.nome ?? 'La tua squadra'} />
             <div className="season-hero__stato">
               <span className="season-hero__posizione"><small>Posizione</small><b>{miaClassifica?.posizione ?? '—'}<sup>ª</sup></b></span>
               <span className="season-hero__punti">{miaClassifica?.punti ?? 0} punti</span>

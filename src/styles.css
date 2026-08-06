@@ -73,7 +73,7 @@
 
 html { min-width: 320px; background: var(--paper); -webkit-text-size-adjust: 100%; touch-action: pan-x pan-y; }
 body { margin: 0; min-width: 320px; min-height: 100vh; overflow-x: hidden; touch-action: pan-x pan-y; }
-button, input, select { font: inherit; }
+button, input, select, textarea { font: inherit; }
 button { color: inherit; }
 button, label, input, select { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, input:focus-visible, select:focus-visible {
@@ -151,7 +151,7 @@ p { line-height: 1.55; }
 
 .form-stack { display: grid; gap: 1rem; }
 label { display: grid; gap: 0.5rem; font-size: 0.88rem; font-weight: 750; }
-input[type="text"], input[type="email"], input[type="password"], select {
+input[type="text"], input[type="email"], input[type="password"], select, textarea {
   width: 100%;
   min-height: 50px;
   border: 1px solid #8f978f;
@@ -161,6 +161,7 @@ input[type="text"], input[type="email"], input[type="password"], select {
   background: var(--paper-light);
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
+textarea { resize: vertical; }
 input::placeholder { color: #6d756e; }
 input:hover:not(:disabled), select:hover:not(:disabled) { border-color: var(--ink); }
 input:disabled { opacity: 0.65; }
@@ -171,6 +172,27 @@ input:disabled { opacity: 0.65; }
 .form-heading--large { margin-bottom: 3rem; }
 .form-heading--large p:last-child { max-width: 60ch; }
 
+/* Oswald autoospitata (SIL OFL), solo latin, pesi 600/700: e' la controparte
+   reale — condensata, da titolo — di "Aptos Narrow", che fuori da Windows
+   non esiste mai davvero e ricade sul sans di sistema. Nessuna chiamata di
+   rete a runtime: i file sono in public/fonts/, scaricati una volta sola.
+   Applicata solo al titolo di Accesso (vedi .auth-pitch h1 sotto), non al
+   resto dell'app. */
+@font-face {
+  font-family: "Oswald";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/oswald-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Oswald";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/oswald-700.woff2") format("woff2");
+}
+
 /* Accesso: il campo occupa metà scena e la riga tattica conduce al modulo. */
 .auth-layout { min-width: 0; min-height: 100vh; display: grid; background: var(--paper); }
 .auth-pitch {
@@ -180,34 +202,42 @@ input:disabled { opacity: 0.65; }
   overflow: hidden;
   padding: 1.4rem;
   color: var(--chalk);
-  background: var(--pitch);
+  background:
+    repeating-linear-gradient(115deg, transparent 0 35px, rgba(255,255,255,.05) 36px 37px),
+    radial-gradient(circle at 84% -10%, rgba(196,140,255,.4), transparent 26rem),
+    radial-gradient(circle at -6% 108%, rgba(101,39,199,.5), transparent 24rem),
+    linear-gradient(155deg, #7c30e6 0%, #4d1c98 78%);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
+.auth-pitch h1 { font-family: "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; font-weight: 700; letter-spacing: -.01em; }
 .auth-pitch::before,
 .auth-pitch::after {
   content: "";
   position: absolute;
   pointer-events: none;
-  border: 1px solid rgba(255, 253, 244, 0.38);
+  border: 1px solid rgba(255, 253, 244, 0.32);
 }
-.auth-pitch::before { inset: 5.5rem -10rem -8rem 26%; border-radius: 50%; }
+.auth-pitch::before { inset: 5.5rem -10rem -8rem 26%; border-radius: 50%; background: radial-gradient(circle at 32% 30%, rgba(255,255,255,.07), transparent 60%); }
 .auth-pitch::after { width: 44%; height: 28%; right: -1px; bottom: 11%; border-right: 0; }
 .pitch-copy { position: relative; z-index: 1; width: 100%; min-width: 0; max-width: 680px; margin-top: 5rem; }
 .pitch-copy h1 { max-width: 10ch; }
-.pitch-copy > p:last-child { width: min(100%, 39ch); margin-bottom: 0; color: #e3efe6; font-size: 1rem; overflow-wrap: anywhere; }
-.pitch-line { position: absolute; right: 12%; bottom: 14%; width: 88px; height: 88px; border: 1px solid rgba(255,253,244,.55); border-radius: 50%; }
+.pitch-copy > p:last-child { width: min(100%, 39ch); margin-bottom: 0; color: #e4d9f7; font-size: 1rem; overflow-wrap: anywhere; }
+.pitch-line { position: absolute; right: 12%; bottom: 14%; width: 88px; height: 88px; border: 1px solid rgba(255,253,244,.5); border-radius: 50%; box-shadow: 0 0 26px rgba(255,255,255,.09); }
 .pitch-line span {
   position: absolute; width: 10px; height: 10px; left: 39px; top: 39px; border-radius: 50%; background: var(--warning);
+  box-shadow: 0 0 14px var(--warning);
   animation: magnet-drop 700ms cubic-bezier(.16,1,.3,1) both;
 }
 @keyframes magnet-drop { from { transform: translateY(-34px) scale(1.7); filter: blur(5px); } to { transform: translateY(0) scale(1); filter: blur(0); } }
-.auth-panel { min-width: 0; padding: 2rem 1.4rem 3rem; display: grid; place-items: center; }
+.auth-panel { min-width: 0; padding: 2rem 1.4rem 3rem; display: grid; place-items: center; background: radial-gradient(circle at 12% 100%, rgba(139,66,239,.14), transparent 22rem), var(--paper); }
 .auth-form-wrap { width: 100%; min-width: 0; max-width: 430px; }
-.segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 3.2rem; padding: 4px; border-radius: var(--radius-md); background: #e1e2da; }
-.segmented button { min-width: 0; min-height: 44px; border: 0; border-radius: var(--radius-sm); background: transparent; font-size: 0.8rem; font-weight: 800; white-space: nowrap; cursor: pointer; }
-.segmented button[aria-pressed="true"] { background: var(--paper-light); box-shadow: 0 3px 9px rgba(24,34,28,.12); }
+.auth-panel .form-heading h2 { font-family: "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; font-weight: 600; letter-spacing: -.005em; }
+.auth-panel input:focus-visible { box-shadow: 0 0 0 4px rgba(139,66,239,.22); }
+.segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 3.2rem; padding: 4px; border-radius: var(--radius-md); background: #1a1523; border: 1px solid #2e2640; }
+.segmented button { min-width: 0; min-height: 44px; border: 0; border-radius: var(--radius-sm); color: #b6a8d1; background: transparent; font-size: 0.8rem; font-weight: 800; white-space: nowrap; cursor: pointer; transition: background .18s ease, color .18s ease, box-shadow .18s ease; }
+.segmented button[aria-pressed="true"] { color: #fff; background: linear-gradient(135deg, #9b4cff, #6726c4); box-shadow: 0 6px 16px rgba(122,48,215,.35); }
 
 /* Shell e ingresso lega */
 .app-shell { min-height: 100vh; }
@@ -656,7 +686,7 @@ h1, h2, h3, strong { color: var(--ink); }
 .button--primary:hover:not(:disabled) { background: linear-gradient(135deg, #b265ff, #762ed7); }
 .button--secondary { color: #eee9ff; background: #28223a; border: 1px solid #40345a; }
 .text-button, .back-button { color: #bda8df; }
-input[type="text"], input[type="email"], input[type="password"], select { color: #f6f4ff; background: #1a1825; border-color: #3a3449; }
+input[type="text"], input[type="email"], input[type="password"], select, textarea { color: #f6f4ff; background: #1a1825; border-color: #3a3449; }
 input::placeholder { color: #706a7d; }
 input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df; }
 .lobby-hero, .season-ticket { background: radial-gradient(circle at 85% 20%, rgba(174,91,255,.38), transparent 22rem), linear-gradient(135deg, #351268, #170c2d 78%); }
@@ -701,34 +731,41 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    sui telefoni piu' stretti, dove "4-2-3-1" al font enorme del modulo puo'
    non lasciare spazio al bottone sulla stessa riga. */
 .formation-toolbar { position: relative; display: flex; flex-direction: column; gap: 18px; margin-bottom: 22px; }
-.formation-toolbar__top { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 18px; }
-.formation-save { display: grid; justify-items: end; gap: 4px; text-align: right; }
+
+.formation-save-row { display: flex; align-items: center; gap: 14px; }
 .formation-save-button { min-height: 40px; padding: .6rem 1.3rem; }
-.formation-save span { font-size: .74rem; font-weight: 800; color: #cbb98a; }
-.formation-save small { color: #9990aa; font-size: .66rem; }
-.formation-module-selector { position: relative; width: max-content; max-width: 100%; }
-.formation-module-trigger { position: relative; z-index: 1; display: flex; align-items: center; gap: 13px; min-width: 190px; padding: 2px 0 4px; color: #f7f4fc; border: 0; background: transparent; text-align: left; cursor: pointer; }
-.formation-module-trigger strong { font-size: clamp(2.5rem, 7vw, 4.4rem); font-weight: 900; letter-spacing: -.055em; line-height: .95; }
-.formation-module-trigger span { width: 31px; height: 31px; display: grid; place-items: center; color: #cf92ff; border: 1px solid #664182; border-radius: 50%; background: #24192e; font-size: 1.15rem; line-height: 1; transition: transform .16s ease, background .16s ease; }
-.formation-module-trigger:hover span, .formation-module-trigger[aria-expanded="true"] span { background: #4e256c; transform: translateY(2px); }
-.formation-module-trigger[aria-expanded="true"] { z-index: 28; }
-.formation-module-scrim { position: fixed; z-index: 25; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; background: rgba(5,4,8,.42); cursor: default; }
+.formation-save-stato { display: grid; gap: 2px; }
+.formation-save-stato span { font-size: .74rem; font-weight: 800; color: #cbb98a; }
+.formation-save-stato small { color: #9990aa; font-size: .66rem; }
+
+/* Overall medio degli undici titolari: un cerchio, subito sotto Salva —
+   stessa cifra gia' mostrata su ogni maglietta, aggregata, non un nuovo
+   numero da spiegare. */
+.formation-overall { width: max-content; display: grid; justify-items: center; gap: 7px; }
+.formation-overall strong { width: 84px; height: 84px; display: grid; place-items: center; border-radius: 50%; border: 2px solid #7a4fc4; background: radial-gradient(circle at 32% 26%, rgba(196,140,255,.3), transparent 65%), #1c1726; color: #fff; font-size: 1.85rem; font-weight: 950; letter-spacing: -.03em; box-shadow: 0 10px 26px rgba(122,48,215,.28), inset 0 0 0 1px rgba(193,112,255,.14); }
+.formation-overall span { color: #9990aa; font-size: .62rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+
+/* Modulo tattico e stile di gioco: due card rettangolari identiche, una
+   sopra l'altra — prima erano due linguaggi grafici diversi (il modulo un
+   testo enorme senza bordo, lo stile una pillola bordata), qui unificati. */
+.formation-tattica { display: grid; gap: 10px; }
+.formation-tattica__voce { position: relative; }
+.formation-tattica__trigger { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 68px; padding: 12px 16px; border: 1px solid #4a3568; border-radius: 14px; background: #1c1726; text-align: left; cursor: pointer; box-sizing: border-box; transition: border-color .16s ease; }
+.formation-tattica__trigger:hover { border-color: #664182; }
+.formation-tattica__testo { display: grid; gap: 3px; min-width: 0; }
+.formation-tattica__testo small { color: #a996c4; font-size: .62rem; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+.formation-tattica__testo strong { overflow: hidden; color: #f7f4fc; font-size: clamp(1.05rem, 3.4vw, 1.35rem); font-weight: 900; letter-spacing: -.01em; text-overflow: ellipsis; white-space: nowrap; }
+.formation-tattica__trigger i { flex-shrink: 0; width: 30px; height: 30px; display: grid; place-items: center; color: #cf92ff; border: 1px solid #664182; border-radius: 50%; background: #24192e; font-style: normal; font-size: 1.1rem; line-height: 1; transition: transform .16s ease, background .16s ease; }
+.formation-tattica__trigger:hover i, .formation-tattica__trigger[aria-expanded="true"] i { background: #4e256c; transform: translateY(2px); }
+.formation-tattica__trigger[aria-expanded="true"] { z-index: 28; border-color: #a354e8; }
+
+.formation-module-scrim, .formation-stile-scrim { position: fixed; z-index: 25; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; background: rgba(5,4,8,.42); cursor: default; }
 .formation-module-menu { position: absolute; z-index: 29; top: calc(100% + 10px); left: 0; width: min(390px, calc(100vw - 48px)); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; padding: 10px; border: 1px solid #68478a; border-radius: 14px; background: rgba(23,19,31,.98); box-shadow: 0 22px 60px rgba(0,0,0,.62), 0 0 0 1px rgba(193,112,255,.1); backdrop-filter: blur(18px); animation: module-menu-in .16s ease-out; }
 .formation-module-menu > button { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; min-width: 0; padding: 11px; color: #ddd5e5; border: 1px solid #393141; border-radius: 9px; background: #201b28; text-align: left; cursor: pointer; }
 .formation-module-menu > button:hover, .formation-module-menu > button.is-active { color: #fff; border-color: #a354e8; background: linear-gradient(135deg, #4d2668, #291c35); }
 .formation-module-menu > button strong { font-size: 1rem; }.formation-module-menu > button small { overflow: hidden; color: #958b9e; font-size: .57rem; text-overflow: ellipsis; white-space: nowrap; }.formation-module-menu > button span { grid-column: 2; grid-row: 1 / 3; align-self: center; color: #c57dff; font-size: .9rem; }
 @keyframes module-menu-in { from { opacity: 0; transform: translateY(-6px) scale(.98); } }
 
-/* Stile di gioco: stessa struttura trigger/menu del modulo, ma volutamente
-   secondaria — nomi piu' lunghi (es. "DIFESA A OLTRANZA") e non deve
-   competere col font enorme del modulo, che resta la card dominante. */
-.formation-stile-selector { position: relative; width: 188px; max-width: 100%; }
-.formation-stile-trigger { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 14px; color: #f7f4fc; border: 1px solid #4a3568; border-radius: 12px; background: #1c1726; text-align: left; cursor: pointer; box-sizing: border-box; }
-.formation-stile-trigger strong { min-width: 0; flex: 1 1 auto; font-size: clamp(.82rem, 2vw, .98rem); font-weight: 900; letter-spacing: -.005em; line-height: 1.25; white-space: normal; }
-.formation-stile-trigger span { flex-shrink: 0; width: 26px; height: 26px; display: grid; place-items: center; color: #cf92ff; border: 1px solid #664182; border-radius: 50%; background: #24192e; font-size: 1rem; line-height: 1; transition: transform .16s ease, background .16s ease; }
-.formation-stile-trigger:hover span, .formation-stile-trigger[aria-expanded="true"] span { background: #4e256c; transform: translateY(2px); }
-.formation-stile-trigger[aria-expanded="true"] { z-index: 28; border-color: #a354e8; }
-.formation-stile-scrim { position: fixed; z-index: 25; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; background: rgba(5,4,8,.42); cursor: default; }
 .formation-stile-menu { position: absolute; z-index: 29; top: calc(100% + 10px); left: 0; width: min(300px, calc(100vw - 48px)); display: grid; gap: 7px; padding: 10px; border: 1px solid #68478a; border-radius: 14px; background: rgba(23,19,31,.98); box-shadow: 0 22px 60px rgba(0,0,0,.62), 0 0 0 1px rgba(193,112,255,.1); backdrop-filter: blur(18px); animation: module-menu-in .16s ease-out; }
 .formation-stile-menu > button { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; min-width: 0; padding: 11px; color: #ddd5e5; border: 1px solid #393141; border-radius: 9px; background: #201b28; text-align: left; cursor: pointer; }
 .formation-stile-menu > button:hover, .formation-stile-menu > button.is-active { color: #fff; border-color: #a354e8; background: linear-gradient(135deg, #4d2668, #291c35); }
@@ -777,6 +814,12 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .pitch-row--0 { --row-count: 1; }.pitch-row--1 { --row-count: 5; }.pitch-row--2 { --row-count: 5; }.pitch-row--3 { --row-count: 5; }
 .pitch-slot { min-width: 0; display: grid; justify-items: center; gap: 3px; }
 .pitch-slot .lineup-player { width: min(100%, 118px); }
+/* Varianti del 4-3-3: il CDM/CAM sta fra i due CM in orizzontale (vedi
+   Formazione.tsx), ma resta comunque leggermente arretrato o avanzato
+   sulla stessa riga per leggerlo a colpo d'occhio come mediano/trequartista
+   e non come un terzo centrale identico agli altri due. */
+.pitch-slot--scostato-giu { transform: translateY(16px); }
+.pitch-slot--scostato-su { transform: translateY(-16px); }
 .lineup-player { position: relative; display: grid; justify-items: center; min-width: 0; padding: 0; color: #fff; border: 0; background: transparent; text-align: center; cursor: pointer; }
 /* Niente filtro sul contenitore: un filter si applica anche agli pseudo-elementi,
    quindi proiettava l'ombra dei loro rettangoli invece della sagoma del giocatore.
@@ -820,6 +863,19 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .lineup-player--compact { flex: 0 0 112px; }
 .lineup-player--compact .lineup-player__portrait { width: 58px; }
 .lineup-player--compact .lineup-player__plate strong { font-size: .62rem; }
+
+/* Slot libero in panchina/tribuna: riquadro grigio/trasparente con un "+",
+   niente sagoma ne' overall/ruolo (non hanno senso finche' e' vuoto). */
+.lineup-player--empty { opacity: .8; transition: opacity .16s ease; }
+.lineup-player--empty:hover, .lineup-player--empty:focus-visible { opacity: 1; }
+.lineup-player--empty .lineup-player__portrait { border-bottom-color: transparent; }
+.lineup-player--empty .lineup-player__portrait::before { content: none; }
+.lineup-player__portrait--empty { display: grid; place-items: center; border: 1.5px dashed #4a4356; border-radius: 12px; background: rgba(255,255,255,.03); }
+.lineup-player__plus { color: #756b85; font-size: 1.6rem; font-weight: 300; line-height: 1; }
+.lineup-player--empty:hover .lineup-player__portrait, .lineup-player--empty:focus-visible .lineup-player__portrait { border-color: #8a63c2; background: rgba(139,66,239,.08); transform: none; }
+.lineup-player--empty:hover .lineup-player__plus, .lineup-player--empty:focus-visible .lineup-player__plus { color: #c99bff; }
+.lineup-player--empty .lineup-player__plate { background: rgba(5,6,8,.6); }
+.lineup-player--empty .lineup-player__plate strong { color: #756b85; font-weight: 700; }
 .player-action-layer { position: fixed; z-index: 90; inset: 0; background: rgba(4,3,7,.14); }
 .player-action-menu { position: fixed; width: 230px; padding: 10px; border: 1px solid #70459a; border-radius: 13px; background: rgba(24,20,32,.98); box-shadow: 0 18px 48px rgba(0,0,0,.58), 0 0 0 1px rgba(188,108,255,.12); backdrop-filter: blur(14px); animation: player-action-in .14s ease-out; }
 .player-action-menu__player { display: grid; grid-template-columns: 40px minmax(0, 1fr) 26px; align-items: center; gap: 8px; padding-bottom: 9px; border-bottom: 1px solid #392f45; }
@@ -1001,10 +1057,10 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .modale-rosa__nome strong { font-size: .86rem; }
   .modale-rosa__ovr { font-size: 1.15rem; }
   .modale-rosa__ingaggio { font-size: .74rem; }
-  .formation-module-trigger { min-width: 0; }.formation-module-menu { width: min(360px, calc(100vw - 64px)); grid-template-columns: 1fr 1fr; }
+  .formation-module-menu { width: min(360px, calc(100vw - 64px)); grid-template-columns: 1fr 1fr; }
   .formation-stile-menu { width: min(280px, calc(100vw - 64px)); }
   .formation-zone-tabs button { padding: 7px; }
-  .formation-view-card { width: 100%; aspect-ratio: .66; }.pitch-grid { inset: 6% 2.5%; }.pitch-row { gap: 1px; }.pitch-slot .lineup-player { width: min(100%, 82px); }.lineup-player__portrait { width: clamp(39px, 11vw, 52px); }.lineup-player__plate { gap: 2px; padding: 4px 3px 4px; }.lineup-player__plate strong { font-size: clamp(.48rem, 1.75vw, .59rem); }.lineup-player__position { font-size: .48rem; min-width: 19px; height: 16px; padding: 0 2px; }.lineup-player__plate b { font-size: .68rem; }.lineup-player__meta { gap: 4px; }.bench-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .formation-view-card { width: 100%; aspect-ratio: .66; }.pitch-grid { inset: 6% 2.5%; }.pitch-row { gap: 1px; }.pitch-slot .lineup-player { width: min(100%, 82px); }.pitch-slot--scostato-giu { transform: translateY(10px); }.pitch-slot--scostato-su { transform: translateY(-10px); }.lineup-player__portrait { width: clamp(39px, 11vw, 52px); }.lineup-player__plate { gap: 2px; padding: 4px 3px 4px; }.lineup-player__plate strong { font-size: clamp(.48rem, 1.75vw, .59rem); }.lineup-player__position { font-size: .48rem; min-width: 19px; height: 16px; padding: 0 2px; }.lineup-player__plate b { font-size: .68rem; }.lineup-player__meta { gap: 4px; }.bench-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .player-modal-backdrop { place-items: end center; padding: 0; }.player-modal { width: 100%; max-height: 88dvh; padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); border-width: 1px 0 0; border-radius: 20px 20px 0 0; }.player-modal__hero { grid-template-columns: 82px minmax(0, 1fr) auto; gap: 11px; padding-right: 34px; }.player-modal__photo { width: 82px; }.player-modal__overall { min-width: 58px; padding: 10px 7px; font-size: 1.55rem; }.player-modal__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }.player-modal__facts div:last-child:nth-child(odd) { grid-column: 1 / -1; }.player-stats-grid { gap: 9px 13px; }
   .lobby-grid { padding: 16px; grid-template-columns: 1fr; }
   .squad-list, .league-sheet, .draft-action-panel, .draft-club-panel, .formation-panel { padding: 20px; }
@@ -1084,6 +1140,8 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .fixture-score i { color: #846b99; font-family: Impact, Haettenschweiler, "Arial Narrow", "Roboto Condensed", sans-serif; font-style: normal; font-weight: 900; }
 .fixture-status { padding: 7px 9px; border-radius: 6px; color: #aaa1b6; background: #2a2632; font-size: .65rem; font-weight: 900; }
 .fixture-status--live { color: #12251a; background: #5cdf86; box-shadow: 0 0 18px rgba(92,223,134,.3); }
+.fixture-score-wrap { display: grid; justify-items: center; gap: 5px; }
+.fixture-neutral { padding: 3px 7px; border: 1px solid #4a4356; border-radius: 999px; color: #a99bc4; background: rgba(255,255,255,.03); font-size: .5rem; font-weight: 900; font-style: normal; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
 .season-card__actions { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
 .season-link { min-height: 36px; padding: 0; border: 0; color: #c991f3; background: transparent; font-size: .76rem; font-weight: 850; cursor: pointer; }
 .season-link:hover { color: #e5c0ff; }
@@ -1145,7 +1203,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .season-hero__squadra { min-width: 0; display: flex; align-items: center; gap: 20px; }
 .season-hero__squadra > div { min-width: 0; }
 .season-hero__squadra .crest { flex-shrink: 0; filter: drop-shadow(0 12px 26px rgba(0,0,0,.45)); }
-.season-hero__squadra h1 { margin: 4px 0 0; font-size: clamp(2.2rem, 6vw, 4.2rem); letter-spacing: -.03em; line-height: 1; overflow-wrap: break-word; word-break: break-word; }
+/* Taglia impostata a runtime da TitoloAdattivo (SeasonUI.tsx): sempre su
+   una riga, mai oltre il contenitore, qualsiasi lunghezza del nome. */
+.season-hero__squadra h1 { margin: 4px 0 0; overflow: hidden; color: #fbf8ff; font-family: "Aptos Narrow", "Arial Narrow", "Roboto Condensed", sans-serif; letter-spacing: -.02em; line-height: 1; }
 .season-hero__stato { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 13px; }
 /* Prima era solo un numero grande con una "a" minuscola in apice: senza
    etichetta, fuori dal contesto di una classifica, si leggeva ambiguo
@@ -1283,7 +1343,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .fixture-row.is-clickable { cursor: pointer; transition: background .16s ease, border-color .16s ease, transform .16s ease; }
 .fixture-row.is-clickable:hover, .fixture-row.is-clickable:focus-visible { z-index: 1; border-color: #7c4aa0; background: #231a2d; transform: translateX(3px); outline: none; }
 .fixture-row > .season-team:first-child { flex-direction: row-reverse; text-align: right; }
-.fixture-row > .fixture-time, .fixture-row > .fixture-score, .fixture-row > .fixture-status { justify-self: center; text-align: center; }
+.fixture-row > .fixture-time, .fixture-row > .fixture-score, .fixture-row > .fixture-status, .fixture-row > .fixture-score-wrap { justify-self: center; text-align: center; }
 .fixture-row > small { position: absolute; top: 6px; right: 9px; color: #c78cf0; font-size: .48rem; font-weight: 900; letter-spacing: .1em; }
 .standings-panel { overflow-x: auto; }
 .standings-head, .standings-row { min-width: 760px; display: grid; grid-template-columns: 48px minmax(220px, 1fr) repeat(7, 50px) 62px; align-items: center; }
