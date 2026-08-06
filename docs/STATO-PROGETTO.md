@@ -1,5 +1,102 @@
 # Stato progetto e handoff
 
+### Notifica fine giornata senza spoiler, e annuncio admin a tutta la lega
+
+Segnalazione dell'utente: la notifica push/in-app di fine giornata mostrava già il risultato
+nel titolo (es. "Vittoria 3-1"), rovinando la sorpresa prima ancora di aprire l'app. In
+`supabase/functions/simula-giornata/index.ts` il testo ora è fisso e uguale per entrambe le
+squadre — `"Giornata {N} terminata"` / `"Entra per controllare il risultato!"` — tolta anche
+la costruzione `verdetto`/`lati` che serviva solo a comporre il testo col punteggio. Ridistribuita.
+
+Aggiunta anche una richiesta collegata: un campo nel pannello Admin per mandare un messaggio
+libero a tutti i partecipanti della lega, come notifica in-app + push. Nuova RPC
+`public.invia_annuncio_lega(p_league_id, p_messaggio)` (migrazione
+`20260808140000_annuncio_admin_lega.sql`), stesso controllo diretto su `leagues.admin_id`
+già usato da `elimina_lega` (non `private.e_admin()`, che è pensata per le policy RLS). Usa
+`tipo = 'sistema'`, già previsto dalla CHECK di `notifications` — nessuna migrazione di
+schema oltre alla funzione. Verificato via query transazionale (poi annullata) su Real
+Fampionato: 8 notifiche inviate (una per squadra attiva), rifiutato correttamente un utente
+non admin. `db lint` invariato.
+
+### Campo neutro nell'ultimo girone dei campionati a gironi dispari
+
+Segnalazione dell'utente: il fattore campo presuppone che ogni squadra giochi in casa e in
+trasferta lo stesso numero di volte contro ogni avversaria — vero solo con un numero pari di
+gironi. Verificato leggendo `private.inizializza_stagione`: alterna casa/trasferta per girone
+e inverte l'ordine ai gironi pari (si accoppiano 1↔2, 3↔4...), ma con un numero dispari di
+gironi l'ultimo resta spaiato e ripete l'ordine del girone 1 — chi era in casa lì lo è di
+nuovo nell'ultimo, un vantaggio strutturale, non casuale.
+
+**Verificato su dati reali**: Real Fampionato (lega 37, dell'utente) ha 3 gironi (dispari), e
+aveva già l'ultimo girone generato (giornate 15-21, tutte `programmata`, nessuna simulata).
+L'utente ha scelto esplicitamente di correggere anche questa lega, sulle giornate non ancora
+giocate.
+
+**Motore** (`engine/engine.js`): nuovo flag opzionale `opt.campoNeutro`, azzera
+`BONUS_CASA_ATT`/`BONUS_CASA_MID` per quel blocco. Stesso pattern additivo di `opt.stileCasa`
+(default assente, nessun effetto sulle chiamate esistenti). Protocollo CLAUDE.md §4 seguito
+per intero: `node tools/validazione/simulate.js` dà lo stesso numero di metriche OK/FUORI del
+baseline (13/13 invariate); verifica direzionale ad-hoc (3000 partite, squadre identiche,
+stesso seed): normale 1,87 gol/partita in casa contro 1,35 in trasferta (il vantaggio atteso),
+con `campoNeutro:true` 1,44 contro 1,46 — il vantaggio sparisce come previsto.
+
+**Schema**: `fixtures.campo_neutro boolean default false` (migrazione
+`20260808130000_campo_neutro_gironi_dispari.sql`), `inizializza_stagione` lo imposta
+sull'ultimo girone quando `n_gironi` è dispari, più un **backfill** nella stessa migrazione
+per le leghe già in corso (verificato: copre esattamente le giornate 15-21 di Real
+Fampionato, senza toccare la giornata 1 già simulata). Una migrazione di correzione
+immediata (`20260808130100`) ha tolto una doppia dichiarazione di variabili nei loop che
+aveva fatto salire i warning di lint da 2 (baseline) a 10 — tornati a 2.
+
+**Frontend**: `FixtureScore` (`src/components/SeasonUI.tsx`), l'unico punto che disegna il
+segno centrale di ogni card partita in tutta l'app, mostra "Campo neutro" quando
+`fixture.campo_neutro`. Attenzione conservata nel CSS: i contenitori chiamanti sono griglie a
+3 colonne fisse (`.fixture-row`, `.last-match-duel`, `.next-match-duel`), quindi il componente
+resta sempre a **un solo elemento radice** (mai un Fragment con due figli) — per il caso
+campo neutro avvolge risultato/etichetta in un unico `.fixture-score-wrap`.
+
+### Il minutaggio sposta la velocità di progressione (§10.2)
+
+Richiesto dall'utente: prima la progressione dipendeva solo dall'età, identica per un
+titolare fisso e per chi non gioca mai. Ora `applica_progressione_trimestrale` scala ogni
+delta per un moltiplicatore lineare sulla quota di minuti giocati in stagione — 0,8x chi
+non gioca affatto, 1,4x chi gioca sempre — riusando la stessa fonte dati già in produzione
+per il morale (`match_stats`/`quota_partite_attesa`, §10bis.3), non serve nessuna colonna
+nuova.
+
+Due parametri scelti esplicitamente dall'utente dopo un confronto fra opzioni: si applica a
+**tutte** le fasce d'età, declino incluso (non solo agli under 27 in crescita — un
+veterano titolare fisso cala anche più in fretta), con un range moderato 0,8x-1,4x (non
+0,5x-1,5x né 0,2x-2x, le due alternative proposte). Migrazione
+`20260808120000_progressione_da_minutaggio.sql`. Verificato eseguendo la funzione vera in
+una transazione poi annullata (lega 29, checkpoint 4): nessun errore, gli overall si
+muovono nella direzione attesa. Non è una modifica al motore (`engine/`) — è una RPC di fine
+trimestre separata — quindi non richiede il protocollo di validazione di CLAUDE.md §4, ma
+segue comunque lo stesso principio: descritta, applicata, verificata su dati reali prima di
+considerarla fatta.
+
+### Due varianti del 4-3-3: offensivo (CAM) e difensivo (CDM)
+
+Segnalazione dell'utente: pochi moduli usavano CAM o CDM (solo il 4-2-3-1). Aggiunte due nuove
+voci in `engine/config.js` `MODULI`, derivate dal 4-3-3 cambiando solo uno dei tre centrocampisti
+centrali: **4-3-3 offensivo** (CM, CM, CAM) e **4-3-3 difensivo** (CM, CM, CDM).
+
+Modifica al motore, protocollo CLAUDE.md §4 seguito per intero: descritta, applicata, rilanciata
+`node tools/validazione/simulate.js`. Nessuna delle 13 metriche target è peggiorata (stessi
+pass/fail di prima, differenze solo di rumore statistico fra run). Il profilo strutturale non
+richiede alcuna taratura a mano — si calcola già a runtime dal monte-pesi degli slot (design.md
+§6.4) — quindi le due varianti sono entrate automaticamente bilanciate: nel torneo all-play-all
+a 9 moduli si piazzano in mezzo al gruppo (1,378 e 1,349 punti/partita su un range 1,335–1,413),
+scarto massimo 0,078 punti/partita contro un target di 0,000–0,220 (più stretto del baseline a 7
+moduli, 0,113–0,122 a seconda del giro). Nessun modulo domina.
+
+Sincronizzate le tre copie tenute a mano (stesso pattern già in uso per gli altri 7 moduli):
+`engine/config.js` (MODULI), `private.moduli_validi()` lato DB (migrazione
+`20260808110000_varianti_433.sql`), `MODULI`/`MODULO_DESCRIZIONI` in `Formazione.tsx`. Aggiornati
+anche `docs/design.md` §6.1/§6.4 e la voce "Moduli e stile di gioco" della guida "Aiuto".
+`docs/risultati-fase0.txt` resta il baseline storico originale, non riscritto — stesso
+precedente già seguito per lo stile di gioco.
+
 ### Notifiche push del browser
 
 Richiesta dell'utente. Secondo canale di consegna sopra `public.notifications`, esattamente

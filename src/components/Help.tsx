@@ -128,6 +128,11 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
       <p>Per lo stesso motivo un giovane già forte <strong>costa di più</strong> in ingaggio di
         un adulto con lo stesso overall attuale: sta pagando anche la crescita futura che gli
         altri devono ancora vedere.</p>
+      <p>Il <strong>minutaggio conta</strong>: chi gioca di più cresce (o, da veterano, cala)
+        più in fretta di chi resta spesso in panchina — fino a quasi il doppio di velocità fra
+        chi non scende mai in campo e chi gioca sempre. Schierare un giovane meno forte al
+        posto di un anziano più forte non è quindi solo una scommessa sul presente: è anche un
+        investimento reale sulla sua crescita.</p>
       <p>Dai 34 anni in su comincia anche a esserci una probabilità di <strong>ritiro</strong>,
         crescente con l'età — vedi la voce dedicata più sotto.</p>
     </>,
@@ -155,6 +160,10 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         nuovo, tutta la squadra perde punti di overall su attacco e centrocampo, e quel malus si
         riduce partita dopo partita fino a sparire dopo un certo numero di gare con lo stesso
         modulo. Cambiare modulo spesso ha quindi un costo reale, non solo estetico.</p>
+      <p>Nella pagina Formazione, il cerchio sotto il bottone "Salva" mostra l'overall medio
+        reale degli undici titolari nello slot in cui li hai messi — non l'overall "di scheda":
+        se qualcuno è fuori ruolo, quel giocatore pesa meno nella media, esattamente come pesa
+        meno nella partita vera.</p>
     </>,
   },
   {
@@ -163,7 +172,8 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     corpo: <>
       <p>Ci sono due leve tattiche, <strong>indipendenti</strong> fra loro, da scegliere insieme
         prima di ogni giornata: il <strong>modulo</strong> e lo <strong>stile di gioco</strong>.</p>
-      <p>Il <strong>modulo</strong> (4-4-2, 4-3-3, 4-2-3-1, 3-5-2, 3-4-3, 5-3-2, 4-2-4) decide
+      <p>Il <strong>modulo</strong> (4-4-2, 4-3-3, 4-3-3 offensivo, 4-3-3 difensivo, 4-2-3-1,
+        3-5-2, 3-4-3, 5-3-2, 4-2-4) decide
         quanti giocatori mandi in ciascun reparto e con che ruoli. Non esiste un modulo
         oggettivamente più forte: ognuno sposta un po' di equilibrio fra attacco, centrocampo e
         difesa, e chi ha più giocatori orientati all'attacco spinge di più ma si scopre
@@ -175,7 +185,12 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         anche meno, chi attacca di più fa l'opposto. "Equilibrato" è il default e non sposta
         nulla.</p>
       <p>In casa la squadra ha anche un piccolo vantaggio fisso su attacco e centrocampo — il
-        classico fattore campo.</p>
+        classico fattore campo. Unica eccezione: se il tuo campionato ha un numero
+        <strong> dispari</strong> di gironi, l'ultimo si gioca sempre a <strong>campo
+        neutro</strong> (nessun vantaggio per nessuna delle due squadre) — altrimenti chi era
+        in casa nel primo girone lo sarebbe di nuovo nell'ultimo, con una partita in casa in
+        più della sua avversaria in quello scontro diretto. Le partite coinvolte hanno
+        l'etichetta "Campo neutro" al posto degli orari/del risultato orientato.</p>
     </>,
   },
   {
@@ -190,6 +205,10 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         che massimizzano l'overall efficace complessivo, garantendo almeno un portiere in
         panchina se ne hai uno disponibile. Meglio comunque schierare sempre di persona: la
         formazione automatica non conosce le tue preferenze tattiche.</p>
+      <p>La panchina arriva fino a <strong>9</strong> giocatori, la tribuna fino al resto della
+        rosa massima (10, con una rosa al tetto di 30). Se un posto è libero lo vedi come un
+        riquadro vuoto: seleziona un giocatore e tocca lo slot libero per spostarcelo, senza
+        doverlo per forza scambiare con qualcun altro.</p>
     </>,
   },
   {
@@ -377,7 +396,11 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         conclusa della lega, squadra per squadra.</p>
       <p>Gli <strong>Avvisi</strong> sono il centro notifiche personale: risultati delle tue
         partite, esiti di aste e trattative, avvisi di rinnovo, formazioni schierate
-        automaticamente e tutto ciò che riguarda direttamente la tua squadra.</p>
+        automaticamente e tutto ciò che riguarda direttamente la tua squadra. L'avviso di fine
+        giornata non svela il risultato — dice solo che è pronto da controllare, così non ti
+        rovina la sorpresa prima ancora di aprire l'app.</p>
+      <p>L'admin della lega può anche mandare un <strong>annuncio</strong> a tutti i
+        partecipanti in un colpo solo, dal pannello Admin.</p>
     </>,
   },
 ]

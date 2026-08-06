@@ -266,7 +266,13 @@ Chi accumula superstar paga un sovrapprezzo che cresce più che linearmente. Con
 
 ### 6.1 Moduli disponibili
 
-4-4-2 · 4-3-3 · 4-2-3-1 · 3-5-2 · 3-4-3 · 5-3-2 · 4-2-4
+4-4-2 · 4-3-3 · 4-3-3 offensivo · 4-3-3 difensivo · 4-2-3-1 · 3-5-2 · 3-4-3 · 5-3-2 · 4-2-4
+
+> **Varianti del 4-3-3, aggiunte dall'utente l'8 agosto 2026.** Segnalazione: pochi moduli
+> usavano CAM o CDM (solo il 4-2-3-1). Le due varianti cambiano solo uno dei tre centrocampisti
+> centrali del 4-3-3 rispetto alla versione base: **offensivo** ha CM, CM, CAM; **difensivo** ha
+> CM, CM, CDM. Nessuna formula toccata — il profilo strutturale si calcola già a runtime dal
+> monte-pesi degli slot (§6.4), quindi le due varianti sono entrate automaticamente bilanciate.
 
 ### 6.2 Overall efficace del giocatore
 
@@ -333,6 +339,8 @@ Profili risultanti (punti di overall rispetto al 4-3-3):
 | Modulo | ATT | MID | DEF |
 |---|---|---|---|
 | 4-3-3 | 0,00 | 0,00 | 0,00 |
+| 4-3-3 offensivo | +0,77 | −0,77 | −0,44 |
+| 4-3-3 difensivo | −0,44 | −0,55 | +0,55 |
 | 4-4-2 | −0,55 | −0,11 | +0,22 |
 | 4-2-3-1 | −0,11 | −1,87 | +0,66 |
 | 3-5-2 | −1,10 | −0,33 | +1,32 |
@@ -348,8 +356,11 @@ Vantaggio del modello: funziona automaticamente con qualsiasi modulo aggiunto in
 basta definirne gli slot. Nessuna cella da tarare a mano.
 
 **Verifica empirica** (torneo all-play-all, rose costruite su misura per ogni modulo,
-1500 partite per accoppiamento): scarto tra il modulo migliore e il peggiore = **0,113
-punti/partita**, cioe 3,2 punti su una stagione da 28 giornate. Nessun modulo domina.
+1500 partite per accoppiamento, aggiornato l'8 agosto 2026 con le 9 voci attuali): scarto tra
+il modulo migliore e il peggiore = **0,078 punti/partita**, cioe circa 2,2 punti su una
+stagione da 28 giornate — più stretto del baseline a 7 moduli (0,113/0,122 a seconda del giro),
+non più largo: le due varianti del 4-3-3 si inseriscono in mezzo al gruppo, non ai bordi.
+Nessun modulo domina.
 
 > Attenzione: 3-5-2 e 5-3-2 devono avere slot **diversi**. Il 3-5-2 usa wing-back alti
 > (LWB/RWB), il 5-3-2 terzini bassi (LB/RB) in una linea a cinque. Nella v1.0 avevano
@@ -376,6 +387,21 @@ Contatore per squadra e per modulo, decade del 10% a stagione se il modulo non v
 
 Squadra di casa: **+2,0 punti di overall** su ATT e MID (additivo, non percentuale).
 Produce un tasso di vittorie interne del 45,9%, in linea coi campionati reali.
+
+> **Eccezione: campo neutro nell'ultimo girone dei campionati a gironi dispari, aggiunta
+> dall'utente l'8 agosto 2026.** Il fattore campo presuppone che ogni squadra giochi lo stesso
+> numero di partite in casa e in trasferta contro ogni avversaria nella stagione — vero solo
+> con un numero **pari** di gironi. Il generatore di calendario (`private.inizializza_stagione`)
+> alterna casa/trasferta girone per girone e inverte l'ordine ai gironi pari, così i gironi si
+> accoppiano e si bilanciano (1↔2, 3↔4, …). Con un numero dispari di gironi l'ultimo resta
+> spaiato e ripete l'ordine del girone 1: chi era in casa nel girone 1 lo è di nuovo
+> nell'ultimo, con una partita in casa in più della sua avversaria in quell'accoppiamento.
+>
+> Correzione: se `n_gironi` è dispari, **tutte le partite dell'ultimo girone si giocano a
+> campo neutro** — nessun bonus casa per nessuna delle due squadre (`opt.campoNeutro` in
+> `engine/engine.js`, flag additivo, di default assente: non cambia nulla per le chiamate
+> esistenti). Le partite coinvolte sono marcate `fixtures.campo_neutro = true` e mostrano
+> l'etichetta "Campo neutro" al posto dell'orientamento casa/trasferta nella card.
 
 ### 6.7 Formazione automatica di fallback
 
@@ -771,6 +797,20 @@ contratti si aggiornano invece nella successiva off-season.
 | ≥ 36 | `−uniform(1.5, 4.0)` |
 
 L'overall non supera mai `potential`. Il `potential` stesso può variare di ±1 con probabilità 15% per gli under 21 (i "breakout").
+
+> **Moltiplicatore da minutaggio, aggiunto dall'utente, 8 agosto 2026.** Prima la
+> progressione dipendeva solo dall'età: un titolare fisso e una riserva che non scende mai
+> in campo crescevano (o calavano) esattamente alla stessa velocità. Ora il delta di ogni
+> fascia viene scalato da un moltiplicatore lineare sulla quota di minuti giocati in
+> stagione (stessa fonte dati del morale, §10bis.3):
+> ```
+> quota         = minuti_giocati / (90 × giornate_disputate), clamp a 1
+> moltiplicatore = 0.8 + 0.6 × quota      -- 0.8x chi non gioca mai, 1.4x chi gioca sempre
+> ```
+> Si applica a **tutte** le fasce, declino incluso: un giovane titolare fisso cresce più in
+> fretta ma un veterano titolare fisso cala anche più in fretta; chi gioca poco fa
+> l'opposto in entrambi i casi. Schierare un giovane meno forte di un anziano diventa così
+> una scelta con un costo/beneficio reale, non solo estetica.
 
 ### 10.3 Ritiro
 
