@@ -730,9 +730,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    allineato a sinistra come il modulo. flex-wrap come rete di sicurezza
    sui telefoni piu' stretti, dove "4-2-3-1" al font enorme del modulo puo'
    non lasciare spazio al bottone sulla stessa riga. */
-.formation-toolbar { position: relative; display: flex; flex-direction: column; gap: 18px; margin-bottom: 22px; }
+.formation-toolbar { position: relative; display: grid; grid-template-columns: max-content minmax(0, 1fr); grid-template-areas: "overall save" "tattica tattica"; align-items: center; gap: 18px; margin-bottom: 22px; }
 
-.formation-save-row { display: flex; align-items: center; gap: 14px; }
+.formation-save-row { grid-area: save; display: flex; justify-content: flex-end; align-items: center; gap: 14px; }
 .formation-save-button { min-height: 40px; padding: .6rem 1.3rem; }
 .formation-save-stato { display: grid; gap: 2px; }
 .formation-save-stato span { font-size: .74rem; font-weight: 800; color: #cbb98a; }
@@ -741,14 +741,14 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 /* Overall medio degli undici titolari: un cerchio, subito sotto Salva —
    stessa cifra gia' mostrata su ogni maglietta, aggregata, non un nuovo
    numero da spiegare. */
-.formation-overall { width: max-content; display: grid; justify-items: center; gap: 7px; }
+.formation-overall { grid-area: overall; width: max-content; display: grid; justify-items: center; gap: 7px; }
 .formation-overall strong { width: 84px; height: 84px; display: grid; place-items: center; border-radius: 50%; border: 2px solid #7a4fc4; background: radial-gradient(circle at 32% 26%, rgba(196,140,255,.3), transparent 65%), #1c1726; color: #fff; font-size: 1.85rem; font-weight: 950; letter-spacing: -.03em; box-shadow: 0 10px 26px rgba(122,48,215,.28), inset 0 0 0 1px rgba(193,112,255,.14); }
 .formation-overall span { color: #9990aa; font-size: .62rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
 
 /* Modulo tattico e stile di gioco: due card rettangolari identiche, una
    sopra l'altra — prima erano due linguaggi grafici diversi (il modulo un
    testo enorme senza bordo, lo stile una pillola bordata), qui unificati. */
-.formation-tattica { display: grid; gap: 10px; }
+.formation-tattica { grid-area: tattica; display: grid; gap: 10px; }
 .formation-tattica__voce { position: relative; }
 .formation-tattica__trigger { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 68px; padding: 12px 16px; border: 1px solid #4a3568; border-radius: 14px; background: #1c1726; text-align: left; cursor: pointer; box-sizing: border-box; transition: border-color .16s ease; }
 .formation-tattica__trigger:hover { border-color: #664182; }
