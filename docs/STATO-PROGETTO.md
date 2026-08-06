@@ -1,5 +1,71 @@
 # Stato progetto e handoff
 
+### Pagina "Finanza": entrate/uscite del club con grafici
+
+Nuova voce di menu (solo a stagione avviata: `seasonItems`/`offseasonItems`/`concludedItems`
+di `GameNav.tsx`, non in draft). Legge `public.transactions` (RLS già corretta: un membro vede
+solo le transazioni della propria squadra) filtrate alla stagione corrente, con card KPI
+(budget attuale, entrate/uscite/saldo netto stagione), un grafico ad area sull'andamento del
+saldo e uno a barre per categoria (Recharts — prima dipendenza UI di terze parti del progetto,
+scelta esplicitamente dall'utente).
+
+**Due cose non ovvie**:
+- Le righe `rinnovo_in_stagione` hanno `importo` sempre positivo ma non sono un vero movimento
+  di cassa (§10.4 bis: "rinnovare oggi non muove denaro oggi", infatti `saldo_dopo` non cambia
+  per quelle righe). Sono escluse dai totali entrate/uscite e dal grafico a categoria, restano
+  visibili nel registro con l'etichetta "nessun movimento di cassa".
+- Il confine di stagione **non può** essere `seasons.creata_il` alla lettera per la stagione 1:
+  quella riga nasce quando il draft finisce (stato → `'stagione'`), **dopo** che dotazione
+  iniziale e ingaggi draft sono già stati registrati — verificato su dati reali (lega 29,
+  squadra 56: dotazione delle 15:40, riga `seasons` delle 16:16). Per la stagione 1 quindi non
+  si filtra affatto; dal 2 in poi si usa `creata_il` (il passaggio di stagione è un'unica
+  operazione atomica, non ancora verificabile in produzione perché nessuna lega ha raggiunto la
+  stagione 2).
+
+### Sezione "Aiuto" in-app, raggiungibile anche prima di entrare in una lega
+
+Sostituisce i due PDF statici (`docs/guida-giocatori.pdf`, `docs/guida-ruoli-ritiri-infortuni.pdf`)
+con una guida sempre aggiornata dentro l'app: accordion di 19 argomenti (`ARGOMENTI_AIUTO` in
+`src/components/Help.tsx`), voce di menu "Aiuto" in ogni fase di lega (draft incluso — a
+differenza di Finanza) e, su richiesta dell'utente, anche in `MenuIniziale.tsx` (la schermata
+prima di entrare in una lega), perché un partecipante deve poterla leggere prima ancora di
+iscriversi.
+
+**Contenuto volutamente neutro**: la prima stesura calcolava cifre concrete dal budget della
+lega aperta (es. "ogni squadra riceve 100 M€"), ma quei valori li sceglie liberamente l'admin
+lega per lega — l'utente l'ha corretto esplicitamente. Il testo ora cita solo percentuali e
+formule relative (regole fisse del motore, es. "lo sponsor è il 20% della dotazione
+iniziale"), mai importi assoluti, proprio perché la stessa guida deve valere identica sia
+dentro una lega specifica sia nella schermata prima di sceglierne una, dove non esiste ancora
+nessun `league` da cui leggere numeri.
+
+### Buonuscita per lo svincolo anticipato (§9.5)
+
+Segnalato dall'utente durante la revisione della guida "Aiuto" appena aggiunta: la spiegazione
+del pagamento ingaggi diceva "svincolare un giocatore non dà nessun rimborso" senza nessun
+costo legato alle stagioni residue — e infatti `svincola_giocatore` era davvero completamente
+gratuito a prescindere dal contratto. Un vero exploit: rinnovare a 4 stagioni e disfarsene
+dopo la prima senza mai pagare le altre tre.
+
+Migrazione `20260807110000_buonuscita_svincolo.sql`. Formula scelta dall'utente: metà (per
+difetto) dell'ingaggio delle stagioni residue dopo quella in corso —
+`⌊(contratto_scadenza − stagione_corrente) × ingaggio / 2⌋`. Zero se è l'ultima stagione di
+contratto o se il giocatore ha già annunciato il ritiro (esce comunque a fine stagione per
+conto suo, §10.3, quindi non c'è nulla da "comprare"). Se il budget non copre la buonuscita lo
+svincolo viene rifiutato con un messaggio che indica la cifra mancante, mai un budget negativo.
+
+Verificato su dati reali (lega 37, istanza 1259: ingaggio 8 M€, 4 stagioni residue, budget 30
+M€): buonuscita calcolata 16 M€, budget sceso a 14 M€, transazione `svincolo_buonuscita`
+registrata con `importo = -16000000`. Verificato anche il rifiuto per budget insufficiente
+(istanza 1116, buonuscita 6 M€ contro budget abbassato artificialmente a 1 M€, in una
+transazione di prova mai committata) e i due casi a costo zero (ultima stagione di contratto;
+ritiro annunciato). `db lint` invariato.
+
+Lato client, `TeamProfile.tsx` mostra la buonuscita nella finestra di conferma prima di
+premere "Svincola definitivamente" (calcolo di anteprima, la cifra vera la ricalcola comunque
+il server). Aggiornati anche `docs/design.md` §5.4/§9.5 e la voce "Finanza — ingaggi e
+insolvenza" della guida "Aiuto" in-app.
+
 ### La richiesta di rinnovo ora tiene conto della mentalità (§10.4 bis)
 
 Segnalato dall'utente su un caso reale: M. Silvestri (istanza 1138), 34 anni, OVR 72,

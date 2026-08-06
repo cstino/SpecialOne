@@ -42,6 +42,18 @@ export type Season = {
   stato: 'preparazione' | 'in_corso' | 'conclusa'
   data_inizio: string | null
   data_fine: string | null
+  creata_il: string
+}
+
+export type Transaction = {
+  id: number
+  league_id: number
+  team_id: number
+  tipo: string
+  importo: number
+  descrizione: string
+  saldo_dopo: number
+  creata_il: string
 }
 
 export type Fixture = {

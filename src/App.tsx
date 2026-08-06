@@ -12,7 +12,9 @@ import { AlboDOro } from './components/AlboDOro'
 import { Avvisi } from './components/Avvisi'
 import { AuthScreen } from './components/AuthScreen'
 import { Draft } from './components/Draft'
+import { Finanza } from './components/Finanza'
 import { Formazione } from './components/Formazione'
+import { Help } from './components/Help'
 import { Rosa } from './components/Rosa'
 import { Matches } from './components/Matches'
 import { MatchDetail } from './components/MatchDetail'
@@ -278,6 +280,7 @@ export default function App() {
   if (active.league?.stato === 'draft') {
     if (gameView === 'squad') return conContesti(<Rosa membership={active} onNavigate={setGameView} />)
     if (gameView === 'admin') return conContesti(<Admin membership={active} onNavigate={setGameView} />)
+    if (gameView === 'help') return conContesti(<Help membership={active} onNavigate={setGameView} />)
     return conContesti(<Draft user={session.user} membership={active} onNavigate={setGameView} />)
   }
 
@@ -310,6 +313,8 @@ export default function App() {
       : gameView === 'honors' ? <AlboDOro membership={active} onNavigate={navigateGame} />
       : gameView === 'notifications' ? <Avvisi membership={active} onNavigate={navigateGame} />
       : gameView === 'admin' ? <Admin membership={active} onNavigate={navigateGame} />
+      : gameView === 'help' ? <Help membership={active} onNavigate={navigateGame} />
+      : gameView === 'finanza' ? <Finanza membership={active} onNavigate={navigateGame} />
       : <SeasonOverview membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'overview' })} onOpenTeam={openTeam} />,
   )
 }

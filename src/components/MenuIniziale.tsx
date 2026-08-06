@@ -4,6 +4,7 @@ import type { Notifica } from '../lib/notifiche'
 import { supabase } from '../lib/supabase'
 import type { Membership, Season, Standing } from '../types'
 import { Crest } from './Crest'
+import { GuidaArgomenti, ARGOMENTI_AIUTO } from './Help'
 import { Notifiche } from './Notifiche'
 
 type Props = {
@@ -24,7 +25,7 @@ const ETICHETTE_STATO: Record<string, string> = {
 }
 
 export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, onEntraConCodice, onRefresh, onApriNotifica }: Props) {
-  const [vista, setVista] = useState<'leghe' | 'profilo'>('leghe')
+  const [vista, setVista] = useState<'leghe' | 'profilo' | 'aiuto'>('leghe')
   const [menuAperto, setMenuAperto] = useState(false)
   const [classifiche, setClassifiche] = useState<Map<number, Standing>>(new Map())
   const [righeClassifica, setRigheClassifica] = useState<Standing[]>([])
@@ -133,7 +134,16 @@ export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, 
     </header>
 
     <div className="menu-page">
-      {vista === 'profilo' ? <>
+      {vista === 'aiuto' ? <>
+        <div className="sezione-testa">
+          <div><p className="kicker">Guida</p><h2>Aiuto</h2></div>
+          <button className="button-fantasma" type="button" onClick={() => setVista('leghe')}>← Le tue leghe</button>
+        </div>
+        <p className="menu-hero__sotto">Tutte le regole del gioco, spiegate senza gergo tecnico.
+          Tocca un argomento per aprirlo. Puoi leggerle anche prima di entrare in una lega, dato
+          che sono le stesse per tutte.</p>
+        <GuidaArgomenti argomenti={ARGOMENTI_AIUTO} />
+      </> : vista === 'profilo' ? <>
         <div className="sezione-testa">
           <div><p className="kicker">Il tuo account</p><h2>Profilo allenatore</h2></div>
           <button className="button-fantasma" type="button" onClick={() => setVista('leghe')}>← Le tue leghe</button>
@@ -258,6 +268,10 @@ export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, 
           <button type="button" onClick={() => { setVista('profilo'); setMenuAperto(false) }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6" /><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6" /></svg>
             Profilo
+          </button>
+          <button type="button" onClick={() => { setVista('aiuto'); setMenuAperto(false) }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M9.3 9.3a2.7 2.7 0 1 1 3.6 2.5c-.8.4-1.4 1-1.4 2v.4" /><path d="M12 16.8v.1" /></svg>
+            Aiuto
           </button>
           <button className="pannello-voci__uscita" type="button" onClick={() => supabase.auth.signOut()}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5M20 12H9M12 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6" /></svg>
