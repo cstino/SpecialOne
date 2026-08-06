@@ -6,26 +6,22 @@ import { Crest } from './Crest'
 import { FixtureScore, Forma, formaPerSquadra, formatMatchDate, SeasonState, TeamLabel, TitoloAdattivo } from './SeasonUI'
 import { LeagueNews } from './LeagueNews'
 
-type Props = { membership: Membership; onNavigate: (view: GameView) => void; onOpenMatch: (matchId: number) => void; onOpenTeam: (teamId: number) => void }
+type Props = { membership: Membership; onNavigate: (view: GameView) => void; revealedMatchIds: Set<number>; onOpenMatch: (matchId: number) => void; onRevealMatch: (matchId: number) => void; onOpenTeam: (teamId: number) => void }
 
-export function SeasonOverview({ membership, onNavigate, onOpenMatch, onOpenTeam }: Props) {
+export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpenMatch, onRevealMatch, onOpenTeam }: Props) {
   const league = membership.league as League
   const data = useSeasonData(membership)
   const forma = useMemo(() => formaPerSquadra(data.fixtures, data.matchByFixture), [data.fixtures, data.matchByFixture])
   const miaSquadra = data.teamById.get(membership.id)
   const miaClassifica = data.standings.find((riga) => riga.team_id === membership.id)
-
-  // Esito dell'ultima partita dal proprio punto di vista: colora la card.
-  const esitoUltima = (() => {
-    const fixture = data.lastFixture
-    const match = fixture ? data.matchByFixture.get(fixture.id) : undefined
-    if (!fixture || !match) return null
-    const inCasa = fixture.home_team_id === membership.id
-    if (!inCasa && fixture.away_team_id !== membership.id) return null
-    const propri = inCasa ? match.gol_home : match.gol_away
-    const subiti = inCasa ? match.gol_away : match.gol_home
-    return propri > subiti ? 'V' : propri < subiti ? 'P' : 'N'
-  })()
+  const ultimaPartita = data.lastFixture ? data.matchByFixture.get(data.lastFixture.id) : undefined
+  const revealAttivo = Boolean(data.lastFixture && data.lastFixture.giornata >= (league.reveal_dalla_giornata ?? 1))
+  const ultimaVista = !revealAttivo || Boolean(ultimaPartita && revealedMatchIds.has(ultimaPartita.id))
+  const apriUltimaPartita = () => {
+    if (!ultimaPartita) return
+    if (ultimaVista) onOpenMatch(ultimaPartita.id)
+    else onRevealMatch(ultimaPartita.id)
+  }
 
   return <main className="app-shell season-shell">
     <GameNav league={league} active="overview" onNavigate={onNavigate} />
@@ -51,11 +47,11 @@ export function SeasonOverview({ membership, onNavigate, onOpenMatch, onOpenTeam
       </section>
 
       <section className="season-dashboard">
-        {data.lastFixture && data.matchByFixture.get(data.lastFixture.id) && <article className={`season-card season-card--last ${esitoUltima ? `esito-riga esito-riga--${esitoUltima}` : ''}`} onClick={() => onOpenMatch(data.matchByFixture.get(data.lastFixture!.id)!.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpenMatch(data.matchByFixture.get(data.lastFixture!.id)!.id) } }} role="button" tabIndex={0}>
-          <div className="season-card__heading"><div><p className="kicker">Ultima partita</p><h2>Giornata {data.lastFixture.giornata}</h2></div><span className="matchday-chip">DETTAGLI ›</span></div>
+        {data.lastFixture && ultimaPartita && <article className={`season-card season-card--last ${ultimaVista ? 'is-revealed' : ''}`} onClick={apriUltimaPartita} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); apriUltimaPartita() } }} role="button" tabIndex={0}>
+          <div className="season-card__heading"><div><p className="kicker">Ultima partita</p><h2>Giornata {data.lastFixture.giornata}</h2></div><span className="matchday-chip">{ultimaVista ? 'DETTAGLI ›' : 'VEDI RISULTATO ›'}</span></div>
           <div className="last-match-duel">
             <TeamLabel team={data.teamById.get(data.lastFixture.home_team_id)} imageUrl={data.crestUrlByTeamId.get(data.lastFixture.home_team_id)} onClick={() => onOpenTeam(data.lastFixture!.home_team_id)} />
-            <FixtureScore fixture={data.lastFixture} match={data.matchByFixture.get(data.lastFixture.id)} />
+            <FixtureScore fixture={data.lastFixture} match={ultimaPartita} reveal={!ultimaVista} />
             <TeamLabel team={data.teamById.get(data.lastFixture.away_team_id)} imageUrl={data.crestUrlByTeamId.get(data.lastFixture.away_team_id)} reversed onClick={() => onOpenTeam(data.lastFixture!.away_team_id)} />
           </div>
         </article>}

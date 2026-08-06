@@ -4,7 +4,7 @@ import type { Fixture, League, Match, Membership, Team } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { FixtureScore, formatMatchDate, SeasonState, TeamLabel } from './SeasonUI'
 
-type Props = { membership: Membership; onNavigate: (view: GameView) => void; onOpenMatch: (matchId: number) => void; onOpenTeam: (teamId: number) => void }
+type Props = { membership: Membership; onNavigate: (view: GameView) => void; revealedMatchIds: Set<number>; onOpenMatch: (matchId: number) => void; onRevealMatch: (matchId: number) => void; onOpenTeam: (teamId: number) => void }
 
 type CardProps = {
   giornata: number
@@ -13,23 +13,14 @@ type CardProps = {
   teamById: Map<number, Team>
   crestUrlByTeamId: Map<number, string>
   matchByFixture: Map<number, Match>
+  revealedMatchIds: Set<number>
   onOpenMatch: (matchId: number) => void
+  onRevealMatch: (matchId: number) => void
   onOpenTeam: (teamId: number) => void
   evidenza?: boolean
 }
 
-// Esito della partita dal punto di vista della propria squadra: colora la
-// striscia laterale della riga, cosi' il risultato si legge prima del punteggio.
-function esitoProprio(fixture: Fixture, match: Match | undefined, teamId: number) {
-  if (!match) return null
-  const inCasa = fixture.home_team_id === teamId
-  if (!inCasa && fixture.away_team_id !== teamId) return null
-  const propri = inCasa ? match.gol_home : match.gol_away
-  const subiti = inCasa ? match.gol_away : match.gol_home
-  return propri > subiti ? 'V' : propri < subiti ? 'P' : 'N'
-}
-
-function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeamId, matchByFixture, onOpenMatch, onOpenTeam, evidenza = false }: CardProps) {
+function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeamId, matchByFixture, revealedMatchIds, onOpenMatch, onRevealMatch, onOpenTeam, evidenza = false }: CardProps) {
   const simulate = fixtures.filter((fixture) => fixture.stato === 'simulata').length
   const completata = fixtures.length > 0 && simulate === fixtures.length
 
@@ -47,17 +38,26 @@ function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeam
       {fixtures.map((fixture) => {
         const match = matchByFixture.get(fixture.id)
         const mia = fixture.home_team_id === membership.id || fixture.away_team_id === membership.id
-        const esito = esitoProprio(fixture, match, membership.id)
+        const revealAttivo = mia && fixture.giornata >= ((membership.league as League | undefined)?.reveal_dalla_giornata ?? 1)
+        // Il reveal e' un momento personale: si anima soltanto la partita
+        // della propria squadra. I risultati del resto della lega restano
+        // subito consultabili, come un normale tabellino di giornata.
+        const giaVista = !revealAttivo || Boolean(match && revealedMatchIds.has(match.id))
+        const apriPartita = () => {
+          if (!match) return
+          if (giaVista) onOpenMatch(match.id)
+          else onRevealMatch(match.id)
+        }
         return <article
-          className={`fixture-row ${mia ? 'is-mine' : ''} ${match ? 'is-clickable' : ''} ${esito ? `esito-riga esito-riga--${esito}` : ''}`}
+          className={`fixture-row ${mia ? 'is-mine' : ''} ${match ? 'is-clickable' : ''}`}
           key={fixture.id}
-          onClick={() => match && onOpenMatch(match.id)}
-          onKeyDown={(event) => { if (match && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onOpenMatch(match.id) } }}
+          onClick={apriPartita}
+          onKeyDown={(event) => { if (match && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); apriPartita() } }}
           role={match ? 'button' : undefined}
           tabIndex={match ? 0 : undefined}
         >
           <TeamLabel team={teamById.get(fixture.home_team_id)} imageUrl={crestUrlByTeamId.get(fixture.home_team_id)} reversed onClick={() => onOpenTeam(fixture.home_team_id)} />
-          <FixtureScore fixture={fixture} match={match} />
+          <FixtureScore fixture={fixture} match={match} reveal={!giaVista} />
           <TeamLabel team={teamById.get(fixture.away_team_id)} imageUrl={crestUrlByTeamId.get(fixture.away_team_id)} onClick={() => onOpenTeam(fixture.away_team_id)} />
           {mia && <small>LA TUA PARTITA</small>}
         </article>
@@ -67,7 +67,7 @@ function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeam
   </article>
 }
 
-export function Matches({ membership, onNavigate, onOpenMatch, onOpenTeam }: Props) {
+export function Matches({ membership, onNavigate, revealedMatchIds, onOpenMatch, onRevealMatch, onOpenTeam }: Props) {
   const league = membership.league as League
   const data = useSeasonData(membership)
   const [calendarioAperto, setCalendarioAperto] = useState(false)
@@ -93,7 +93,9 @@ export function Matches({ membership, onNavigate, onOpenMatch, onOpenTeam }: Pro
     teamById: data.teamById,
     crestUrlByTeamId: data.crestUrlByTeamId,
     matchByFixture: data.matchByFixture,
+    revealedMatchIds,
     onOpenMatch,
+    onRevealMatch,
     onOpenTeam,
   }
 

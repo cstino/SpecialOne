@@ -14,6 +14,8 @@ const ETICHETTA_TIPO: Record<string, string> = {
   premio_classifica: 'Premio posizione',
   draft_pick: 'Ingaggi draft',
   ingaggi_stagione: 'Monte ingaggi stagionale',
+  conversione_riserva_ingaggi: 'Conversione riserva ingaggi',
+  stipendio_giornata: 'Stipendi giornata',
   asta_svincolato: 'Aste svincolati',
   spin_offseason: 'Spin mercato off-season',
   mercato_scambio: 'Scambi di mercato',
@@ -122,7 +124,7 @@ export function Finanza({ membership, onNavigate }: Props) {
       <section className="help-heading">
         <p className="kicker">{league.nome}</p>
         <h1>Finanza</h1>
-        <p>Entrate e uscite della tua squadra in questa stagione.</p>
+        <p>Entrate, uscite e stipendi maturati giornata dopo giornata.</p>
       </section>
 
       <SeasonState loading={loading} error={error} onRetry={carica} />
@@ -130,6 +132,8 @@ export function Finanza({ membership, onNavigate }: Props) {
       {!loading && !error && <>
         <div className="finanza-kpi">
           <div className="finanza-kpi__cella"><span>Budget attuale</span><strong>{money(membership.budget)}</strong></div>
+          <div className="finanza-kpi__cella"><span>Ingaggi riservati</span><strong>{money(membership.budget_ingaggi_riservato ?? 0)}</strong></div>
+          <div className="finanza-kpi__cella finanza-kpi__cella--entrata"><span>Disponibile</span><strong>{money(membership.budget - (membership.budget_ingaggi_riservato ?? 0))}</strong></div>
           <div className="finanza-kpi__cella finanza-kpi__cella--entrata"><span>Entrate stagione</span><strong>{money(entrate)}</strong></div>
           <div className="finanza-kpi__cella finanza-kpi__cella--uscita"><span>Uscite stagione</span><strong>{money(uscite)}</strong></div>
           <div className={`finanza-kpi__cella ${saldoNetto >= 0 ? 'finanza-kpi__cella--entrata' : 'finanza-kpi__cella--uscita'}`}><span>Saldo netto</span><strong>{saldoNetto >= 0 ? '+' : ''}{money(saldoNetto)}</strong></div>

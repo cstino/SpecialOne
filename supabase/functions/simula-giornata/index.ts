@@ -12,7 +12,12 @@ const CHIAVE_SEGRETA = Deno.env.get('CHIAVE_SEGRETA_PROGETTO') ?? ''
 
 type JsonMap = Record<string, unknown>
 type GolBlocco = { blocco: number; casa: number; ospite: number }
-type EventoGol = { minuto: number; blocco: number; lato: 'casa' | 'ospite'; team_id: number; marcatore: number; assist: number | null }
+type Lato = 'casa' | 'ospite'
+type EventoGol = { tipo: 'gol'; minuto: number; blocco: number; lato: Lato; team_id: number; marcatore: number; assist: number | null }
+type EventoTiro = { tipo: 'tiro_parato' | 'tiro_fuori'; minuto: number; blocco: number; lato: Lato; team_id: number; giocatore: number }
+type EventoSostituzione = { tipo: 'sostituzione'; minuto: number; blocco: number; lato: Lato; team_id: number; esce: number; entra: number }
+type EventoInfortunio = { tipo: 'infortunio'; minuto: number; blocco: number; lato: Lato; team_id: number; esce: number; entra: number }
+type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio
 type DbPlayer = { id: number; nome: string; posizioni: string[]; attributi: Record<string, number> }
 type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number }
 type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; gk: number; condizione: number; infortunatoFinoA: number }
@@ -239,6 +244,7 @@ function costruisciEventiGol(
       for (let g = 0; g < quanti; g++) {
         const minutoBase = (blocco.blocco - 1) * MINUTI_PER_BLOCCO
         eventi.push({
+          tipo: 'gol',
           minuto: minutoBase + 1 + Math.floor(rnd() * MINUTI_PER_BLOCCO),
           blocco: blocco.blocco,
           lato: lato.lato,
@@ -263,6 +269,7 @@ function costruisciEventiGol(
   // cambia solo in quale blocco viene mostrato.
   const rimasti = new Map<string, number[]>()
   for (const lato of lati) rimasti.set(lato.lato, [...lato.marcatori])
+  const minutiUsatiPerSquadra = new Map<number, Set<number>>()
 
   for (const evento of eventi) {
     const lato = lati.find((item) => item.lato === evento.lato)!
@@ -274,9 +281,137 @@ function costruisciEventiGol(
     if (marcatore === undefined) continue
     evento.marcatore = marcatore
     evento.assist = scegliAssist(lato.lineup, marcatore, presenti, rnd)
+
+    // `presenzePerBlocco` fotografa il cambio al confine del blocco: un
+    // subentrato al 60' puo' quindi comparire gia' nel blocco 46'-60'. Il
+    // gol puo' essere del blocco per il motore, ma non puo' essere raccontato
+    // prima del suo ingresso. Lo spostiamo al blocco successivo (61'-75') e
+    // separiamo i gol della stessa squadra quando lo spazio lo consente.
+    const eraGiaInCampo = evento.blocco === 1 || (lato.presenzePerBlocco[evento.blocco - 2] ?? []).includes(marcatore)
+    const inizio = eraGiaInCampo
+      ? (evento.blocco - 1) * MINUTI_PER_BLOCCO + 1
+      : Math.min(90, evento.blocco * MINUTI_PER_BLOCCO + 1)
+    const fine = Math.min(90, inizio + MINUTI_PER_BLOCCO - 1)
+    const minutiUsati = minutiUsatiPerSquadra.get(evento.team_id) ?? new Set<number>()
+    let candidati = Array.from({ length: fine - inizio + 1 }, (_, indice) => inizio + indice)
+      .filter((minuto) => !minutiUsati.has(minuto))
+    if (!candidati.length) candidati = Array.from({ length: fine - inizio + 1 }, (_, indice) => inizio + indice)
+    evento.minuto = candidati[Math.floor(rnd() * candidati.length)]
+    minutiUsati.add(evento.minuto)
   }
 
   return eventi.filter((evento) => evento.marcatore !== 0)
+    .sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.blocco - destra.blocco)
+}
+
+// Il motore restituisce statistiche individuali aggregate: qui le rendiamo
+// coerenti con il totale di squadra senza cambiare alcun esito simulato. In
+// particolare un marcatore ha sempre almeno un tiro e un tiro in porta per
+// ogni gol: requisito necessario per poter raccontare azioni reali, non un
+// evento inventato dalla UI.
+function rendiTiriCoerenti(righe: Array<Record<string, number>>, teamStats: JsonMap) {
+  const totaleTiri = Number(teamStats.tiri ?? 0)
+  const totaleInPorta = Number(teamStats.inPorta ?? 0)
+  const ordinaPerCapacita = (campo: 'tiri' | 'tiri_porta') => [...righe].sort((a, b) =>
+    (b[campo] - b.gol) - (a[campo] - a.gol) || a.player_instance_id - b.player_instance_id)
+
+  for (const riga of righe) {
+    riga.tiri = Math.max(riga.tiri, riga.gol)
+    riga.tiri_porta = Math.min(riga.tiri, Math.max(riga.tiri_porta, riga.gol))
+  }
+  let differenza = totaleTiri - righe.reduce((somma, riga) => somma + riga.tiri, 0)
+  let indice = 0
+  while (differenza > 0 && righe.length) { righe[indice++ % righe.length].tiri++; differenza-- }
+  while (differenza < 0) {
+    const candidata = ordinaPerCapacita('tiri')[0]
+    if (!candidata || candidata.tiri <= candidata.gol) break
+    candidata.tiri--; candidata.tiri_porta = Math.min(candidata.tiri_porta, candidata.tiri); differenza++
+  }
+
+  for (const riga of righe) riga.tiri_porta = Math.min(riga.tiri, Math.max(riga.gol, riga.tiri_porta))
+  differenza = totaleInPorta - righe.reduce((somma, riga) => somma + riga.tiri_porta, 0)
+  indice = 0
+  while (differenza > 0) {
+    const candidate = righe.filter((riga) => riga.tiri_porta < riga.tiri)
+    if (!candidate.length) break
+    candidate[indice++ % candidate.length].tiri_porta++; differenza--
+  }
+  while (differenza < 0) {
+    const candidata = ordinaPerCapacita('tiri_porta')[0]
+    if (!candidata || candidata.tiri_porta <= candidata.gol) break
+    candidata.tiri_porta--; differenza++
+  }
+}
+
+function costruisciEventiPartita(
+  gol: EventoGol[],
+  lati: Array<{ lato: Lato; teamId: number; presenzePerBlocco: number[][]; stats: Array<Record<string, number>> }>,
+  infortuni: Array<{ lato: Lato; blocco: number; esce: number; entra: number }>,
+  seed: number,
+): EventoPartita[] {
+  const rnd = creaRng(seed ^ 0x9e3779b9)
+  const eventi: EventoPartita[] = [...gol]
+
+  for (const lato of lati) {
+    // I cambi sono letti direttamente dall'undici realmente presente in due
+    // blocchi consecutivi. Il motore effettua cambi solo dopo 45', 60' e 75'.
+    for (let blocco = 1; blocco < lato.presenzePerBlocco.length; blocco++) {
+      const prima = lato.presenzePerBlocco[blocco - 1] ?? []
+      const dopo = lato.presenzePerBlocco[blocco] ?? []
+      for (let slot = 0; slot < Math.max(prima.length, dopo.length); slot++) {
+        const esce = prima[slot]
+        const entra = dopo[slot]
+        if (!esce || !entra || esce === entra) continue
+        // Lo stesso cambio e' gia' raccontato come infortunio: non duplicarlo
+        // con la generica sostituzione derivata dalle presenze per blocco.
+        if (infortuni.some((evento) => evento.lato === lato.lato && evento.blocco === blocco && evento.esce === esce && evento.entra === entra)) continue
+        eventi.push({ tipo: 'sostituzione', minuto: blocco * MINUTI_PER_BLOCCO, blocco, lato: lato.lato, team_id: lato.teamId, esce, entra })
+      }
+    }
+
+    const blocchiPerGiocatore = new Map<number, number[]>()
+    for (let indice = 0; indice < lato.presenzePerBlocco.length; indice++) {
+      for (const giocatore of lato.presenzePerBlocco[indice] ?? []) {
+        blocchiPerGiocatore.set(giocatore, [...(blocchiPerGiocatore.get(giocatore) ?? []), indice + 1])
+      }
+    }
+    for (const stat of lato.stats) {
+      const id = stat.player_instance_id
+      const blocchi = blocchiPerGiocatore.get(id) ?? []
+      if (!blocchi.length) continue
+      const parati = Math.max(0, stat.tiri_porta - stat.gol)
+      const fuori = Math.max(0, stat.tiri - stat.tiri_porta)
+      for (const tipo of ['tiro_parato', 'tiro_fuori'] as const) {
+        const quanti = tipo === 'tiro_parato' ? parati : fuori
+        for (let numero = 0; numero < quanti; numero++) {
+          const blocco = blocchi[Math.floor(rnd() * blocchi.length)]
+          eventi.push({
+            tipo,
+            minuto: (blocco - 1) * MINUTI_PER_BLOCCO + 1 + Math.floor(rnd() * MINUTI_PER_BLOCCO),
+            blocco,
+            lato: lato.lato,
+            team_id: lato.teamId,
+            giocatore: id,
+          })
+        }
+      }
+    }
+  }
+  for (const infortunio of infortuni) {
+    const lato = lati.find((item) => item.lato === infortunio.lato)
+    if (!lato) continue
+    eventi.push({
+      tipo: 'infortunio',
+      // Il cambio diventa effettivo alla fine del blocco in cui si verifica.
+      minuto: Math.min(90, infortunio.blocco * MINUTI_PER_BLOCCO),
+      blocco: infortunio.blocco,
+      lato: infortunio.lato,
+      team_id: lato.teamId,
+      esce: infortunio.esce,
+      entra: infortunio.entra,
+    })
+  }
+  return eventi.sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.team_id - destra.team_id)
 }
 
 function playerStats(teamId: number, stats: JsonMap, teamStats: JsonMap, assist: Map<number, number>) {
@@ -443,6 +578,7 @@ export default {
           stileCasa: homeDbLineup.stile_gioco,
           stileOspite: awayDbLineup.stile_gioco,
           campoNeutro: fixture.campo_neutro,
+          seedInfortuni: seed ^ 0x6d2b79f5,
         })
         const presenzePerBlocco = result.presenzePerBlocco as { casa: number[][]; ospite: number[][] }
         const eventi = costruisciEventiGol(result.golPerBlocco as GolBlocco[], [
@@ -459,6 +595,12 @@ export default {
           ...playerStats(fixture.home_team_id, result.perGiocatore.casa, result.statsCasa, assistPerGiocatore),
           ...playerStats(fixture.away_team_id, result.perGiocatore.ospite, result.statsOspite, assistPerGiocatore),
         ]
+        rendiTiriCoerenti(stats.filter((stat) => stat.team_id === fixture.home_team_id), result.statsCasa)
+        rendiTiriCoerenti(stats.filter((stat) => stat.team_id === fixture.away_team_id), result.statsOspite)
+        const cronaca = costruisciEventiPartita(eventi, [
+          { lato: 'casa', teamId: fixture.home_team_id, presenzePerBlocco: presenzePerBlocco.casa, stats: stats.filter((stat) => stat.team_id === fixture.home_team_id) },
+          { lato: 'ospite', teamId: fixture.away_team_id, presenzePerBlocco: presenzePerBlocco.ospite, stats: stats.filter((stat) => stat.team_id === fixture.away_team_id) },
+        ], result.infortuniInPartita as Array<{ lato: Lato; blocco: number; esce: number; entra: number }>, seed)
         const { data: saved, error: saveError } = await ctx.supabaseAdmin.rpc('registra_risultato_partita', {
           p_fixture_id: fixture.id,
           p_seed: seed,
@@ -468,7 +610,7 @@ export default {
           p_stile_away: awayDbLineup.stile_gioco,
           p_gol_home: result.golC,
           p_gol_away: result.golO,
-          p_blocchi: eventi,
+          p_blocchi: cronaca,
           p_stats_squadra: { home: result.statsCasa, away: result.statsOspite },
           p_player_stats: stats,
           // Chi e' sceso in campo davvero all'inizio, non chi era stato
@@ -534,6 +676,15 @@ export default {
       })
       if (moraleError) throw moraleError
 
+      // Lo stipendio e' una rata per giornata, non un addebito anticipato.
+      // L'RPC e' idempotente: se il cron ritenta dopo un errore, ogni quota
+      // gia' scritta nella tabella privata resta una sola volta.
+      const { data: stipendiPagati, error: stipendiError } = await ctx.supabaseAdmin.rpc('addebita_ingaggi_giornata', {
+        p_league_id: leagueId,
+        p_giornata: giornata,
+      })
+      if (stipendiError) throw stipendiError
+
       // Notifiche: la giornata si gioca alle 00:00, quando tutti dormono.
       // Senza un avviso, il risultato lo si scopre solo riaprendo l'app.
       //
@@ -591,7 +742,7 @@ export default {
         console.error('Notifiche non inviate:', errore)
       }
 
-      return Response.json({ league_id: leagueId, giornata, modo: ctx.authMode, rose_aggiornate: valoriCondizione.length, progressione, morale, notifiche: notificheInviate, partite: summaries })
+      return Response.json({ league_id: leagueId, giornata, modo: ctx.authMode, rose_aggiornate: valoriCondizione.length, stipendi_pagati: stipendiPagati, progressione, morale, notifiche: notificheInviate, partite: summaries })
     } catch (error) {
       console.error(error)
       return Response.json({ error: error instanceof Error ? error.message : 'Errore durante la simulazione.' }, { status: 500 })
