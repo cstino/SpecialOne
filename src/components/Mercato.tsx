@@ -24,6 +24,7 @@ type Proposta = {
   stato: StatoProposta
   creata_il: string
   scade_il: string
+  risolta_il?: string | null
 }
 
 type Giocatore = {
@@ -108,6 +109,12 @@ function mercatoAperto() {
 
 function milioni(euro: number) {
   return `${(euro / 1_000_000).toFixed(1).replace('.', ',')} M€`
+}
+
+function giornoRoma(value: Date | string) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date(value))
 }
 
 const ETICHETTE_STATO: Record<StatoProposta, string> = {
@@ -439,6 +446,18 @@ export function Mercato({ membership, onNavigate }: Props) {
         && a.ingaggio_teorico / 1_000_000 >= filtroIngaggio[0]
         && a.ingaggio_teorico / 1_000_000 <= filtroIngaggio[1]
     })
+
+  // La trasparenza e' il resoconto dell'ultima chiusura completata. Durante
+  // il mercato corrente resta visibile quella precedente; quando le aste del
+  // giorno vengono risolte, questa data avanza automaticamente.
+  const giorniAste = [...new Set(aste.map((a) => a.giorno))].sort((a, b) => b.localeCompare(a))
+  const giornoTrasparenza = giorniAste.find((giorno) =>
+    !aste.some((asta) => asta.giorno === giorno && asta.stato === 'aperta')) ?? null
+  const asteVinteTrasparenti = giornoTrasparenza == null ? [] : aste
+    .filter((asta) => asta.giorno === giornoTrasparenza && asta.stato === 'assegnata' && asta.vincitore_team_id != null)
+    .sort((a, b) => a.id - b.id)
+  const trattativeTrasparenti = giornoTrasparenza == null ? [] : concluse
+    .filter((proposta) => proposta.risolta_il != null && giornoRoma(proposta.risolta_il) === giornoTrasparenza)
 
   async function offri(asta: Asta) {
     const grezzo = bozzaOfferta[asta.id] ?? ''
@@ -1086,12 +1105,16 @@ export function Mercato({ membership, onNavigate }: Props) {
 
       {/* ---- Log pubblico: design §9.3, tutti vedono tutto ---- */}
       <section className="mercato-blocco">
-        <div className="sezione-testa"><div><p className="kicker">Trasparenza</p><h2>Trattative concluse</h2></div></div>
-        <p className="mercato-nota">Ogni scambio concluso è visibile a tutta la lega, con giocatori e cifre.</p>
-        {concluse.length === 0
-          ? <p className="season-empty">Nessuno scambio finora.</p>
+        <div className="sezione-testa"><div><p className="kicker">Trasparenza</p><h2>Operazioni concluse</h2></div></div>
+        <p className="mercato-nota">
+          {giornoTrasparenza
+            ? `Esiti della chiusura del ${giornoTrasparenza.split('-').reverse().join('/')}: scambi e aste vinte visibili a tutta la lega.`
+            : 'Gli esiti del mercato appariranno qui alla prima chiusura.'}
+        </p>
+        {trattativeTrasparenti.length === 0 && asteVinteTrasparenti.length === 0
+          ? <p className="season-empty">Nessuna operazione conclusa in questa chiusura.</p>
           : <ul className="mercato-log">
-              {concluse.map((p) => <li key={p.id}>
+              {trattativeTrasparenti.map((p) => <li key={`scambio-${p.id}`}>
                 <strong>{nomeSquadra(p.da_team_id)}</strong>
                 <i aria-hidden="true">⇄</i>
                 <strong>{nomeSquadra(p.a_team_id)}</strong>
@@ -1102,6 +1125,13 @@ export function Mercato({ membership, onNavigate }: Props) {
                   {p.conguaglio !== 0 && ` · ${milioni(Math.abs(p.conguaglio))}`}
                 </span>
                 <em>{ETICHETTE_STATO[p.stato]}</em>
+              </li>)}
+              {asteVinteTrasparenti.map((asta) => <li key={`asta-${asta.id}`}>
+                <strong>{svincolati.get(asta.player_id)?.nome ?? `#${asta.player_id}`}</strong>
+                <i aria-hidden="true">→</i>
+                <strong>{nomeSquadra(asta.vincitore_team_id!)}</strong>
+                <span>Ingaggio concordato: {milioni(asta.ingaggio_finale ?? 0)}</span>
+                <em>Asta vinta</em>
               </li>)}
             </ul>}
       </section>
