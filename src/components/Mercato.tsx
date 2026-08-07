@@ -1124,35 +1124,36 @@ export function Mercato({ membership, onNavigate }: Props) {
           ? <p className="season-empty">Nessuna operazione conclusa in questa chiusura.</p>
           : <ul className="mercato-trasparenza">
               {trattativeTrasparenti.map((p) => <li className="mercato-operazione mercato-operazione--scambio" key={`scambio-${p.id}`}>
-                <div className="mercato-operazione__club mercato-operazione__club--da">
-                  {stemma(p.da_team_id)}
-                  <strong>{nomeSquadra(p.da_team_id)}</strong>
+                <div className="mercato-operazione__giocatori mercato-operazione__giocatori--da">
+                  {p.giocatori_offerti.map((id) => {
+                    const g = giocatore(id)
+                    return <div className="mercato-operazione__giocatore" key={id}>
+                      <div className="mercato-operazione__volto">
+                        {g?.foto_firmata ? <img src={g.foto_firmata} alt="" /> : <span>{(g?.nome ?? '?').slice(0, 1)}</span>}
+                        <b>{stemma(p.da_team_id)}</b>
+                      </div>
+                      <strong>{g?.nome ?? `#${id}`}</strong>
+                    </div>
+                  })}
                 </div>
-                <div className="mercato-operazione__scambio">
-                  <span className="mercato-operazione__ritratti">
-                    {p.giocatori_offerti.slice(0, 2).map((id) => {
-                      const g = giocatore(id)
-                      return <b key={id} title={g?.nome ?? 'Giocatore'}>{g?.foto_firmata ? <img src={g.foto_firmata} alt="" /> : (g?.nome ?? '?').slice(0, 1)}</b>
-                    })}
-                  </span>
+                <div className="mercato-operazione__scambio" aria-label="Scambio tra squadre">
                   <i aria-hidden="true">⇄</i>
-                  <span className="mercato-operazione__ritratti">
-                    {p.giocatori_richiesti.slice(0, 2).map((id) => {
-                      const g = giocatore(id)
-                      return <b key={id} title={g?.nome ?? 'Giocatore'}>{g?.foto_firmata ? <img src={g.foto_firmata} alt="" /> : (g?.nome ?? '?').slice(0, 1)}</b>
-                    })}
-                  </span>
+                  {p.conguaglio !== 0 && <span className={`mercato-operazione__conguaglio ${p.conguaglio > 0 ? 'e-destra' : 'e-sinistra'}`}>
+                    {p.conguaglio > 0 ? '→' : '←'} {milioni(Math.abs(p.conguaglio))}
+                  </span>}
                 </div>
-                <div className="mercato-operazione__club mercato-operazione__club--a">
-                  {stemma(p.a_team_id)}
-                  <strong>{nomeSquadra(p.a_team_id)}</strong>
+                <div className="mercato-operazione__giocatori mercato-operazione__giocatori--a">
+                  {p.giocatori_richiesti.map((id) => {
+                    const g = giocatore(id)
+                    return <div className="mercato-operazione__giocatore" key={id}>
+                      <div className="mercato-operazione__volto">
+                        {g?.foto_firmata ? <img src={g.foto_firmata} alt="" /> : <span>{(g?.nome ?? '?').slice(0, 1)}</span>}
+                        <b>{stemma(p.a_team_id)}</b>
+                      </div>
+                      <strong>{g?.nome ?? `#${id}`}</strong>
+                    </div>
+                  })}
                 </div>
-                <p>
-                  {p.giocatori_offerti.map((id) => giocatore(id)?.nome ?? `#${id}`).join(', ') || '—'}
-                  {' per '}
-                  {p.giocatori_richiesti.map((id) => giocatore(id)?.nome ?? `#${id}`).join(', ') || '—'}
-                  {p.conguaglio !== 0 && ` · ${milioni(Math.abs(p.conguaglio))}`}
-                </p>
                 <em>{ETICHETTE_STATO[p.stato]}</em>
               </li>)}
               {asteVinteTrasparenti.map((asta) => {
