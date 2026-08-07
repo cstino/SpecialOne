@@ -447,14 +447,23 @@ export function Mercato({ membership, onNavigate }: Props) {
         && a.ingaggio_teorico / 1_000_000 <= filtroIngaggio[1]
     })
 
-  // La trasparenza e' il resoconto dell'ultima chiusura completata. Durante
-  // il mercato corrente resta visibile quella precedente; quando le aste del
-  // giorno vengono risolte, questa data avanza automaticamente.
-  const giorniAste = [...new Set(aste.map((a) => a.giorno))].sort((a, b) => b.localeCompare(a))
-  const giornoTrasparenza = giorniAste.find((giorno) =>
-    !aste.some((asta) => asta.giorno === giorno && asta.stato === 'aperta')) ?? null
-  const asteVinteTrasparenti = giornoTrasparenza == null ? [] : aste
-    .filter((asta) => asta.giorno === giornoTrasparenza && asta.stato === 'assegnata' && asta.vincitore_team_id != null)
+  // La trasparenza e' il resoconto dell'ultima TORNATA di estrazione chiusa,
+  // non dell'intera giornata: l'admin puo' aprire piu' mercati nello stesso
+  // giorno e ogni nuova tornata deve sostituire la precedente.
+  const tornateAste = Array.from(new Map(aste
+    .filter((asta) => asta.origine === 'estrazione')
+    .map((asta) => [`${asta.giorno}-${asta.tornata}`, { giorno: asta.giorno, tornata: asta.tornata }]))
+    .values())
+    .sort((a, b) => b.giorno.localeCompare(a.giorno) || b.tornata - a.tornata)
+  const tornataTrasparenza = tornateAste.find(({ giorno, tornata }) =>
+    !aste.some((asta) => asta.origine === 'estrazione' && asta.giorno === giorno && asta.tornata === tornata && asta.stato === 'aperta')) ?? null
+  const giornoTrasparenza = tornataTrasparenza?.giorno ?? null
+  const asteVinteTrasparenti = tornataTrasparenza == null ? [] : aste
+    .filter((asta) => asta.origine === 'estrazione'
+      && asta.giorno === tornataTrasparenza.giorno
+      && asta.tornata === tornataTrasparenza.tornata
+      && asta.stato === 'assegnata'
+      && asta.vincitore_team_id != null)
     .sort((a, b) => a.id - b.id)
   const trattativeTrasparenti = giornoTrasparenza == null ? [] : concluse
     .filter((proposta) => proposta.risolta_il != null && giornoRoma(proposta.risolta_il) === giornoTrasparenza)
