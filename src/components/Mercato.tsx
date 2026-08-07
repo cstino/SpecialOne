@@ -1133,6 +1133,7 @@ export function Mercato({ membership, onNavigate }: Props) {
                         <b>{stemma(p.da_team_id)}</b>
                       </div>
                       <strong>{g?.nome ?? `#${id}`}</strong>
+                      <small>({nomeSquadra(p.da_team_id)})</small>
                     </div>
                   })}
                 </div>
@@ -1151,6 +1152,7 @@ export function Mercato({ membership, onNavigate }: Props) {
                         <b>{stemma(p.a_team_id)}</b>
                       </div>
                       <strong>{g?.nome ?? `#${id}`}</strong>
+                      <small>({nomeSquadra(p.a_team_id)})</small>
                     </div>
                   })}
                 </div>
