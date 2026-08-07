@@ -369,6 +369,6 @@ export default function App() {
       : <SeasonOverview membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} onOpenMatch={(id) => setOpenMatch({ id, from: 'overview' })} onRevealMatch={(id) => setRevealMatch({ id, from: 'overview' })} onOpenTeam={openTeam} />
   return conContesti(<>
     {schermata}
-    {revealMatch && <MatchReveal membership={active} matchId={revealMatch.id} onClose={() => setRevealMatch(null)} onRevealed={segnaPartitaVista} onOpenReport={() => { setOpenMatch(revealMatch); setRevealMatch(null) }} />}
+    {revealMatch && <MatchReveal membership={active} matchId={revealMatch.id} onClose={() => { void segnaPartitaVista(revealMatch.id); setRevealMatch(null) }} onRevealed={segnaPartitaVista} onOpenReport={() => { void segnaPartitaVista(revealMatch.id); setOpenMatch(revealMatch); setRevealMatch(null) }} />}
   </>)
 }

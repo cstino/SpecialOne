@@ -1886,6 +1886,13 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .free-agent-gruppo { margin-bottom:16px; }
 .free-agent-gruppo:last-child { margin-bottom:0; }
 .free-agent-gruppo__titolo { margin:0 0 8px; color:#b78ee4; font-size:.66rem; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
+.free-agent-ruoli { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; margin:2px 0 4px; }
+.free-agent-ruoli button { min-width:0; display:grid; gap:3px; padding:10px 7px; border:1px solid #3a2b49; border-radius:11px; color:#a99ab7; background:#19151f; cursor:pointer; font:inherit; text-align:left; transition:background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease; }
+.free-agent-ruoli button:hover:not(:disabled) { border-color:#76519d; color:#fff; transform:translateY(-1px); }
+.free-agent-ruoli button.is-attivo { border-color:#c58cff; color:#fff; background:#2b1b3b; box-shadow:0 8px 18px rgba(0,0,0,.18); }
+.free-agent-ruoli button:disabled { cursor:default; opacity:.42; }
+.free-agent-ruoli button span { overflow:hidden; font-size:.62rem; font-weight:850; text-overflow:ellipsis; white-space:nowrap; }
+.free-agent-ruoli button b { color:#c58cff; font-size:1rem; line-height:1; }
 .free-agent-filters { display:grid; grid-template-columns:1fr repeat(3,minmax(120px,auto)); gap:9px; align-items:end; }
 .free-agent-filters label, .range-filter { min-width:0; display:grid; gap:5px; margin:0; padding:0; border:0; }
 .free-agent-filters span, .range-filter legend { color:#9e8bb5; font-size:.6rem; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }

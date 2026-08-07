@@ -170,6 +170,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   const [bozzaOfferta, setBozzaOfferta] = useState<Record<number, string>>({})
   const [spinOffseason, setSpinOffseason] = useState<StatoSpinOffseason | null>(null)
   const [animazioneSpin, setAnimazioneSpin] = useState<AnimazioneSpin | null>(null)
+  const [paginaAstaRuolo, setPaginaAstaRuolo] = useState<MacroRuolo>('GK')
   // Offrire impegna il denaro: quello che conta non e' il budget ma cio' che
   // resta dopo aver messo da parte le offerte ancora in gioco.
   const [conti, setConti] = useState<{ disponibile: number; impegnato: number; slot_liberi: number } | null>(null)
@@ -631,6 +632,14 @@ export function Mercato({ membership, onNavigate }: Props) {
       .map((ruolo) => ({ ruolo, aste: gruppi.get(ruolo)! }))
   }
 
+  const gruppiAsta = perRuolo(nuoviDelGiorno)
+  const paginaAsta = gruppiAsta.find((gruppo) => gruppo.ruolo === paginaAstaRuolo) ?? gruppiAsta[0]
+
+  useEffect(() => {
+    if (giornoAste === null || tornataLive === 0) return
+    setPaginaAstaRuolo('GK')
+  }, [giornoAste, tornataLive])
+
   const listaGiocatori = (
     elenco: Giocatore[], selezionati: number[], imposta: (v: number[]) => void, vuoto: string,
   ) => elenco.length === 0
@@ -774,7 +783,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       <section className="mercato-blocco mercato-svincolati">
         <div className="sezione-testa">
           <div><p className="kicker">Asta a busta chiusa</p><h2>Mercato svincolati live</h2></div>
-          <span>{league.fase_carriera === 'offseason' ? '10 per ruolo' : '3 per ruolo'}</span>
+          <span>{league.fase_carriera === 'offseason' ? '10 per ruolo' : '5 per ruolo'}</span>
         </div>
         <p className="mercato-nota">
           Ogni giorno escono nuovi giocatori bilanciati per ruolo: portieri, difensori, centrocampisti
@@ -789,10 +798,28 @@ export function Mercato({ membership, onNavigate }: Props) {
           </div>
           {nuoviDelGiorno.length === 0
             ? <p className="season-empty">Nessuna estrazione ancora. I nuovi svincolati escono ogni giorno alle 23:30.</p>
-            : perRuolo(nuoviDelGiorno).map(({ ruolo, aste: asteRuolo }) => <div className="free-agent-gruppo" key={ruolo}>
-                <p className="free-agent-gruppo__titolo">{MACRO_LABEL[ruolo]} · {asteRuolo.length}</p>
-                <div className="free-agent-grid">{asteRuolo.map((a) => cardSvincolato(a))}</div>
-              </div>)}
+            : <>
+                <nav className="free-agent-ruoli" aria-label="Ruolo degli svincolati">
+                  {ORDINE_MACRO_RUOLO.map((ruolo) => {
+                    const gruppo = gruppiAsta.find((voce) => voce.ruolo === ruolo)
+                    const attivo = paginaAsta?.ruolo === ruolo
+                    return <button
+                      key={ruolo}
+                      type="button"
+                      className={attivo ? 'is-attivo' : ''}
+                      disabled={!gruppo}
+                      aria-current={attivo ? 'page' : undefined}
+                      onClick={() => setPaginaAstaRuolo(ruolo)}
+                    >
+                      <span>{MACRO_LABEL[ruolo]}</span><b>{gruppo?.aste.length ?? 0}</b>
+                    </button>
+                  })}
+                </nav>
+                {paginaAsta && <div className="free-agent-gruppo">
+                  <p className="free-agent-gruppo__titolo">{MACRO_LABEL[paginaAsta.ruolo]} · {paginaAsta.aste.length} giocatori</p>
+                  <div className="free-agent-grid">{paginaAsta.aste.map((a) => cardSvincolato(a))}</div>
+                </div>}
+              </>}
         </div>
 
         {mostraArchivioSvincolati && <div className="free-agent-archive">
