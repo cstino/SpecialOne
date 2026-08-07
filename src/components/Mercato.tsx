@@ -1122,26 +1122,57 @@ export function Mercato({ membership, onNavigate }: Props) {
         </p>
         {trattativeTrasparenti.length === 0 && asteVinteTrasparenti.length === 0
           ? <p className="season-empty">Nessuna operazione conclusa in questa chiusura.</p>
-          : <ul className="mercato-log">
-              {trattativeTrasparenti.map((p) => <li key={`scambio-${p.id}`}>
-                <strong>{nomeSquadra(p.da_team_id)}</strong>
-                <i aria-hidden="true">⇄</i>
-                <strong>{nomeSquadra(p.a_team_id)}</strong>
-                <span>
+          : <ul className="mercato-trasparenza">
+              {trattativeTrasparenti.map((p) => <li className="mercato-operazione mercato-operazione--scambio" key={`scambio-${p.id}`}>
+                <div className="mercato-operazione__club mercato-operazione__club--da">
+                  {stemma(p.da_team_id)}
+                  <strong>{nomeSquadra(p.da_team_id)}</strong>
+                </div>
+                <div className="mercato-operazione__scambio">
+                  <span className="mercato-operazione__ritratti">
+                    {p.giocatori_offerti.slice(0, 2).map((id) => {
+                      const g = giocatore(id)
+                      return <b key={id} title={g?.nome ?? 'Giocatore'}>{g?.foto_firmata ? <img src={g.foto_firmata} alt="" /> : (g?.nome ?? '?').slice(0, 1)}</b>
+                    })}
+                  </span>
+                  <i aria-hidden="true">⇄</i>
+                  <span className="mercato-operazione__ritratti">
+                    {p.giocatori_richiesti.slice(0, 2).map((id) => {
+                      const g = giocatore(id)
+                      return <b key={id} title={g?.nome ?? 'Giocatore'}>{g?.foto_firmata ? <img src={g.foto_firmata} alt="" /> : (g?.nome ?? '?').slice(0, 1)}</b>
+                    })}
+                  </span>
+                </div>
+                <div className="mercato-operazione__club mercato-operazione__club--a">
+                  {stemma(p.a_team_id)}
+                  <strong>{nomeSquadra(p.a_team_id)}</strong>
+                </div>
+                <p>
                   {p.giocatori_offerti.map((id) => giocatore(id)?.nome ?? `#${id}`).join(', ') || '—'}
                   {' per '}
                   {p.giocatori_richiesti.map((id) => giocatore(id)?.nome ?? `#${id}`).join(', ') || '—'}
                   {p.conguaglio !== 0 && ` · ${milioni(Math.abs(p.conguaglio))}`}
-                </span>
+                </p>
                 <em>{ETICHETTE_STATO[p.stato]}</em>
               </li>)}
-              {asteVinteTrasparenti.map((asta) => <li key={`asta-${asta.id}`}>
-                <strong>{svincolati.get(asta.player_id)?.nome ?? `#${asta.player_id}`}</strong>
-                <i aria-hidden="true">→</i>
-                <strong>{nomeSquadra(asta.vincitore_team_id!)}</strong>
-                <span>Ingaggio concordato: {milioni(asta.ingaggio_finale ?? 0)}</span>
-                <em>Asta vinta</em>
-              </li>)}
+              {asteVinteTrasparenti.map((asta) => {
+                const g = svincolati.get(asta.player_id)
+                return <li className="mercato-operazione mercato-operazione--asta" key={`asta-${asta.id}`}>
+                  <div className="mercato-operazione__portrait">
+                    {g?.foto_firmata ? <img src={g.foto_firmata} alt="" /> : <span>{(g?.nome ?? '?').slice(0, 1)}</span>}
+                  </div>
+                  <div className="mercato-operazione__firma">
+                    <small>ASTA VINTA</small>
+                    <strong>{g?.nome ?? `Giocatore #${asta.player_id}`}</strong>
+                    <span>{g?.ruolo ?? 'Svincolato'} · Ingaggio {milioni(asta.ingaggio_finale ?? 0)}</span>
+                  </div>
+                  <div className="mercato-operazione__club mercato-operazione__club--firma">
+                    {stemma(asta.vincitore_team_id!)}
+                    <small>FIRMA PER</small>
+                    <strong>{nomeSquadra(asta.vincitore_team_id!)}</strong>
+                  </div>
+                </li>
+              })}
             </ul>}
       </section>
 
