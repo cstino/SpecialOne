@@ -488,7 +488,7 @@ export default {
       const teamIds = [...new Set(fixtures.flatMap((fixture) => [fixture.home_team_id, fixture.away_team_id]))]
 
       const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult] = await Promise.all([
-        ctx.supabaseAdmin.from('teams').select('id, nome, user_id').eq('league_id', leagueId).in('id', teamIds),
+        ctx.supabaseAdmin.from('teams').select('id, nome, user_id, controllata_da_pc').eq('league_id', leagueId).in('id', teamIds),
         ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a').eq('league_id', leagueId).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
@@ -504,6 +504,7 @@ export default {
       if (playersError) throw playersError
       const catalog = new Map((playersData ?? []).map((player) => [player.id, player as DbPlayer]))
       const teamNames = new Map((teamsResult.data ?? []).map((team) => [team.id, team.nome]))
+      const teamControllateDaPc = new Map((teamsResult.data ?? []).map((team) => [team.id, Boolean(team.controllata_da_pc)]))
       // Serve a sapere chi notificare: le notifiche sono per-persona, non
       // per-squadra, perche' la campanella e' una sola per tutte le leghe.
       const teamUsers = new Map((teamsResult.data ?? []).map((team) => [team.id, team.user_id as string]))
@@ -527,7 +528,9 @@ export default {
       for (const teamId of teamIds) {
         if (lineups.has(teamId)) continue
         const roster = rosters.get(teamId)!
-        const inherited = inheritedLineups.get(teamId)
+        // Il PC valuta ogni giornata la rosa aggiornata (condizione, infortuni e
+        // arrivi del mercato) invece di ereditare una formazione ormai stantia.
+        const inherited = teamControllateDaPc.get(teamId) ? undefined : inheritedLineups.get(teamId)
         let fallback: DbLineup
         if (inherited) {
           fallback = { team_id: teamId, modulo: inherited.modulo, titolari: inherited.titolari, panchina: inherited.panchina, tribuna: inherited.tribuna, stile_gioco: inherited.stile_gioco, automatica: true }
@@ -741,6 +744,9 @@ export default {
       } catch (errore) {
         console.error('Notifiche non inviate:', errore)
       }
+
+      const { error: rinnoviPcError } = await ctx.supabaseAdmin.rpc('gestisci_rinnovi_squadre_pc', { p_league_id: leagueId })
+      if (rinnoviPcError) console.error('Rinnovi squadre PC non eseguiti:', rinnoviPcError)
 
       return Response.json({ league_id: leagueId, giornata, modo: ctx.authMode, rose_aggiornate: valoriCondizione.length, stipendi_pagati: stipendiPagati, progressione, morale, notifiche: notificheInviate, partite: summaries })
     } catch (error) {

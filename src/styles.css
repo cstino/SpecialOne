@@ -456,6 +456,15 @@ input:disabled { opacity: 0.65; }
   *, *::before, *::after { animation: none !important; transition-duration: 80ms !important; }
 }
 /* Draft */
+.draft-mode-picker { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 4px 0 28px; }
+.draft-mode-option { display: grid; gap: 7px; min-height: 142px; padding: 18px; text-align: left; color: var(--ink); background: rgba(127,60,226,.045); border: 1px solid var(--line); border-radius: 16px; cursor: pointer; transition: border-color .2s ease, transform .2s ease, background .2s ease, box-shadow .2s ease; }
+.draft-mode-option:hover { transform: translateY(-2px); border-color: rgba(127,60,226,.48); }
+.draft-mode-option.is-selected { color: #fff; border-color: #a65cff; background: linear-gradient(145deg, #3b126c, #17131f 72%); box-shadow: 0 12px 32px rgba(112,39,219,.2), inset 0 0 28px rgba(168,83,255,.08); }
+.draft-mode-option > span { color: #b976ff; font-size: .66rem; font-weight: 950; letter-spacing: .16em; }
+.draft-mode-option > strong { font-size: 1.35rem; font-weight: 950; }
+.draft-mode-option > small { color: var(--muted); line-height: 1.45; }
+.draft-mode-option.is-selected > small { color: #c7bdd2; }
+.draft-mode-option:disabled { opacity: .55; cursor: wait; }
 .draft-hero,
 .draft-launch-panel,
 .draft-action-panel,
@@ -474,6 +483,25 @@ input:disabled { opacity: 0.65; }
 .draft-turn-board--clickable:hover { border-color: #a257ed; transform: translateY(-1px); }
 .draft-turn-board--clickable:focus-visible { outline: 2px solid #c77dff; outline-offset: 3px; }
 .draft-turn-board__hint { margin-top: 6px; color: #c99cff !important; font-weight: 700; font-size: .74rem; }
+.draft-waiting-panel { display: grid; gap: 18px; }
+.draft-waiting-panel__testa { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+.draft-waiting-panel__testa > div { min-width: 0; }
+.draft-waiting-panel__testa > strong { flex: 0 0 auto; color: #c66cff; font-size: 2rem; line-height: 1; }
+.draft-waiting-total, .draft-waiting-list__bar { overflow: hidden; border-radius: 99px; background: #2a2435; }
+.draft-waiting-total { height: 8px; }
+.draft-waiting-total > i, .draft-waiting-list__bar > i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #782bd0, #c260ff); transition: width .35s ease; }
+.draft-waiting-total > i { box-shadow: 0 0 15px rgba(183,76,255,.55); }
+.draft-waiting-list { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.draft-waiting-list li { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 13px; border: 1px solid #302a3d; border-radius: 12px; background: rgba(9,8,14,.28); }
+.draft-waiting-list li > div { display: grid; gap: 5px; min-width: 0; }
+.draft-waiting-list li > div > strong { display: flex; align-items: center; gap: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.draft-waiting-list li > div > strong small { padding: 2px 6px; color: #c486ff; border: 1px solid rgba(180,91,255,.28); border-radius: 99px; font-size: .55rem; letter-spacing: .08em; }
+.draft-waiting-list li > div > span { color: #8f869d; font-size: .69rem; }
+.draft-waiting-list li > b { color: #bdb3c9; font-size: .8rem; font-variant-numeric: tabular-nums; }
+.draft-waiting-list__stato { display: grid; width: 30px; height: 30px; place-items: center; color: #101812; border-radius: 50%; background: #302a3c; font-weight: 950; }
+.draft-waiting-list li.is-complete .draft-waiting-list__stato { background: #43d47e; box-shadow: 0 0 16px rgba(67,212,126,.2); }
+.draft-waiting-list li.is-loading .draft-waiting-list__stato::after { content: ''; width: 12px; height: 12px; border: 2px solid #b25cff; border-right-color: transparent; border-radius: 50%; animation: button-spin .75s linear infinite; }
+.draft-waiting-list__bar { height: 4px; }
 
 /* Budget: quanto e' gia' speso rispetto al tetto dell'80% (design §4.3) */
 .draft-budget { margin-top: 10px; display: grid; gap: 6px; }
@@ -496,6 +524,20 @@ input:disabled { opacity: 0.65; }
 
 /* Griglia dei 4 slot del pacchetto: fissa, una carta per ruolo */
 .draft-pacchetto-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+.draft-role-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 22px; }
+.draft-role-choice { position: relative; display: grid; gap: 8px; min-height: 138px; padding: 18px 14px; overflow: hidden; text-align: left; color: #fff; background: #17141f; border: 1px solid #342b43; border-radius: 16px; cursor: pointer; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.draft-role-choice::after { content: ''; position: absolute; inset: auto -28px -38px auto; width: 100px; height: 100px; border-radius: 50%; opacity: .2; filter: blur(3px); }
+.draft-role-choice:hover { transform: translateY(-3px); border-color: #a45aef; box-shadow: 0 14px 30px rgba(0,0,0,.28); }
+.draft-role-choice > span { font-size: .68rem; font-weight: 950; letter-spacing: .15em; color: #b982f1; }
+.draft-role-choice > strong { align-self: end; font-size: 1rem; }
+.draft-role-choice > small { color: #afa4bc; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
+.draft-role-choice--gk::after { background: #f4c15a; }
+.draft-role-choice--def::after { background: #47aee9; }
+.draft-role-choice--mid::after { background: #42d3b5; }
+.draft-role-choice--att::after { background: #f57b55; }
+.draft-role-choice:disabled { opacity: .55; cursor: wait; }
+.draft-by-role-card { width: min(100%, 560px); margin: 24px auto 0; display: grid; gap: 9px; }
+.draft-carta--by-role { width: 100%; box-sizing: border-box; cursor: default; }
 .draft-carta-slot { display: grid; gap: 8px; align-content: start; }
 .draft-ruolo-badge { justify-self: start; padding: 5px 11px; border-radius: 99px; font-size: .68rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
 .draft-ruolo-badge--gk  { color: #1c1408; background: linear-gradient(135deg, #f4c15a, #d99b2b); }
@@ -538,10 +580,12 @@ input:disabled { opacity: 0.65; }
   .draft-carta__nome-spin, .draft-carta__ovr-spin { animation: none; }
 }
 @media (max-width: 640px) {
+  .draft-mode-picker { grid-template-columns: 1fr; }
   .draft-hero, .draft-launch-panel { display: block; }
   .draft-turn-board { width: 100%; box-sizing: border-box; margin-top: 20px; }
   .draft-launch-panel .button { margin-top: 20px; width: 100%; }
   .draft-pacchetto-grid { grid-template-columns: 1fr; }
+  .draft-role-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* Segnaposto prima di aprire il pacchetto: stessa sagoma della carta, "?" al posto della foto */
@@ -2020,6 +2064,10 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .mercato-card > header strong { font-size: .86rem; }
 .mercato-card > footer { display: flex; flex-wrap: wrap; gap: 9px; }
 .mercato-card > footer .button { flex: 1; min-width: 130px; }
+.mercato-card > footer.mercato-rifiuto-aperto { padding-top: 10px; border-top: 1px solid rgba(194,86,255,.18); }
+.mercato-card > footer.mercato-rifiuto-aperto .button--primary { box-shadow: 0 0 24px rgba(147,51,234,.2); }
+.mercato-annulla-controfferta { min-height: 38px; padding: 8px 14px; }
+.mercato-controfferta-notice { border-color: rgba(194,86,255,.34); background: linear-gradient(135deg, rgba(116,35,170,.18), rgba(32,24,45,.7)); }
 
 .mercato-scambio { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 12px; border-radius: 10px; background: #14121c; }
 .mercato-scambio > div { min-width: 0; display: grid; gap: 3px; }
@@ -2286,3 +2334,6 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 @media (max-width: 720px) {
   .finanza-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+.button.is-loading { cursor: wait; }
+.button.is-loading::before { content: ''; display: inline-block; width: .85em; height: .85em; margin-right: .55em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: button-spin .7s linear infinite; vertical-align: -.08em; }
+@keyframes button-spin { to { transform: rotate(360deg); } }

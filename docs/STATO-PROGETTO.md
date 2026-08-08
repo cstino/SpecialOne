@@ -1,5 +1,25 @@
 # Stato progetto e handoff
 
+### Rose delle squadre PC bilanciate per reparto
+
+Segnalazione dell'utente sulla lega di test Test2: il draft PC in modalita `BY ROLE`
+sceglieva il reparto con una probabilita uniforme a ogni pick e poteva quindi produrre rose
+con 7-9 portieri. La liberta totale prevista dal design resta invariata per gli utenti;
+il correttivo riguarda soltanto le squadre controllate dal PC.
+
+La migrazione `20260808197000_rose_pc_bilanciate_per_ruolo.sql` introduce cinque profili
+realistici da 24 giocatori, tutti vicini alla base 3 portieri / 8 difensori / 8
+centrocampisti / 5 attaccanti. Il reparto del prossimo pick viene mescolato fra quelli
+ancora sotto obiettivo, evitando sia accumuli casuali di portieri sia il vecchio pattern
+"prima un reparto intero, poi il successivo". Anche il fallback economico resta vincolato
+al reparto richiesto.
+
+Backfill applicato a Test2, che non aveva ancora partite simulate: sostituiti soltanto pick
+PC non coinvolti in trattative, con giocatori liberi dello stesso identico ingaggio. Budget,
+numero di giocatori e squadra umana invariati. Risultato verificato: tutte le rose PC hanno
+2-3 portieri e rispettano esattamente il proprio profilo; una rosa da 25 dovuta al mercato
+assegna lo slot aggiuntivo a un reparto di movimento.
+
 ### Notifica fine giornata senza spoiler, e annuncio admin a tutta la lega
 
 Segnalazione dell'utente: la notifica push/in-app di fine giornata mostrava già il risultato

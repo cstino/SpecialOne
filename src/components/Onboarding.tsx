@@ -159,10 +159,12 @@ export function Onboarding({ user, onComplete, onCancel, modoIniziale = 'choose'
 function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCancel'> & { onBack: () => void }) {
   const [leagueName, setLeagueName] = useState('')
   const [teams, setTeams] = useState(8)
+  const [pcTeams, setPcTeams] = useState(0)
   const [rounds, setRounds] = useState(4)
   const [budget, setBudget] = useState(100)
   const [budgetDraft, setBudgetDraft] = useState(80)
   const [rerolls, setRerolls] = useState(12)
+  const [draftMode, setDraftMode] = useState<'2_of_4' | 'by_role'>('2_of_4')
   const [competitions, setCompetitions] = useState<string[]>([...CAMPIONATI])
   const [identity, setIdentity] = useState<TeamFields>({ teamName: '', crest: DEFAULT_CREST })
   const [pending, setPending] = useState(false)
@@ -175,6 +177,7 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
   // l'admin abbassa il budget iniziale sotto al valore gia' scelto per il
   // draft, lo si segue giu' invece di lasciare un valore non piu' valido.
   useEffect(() => { setBudgetDraft((current) => Math.min(current, budget)) }, [budget])
+  useEffect(() => { setPcTeams((current) => Math.min(current, teams - 1)) }, [teams])
 
   function toggleCompetition(competition: string) {
     setCompetitions((current) =>
@@ -207,6 +210,8 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
         p_slot_rosa: 24,
         p_portieri_minimi: 0,
         p_campionati_attivi: competitions,
+        p_squadre_pc: pcTeams,
+        p_modalita_draft: draftMode,
       })
       if (rpcError) throw rpcError
       onComplete(data as RpcResult)
@@ -239,16 +244,38 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
         <div className="form-section">
           <div className="section-heading-row"><h2>Formato</h2><span>{matches} partite per squadra</span></div>
           <RangeField label="Squadre" value={teams} min={4} max={20} onChange={setTeams} disabled={pending} />
+          <RangeField label="Squadre PC" value={pcTeams} min={0} max={teams - 1} onChange={setPcTeams} disabled={pending} />
+          <p className="field-help">Completano subito i posti indicati e gestiscono draft, formazione, rinnovi e mercato in autonomia.</p>
           <RangeField label="Gironi" value={rounds} min={2} max={6} onChange={setRounds} disabled={pending} />
         </div>
 
         <div className="form-section">
           <h2>Risorse del draft</h2>
+          <div className="draft-mode-picker" role="radiogroup" aria-label="Modalità draft">
+            <button
+              className={`draft-mode-option${draftMode === '2_of_4' ? ' is-selected' : ''}`}
+              type="button" role="radio" aria-checked={draftMode === '2_of_4'}
+              onClick={() => setDraftMode('2_of_4')} disabled={pending}
+            >
+              <span>CLASSICO</span>
+              <strong>2 of 4</strong>
+              <small>Spinna 4 giocatori, uno per reparto, e scegline 2.</small>
+            </button>
+            <button
+              className={`draft-mode-option${draftMode === 'by_role' ? ' is-selected' : ''}`}
+              type="button" role="radio" aria-checked={draftMode === 'by_role'}
+              onClick={() => setDraftMode('by_role')} disabled={pending}
+            >
+              <span>LIBERO</span>
+              <strong>BY ROLE</strong>
+              <small>Scegli il reparto a ogni spin e costruisci liberamente i 24 posti.</small>
+            </button>
+          </div>
           <RangeField label="Budget iniziale" value={budget} min={50} max={200} step={10} suffix=" M€" onChange={setBudget} disabled={pending} />
           <RangeField label="Budget draft" value={budgetDraft} min={20} max={budget} step={10} suffix=" M€" onChange={setBudgetDraft} disabled={pending} />
           <p className="field-help">Monte ingaggi utilizzabile nel draft. Il resto del budget iniziale resta liquido per il mercato della stagione 1. Abbassalo rispetto al budget iniziale per rose più equilibrate.</p>
           <RangeField label="Reroll" value={rerolls} min={0} max={30} onChange={setRerolls} disabled={pending} />
-          <p className="field-help">Rosa fissata a 24 giocatori: 12 pacchetti da 2 carte a testa, senza resto.</p>
+          <p className="field-help">{draftMode === '2_of_4' ? 'Rosa fissata a 24 giocatori: 12 pacchetti da 2 carte a testa.' : 'Rosa fissata a 24 giocatori: sei tu a decidere quanti spin dedicare a ogni reparto.'}</p>
         </div>
 
         <fieldset className="form-section competitions" disabled={pending}>
@@ -276,10 +303,11 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
         <dl>
           <div><dt>Squadre</dt><dd>{teams}</dd></div>
           <div><dt>Partite / squadra</dt><dd>{matches}</dd></div>
+          <div><dt>Draft</dt><dd>{draftMode === '2_of_4' ? '2 of 4' : 'BY ROLE'}</dd></div>
           <div><dt>Fine prevista</dt><dd>{dataFineStagione(matchdays)}</dd></div>
         </dl>
         <p>Una giornata viene simulata ogni sera alle 23:00, ora di Roma.</p>
-        <button className="button button--light" type="submit" disabled={pending}>
+        <button className={`button button--light${pending ? ' is-loading' : ''}`} type="submit" disabled={pending} aria-busy={pending}>
           {pending ? 'Creazione in corso…' : 'Crea lega e squadra'}
         </button>
       </aside>

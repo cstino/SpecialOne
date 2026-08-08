@@ -10,6 +10,7 @@ export type League = {
   reroll_draft: number
   slot_rosa: number
   portieri_minimi: number
+  modalita_draft: '2_of_4' | 'by_role'
   campionati_attivi: string[]
   partite_per_squadra: number
   giornate_totali: number
@@ -23,6 +24,8 @@ export type League = {
 export type Team = {
   id: number
   league_id: number
+  // Le squadre PC arrivano dal database senza utente; il client le normalizza
+  // a stringa vuota prima di usarle nei componenti che indicizzano per user id.
   user_id: string
   nome: string
   stemma_url: string | null
@@ -31,6 +34,7 @@ export type Team = {
   reroll_rimasti: number
   ordine_draft: number | null
   attiva: boolean
+  controllata_da_pc: boolean
   entrata_stagione: number
   uscita_stagione: number | null
 }

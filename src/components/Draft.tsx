@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
@@ -15,6 +15,8 @@ type DraftTeamState = {
   carta_def: number | null
   carta_mid: number | null
   carta_att: number | null
+  carta_ruolo: number | null
+  ruolo_scelto: MacroRuolo | null
 }
 type DraftCard = {
   ruolo: MacroRuolo
@@ -39,7 +41,25 @@ type DraftPacchetto = {
   slot_occupati: number
   carte: DraftCard[]
 }
-type DraftProps = { user: User; membership: Membership; onNavigate: (view: GameView) => void }
+type DraftByRolePayload = Omit<DraftPacchetto, 'carte'> & {
+  ruolo_scelto: MacroRuolo | null
+  carta: DraftCard | null
+}
+type AvanzamentoDraft = {
+  team_id: number
+  nome: string
+  stemma_url: string | null
+  controllata_da_pc: boolean
+  stato: 'in_corso' | 'concluso'
+  giocatori: number
+  obiettivo: number
+}
+type DraftProps = {
+  user: User
+  membership: Membership
+  onNavigate: (view: GameView) => void
+  onRefresh: () => void | Promise<void>
+}
 
 const NOME_RUOLO: Record<DraftCard['ruolo'], string> = {
   ALL: '',
@@ -65,10 +85,12 @@ function milioni(euro: number) {
   return `${(euro / 1_000_000).toFixed(1).replace('.', ',')} M€`
 }
 
-export function Draft({ user, membership, onNavigate }: DraftProps) {
+export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
   const league = membership.league as League
+  const isByRole = league.modalita_draft === 'by_role'
   const [state, setState] = useState<DraftTeamState | null>(null)
   const [payload, setPayload] = useState<DraftPacchetto | null>(null)
+  const [byRolePayload, setByRolePayload] = useState<DraftByRolePayload | null>(null)
   const [fotoCarte, setFotoCarte] = useState<Map<number, string>>(new Map())
   const [selezionati, setSelezionati] = useState<number[]>([])
   const [fase, setFase] = useState<'vuoto' | 'girando' | 'rivelato'>('vuoto')
@@ -85,6 +107,63 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
   // codice invito era mostrato dopo la creazione della lega.
   const [squadreIscritte, setSquadreIscritte] = useState<number | null>(null)
   const [copiato, setCopiato] = useState(false)
+  const [avanzamento, setAvanzamento] = useState<AvanzamentoDraft[]>([])
+  const [preparazionePc, setPreparazionePc] = useState(false)
+  const automazionePcRef = useRef(false)
+
+  const caricaAvanzamento = useCallback(async () => {
+    const { data, error: avanzamentoError } = await supabase.rpc('stato_avanzamento_draft', { p_league_id: league.id })
+    if (avanzamentoError) {
+      setError(avanzamentoError.message)
+      return [] as AvanzamentoDraft[]
+    }
+    const righe = (data ?? []) as AvanzamentoDraft[]
+    setAvanzamento(righe)
+    return righe
+  }, [league.id])
+
+  // Mostra sempre dati reali, anche se un altro browser o il cron completa
+  // una rosa mentre questa pagina è aperta.
+  useEffect(() => {
+    if (league.stato !== 'draft') return
+    let active = true
+    async function aggiorna() {
+      const righe = await caricaAvanzamento()
+      if (!active) return
+      if (righe.length > 0 && righe.every((riga) => riga.stato === 'concluso')) await onRefresh()
+    }
+    void aggiorna()
+    const timer = window.setInterval(() => void aggiorna(), 1800)
+    return () => { active = false; window.clearInterval(timer) }
+  }, [caricaAvanzamento, league.stato, onRefresh])
+
+  // Appena l'utente finisce, prepara una squadra PC per chiamata. In questo
+  // modo non rischiamo timeout e la lista può aggiornarsi fra una squadra e
+  // la successiva; il cron al minuto resta soltanto il paracadute.
+  useEffect(() => {
+    if (league.stato !== 'draft' || state?.stato !== 'concluso' || automazionePcRef.current) return
+    let active = true
+    automazionePcRef.current = true
+    async function completaPc() {
+      setPreparazionePc(true)
+      while (active) {
+        const { data, error: completamentoError } = await supabase.rpc('completa_prossima_squadra_pc', { p_league_id: league.id })
+        if (completamentoError) {
+          if (active) setError(completamentoError.message)
+          break
+        }
+        await caricaAvanzamento()
+        if (data !== true) break
+      }
+      if (active) {
+        setPreparazionePc(false)
+        await onRefresh()
+      }
+      automazionePcRef.current = false
+    }
+    void completaPc()
+    return () => { active = false; automazionePcRef.current = false }
+  }, [caricaAvanzamento, league.id, league.stato, onRefresh, state?.stato])
 
   useEffect(() => {
     let active = true
@@ -101,22 +180,30 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
       if (stateError || !teamState) { setError(stateError?.message ?? 'Stato del tuo draft non disponibile.'); setLoading(false); return }
       const nextState = teamState as DraftTeamState
       setState(nextState)
-      if (nextState.carta_gk !== null && nextState.stato === 'in_corso') {
-        const result = await supabase.rpc('draft_apri_pacchetto', { p_league_id: league.id })
+      const haCartaAperta = isByRole ? nextState.carta_ruolo !== null : nextState.carta_gk !== null
+      if (haCartaAperta && nextState.stato === 'in_corso') {
+        const result = isByRole
+          ? await supabase.rpc('draft_by_role_spin', { p_league_id: league.id, p_ruolo: nextState.ruolo_scelto ?? 'GK' })
+          : await supabase.rpc('draft_apri_pacchetto', { p_league_id: league.id })
         if (!active) return
         if (result.error) setError(result.error.message)
-        else {
+        else if (isByRole) {
+          const dati = result.data as DraftByRolePayload
+          setByRolePayload(dati)
+          setFase('rivelato')
+          setFotoCarte(await firmaTutte(dati.carta ? [dati.carta] : []))
+        } else {
           const dati = result.data as DraftPacchetto
           setPayload(dati)
           setFase('rivelato')
           setFotoCarte(await firmaTutte(dati.carte))
         }
-      } else { setPayload(null); setFase('vuoto') }
+      } else { setPayload(null); setByRolePayload(null); setFase('vuoto') }
       setLoading(false)
     }
     void load()
     return () => { active = false; if (spinRef.current) window.clearInterval(spinRef.current) }
-  }, [league.id, membership.id, refresh])
+  }, [isByRole, league.id, membership.id, refresh])
 
   async function firmaTutte(carte: DraftCard[]) {
     const voci = await Promise.all(carte.map(async (c) => [c.id, await firmaFoto(c.foto_url)] as const))
@@ -138,6 +225,20 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
     }, 1000)
   }
 
+  function avviaRotazioneByRole(dati: DraftByRolePayload) {
+    setByRolePayload(dati)
+    setFase('girando')
+    if (spinRef.current) window.clearInterval(spinRef.current)
+    spinRef.current = window.setInterval(() => {
+      setNomiSpin([NOMI_SPIN[Math.floor(Math.random() * NOMI_SPIN.length)], '', '', ''])
+    }, 65)
+    window.setTimeout(async () => {
+      if (spinRef.current) { window.clearInterval(spinRef.current); spinRef.current = null }
+      setFase('rivelato')
+      setFotoCarte(await firmaTutte(dati.carta ? [dati.carta] : []))
+    }, 1000)
+  }
+
   async function apriPacchetto() {
     setPending(true); setError(null)
     const result = await supabase.rpc('draft_apri_pacchetto', { p_league_id: league.id })
@@ -151,6 +252,35 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
     const result = await supabase.rpc('draft_pacchetto_reroll', { p_league_id: league.id })
     if (result.error) setError(result.error.message)
     else avviaRotazione(result.data as DraftPacchetto)
+    setPending(false)
+  }
+
+  async function spinByRole(ruolo: MacroRuolo) {
+    setPending(true); setError(null)
+    const result = await supabase.rpc('draft_by_role_spin', { p_league_id: league.id, p_ruolo: ruolo })
+    if (result.error) setError(result.error.message)
+    else avviaRotazioneByRole(result.data as DraftByRolePayload)
+    setPending(false)
+  }
+
+  async function rerollByRole() {
+    setPending(true); setError(null)
+    const result = await supabase.rpc('draft_by_role_reroll', { p_league_id: league.id })
+    if (result.error) setError(result.error.message)
+    else avviaRotazioneByRole(result.data as DraftByRolePayload)
+    setPending(false)
+  }
+
+  async function ingaggiaByRole() {
+    const carta = byRolePayload?.carta
+    if (!carta?.ingaggiabile) return
+    setPending(true); setError(null)
+    const result = await supabase.rpc('draft_by_role_ingaggia', {
+      p_league_id: league.id,
+      p_player_id: carta.id,
+    })
+    if (result.error) setError(result.error.message)
+    else { setByRolePayload(null); setFase('vuoto'); setRefresh((value) => value + 1) }
     setPending(false)
   }
 
@@ -189,15 +319,18 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
   // design §4.4), applicata ai DUE pick del turno insieme: quanto si puo' spendere in
   // totale sulle due carte scelte ora, una volta accantonato il minimo di 0,5M per
   // ognuno degli slot che restano da riempire DOPO questo turno.
-  const slotLiberiDopoTurno = Math.max(0, total - picks - 2)
+  const pickDelTurno = isByRole ? 1 : 2
+  const slotLiberiDopoTurno = Math.max(0, total - picks - pickDelTurno)
   const massimoSpesaTurno = Math.max(0, disponibile - slotLiberiDopoTurno * 500_000)
+  const squadreCompletate = avanzamento.filter((riga) => riga.stato === 'concluso').length
+  const percentualeLega = avanzamento.length > 0 ? (squadreCompletate / avanzamento.length) * 100 : 0
 
   return (
     <main className="app-shell draft-shell">
       <GameNav league={league} active="draft" onNavigate={onNavigate} />
       <header className="topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span className="user-email">{user.email}</span></header>
       <section className="draft-hero">
-        <div><p className="kicker">Draft a pacchetti · {league.nome}</p><h1>{state?.stato === 'concluso' ? 'Rosa completa.' : 'Scegli bene.'}</h1><p>La tua squadra è al pacchetto {Math.min(Math.floor(picks / 2) + 1, total / 2)} su {total / 2}. Le altre squadre possono draftare contemporaneamente.</p></div>
+        <div><p className="kicker">Draft {isByRole ? 'BY ROLE' : '2 of 4'} · {league.nome}</p><h1>{state?.stato === 'concluso' ? 'Rosa completa.' : 'Scegli bene.'}</h1><p>{isByRole ? `Hai completato ${picks} spin su ${total}. Scegli liberamente il reparto del prossimo.` : `La tua squadra è al pacchetto ${Math.min(Math.floor(picks / 2) + 1, total / 2)} su ${total / 2}.`} Le altre squadre possono draftare contemporaneamente.</p></div>
         <button className="draft-turn-board draft-turn-board--clickable" type="button" onClick={() => setRosaAperta(true)}>
           <span>La tua squadra</span>
           <strong>{membership.nome}</strong>
@@ -231,9 +364,105 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
       )}
       {error && <p className="notice notice--error" role="alert">{error}</p>}
       {state?.stato === 'concluso' ? (
-        <section className="draft-action-panel"><p className="kicker">Draft concluso</p><h2>La rosa è pronta.</h2><p>Il prossimo passaggio sarà la scelta della formazione.</p></section>
+        <section className="draft-action-panel draft-waiting-panel">
+          <div className="draft-waiting-panel__testa">
+            <div>
+              <p className="kicker">Draft concluso</p>
+              <h2>{squadreCompletate === avanzamento.length && avanzamento.length > 0 ? 'Tutte le rose sono pronte.' : 'Preparazione delle altre rose…'}</h2>
+              <p>{preparazionePc ? 'Le squadre PC stanno completando automaticamente il draft.' : 'Controllo lo stato delle altre squadre.'}</p>
+            </div>
+            <strong>{squadreCompletate}/{avanzamento.length || league.n_squadre}</strong>
+          </div>
+          <div className="draft-waiting-total" aria-label={`${squadreCompletate} squadre complete su ${avanzamento.length}`}>
+            <i style={{ width: `${percentualeLega}%` }} />
+          </div>
+          <ul className="draft-waiting-list">
+            {avanzamento.map((riga) => {
+              const completa = riga.stato === 'concluso'
+              const quota = Math.min(100, (riga.giocatori / Math.max(riga.obiettivo, 1)) * 100)
+              return <li key={riga.team_id} className={completa ? 'is-complete' : 'is-loading'}>
+                <span className="draft-waiting-list__stato" aria-hidden="true">{completa ? '✓' : ''}</span>
+                <div>
+                  <strong>{riga.nome}{riga.controllata_da_pc ? <small>PC</small> : null}</strong>
+                  <span>{completa ? 'Rosa completata' : riga.controllata_da_pc ? 'Estrazione in corso' : 'In attesa del giocatore'}</span>
+                  <div className="draft-waiting-list__bar"><i style={{ width: `${quota}%` }} /></div>
+                </div>
+                <b>{riga.giocatori}/{riga.obiettivo}</b>
+              </li>
+            })}
+          </ul>
+        </section>
       ) : (
         <section className="draft-club-panel">
+          {isByRole ? (
+            <>
+              <div className="section-heading-row">
+                <div>
+                  <p className="kicker">{fase === 'vuoto' ? 'Scegli il prossimo reparto' : fase === 'girando' ? 'Spin in corso…' : NOME_RUOLO[byRolePayload?.ruolo_scelto ?? 'ALL']}</p>
+                  <h2>{fase === 'vuoto' ? 'Chi vuoi cercare?' : fase === 'girando' ? 'Scouting il pool attivo.' : 'Firma o prova un reroll.'}</h2>
+                </div>
+                {fase !== 'vuoto' && (
+                  <button className="draft-reroll-oro" type="button" disabled={pending || fase === 'girando' || (byRolePayload?.reroll_rimasti ?? 0) < 1} onClick={rerollByRole}>
+                    <span className="draft-azione-testo">Reroll · {byRolePayload?.reroll_rimasti ?? 0}</span>
+                  </button>
+                )}
+              </div>
+              {fase === 'vuoto' && (
+                <>
+                  <p>Ogni spin mostra un solo giocatore del reparto scelto. La composizione finale della rosa dipende interamente da te.</p>
+                  <div className="draft-role-grid">
+                    {ORDINE_RUOLI_PACCHETTO.map((ruolo) => (
+                      <button key={ruolo} className={`draft-role-choice draft-role-choice--${ruolo.toLowerCase()}`} type="button" disabled={pending} onClick={() => spinByRole(ruolo)}>
+                        <span>{ruolo}</span>
+                        <strong>{NOME_RUOLO[ruolo]}</strong>
+                        <small>Spin</small>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+              {fase !== 'vuoto' && (
+                <div className="draft-by-role-card">
+                  <span className={`draft-ruolo-badge draft-ruolo-badge--${(byRolePayload?.ruolo_scelto ?? 'GK').toLowerCase()}`}>{NOME_RUOLO[byRolePayload?.ruolo_scelto ?? 'GK']}</span>
+                  {fase === 'girando' && (
+                    <div className="draft-carta draft-carta--spin">
+                      <div className="draft-carta__foto draft-carta__foto--spin" aria-hidden="true" />
+                      <strong className="draft-carta__nome-spin">{nomiSpin[0]}</strong>
+                      <span className="draft-carta__ovr-spin">{40 + Math.floor(Math.random() * 55)}</span>
+                    </div>
+                  )}
+                  {fase === 'rivelato' && byRolePayload?.carta && (
+                    <motion.div
+                      className="draft-carta draft-carta--by-role"
+                      initial={{ opacity: 0, scale: 0.88, y: 8 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      transition={{ type: 'spring', stiffness: 340, damping: 22 }}
+                    >
+                      <div className="draft-carta__foto">
+                        {fotoCarte.get(byRolePayload.carta.id) ? <img src={fotoCarte.get(byRolePayload.carta.id)} alt="" /> : <span aria-hidden="true">{byRolePayload.carta.nome.charAt(0)}</span>}
+                      </div>
+                      <div className="draft-carta__info">
+                        <strong>{byRolePayload.carta.nome}</strong>
+                        <small>{byRolePayload.carta.club} · {byRolePayload.carta.eta} anni</small>
+                        <small className="draft-carta__posizioni">{byRolePayload.carta.posizioni.join(' · ')}</small>
+                      </div>
+                      <b className="draft-carta__ovr">{byRolePayload.carta.overall}</b>
+                      <div className="draft-carta__wage">
+                        {(byRolePayload.carta.ingaggio / 1_000_000).toFixed(1)} M€
+                        <small>{byRolePayload.carta.ingaggiabile ? 'Sostenibile' : 'Non sostenibile'}</small>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              )}
+              {fase === 'rivelato' && (
+                <button className="button button--primary draft-conferma" type="button" disabled={pending || !byRolePayload?.carta?.ingaggiabile} onClick={ingaggiaByRole}>
+                  Ingaggia {byRolePayload?.carta?.nome ?? 'giocatore'}
+                </button>
+              )}
+            </>
+          ) : (
+            <>
           <div className="section-heading-row">
             <div>
               <p className="kicker">{fase === 'vuoto' ? 'Pronto per il prossimo spin' : fase === 'girando' ? 'Apertura in corso…' : 'Pacchetto aperto'}</p>
@@ -297,6 +526,8 @@ export function Draft({ user, membership, onNavigate }: DraftProps) {
             <button className="button button--primary draft-conferma" type="button" disabled={pending || selezionati.length !== 2} onClick={confermaScelta}>
               Conferma scelta ({selezionati.length}/2)
             </button>
+          )}
+            </>
           )}
         </section>
       )}

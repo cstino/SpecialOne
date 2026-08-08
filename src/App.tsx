@@ -331,7 +331,7 @@ export default function App() {
     if (gameView === 'squad') return conContesti(<Rosa membership={active} onNavigate={setGameView} />)
     if (gameView === 'admin') return conContesti(<Admin membership={active} onNavigate={setGameView} />)
     if (gameView === 'help') return conContesti(<Help membership={active} onNavigate={setGameView} />)
-    return conContesti(<Draft user={session.user} membership={active} onNavigate={setGameView} />)
+    return conContesti(<Draft user={session.user} membership={active} onNavigate={setGameView} onRefresh={loadMemberships} />)
   }
 
   if (gameView === 'offseason') {
@@ -339,7 +339,7 @@ export default function App() {
   }
 
   if (active.league?.fase_carriera === 'offseason' && gameView === 'draft') {
-    return conContesti(<Draft user={session.user} membership={active} onNavigate={setGameView} />)
+    return conContesti(<Draft user={session.user} membership={active} onNavigate={setGameView} onRefresh={loadMemberships} />)
   }
 
   function navigateGame(view: GameView) {

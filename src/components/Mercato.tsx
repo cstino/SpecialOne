@@ -25,6 +25,7 @@ type Proposta = {
   creata_il: string
   scade_il: string
   risolta_il?: string | null
+  controproposta_di?: number | null
 }
 
 type Giocatore = {
@@ -189,6 +190,8 @@ export function Mercato({ membership, onNavigate }: Props) {
   const [offerti, setOfferti] = useState<number[]>([])
   const [conguaglio, setConguaglio] = useState('0')
   const [messaggio, setMessaggio] = useState('')
+  const [sceltaRifiutoId, setSceltaRifiutoId] = useState<number | null>(null)
+  const [contropropostaOrigine, setContropropostaOrigine] = useState<Proposta | null>(null)
   const [vetrinaRuolo, setVetrinaRuolo] = useState<MacroRuolo>('ALL')
   const [vetrinaEta, setVetrinaEta] = useState<[number, number]>([16, 45])
   const [vetrinaOverall, setVetrinaOverall] = useState<[number, number]>([50, 99])
@@ -204,6 +207,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   // Dalla vetrina si salta dritti alla proposta, gia' compilata: e' il modo
   // piu' veloce per dire "questo lo voglio" senza passare dalla scheda.
   function proponiPerGiocatore(g: Giocatore) {
+    setContropropostaOrigine(null)
     setAvversaria(g.team_id)
     setChiesti([g.id])
     compositoreRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -584,22 +588,46 @@ export function Mercato({ membership, onNavigate }: Props) {
     // loader dell'intera pagina farebbe sembrare un refresh e spezzerebbe il
     // contesto dell'azione appena compiuta.
     if (!error) await carica(true)
+    return !error
   }
 
   async function invia() {
     const valore = Math.round(Number(conguaglio.replace(',', '.')) * 1_000_000)
     if (!avversaria || Number.isNaN(valore)) { setEsito('Conguaglio non valido.'); return }
-    await chiama(
-      () => supabase.rpc('proponi_scambio', {
-        p_a_team_id: avversaria,
+    const riuscita = await chiama(
+      () => supabase.rpc(contropropostaOrigine ? 'controproponi' : 'proponi_scambio', {
+        ...(contropropostaOrigine ? { p_proposta_id: contropropostaOrigine.id } : { p_a_team_id: avversaria }),
         p_giocatori_offerti: offerti,
         p_giocatori_richiesti: chiesti,
         p_conguaglio: valore,
         p_messaggio: messaggio.trim() || null,
       }),
-      'Proposta inviata.',
+      contropropostaOrigine ? 'Controfferta inviata.' : 'Proposta inviata.',
     )
-    setChiesti([]); setOfferti([]); setConguaglio('0'); setMessaggio('')
+    if (riuscita) {
+      setChiesti([]); setOfferti([]); setConguaglio('0'); setMessaggio('')
+      setContropropostaOrigine(null)
+    }
+  }
+
+  function preparaControfferta(p: Proposta) {
+    setContropropostaOrigine(p)
+    setAvversaria(p.da_team_id)
+    setOfferti([...p.giocatori_richiesti])
+    setChiesti([...p.giocatori_offerti])
+    setConguaglio((-p.conguaglio / 1_000_000).toString().replace('.', ','))
+    setMessaggio('Controfferta')
+    setSceltaRifiutoId(null)
+    window.requestAnimationFrame(() => compositoreRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+
+  function annullaControfferta() {
+    setContropropostaOrigine(null)
+    setAvversaria(null)
+    setChiesti([])
+    setOfferti([])
+    setConguaglio('0')
+    setMessaggio('')
   }
 
   const cardSvincolato = (a: Asta, compatta = false) => {
@@ -794,15 +822,26 @@ export function Mercato({ membership, onNavigate }: Props) {
           : ricevute.map((p) => <article className="mercato-card" key={p.id}>
               <header>{stemma(p.da_team_id)}<strong>{nomeSquadra(p.da_team_id)}</strong></header>
               {riepilogo(p)}
-              <footer>
+              <footer className={sceltaRifiutoId === p.id ? 'mercato-rifiuto-aperto' : ''}>
+                {sceltaRifiutoId !== p.id ? <>
                 <button className="button button--primary" type="button" disabled={inCorso || !aperto}
                   onClick={() => chiama(() => supabase.rpc('rispondi_a_proposta', { p_proposta_id: p.id, p_accetta: true }), 'Scambio concluso.')}>
                   Accetta
                 </button>
                 <button className="button button--secondary" type="button" disabled={inCorso}
+                  onClick={() => setSceltaRifiutoId(p.id)}>
+                  Rifiuta
+                </button>
+                </> : <>
+                <button className="button button--primary" type="button" disabled={inCorso || !aperto}
+                  onClick={() => preparaControfferta(p)}>
+                  Controfferta
+                </button>
+                <button className="button button--danger-ghost" type="button" disabled={inCorso}
                   onClick={() => chiama(() => supabase.rpc('rispondi_a_proposta', { p_proposta_id: p.id, p_accetta: false }), 'Proposta rifiutata.')}>
                   Rifiuta
                 </button>
+                </>}
               </footer>
             </article>)}
       </section>
@@ -1045,10 +1084,21 @@ export function Mercato({ membership, onNavigate }: Props) {
 
       {/* ---- Compositore ---- */}
       <section className="mercato-blocco" ref={compositoreRef}>
-        <div className="sezione-testa"><div><p className="kicker">Tratta</p><h2>Nuova proposta</h2></div></div>
+        <div className="sezione-testa">
+          <div>
+            <p className="kicker">{contropropostaOrigine ? 'Risposta alla trattativa' : 'Tratta'}</p>
+            <h2>{contropropostaOrigine ? `Controfferta a ${nomeSquadra(contropropostaOrigine.da_team_id)}` : 'Nuova proposta'}</h2>
+          </div>
+          {contropropostaOrigine && <button className="button button--secondary mercato-annulla-controfferta" type="button" disabled={inCorso} onClick={annullaControfferta}>
+            Annulla
+          </button>}
+        </div>
+        {contropropostaOrigine && <p className="notice mercato-controfferta-notice">
+          La proposta ricevuta è stata invertita: puoi cambiare giocatori e conguaglio prima di inviarla.
+        </p>}
         {!aperto && <p className="notice">Il mercato è chiuso: puoi preparare la proposta ma potrai inviarla dalle 23:30.</p>}
 
-        <div className="mercato-scelta-squadra">
+        {!contropropostaOrigine && <div className="mercato-scelta-squadra">
           {dati.teams.filter((s) => s.id !== membership.id).map((s) => <button
             key={s.id} type="button"
             className={avversaria === s.id ? 'is-scelto' : ''}
@@ -1059,7 +1109,7 @@ export function Mercato({ membership, onNavigate }: Props) {
           >
             {stemma(s.id)}
           </button>)}
-        </div>
+        </div>}
 
         {avversaria && <>
           <div className="mercato-colonne">
@@ -1090,7 +1140,7 @@ export function Mercato({ membership, onNavigate }: Props) {
           <button className="button button--primary" type="button"
             disabled={inCorso || !aperto || (chiesti.length === 0 && offerti.length === 0)}
             onClick={() => void invia()}>
-            {inCorso ? 'Invio…' : 'Invia la proposta'}
+            {inCorso ? 'Invio…' : contropropostaOrigine ? 'Invia la controfferta' : 'Invia la proposta'}
           </button>
         </>}
       </section>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
+import { ricostruisciEventiStorici } from '../lib/matchEvents'
 import { ordineRuolo } from '../lib/ruoli'
 import { useSeasonData } from '../lib/useSeasonData'
 import { isEventoGol, type EventoGol, type EventoPartita, type League, type MatchPlayerStat, type MatchTeamStats, type Membership } from '../types'
@@ -124,8 +125,21 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
   const eventi = useMemo(() => {
     const registrati = match?.blocchi
     if (!Array.isArray(registrati)) return []
+    const estesa = registrati.some((evento) => !isEventoGol(evento))
+    if (!estesa && match && fixture) {
+      if (statsLoading) return []
+      return ricostruisciEventiStorici(
+        registrati,
+        stats,
+        match.titolari_home,
+        match.titolari_away,
+        fixture.home_team_id,
+        fixture.away_team_id,
+        match.id,
+      )
+    }
     return [...registrati].sort((sinistra, destra) => sinistra.minuto - destra.minuto)
-  }, [match])
+  }, [fixture, match, stats, statsLoading])
 
   // Ordinati per reparto (GK -> ST) prima ancora che per prestazione: e' cosi'
   // che si legge un tabellino, non per gol fatti.

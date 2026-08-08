@@ -1,72 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
+import { ricostruisciEventiStorici, type StatEventoStorico } from '../lib/matchEvents'
 import { useSeasonData } from '../lib/useSeasonData'
 import { isEventoGol, type EventoPartita, type Membership } from '../types'
 import { Crest } from './Crest'
 
 type Props = { membership: Membership; matchId: number; onClose: () => void; onRevealed: (matchId: number) => void; onOpenReport: () => void }
 type Player = { id: number; nome: string }
-type StatStorica = { team_id: number; player_instance_id: number; minuti: number; gol: number; tiri: number; tiri_porta: number }
-
-function creaRng(seme: number) {
-  let stato = seme >>> 0
-  return () => { stato = (stato * 1664525 + 1013904223) >>> 0; return stato / 4294967296 }
-}
-
-// Le vecchie partite hanno solo i gol salvati in cronaca, ma possiedono gia'
-// minutaggio e tiri individuali. Li usiamo per ricostruire highlights reali
-// (mai numeri aggiuntivi) finche' le nuove simulazioni non salvano tutto.
-function ricostruisciStorico(gol: EventoPartita[], stats: StatStorica[], titolariCasa: number[], titolariOspite: number[], teamCasa: number, teamOspite: number, seed: number) {
-  const rnd = creaRng(seed)
-  // I minuti dei gol delle partite storiche erano assegnati in presentazione.
-  // Se un marcatore era un subentrato, il vecchio minuto puo' cadere prima del
-  // suo ingresso: lo riportiamo quindi nel suo intervallo effettivo di gioco.
-  const intervalloGioco = (teamId: number, giocatoreId: number) => {
-    const stat = stats.find((riga) => riga.team_id === teamId && riga.player_instance_id === giocatoreId)
-    const titolari = teamId === teamCasa ? titolariCasa : titolariOspite
-    if (!stat || !titolari.length || stat.minuti <= 0) return null
-    return titolari.includes(giocatoreId)
-      ? { da: 1, a: stat.minuti }
-      : { da: Math.max(1, 90 - stat.minuti), a: 90 }
-  }
-  const eventi: EventoPartita[] = gol.map((evento) => {
-    if (!isEventoGol(evento)) return evento
-    const intervallo = intervalloGioco(evento.team_id, evento.marcatore)
-    if (!intervallo || (evento.minuto >= intervallo.da && evento.minuto <= intervallo.a)) return evento
-    return { ...evento, minuto: evento.minuto < intervallo.da ? intervallo.da : intervallo.a, blocco: Math.ceil((evento.minuto < intervallo.da ? intervallo.da : intervallo.a) / 15) }
-  })
-  for (const [lato, teamId, titolari] of [['casa', teamCasa, titolariCasa], ['ospite', teamOspite, titolariOspite]] as const) {
-    const righe = stats.filter((stat) => stat.team_id === teamId)
-    if (!righe.length) continue
-    const azioni: Array<{ tipo: 'tiro_parato' | 'tiro_fuori'; giocatore: number; minuti: number }> = []
-    for (const stat of righe) {
-      for (let i = 0; i < Math.max(0, stat.tiri_porta - stat.gol); i++) azioni.push({ tipo: 'tiro_parato', giocatore: stat.player_instance_id, minuti: stat.minuti })
-      for (let i = 0; i < Math.max(0, stat.tiri - stat.tiri_porta); i++) azioni.push({ tipo: 'tiro_fuori', giocatore: stat.player_instance_id, minuti: stat.minuti })
-    }
-    // Sono highlights, non il feed di ogni singolo tiro: al massimo quattro
-    // per squadra, tutti comunque supportati dalle statistiche registrate.
-    for (const azione of azioni.sort(() => rnd() - .5).slice(0, 4)) {
-      const eTitolare = titolari.includes(azione.giocatore)
-      const minimo = eTitolare ? 1 : Math.max(1, 90 - azione.minuti)
-      const massimo = eTitolare ? Math.max(minimo, azione.minuti) : 90
-      const minuto = minimo + Math.floor(rnd() * (massimo - minimo + 1))
-      eventi.push({ tipo: azione.tipo, minuto, blocco: Math.ceil(minuto / 15), lato, team_id: teamId, giocatore: azione.giocatore })
-    }
-    const subentratiGiaUsati = new Set<number>()
-    for (const titolare of righe.filter((stat) => titolari.includes(stat.player_instance_id) && stat.minuti > 0 && stat.minuti < 90)) {
-      const entra = righe.find((stat) => !titolari.includes(stat.player_instance_id)
-        && !subentratiGiaUsati.has(stat.player_instance_id)
-        && stat.minuti === 90 - titolare.minuti)
-      if (entra) {
-        subentratiGiaUsati.add(entra.player_instance_id)
-        eventi.push({ tipo: 'sostituzione', minuto: titolare.minuti, blocco: Math.ceil(titolare.minuti / 15), lato, team_id: teamId, esce: titolare.player_instance_id, entra: entra.player_instance_id })
-      }
-    }
-  }
-  return eventi.sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.team_id - destra.team_id)
-}
-
 function testoEvento(evento: EventoPartita, nomi: Map<number, Player>) {
   const nome = (id: number) => cognome(nomi.get(id)?.nome ?? `Giocatore ${id}`)
   if (isEventoGol(evento)) return <><strong>GOOOL!</strong> {nome(evento.marcatore)} la mette dentro.</>
@@ -82,7 +23,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const match = data.matches.find((item) => item.id === matchId)
   const fixture = match ? data.fixtures.find((item) => item.id === match.fixture_id) : undefined
   const [nomi, setNomi] = useState<Map<number, Player>>(new Map())
-  const [statsStoriche, setStatsStoriche] = useState<StatStorica[]>([])
+  const [statsStoriche, setStatsStoriche] = useState<StatEventoStorico[]>([])
   const revealRegistrato = useRef(false)
   // Un secondo reale per ogni minuto di gioco: il reveal non salta da
   // un'azione all'altra, ma percorre tutta la partita come una cronaca.
@@ -92,7 +33,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     if (!match) return []
     const estesa = match.blocchi.some((evento) => !isEventoGol(evento))
     if (estesa || !fixture) return [...match.blocchi].sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.team_id - destra.team_id)
-    return ricostruisciStorico(match.blocchi, statsStoriche, match.titolari_home, match.titolari_away, fixture.home_team_id, fixture.away_team_id, match.id)
+    return ricostruisciEventiStorici(match.blocchi, statsStoriche, match.titolari_home, match.titolari_away, fixture.home_team_id, fixture.away_team_id, match.id)
   }, [fixture, match, statsStoriche])
   const inCorso = minutoCorrente >= 0 && minutoCorrente < 90
   const completata = minutoCorrente >= 90
@@ -111,7 +52,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     let attivo = true
     async function caricaStatisticheStoriche() {
       const { data: righe } = await supabase.from('match_stats').select('team_id, player_instance_id, minuti, gol, tiri, tiri_porta').eq('match_id', idPartita)
-      if (attivo) setStatsStoriche((righe ?? []) as StatStorica[])
+      if (attivo) setStatsStoriche((righe ?? []) as StatEventoStorico[])
     }
     void caricaStatisticheStoriche()
     return () => { attivo = false }

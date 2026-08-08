@@ -37,7 +37,7 @@ export function Lobby({ user, membership, memberships, onSelectLeague, onNewLeag
         setLoading(false)
         return
       }
-      const loadedTeams = (data ?? []) as Team[]
+      const loadedTeams = (data ?? []).map((team) => ({ ...team, user_id: team.user_id ?? '' })) as Team[]
       setTeams(loadedTeams)
 
       // Leggibile solo fra chi condivide una lega (policy profiles_lettura):
@@ -137,6 +137,7 @@ export function Lobby({ user, membership, memberships, onSelectLeague, onNewLeag
                 <li key={team.id}>
                   <span className="roster-number">{String(index + 1).padStart(2, '0')}</span>
                   <Crest value={team.stemma_url} imageUrl={team.stemma_url ? imageUrls[team.stemma_url] : null} />
+                  {team.controllata_da_pc && <span className="status-chip">PC</span>}
                   <div><strong>{team.nome}</strong><span>{allenatori[team.user_id] ? `${allenatori[team.user_id]} · ` : ''}{team.user_id === league.admin_id ? 'Admin' : 'Partecipante'}</span></div>
                   {team.user_id === user.id && <span className="status-chip">La tua</span>}
                 </li>

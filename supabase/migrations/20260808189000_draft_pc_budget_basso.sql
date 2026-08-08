@@ -1,0 +1,3 @@
+-- Migrazione intenzionalmente vuota: la precedente variante eliminava il
+-- vincolo di solvibilita' del draft PC ed e' stata scartata. Il fallback
+-- corretto e' definito nella migrazione successiva 20260808190000.
