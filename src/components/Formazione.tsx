@@ -6,6 +6,7 @@ import type { League, Membership } from '../types'
 import { GameNav } from './GameNav'
 import { SchedaGiocatore } from './SchedaGiocatore'
 import type { GameView } from './GameNav'
+import { LoadingLogo } from './LoadingLogo'
 
 // Tetti fissi di rosa in campo (design.md §6): 11 titolari sempre, panchina
 // fino a 9. La tribuna non ha un tetto suo — e' semplicemente "il resto
@@ -494,7 +495,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     setStileMenuOpen(false)
   }
 
-  if (loading) return <main className="loading-screen"><img className="loading-mark" src="/specialone-mark.svg" alt="" /><p>Preparo la formazione…</p></main>
+  if (loading) return <main className="loading-screen"><LoadingLogo /><p>Preparo la formazione…</p></main>
 
   return (
     <main className="app-shell formation-shell">

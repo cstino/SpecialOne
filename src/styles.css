@@ -401,8 +401,12 @@ input:disabled { opacity: 0.65; }
 /* Stati globali */
 .loading-screen, .fatal-state { min-height: 100vh; display: grid; place-content: center; justify-items: center; padding: 2rem; text-align: center; }
 .loading-screen { color: #f7f2ff; background: #0b0a11; }
-.loading-mark { width: 88px; height: 88px; object-fit: contain; filter: drop-shadow(0 18px 30px rgba(119, 50, 210, .35)); animation: breathe 1.6s ease-in-out infinite; }
-@keyframes breathe { 50% { transform: translateY(-5px); filter: drop-shadow(0 8px 8px rgba(24,34,28,.2)); } }
+.loading-logo { width: 96px; height: 122px; display: grid; place-items: center; }
+.loading-logo img { width: 70px; height: 99px; object-fit: contain; filter: drop-shadow(0 10px 16px rgba(151, 89, 239, .24)); animation: loading-logo-galleggia 2.4s ease-in-out infinite; }
+.loading-logo--compatto { width: 54px; height: 64px; }
+.loading-logo--compatto img { width: 38px; height: 54px; }
+@keyframes loading-logo-galleggia { 0%, 100% { transform: translateY(2px); } 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .loading-logo img { animation: none; } }
 .loading-screen p { margin: 1rem 0 0; color: var(--ink-muted); font-weight: 700; }
 .loading-screen p { color: #9d94aa; }
 .fatal-state img { width: 76px; margin-bottom: 2rem; }
@@ -1225,6 +1229,8 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .season-state { min-height: calc(100vh - 76px); display: grid; place-content: center; justify-items: center; padding: 40px; text-align: center; }
 .season-state h2 { margin: 18px 0 7px; color: #f8f4fc; }
 .season-state p { max-width: 460px; color: #948b9f; }
+.season-countdown { margin: .35rem 0 0; color: #a99bb9; font-size: .72rem; font-variant-numeric: tabular-nums; }
+.season-countdown strong { color: #e1b45c; letter-spacing: .06em; }
 .season-loader { width: 34px; height: 34px; border: 3px solid #42364e; border-top-color: #b75fff; border-radius: 50%; animation: season-spin .75s linear infinite; }
 .season-state__icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; color: #160e1e; background: #dd9c49; font-size: 1.3rem; font-weight: 950; }
 @keyframes season-spin { to { transform: rotate(360deg); } }
@@ -1491,7 +1497,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .alerts-list__open i[data-tipo="formazione_mancante"] { color:#f3c969; background:#33280f; }
 .alerts-list__open i[data-tipo="mercato_proposta"] { color:#9fc7ff; background:#172438; }
 .alerts-empty { display:grid; justify-items:center; padding:62px 24px; border:1px dashed #465865; border-radius:18px; color:#9aa7b0; background:linear-gradient(145deg,rgba(27,42,50,.65),rgba(18,16,24,.65)); text-align:center; }
-.alerts-empty>span:not(.season-loader) { width:52px; height:52px; display:grid; place-items:center; border-radius:50%; color:#83d6ed; background:#17333e; font-size:1.6rem; }
+.alerts-empty>span:not(.season-loader):not(.loading-logo) { width:52px; height:52px; display:grid; place-items:center; border-radius:50%; color:#83d6ed; background:#17333e; font-size:1.6rem; }
 .alerts-empty h2 { margin:16px 0 6px; color:#f2f8fb; font-size:1.25rem; }
 .alerts-empty p { max-width:410px; margin:0; font-size:.78rem; line-height:1.5; }
 
@@ -2279,6 +2285,16 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .finanza-kpi__cella--uscita strong { color: #ff8fa8; }
 
 .finanza-grafico, .finanza-movimenti { margin-bottom: 24px; padding: 22px; border: 1px solid #322b41; border-radius: 17px; background: linear-gradient(145deg, rgba(27,24,37,.98), rgba(20,18,28,.98)); box-shadow: 0 18px 50px rgba(0,0,0,.16); }
+.finanza-proiezione { display: grid; gap: 16px; margin-bottom: 24px; padding: 22px; border: 1px solid rgba(189,103,255,.46); border-radius: 17px; background: linear-gradient(145deg, rgba(58,31,80,.5), rgba(27,24,37,.98)); box-shadow: 0 18px 50px rgba(0,0,0,.16); }
+.finanza-proiezione__numero { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding: 14px 0; border-block: 1px solid rgba(189,103,255,.2); }
+.finanza-proiezione__numero span, .finanza-proiezione small { color: #a79db8; font-size: .76rem; }
+.finanza-proiezione__numero strong { font-size: clamp(1.65rem, 5vw, 2.35rem); line-height: 1; }
+.finanza-proiezione .is-positive { color: #4fdba6; }
+.finanza-proiezione .is-negative { color: #ff8fa8; }
+.finanza-proiezione dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.finanza-proiezione dl > div { display: grid; gap: 3px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.07); }
+.finanza-proiezione dt { color: #a79db8; font-size: .68rem; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+.finanza-proiezione dd { margin: 0; color: #eee8f4; font-size: .87rem; font-weight: 800; }
 .finanza-grafico__heading { margin-bottom: 14px; }
 .finanza-grafico__heading .kicker { margin: 0 0 4px; color: #bf78f7; font-size: .66rem; }
 .finanza-grafico__heading h2 { margin: 0; color: #f8f5fb; font-size: 1.15rem; }
@@ -2333,7 +2349,10 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 
 @media (max-width: 720px) {
   .finanza-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .finanza-proiezione dl { grid-template-columns: 1fr; }
 }
 .button.is-loading { cursor: wait; }
 .button.is-loading::before { content: ''; display: inline-block; width: .85em; height: .85em; margin-right: .55em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: button-spin .7s linear infinite; vertical-align: -.08em; }
+.button.offerta-in-corso { cursor: wait; }
+.offerta-spinner { display: inline-block; width: .85em; height: .85em; margin-right: .55em; border: 2px solid currentColor; border-left-color: transparent; border-radius: 50%; animation: button-spin .7s linear infinite; vertical-align: -.08em; }
 @keyframes button-spin { to { transform: rotate(360deg); } }

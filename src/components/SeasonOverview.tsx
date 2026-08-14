@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useSeasonData } from '../lib/useSeasonData'
+import { formatCountdown, useOraCorrente } from '../lib/countdown'
 import type { League, Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { Crest } from './Crest'
@@ -11,12 +12,14 @@ type Props = { membership: Membership; onNavigate: (view: GameView) => void; rev
 export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpenMatch, onRevealMatch, onOpenTeam }: Props) {
   const league = membership.league as League
   const data = useSeasonData(membership)
+  const adesso = useOraCorrente()
   const forma = useMemo(() => formaPerSquadra(data.fixtures, data.matchByFixture), [data.fixtures, data.matchByFixture])
   const miaSquadra = data.teamById.get(membership.id)
   const miaClassifica = data.standings.find((riga) => riga.team_id === membership.id)
   const ultimaPartita = data.lastFixture ? data.matchByFixture.get(data.lastFixture.id) : undefined
   const revealAttivo = Boolean(data.lastFixture && data.lastFixture.giornata >= (league.reveal_dalla_giornata ?? 1))
   const ultimaVista = !revealAttivo || Boolean(ultimaPartita && revealedMatchIds.has(ultimaPartita.id))
+  const millisecondiAllaPartita = data.nextFixture ? Math.max(0, new Date(data.nextFixture.data_sim).getTime() - adesso) : 0
   const apriUltimaPartita = () => {
     if (!ultimaPartita) return
     if (ultimaVista) onOpenMatch(ultimaPartita.id)
@@ -56,7 +59,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
           </div>
         </article>}
         <article className="season-card season-card--next">
-          <div className="season-card__heading"><div><p className="kicker">Prossima partita</p><h2>{data.nextFixture ? formatMatchDate(data.nextFixture.data_sim) : 'Calendario concluso'}</h2></div><span className="matchday-chip">G{data.nextFixture?.giornata ?? league.giornate_totali}</span></div>
+          <div className="season-card__heading"><div><p className="kicker">Prossima partita</p><h2>{data.nextFixture ? formatMatchDate(data.nextFixture.data_sim) : 'Calendario concluso'}</h2>{data.nextFixture && <p className="season-countdown">Si gioca tra <strong>{formatCountdown(millisecondiAllaPartita)}</strong></p>}</div><span className="matchday-chip">G{data.nextFixture?.giornata ?? league.giornate_totali}</span></div>
           {data.nextFixture ? <div className="next-match-duel">
             <TeamLabel team={data.teamById.get(data.nextFixture.home_team_id)} imageUrl={data.crestUrlByTeamId.get(data.nextFixture.home_team_id)} onClick={() => onOpenTeam(data.nextFixture!.home_team_id)} />
             <FixtureScore fixture={data.nextFixture} match={data.matchByFixture.get(data.nextFixture.id)} />

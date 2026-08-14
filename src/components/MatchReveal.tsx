@@ -8,6 +8,44 @@ import { Crest } from './Crest'
 
 type Props = { membership: Membership; matchId: number; onClose: () => void; onRevealed: (matchId: number) => void; onOpenReport: () => void }
 type Player = { id: number; nome: string }
+
+// Le cronache salvate dal backend piu' recente hanno sempre `minuto`. Alcune
+// partite gia' registrate (o scritte durante un deploy parziale) possono pero'
+// contenere `null`: in JavaScript `null <= 2` e' vero, e tutti gli eventi
+// finirebbero visibili gia' al secondo minuto. Prima del reveal rendiamo il
+// dato sicuro usando il blocco da 15 minuti che accompagna ogni evento.
+function normalizzaMinuti(eventi: EventoPartita[]) {
+  const gruppi = new Map<number, number[]>()
+  eventi.forEach((evento, indice) => {
+    const minuto = Number(evento.minuto)
+    if (Number.isInteger(minuto) && minuto >= 1 && minuto <= 90) return
+    const bloccoLetto = Number(evento.blocco)
+    const blocco = Number.isInteger(bloccoLetto) && bloccoLetto >= 1 && bloccoLetto <= 6
+      ? bloccoLetto
+      : Math.min(6, Math.floor(indice * 6 / Math.max(1, eventi.length)) + 1)
+    const gruppo = gruppi.get(blocco) ?? []
+    gruppo.push(indice)
+    gruppi.set(blocco, gruppo)
+  })
+
+  const minutiRicostruiti = new Map<number, number>()
+  for (const [blocco, gruppo] of gruppi) {
+    gruppo.forEach((indice, posizione) => {
+      // Li distribuiamo nel blocco, anziche' assegnarli tutti al suo primo
+      // minuto: cosi' la cronaca conserva un ritmo naturale anche nel raro
+      // caso di dati incompleti.
+      minutiRicostruiti.set(indice, (blocco - 1) * 15 + Math.ceil((posizione + 1) * 15 / (gruppo.length + 1)))
+    })
+  }
+
+  return eventi.map((evento, indice) => {
+    const minuto = Number(evento.minuto)
+    return Number.isInteger(minuto) && minuto >= 1 && minuto <= 90
+      ? evento
+      : { ...evento, minuto: minutiRicostruiti.get(indice) ?? 90 }
+  }).sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.team_id - destra.team_id)
+}
+
 function testoEvento(evento: EventoPartita, nomi: Map<number, Player>) {
   const nome = (id: number) => cognome(nomi.get(id)?.nome ?? `Giocatore ${id}`)
   if (isEventoGol(evento)) return <><strong>GOOOL!</strong> {nome(evento.marcatore)} la mette dentro.</>
@@ -32,8 +70,8 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const eventi = useMemo(() => {
     if (!match) return []
     const estesa = match.blocchi.some((evento) => !isEventoGol(evento))
-    if (estesa || !fixture) return [...match.blocchi].sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.team_id - destra.team_id)
-    return ricostruisciEventiStorici(match.blocchi, statsStoriche, match.titolari_home, match.titolari_away, fixture.home_team_id, fixture.away_team_id, match.id)
+    if (estesa || !fixture) return normalizzaMinuti([...match.blocchi])
+    return normalizzaMinuti(ricostruisciEventiStorici(match.blocchi, statsStoriche, match.titolari_home, match.titolari_away, fixture.home_team_id, fixture.away_team_id, match.id))
   }, [fixture, match, statsStoriche])
   const inCorso = minutoCorrente >= 0 && minutoCorrente < 90
   const completata = minutoCorrente >= 90

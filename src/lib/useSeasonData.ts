@@ -67,6 +67,18 @@ export function useSeasonData(membership: Membership) {
 
   useEffect(() => { void load() }, [load])
 
+  // Alla scadenza di una partita il server puo' impiegare qualche secondo a
+  // simulare il turno e a fissare quello successivo. Ricarichiamo solo in
+  // quel breve intervallo: il countdown resta allineato al dato autorevole.
+  useEffect(() => {
+    const prossima = fixtures.find((fixture) => fixture.stato === 'programmata')
+    if (!prossima) return
+    const scadenza = new Date(prossima.data_sim).getTime()
+    if (Date.now() < scadenza) return
+    const timer = window.setInterval(() => { void load() }, 15_000)
+    return () => window.clearInterval(timer)
+  }, [fixtures, load])
+
   const teamById = useMemo(() => new Map(teams.map((team) => [team.id, team])), [teams])
   const crestUrlByTeamId = useMemo(() => new Map(Object.entries(crestUrls).map(([id, url]) => [Number(id), url])), [crestUrls])
   const matchByFixture = useMemo(() => new Map(matches.map((match) => [match.fixture_id, match])), [matches])

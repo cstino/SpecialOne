@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import type { Fixture, Match, Team } from '../types'
 import { Crest } from './Crest'
+import { LoadingLogo } from './LoadingLogo'
 
 // Canvas condiviso solo per misurare il testo (mai disegnato/allegato al
 // DOM): measureText e' molto piu' economico di un reflow reale, e un solo
@@ -109,7 +110,7 @@ export function Forma({ esiti, slot = 5 }: { esiti?: Esito[]; slot?: number }) {
 }
 
 export function SeasonState({ loading, error, onRetry }: { loading: boolean; error: string | null; onRetry: () => void }) {
-  if (loading) return <section className="season-state"><span className="season-loader" /><h2>Preparo la stagione…</h2><p>Recupero calendario, risultati e classifica.</p></section>
+  if (loading) return <section className="season-state"><LoadingLogo compatto /><h2>Preparo la stagione…</h2><p>Recupero calendario, risultati e classifica.</p></section>
   if (error) return <section className="season-state"><span className="season-state__icon">!</span><h2>Dati non disponibili</h2><p>{error}</p><button className="button button--primary" type="button" onClick={onRetry}>Riprova</button></section>
   return null
 }

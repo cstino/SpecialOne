@@ -26,6 +26,7 @@ import { Standings } from './components/Standings'
 import { TeamProfile } from './components/TeamProfile'
 import type { GameView } from './components/GameNav'
 import { Lobby } from './components/Lobby'
+import { LoadingLogo } from './components/LoadingLogo'
 import { MenuIniziale } from './components/MenuIniziale'
 import { Onboarding } from './components/Onboarding'
 import { ContestoHome, ContestoNotifiche } from './lib/navigazione'
@@ -254,9 +255,9 @@ export default function App() {
   if (configurationError) {
     return <main className="fatal-state"><img src="/specialone-mark.svg" alt="" /><h1>Configurazione incompleta</h1><p>{configurationError}</p></main>
   }
-  if (authLoading) return <main className="loading-screen"><img className="loading-mark" src="/specialone-mark.svg" alt="" /><p>Ingresso in campo…</p></main>
+  if (authLoading) return <main className="loading-screen"><LoadingLogo /><p>Ingresso in campo…</p></main>
   if (!session) return <AuthScreen />
-  if (dataLoading && memberships.length === 0) return <main className="loading-screen"><img className="loading-mark" src="/specialone-mark.svg" alt="" /><p>Preparo la distinta…</p></main>
+  if (dataLoading && memberships.length === 0) return <main className="loading-screen"><LoadingLogo /><p>Preparo la distinta…</p></main>
   if (error) return <main className="fatal-state"><h1>Qualcosa non torna</h1><p>{error}</p><button className="button button--primary" type="button" onClick={() => loadMemberships()}>Riprova</button></main>
   if (showOnboarding || memberships.length === 0) {
     return <Onboarding

@@ -414,6 +414,57 @@ function costruisciEventiPartita(
   return eventi.sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.team_id - destra.team_id)
 }
 
+// `blocchi` e' la fonte della cronaca animata. Un minuto nullo e' pericoloso
+// anche se il tipo TypeScript dichiara il contrario: dopo la serializzazione
+// JSON `null <= 2` vale true e il client mostrerebbe subito tutta la partita.
+// Una cronaca incompleta non deve pero' mai bloccare risultato, classifica e
+// condizione della rosa. Gli eventi anomali vengono quindi riparati qui,
+// prima del salvataggio, e segnalati nei log per poter indagare la causa.
+function normalizzaCronaca(eventi: EventoPartita[]) {
+  const senzaMinutoPerBlocco = new Map<number, number[]>()
+  const haMinutoValido = (evento: EventoPartita) => {
+    const minuto = Number(evento.minuto)
+    return Number.isInteger(minuto) && minuto >= 1 && minuto <= 90
+  }
+
+  eventi.forEach((evento, indice) => {
+    if (haMinutoValido(evento)) return
+    const bloccoLetto = Number(evento.blocco)
+    const blocco = Number.isInteger(bloccoLetto) && bloccoLetto >= 1 && bloccoLetto <= 6
+      ? bloccoLetto
+      : Math.min(6, Math.floor(indice * 6 / Math.max(1, eventi.length)) + 1)
+    const indici = senzaMinutoPerBlocco.get(blocco) ?? []
+    indici.push(indice)
+    senzaMinutoPerBlocco.set(blocco, indici)
+  })
+
+  const minutiRicostruiti = new Map<number, { minuto: number; blocco: number }>()
+  for (const [blocco, indici] of senzaMinutoPerBlocco) {
+    indici.forEach((indice, posizione) => {
+      minutiRicostruiti.set(indice, {
+        blocco,
+        minuto: (blocco - 1) * MINUTI_PER_BLOCCO + Math.ceil((posizione + 1) * MINUTI_PER_BLOCCO / (indici.length + 1)),
+      })
+    })
+  }
+
+  let corretti = 0
+  const normalizzati = eventi.map((evento, indice) => {
+    const ricostruito = minutiRicostruiti.get(indice)
+    if (ricostruito) {
+      corretti++
+      return { ...evento, ...ricostruito }
+    }
+    const minuto = Number(evento.minuto)
+    const blocco = Math.ceil(minuto / MINUTI_PER_BLOCCO)
+    if (Number(evento.blocco) === blocco) return evento
+    corretti++
+    return { ...evento, minuto, blocco }
+  })
+  if (corretti) console.error(`Cronaca normalizzata: corretti ${corretti} eventi incompleti.`)
+  return normalizzati.sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.team_id - destra.team_id)
+}
+
 function playerStats(teamId: number, stats: JsonMap, teamStats: JsonMap, assist: Map<number, number>) {
   const minuti = stats.minuti as Map<number, number>
   const tiri = stats.tiri as Map<number, number>
@@ -600,10 +651,10 @@ export default {
         ]
         rendiTiriCoerenti(stats.filter((stat) => stat.team_id === fixture.home_team_id), result.statsCasa)
         rendiTiriCoerenti(stats.filter((stat) => stat.team_id === fixture.away_team_id), result.statsOspite)
-        const cronaca = costruisciEventiPartita(eventi, [
+        const cronaca = normalizzaCronaca(costruisciEventiPartita(eventi, [
           { lato: 'casa', teamId: fixture.home_team_id, presenzePerBlocco: presenzePerBlocco.casa, stats: stats.filter((stat) => stat.team_id === fixture.home_team_id) },
           { lato: 'ospite', teamId: fixture.away_team_id, presenzePerBlocco: presenzePerBlocco.ospite, stats: stats.filter((stat) => stat.team_id === fixture.away_team_id) },
-        ], result.infortuniInPartita as Array<{ lato: Lato; blocco: number; esce: number; entra: number }>, seed)
+        ], result.infortuniInPartita as Array<{ lato: Lato; blocco: number; esce: number; entra: number }>, seed))
         const { data: saved, error: saveError } = await ctx.supabaseAdmin.rpc('registra_risultato_partita', {
           p_fixture_id: fixture.id,
           p_seed: seed,

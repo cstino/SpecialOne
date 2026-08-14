@@ -7,6 +7,7 @@ import type { League, Membership } from '../types'
 import { GameNav } from './GameNav'
 import type { GameView } from './GameNav'
 import { firmaFoto, RosaElenco, type RosterPlayer } from './RosaElenco'
+import { LoadingLogo } from './LoadingLogo'
 
 type DraftTeamState = {
   pick_numero: number
@@ -306,7 +307,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
     setPending(false)
   }
 
-  if (loading) return <main className="loading-screen"><img className="loading-mark" src="/specialone-mark.svg" alt="" /><p>Apro il pacchetto…</p></main>
+  if (loading) return <main className="loading-screen"><LoadingLogo /><p>Apro il pacchetto…</p></main>
   if (error && !state) return <main className="fatal-state"><h1>Draft non disponibile</h1><p>{error}</p></main>
 
   const picks = state?.pick_numero ?? 0

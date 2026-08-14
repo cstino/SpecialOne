@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Area, AreaChart, Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { supabase } from '../lib/supabase'
-import type { League, Membership, Season, Transaction } from '../types'
+import type { League, Membership, Season, Standing, Transaction } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { SeasonState } from './SeasonUI'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
+type Contratto = { ingaggio: number; contratto_scadenza: number; ritiro_annunciato: boolean }
 
 const ETICHETTA_TIPO: Record<string, string> = {
   dotazione_iniziale: 'Dotazione iniziale',
@@ -44,6 +45,36 @@ function dataOraBreve(iso: string) {
   return new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
 }
 
+function arrotondaCentoMila(valore: number) { return Math.round(valore / 100_000) * 100_000 }
+
+function proiezioneFinanza(league: League, membership: Membership, classifica: Standing[], contratti: Contratto[]) {
+  const mia = classifica.find((riga) => riga.team_id === membership.id)
+  if (!mia || mia.giocate <= 0) return null
+  const squadre = classifica.length
+  const finale = classifica.map((riga) => ({
+    ...riga,
+    puntiStimati: (riga.punti / Math.max(riga.giocate, 1)) * league.partite_per_squadra,
+  })).sort((a, b) => b.puntiStimati - a.puntiStimati || b.differenza_reti - a.differenza_reti || b.gol_fatti - a.gol_fatti)
+  const posizione = finale.findIndex((riga) => riga.team_id === membership.id) + 1
+  const pesi = finale.reduce((somma, _, indice) => somma + Math.pow(squadre - indice, 1.8), 0)
+  const premioClassifica = arrotondaCentoMila(0.12 * league.budget_iniziale * squadre * Math.pow(squadre - posizione + 1, 1.8) / Math.max(pesi, 1))
+  const premioPartitaMedio = arrotondaCentoMila(league.budget_iniziale * (
+    0.54 * mia.vittorie + 0.27 * mia.pareggi + 0.135 * mia.sconfitte
+  ) / Math.max(mia.giocate, 1))
+  const partiteRimanenti = Math.max(0, league.partite_per_squadra - mia.giocate)
+  const premiPartitaStimati = premioPartitaMedio * partiteRimanenti
+  const sponsor = arrotondaCentoMila(league.budget_iniziale * 0.20)
+  const confermati = contratti.filter((giocatore) => giocatore.contratto_scadenza > league.stagione_corrente && !giocatore.ritiro_annunciato)
+  const costoCompletamento = Math.max(0, 21 - confermati.length) * 500_000
+  const ingaggiProssima = confermati.reduce((somma, giocatore) => somma + giocatore.ingaggio, 0) + costoCompletamento
+  const budgetFine = membership.budget - (membership.budget_ingaggi_riservato ?? 0) + premiPartitaStimati + sponsor + premioClassifica
+  return {
+    posizione, puntiStimati: finale.find((riga) => riga.team_id === membership.id)?.puntiStimati ?? mia.punti,
+    partiteRimanenti, sponsor, premioClassifica, premiPartitaStimati, confermati: confermati.length,
+    costoCompletamento, ingaggiProssima, disponibile: budgetFine - ingaggiProssima,
+  }
+}
+
 type TooltipVoce = { value?: number | string; payload?: Record<string, unknown> }
 
 function TooltipSaldo({ active, payload }: { active?: boolean; payload?: TooltipVoce[] }) {
@@ -61,6 +92,8 @@ function TooltipCategoria({ active, payload }: { active?: boolean; payload?: Too
 export function Finanza({ membership, onNavigate }: Props) {
   const league = membership.league as League
   const [transazioni, setTransazioni] = useState<Transaction[]>([])
+  const [classifica, setClassifica] = useState<Standing[]>([])
+  const [contratti, setContratti] = useState<Contratto[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -90,9 +123,16 @@ export function Finanza({ membership, onNavigate }: Props) {
       .eq('team_id', membership.id)
       .order('creata_il', { ascending: true })
     if (inizio) query = query.gte('creata_il', inizio)
-    const { data, error: erroreTransazioni } = await query
-    if (erroreTransazioni) { setError(erroreTransazioni.message); setLoading(false); return }
+    const [transazioniResult, classificaResult, contrattiResult] = await Promise.all([
+      query,
+      stagione ? supabase.from('standings').select('*').eq('league_id', league.id).eq('season_id', (stagione as Season).id) : Promise.resolve({ data: [], error: null }),
+      supabase.from('player_instances').select('ingaggio, contratto_scadenza, ritiro_annunciato').eq('team_id', membership.id),
+    ])
+    if (transazioniResult.error || classificaResult.error || contrattiResult.error) { setError(transazioniResult.error?.message ?? classificaResult.error?.message ?? contrattiResult.error?.message ?? 'Proiezione finanziaria non disponibile.'); setLoading(false); return }
+    const data = transazioniResult.data
     setTransazioni((data ?? []) as Transaction[])
+    setClassifica((classificaResult.data ?? []) as Standing[])
+    setContratti((contrattiResult.data ?? []) as Contratto[])
     setLoading(false)
   }
 
@@ -117,6 +157,7 @@ export function Finanza({ membership, onNavigate }: Props) {
     .sort((a, b) => Math.abs(b.valore) - Math.abs(a.valore))
 
   const movimentiRecenti = [...transazioni].reverse()
+  const proiezione = useMemo(() => proiezioneFinanza(league, membership, classifica, contratti), [league, membership, classifica, contratti])
 
   return <main className="app-shell season-shell">
     <GameNav league={league} active="finanza" onNavigate={naviga} />
@@ -139,6 +180,18 @@ export function Finanza({ membership, onNavigate }: Props) {
           <div className="finanza-kpi__cella finanza-kpi__cella--uscita"><span>Uscite stagione</span><strong>{money(uscite)}</strong></div>
           <div className={`finanza-kpi__cella ${saldoNetto >= 0 ? 'finanza-kpi__cella--entrata' : 'finanza-kpi__cella--uscita'}`}><span>Saldo netto</span><strong>{saldoNetto >= 0 ? '+' : ''}{money(saldoNetto)}</strong></div>
         </div>
+
+        {proiezione && <section className="finanza-proiezione">
+          <div className="finanza-grafico__heading"><p className="kicker">Proiezione dinamica</p><h2>Inizio prossima stagione</h2><p>Basata sulla media punti attuale di tutte le squadre. Si aggiorna dopo ogni giornata.</p></div>
+          <div className="finanza-proiezione__numero"><span>Disponibilità stimata</span><strong className={proiezione.disponibile >= 0 ? 'is-positive' : 'is-negative'}>{money(proiezione.disponibile)}</strong></div>
+          <dl>
+            <div><dt>Posizione prevista</dt><dd>{proiezione.posizione}ª · {proiezione.puntiStimati.toFixed(1).replace('.', ',')} pt</dd></div>
+            <div><dt>Premi partita stimati</dt><dd>+{money(proiezione.premiPartitaStimati)}</dd></div>
+            <div><dt>Sponsor + classifica</dt><dd>+{money(proiezione.sponsor + proiezione.premioClassifica)}</dd></div>
+            <div><dt>Ingaggi prossima rosa</dt><dd>−{money(proiezione.ingaggiProssima)}</dd></div>
+          </dl>
+          <small>{proiezione.partiteRimanenti} partite da giocare · {proiezione.confermati} confermati{proiezione.costoCompletamento > 0 ? ` · include ${money(proiezione.costoCompletamento)} per completare la rosa a 21` : ''}.</small>
+        </section>}
 
         {transazioni.length === 0
           ? <p className="season-empty">Nessun movimento ancora in questa stagione.</p>

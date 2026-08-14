@@ -4,9 +4,11 @@ import { cognome } from '../lib/nomi'
 import { MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
 import { useSeasonData } from '../lib/useSeasonData'
+import { formatCountdown, useOraCorrente } from '../lib/countdown'
 import type { League, Membership } from '../types'
 import { Crest } from './Crest'
 import { GameNav, type GameView } from './GameNav'
+import { LoadingLogo } from './LoadingLogo'
 import { SchedaGiocatore } from './SchedaGiocatore'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
@@ -168,6 +170,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   // Squadre e stemmi arrivano da qui: firmare le URL degli stemmi e' gia'
   // risolto, e rifarlo a mano avrebbe prodotto una seconda verita'.
   const dati = useSeasonData(membership)
+  const adesso = useOraCorrente()
   const [rose, setRose] = useState<Giocatore[]>([])
   const [proposte, setProposte] = useState<Proposta[]>([])
   const [trattativePubbliche, setTrattativePubbliche] = useState<TrattativaPubblica[]>([])
@@ -200,6 +203,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   const [filtroIngaggio, setFiltroIngaggio] = useState<[number, number]>([0, 30])
   const [filtroOverall, setFiltroOverall] = useState<[number, number]>([50, 99])
   const [inCorso, setInCorso] = useState(false)
+  const [offertaInCorso, setOffertaInCorso] = useState<{ id: number; tipo: 'offri' | 'modifica' | 'ritira' } | null>(null)
   const [esito, setEsito] = useState<string | null>(null)
   const [schedaApertaId, setSchedaApertaId] = useState<number | null>(null)
   const compositoreRef = useRef<HTMLElement>(null)
@@ -420,7 +424,28 @@ export function Mercato({ membership, onNavigate }: Props) {
   // Un'apertura manuale e' valida anche fuori orario, ma solo per le aste
   // dell'ultima estrazione: aste residue di giorni precedenti non devono
   // tenere artificialmente aperta tutta la pagina.
-  const aperto = mercatoAperto() || nuoviDelGiorno.length > 0
+  const ultimaPartitaIl = useMemo(() => dati.matches.reduce<number | null>((ultima, partita) => {
+    const istante = new Date(partita.simulata_il).getTime()
+    return ultima == null || istante > ultima ? istante : ultima
+  }, null), [dati.matches])
+  const prossimaPartitaIl = dati.fixtures.filter((fixture) => fixture.stato === 'programmata')
+    .reduce<number | null>((prossima, fixture) => {
+      const istante = new Date(fixture.data_sim).getTime()
+      return prossima == null || istante < prossima ? istante : prossima
+    }, null)
+  const cicloDinamico = ultimaPartitaIl != null && prossimaPartitaIl != null
+  const aperturaMercatoIl = ultimaPartitaIl == null ? null : ultimaPartitaIl + 30 * 60 * 1000
+  const chiusuraMercatoIl = prossimaPartitaIl == null ? null : prossimaPartitaIl - 2 * 60 * 60 * 1000
+  const mercatoDinamicoAperto = cicloDinamico && aperturaMercatoIl != null && chiusuraMercatoIl != null
+    && adesso >= aperturaMercatoIl && adesso < chiusuraMercatoIl
+  const aperto = (cicloDinamico ? mercatoDinamicoAperto : mercatoAperto()) || nuoviDelGiorno.length > 0
+  const etichettaMercato = cicloDinamico
+    ? aperto
+      ? `Mercato aperto · chiude tra ${formatCountdown(Math.max(0, (chiusuraMercatoIl ?? adesso) - adesso))}`
+      : adesso < (aperturaMercatoIl ?? 0)
+        ? `Mercato chiuso · apre tra ${formatCountdown(Math.max(0, (aperturaMercatoIl ?? adesso) - adesso))}`
+        : 'Mercato chiuso · in attesa della prossima partita'
+    : aperto ? 'Mercato aperto · chiude alle 21:00' : 'Mercato chiuso · apre alle 23:30'
   const mieProposteAperte = nuoviDelGiorno.filter((a) => a.stato === 'aperta' && mieOfferte.has(a.id))
   const giocatoriSottoContratto = new Set(rose.map((g) => g.player_id))
 
@@ -476,34 +501,54 @@ export function Mercato({ membership, onNavigate }: Props) {
     const grezzo = bozzaOfferta[asta.id] ?? ''
     const valore = Math.round(Number(grezzo.replace(',', '.')) * 1_000_000)
     if (!grezzo || Number.isNaN(valore)) { setEsito('Ingaggio non valido.'); return }
-    await chiama(
-      () => supabase.rpc('offri_per_svincolato', { p_auction_id: asta.id, p_ingaggio: valore }),
-      'Offerta registrata. Si apre alle 21:00.',
-    )
+    setOffertaInCorso({ id: asta.id, tipo: mieOfferte.has(asta.id) ? 'modifica' : 'offri' })
+    try {
+      const riuscita = await chiama(
+        () => supabase.rpc('offri_per_svincolato', { p_auction_id: asta.id, p_ingaggio: valore }),
+        'Offerta registrata. Si apre alle 21:00.',
+        350,
+      )
+      if (riuscita) setBozzaOfferta((correnti) => ({ ...correnti, [asta.id]: '' }))
+    } finally {
+      setOffertaInCorso(null)
+    }
   }
 
   // La RPC esisteva già (controlla proprietà e finestra di mercato lato
   // server) ma nessun bottone la richiamava: ci si poteva solo pentire
   // modificando l'offerta, mai ritirandola del tutto.
   async function ritiraOfferta(asta: Asta) {
-    await chiama(
-      () => supabase.rpc('ritira_offerta', { p_auction_id: asta.id }),
-      'Offerta ritirata.',
-    )
+    setOffertaInCorso({ id: asta.id, tipo: 'ritira' })
+    try {
+      await chiama(
+        () => supabase.rpc('ritira_offerta', { p_auction_id: asta.id }),
+        'Offerta ritirata.',
+        350,
+      )
+    } finally {
+      setOffertaInCorso(null)
+    }
   }
 
   async function offriArchivio(asta: Asta) {
     const grezzo = bozzaOfferta[asta.id] ?? ''
     const valore = Math.round(Number(grezzo.replace(',', '.')) * 1_000_000)
     if (!grezzo || Number.isNaN(valore)) { setEsito('Ingaggio non valido.'); return }
-    await chiama(
-      () => supabase.rpc('offri_per_svincolato_archivio', {
-        p_league_id: league.id,
-        p_player_id: asta.player_id,
-        p_ingaggio: valore,
-      }),
-      'Offerta registrata. Il giocatore rientra nelle aste di oggi.',
-    )
+    setOffertaInCorso({ id: asta.id, tipo: 'offri' })
+    try {
+      const riuscita = await chiama(
+        () => supabase.rpc('offri_per_svincolato_archivio', {
+          p_league_id: league.id,
+          p_player_id: asta.player_id,
+          p_ingaggio: valore,
+        }),
+        'Offerta registrata. Il giocatore rientra nelle aste di oggi.',
+        350,
+      )
+      if (riuscita) setBozzaOfferta((correnti) => ({ ...correnti, [asta.id]: '' }))
+    } finally {
+      setOffertaInCorso(null)
+    }
   }
 
   async function usaSpin() {
@@ -578,17 +623,23 @@ export function Mercato({ membership, onNavigate }: Props) {
 
   // PromiseLike e non Promise: `supabase.rpc(...)` restituisce un builder
   // che si puo' attendere ma non e' una Promise vera.
-  async function chiama(azione: () => PromiseLike<{ error: { message: string } | null }>, successo: string) {
+  async function chiama(azione: () => PromiseLike<{ error: { message: string } | null }>, successo: string, durataMinima = 0) {
+    const partenza = performance.now()
     setInCorso(true)
     setEsito(null)
-    const { error } = await azione()
-    setInCorso(false)
-    setEsito(error ? error.message : successo)
-    // Dopo un'offerta, uno scambio o un ritiro aggiorniamo solo i dati: il
-    // loader dell'intera pagina farebbe sembrare un refresh e spezzerebbe il
-    // contesto dell'azione appena compiuta.
-    if (!error) await carica(true)
-    return !error
+    try {
+      const { error } = await azione()
+      setEsito(error ? error.message : successo)
+      // Dopo un'offerta, uno scambio o un ritiro aggiorniamo solo i dati: il
+      // loader dell'intera pagina farebbe sembrare un refresh e spezzerebbe il
+      // contesto dell'azione appena compiuta.
+      if (!error) await carica(true)
+      const attesa = Math.max(0, durataMinima - (performance.now() - partenza))
+      if (attesa) await new Promise((resolve) => window.setTimeout(resolve, attesa))
+      return !error
+    } finally {
+      setInCorso(false)
+    }
   }
 
   async function invia() {
@@ -633,6 +684,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   const cardSvincolato = (a: Asta, compatta = false) => {
     const g = svincolati.get(a.player_id)
     const mia = a.stato === 'aperta' ? mieOfferte.get(a.id) : undefined
+    const azioneInCorso = offertaInCorso?.id === a.id ? offertaInCorso.tipo : null
     const macro = macroRuolo(g?.posizioni ?? [])
     return <article key={a.id} className={`free-agent-card ${compatta ? 'is-compact' : ''} ${a.stato !== 'aperta' ? 'is-closed' : ''}`}>
       <div className="free-agent-card__portrait">
@@ -660,13 +712,13 @@ export function Mercato({ membership, onNavigate }: Props) {
           onChange={(e) => setBozzaOfferta({ ...bozzaOfferta, [a.id]: e.target.value })}
         />
         <div className="free-agent-card__bid-azioni">
-          <button className="button button--secondary" type="button"
+          <button className={`button button--secondary${azioneInCorso && azioneInCorso !== 'ritira' ? ' offerta-in-corso' : ''}`} type="button"
             disabled={inCorso || !aperto} onClick={() => void (a.stato === 'aperta' ? offri(a) : offriArchivio(a))}>
-            {mia ? 'Modifica' : a.stato === 'aperta' ? 'Offri' : 'Rioffri'}
+            {azioneInCorso && azioneInCorso !== 'ritira' ? <><span className="offerta-spinner" role="status" aria-label="Operazione sull'offerta in corso" />{azioneInCorso === 'modifica' ? 'Aggiorno…' : 'Invio…'}</> : mia ? 'Modifica' : a.stato === 'aperta' ? 'Offri' : 'Rioffri'}
           </button>
-          {mia !== undefined && a.stato === 'aperta' && <button className="button button--danger-ghost" type="button"
+          {mia !== undefined && a.stato === 'aperta' && <button className={`button button--danger-ghost${azioneInCorso === 'ritira' ? ' offerta-in-corso' : ''}`} type="button"
             disabled={inCorso || !aperto} onClick={() => void ritiraOfferta(a)}>
-            Ritira
+            {azioneInCorso === 'ritira' ? <><span className="offerta-spinner" role="status" aria-label="Ritiro offerta in corso" />Ritiro…</> : 'Ritira'}
           </button>}
         </div>
         {mia && <small>Hai offerto {milioni(mia)}</small>}
@@ -745,11 +797,11 @@ export function Mercato({ membership, onNavigate }: Props) {
     <header className="topbar season-topbar">
       <div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div>
       <span className={`mercato-finestra ${aperto ? 'e-aperto' : ''}`}>
-        {aperto ? 'Mercato aperto · chiude alle 21:00' : 'Mercato chiuso · apre alle 23:30'}
+        {etichettaMercato}
       </span>
     </header>
 
-    {caricamento && <div className="season-page"><p className="season-empty">Carico il mercato…</p></div>}
+    {caricamento && <div className="season-page"><section className="season-state mercato-caricamento"><LoadingLogo compatto /><h2>Preparo il mercato…</h2><p>Recupero trattative, svincolati e disponibilità.</p></section></div>}
     {errore && <div className="season-page"><p className="season-empty">{errore}</p></div>}
 
     {!caricamento && !errore && <div className="season-page season-page--narrow">
