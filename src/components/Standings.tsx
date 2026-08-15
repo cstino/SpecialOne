@@ -17,6 +17,7 @@ type RigaClassificaGiocatori = {
   gol: number
   assist: number
 }
+type RigaStatGiocatore = { player_instance_id: number; team_id: number; gol: number; assist: number }
 
 const SCHEDE = ['classifica', 'marcatori', 'assistman'] as const
 type Scheda = typeof SCHEDE[number]
@@ -35,22 +36,14 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
     let attivo = true
     async function carica() {
       setCaricoGiocatori(true)
-      // Solo le partite della stagione in corso: data.matches copre tutta la
-      // storia della lega, data.fixtures e' gia' filtrata sulla stagione.
-      const matchIds = data.fixtures
-        .map((fixture) => data.matchByFixture.get(fixture.id)?.id)
-        .filter((id): id is number => typeof id === 'number')
-      if (matchIds.length === 0) { if (attivo) { setRigheGiocatori([]); setCaricoGiocatori(false) }; return }
-
+      // L'aggregazione avviene nel database sulla stagione corrente: non
+      // dipende dal caricamento asincrono di fixture e match nel browser.
       const { data: righeStat, error } = await supabase
-        .from('match_stats')
-        .select('player_instance_id, team_id, gol, assist')
-        .eq('league_id', league.id)
-        .in('match_id', matchIds)
+        .rpc('classifica_giocatori_stagione', { p_league_id: league.id })
       if (error || !attivo) { if (attivo) setCaricoGiocatori(false); return }
 
       const aggregati = new Map<number, { teamId: number; gol: number; assist: number }>()
-      for (const riga of righeStat ?? []) {
+      for (const riga of (righeStat ?? []) as RigaStatGiocatore[]) {
         const voce = aggregati.get(riga.player_instance_id) ?? { teamId: riga.team_id, gol: 0, assist: 0 }
         voce.gol += riga.gol
         voce.assist += riga.assist
@@ -86,7 +79,7 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
     }
     void carica()
     return () => { attivo = false }
-  }, [league.id, data.fixtures, data.matchByFixture])
+  }, [league.id])
 
   const marcatori = useMemo(
     () => [...righeGiocatori].sort((a, b) => b.gol - a.gol || b.assist - a.assist).slice(0, 10),

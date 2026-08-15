@@ -58,9 +58,12 @@ function proiezioneFinanza(league: League, membership: Membership, classifica: S
   const posizione = finale.findIndex((riga) => riga.team_id === membership.id) + 1
   const pesi = finale.reduce((somma, _, indice) => somma + Math.pow(squadre - indice, 1.8), 0)
   const premioClassifica = arrotondaCentoMila(0.12 * league.budget_iniziale * squadre * Math.pow(squadre - posizione + 1, 1.8) / Math.max(pesi, 1))
-  const premioPartitaMedio = arrotondaCentoMila(league.budget_iniziale * (
+  // I coefficienti sono premi distribuiti sull'intera stagione, non su una
+  // singola partita. Senza la divisione per `partite_per_squadra` la stima
+  // moltiplicherebbe gli incassi futuri per tutte le gare del calendario.
+  const premioPartitaMedio = league.budget_iniziale * (
     0.54 * mia.vittorie + 0.27 * mia.pareggi + 0.135 * mia.sconfitte
-  ) / Math.max(mia.giocate, 1))
+  ) / Math.max(league.partite_per_squadra * mia.giocate, 1)
   const partiteRimanenti = Math.max(0, league.partite_per_squadra - mia.giocate)
   const premiPartitaStimati = premioPartitaMedio * partiteRimanenti
   const sponsor = arrotondaCentoMila(league.budget_iniziale * 0.20)
