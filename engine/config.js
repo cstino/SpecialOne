@@ -6,6 +6,10 @@
 export const CFG = {
   // --- Motore ---
   BLOCCHI_PARTITA: 6,
+  // 30 minuti di supplementari = 2 blocchi da 15'. Costante NUOVA: si applica
+  // solo alle eliminatorie di playoff/playout (design §10.7) quando chi chiama
+  // passa opt.supplementariSeParita. Nessuna partita di campionato la usa.
+  BLOCCHI_SUPPLEMENTARI: 2,
   XG_BASE_BLOCCO: 0.252,
   // xG = BASE * (ctrl/0.5) * exp(SENSIBILITA_FORZA * (ATT - DEF))
   // forma esponenziale sulla DIFFERENZA di overall, non sul rapporto:

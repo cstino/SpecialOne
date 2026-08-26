@@ -258,7 +258,17 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   const presenzeOspitePerBlocco = [];
   const infortuniInPartita = [];
 
-  for (let b = 0; b < CFG.BLOCCHI_PARTITA; b++) {
+  // Supplementari (design §10.7): si aggiungono IN CORSA, solo se alla fine dei
+  // regolamentari l'eliminatoria e' ancora in parita'. opt.scartoAndata e' il
+  // vantaggio gia' maturato nell'andata dalla squadra che qui gioca in casa
+  // (0 per una gara secca), cosi' la stessa condizione copre entrambi i casi.
+  // Senza opt.supplementariSeParita il limite resta CFG.BLOCCHI_PARTITA e ogni
+  // chiamata esistente si comporta esattamente come prima.
+  let blocchiDaGiocare = CFG.BLOCCHI_PARTITA;
+  let golRegolamentari = null;
+  let supplementariGiocati = false;
+
+  for (let b = 0; b < blocchiDaGiocare; b++) {
     const fc = forzeLinee(lc), fo = forzeLinee(lo);
 
     // tutto in PUNTI di overall: bonus e malus sono additivi, non moltiplicativi
@@ -334,6 +344,18 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     }
 
     if (CFG.FINESTRE_CAMBI.includes(b + 1)) { sostituzioni(lc); sostituzioni(lo); }
+
+    if (b + 1 === CFG.BLOCCHI_PARTITA) {
+      golRegolamentari = { casa: golC, ospite: golO };
+      if (opt.supplementariSeParita && (opt.scartoAndata || 0) + golC - golO === 0) {
+        blocchiDaGiocare += CFG.BLOCCHI_SUPPLEMENTARI;
+        supplementariGiocati = true;
+        // Finestra di cambi extra concessa all'inizio dei supplementari, come
+        // nel calcio vero. Resta soggetta a MAX_CAMBI: chi li ha gia' esauriti
+        // non ne guadagna uno in piu'.
+        sostituzioni(lc); sostituzioni(lo);
+      }
+    }
   }
 
   // ---------- statistiche ----------
@@ -411,6 +433,10 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     golC, golO, statsCasa: sC, statsOspite: sO, perGiocatore, golPerBlocco,
     presenzePerBlocco: { casa: presenzeCasaPerBlocco, ospite: presenzeOspitePerBlocco },
     infortuniInPartita,
+    // golC/golO sono il risultato FINALE (supplementari inclusi). Chi presenta
+    // la partita ha qui anche il parziale dei 90', e se i supplementari sono
+    // stati davvero giocati.
+    golRegolamentari, supplementari: supplementariGiocati,
   };
 }
 
