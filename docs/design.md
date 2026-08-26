@@ -208,19 +208,20 @@ sconfitta = 0.135 × B / P
 
 Con N=8, G=4 (P=28), B=100M: **1,93 M€ / 0,96 M€ / 0,48 M€**.
 
-**Premi posizione** — monte totale `0.12 × B × N`, distribuito con pesi `w_i = (N − i + 1)^1.8`:
+**Premi posizione** — ~~monte totale `0.12 × B × N`, distribuito con pesi `w_i = (N − i + 1)^1.8`~~ **SOSTITUITO da §10.7 (playoff e playout), 26 agosto 2026.**
 
-```
-premio(pos_i) = monte × w_i / Σw
-```
-
-Con N=8, B=100M (monte 96 M€):
-
-| Pos | 1° | 2° | 3° | 4° | 5° | 6° | 7° | 8° |
-|---|---|---|---|---|---|---|---|---|
-| M€ | 28,4 | 22,1 | 16,6 | 12,0 | 8,4 | 5,3 | 2,4 | 0,7 |
-
-Rapporto 40:1 tra primo e ultimo. È aggressivo di proposito: rende la lotta per ogni posizione economicamente rilevante fino all'ultima giornata.
+> **Perché è stato rimosso.** La curva esponenziale distribuiva con rapporto 40:1 fra primo
+> e ultimo (con N=8: 28,4 M€ contro 0,7 M€). Alla fine della prima stagione reale di "Real
+> Fampionato" il risultato osservato è stato che **8 squadre su 10 avevano il monte ingaggi
+> scoperto**, e le squadre di bassa classifica non avevano abbastanza cassa per partecipare
+> al mercato: le trattative fra squadre erano quasi ferme, perché serve che *entrambe* le
+> parti possano permettersi uno scambio. Non era il deficit strutturale di §5.3 a causarlo
+> (quello è voluto e resta), ma la combinazione fra la curva aggressiva e l'assenza, allora,
+> di un tetto preventivo sugli ingaggi (§5.7).
+>
+> La sostituzione **non** inverte semplicemente la curva premiando l'ultimo posto: darebbe a
+> una squadra fuori dai giochi un incentivo economico diretto a perdere le ultime partite.
+> Il denaro extra si conquista invece in campo, in un torneo dedicato.
 
 ### 5.3 Bilancio strutturale
 
@@ -228,12 +229,18 @@ Rapporto 40:1 tra primo e ultimo. È aggressivo di proposito: rende la lotta per
 |---|---|
 | Sponsor | 20,0 M€ |
 | Partite (10V-8P-10S) | 31,8 M€ |
-| Premio posizione (media) | 12,0 M€ |
-| **Entrate totali** | **63,8 M€** |
+| Premio di partecipazione (§10.7) | 15,0 M€ |
+| **Entrate totali** | **66,8 M€** |
 | Monte ingaggi | ~76 M€ |
-| **Saldo** | **−12 M€** |
+| **Saldo** | **−9,2 M€** |
 
-Deficit strutturale di circa il **15% del monte ingaggi**. È il motore economico del gioco: ogni stagione sei costretto a vendere o svincolare. Senza deficit, il denaro smette di essere una risorsa entro la stagione 3.
+Deficit strutturale di circa il **12% del monte ingaggi**. È il motore economico del gioco: ogni stagione sei costretto a vendere o svincolare. Senza deficit, il denaro smette di essere una risorsa entro la stagione 3.
+
+> Il premio di partecipazione fisso (§10.7) ha sostituito il premio posizione medio da 12 M€.
+> Per la squadra *media* il saldo cambia poco (da −12 a −9,2 M€), ma la varianza fra squadre
+> crolla: prima l'ultima incassava 0,7 M€ e la prima 28,4 M€ di premio posizione, ora prendono
+> gli stessi 15 M€ e il bonus extra si conquista nel playout. È esattamente lo scopo del
+> cambiamento — un mercato in cui anche chi ha fatto una stagione storta possa comprare.
 
 I trasferimenti tra squadre sono a somma zero: non alterano la massa monetaria della lega.
 
@@ -1035,6 +1042,85 @@ scadenza vengono eliminati e il calendario usa soltanto le squadre realmente att
 I giocatori di una squadra rimossa diventano svincolati. Le trattative fra squadre restano aperte
 durante l'off-season. Un nuovo partecipante riceve il budget iniziale previsto dalle regole della
 lega, necessario per completare il draft d'ingresso.
+
+### 10.7 Playoff e playout
+
+> **Aggiunto dall'utente, 26 agosto 2026.** Sostituisce integralmente i premi posizione a curva
+> esponenziale di §5.2. Motivazione e contesto nella nota di §5.2.
+
+Alla fine della stagione regolare la classifica **non** distribuisce più denaro in modo
+differenziato. Al suo posto:
+
+**Premio di partecipazione**: `0,15 × B` a **ogni** squadra attiva, identico per tutte,
+qualunque sia la posizione finale. Con B=100M sono 15 M€.
+
+Poi la lega si divide in due tornei a eliminazione diretta, che si giocano in contemporanea:
+
+- **Playoff (metà alta)** — si compete per il **titolo di campione**. Nessun premio in denaro:
+  il vantaggio è il trofeo e l'albo d'oro.
+- **Playout (metà bassa)** — si compete per un **bonus economico**: `0,10 × B` al vincitore
+  (10 M€ con B=100M) e `0,05 × B` al finalista sconfitto (5 M€). Si somma al premio di
+  partecipazione.
+
+**Composizione dei gruppi**: metà alta = prime `⌈N/2⌉` in classifica, metà bassa = ultime
+`⌊N/2⌋`. Con N dispari la squadra di mezzo entra nella metà **alta**.
+
+**Seeding e bye.** In ciascun gruppo le teste di serie sono le squadre meglio piazzate *di
+quel gruppo* — nel playout questo significa che la testa di serie è **l'ultima in classifica
+assoluta**, coerentemente con l'idea che il torneo serva a dare una via d'uscita a chi ha
+faticato. Le teste di serie ricevono un bye finché il tabellone non è una potenza di 2; le
+altre si affrontano nei turni preliminari.
+
+Con N=12 (esempio dell'utente, gruppi da 6):
+
+| Playoff (1–6) | Playout (7–12) |
+|---|---|
+| Preliminari: 3v6, 4v5 | Preliminari: 10v7, 9v8 |
+| Semifinali: 1 vs vinc.(4v5), 2 vs vinc.(3v6) | Semifinali: 12 vs vinc.(9v8), 11 vs vinc.(10v7) |
+| Finale: titolo | Finale: 10 M€ al vincitore, 5 M€ al finalista |
+
+**Formato**: ogni turno si gioca **andata e ritorno**, tranne la **finale** di ciascun torneo
+che è a **gara secca**. Il ritorno si gioca in casa della squadra con seeding migliore.
+
+**Risoluzione della parità** (aggiunta dell'utente, 26 agosto 2026):
+
+1. Vale il **punteggio aggregato** dei due match. I gol in trasferta **non** valgono doppio:
+   si segue la regola moderna, abolita dalla UEFA nel 2021.
+2. Se l'aggregato è pari — o se la finale secca finisce in parità — si giocano i
+   **supplementari**: 30 minuti, cioè 2 blocchi da 15' in coda ai 6 regolamentari. Nel doppio
+   confronto si giocano solo nel match di ritorno.
+3. Se il pareggio persiste, si va ai **calci di rigore**.
+
+**Modello dei rigori.** Il motore non ha un concetto di "abilità dagli undici metri", quindi
+la sequenza è logica nuova, esterna a `engine/`. Tirano i **5 giocatori di movimento con
+overall più alto fra quelli in campo a fine partita**, in ordine decrescente di overall,
+alternando le squadre. La probabilità di segnare dipende dall'overall del tiratore contro
+quello del portiere avversario:
+
+```
+p(gol) = 0,76 + 0,004 × (ovr_tiratore − ovr_portiere)     limitata a [0,55 ; 0,95]
+```
+
+La base 0,76 è la percentuale di realizzazione reale nei tie-break dei tornei europei. Dopo
+le 5 serie si procede **a oltranza** a coppie, riprendendo dal sesto miglior overall e
+ripartendo dal primo tiratore quando la lista si esaurisce. Si applica la morte improvvisa
+standard: la serie si chiude appena il risultato è matematicamente deciso.
+
+> **Impatto sul motore.** I supplementari richiedono un flag opzionale `opt.blocchiExtra` in
+> `simulaPartita`, con lo stesso schema additivo già usato per `campoNeutro` e `stileCasa`:
+> default assente → comportamento identico per tutte le chiamate esistenti. Nessuna formula
+> viene toccata, ma resta una modifica a `engine/` e va quindi validata secondo CLAUDE.md §4
+> prima di essere considerata acquisita.
+
+**Soglia minima**: i due tornei si attivano solo con **N ≥ 8**. Sotto quella soglia i gruppi
+sarebbero troppo piccoli perché il tabellone significhi qualcosa, e resta il solo premio di
+partecipazione uguale per tutti.
+
+**Durata**: i turni si giocano dopo l'ultima giornata di stagione regolare, uno al giorno come
+le giornate normali. Detto `T = ⌈log₂(⌈N/2⌉)⌉` il numero di turni del gruppo più numeroso, i
+giorni aggiuntivi sono `2 × (T − 1) + 1`: andata e ritorno per ogni turno tranne la finale,
+che è secca. Con N=12 o N=14 (T=3): 5 giorni; con N=8 (T=2): 3 giorni. Vale lo stesso vincolo
+di §3.1: la creazione lega deve mostrare la durata totale aggiornata.
 
 ---
 
