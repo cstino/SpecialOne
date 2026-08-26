@@ -98,8 +98,19 @@ export function useSeasonData(membership: Membership) {
     || (teamById.get(left.team_id)?.nome ?? '').localeCompare(teamById.get(right.team_id)?.nome ?? '', 'it')
   )
 
+  // Quante giornate ha DAVVERO questa stagione. league.giornate_totali e' una
+  // colonna generata da squadre e gironi: cambia quando l'admin aggiunge una
+  // squadra, anche per le stagioni gia' concluse, e faceva comparire cose come
+  // "giornata 21 di 33" su un campionato finito alla 21a. La stagione se lo
+  // porta dietro da quando e' nato il calendario; le fixtures sono il ripiego
+  // per le stagioni piu' vecchie del backfill.
+  const giornateStagione = season?.giornate_totali
+    ?? (fixtures.length
+      ? Math.max(...fixtures.filter((f) => f.bracket_tie_id == null).map((f) => f.giornata))
+      : league.giornate_totali)
+
   return {
     season, teams, teamById, crestUrlByTeamId, fixtures, matches, matchByFixture, standings: orderedStandings,
-    currentGiornata, nextFixture, lastFixture, loading, error, reload: load,
+    currentGiornata, nextFixture, lastFixture, giornateStagione, loading, error, reload: load,
   }
 }

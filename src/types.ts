@@ -49,6 +49,10 @@ export type Season = {
   data_inizio: string | null
   data_fine: string | null
   creata_il: string
+  // Giornate di stagione REGOLARE, fissate alla creazione del calendario.
+  // Da preferire sempre a league.giornate_totali, che e' una colonna generata
+  // da squadre e gironi e cambia anche per le stagioni gia' concluse.
+  giornate_totali: number | null
 }
 
 export type Transaction = {

@@ -46,7 +46,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
             </div>
           </div>
         </div>
-        <div className="season-round-stamp"><small>GIORNATA</small><strong>{data.currentGiornata}</strong><span>di {league.giornate_totali}</span></div>
+        <div className="season-round-stamp"><small>GIORNATA</small><strong>{data.currentGiornata}</strong><span>di {data.giornateStagione}</span></div>
       </section>
 
       <section className="season-dashboard">
@@ -59,7 +59,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
           </div>
         </article>}
         <article className="season-card season-card--next">
-          <div className="season-card__heading"><div><p className="kicker">Prossima partita</p><h2>{data.nextFixture ? formatMatchDate(data.nextFixture.data_sim) : 'Calendario concluso'}</h2>{data.nextFixture && <p className="season-countdown">Si gioca tra <strong>{formatCountdown(millisecondiAllaPartita)}</strong></p>}</div><span className="matchday-chip">G{data.nextFixture?.giornata ?? league.giornate_totali}</span></div>
+          <div className="season-card__heading"><div><p className="kicker">Prossima partita</p><h2>{data.nextFixture ? formatMatchDate(data.nextFixture.data_sim) : 'Calendario concluso'}</h2>{data.nextFixture && <p className="season-countdown">Si gioca tra <strong>{formatCountdown(millisecondiAllaPartita)}</strong></p>}</div><span className="matchday-chip">G{data.nextFixture?.giornata ?? data.giornateStagione}</span></div>
           {data.nextFixture ? <div className="next-match-duel">
             <TeamLabel team={data.teamById.get(data.nextFixture.home_team_id)} imageUrl={data.crestUrlByTeamId.get(data.nextFixture.home_team_id)} onClick={() => onOpenTeam(data.nextFixture!.home_team_id)} />
             <FixtureScore fixture={data.nextFixture} match={data.matchByFixture.get(data.nextFixture.id)} />
