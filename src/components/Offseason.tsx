@@ -7,9 +7,9 @@ import { Crest } from './Crest'
 
 type StatoTeam = { id: number; nome: string; attiva: boolean; entrante: boolean; rosa: number; draft: string | null; budget: number }
 type StatoOffseason = { fase: string; stagione_corrente: number; stagione_prossima: number; scade_il: string | null; posti_nuovi: number; squadre_attese: number; squadre: StatoTeam[] }
-type Props = { user: User; membership: Membership; onNavigate: (view: GameView) => void; onRefresh: () => Promise<void> }
+type Props = { user: User; membership: Membership; onNavigate: (view: GameView) => void; onOpenTeam: (teamId: number) => void; onRefresh: () => Promise<void> }
 
-export function Offseason({ user, membership, onNavigate, onRefresh }: Props) {
+export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh }: Props) {
   const league = membership.league as League
   const admin = league.admin_id === user.id
   const [teams, setTeams] = useState<Team[]>([])
@@ -135,7 +135,7 @@ export function Offseason({ user, membership, onNavigate, onRefresh }: Props) {
         </section>
         {entrant && <section className="offseason-card offseason-card--accent"><p className="kicker">Nuova squadra</p><h2>Completa il draft</h2><p>Hai il budget iniziale completo e puoi scegliere senza attendere gli altri.</p><button className="button button--primary" onClick={() => onNavigate('draft')}>Vai al draft</button></section>}
         {!entrant && <section className="offseason-card"><p className="kicker">Contratti</p><h2>Chi è in scadenza</h2><p>I rinnovi si trattano durante la stagione, dalla scheda del giocatore. Chi arriva a fine off-season col contratto scaduto lascia la squadra ed entra nel pool degli svincolati.</p></section>}
-        <section className="offseason-card"><p className="kicker">Stato lega</p><h2>Squadre pronte</h2><p>Alla scadenza le rose sotto quota 21 saranno completate automaticamente con gli svincolati più economici sostenibili.</p><div className="offseason-readiness">{status?.squadre.filter(t => t.attiva).map(team => <div key={team.id}><strong>{team.nome}</strong><span>{team.rosa} giocatori</span></div>)}</div>
+        <section className="offseason-card"><p className="kicker">Stato lega</p><h2>Squadre pronte</h2><p>Alla scadenza le rose sotto quota 21 saranno completate automaticamente con gli svincolati più economici sostenibili.</p><div className="offseason-readiness">{status?.squadre.filter(t => t.attiva).map(team => <div key={team.id} role="button" tabIndex={0} onClick={() => onOpenTeam(team.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onOpenTeam(team.id) }}><strong>{team.nome}</strong><span>{team.rosa} giocatori</span></div>)}</div>
           {admin && !scaduta && <button className="button button--secondary" disabled type="button">Avvio automatico tra {countdown}</button>}
           {admin && scaduta && <button className="button button--primary" disabled={pending} onClick={() => void run(() => supabase.rpc('avvia_prossima_stagione', { p_league_id: league.id }), 'Nuova stagione avviata.')}>{pending ? 'Preparazione…' : 'Riprova avvio adesso'}</button>}
         </section>

@@ -336,7 +336,7 @@ export default function App() {
   }
 
   if (gameView === 'offseason') {
-    return conContesti(<Offseason user={session.user} membership={active} onNavigate={setGameView} onRefresh={loadMemberships} />)
+    return conContesti(<Offseason user={session.user} membership={active} onNavigate={setGameView} onOpenTeam={openTeam} onRefresh={loadMemberships} />)
   }
 
   if (active.league?.fase_carriera === 'offseason' && gameView === 'draft') {
