@@ -1080,7 +1080,10 @@ Con N=12 (esempio dell'utente, gruppi da 6):
 | Finale: titolo | Finale: 10 M€ al vincitore, 5 M€ al finalista |
 
 **Formato**: ogni turno si gioca **andata e ritorno**, tranne la **finale** di ciascun torneo
-che è a **gara secca**. Il ritorno si gioca in casa della squadra con seeding migliore.
+che è a **gara secca**. Il ritorno si gioca in casa della squadra con seeding migliore; la
+finale si gioca in **campo neutro** — è il formato classico di una finale unica, e su una
+partita sola il fattore campo peserebbe troppo. Le due finali cadono lo stesso giorno anche
+quando i due gruppi hanno un numero di turni diverso: il tabellone più corto parte più tardi.
 
 **Risoluzione della parità** (aggiunta dell'utente, 26 agosto 2026):
 

@@ -15,6 +15,7 @@ const ETICHETTA_TIPO: Record<string, string> = {
   rettifica_premi_partite: 'Rettifica premi partita',
   premio_classifica: 'Premio posizione',
   premio_partecipazione: 'Premio di partecipazione',
+  premio_playout: 'Premio playout',
   svincolo_ingaggio_residuo: 'Quota ingaggio residua',
   correzione_svincolo_ingaggio_residuo: 'Storno quota ingaggio',
   draft_pick: 'Ingaggi draft',
