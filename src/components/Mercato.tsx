@@ -413,9 +413,13 @@ export function Mercato({ membership, onNavigate }: Props) {
   const concluse = proposte.filter((p) => p.stato === 'accettata')
 
   // Il live e' l'ultima tornata di estrazione della giornata corrente, mai
-  // l'unione delle tornate manuali gia' chiuse nello stesso giorno.
-  const giornoAste = aste[0]?.giorno ?? null
-  const asteDelGiorno = aste.filter((a) => a.giorno === giornoAste)
+  // l'unione delle tornate manuali gia' chiuse nello stesso giorno. Esclude
+  // le aste da spin off-season: hanno una propria vetrina separata piu' sotto
+  // e, essendo datate col giorno corrente, altrimenti nasconderebbero
+  // un'estrazione del giorno precedente ancora aperta (chiude alle 21:00).
+  const asteEstrazione = aste.filter((a) => a.origine === 'estrazione')
+  const giornoAste = asteEstrazione[0]?.giorno ?? null
+  const asteDelGiorno = asteEstrazione.filter((a) => a.giorno === giornoAste)
   const tornataLive = Math.max(0, ...asteDelGiorno
     .filter((a) => a.origine === 'estrazione')
     .map((a) => a.tornata))
