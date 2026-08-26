@@ -36,16 +36,25 @@ export function Notifiche({ userId, onApriNotifica, embedded = false }: Notifich
   const [statoPush, setStatoPush] = useState<StatoPush>('assente')
   const contenitore = useRef<HTMLDivElement>(null)
 
-  // Controllato solo quando il pannello si apre: pushManager.getSubscription
-  // e' asincrono, non serve rifarlo a ogni render della campanella.
+  // Controllato all'avvio dell'app e ogni volta che si apre il pannello:
+  // pushManager.getSubscription e' asincrono, non serve rifarlo a ogni
+  // render della campanella, ma nemmeno solo quando l'utente guarda dentro.
+  // Se il permesso e' gia' 'granted' ma il browser ha perso la
+  // sottoscrizione (capita su iOS anche con uso quotidiano, per motivi
+  // fuori dal nostro controllo), la si ricrea in silenzio: subscribe() non
+  // richiede un nuovo gesto dell'utente quando il permesso e' gia' concesso,
+  // quindi non serve che l'utente se ne accorga e tocchi di nuovo il tasto.
   useEffect(() => {
-    if (!aperto) return
     let attivo = true
     async function controlla() {
       const permesso = permessoPush()
       if (permesso === 'non-supportato') { if (attivo) setStatoPush('non-supportato'); return }
       if (permesso === 'denied') { if (attivo) setStatoPush('negato'); return }
-      const sottoscrizione = await sottoscrizioneAttuale()
+      let sottoscrizione = await sottoscrizioneAttuale()
+      if (!sottoscrizione && permesso === 'granted') {
+        const esito = await attivaPush()
+        if (esito.ok) sottoscrizione = await sottoscrizioneAttuale()
+      }
       if (attivo) setStatoPush(sottoscrizione ? 'attivo' : 'inattivo')
     }
     void controlla()
