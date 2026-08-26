@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useNotificheContesto, useTornaAllaHome } from '../lib/navigazione'
 import type { League } from '../types'
 
-export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'matches' | 'table' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza'
+export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza'
 type GameNavProps = { league: League; active: GameView; onNavigate?: (view: GameView) => void }
 
 // Icone disegnate a mano: i glifi Unicode di prima (▦ ♜ ♙ ◆ ◉ ≡) venivano resi dal
@@ -17,6 +17,7 @@ const ICONE: Record<string, ReactNode> = {
   honors: <><path d="M8 4h8v4.5a4 4 0 0 1-8 0z" /><path d="M8 6H5.5v1.5A3 3 0 0 0 8.5 10M16 6h2.5v1.5a3 3 0 0 1-3 2.5M12 12.5V17M8.5 21h7M9.5 17h5" /></>,
   notifications: <><path d="M18 9a6 6 0 1 0-12 0c0 4.5-1.5 5.6-2 6.5h16c-.5-.9-2-2-2-6.5" /><path d="M10 19a2.2 2.2 0 0 0 4 0" /></>,
   mercato: <><path d="M4 8.5h12m0 0-3-3m3 3-3 3" /><path d="M20 15.5H8m0 0 3-3m-3 3 3 3" /></>,
+  tabellone: <><path d="M4 6h5v5M4 18h5v-5M9 11h4v2H9zM13 12h7" /><path d="M17 9l3 3-3 3" /></>,
   offseason: <><path d="M4 7h16M6 3v4m12-4v4" /><path d="M5 11h14v9H5z" /><path d="m9 15 2 2 4-4" /></>,
   admin: <><path d="M12 3.5 5 6.5v5c0 4.5 3 7.2 7 9 4-1.8 7-4.5 7-9v-5z" /><path d="m9.2 12 1.9 1.9 3.7-3.9" /></>,
   help: <><circle cx="12" cy="12" r="9" /><path d="M9.3 9.3a2.7 2.7 0 1 1 3.6 2.5c-.8.4-1.4 1-1.4 2v.4" /><path d="M12 16.8v.1" /></>,
@@ -48,6 +49,7 @@ const seasonItems = [
   ['mercato', 'Mercato'],
   ['matches', 'Partite'],
   ['table', 'Classifica'],
+  ['tabellone', 'Tabellone'],
   ['honors', "Albo d'oro"],
   ['notifications', 'Avvisi'],
   ['help', 'Aiuto'],
@@ -60,6 +62,7 @@ const offseasonItems = [
   ['mercato', 'Mercato'],
   ['matches', 'Partite'],
   ['table', 'Classifica'],
+  ['tabellone', 'Tabellone'],
   ['honors', "Albo d'oro"],
   ['notifications', 'Avvisi'],
   ['help', 'Aiuto'],
@@ -72,6 +75,7 @@ const concludedItems = [
   ['finanza', 'Finanza'],
   ['matches', 'Partite'],
   ['table', 'Classifica'],
+  ['tabellone', 'Tabellone'],
   ['honors', "Albo d'oro"],
   ['notifications', 'Avvisi'],
   ['help', 'Aiuto'],

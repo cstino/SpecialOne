@@ -70,12 +70,24 @@ export function FixtureScore({ fixture, match, reveal = false }: { fixture: Fixt
     // L'orario e' gia' nell'intestazione della giornata: qui serve solo il
     // segno che separa le due squadre.
     : <span className="fixture-time">VS</span>
-  // Ultimo girone di un campionato a gironi dispari (design.md §6.6): niente
-  // vantaggio casa. Un solo elemento radice anche in questo caso (mai un
-  // Fragment con due figli), perche' i contenitori chiamanti sono griglie a
-  // 3 colonne fisse che si aspettano esattamente un elemento qui in mezzo.
-  if (!fixture.campo_neutro) return esito
-  return <span className="fixture-score-wrap">{esito}<em className="fixture-neutral" title="Ultimo girone di un campionato a gironi dispari: nessun vantaggio casa">Campo neutro</em></span>
+  // Un solo elemento radice in ogni caso (mai un Fragment con due figli),
+  // perche' i contenitori chiamanti sono griglie a 3 colonne fisse che si
+  // aspettano esattamente un elemento qui in mezzo.
+  const mostraRisultato = fixture.stato === 'simulata' && match && !reveal
+  // Playoff/playout (design §10.7): il punteggio dai dischetti e i
+  // supplementari cambiano la lettura del risultato, vanno detti.
+  const nota = !mostraRisultato ? null
+    : match.rigori_home !== null && match.rigori_away !== null
+      ? `Rigori ${match.rigori_home}-${match.rigori_away}`
+      : match.gol_home_90 !== null ? 'Dopo i supplementari'
+      // Ultimo girone di un campionato a gironi dispari (design.md §6.6):
+      // niente vantaggio casa. Nelle finali di tabellone e' la norma.
+      : fixture.campo_neutro ? 'Campo neutro'
+      : null
+  const notaFuoriPartita = !mostraRisultato && fixture.campo_neutro ? 'Campo neutro' : null
+  const testo = nota ?? notaFuoriPartita
+  if (!testo) return esito
+  return <span className="fixture-score-wrap">{esito}<em className="fixture-neutral">{testo}</em></span>
 }
 
 export type Esito = 'V' | 'N' | 'P'

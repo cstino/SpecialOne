@@ -72,6 +72,36 @@ export type Fixture = {
   data_sim: string
   stato: 'programmata' | 'in_corso' | 'simulata' | 'annullata'
   campo_neutro: boolean
+  // Valorizzati solo per le partite di playoff/playout (design §10.7).
+  bracket_tie_id: number | null
+  mano: 1 | 2 | null
+}
+
+export type RigoreTiro = { numero: number; lato: 'casa' | 'ospite'; tiratoreId: number | null; tiratore: string; segnato: boolean }
+
+export type Bracket = {
+  id: number
+  league_id: number
+  season_id: number
+  tipo: 'playoff' | 'playout'
+  stato: 'in_corso' | 'concluso'
+  vincitore_team_id: number | null
+  finalista_team_id: number | null
+}
+
+export type BracketTie = {
+  id: number
+  bracket_id: number
+  league_id: number
+  turno: number
+  posizione: number
+  alta_team_id: number | null
+  bassa_team_id: number | null
+  alta_seed: number | null
+  bassa_seed: number | null
+  gara_secca: boolean
+  vincitore_team_id: number | null
+  stato: 'in_attesa' | 'in_corso' | 'concluso'
 }
 
 export type Match = {
@@ -90,6 +120,12 @@ export type Match = {
   }
   blocchi: EventoPartita[]
   simulata_il: string
+  // Parziale dei 90': valorizzato solo se si sono giocati i supplementari.
+  gol_home_90: number | null
+  gol_away_90: number | null
+  rigori_home: number | null
+  rigori_away: number | null
+  rigori_serie: RigoreTiro[] | null
 }
 
 // Minuto e assist sono un'attribuzione della Edge Function: il motore decide

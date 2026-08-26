@@ -2356,3 +2356,47 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .button.offerta-in-corso { cursor: wait; }
 .offerta-spinner { display: inline-block; width: .85em; height: .85em; margin-right: .55em; border: 2px solid currentColor; border-left-color: transparent; border-radius: 50%; animation: button-spin .7s linear infinite; vertical-align: -.08em; }
 @keyframes button-spin { to { transform: rotate(360deg); } }
+
+/* ---- Tabellone playoff/playout (design §10.7) ---- */
+.tabellone { display:grid;gap:1.1rem; }
+.tabellone-vincitore { color:#c8b6dd;font-size:.85rem; }
+.tabellone-vincitore b { color:#fff; }
+.tabellone--playout .tabellone-vincitore b { color:#67e8b0; }
+.tabellone-turno { display:grid;gap:.7rem; }
+.tabellone-turno h3 { margin:0;color:#b99dce;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase; }
+.tabellone-tie { display:grid;gap:.35rem;border:1px solid #332b40;border-radius:12px;padding:.7rem .8rem;background:#1b1626; }
+.tabellone-tie--bye { opacity:.75; }
+.tabellone-tie--bye small { color:#8f86a0;font-size:.76rem; }
+.tabellone-riga { display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:.6rem;align-items:center; }
+.tabellone-riga .crest { width:28px;height:28px; }
+.tabellone-riga--vuota { color:#8f86a0;font-style:italic;grid-template-columns:1fr; }
+.tabellone-nome { display:flex;gap:.45rem;align-items:center;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.tabellone-seed { flex:none;font-style:normal;font-size:.7rem;color:#8f86a0;border:1px solid #3d3450;border-radius:5px;padding:0 .3rem; }
+.tabellone-gol { font-weight:700;font-variant-numeric:tabular-nums; }
+.tabellone-gol em { font-style:normal;color:#b99dce;font-weight:500;font-size:.82rem; }
+.tabellone-riga.e-vincitore .tabellone-nome { color:#fff; }
+.tabellone-riga.e-vincitore .tabellone-gol { color:#9b43f5; }
+.tabellone--playout .tabellone-riga.e-vincitore .tabellone-gol { color:#34d399; }
+.tabellone-riga:not(.e-vincitore) { color:#a9a0b7; }
+.tabellone-mani { display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.3rem;padding-top:.5rem;border-top:1px solid #2a2336; }
+.tabellone-mano { font-size:.76rem;color:#a9a0b7;background:#241d30;border:1px solid #332b40;border-radius:7px;padding:.25rem .5rem; }
+.tabellone-mano em { font-style:normal;color:#8f86a0; }
+.tabellone-mano--link { cursor:pointer; }
+.tabellone-mano--link:hover { border-color:#9b43f5;color:#fff; }
+.tabellone-badge { font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:#b99dce;background:#2a2140;border-radius:7px;padding:.25rem .5rem; }
+
+/* ---- Calci di rigore nel tabellino ---- */
+.rigori-punteggio { display:grid;grid-template-columns:1fr auto 1fr;gap:1rem;align-items:center;margin:.8rem 0; }
+.rigori-punteggio span { color:#a9a0b7;font-size:.85rem; }
+.rigori-punteggio span:last-child { text-align:right; }
+.rigori-punteggio strong { font-size:2rem;font-variant-numeric:tabular-nums; }
+.rigori-punteggio i { color:#6b6280;font-style:normal;margin:0 .35rem; }
+.rigori-nota { color:#a9a0b7;font-size:.84rem;margin:0 0 .8rem; }
+.rigori-serie { list-style:none;margin:0;padding:0;display:grid;gap:.3rem; }
+.rigori-tiro { display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:.6rem;align-items:center;padding:.35rem .5rem;border-radius:8px;background:#1b1626; }
+.rigori-tiro b { color:#8f86a0;font-size:.75rem;font-weight:600; }
+.rigori-tiro span { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.rigori-tiro em { font-style:normal;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase; }
+.rigori-tiro.e-gol em { color:#34d399; }
+.rigori-tiro.e-errore em { color:#f87171; }
+.rigori-tiro--ospite { background:#191423;border-left:2px solid #332b40; }

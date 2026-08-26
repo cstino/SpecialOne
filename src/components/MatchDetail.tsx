@@ -203,8 +203,36 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
           <ScorerList eventi={eventi} lato="casa" players={players} />
           <ScorerList eventi={eventi} lato="ospite" players={players} />
         </div>
-        <span className="match-report-final">RISULTATO FINALE</span>
+        <span className="match-report-final">
+          {match.rigori_home !== null ? 'DOPO I CALCI DI RIGORE'
+            : match.gol_home_90 !== null ? 'DOPO I SUPPLEMENTARI'
+            : 'RISULTATO FINALE'}
+        </span>
       </section>
+
+      {/* Playoff/playout (design §10.7): senza questo riquadro il punteggio in
+          alto sarebbe incomprensibile — una gara vinta ai rigori mostrerebbe
+          un pareggio con un vincitore. */}
+      {match.rigori_home !== null && match.rigori_away !== null && <section className="match-report-panel">
+        <div className="match-report-heading"><p className="kicker">Dagli undici metri</p><h2>Calci di rigore</h2></div>
+        <div className="rigori-punteggio">
+          <span>{data.teamById.get(fixture.home_team_id)?.nome ?? 'Casa'}</span>
+          <strong>{match.rigori_home}<i>-</i>{match.rigori_away}</strong>
+          <span>{data.teamById.get(fixture.away_team_id)?.nome ?? 'Ospite'}</span>
+        </div>
+        {match.gol_home_90 !== null && <p className="rigori-nota">
+          Al 90’ {match.gol_home_90}-{match.gol_away_90}, dopo i supplementari {match.gol_home}-{match.gol_away}.
+        </p>}
+        {match.rigori_serie && <ol className="rigori-serie">
+          {match.rigori_serie.map((tiro, i) => (
+            <li key={i} className={`rigori-tiro rigori-tiro--${tiro.lato} ${tiro.segnato ? 'e-gol' : 'e-errore'}`}>
+              <b>{tiro.numero}</b>
+              <span>{tiro.tiratore}</span>
+              <em>{tiro.segnato ? 'gol' : 'errore'}</em>
+            </li>
+          ))}
+        </ol>}
+      </section>}
 
       <section className="match-report-panel">
         <div className="match-report-heading"><p className="kicker">Numeri della gara</p><h2>Statistiche squadre</h2></div>

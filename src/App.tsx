@@ -21,6 +21,7 @@ import { MatchDetail } from './components/MatchDetail'
 import { MatchReveal } from './components/MatchReveal'
 import { Mercato } from './components/Mercato'
 import { Offseason } from './components/Offseason'
+import { Tabellone } from './components/Tabellone'
 import { SeasonOverview } from './components/SeasonOverview'
 import { Standings } from './components/Standings'
 import { TeamProfile } from './components/TeamProfile'
@@ -362,6 +363,7 @@ export default function App() {
       : gameView === 'mercato' ? <Mercato membership={active} onNavigate={navigateGame} />
       : gameView === 'matches' ? <Matches membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} onOpenMatch={(id) => setOpenMatch({ id, from: 'matches' })} onRevealMatch={(id) => setRevealMatch({ id, from: 'matches' })} onOpenTeam={openTeam} />
       : gameView === 'table' ? <Standings membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
+      : gameView === 'tabellone' ? <Tabellone membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'tabellone' })} />
       : gameView === 'honors' ? <AlboDOro membership={active} onNavigate={navigateGame} />
       : gameView === 'notifications' ? <Avvisi membership={active} onNavigate={navigateGame} />
       : gameView === 'admin' ? <Admin membership={active} onNavigate={navigateGame} />
