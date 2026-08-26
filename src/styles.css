@@ -2400,3 +2400,4 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .rigori-tiro.e-gol em { color:#34d399; }
 .rigori-tiro.e-errore em { color:#f87171; }
 .rigori-tiro--ospite { background:#191423;border-left:2px solid #332b40; }
+.honors-badge { display:inline-block;margin-right:.45rem;font-size:.62rem;font-weight:700;letter-spacing:.09em;color:#e9ddfa;background:#4a2f77;border-radius:5px;padding:.1rem .32rem;vertical-align:.05rem; }

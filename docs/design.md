@@ -1057,7 +1057,11 @@ qualunque sia la posizione finale. Con B=100M sono 15 M€.
 Poi la lega si divide in due tornei a eliminazione diretta, che si giocano in contemporanea:
 
 - **Playoff (metà alta)** — si compete per il **titolo di campione**. Nessun premio in denaro:
-  il vantaggio è il trofeo e l'albo d'oro.
+  il vantaggio è il trofeo e l'albo d'oro. **Dalla stagione 2 il campione della lega è chi vince
+  il playoff, non chi arriva primo in classifica**: l'albo d'oro registra quello. Vincere la
+  stagione regolare dà un tabellone più facile, non il titolo. Le stagioni giocate prima dei
+  playoff, e le leghe sotto le 8 squadre, continuano ad assegnare il titolo al primo in
+  classifica — è l'unico criterio che quelle stagioni hanno.
 - **Playout (metà bassa)** — si compete per un **bonus economico**: `0,10 × B` al vincitore
   (10 M€ con B=100M) e `0,05 × B` al finalista sconfitto (5 M€). Si somma al premio di
   partecipazione.

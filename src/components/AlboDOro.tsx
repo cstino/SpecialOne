@@ -10,6 +10,10 @@ type Campione = {
   classifica: Standing
   squadra: Team | null
   stemmaFirmato?: string
+  // Dalla stagione 2 il titolo lo vince il playoff, non la stagione regolare
+  // (design §10.7). Resta falso per le stagioni giocate prima dei tabelloni e
+  // per le leghe sotto le 8 squadre, dove i playoff non si giocano.
+  daPlayoff: boolean
 }
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
@@ -49,20 +53,38 @@ export function AlboDOro({ membership, onNavigate }: Props) {
     }
 
     const idsStagioni = stagioniConcluse.map((stagione) => stagione.id)
-    const { data: classifiche, error: erroreClassifiche } = await supabase
-      .from('standings')
-      .select('*')
-      .eq('league_id', league.id)
-      .in('season_id', idsStagioni)
-      .eq('posizione', 1)
-    if (erroreClassifiche) {
-      setError(erroreClassifiche.message)
+    // Serve tutta la classifica, non solo la prima: il campione puo' essere
+    // arrivato quarto in stagione regolare e aver vinto il playoff, e di lui
+    // vogliamo comunque mostrare punti e record.
+    const [classificheRes, playoffRes] = await Promise.all([
+      supabase.from('standings').select('*').eq('league_id', league.id).in('season_id', idsStagioni),
+      supabase.from('brackets').select('season_id, vincitore_team_id')
+        .eq('league_id', league.id).in('season_id', idsStagioni)
+        .eq('tipo', 'playoff').eq('stato', 'concluso'),
+    ])
+    if (classificheRes.error || playoffRes.error) {
+      setError(classificheRes.error?.message ?? playoffRes.error?.message ?? 'Dati non disponibili.')
       setLoading(false)
       return
     }
 
-    const vincitori = (classifiche ?? []) as Standing[]
-    const idsSquadre = [...new Set(vincitori.map((riga) => riga.team_id))]
+    const classifiche = (classificheRes.data ?? []) as Standing[]
+    const campionePlayoffPerStagione = new Map(
+      ((playoffRes.data ?? []) as Array<{ season_id: number; vincitore_team_id: number | null }>)
+        .filter((b) => b.vincitore_team_id != null)
+        .map((b) => [b.season_id, b.vincitore_team_id!]),
+    )
+    // Il titolo e' del vincitore del playoff; dove il playoff non c'e' stato
+    // (stagione 1, o lega sotto le 8 squadre) vale la prima in classifica.
+    const vincitori = stagioniConcluse.flatMap((stagione) => {
+      const diStagione = classifiche.filter((riga) => riga.season_id === stagione.id)
+      const idPlayoff = campionePlayoffPerStagione.get(stagione.id)
+      const riga = idPlayoff != null
+        ? diStagione.find((r) => r.team_id === idPlayoff)
+        : diStagione.find((r) => r.posizione === 1)
+      return riga ? [{ riga, daPlayoff: idPlayoff != null }] : []
+    })
+    const idsSquadre = [...new Set(vincitori.map((v) => v.riga.team_id))]
     const { data: squadre, error: erroreSquadre } = idsSquadre.length
       ? await supabase.from('teams').select('*').in('id', idsSquadre)
       : { data: [], error: null }
@@ -80,12 +102,17 @@ export function AlboDOro({ membership, onNavigate }: Props) {
         return [squadra.id, data?.signedUrl] as const
       }))
     const stemmiPerSquadra = new Map(stemmiFirmati.filter((voce): voce is readonly [number, string] => Boolean(voce[1])))
-    const classificaPerStagione = new Map(vincitori.map((riga) => [riga.season_id, riga]))
+    const vincitorePerStagione = new Map(vincitori.map((v) => [v.riga.season_id, v]))
 
     setCampioni(stagioniConcluse.flatMap((stagione) => {
-      const classifica = classificaPerStagione.get(stagione.id)
-      if (!classifica) return []
-      return [{ stagione, classifica, squadra: squadrePerId.get(classifica.team_id) ?? null, stemmaFirmato: stemmiPerSquadra.get(classifica.team_id) }]
+      const vincitore = vincitorePerStagione.get(stagione.id)
+      if (!vincitore) return []
+      const { riga, daPlayoff } = vincitore
+      return [{
+        stagione, classifica: riga, daPlayoff,
+        squadra: squadrePerId.get(riga.team_id) ?? null,
+        stemmaFirmato: stemmiPerSquadra.get(riga.team_id),
+      }]
     }))
     setLoading(false)
   }, [league.id])
@@ -102,7 +129,7 @@ export function AlboDOro({ membership, onNavigate }: Props) {
         <div>
           <p className="kicker">{league.nome}</p>
           <h1>Albo d'oro.</h1>
-          <p>Le squadre che hanno scritto la storia della lega, stagione dopo stagione.</p>
+          <p>Le squadre che hanno scritto la storia della lega, stagione dopo stagione. Dalla stagione 2 il titolo si assegna ai playoff, non in classifica.</p>
         </div>
         <div className="honors-cup" aria-hidden="true"><span>★</span><small>{campioni.length}</small><b>titoli assegnati</b></div>
       </section>
@@ -112,7 +139,15 @@ export function AlboDOro({ membership, onNavigate }: Props) {
         <p>Campione in carica</p>
         <div className="honors-champion__team">
           <Crest value={ultimoCampione.squadra?.stemma_url ?? null} imageUrl={ultimoCampione.stemmaFirmato} size="large" />
-          <div><small>STAGIONE {ultimoCampione.stagione.numero}</small><h2>{ultimoCampione.squadra?.nome ?? 'Squadra non disponibile'}</h2><span>{ultimoCampione.classifica.punti} punti · {ultimoCampione.classifica.vittorie} vittorie</span></div>
+          <div>
+            <small>STAGIONE {ultimoCampione.stagione.numero}</small>
+            <h2>{ultimoCampione.squadra?.nome ?? 'Squadra non disponibile'}</h2>
+            <span>
+              {ultimoCampione.daPlayoff
+                ? <>Vincitore dei playoff · {ultimoCampione.classifica.posizione}ª in stagione regolare</>
+                : <>{ultimoCampione.classifica.punti} punti · {ultimoCampione.classifica.vittorie} vittorie</>}
+            </span>
+          </div>
         </div>
         {dataItaliana(ultimoCampione.stagione.data_fine) && <em>Trionfo del {dataItaliana(ultimoCampione.stagione.data_fine)}</em>}
       </section> : <section className="honors-empty"><span aria-hidden="true">★</span><h2>Il primo trofeo è ancora in palio.</h2><p>Quando una stagione si concluderà, qui comparirà la squadra campione.</p></section>}
@@ -124,7 +159,10 @@ export function AlboDOro({ membership, onNavigate }: Props) {
             <span className="honors-list__season">S{campione.stagione.numero}</span>
             <Crest value={campione.squadra?.stemma_url ?? null} imageUrl={campione.stemmaFirmato} />
             <strong>{campione.squadra?.nome ?? 'Squadra non disponibile'}</strong>
-            <span className="honors-list__record">{campione.classifica.punti} PT <i>·</i> {campione.classifica.vittorie}V {campione.classifica.pareggi}N {campione.classifica.sconfitte}P</span>
+            <span className="honors-list__record">
+              {campione.daPlayoff && <b className="honors-badge">PLAYOFF</b>}
+              {campione.classifica.punti} PT <i>·</i> {campione.classifica.vittorie}V {campione.classifica.pareggi}N {campione.classifica.sconfitte}P
+            </span>
             {indice === 0 && <em>IN CARICA</em>}
           </li>)}
         </ol>
