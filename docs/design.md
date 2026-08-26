@@ -1092,9 +1092,13 @@ che è a **gara secca**. Il ritorno si gioca in casa della squadra con seeding m
 3. Se il pareggio persiste, si va ai **calci di rigore**.
 
 **Modello dei rigori.** Il motore non ha un concetto di "abilità dagli undici metri", quindi
-la sequenza è logica nuova, esterna a `engine/`. Tirano i **5 giocatori di movimento con
-overall più alto fra quelli in campo a fine partita**, in ordine decrescente di overall,
-alternando le squadre. La probabilità di segnare dipende dall'overall del tiratore contro
+la sequenza è logica nuova: vive in `engine/rigori.js`, un file separato **fuori dal nucleo
+validato in Fase 0** — la suite di `tools/validazione` non lo importa e nessuna formula di
+`engine.js` viene toccata. Sta in `engine/` solo perché la Edge Function importa già da lì e i
+rigori usano lo stesso RNG seeded, per restare riproducibili da un seed di fixture.
+
+Tirano i **5 giocatori di movimento con overall più alto fra quelli in campo a fine partita**,
+in ordine decrescente di overall, alternando le squadre. La probabilità di segnare dipende dall'overall del tiratore contro
 quello del portiere avversario:
 
 ```
