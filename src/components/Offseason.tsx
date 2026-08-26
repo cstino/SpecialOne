@@ -17,6 +17,9 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
   const [status, setStatus] = useState<StatoOffseason | null>(null)
   const [removed, setRemoved] = useState<number[]>([])
   const [newSlots, setNewSlots] = useState(0)
+  const [editing, setEditing] = useState(false)
+  const [editRemoved, setEditRemoved] = useState<number[]>([])
+  const [editSlots, setEditSlots] = useState(0)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -62,9 +65,10 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
   async function run(action: () => PromiseLike<{ error: { message: string } | null }>, success: string) {
     setPending(true); setError(null); setNotice(null)
     const result = await action()
-    if (result.error) setError(result.error.message)
-    else { setNotice(success); await onRefresh(); await load() }
+    if (result.error) { setError(result.error.message); setPending(false); return false }
+    setNotice(success); await onRefresh(); await load()
     setPending(false)
+    return true
   }
 
   function openOffseason() {
@@ -74,8 +78,25 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
     )
   }
 
+  function apriModificaSquadre() {
+    setEditRemoved([])
+    setEditSlots(status?.posti_nuovi ?? 0)
+    setEditing(true)
+  }
+
+  async function salvaModificheSquadre() {
+    const ok = await run(
+      () => supabase.rpc('modifica_squadre_offseason', {
+        p_league_id: league.id, p_squadre_rimuovi: editRemoved, p_nuovi_posti_aperti: editSlots,
+      }),
+      'Squadre aggiornate.',
+    )
+    if (ok) setEditing(false)
+  }
+
   const entrant = membership.entrata_stagione === league.stagione_corrente + 1
   const activeCount = useMemo(() => teams.filter((team) => team.attiva && !removed.includes(team.id)).length + newSlots, [teams, removed, newSlots])
+  const editActiveCount = useMemo(() => teams.filter((team) => team.attiva && !editRemoved.includes(team.id)).length + editSlots, [teams, editRemoved, editSlots])
   const millisecondiRimasti = status?.scade_il ? Math.max(0, new Date(status.scade_il).getTime() - adesso) : 0
   const scaduta = Boolean(status?.scade_il) && millisecondiRimasti === 0
   const countdown = formatCountdown(millisecondiRimasti)
@@ -135,9 +156,36 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
         </section>
         {entrant && <section className="offseason-card offseason-card--accent"><p className="kicker">Nuova squadra</p><h2>Completa il draft</h2><p>Hai il budget iniziale completo e puoi scegliere senza attendere gli altri.</p><button className="button button--primary" onClick={() => onNavigate('draft')}>Vai al draft</button></section>}
         {!entrant && <section className="offseason-card"><p className="kicker">Contratti</p><h2>Chi è in scadenza</h2><p>I rinnovi si trattano durante la stagione, dalla scheda del giocatore. Chi arriva a fine off-season col contratto scaduto lascia la squadra ed entra nel pool degli svincolati.</p></section>}
-        <section className="offseason-card"><p className="kicker">Stato lega</p><h2>Squadre pronte</h2><p>Alla scadenza le rose sotto quota 21 saranno completate automaticamente con gli svincolati più economici sostenibili.</p><div className="offseason-readiness">{status?.squadre.filter(t => t.attiva).map(team => <div key={team.id} role="button" tabIndex={0} onClick={() => onOpenTeam(team.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onOpenTeam(team.id) }}><strong>{team.nome}</strong><span>{team.rosa} giocatori</span></div>)}</div>
-          {admin && !scaduta && <button className="button button--secondary" disabled type="button">Avvio automatico tra {countdown}</button>}
-          {admin && scaduta && <button className="button button--primary" disabled={pending} onClick={() => void run(() => supabase.rpc('avvia_prossima_stagione', { p_league_id: league.id }), 'Nuova stagione avviata.')}>{pending ? 'Preparazione…' : 'Riprova avvio adesso'}</button>}
+        <section className="offseason-card">
+          <div className="offseason-control__heading"><div><p className="kicker">Stato lega</p><h2>Squadre pronte</h2></div>
+            {admin && !scaduta && !editing && <button className="button button--secondary" type="button" onClick={apriModificaSquadre}>Modifica squadre</button>}
+          </div>
+          {!editing && <>
+            <p>Alla scadenza le rose sotto quota 21 saranno completate automaticamente con gli svincolati più economici sostenibili.</p>
+            <div className="offseason-readiness">{status?.squadre.filter(t => t.attiva).map(team => <div key={team.id} role="button" tabIndex={0} onClick={() => onOpenTeam(team.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onOpenTeam(team.id) }}><strong>{team.nome}</strong><span>{team.rosa} giocatori</span></div>)}</div>
+            {admin && !scaduta && <button className="button button--secondary" disabled type="button">Avvio automatico tra {countdown}</button>}
+            {admin && scaduta && <button className="button button--primary" disabled={pending} onClick={() => void run(() => supabase.rpc('avvia_prossima_stagione', { p_league_id: league.id }), 'Nuova stagione avviata.')}>{pending ? 'Preparazione…' : 'Riprova avvio adesso'}</button>}
+          </>}
+          {editing && <>
+            <p>Escludi squadre o cambia i posti nuovi ancora aperti: puoi rifarlo finché l'off-season non scade. Chi viene escluso ora rilascia subito i giocatori nel mercato svincolati, anche se ha già completato il draft.</p>
+            <div className="offseason-team-grid">{teams.filter(t => t.attiva).map(team => {
+              const selected = !editRemoved.includes(team.id)
+              const locked = team.user_id === league.admin_id
+              return <label className={`${selected ? 'is-selected' : 'is-removed'} ${locked ? 'is-locked' : ''}`} key={team.id}>
+                <input className="sr-only" type="checkbox" checked={selected} disabled={locked} onChange={() => setEditRemoved(value => value.includes(team.id) ? value.filter(id => id !== team.id) : [...value, team.id])} />
+                <Crest value={team.stemma_url} imageUrl={crestUrls[team.id]} />
+                <span><strong>{team.nome}</strong><small>{locked ? 'La tua squadra · Admin' : selected ? 'Confermata' : 'Esclusa'}</small></span>
+                <i aria-hidden="true">{locked ? '◆' : selected ? '✓' : '×'}</i>
+              </label>})}
+            </div>
+            <div className="offseason-slots"><div><p className="kicker">Espansione</p><strong>Nuovi posti ancora aperti</strong><small>Il codice invito resterà attivo per nuovi allenatori.</small></div><div className="offseason-stepper"><button type="button" aria-label="Riduci nuovi posti" disabled={editSlots === 0} onClick={() => setEditSlots(value => Math.max(0, value - 1))}>−</button><output>{editSlots}</output><button type="button" aria-label="Aumenta nuovi posti" disabled={editSlots === 16} onClick={() => setEditSlots(value => Math.min(16, value + 1))}>+</button></div></div>
+            <div className="offseason-launch__footer"><div><small>PROSSIMA STAGIONE</small><strong>{editActiveCount} squadre</strong></div>
+              <div style={{ display: 'flex', gap: '.6rem' }}>
+                <button className="button button--secondary" type="button" disabled={pending} onClick={() => setEditing(false)}>Annulla</button>
+                <button className="offseason-open-button" disabled={pending || editActiveCount < 4 || editActiveCount > 20} onClick={salvaModificheSquadre}><span>{pending ? 'Salvataggio…' : 'Salva modifiche'}</span><i aria-hidden="true">→</i></button>
+              </div>
+            </div>
+          </>}
         </section>
       </>}
     </section>
