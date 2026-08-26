@@ -3,6 +3,7 @@ import { withSupabase } from '@supabase/server'
 import { ovrEfficace, schiera, simulaPartita } from '../../../engine/engine.js'
 import { MODULI } from '../../../engine/config.js'
 import { setSeed } from '../../../engine/random.js'
+import { calciaRigori, portiereDaLineup, tiratoriDaLineup } from '../../../engine/rigori.js'
 
 // La chiave segreta del progetto, esposta con un nome non riservato: la
 // piattaforma non inietta SUPABASE_SECRET_KEY e vieta di crearla a mano.
@@ -24,7 +25,7 @@ type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number
 type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number> }
 type DbLineup = { team_id: number; giornata?: number; modulo: string; titolari: number[]; panchina: number[]; tribuna: number[]; stile_gioco: string; automatica: boolean }
 type EngineLineup = { modulo: string; slots: string[]; titolari: EnginePlayer[]; panchina: EnginePlayer[]; cambiFatti: number }
-type Fixture = { id: number; season_id: number; league_id: number; giornata: number; home_team_id: number; away_team_id: number; stato: string; campo_neutro: boolean }
+type Fixture = { id: number; season_id: number; league_id: number; giornata: number; home_team_id: number; away_team_id: number; stato: string; campo_neutro: boolean; bracket_tie_id: number | null; mano: number | null }
 
 function requiredNumber(attributes: Record<string, number>, field: string, playerId: number) {
   const value = attributes[field]
@@ -538,6 +539,36 @@ export default {
       const fixtures = (fixtureRows ?? []) as Fixture[]
       const teamIds = [...new Set(fixtures.flatMap((fixture) => [fixture.home_team_id, fixture.away_team_id]))]
 
+      // Ritorni di eliminatoria: serve il risultato dell'andata per sapere se
+      // l'accoppiamento e' in parita' e quindi se giocare i supplementari
+      // (design §10.7). Nell'andata i ruoli erano invertiti, quindi il
+      // vantaggio di chi ORA gioca in casa e' gol_away meno gol_home.
+      const scartoAndataPerFixture = new Map<number, number>()
+      const tieDaControllare = fixtures.filter((f) => f.bracket_tie_id !== null && f.mano === 2)
+      if (tieDaControllare.length > 0) {
+        const { data: andate, error: andateError } = await ctx.supabaseAdmin.from('fixtures')
+          .select('bracket_tie_id, matches(gol_home, gol_away)')
+          .in('bracket_tie_id', tieDaControllare.map((f) => f.bracket_tie_id))
+          .eq('mano', 1)
+        if (andateError) throw andateError
+        // matches.fixture_id e' UNIQUE, quindi PostgREST dovrebbe restituire un
+        // oggetto; a seconda di come deduce la relazione puo' pero' tornare un
+        // array. Accettiamo entrambe le forme: sbagliare qui significherebbe
+        // giocare i supplementari quando non servono, o non giocarli affatto.
+        type RigaAndata = { bracket_tie_id: number; matches: MatchGol | MatchGol[] | null }
+        type MatchGol = { gol_home: number; gol_away: number }
+        const perTie = new Map<number, MatchGol>()
+        for (const riga of (andate ?? []) as RigaAndata[]) {
+          const m = Array.isArray(riga.matches) ? riga.matches[0] : riga.matches
+          if (m) perTie.set(riga.bracket_tie_id, m)
+        }
+        for (const f of tieDaControllare) {
+          const andata = perTie.get(f.bracket_tie_id!)
+          // Nessuna andata (finale in gara secca): si parte da zero.
+          scartoAndataPerFixture.set(f.id, andata ? andata.gol_away - andata.gol_home : 0)
+        }
+      }
+
       const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult] = await Promise.all([
         ctx.supabaseAdmin.from('teams').select('id, nome, user_id, controllata_da_pc').eq('league_id', leagueId).in('id', teamIds),
         ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a').eq('league_id', leagueId).in('team_id', teamIds),
@@ -624,6 +655,10 @@ export default {
         const titolariAwayIds = awayLineup.titolari.map((player: EnginePlayer) => player.id)
         const seed = seedFor(fixture)
         setSeed(seed)
+        // Supplementari solo nell'ultima mano di un'eliminatoria: nell'andata
+        // si gioca sempre e solo 90 minuti.
+        const decisiva = fixture.bracket_tie_id !== null && fixture.mano === 2
+        const scartoAndata = scartoAndataPerFixture.get(fixture.id) ?? 0
         const result = simulaPartita(homeRoster, awayRoster, homeDbLineup.modulo, awayDbLineup.modulo, {
           usaCondizione: true,
           statsGiocatori: true,
@@ -633,7 +668,20 @@ export default {
           stileOspite: awayDbLineup.stile_gioco,
           campoNeutro: fixture.campo_neutro,
           seedInfortuni: seed ^ 0x6d2b79f5,
+          supplementariSeParita: decisiva,
+          scartoAndata,
         })
+        // Se l'aggregato resiste anche ai supplementari si va ai rigori. Le
+        // lineup qui sono gia' quelle di fine partita: simulaPartita() le muta
+        // in posto a ogni sostituzione, quindi tirano davvero gli undici
+        // rimasti in campo, come vuole il design §10.7.
+        const aiRigori = decisiva && scartoAndata + result.golC - result.golO === 0
+        const rigori = aiRigori
+          ? calciaRigori(
+              { lato: 'casa', tiratori: tiratoriDaLineup(homeLineup), portiere: portiereDaLineup(homeLineup) },
+              { lato: 'ospite', tiratori: tiratoriDaLineup(awayLineup), portiere: portiereDaLineup(awayLineup) },
+            )
+          : null
         const presenzePerBlocco = result.presenzePerBlocco as { casa: number[][]; ospite: number[][] }
         const eventi = costruisciEventiGol(result.golPerBlocco as GolBlocco[], [
           { lato: 'casa', teamId: fixture.home_team_id, lineup: homeLineup, marcatori: result.perGiocatore.casa.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.casa },
@@ -674,6 +722,13 @@ export default {
           // dopo, l'array e' gia' stato mutato dalle sostituzioni.
           p_titolari_home: titolariHomeIds,
           p_titolari_away: titolariAwayIds,
+          // Parziale dei 90' solo se i supplementari si sono davvero giocati:
+          // altrimenti gol_home e' gia' il risultato dei regolamentari.
+          p_gol_home_90: result.supplementari ? result.golRegolamentari.casa : null,
+          p_gol_away_90: result.supplementari ? result.golRegolamentari.ospite : null,
+          p_rigori_home: rigori ? rigori.golA : null,
+          p_rigori_away: rigori ? rigori.golB : null,
+          p_rigori_serie: rigori ? rigori.serie : null,
         })
         if (saveError) throw saveError
         summaries.push(saved)
