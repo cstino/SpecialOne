@@ -48,6 +48,17 @@ function dataOraBreve(iso: string) {
 function arrotondaCentoMila(valore: number) { return Math.round(valore / 100_000) * 100_000 }
 
 function proiezioneFinanza(league: League, membership: Membership, classifica: Standing[], contratti: Contratto[]) {
+  // La proiezione estrapola verso la FINE della stagione in corso: sponsor e
+  // premio classifica sono ancora da incassare, e le partite rimanenti sono
+  // quelle che restano davvero da giocare. In off-season questi presupposti
+  // sono falsi — sponsor e premio classifica sono gia' stati accreditati da
+  // prepara_offseason (finirebbero contati due volte), e
+  // league.partite_per_squadra riflette gia' il numero di squadre della
+  // PROSSIMA stagione (cambia appena l'admin apre l'off-season con nuovi
+  // posti), quindi "partite rimanenti" conterebbe partite fantasma su una
+  // stagione gia' conclusa. La situazione reale in off-season e' gia'
+  // visibile nei riquadri sopra (budget, disponibile).
+  if (league.fase_carriera === 'offseason') return null
   const mia = classifica.find((riga) => riga.team_id === membership.id)
   if (!mia || mia.giocate <= 0) return null
   const squadre = classifica.length
