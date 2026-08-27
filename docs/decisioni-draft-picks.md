@@ -206,7 +206,16 @@ scambi). Nessuno dei due deriva dall'altro.
   età, la stessa formula già usata per aste e rinnovi), contratto di **1 stagione** come
   qualunque altro sotto `decisioni-economia.md` — nessuna trattativa, nessuna asta.
 
-## 6 bis. Punto risolto il 28 agosto 2026
+## 6 bis. Punti risolti il 28 agosto 2026
+
+- **Leghe sotto soglia per il Draft Playoff** (es. LegaBot, 8 squadre: Title
+  Playoff gioca comunque il tabellone completo su tutte e 8, il Draft Playoff
+  resta vuoto — §6, "sotto una certa N"). L'ordine delle scelte segue comunque
+  l'eliminazione nel **Title Playoff**, stessa logica di §2 estesa a tutte le
+  posizioni: il campione sceglie per ultimo, chi esce prima nel tabellone
+  sceglie prima. Non la classifica pura di fine campionato: il piazzamento nel
+  tabellone resta quello che conta, anche quando non c'e' un Draft Playoff a
+  fargli da contrappeso.
 
 - **Composizione del pool**: non "tutti gli svincolati overall > 75", ma un'**estrazione
   dedicata** alla finestra, **10 giocatori per ruolo (GK/DEF/MID/ATT) = 40 totali**, stesso

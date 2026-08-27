@@ -61,9 +61,12 @@ export function Scelte({ membership, onNavigate }: Props) {
   }, [league.id])
 
   const teamById = useMemo(() => new Map(dati.teams.map((t) => [t.id, t])), [dati.teams])
+  // ON prima di OFF a parita' di stagione: e' l'ordine in cui le due finestre
+  // si aprono davvero durante l'anno.
+  const ordineFinestra: Record<SceltaDraft['finestra'], number> = { on: 0, off: 1 }
   const mieScelte = useMemo(
     () => scelte.filter((s) => s.team_proprietario_id === membership.id)
-      .sort((a, b) => a.stagione - b.stagione || a.finestra.localeCompare(b.finestra)),
+      .sort((a, b) => a.stagione - b.stagione || ordineFinestra[a.finestra] - ordineFinestra[b.finestra]),
     [scelte, membership.id],
   )
 
@@ -175,16 +178,21 @@ export function Scelte({ membership, onNavigate }: Props) {
           : <ul className="scelte-lista">
               {mieScelte.map((s) => {
                 const origine = teamById.get(s.team_origine_id)
-                return <li className="scelta-ticket" key={s.id}>
-                  <div className="scelta-ticket__origine">
-                    <Crest value={origine?.stemma_url ?? null} imageUrl={origine ? dati.crestUrlByTeamId.get(origine.id) : undefined} />
-                    <small>{origine?.nome ?? 'Squadra sconosciuta'}</small>
+                return <li className={`scelta-ticket scelta-ticket--${s.finestra}`} key={s.id}>
+                  <div className="scelta-ticket__taglio" aria-hidden="true">
+                    <span className="scelta-ticket__stagione">S{s.stagione}</span>
+                    <span className={`scelta-ticket__finestra scelta-ticket__finestra--${s.finestra}`}>{ETICHETTA_FINESTRA[s.finestra].toUpperCase()}</span>
                   </div>
-                  <div className="scelta-ticket__info">
-                    <strong>S{s.stagione} · {ETICHETTA_FINESTRA[s.finestra]}</strong>
-                    <span>{s.posizione != null ? `${s.posizione}ª scelta` : ETICHETTA_STATO[s.stato]}</span>
+                  <div className="scelta-ticket__corpo">
+                    <div className="scelta-ticket__origine">
+                      <Crest value={origine?.stemma_url ?? null} imageUrl={origine ? dati.crestUrlByTeamId.get(origine.id) : undefined} />
+                      <small>{origine?.nome ?? 'Squadra sconosciuta'}</small>
+                    </div>
+                    <div className="scelta-ticket__dettagli">
+                      <strong>{s.posizione != null ? `${s.posizione}ª scelta` : 'Posizione da determinare'}</strong>
+                      <span className={`scelta-ticket__stato scelta-ticket__stato--${s.stato}`}>{ETICHETTA_STATO[s.stato]}</span>
+                    </div>
                   </div>
-                  <div className={`scelta-ticket__stato scelta-ticket__stato--${s.stato}`}>{ETICHETTA_STATO[s.stato]}</div>
                 </li>
               })}
             </ul>}

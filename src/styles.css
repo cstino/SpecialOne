@@ -1155,15 +1155,30 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .mercato-sottomenu button:hover { border-color:#76519d; color:#fff; }
 .mercato-sottomenu button.is-attivo { border-color:#c58cff; color:#fff; background:#2b1b3b; box-shadow:0 8px 18px rgba(0,0,0,.18); }
 
-.scelte-lista { display:grid; gap:10px; list-style:none; margin:0; padding:0; }
-.scelta-ticket { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:16px; padding:14px 18px; border:1px dashed #3a2b49; border-radius:14px; background:#19151f; }
-.scelta-ticket__origine { display:grid; justify-items:center; gap:4px; width:60px; }
-.scelta-ticket__origine img, .scelta-ticket__origine svg { width:34px; height:34px; }
-.scelta-ticket__origine small { color:#8b8498; font-size:.6rem; font-weight:800; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60px; }
-.scelta-ticket__info { display:grid; gap:2px; min-width:0; }
-.scelta-ticket__info strong { font-size:.95rem; }
-.scelta-ticket__info span { color:#948aa8; font-size:.78rem; }
-.scelta-ticket__stato { padding:5px 11px; border-radius:999px; font-size:.68rem; font-weight:800; white-space:nowrap; }
+.scelte-lista { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; list-style:none; margin:0; padding:0; }
+
+/* Ticket vero e proprio: matrice staccabile a sinistra (stagione+finestra in
+   verticale, come lo strappo di un biglietto), corpo a destra. Le tacche
+   semicircolari sul bordo del taglio sono due cerchi dello stesso colore
+   dello sfondo pagina, posizionati a cavallo del bordo: dal punto di vista
+   dell'occhio "mordono" il ticket come una vera perforazione. */
+.scelta-ticket { position:relative; display:grid; grid-template-columns:84px 1fr; min-height:132px; border-radius:16px; overflow:hidden; background:#19151f; box-shadow:0 14px 34px rgba(0,0,0,.28); }
+.scelta-ticket--on { box-shadow:0 14px 34px rgba(120,70,220,.22); }
+.scelta-ticket--off { box-shadow:0 14px 34px rgba(230,150,50,.2); }
+
+.scelta-ticket__taglio { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:14px 6px; color:#fff; background:linear-gradient(160deg,#8046aa,#5a1f96); }
+.scelta-ticket--off .scelta-ticket__taglio { background:linear-gradient(160deg,#e6963b,#b85f1f); }
+.scelta-ticket__taglio::after { content:""; position:absolute; inset:0 -1px 0 auto; width:2px; background-image:radial-gradient(circle, transparent 3px, rgba(255,255,255,.28) 3.5px, transparent 4px); background-size:2px 12px; background-repeat:repeat-y; }
+.scelta-ticket__stagione { font-size:1.5rem; font-weight:900; letter-spacing:-.02em; text-shadow:0 2px 8px rgba(0,0,0,.35); }
+.scelta-ticket__finestra { writing-mode:vertical-rl; transform:rotate(180deg); font-size:.72rem; font-weight:900; letter-spacing:.16em; text-shadow:0 2px 8px rgba(0,0,0,.35); }
+
+.scelta-ticket__corpo { display:flex; flex-direction:column; justify-content:space-between; gap:10px; padding:16px 18px; }
+.scelta-ticket__origine { display:flex; align-items:center; gap:10px; }
+.scelta-ticket__origine img, .scelta-ticket__origine svg { width:32px; height:32px; flex:none; }
+.scelta-ticket__origine small { color:#8b8498; font-size:.68rem; font-weight:800; letter-spacing:.02em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.scelta-ticket__dettagli { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.scelta-ticket__dettagli strong { font-size:1rem; color:#fbf8ff; }
+.scelta-ticket__stato { padding:5px 11px; border-radius:999px; font-size:.66rem; font-weight:800; white-space:nowrap; }
 .scelta-ticket__stato--futura { color:#a99ab7; background:#241d2e; }
 .scelta-ticket__stato--determinata { color:#e5c8ff; background:#3a2350; }
 .scelta-ticket__stato--usata { color:#67e8b0; background:#1a3327; }
