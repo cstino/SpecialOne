@@ -722,6 +722,12 @@ h1, h2, h3, strong { color: var(--ink); }
 .game-nav-item.is-active { color: #fff; background: linear-gradient(90deg, #6929bd, #482077); box-shadow: inset 3px 0 #b866ff, 0 9px 24px rgba(72,32,119,.2); }
 .game-nav-item.is-active i { color: #e5c8ff; }
 .game-nav-item b { position: absolute; right: 12px; width: 5px; height: 5px; border-radius: 50%; background: #dcaaff; }
+.game-nav-group { display: grid; gap: 5px; }
+.game-nav-chevron { margin-left: auto; width: 15px !important; height: 15px !important; transition: transform .16s ease; }
+.game-nav-chevron.is-aperto { transform: rotate(180deg); }
+.game-nav-sottomenu { display: grid; gap: 3px; padding-left: 21px; }
+.game-nav-item--figlio { min-height: 38px; padding-left: 21px; font-size: .8rem; font-weight: 650; border-left: 1px solid #302b3d; border-radius: 0 9px 9px 0; }
+.game-nav-item--figlio.is-active { border-left-color: #b866ff; }
 .game-sidebar__footer { display: flex; align-items: center; gap: 7px; margin-top: auto; color: #8b8498; font-size: .7rem; }
 .game-online-dot { width: 7px; height: 7px; border-radius: 50%; background: #59db87; box-shadow: 0 0 10px #59db87; }
 .game-version { margin-left: auto; color: #5f596d; font-size: .6rem; }
@@ -1148,6 +1154,20 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .mercato-sottomenu button { flex: 1; padding:12px 16px; border:1px solid #3a2b49; border-radius:12px; color:#a99ab7; background:#19151f; cursor:pointer; font:inherit; font-weight:800; text-align:center; transition:background .18s ease, border-color .18s ease, color .18s ease; }
 .mercato-sottomenu button:hover { border-color:#76519d; color:#fff; }
 .mercato-sottomenu button.is-attivo { border-color:#c58cff; color:#fff; background:#2b1b3b; box-shadow:0 8px 18px rgba(0,0,0,.18); }
+
+.scelte-lista { display:grid; gap:10px; list-style:none; margin:0; padding:0; }
+.scelta-ticket { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:16px; padding:14px 18px; border:1px dashed #3a2b49; border-radius:14px; background:#19151f; }
+.scelta-ticket__origine { display:grid; justify-items:center; gap:4px; width:60px; }
+.scelta-ticket__origine img, .scelta-ticket__origine svg { width:34px; height:34px; }
+.scelta-ticket__origine small { color:#8b8498; font-size:.6rem; font-weight:800; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60px; }
+.scelta-ticket__info { display:grid; gap:2px; min-width:0; }
+.scelta-ticket__info strong { font-size:.95rem; }
+.scelta-ticket__info span { color:#948aa8; font-size:.78rem; }
+.scelta-ticket__stato { padding:5px 11px; border-radius:999px; font-size:.68rem; font-weight:800; white-space:nowrap; }
+.scelta-ticket__stato--futura { color:#a99ab7; background:#241d2e; }
+.scelta-ticket__stato--determinata { color:#e5c8ff; background:#3a2350; }
+.scelta-ticket__stato--usata { color:#67e8b0; background:#1a3327; }
+.scelta-ticket__stato--vuota { color:#f0567c; background:#33141d; }
 .season-round-stamp { width: 132px; aspect-ratio: 1; display: grid; place-content: center; justify-items: center; border: 1px solid #4b3a5f; border-radius: 20px; background: linear-gradient(145deg, #24192f, #17141f); box-shadow: 0 18px 45px rgba(0,0,0,.26); }
 .season-round-stamp small { color: #af88cf; font-size: .58rem; font-weight: 900; letter-spacing: .16em; }
 .season-round-stamp strong { margin: 2px 0 -3px; color: #fff; font-family: "Aptos Narrow", "Arial Narrow", sans-serif; font-size: 3.7rem; line-height: 1; }

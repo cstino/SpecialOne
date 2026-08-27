@@ -83,6 +83,18 @@ export type Fixture = {
 
 export type RigoreTiro = { numero: number; lato: 'casa' | 'ospite'; tiratoreId: number | null; tiratore: string; segnato: boolean }
 
+export type SceltaDraft = {
+  id: number
+  league_id: number
+  team_origine_id: number
+  team_proprietario_id: number
+  stagione: number
+  finestra: 'on' | 'off'
+  posizione: number | null
+  stato: 'futura' | 'determinata' | 'usata' | 'vuota'
+  player_instance_id: number | null
+}
+
 export type Bracket = {
   id: number
   league_id: number

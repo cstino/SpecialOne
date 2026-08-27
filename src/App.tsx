@@ -20,6 +20,7 @@ import { Matches } from './components/Matches'
 import { MatchDetail } from './components/MatchDetail'
 import { MatchReveal } from './components/MatchReveal'
 import { Mercato } from './components/Mercato'
+import { Scelte } from './components/Scelte'
 import { Offseason } from './components/Offseason'
 import { Tabellone } from './components/Tabellone'
 import { SeasonOverview } from './components/SeasonOverview'
@@ -362,6 +363,7 @@ export default function App() {
       : gameView === 'team' ? <TeamProfile membership={active} teamId={viewedTeamId ?? active.id} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'team' })} onTeamUpdated={loadMemberships} />
       : gameView === 'mercato' ? <Mercato membership={active} onNavigate={navigateGame} sezioneIniziale="liberi" />
       : gameView === 'scambi' ? <Mercato membership={active} onNavigate={navigateGame} sezioneIniziale="scambi" />
+      : gameView === 'scelte' ? <Scelte membership={active} onNavigate={navigateGame} />
       : gameView === 'matches' ? <Matches membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} onOpenMatch={(id) => setOpenMatch({ id, from: 'matches' })} onRevealMatch={(id) => setRevealMatch({ id, from: 'matches' })} onOpenTeam={openTeam} />
       : gameView === 'table' ? <Standings membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
       : gameView === 'tabellone' ? <Tabellone membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'tabellone' })} />
