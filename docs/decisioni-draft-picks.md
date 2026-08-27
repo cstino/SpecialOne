@@ -37,14 +37,11 @@ valida parola per parola.
 
 Con **Real Fampionato a 14 squadre**:
 
-- **Title Playoff** — prime **8** in classifica. Si gioca per il titolo. Nessun premio
-  economico: il vantaggio è il trofeo e l'albo d'oro (invariato da §10.7).
-- **Draft Playoff** — ultime **6** in classifica. Si gioca per l'ordine di scelta nel
-  mercato della stagione successiva (vedi §3).
-
-> **Punto aperto**: questa migrazione fissa la soglia a 8/6 perché è il caso reale di Real
-> Fampionato. Come si generalizza per un numero di squadre diverso (12, 16, 20…) non è
-> ancora stato deciso — vedi §6.1.
+- **Title Playoff** — prime **8** in classifica, sempre, indipendentemente da N (vedi §6).
+  Si gioca per il titolo. Nessun premio economico: il vantaggio è il trofeo e l'albo d'oro
+  (invariato da §10.7).
+- **Draft Playoff** — tutte le altre N−8. Si gioca per l'ordine di scelta nel mercato della
+  stagione successiva (vedi §3).
 
 ### 1.2 Seeding — diverso da §10.7
 
@@ -121,11 +118,9 @@ bassa (vedi §3.3).
 
 ### 3.1 Due finestre per stagione
 
-- **ON-Season X** — mercato a metà della stagione X.
+- **ON-Season X** — mercato a metà della stagione X, apre dopo la giornata
+  `⌊giornate_totali / 2⌋` (vedi §6).
 - **OFF-Season X** — mercato durante l'off-season che porta alla stagione X.
-
-> **Punto aperto**: il momento esatto di apertura di ON-Season (quale giornata definisce
-> "metà stagione") non è stato specificato — vedi §6.2.
 
 ### 3.2 Le scelte come asset scambiabile
 
@@ -142,16 +137,14 @@ che l'ha "guadagnata" con il proprio piazzamento resta quella che la determina (
 posizione nell'ordine dipende dal SUO risultato in campionato, non da quello di chi la
 possiede ora). Vedi §5 per come questo si traduce in UI.
 
-**Il pool di ogni finestra è limitato ai giocatori con overall > 75.**
+**Il pool di ogni finestra è limitato ai giocatori con overall > 75** (esattamente 75 esclude,
+va nel mercato di emergenza — deciso il 27 agosto 2026).
 
 ### 3.3 Mercato di emergenza (quello di oggi)
 
 Il mercato giornaliero a buste chiuse esistente resta attivo, ma **solo per i giocatori con
-overall < 75**. Nessun'altra modifica alle sue regole (orari, soglie, risoluzione): quelle
+overall ≤ 75**. Nessun'altra modifica alle sue regole (orari, soglie, risoluzione): quelle
 di `design.md` §9.4 restano valide.
-
-> **Punto aperto**: cosa succede a un giocatore con overall esattamente **75** — nel pool
-> ad alta fascia, in quello di emergenza, o in nessuno dei due? Non specificato — vedi §6.3.
 
 ---
 
@@ -196,30 +189,25 @@ scambi). Nessuno dei due deriva dall'altro.
 
 ---
 
-## 6. Punti aperti
+## 6. Punti risolti il 27 agosto 2026
 
-Da chiarire prima di scrivere lo schema — bloccano l'implementazione dei punti indicati.
+- **Soglia 8/6**: **8 è fisso**, indipendente da N. Il Title Playoff prende sempre le prime
+  8 in classifica; il Draft Playoff prende tutte le altre (N−8), qualunque sia N. Non è più
+  una frazione della lega come il vecchio playout: con N=20 il Draft Playoff avrebbe 12
+  squadre, con N=10 solo 2. Sotto una certa N il Draft Playoff diventa troppo piccolo per
+  avere senso (2 squadre = una partita secca, non un torneo) — soglia minima da fissare in
+  implementazione con un criterio ragionevole (es. nessun Draft Playoff sotto le 4 squadre
+  rimanenti, quelle picks assegnate direttamente per classifica), non è un nuovo punto
+  aperto da chiedere: è una scelta di implementazione, non di design.
+- **Timing ON-Season**: `⌊giornate_totali / 2⌋` — metà esatta arrotondata per difetto.
+- **Confine 75 overall**: **>75 = mercato a scelte, ≤75 = mercato di emergenza**. Aggiornato
+  anche il testo di §3.2 e §3.3 sopra.
+- **Contratto da scelta**: ingaggio teorico fisso (`private.ingaggio_teorico` su overall ed
+  età, la stessa formula già usata per aste e rinnovi), contratto di **1 stagione** come
+  qualunque altro sotto `decisioni-economia.md` — nessuna trattativa, nessuna asta.
 
-### 6.1 Generalizzazione della soglia 8/6
+## 7. Punti aperti rimanenti
 
-Fissata per N=14. Per un numero di squadre diverso, la soglia dovrebbe scalare (es. sempre
-8 al Title Playoff sopra una certa N, il resto al Draft Playoff)? O è un numero fisso solo
-per leghe a 14? Blocca: generazione dinamica dei due tabelloni per leghe con N diverso da 14.
-
-### 6.2 Timing di ON-Season
-
-Quale giornata definisce "metà stagione"? Una frazione fissa di `giornate_totali` (es. metà
-esatta, arrotondata)? Blocca: quando aprire/chiudere la finestra ON-Season.
-
-### 6.3 Confine 75 overall
-
-Il giocatore con overall esattamente 75 va nel mercato a scelte, in quello di emergenza, o
-in nessuno dei due? Blocca: la query di selezione del pool per entrambi i mercati.
-
-### 6.4 Non ancora discusso
-
-- Contratto e ingaggio di chi viene preso con una scelta: fisso, o dipende dall'overall del
-  giocatore? Come si incastra col tetto salariale (`decisioni-economia.md`)?
 - Le squadre PC (controllate dal bot) partecipano al mercato a scelte? Con quale logica di
   scambio e di lista preferenze?
 - Cosa succede a una scelta non ancora "nata" (es. OFF-Season 5) se la squadra di origine
