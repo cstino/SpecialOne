@@ -206,6 +206,15 @@ scambi). Nessuno dei due deriva dall'altro.
   età, la stessa formula già usata per aste e rinnovi), contratto di **1 stagione** come
   qualunque altro sotto `decisioni-economia.md` — nessuna trattativa, nessuna asta.
 
+## 6 bis. Punto risolto il 28 agosto 2026
+
+- **Composizione del pool**: non "tutti gli svincolati overall > 75", ma un'**estrazione
+  dedicata** alla finestra, **10 giocatori per ruolo (GK/DEF/MID/ATT) = 40 totali**, stesso
+  meccanismo dell'estrazione del mercato di emergenza (`private.estrai_svincolati_lega`) ma
+  filtrato a overall > 75 e senza tornate giornaliere: un'estrazione sola per finestra, che
+  resta la stessa finché la finestra non si risolve (altrimenti la lista di preferenze
+  sottomessa non avrebbe senso: cambierebbe sotto ai piedi delle squadre).
+
 ## 7. Punti aperti rimanenti
 
 - Le squadre PC (controllate dal bot) partecipano al mercato a scelte? Con quale logica di

@@ -40,6 +40,7 @@ export function Scelte({ membership, onNavigate }: Props) {
   const adesso = useOraCorrente()
   const [scelte, setScelte] = useState<SceltaDraft[]>([])
   const [pool, setPool] = useState<GiocatorePool[]>([])
+  const [poolCaricato, setPoolCaricato] = useState(false)
   const [filtroRuolo, setFiltroRuolo] = useState<MacroRuolo>('ALL')
   const [loading, setLoading] = useState(true)
   const [errore, setErrore] = useState<string | null>(null)
@@ -48,38 +49,22 @@ export function Scelte({ membership, onNavigate }: Props) {
     let vivo = true
     async function carica() {
       setLoading(true)
-      const [sceltaRes, giocatoriRes, istanzeRes, ritiratiRes] = await Promise.all([
-        supabase.from('scelte_draft').select('*').eq('league_id', league.id).order('stagione').order('finestra'),
-        supabase.from('players').select('id, nome, club, posizioni, overall, eta').gt('overall', 75).in('campionato', league.campionati_attivi),
-        supabase.from('player_instances').select('player_id').eq('league_id', league.id).not('team_id', 'is', null),
-        supabase.from('retired_players').select('player_id').eq('league_id', league.id),
-      ])
+      const { data, error } = await supabase.from('scelte_draft').select('*').eq('league_id', league.id)
+        .order('stagione').order('finestra')
       if (!vivo) return
-      const primoErrore = sceltaRes.error ?? giocatoriRes.error ?? istanzeRes.error ?? ritiratiRes.error
-      if (primoErrore) { setErrore(primoErrore.message); setLoading(false); return }
-      const occupati = new Set([
-        ...(istanzeRes.data ?? []).map((r) => r.player_id),
-        ...(ritiratiRes.data ?? []).map((r) => r.player_id),
-      ])
-      setScelte((sceltaRes.data ?? []) as SceltaDraft[])
-      setPool(((giocatoriRes.data ?? []) as GiocatorePool[])
-        .filter((g) => !occupati.has(g.id))
-        .sort((a, b) => b.overall - a.overall))
+      if (error) { setErrore(error.message); setLoading(false); return }
+      setScelte((data ?? []) as SceltaDraft[])
       setLoading(false)
     }
     void carica()
     return () => { vivo = false }
-  }, [league.id, league.campionati_attivi])
+  }, [league.id])
 
   const teamById = useMemo(() => new Map(dati.teams.map((t) => [t.id, t])), [dati.teams])
   const mieScelte = useMemo(
     () => scelte.filter((s) => s.team_proprietario_id === membership.id)
       .sort((a, b) => a.stagione - b.stagione || a.finestra.localeCompare(b.finestra)),
     [scelte, membership.id],
-  )
-  const poolFiltrato = useMemo(
-    () => pool.filter((g) => filtroRuolo === 'ALL' || macroRuolo(g.posizioni) === filtroRuolo),
-    [pool, filtroRuolo],
   )
 
   // Finestra ON-Season: si apre a giornata ⌊totali/2⌋ (appena giocata la
@@ -103,10 +88,39 @@ export function Scelte({ membership, onNavigate }: Props) {
   const offSeasonScadenza = league.offseason_fine ? new Date(league.offseason_fine) : null
 
   const finestraAttiva = offSeasonVisibile
-    ? { label: `OFF-Season ${league.stagione_corrente + 1}`, scadenza: offSeasonScadenza! }
+    ? { label: `OFF-Season ${league.stagione_corrente + 1}`, scadenza: offSeasonScadenza!, stagione: league.stagione_corrente + 1, finestra: 'off' as const }
     : onSeasonVisibile
-      ? { label: `ON-Season ${league.stagione_corrente}`, scadenza: onSeasonScadenza! }
+      ? { label: `ON-Season ${league.stagione_corrente}`, scadenza: onSeasonScadenza!, stagione: league.stagione_corrente, finestra: 'on' as const }
       : null
+
+  // Il pool non è "tutti gli svincolati overall>75": è un'estrazione dedicata
+  // alla finestra (10 per ruolo, 40 totali, private.estrai_pool_scelte),
+  // stabile finché la finestra non si risolve — non una query dal vivo che
+  // cambierebbe ad ogni refresh sotto ai piedi di chi sta scegliendo.
+  useEffect(() => {
+    if (!finestraAttiva) { setPool([]); setPoolCaricato(true); return }
+    let vivo = true
+    async function carica() {
+      setPoolCaricato(false)
+      const { data, error } = await supabase.from('scelte_pool')
+        .select('player_id, players(id, nome, club, posizioni, overall, eta)')
+        .eq('league_id', league.id).eq('stagione', finestraAttiva!.stagione).eq('finestra', finestraAttiva!.finestra)
+      if (!vivo) return
+      if (error) { setErrore(error.message); setPoolCaricato(true); return }
+      setPool((data ?? [])
+        .map((r) => r.players as unknown as GiocatorePool | null)
+        .filter((g): g is GiocatorePool => g != null)
+        .sort((a, b) => b.overall - a.overall))
+      setPoolCaricato(true)
+    }
+    void carica()
+    return () => { vivo = false }
+  }, [league.id, finestraAttiva?.stagione, finestraAttiva?.finestra])
+
+  const poolFiltrato = useMemo(
+    () => pool.filter((g) => filtroRuolo === 'ALL' || macroRuolo(g.posizioni) === filtroRuolo),
+    [pool, filtroRuolo],
+  )
 
   return <main className="app-shell season-shell">
     <GameNav league={league} active="scelte" onNavigate={onNavigate} />
@@ -143,9 +157,9 @@ export function Scelte({ membership, onNavigate }: Props) {
         <h2>Liste di preferenze</h2>
         <p>
           La sezione per indicare le preferenze sui giocatori del pool qui sotto (fino a N
-          scelte, dove N è la posizione del ticket) arriva in un passo successivo: qui vedi
-          già il pool reale e il countdown della finestra, ma non puoi ancora sottomettere una
-          lista.
+          scelte, dove N è la posizione del ticket) arriva in un passo successivo. Manca
+          ancora anche l'estrazione automatica del pool all'apertura della finestra: per ora
+          va lanciata a mano.
         </p>
       </section>
 
@@ -176,28 +190,32 @@ export function Scelte({ membership, onNavigate }: Props) {
             </ul>}
       </section>
 
-      <section className="mercato-blocco">
+      {finestraAttiva && <section className="mercato-blocco">
         <div className="sezione-testa">
-          <div><p className="kicker">Overall &gt; 75</p><h2>Pool del mercato a scelte</h2></div>
+          <div><p className="kicker">10 per ruolo</p><h2>Pool di {finestraAttiva.label}</h2></div>
           <small>{poolFiltrato.length} giocatori</small>
         </div>
-        <nav className="free-agent-ruoli" aria-label="Ruolo del pool">
-          {(['ALL', 'GK', 'DEF', 'MID', 'ATT'] as MacroRuolo[]).map((r) => <button
-            key={r} type="button" className={filtroRuolo === r ? 'is-attivo' : ''}
-            onClick={() => setFiltroRuolo(r)}
-          >
-            <span>{r === 'ALL' ? 'Tutti' : MACRO_LABEL[r]}</span><b>{pool.filter((g) => r === 'ALL' || macroRuolo(g.posizioni) === r).length}</b>
-          </button>)}
-        </nav>
-        {poolFiltrato.length === 0
-          ? <p className="season-empty">Nessun giocatore libero con questi filtri.</p>
-          : <ul className="scelte-pool">
-              {poolFiltrato.map((g) => <li key={g.id}>
-                <b>{g.overall}</b>
-                <span><strong>{cognome(g.nome)}</strong><small>{g.club} · {(g.posizioni ?? []).join(' / ')} · {g.eta} anni</small></span>
-              </li>)}
-            </ul>}
-      </section>
+        {!poolCaricato
+          ? <p className="season-empty">Carico il pool…</p>
+          : pool.length === 0
+            ? <p className="season-empty">Il pool di questa finestra non è ancora stato estratto.</p>
+            : <>
+                <nav className="free-agent-ruoli" aria-label="Ruolo del pool">
+                  {(['ALL', 'GK', 'DEF', 'MID', 'ATT'] as MacroRuolo[]).map((r) => <button
+                    key={r} type="button" className={filtroRuolo === r ? 'is-attivo' : ''}
+                    onClick={() => setFiltroRuolo(r)}
+                  >
+                    <span>{r === 'ALL' ? 'Tutti' : MACRO_LABEL[r]}</span><b>{pool.filter((g) => r === 'ALL' || macroRuolo(g.posizioni) === r).length}</b>
+                  </button>)}
+                </nav>
+                <ul className="scelte-pool">
+                  {poolFiltrato.map((g) => <li key={g.id}>
+                    <b>{g.overall}</b>
+                    <span><strong>{cognome(g.nome)}</strong><small>{g.club} · {(g.posizioni ?? []).join(' / ')} · {g.eta} anni</small></span>
+                  </li>)}
+                </ul>
+              </>}
+      </section>}
       </>}
     </div>
   </main>
