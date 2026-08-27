@@ -120,7 +120,19 @@ bassa (vedi §3.3).
 
 - **ON-Season X** — l'estrazione avviene a metà della stagione X, dopo la giornata
   `⌊giornate_totali / 2⌋` (vedi §6).
-- **OFF-Season X** — l'estrazione avviene durante l'off-season che porta alla stagione X.
+- **OFF-Season X** — l'estrazione avviene **allo scadere dell'off-season che segue la
+  stagione X**, cioè quella che porta alla stagione X+1. L'istante è esattamente
+  `leagues.offseason_fine`.
+
+> **Correzione del 28 agosto 2026.** La prima stesura diceva «l'off-season che porta
+> *alla* stagione X», cioè prima della stagione X. È sbagliato, e si vede da due lati:
+> una lega nuova comincia dalla stagione 1 con il draft iniziale, **non da un'off-season**,
+> quindi un "OFF-Season 1" precedente alla stagione 1 non esisterebbe mai; e l'elenco di
+> §3.2 (ON-Season 2, OFF-Season 2, ON-Season 3, …) è in ordine cronologico solo se OFF-X
+> viene *dopo* ON-X.
+>
+> Le due finestre di una stagione stanno quindi entrambe dentro il ciclo di quella
+> stagione: `ON-X` a metà del campionato, `OFF-X` alla fine, appena prima della X+1.
 
 ### 3.1 bis Quando si vede il pool e fino a quando si modificano le preferenze
 
