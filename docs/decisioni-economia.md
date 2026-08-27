@@ -15,7 +15,7 @@ vince questo file: è più recente.
 | 2 | Contratti annuali | fatto |
 | 3a | Aste sugli svincolati | fatto |
 | 3b | Percorsi delle squadre PC (offerte, rinnovi, proposte, risposte) | fatto |
-| 4 | Draft | da fare |
+| 4 | Draft | fatto |
 | 5 | Scambi umani, rimozione del modello a cassa | da fare |
 | 6 | Pulizia frontend | da fare |
 
