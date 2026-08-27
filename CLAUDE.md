@@ -56,8 +56,10 @@ Leggili quando servono. Non serve leggerli tutti per ogni task.
 | `docs/risultati-fase0.txt` | Output grezzo dell'ultima validazione | Confronto numerico dopo modifiche al motore |
 | `docs/decisioni-fase1.md` | Decisioni prese dopo la prima review. **Vincolante, e più recente del design doc** | Sempre, prima di iniziare un task |
 | `docs/decisioni-economia.md` | Economia a tetto salariale fisso. **Sostituisce il capitolo 5 del design doc** (tranne §5.1) | Prima di toccare ingaggi, contratti, mercato, draft |
+| `docs/decisioni-draft-picks.md` | Playoff a doppio tabellone e mercato a scelte scambiabili stile NBA. **Sostituisce §10.7 del design doc** (tranne il formato dei match). **Non ancora implementato, con punti aperti** | Prima di toccare playoff, ordine di scelta, mercato di fascia alta |
 
-**Gerarchia in caso di discrepanza**: `docs/decisioni-economia.md` (solo economia) >
+**Gerarchia in caso di discrepanza**: `docs/decisioni-draft-picks.md` (solo playoff/scelte) >
+`docs/decisioni-economia.md` (solo economia) >
 `docs/decisioni-fase1.md` > codice del motore >
 `docs/design.md`. Il design doc è stato scritto prima della validazione e corretto dopo;
 potrebbe essere rimasto qualche residuo. Per i numeri della validazione, la verità è
