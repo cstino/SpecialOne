@@ -99,9 +99,16 @@ successiva. Alla prima off-season utile va rinnovato come tutti gli altri.
 La capienza si verifica quindi sulla **stagione corrente**:
 
 ```
-acquisto in stagione:  verifica_capienza(squadra, ingaggio, stagione_corrente)
-rinnovo in off-season: verifica_capienza(squadra, ingaggio, stagione_corrente + 1)
+acquisto in stagione: verifica_capienza(squadra, ingaggio, stagione_corrente)
+rinnovo:              verifica_capienza(squadra, ingaggio, stagione_corrente + 1)
 ```
+
+> **Quando si rinnova.** A stagione in corso, non in off-season: il canale di
+> giugno è stato rimosso il 5 agosto 2026
+> (`20260805170000_via_rinnovi_offseason.sql`). Chi non è stato rinnovato
+> *durante* la stagione lascia la squadra alla chiusura dell'off-season ed
+> entra nel pool degli svincolati. È per questo che il rinnovo verifica la
+> capienza sulla stagione **entrante**.
 
 È la scelta coerente con i contratti annuali: nessun acquisto può impegnare
 spazio salariale oltre l'orizzonte che il sistema sta verificando. In pratica
@@ -109,7 +116,7 @@ ogni acquisto a stagione in corso è un prestito fino a giugno.
 
 ### Conseguenza accettata
 
-Ogni off-season si rinegozia **l'intera rosa**. È una scelta consapevole: costa
+Ogni stagione si rinegozia **l'intera rosa**. È una scelta consapevole: costa
 ripetitività (25 decisioni a squadra ogni stagione) e toglie il gioco di prospettiva
 del contratto lungo firmato prima che il giovane cresca. In cambio l'insolvenza
 diventa impossibile per costruzione, non per controllo.
