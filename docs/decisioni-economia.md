@@ -16,8 +16,8 @@ vince questo file: è più recente.
 | 3a | Aste sugli svincolati | fatto |
 | 3b | Percorsi delle squadre PC (offerte, rinnovi, proposte, risposte) | fatto |
 | 4 | Draft | fatto |
-| 5 | Scambi umani, rimozione del modello a cassa | da fare |
-| 6 | Pulizia frontend | da fare |
+| 5 | Scambi umani (giocatori + scelte, niente conguaglio) | fatto |
+| 6 | Rimozione di teams.budget/budget_ingaggi_riservato e pulizia frontend | da fare |
 
 ---
 
