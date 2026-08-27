@@ -55,8 +55,10 @@ Leggili quando servono. Non serve leggerli tutti per ogni task.
 | `docs/motore-validazione.md` | Report della Fase 0: risultati, formule corrette, cosa non ha funzionato e perché | Prima di toccare il motore. Anche solo per capire perché le formule sono quelle |
 | `docs/risultati-fase0.txt` | Output grezzo dell'ultima validazione | Confronto numerico dopo modifiche al motore |
 | `docs/decisioni-fase1.md` | Decisioni prese dopo la prima review. **Vincolante, e più recente del design doc** | Sempre, prima di iniziare un task |
+| `docs/decisioni-economia.md` | Economia a tetto salariale fisso. **Sostituisce il capitolo 5 del design doc** (tranne §5.1) | Prima di toccare ingaggi, contratti, mercato, draft |
 
-**Gerarchia in caso di discrepanza**: `docs/decisioni-fase1.md` > codice del motore >
+**Gerarchia in caso di discrepanza**: `docs/decisioni-economia.md` (solo economia) >
+`docs/decisioni-fase1.md` > codice del motore >
 `docs/design.md`. Il design doc è stato scritto prima della validazione e corretto dopo;
 potrebbe essere rimasto qualche residuo. Per i numeri della validazione, la verità è
 `docs/risultati-fase0.txt`.
@@ -198,11 +200,16 @@ Cose che sono già state analizzate. Non riaprirle senza un motivo nuovo.
   ruolo, se ne tengono 2. Se meno di 2 carte su 4 sono ingaggiabili, quelle ingaggiabili
   restano ferme e solo le altre si ripescano automaticamente, senza consumare reroll. Stessa
   ragione di prima: senza questa regola la sfortuna blocca il draft.
-- **L'economia si rompe se i premi partita sono valori assoluti.** Il numero di partite
-  dipende dalle impostazioni dell'admin. I premi vanno normalizzati come frazione del budget
-  diviso il numero di partite (design doc 5.2).
-- **I 100M€ iniziali sono una dotazione una tantum, non ricorrente.** Se li ricarichi
-  ogni stagione, il denaro smette di essere una risorsa entro la stagione 3.
+- **L'economia a cassa è stata abbandonata.** Premi partita, dotazione iniziale e
+  insolvenza non esistono più: vedi `docs/decisioni-economia.md`. Le due trappole qui
+  sotto restano solo come memoria storica del perché.
+  - *(storico)* I premi partita come valori assoluti rompevano l'economia: il numero di
+    partite dipende dalle impostazioni dell'admin, quindi andavano normalizzati come
+    frazione del budget (design doc 5.2).
+  - *(storico)* I 100M€ iniziali erano una dotazione una tantum: ricaricarli ogni
+    stagione **sommandoli alle entrate** faceva smettere il denaro di essere una risorsa
+    entro la stagione 3. Il tetto salariale fisso non ricade in questa trappola perché
+    non è uno stock che si accumula, ma un limite.
 - **La condizione media della rosa è una metrica inutile** (14 giocatori su 25 non giocano
   mai). Se devi mostrare un indicatore di freschezza, usa la media degli 11 migliori.
 - **Il fuso orario.** Vedi sezione 2. Ci si inciampa solo al cambio dell'ora legale,
