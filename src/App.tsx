@@ -360,7 +360,8 @@ export default function App() {
       ? <MatchDetail membership={active} matchId={openMatch.id} onBack={() => { setOpenMatch(null); setGameView(openMatch.from) }} onNavigate={navigateGame} onOpenTeam={openTeam} />
       : gameView === 'squad' ? <Formazione membership={active} onNavigate={navigateGame} />
       : gameView === 'team' ? <TeamProfile membership={active} teamId={viewedTeamId ?? active.id} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'team' })} onTeamUpdated={loadMemberships} />
-      : gameView === 'mercato' ? <Mercato membership={active} onNavigate={navigateGame} />
+      : gameView === 'mercato' ? <Mercato membership={active} onNavigate={navigateGame} sezioneIniziale="liberi" />
+      : gameView === 'scambi' ? <Mercato membership={active} onNavigate={navigateGame} sezioneIniziale="scambi" />
       : gameView === 'matches' ? <Matches membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} onOpenMatch={(id) => setOpenMatch({ id, from: 'matches' })} onRevealMatch={(id) => setRevealMatch({ id, from: 'matches' })} onOpenTeam={openTeam} />
       : gameView === 'table' ? <Standings membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
       : gameView === 'tabellone' ? <Tabellone membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'tabellone' })} />

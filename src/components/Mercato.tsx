@@ -11,7 +11,8 @@ import { GameNav, type GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
 import { SchedaGiocatore } from './SchedaGiocatore'
 
-type Props = { membership: Membership; onNavigate: (view: GameView) => void }
+type Sezione = 'liberi' | 'scambi'
+type Props = { membership: Membership; onNavigate: (view: GameView) => void; sezioneIniziale?: Sezione }
 
 type StatoProposta = 'in_attesa' | 'accettata' | 'rifiutata' | 'ritirata' | 'scaduta'
 
@@ -150,8 +151,17 @@ function scegliPesato<T>(seme: number, opzioni: { valore: T; peso: number }[]) {
   return opzioni[opzioni.length - 1].valore
 }
 
-export function Mercato({ membership, onNavigate }: Props) {
+export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: Props) {
   const league = membership.league as League
+  // Due destinazioni di menu distinte (Free Agent / Scambi) puntano qui con
+  // sezioneIniziale diverso: il tab interno resta comunque cambiabile senza
+  // uscire dalla pagina, quindi va risincronizzato quando arriva dal menu.
+  const [sezione, setSezione] = useState<Sezione>(sezioneIniziale)
+  useEffect(() => { setSezione(sezioneIniziale) }, [sezioneIniziale])
+  function vaiA(s: Sezione) {
+    setSezione(s)
+    onNavigate(s === 'liberi' ? 'mercato' : 'scambi')
+  }
   // Squadre e stemmi arrivano da qui: firmare le URL degli stemmi e' gia'
   // risolto, e rifarlo a mano avrebbe prodotto una seconda verita'.
   const dati = useSeasonData(membership)
@@ -360,7 +370,13 @@ export function Mercato({ membership, onNavigate }: Props) {
     }).filter((r): r is RigaRumor => r !== null)
   }, [aste, svincolati, dati.teams, conteggioRuoli])
 
-  const righeRumor = useMemo(() => [...righeScambio, ...righeRumorSvincolati], [righeScambio, righeRumorSvincolati])
+  // Sezioni diverse, voci diverse: gli svincolati sui Free Agent, gli
+  // scambi sulla pagina Scambi. Nessun motivo di mischiarli sotto un tab
+  // che non li riguarda.
+  const righeRumor = useMemo(
+    () => sezione === 'liberi' ? righeRumorSvincolati : righeScambio,
+    [sezione, righeScambio, righeRumorSvincolati],
+  )
   const paginaRumorMax = Math.max(0, Math.ceil(righeRumor.length / PAGINA_RUMOR) - 1)
   useEffect(() => { setPaginaRumor((p) => Math.min(p, paginaRumorMax)) }, [paginaRumorMax])
   useEffect(() => {
@@ -702,7 +718,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   const schedaAperta = schedaApertaId != null ? giocatore(schedaApertaId) : undefined
 
   return <main className="app-shell season-shell">
-    <GameNav league={league} active="mercato" onNavigate={onNavigate} />
+    <GameNav league={league} active={sezione === 'liberi' ? 'mercato' : 'scambi'} onNavigate={onNavigate} />
     <header className="topbar season-topbar">
       <div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div>
       <span className={`mercato-finestra ${aperto ? 'e-aperto' : ''}`}>
@@ -717,7 +733,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       <section className="season-title-row">
         <div>
           <p className="kicker">Stagione {league.stagione_corrente} · {league.nome}</p>
-          <h1>Mercato.</h1>
+          <h1>{sezione === 'liberi' ? 'Free Agent.' : 'Scambi.'}</h1>
           <p>Si tratta dalle 23:30 alle 21:00. Le proposte non accettate entro la chiusura scadono.</p>
         </div>
         <div className="season-total">
@@ -725,6 +741,15 @@ export function Mercato({ membership, onNavigate }: Props) {
           <span>{conti && conti.impegnato > 0 ? 'disponibile' : 'budget'}</span>
         </div>
       </section>
+
+      <nav className="mercato-sottomenu" aria-label="Sezione mercato">
+        <button type="button" className={sezione === 'liberi' ? 'is-attivo' : ''} onClick={() => vaiA('liberi')}>
+          Free Agent
+        </button>
+        <button type="button" className={sezione === 'scambi' ? 'is-attivo' : ''} onClick={() => vaiA('scambi')}>
+          Scambi
+        </button>
+      </nav>
 
       {conti && conti.impegnato > 0 && <p className="mercato-impegno">
         <strong>{milioni(conti.impegnato)}</strong> sono impegnati in offerte ancora aperte (ingaggio
@@ -735,7 +760,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       {esito && <p className="notice">{esito}</p>}
 
       {/* ---- Ricevute: la cosa piu' urgente, quindi per prima ---- */}
-      <section className="mercato-blocco">
+      {sezione === 'scambi' && <section className="mercato-blocco">
         <div className="sezione-testa"><div><p className="kicker">In arrivo</p><h2>Proposte ricevute</h2></div></div>
         {ricevute.length === 0
           ? <p className="season-empty">Nessuna proposta da valutare.</p>
@@ -764,10 +789,10 @@ export function Mercato({ membership, onNavigate }: Props) {
                 </>}
               </footer>
             </article>)}
-      </section>
+      </section>}
 
       {/* ---- Mercato svincolati: nuovi + archivio filtrabile ---- */}
-      <section className="mercato-blocco mercato-svincolati">
+      {sezione === 'liberi' && <section className="mercato-blocco mercato-svincolati">
         <div className="sezione-testa">
           <div><p className="kicker">Asta a busta chiusa</p><h2>Mercato svincolati live</h2></div>
           <span>{league.fase_carriera === 'offseason' ? '10 per ruolo' : '5 per ruolo'}</span>
@@ -826,12 +851,12 @@ export function Mercato({ membership, onNavigate }: Props) {
             ? <p className="season-empty">Nessun giocatore con questi filtri.</p>
             : <div className="free-agent-list">{archivioSvincolati.map((a) => cardSvincolato(a, true))}</div>}
         </div>}
-      </section>
+      </section>}
 
       {/* ---- Le mie proposte: solo le aste su cui ho gia' offerto, per
           ritirarle o modificarle senza dover ripescare la carta giusta nella
           griglia grande qui sopra. ---- */}
-      <section className="mercato-blocco">
+      {sezione === 'liberi' && <section className="mercato-blocco">
         <div className="sezione-testa">
           <div><p className="kicker">Asta a busta chiusa</p><h2>Le mie proposte</h2></div>
           <span>{mieProposteAperte.length} {mieProposteAperte.length === 1 ? 'offerta' : 'offerte'}</span>
@@ -840,10 +865,10 @@ export function Mercato({ membership, onNavigate }: Props) {
         {mieProposteAperte.length === 0
           ? <p className="season-empty">Non hai ancora offerto per nessuno svincolato oggi.</p>
           : <div className="free-agent-grid">{mieProposteAperte.map((a) => cardSvincolato(a, true))}</div>}
-      </section>
+      </section>}
 
       {/* ---- Vetrina: chi le squadre hanno messo in lista ---- */}
-      <section className="mercato-blocco">
+      {sezione === 'scambi' && <section className="mercato-blocco">
         <div className="sezione-testa">
           <div><p className="kicker">Lista trasferimenti</p><h2>Mercato della lega</h2></div>
           <small>{vetrinaMercato.length} in lista</small>
@@ -881,7 +906,7 @@ export function Mercato({ membership, onNavigate }: Props) {
                 <small>{(g.ingaggio / 1_000_000).toFixed(1)} M€</small>
               </span>
             </button>)}</div>}
-      </section>
+      </section>}
 
       <section className="mercato-blocco mercato-rumors">
         <div className="sezione-testa">
@@ -1003,7 +1028,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       </>}
 
       {/* ---- Compositore ---- */}
-      <section className="mercato-blocco" ref={compositoreRef}>
+      {sezione === 'scambi' && <section className="mercato-blocco" ref={compositoreRef}>
         <div className="sezione-testa">
           <div>
             <p className="kicker">{contropropostaOrigine ? 'Risposta alla trattativa' : 'Tratta'}</p>
@@ -1063,10 +1088,10 @@ export function Mercato({ membership, onNavigate }: Props) {
             {inCorso ? 'Invio…' : contropropostaOrigine ? 'Invia la controfferta' : 'Invia la proposta'}
           </button>
         </>}
-      </section>
+      </section>}
 
       {/* ---- Inviate ---- */}
-      <section className="mercato-blocco">
+      {sezione === 'scambi' && <section className="mercato-blocco">
         <div className="sezione-testa"><div><p className="kicker">In uscita</p><h2>Proposte inviate</h2></div></div>
         {inviate.length === 0
           ? <p className="season-empty">Nessuna proposta in attesa di risposta.</p>
@@ -1080,20 +1105,20 @@ export function Mercato({ membership, onNavigate }: Props) {
                 </button>
               </footer>
             </article>)}
-      </section>
+      </section>}
 
       {/* ---- Log pubblico: design §9.3, tutti vedono tutto ---- */}
       <section className="mercato-blocco">
         <div className="sezione-testa"><div><p className="kicker">Trasparenza</p><h2>Operazioni concluse</h2></div></div>
         <p className="mercato-nota">
           {giornoTrasparenza
-            ? `Esiti della chiusura del ${giornoTrasparenza.split('-').reverse().join('/')}: scambi e aste vinte visibili a tutta la lega.`
+            ? `Esiti della chiusura del ${giornoTrasparenza.split('-').reverse().join('/')}: ${sezione === 'liberi' ? 'aste vinte' : 'scambi'} visibili a tutta la lega.`
             : 'Gli esiti del mercato appariranno qui alla prima chiusura.'}
         </p>
-        {trattativeTrasparenti.length === 0 && asteVinteTrasparenti.length === 0
+        {(sezione === 'liberi' ? asteVinteTrasparenti.length === 0 : trattativeTrasparenti.length === 0)
           ? <p className="season-empty">Nessuna operazione conclusa in questa chiusura.</p>
           : <ul className="mercato-trasparenza">
-              {trattativeTrasparenti.map((p) => <li className="mercato-operazione mercato-operazione--scambio" key={`scambio-${p.id}`}>
+              {sezione === 'scambi' && trattativeTrasparenti.map((p) => <li className="mercato-operazione mercato-operazione--scambio" key={`scambio-${p.id}`}>
                 <div className="mercato-operazione__giocatori mercato-operazione__giocatori--da">
                   {p.giocatori_offerti.map((id) => {
                     const g = giocatore(id)
@@ -1128,7 +1153,7 @@ export function Mercato({ membership, onNavigate }: Props) {
                 </div>
                 <em>{ETICHETTE_STATO[p.stato]}</em>
               </li>)}
-              {asteVinteTrasparenti.map((asta) => {
+              {sezione === 'liberi' && asteVinteTrasparenti.map((asta) => {
                 const g = svincolati.get(asta.player_id)
                 return <li className="mercato-operazione mercato-operazione--asta" key={`asta-${asta.id}`}>
                   <div className="mercato-operazione__portrait">

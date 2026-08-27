@@ -1143,6 +1143,11 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .season-hero .kicker, .season-title-row .kicker { color: #c59be8; }
 .season-hero h1, .season-title-row h1 { margin: 6px 0 13px; color: #fbf8ff; font-size: clamp(3.6rem, 7vw, 6.8rem); overflow-wrap: break-word; word-break: break-word; }
 .season-hero p:last-child, .season-title-row p:last-child { max-width: 640px; margin: 0; color: #aaa2b7; font-size: 1rem; }
+
+.mercato-sottomenu { display:flex; gap:8px; margin: -14px 0 30px; }
+.mercato-sottomenu button { flex: 1; padding:12px 16px; border:1px solid #3a2b49; border-radius:12px; color:#a99ab7; background:#19151f; cursor:pointer; font:inherit; font-weight:800; text-align:center; transition:background .18s ease, border-color .18s ease, color .18s ease; }
+.mercato-sottomenu button:hover { border-color:#76519d; color:#fff; }
+.mercato-sottomenu button.is-attivo { border-color:#c58cff; color:#fff; background:#2b1b3b; box-shadow:0 8px 18px rgba(0,0,0,.18); }
 .season-round-stamp { width: 132px; aspect-ratio: 1; display: grid; place-content: center; justify-items: center; border: 1px solid #4b3a5f; border-radius: 20px; background: linear-gradient(145deg, #24192f, #17141f); box-shadow: 0 18px 45px rgba(0,0,0,.26); }
 .season-round-stamp small { color: #af88cf; font-size: .58rem; font-weight: 900; letter-spacing: .16em; }
 .season-round-stamp strong { margin: 2px 0 -3px; color: #fff; font-family: "Aptos Narrow", "Arial Narrow", sans-serif; font-size: 3.7rem; line-height: 1; }
