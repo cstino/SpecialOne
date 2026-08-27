@@ -90,6 +90,23 @@ al rinnovo:
 Niente casi peggiori, niente entrate garantite da indovinare, niente proiezioni.
 La funzione `private.entrata_minima_garantita` diventa inutile e va rimossa.
 
+### Chi arriva a stagione in corso scade a fine stagione corrente
+
+Un giocatore preso durante la stagione — asta sugli svincolati o scambio —
+riceve un contratto che **scade alla fine della stagione in corso**, non della
+successiva. Alla prima off-season utile va rinnovato come tutti gli altri.
+
+La capienza si verifica quindi sulla **stagione corrente**:
+
+```
+acquisto in stagione:  verifica_capienza(squadra, ingaggio, stagione_corrente)
+rinnovo in off-season: verifica_capienza(squadra, ingaggio, stagione_corrente + 1)
+```
+
+È la scelta coerente con i contratti annuali: nessun acquisto può impegnare
+spazio salariale oltre l'orizzonte che il sistema sta verificando. In pratica
+ogni acquisto a stagione in corso è un prestito fino a giugno.
+
 ### Conseguenza accettata
 
 Ogni off-season si rinegozia **l'intera rosa**. È una scelta consapevole: costa
