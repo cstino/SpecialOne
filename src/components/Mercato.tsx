@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ROSA_MASSIMA } from '../lib/league'
 import { cognome } from '../lib/nomi'
 import { MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
@@ -9,27 +9,8 @@ import type { League, Membership } from '../types'
 import { Crest } from './Crest'
 import { GameNav, type GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
-import { SchedaGiocatore } from './SchedaGiocatore'
 
-type Sezione = 'liberi' | 'scambi'
-type Props = { membership: Membership; onNavigate: (view: GameView) => void; sezioneIniziale?: Sezione }
-
-type StatoProposta = 'in_attesa' | 'accettata' | 'rifiutata' | 'ritirata' | 'scaduta'
-
-type Proposta = {
-  id: number
-  da_team_id: number
-  a_team_id: number
-  giocatori_offerti: number[]
-  giocatori_richiesti: number[]
-  conguaglio: number
-  messaggio: string | null
-  stato: StatoProposta
-  creata_il: string
-  scade_il: string
-  risolta_il?: string | null
-  controproposta_di?: number | null
-}
+type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
 type Giocatore = {
   id: number
@@ -47,11 +28,11 @@ type Giocatore = {
   altezza?: number | null
   attributi?: Record<string, number | null>
   foto_firmata?: string
-  sulMercato?: boolean
   condizione?: number
   infortunatoFinoA?: number
   ritiroAnnunciato?: boolean
 }
+
 
 type Asta = {
   id: number
@@ -100,33 +81,7 @@ function milioni(euro: number) {
   return `${(euro / 1_000_000).toFixed(1).replace('.', ',')} M€`
 }
 
-function giornoRoma(value: Date | string) {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit',
-  }).format(new Date(value))
-}
-
-const ETICHETTE_STATO: Record<StatoProposta, string> = {
-  in_attesa: 'In attesa',
-  accettata: 'Accettata',
-  rifiutata: 'Rifiutata',
-  ritirata: 'Ritirata',
-  scaduta: 'Scaduta',
-}
-
-type GiocatoreMini = { nome: string; foto?: string }
-
-type RigaRumor =
-  | { tipo: 'svincolato'; key: string; nome: string; foto?: string; destinazioneId: number }
-  | { tipo: 'scambio'; key: string; daTeamId: number; aTeamId: number; offerti: GiocatoreMini[]; richiesti: GiocatoreMini[] }
-
-type TrattativaPubblica = {
-  id: number
-  da_team_id: number
-  a_team_id: number
-  giocatori_offerti: number[]
-  giocatori_richiesti: number[]
-}
+type RigaRumor = { tipo: 'svincolato'; key: string; nome: string; foto?: string; destinazioneId: number }
 
 const PAGINA_RUMOR = 4
 
@@ -151,24 +106,13 @@ function scegliPesato<T>(seme: number, opzioni: { valore: T; peso: number }[]) {
   return opzioni[opzioni.length - 1].valore
 }
 
-export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: Props) {
+export function Mercato({ membership, onNavigate }: Props) {
   const league = membership.league as League
-  // Due destinazioni di menu distinte (Free Agent / Scambi) puntano qui con
-  // sezioneIniziale diverso: il tab interno resta comunque cambiabile senza
-  // uscire dalla pagina, quindi va risincronizzato quando arriva dal menu.
-  const [sezione, setSezione] = useState<Sezione>(sezioneIniziale)
-  useEffect(() => { setSezione(sezioneIniziale) }, [sezioneIniziale])
-  function vaiA(s: Sezione) {
-    setSezione(s)
-    onNavigate(s === 'liberi' ? 'mercato' : 'scambi')
-  }
   // Squadre e stemmi arrivano da qui: firmare le URL degli stemmi e' gia'
   // risolto, e rifarlo a mano avrebbe prodotto una seconda verita'.
   const dati = useSeasonData(membership)
   const adesso = useOraCorrente()
   const [rose, setRose] = useState<Giocatore[]>([])
-  const [proposte, setProposte] = useState<Proposta[]>([])
-  const [trattativePubbliche, setTrattativePubbliche] = useState<TrattativaPubblica[]>([])
   const [aste, setAste] = useState<Asta[]>([])
   const [svincolati, setSvincolati] = useState<Map<number, Anagrafica>>(new Map())
   // Solo le proprie: la RLS non consegna quelle altrui, ed e' il punto.
@@ -181,16 +125,6 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
   const [caricamento, setCaricamento] = useState(true)
   const [errore, setErrore] = useState<string | null>(null)
 
-  const [avversaria, setAvversaria] = useState<number | null>(null)
-  const [chiesti, setChiesti] = useState<number[]>([])
-  const [offerti, setOfferti] = useState<number[]>([])
-  const [conguaglio, setConguaglio] = useState('0')
-  const [messaggio, setMessaggio] = useState('')
-  const [sceltaRifiutoId, setSceltaRifiutoId] = useState<number | null>(null)
-  const [contropropostaOrigine, setContropropostaOrigine] = useState<Proposta | null>(null)
-  const [vetrinaRuolo, setVetrinaRuolo] = useState<MacroRuolo>('ALL')
-  const [vetrinaEta, setVetrinaEta] = useState<[number, number]>([16, 45])
-  const [vetrinaOverall, setVetrinaOverall] = useState<[number, number]>([50, 99])
   const [filtroRuolo, setFiltroRuolo] = useState<MacroRuolo>('ALL')
   const [filtroEta, setFiltroEta] = useState<[number, number]>([16, 45])
   const [filtroIngaggio, setFiltroIngaggio] = useState<[number, number]>([0, 30])
@@ -198,17 +132,6 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
   const [inCorso, setInCorso] = useState(false)
   const [offertaInCorso, setOffertaInCorso] = useState<{ id: number; tipo: 'offri' | 'modifica' | 'ritira' } | null>(null)
   const [esito, setEsito] = useState<string | null>(null)
-  const [schedaApertaId, setSchedaApertaId] = useState<number | null>(null)
-  const compositoreRef = useRef<HTMLElement>(null)
-
-  // Dalla vetrina si salta dritti alla proposta, gia' compilata: e' il modo
-  // piu' veloce per dire "questo lo voglio" senza passare dalla scheda.
-  function proponiPerGiocatore(g: Giocatore) {
-    setContropropostaOrigine(null)
-    setAvversaria(g.team_id)
-    setChiesti([g.id])
-    compositoreRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
   const [paginaRumor, setPaginaRumor] = useState(0)
 
   const mostraListaLegacySvincolati = false
@@ -221,23 +144,17 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
   const carica = useCallback(async (silenzioso = false) => {
     if (!silenzioso) setCaricamento(true)
     setErrore(null)
-    const [istanzeRes, proposteRes, trattativeRes, asteRes, offerteRes, contiRes] = await Promise.all([
+    const [istanzeRes, asteRes, offerteRes, contiRes] = await Promise.all([
       supabase.from('player_instances')
-        .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato, sul_mercato')
+        .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato')
         .eq('league_id', league.id).not('team_id', 'is', null),
-      supabase.from('trade_proposals').select('*')
-        .eq('league_id', league.id).order('creata_il', { ascending: false }),
-      // Per la card "Rumors": chi tratta con chi, su tutta la lega. RPC
-      // dedicata che espone solo squadre e giocatori coinvolti, mai
-      // conguaglio ne' messaggio (restano privati alle due squadre).
-      supabase.rpc('trattative_pubbliche', { p_league_id: league.id }),
       supabase.from('free_agent_auctions')
         .select('id, giorno, tornata, player_id, ingaggio_teorico, stato, origine, vincitore_team_id, ingaggio_finale')
         .eq('league_id', league.id).order('giorno', { ascending: false }).order('id').limit(500),
       supabase.from('free_agent_bids').select('auction_id, ingaggio_offerto'),
       supabase.rpc('budget_disponibile', { p_league_id: league.id }),
     ])
-    const primoErrore = istanzeRes.error ?? proposteRes.error ?? asteRes.error ?? offerteRes.error
+    const primoErrore = istanzeRes.error ?? asteRes.error ?? offerteRes.error
     if (primoErrore) { setErrore(primoErrore.message); setCaricamento(false); return }
 
     const istanze = istanzeRes.data ?? []
@@ -266,8 +183,6 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
       piede: string | null; altezza: number | null; attributi: Record<string, number | null>
       overall: number; eta: number; foto_url: string | null
     }]))
-    setProposte((proposteRes.data ?? []) as Proposta[])
-    setTrattativePubbliche(trattativeRes.error ? [] : (trattativeRes.data ?? []) as TrattativaPubblica[])
     setAste(asteRighe)
     setMieOfferte(new Map((offerteRes.data ?? []).map((o) => [o.auction_id, o.ingaggio_offerto])))
     // Un errore qui non deve impedire di usare il mercato: e' un indicatore.
@@ -301,7 +216,6 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
       condizione: i.condizione,
       infortunatoFinoA: i.infortunato_fino_a,
       ritiroAnnunciato: i.ritiro_annunciato,
-      sulMercato: i.sul_mercato,
     })))
     setCaricamento(false)
   }, [league.id])
@@ -316,7 +230,6 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
     value={dati.teamById.get(id)?.stemma_url ?? null}
     imageUrl={dati.crestUrlByTeamId.get(id) ?? null}
   />, [dati.teamById, dati.crestUrlByTeamId])
-  const giocatore = useCallback((id: number) => rose.find((g) => g.id === id), [rose])
 
   // Quanti giocatori per macro-ruolo ha ciascuna squadra: e' l'unico segnale
   // che uso per il "rumor" degli svincolati (chi sembra scoperto in quel
@@ -333,17 +246,6 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
     }
     return mappa
   }, [rose])
-
-  // Trattative reali di tutta la lega, non solo le mie (decisione
-  // dell'utente): chi offre cosa a chi, mai il conguaglio ne' il messaggio.
-  const righeScambio = useMemo<RigaRumor[]>(() => trattativePubbliche.map((t): RigaRumor => ({
-    tipo: 'scambio', key: `scambio-${t.id}`,
-    daTeamId: t.da_team_id, aTeamId: t.a_team_id,
-    offerti: t.giocatori_offerti.map((id) => giocatore(id)).filter((g): g is NonNullable<typeof g> => Boolean(g))
-      .map((g) => ({ nome: g.nome, foto: g.foto_firmata })),
-    richiesti: t.giocatori_richiesti.map((id) => giocatore(id)).filter((g): g is NonNullable<typeof g> => Boolean(g))
-      .map((g) => ({ nome: g.nome, foto: g.foto_firmata })),
-  })), [trattativePubbliche, giocatore])
 
   // Rumor speculativi sugli svincolati piu' quotati: la squadra di
   // destinazione NON viene dalle offerte reali (busta chiusa, non si tocca),
@@ -370,13 +272,7 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
     }).filter((r): r is RigaRumor => r !== null)
   }, [aste, svincolati, dati.teams, conteggioRuoli])
 
-  // Sezioni diverse, voci diverse: gli svincolati sui Free Agent, gli
-  // scambi sulla pagina Scambi. Nessun motivo di mischiarli sotto un tab
-  // che non li riguarda.
-  const righeRumor = useMemo(
-    () => sezione === 'liberi' ? righeRumorSvincolati : righeScambio,
-    [sezione, righeScambio, righeRumorSvincolati],
-  )
+  const righeRumor = righeRumorSvincolati
   const paginaRumorMax = Math.max(0, Math.ceil(righeRumor.length / PAGINA_RUMOR) - 1)
   useEffect(() => { setPaginaRumor((p) => Math.min(p, paginaRumorMax)) }, [paginaRumorMax])
   useEffect(() => {
@@ -384,19 +280,6 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
     const timer = window.setInterval(() => setPaginaRumor((p) => (p + 1) % (paginaRumorMax + 1)), 6000)
     return () => window.clearInterval(timer)
   }, [paginaRumorMax])
-
-  const miaRosa = useMemo(
-    () => rose.filter((g) => g.team_id === membership.id).sort((a, b) => b.overall - a.overall),
-    [rose, membership.id],
-  )
-  const rosaAvversaria = useMemo(
-    () => rose.filter((g) => g.team_id === avversaria).sort((a, b) => b.overall - a.overall),
-    [rose, avversaria],
-  )
-
-  const ricevute = proposte.filter((p) => p.a_team_id === membership.id && p.stato === 'in_attesa')
-  const inviate = proposte.filter((p) => p.da_team_id === membership.id && p.stato === 'in_attesa')
-  const concluse = proposte.filter((p) => p.stato === 'accettata')
 
   // Il live e' l'ultima tornata di estrazione della giornata corrente, mai
   // l'unione delle tornate manuali gia' chiuse nello stesso giorno. Esclude
@@ -440,19 +323,6 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
   const mieProposteAperte = nuoviDelGiorno.filter((a) => a.stato === 'aperta' && mieOfferte.has(a.id))
   const giocatoriSottoContratto = new Set(rose.map((g) => g.player_id))
 
-  // Vetrina "Mercato della lega": i giocatori messi in lista dalle squadre.
-  // Filtri indipendenti da quelli dell'archivio svincolati: sono due elenchi
-  // diversi e chi cerca un difensore qui non sta cercando lo stesso di là.
-  const vetrinaMercato = useMemo(() => rose
-    .filter((g) => g.sulMercato && g.team_id !== membership.id)
-    .filter((g) => {
-      const macro = macroRuolo(g.posizioni ?? [])
-      return (vetrinaRuolo === 'ALL' || macro === vetrinaRuolo)
-        && g.eta >= vetrinaEta[0] && g.eta <= vetrinaEta[1]
-        && g.overall >= vetrinaOverall[0] && g.overall <= vetrinaOverall[1]
-    })
-    .sort((a, b) => b.overall - a.overall),
-    [rose, vetrinaRuolo, vetrinaEta, vetrinaOverall, membership.id])
   const archivioSvincolati = Array.from(new Map(aste
     .filter((a) => a.stato === 'deserta' && !giocatoriSottoContratto.has(a.player_id))
     .map((a) => [a.player_id, a])).values())
@@ -485,8 +355,6 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
       && asta.stato === 'assegnata'
       && asta.vincitore_team_id != null)
     .sort((a, b) => a.id - b.id)
-  const trattativeTrasparenti = giornoTrasparenza == null ? [] : concluse
-    .filter((proposta) => proposta.risolta_il != null && giornoRoma(proposta.risolta_il) === giornoTrasparenza)
 
   async function offri(asta: Asta) {
     const grezzo = bozzaOfferta[asta.id] ?? ''
@@ -542,10 +410,6 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
     }
   }
 
-  function alterna(elenco: number[], id: number, imposta: (v: number[]) => void) {
-    imposta(elenco.includes(id) ? elenco.filter((x) => x !== id) : [...elenco, id])
-  }
-
   // PromiseLike e non Promise: `supabase.rpc(...)` restituisce un builder
   // che si puo' attendere ma non e' una Promise vera.
   async function chiama(azione: () => PromiseLike<{ error: { message: string } | null }>, successo: string, durataMinima = 0) {
@@ -565,45 +429,6 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
     } finally {
       setInCorso(false)
     }
-  }
-
-  async function invia() {
-    const valore = Math.round(Number(conguaglio.replace(',', '.')) * 1_000_000)
-    if (!avversaria || Number.isNaN(valore)) { setEsito('Conguaglio non valido.'); return }
-    const riuscita = await chiama(
-      () => supabase.rpc(contropropostaOrigine ? 'controproponi' : 'proponi_scambio', {
-        ...(contropropostaOrigine ? { p_proposta_id: contropropostaOrigine.id } : { p_a_team_id: avversaria }),
-        p_giocatori_offerti: offerti,
-        p_giocatori_richiesti: chiesti,
-        p_conguaglio: valore,
-        p_messaggio: messaggio.trim() || null,
-      }),
-      contropropostaOrigine ? 'Controfferta inviata.' : 'Proposta inviata.',
-    )
-    if (riuscita) {
-      setChiesti([]); setOfferti([]); setConguaglio('0'); setMessaggio('')
-      setContropropostaOrigine(null)
-    }
-  }
-
-  function preparaControfferta(p: Proposta) {
-    setContropropostaOrigine(p)
-    setAvversaria(p.da_team_id)
-    setOfferti([...p.giocatori_richiesti])
-    setChiesti([...p.giocatori_offerti])
-    setConguaglio((-p.conguaglio / 1_000_000).toString().replace('.', ','))
-    setMessaggio('Controfferta')
-    setSceltaRifiutoId(null)
-    window.requestAnimationFrame(() => compositoreRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
-  }
-
-  function annullaControfferta() {
-    setContropropostaOrigine(null)
-    setAvversaria(null)
-    setChiesti([])
-    setOfferti([])
-    setConguaglio('0')
-    setMessaggio('')
   }
 
   const cardSvincolato = (a: Asta, compatta = false) => {
@@ -673,52 +498,8 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
     setPaginaAstaRuolo('GK')
   }, [giornoAste, tornataLive])
 
-  const listaGiocatori = (
-    elenco: Giocatore[], selezionati: number[], imposta: (v: number[]) => void, vuoto: string,
-  ) => elenco.length === 0
-    ? <p className="season-empty">{vuoto}</p>
-    : <ul className="mercato-rosa">
-        {elenco.map((g) => <li key={g.id}>
-          <button
-            type="button"
-            className={selezionati.includes(g.id) ? 'is-scelto' : ''}
-            onClick={() => alterna(selezionati, g.id, imposta)}
-            aria-pressed={selezionati.includes(g.id)}
-          >
-            <b>{g.overall}</b>
-            <span><strong>{g.nome}</strong><small>{g.ruolo} · {g.eta} anni</small></span>
-            <em>{milioni(g.ingaggio)}</em>
-          </button>
-        </li>)}
-      </ul>
-
-  const riepilogo = (p: Proposta) => <>
-    <div className="mercato-scambio">
-      <div>
-        <small>{p.da_team_id === membership.id ? 'Offri' : 'Ti offre'}</small>
-        {p.giocatori_offerti.length === 0
-          ? <span className="mercato-nessuno">nessun giocatore</span>
-          : p.giocatori_offerti.map((id) => <button key={id} type="button" className="mercato-nome-giocatore" onClick={() => setSchedaApertaId(id)}>{giocatore(id)?.nome ?? `#${id}`}</button>)}
-      </div>
-      <i aria-hidden="true">⇄</i>
-      <div>
-        <small>{p.da_team_id === membership.id ? 'Chiedi' : 'Ti chiede'}</small>
-        {p.giocatori_richiesti.length === 0
-          ? <span className="mercato-nessuno">nessun giocatore</span>
-          : p.giocatori_richiesti.map((id) => <button key={id} type="button" className="mercato-nome-giocatore" onClick={() => setSchedaApertaId(id)}>{giocatore(id)?.nome ?? `#${id}`}</button>)}
-      </div>
-    </div>
-    {p.conguaglio !== 0 && <p className="mercato-conguaglio">
-      Conguaglio: <strong>{milioni(Math.abs(p.conguaglio))}</strong>{' '}
-      {p.conguaglio > 0 ? `da ${nomeSquadra(p.da_team_id)}` : `da ${nomeSquadra(p.a_team_id)}`}
-    </p>}
-    {p.messaggio && <p className="mercato-messaggio">«{p.messaggio}»</p>}
-  </>
-
-  const schedaAperta = schedaApertaId != null ? giocatore(schedaApertaId) : undefined
-
   return <main className="app-shell season-shell">
-    <GameNav league={league} active={sezione === 'liberi' ? 'mercato' : 'scambi'} onNavigate={onNavigate} />
+    <GameNav league={league} active="mercato" onNavigate={onNavigate} />
     <header className="topbar season-topbar">
       <div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div>
       <span className={`mercato-finestra ${aperto ? 'e-aperto' : ''}`}>
@@ -733,23 +514,14 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
       <section className="season-title-row">
         <div>
           <p className="kicker">Stagione {league.stagione_corrente} · {league.nome}</p>
-          <h1>{sezione === 'liberi' ? 'Free Agent.' : 'Scambi.'}</h1>
-          <p>Si tratta dalle 23:30 alle 21:00. Le proposte non accettate entro la chiusura scadono.</p>
+          <h1>Free Agent.</h1>
+          <p>Asta a busta chiusa: si offre dalle 23:30 alle 21:00.</p>
         </div>
         <div className="season-total">
           <strong>{milioni(conti ? conti.disponibile : membership.budget)}</strong>
           <span>{conti && conti.impegnato > 0 ? 'disponibile' : 'budget'}</span>
         </div>
       </section>
-
-      <nav className="mercato-sottomenu" aria-label="Sezione mercato">
-        <button type="button" className={sezione === 'liberi' ? 'is-attivo' : ''} onClick={() => vaiA('liberi')}>
-          Free Agent
-        </button>
-        <button type="button" className={sezione === 'scambi' ? 'is-attivo' : ''} onClick={() => vaiA('scambi')}>
-          Scambi
-        </button>
-      </nav>
 
       {conti && conti.impegnato > 0 && <p className="mercato-impegno">
         <strong>{milioni(conti.impegnato)}</strong> sono impegnati in offerte ancora aperte (ingaggio
@@ -759,40 +531,8 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
 
       {esito && <p className="notice">{esito}</p>}
 
-      {/* ---- Ricevute: la cosa piu' urgente, quindi per prima ---- */}
-      {sezione === 'scambi' && <section className="mercato-blocco">
-        <div className="sezione-testa"><div><p className="kicker">In arrivo</p><h2>Proposte ricevute</h2></div></div>
-        {ricevute.length === 0
-          ? <p className="season-empty">Nessuna proposta da valutare.</p>
-          : ricevute.map((p) => <article className="mercato-card" key={p.id}>
-              <header>{stemma(p.da_team_id)}<strong>{nomeSquadra(p.da_team_id)}</strong></header>
-              {riepilogo(p)}
-              <footer className={sceltaRifiutoId === p.id ? 'mercato-rifiuto-aperto' : ''}>
-                {sceltaRifiutoId !== p.id ? <>
-                <button className="button button--primary" type="button" disabled={inCorso || !aperto}
-                  onClick={() => chiama(() => supabase.rpc('rispondi_a_proposta', { p_proposta_id: p.id, p_accetta: true }), 'Scambio concluso.')}>
-                  Accetta
-                </button>
-                <button className="button button--secondary" type="button" disabled={inCorso}
-                  onClick={() => setSceltaRifiutoId(p.id)}>
-                  Rifiuta
-                </button>
-                </> : <>
-                <button className="button button--primary" type="button" disabled={inCorso || !aperto}
-                  onClick={() => preparaControfferta(p)}>
-                  Controfferta
-                </button>
-                <button className="button button--danger-ghost" type="button" disabled={inCorso}
-                  onClick={() => chiama(() => supabase.rpc('rispondi_a_proposta', { p_proposta_id: p.id, p_accetta: false }), 'Proposta rifiutata.')}>
-                  Rifiuta
-                </button>
-                </>}
-              </footer>
-            </article>)}
-      </section>}
-
       {/* ---- Mercato svincolati: nuovi + archivio filtrabile ---- */}
-      {sezione === 'liberi' && <section className="mercato-blocco mercato-svincolati">
+      <section className="mercato-blocco mercato-svincolati">
         <div className="sezione-testa">
           <div><p className="kicker">Asta a busta chiusa</p><h2>Mercato svincolati live</h2></div>
           <span>{league.fase_carriera === 'offseason' ? '10 per ruolo' : '5 per ruolo'}</span>
@@ -851,12 +591,12 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
             ? <p className="season-empty">Nessun giocatore con questi filtri.</p>
             : <div className="free-agent-list">{archivioSvincolati.map((a) => cardSvincolato(a, true))}</div>}
         </div>}
-      </section>}
+      </section>
 
       {/* ---- Le mie proposte: solo le aste su cui ho gia' offerto, per
           ritirarle o modificarle senza dover ripescare la carta giusta nella
           griglia grande qui sopra. ---- */}
-      {sezione === 'liberi' && <section className="mercato-blocco">
+      <section className="mercato-blocco">
         <div className="sezione-testa">
           <div><p className="kicker">Asta a busta chiusa</p><h2>Le mie proposte</h2></div>
           <span>{mieProposteAperte.length} {mieProposteAperte.length === 1 ? 'offerta' : 'offerte'}</span>
@@ -865,48 +605,7 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
         {mieProposteAperte.length === 0
           ? <p className="season-empty">Non hai ancora offerto per nessuno svincolato oggi.</p>
           : <div className="free-agent-grid">{mieProposteAperte.map((a) => cardSvincolato(a, true))}</div>}
-      </section>}
-
-      {/* ---- Vetrina: chi le squadre hanno messo in lista ---- */}
-      {sezione === 'scambi' && <section className="mercato-blocco">
-        <div className="sezione-testa">
-          <div><p className="kicker">Lista trasferimenti</p><h2>Mercato della lega</h2></div>
-          <small>{vetrinaMercato.length} in lista</small>
-        </div>
-        <p className="mercato-nota">
-          I giocatori che le squadre hanno messo sul mercato. È una vetrina: per trattare
-          davvero, manda una proposta di scambio alla squadra proprietaria.
-        </p>
-        <div className="free-agent-filters free-agent-filters--vetrina">
-          <label><span>Ruolo</span><select value={vetrinaRuolo} onChange={(e) => setVetrinaRuolo(e.target.value as MacroRuolo)}>
-            {(['ALL', 'GK', 'DEF', 'MID', 'ATT'] as MacroRuolo[]).map((r) => <option key={r} value={r}>{MACRO_LABEL[r]}</option>)}
-          </select></label>
-          <RangeFilter label="Eta" value={vetrinaEta} min={16} max={45} onChange={setVetrinaEta} />
-          <RangeFilter label="Overall" value={vetrinaOverall} min={50} max={99} onChange={setVetrinaOverall} />
-        </div>
-        {vetrinaMercato.length === 0
-          ? <p className="season-empty">Nessun giocatore in lista con questi filtri.</p>
-          : <div className="vetrina-list">{vetrinaMercato.map((g) => <button
-              className="vetrina-card"
-              type="button"
-              key={g.id}
-              onClick={() => proponiPerGiocatore(g)}
-              aria-label={`Proponi uno scambio per ${g.nome}`}
-            >
-              <span className="vetrina-card__foto">
-                {g.foto_firmata ? <img src={g.foto_firmata} alt="" loading="lazy" /> : <i aria-hidden="true">{g.nome.charAt(0)}</i>}
-              </span>
-              <span className="vetrina-card__info">
-                <strong>{g.nome}</strong>
-                <small>{(g.posizioni ?? [g.ruolo]).join(' · ')} · {g.eta} anni</small>
-                <em>{nomeSquadra(g.team_id)}</em>
-              </span>
-              <span className="vetrina-card__numeri">
-                <b>{g.overall}</b>
-                <small>{(g.ingaggio / 1_000_000).toFixed(1)} M€</small>
-              </span>
-            </button>)}</div>}
-      </section>}
+      </section>
 
       <section className="mercato-blocco mercato-rumors">
         <div className="sezione-testa">
@@ -921,8 +620,8 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
                 invece di doverle ripescare ogni volta che il carosello
                 cambia pagina. */}
             {Array.from({ length: paginaRumorMax + 1 }, (_, pagina) => <ul key={pagina} className={`rumors-lista ${pagina === paginaRumor ? '' : 'is-nascosta'}`}>
-              {righeRumor.slice(pagina * PAGINA_RUMOR, pagina * PAGINA_RUMOR + PAGINA_RUMOR).map((riga) => riga.tipo === 'svincolato'
-                ? <li key={riga.key} className="rumors-riga rumors-riga--svincolato">
+              {righeRumor.slice(pagina * PAGINA_RUMOR, pagina * PAGINA_RUMOR + PAGINA_RUMOR).map((riga) =>
+                <li key={riga.key} className="rumors-riga rumors-riga--svincolato">
                     <div className="rumors-foto">
                       {riga.foto ? <img src={riga.foto} alt="" /> : <span className="rumors-foto-vuota" aria-hidden="true" />}
                     </div>
@@ -932,36 +631,6 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
                     </div>
                     <i aria-hidden="true">→</i>
                     <div className="rumors-destinazione">{stemma(riga.destinazioneId)}</div>
-                  </li>
-                : <li key={riga.key} className="rumors-riga rumors-riga--scambio">
-                    <div className="rumors-scambio-lato">
-                      <span className="rumors-scambio-stemma">{stemma(riga.daTeamId)}</span>
-                      <div className="rumors-scambio-giocatore">
-                        <div className="rumors-foto">
-                          {riga.offerti[0]?.foto ? <img src={riga.offerti[0].foto} alt="" />
-                            : riga.offerti[0] ? <span className="rumors-foto-vuota" aria-hidden="true" />
-                            : <span className="rumors-foto-conguaglio" aria-hidden="true">€</span>}
-                          {riga.offerti.length > 1 && <b className="rumors-extra">+{riga.offerti.length - 1}</b>}
-                        </div>
-                        <small>{riga.offerti[0]?.nome ?? 'Conguaglio'}</small>
-                      </div>
-                    </div>
-                    <div className="rumors-scambio-centro">
-                      <span className="rumors-etichetta rumors-etichetta--scambio">Trattativa</span>
-                      <i aria-hidden="true">⇄</i>
-                    </div>
-                    <div className="rumors-scambio-lato rumors-scambio-lato--destra">
-                      <div className="rumors-scambio-giocatore">
-                        <div className="rumors-foto">
-                          {riga.richiesti[0]?.foto ? <img src={riga.richiesti[0].foto} alt="" />
-                            : riga.richiesti[0] ? <span className="rumors-foto-vuota" aria-hidden="true" />
-                            : <span className="rumors-foto-conguaglio" aria-hidden="true">€</span>}
-                          {riga.richiesti.length > 1 && <b className="rumors-extra">+{riga.richiesti.length - 1}</b>}
-                        </div>
-                        <small>{riga.richiesti[0]?.nome ?? 'Conguaglio'}</small>
-                      </div>
-                      <span className="rumors-scambio-stemma">{stemma(riga.aTeamId)}</span>
-                    </div>
                   </li>)}
             </ul>)}
             {righeRumor.length > PAGINA_RUMOR && <div className="rumors-paginazione">
@@ -1027,133 +696,18 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
 
       </>}
 
-      {/* ---- Compositore ---- */}
-      {sezione === 'scambi' && <section className="mercato-blocco" ref={compositoreRef}>
-        <div className="sezione-testa">
-          <div>
-            <p className="kicker">{contropropostaOrigine ? 'Risposta alla trattativa' : 'Tratta'}</p>
-            <h2>{contropropostaOrigine ? `Controfferta a ${nomeSquadra(contropropostaOrigine.da_team_id)}` : 'Nuova proposta'}</h2>
-          </div>
-          {contropropostaOrigine && <button className="button button--secondary mercato-annulla-controfferta" type="button" disabled={inCorso} onClick={annullaControfferta}>
-            Annulla
-          </button>}
-        </div>
-        {contropropostaOrigine && <p className="notice mercato-controfferta-notice">
-          La proposta ricevuta è stata invertita: puoi cambiare giocatori e conguaglio prima di inviarla.
-        </p>}
-        {!aperto && <p className="notice">Il mercato è chiuso: puoi preparare la proposta ma potrai inviarla dalle 23:30.</p>}
-
-        {!contropropostaOrigine && <div className="mercato-scelta-squadra">
-          {dati.teams.filter((s) => s.id !== membership.id).map((s) => <button
-            key={s.id} type="button"
-            className={avversaria === s.id ? 'is-scelto' : ''}
-            onClick={() => { setAvversaria(s.id); setChiesti([]) }}
-            aria-label={s.nome}
-            aria-pressed={avversaria === s.id}
-            title={s.nome}
-          >
-            {stemma(s.id)}
-          </button>)}
-        </div>}
-
-        {avversaria && <>
-          <div className="mercato-colonne">
-            <div>
-              <h3>Cosa chiedi a {nomeSquadra(avversaria)}</h3>
-              {listaGiocatori(rosaAvversaria, chiesti, setChiesti, 'Rosa non disponibile.')}
-            </div>
-            <div>
-              <h3>Cosa offri</h3>
-              {listaGiocatori(miaRosa, offerti, setOfferti, 'La tua rosa è vuota.')}
-            </div>
-          </div>
-
-          <div className="mercato-conguaglio-riga">
-            <label>
-              <span>Conguaglio in M€</span>
-              <input type="text" inputMode="decimal" value={conguaglio}
-                onChange={(e) => setConguaglio(e.target.value)} placeholder="0" />
-              <small>Positivo: paghi tu. Negativo: paga lui.</small>
-            </label>
-            <label>
-              <span>Messaggio (facoltativo)</span>
-              <input type="text" value={messaggio} maxLength={240}
-                onChange={(e) => setMessaggio(e.target.value)} placeholder="Due righe per convincerlo" />
-            </label>
-          </div>
-
-          <button className="button button--primary" type="button"
-            disabled={inCorso || !aperto || (chiesti.length === 0 && offerti.length === 0)}
-            onClick={() => void invia()}>
-            {inCorso ? 'Invio…' : contropropostaOrigine ? 'Invia la controfferta' : 'Invia la proposta'}
-          </button>
-        </>}
-      </section>}
-
-      {/* ---- Inviate ---- */}
-      {sezione === 'scambi' && <section className="mercato-blocco">
-        <div className="sezione-testa"><div><p className="kicker">In uscita</p><h2>Proposte inviate</h2></div></div>
-        {inviate.length === 0
-          ? <p className="season-empty">Nessuna proposta in attesa di risposta.</p>
-          : inviate.map((p) => <article className="mercato-card" key={p.id}>
-              <header>{stemma(p.a_team_id)}<strong>A {nomeSquadra(p.a_team_id)}</strong></header>
-              {riepilogo(p)}
-              <footer>
-                <button className="button button--secondary" type="button" disabled={inCorso}
-                  onClick={() => chiama(() => supabase.rpc('ritira_proposta', { p_proposta_id: p.id }), 'Proposta ritirata.')}>
-                  Ritira
-                </button>
-              </footer>
-            </article>)}
-      </section>}
-
       {/* ---- Log pubblico: design §9.3, tutti vedono tutto ---- */}
       <section className="mercato-blocco">
         <div className="sezione-testa"><div><p className="kicker">Trasparenza</p><h2>Operazioni concluse</h2></div></div>
         <p className="mercato-nota">
           {giornoTrasparenza
-            ? `Esiti della chiusura del ${giornoTrasparenza.split('-').reverse().join('/')}: ${sezione === 'liberi' ? 'aste vinte' : 'scambi'} visibili a tutta la lega.`
+            ? `Esiti della chiusura del ${giornoTrasparenza.split('-').reverse().join('/')}: aste vinte visibili a tutta la lega.`
             : 'Gli esiti del mercato appariranno qui alla prima chiusura.'}
         </p>
-        {(sezione === 'liberi' ? asteVinteTrasparenti.length === 0 : trattativeTrasparenti.length === 0)
+        {asteVinteTrasparenti.length === 0
           ? <p className="season-empty">Nessuna operazione conclusa in questa chiusura.</p>
           : <ul className="mercato-trasparenza">
-              {sezione === 'scambi' && trattativeTrasparenti.map((p) => <li className="mercato-operazione mercato-operazione--scambio" key={`scambio-${p.id}`}>
-                <div className="mercato-operazione__giocatori mercato-operazione__giocatori--da">
-                  {p.giocatori_offerti.map((id) => {
-                    const g = giocatore(id)
-                    return <div className="mercato-operazione__giocatore" key={id}>
-                      <div className="mercato-operazione__volto">
-                        {g?.foto_firmata ? <img src={g.foto_firmata} alt="" /> : <span>{(g?.nome ?? '?').slice(0, 1)}</span>}
-                        <b>{stemma(p.da_team_id)}</b>
-                      </div>
-                      <strong>{g?.nome ?? `#${id}`}</strong>
-                      <small>({nomeSquadra(p.da_team_id)})</small>
-                    </div>
-                  })}
-                </div>
-                <div className="mercato-operazione__scambio" aria-label="Scambio tra squadre">
-                  <i aria-hidden="true">⇄</i>
-                  {p.conguaglio !== 0 && <span className={`mercato-operazione__conguaglio ${p.conguaglio > 0 ? 'e-destra' : 'e-sinistra'}`}>
-                    {p.conguaglio > 0 ? '→' : '←'} {milioni(Math.abs(p.conguaglio))}
-                  </span>}
-                </div>
-                <div className="mercato-operazione__giocatori mercato-operazione__giocatori--a">
-                  {p.giocatori_richiesti.map((id) => {
-                    const g = giocatore(id)
-                    return <div className="mercato-operazione__giocatore" key={id}>
-                      <div className="mercato-operazione__volto">
-                        {g?.foto_firmata ? <img src={g.foto_firmata} alt="" /> : <span>{(g?.nome ?? '?').slice(0, 1)}</span>}
-                        <b>{stemma(p.a_team_id)}</b>
-                      </div>
-                      <strong>{g?.nome ?? `#${id}`}</strong>
-                      <small>({nomeSquadra(p.a_team_id)})</small>
-                    </div>
-                  })}
-                </div>
-                <em>{ETICHETTE_STATO[p.stato]}</em>
-              </li>)}
-              {sezione === 'liberi' && asteVinteTrasparenti.map((asta) => {
+              {asteVinteTrasparenti.map((asta) => {
                 const g = svincolati.get(asta.player_id)
                 return <li className="mercato-operazione mercato-operazione--asta" key={`asta-${asta.id}`}>
                   <div className="mercato-operazione__portrait">
@@ -1173,26 +727,6 @@ export function Mercato({ membership, onNavigate, sezioneIniziale = 'liberi' }: 
               })}
             </ul>}
       </section>
-
-      {schedaAperta && <SchedaGiocatore
-        giocatore={{
-          nome: schedaAperta.nome,
-          club: schedaAperta.club,
-          nazionalita: schedaAperta.nazionalita,
-          posizioni: schedaAperta.posizioni ?? [schedaAperta.ruolo],
-          overall: schedaAperta.overall,
-          eta: schedaAperta.eta,
-          piede: schedaAperta.piede,
-          altezza: schedaAperta.altezza,
-          ingaggio: schedaAperta.ingaggio,
-          condizione: schedaAperta.condizione,
-          infortunatoFinoA: schedaAperta.infortunatoFinoA,
-          ritiroAnnunciato: schedaAperta.ritiroAnnunciato,
-          attributi: schedaAperta.attributi ?? {},
-        }}
-        fotoUrl={schedaAperta.foto_firmata}
-        onClose={() => setSchedaApertaId(null)}
-      />}
     </div>}
   </main>
 }
