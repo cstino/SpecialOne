@@ -74,21 +74,6 @@ type Anagrafica = {
   foto_url: string | null
   foto_firmata?: string
 }
-type SpinOffseason = {
-  id: number
-  player_id: number
-  stato: 'proposto' | 'ingaggiato' | 'asta'
-  ingaggio: number
-  nome: string
-  club: string
-  ruolo: string
-  overall: number
-  eta: number
-  foto_url?: string | null
-  foto_firmata?: string
-}
-type StatoSpinOffseason = { attivo: boolean; rimasti: number; usati: number; spin: SpinOffseason[] }
-type AnimazioneSpin = { fase: 'giro' | 'reveal'; nome: string; overall?: number; ruolo?: string; foto?: string }
 
 // Il mercato apre alle 23:30 e chiude alle 21:00 (design §9.1, apertura
 // spostata dalle 07:00 il 7 agosto 2026 per aprire subito dopo le partite,
@@ -179,8 +164,6 @@ export function Mercato({ membership, onNavigate }: Props) {
   // Solo le proprie: la RLS non consegna quelle altrui, ed e' il punto.
   const [mieOfferte, setMieOfferte] = useState<Map<number, number>>(new Map())
   const [bozzaOfferta, setBozzaOfferta] = useState<Record<number, string>>({})
-  const [spinOffseason, setSpinOffseason] = useState<StatoSpinOffseason | null>(null)
-  const [animazioneSpin, setAnimazioneSpin] = useState<AnimazioneSpin | null>(null)
   const [paginaAstaRuolo, setPaginaAstaRuolo] = useState<MacroRuolo>('GK')
   // Offrire impegna il denaro: quello che conta non e' il budget ma cio' che
   // resta dopo aver messo da parte le offerte ancora in gioco.
@@ -228,7 +211,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   const carica = useCallback(async (silenzioso = false) => {
     if (!silenzioso) setCaricamento(true)
     setErrore(null)
-    const [istanzeRes, proposteRes, trattativeRes, asteRes, offerteRes, contiRes, spinRes] = await Promise.all([
+    const [istanzeRes, proposteRes, trattativeRes, asteRes, offerteRes, contiRes] = await Promise.all([
       supabase.from('player_instances')
         .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato, sul_mercato')
         .eq('league_id', league.id).not('team_id', 'is', null),
@@ -243,11 +226,8 @@ export function Mercato({ membership, onNavigate }: Props) {
         .eq('league_id', league.id).order('giorno', { ascending: false }).order('id').limit(500),
       supabase.from('free_agent_bids').select('auction_id, ingaggio_offerto'),
       supabase.rpc('budget_disponibile', { p_league_id: league.id }),
-      league.fase_carriera === 'offseason'
-        ? supabase.rpc('stato_spin_offseason', { p_league_id: league.id })
-        : Promise.resolve({ data: null, error: null }),
     ])
-    const primoErrore = istanzeRes.error ?? proposteRes.error ?? asteRes.error ?? offerteRes.error ?? spinRes.error
+    const primoErrore = istanzeRes.error ?? proposteRes.error ?? asteRes.error ?? offerteRes.error
     if (primoErrore) { setErrore(primoErrore.message); setCaricamento(false); return }
 
     const istanze = istanzeRes.data ?? []
@@ -257,7 +237,6 @@ export function Mercato({ membership, onNavigate }: Props) {
     const daCercare = [...new Set([
       ...istanze.map((i) => i.player_id),
       ...asteRighe.map((a) => a.player_id),
-      ...((spinRes.data as StatoSpinOffseason | null)?.spin ?? []).map((spin) => spin.player_id),
     ])]
     const { data: anagrafica, error: erroreAnagrafica } = daCercare.length
       ? await supabase.from('players').select('id, nome, club, nazionalita, posizioni, piede, altezza, attributi, overall, eta, foto_url').in('id', daCercare)
@@ -281,15 +260,6 @@ export function Mercato({ membership, onNavigate }: Props) {
     setTrattativePubbliche(trattativeRes.error ? [] : (trattativeRes.data ?? []) as TrattativaPubblica[])
     setAste(asteRighe)
     setMieOfferte(new Map((offerteRes.data ?? []).map((o) => [o.auction_id, o.ingaggio_offerto])))
-    const statoSpin = spinRes.data as StatoSpinOffseason | null
-    setSpinOffseason(statoSpin ? {
-      ...statoSpin,
-      spin: statoSpin.spin.map((spin) => ({
-        ...spin,
-        foto_url: perId.get(spin.player_id)?.foto_url ?? null,
-        foto_firmata: fotoPerId.get(spin.player_id),
-      })),
-    } : null)
     // Un errore qui non deve impedire di usare il mercato: e' un indicatore.
     setConti(contiRes.error ? null : contiRes.data as typeof conti)
     setSvincolati(new Map(asteRighe.map((a) => [a.player_id, {
@@ -414,9 +384,10 @@ export function Mercato({ membership, onNavigate }: Props) {
 
   // Il live e' l'ultima tornata di estrazione della giornata corrente, mai
   // l'unione delle tornate manuali gia' chiuse nello stesso giorno. Esclude
-  // le aste da spin off-season: hanno una propria vetrina separata piu' sotto
-  // e, essendo datate col giorno corrente, altrimenti nasconderebbero
-  // un'estrazione del giorno precedente ancora aperta (chiude alle 21:00).
+  // le aste di origine spin off-season (funzionalita' rimossa, ma restano
+  // aste storiche con questa origine): essendo datate col giorno corrente,
+  // altrimenti nasconderebbero un'estrazione del giorno precedente ancora
+  // aperta (chiude alle 21:00).
   const asteEstrazione = aste.filter((a) => a.origine === 'estrazione')
   const giornoAste = asteEstrazione[0]?.giorno ?? null
   const asteDelGiorno = asteEstrazione.filter((a) => a.giorno === giornoAste)
@@ -553,72 +524,6 @@ export function Mercato({ membership, onNavigate }: Props) {
     } finally {
       setOffertaInCorso(null)
     }
-  }
-
-  async function usaSpin() {
-    if (inCorso || animazioneSpin) return
-    setInCorso(true)
-    setEsito(null)
-    const nomi = [...new Set([
-      ...rose.map((giocatore) => giocatore.nome),
-      ...Array.from(svincolati.values()).map((giocatore) => giocatore.nome),
-    ].filter(Boolean))]
-    const partenza = performance.now()
-    let indice = Math.floor(Math.random() * Math.max(nomi.length, 1))
-    setAnimazioneSpin({ fase: 'giro', nome: nomi[indice] ?? 'Scouting in corso' })
-    const rotazione = window.setInterval(() => {
-      indice = (indice + 1 + Math.floor(Math.random() * 5)) % Math.max(nomi.length, 1)
-      setAnimazioneSpin({ fase: 'giro', nome: nomi[indice] ?? 'Analisi del mercato' })
-    }, 85)
-
-    const risultato = await supabase.rpc('spin_offseason', { p_league_id: league.id })
-    const attesa = Math.max(0, 1750 - (performance.now() - partenza))
-    await new Promise((resolve) => window.setTimeout(resolve, attesa))
-    window.clearInterval(rotazione)
-
-    if (risultato.error) {
-      setAnimazioneSpin(null)
-      setEsito(risultato.error.message)
-      setInCorso(false)
-      return
-    }
-
-    const nuovoStato = risultato.data as StatoSpinOffseason
-    const estratto = nuovoStato.spin.find((spin) => spin.stato === 'proposto')
-    let fotoFirmata: string | undefined
-    let fotoUrl: string | null = null
-    if (estratto) {
-      const { data: giocatore } = await supabase.from('players').select('foto_url').eq('id', estratto.player_id).maybeSingle()
-      fotoUrl = giocatore?.foto_url ?? null
-      if (fotoUrl?.startsWith('http')) fotoFirmata = fotoUrl
-      else if (fotoUrl) {
-        const { data } = await supabase.storage.from('player-photos').createSignedUrl(fotoUrl, 3600)
-        fotoFirmata = data?.signedUrl
-      }
-      setAnimazioneSpin({ fase: 'reveal', nome: estratto.nome, overall: estratto.overall, ruolo: estratto.ruolo, foto: fotoFirmata })
-    }
-    await new Promise((resolve) => window.setTimeout(resolve, 850))
-    setSpinOffseason({
-      ...nuovoStato,
-      spin: nuovoStato.spin.map((spin) => spin.id === estratto?.id ? { ...spin, foto_url: fotoUrl, foto_firmata: fotoFirmata } : spin),
-    })
-    setAnimazioneSpin(null)
-    setEsito('Nuovo giocatore estratto.')
-    setInCorso(false)
-  }
-
-  async function ingaggiaSpin(spin: SpinOffseason) {
-    await chiama(
-      () => supabase.rpc('ingaggia_spin_offseason', { p_spin_id: spin.id }),
-      `${cognome(spin.nome)} ingaggiato.`,
-    )
-  }
-
-  async function mandaSpinAlMercato(spin: SpinOffseason) {
-    await chiama(
-      () => supabase.rpc('manda_spin_al_mercato', { p_spin_id: spin.id }),
-      `${cognome(spin.nome)} aggiunto agli svincolati del giorno.`,
-    )
   }
 
   function alterna(elenco: number[], id: number, imposta: (v: number[]) => void) {
@@ -828,47 +733,6 @@ export function Mercato({ membership, onNavigate }: Props) {
       </p>}
 
       {esito && <p className="notice">{esito}</p>}
-
-      {league.fase_carriera === 'offseason' && spinOffseason?.attivo && <section className="mercato-blocco mercato-spin">
-        <div className="sezione-testa">
-          <div><p className="kicker">Off-season</p><h2>Spin mercato</h2></div>
-          <span>{spinOffseason.rimasti} / 5 rimasti</span>
-        </div>
-        <p className="mercato-nota">
-          Ogni squadra ha 5 occasioni extra: lo spin propone un giocatore libero. Puoi prenderlo subito
-          oppure mandarlo nella lista svincolati, dove tutta la lega puo fare offerta.
-        </p>
-        <div className={`mercato-spin-stage ${animazioneSpin ? 'is-running' : ''}`}>
-        {animazioneSpin
-          ? <div className={`spin-reel spin-reel--${animazioneSpin.fase}`}>
-              <div className="spin-reel__portrait">
-                {animazioneSpin.foto ? <img src={animazioneSpin.foto} alt="" /> : <span aria-hidden="true">S1</span>}
-                {animazioneSpin.overall && <b>{animazioneSpin.overall}</b>}
-              </div>
-              <div><small>{animazioneSpin.fase === 'giro' ? 'DATABASE GIOCATORI' : 'PROFILO TROVATO'}</small><strong>{animazioneSpin.nome}</strong>{animazioneSpin.ruolo && <em>{animazioneSpin.ruolo}</em>}</div>
-              <i aria-hidden="true" />
-            </div>
-          : spinOffseason.spin.filter((spin) => spin.stato === 'proposto').length === 0
-          ? <button className="button button--primary" type="button" disabled={inCorso || spinOffseason.rimasti <= 0} onClick={() => void usaSpin()}>
-              {spinOffseason.rimasti <= 0 ? 'Spin esauriti' : 'Usa uno spin'}
-            </button>
-          : spinOffseason.spin.filter((spin) => spin.stato === 'proposto').map((spin) => <article className="mercato-spin-card" key={spin.id}>
-              <div className="mercato-spin-card__portrait">{spin.foto_firmata ? <img src={spin.foto_firmata} alt="" /> : <span aria-hidden="true">?</span>}<b>{spin.overall}</b></div>
-              <span><strong>{spin.nome}</strong><small>{spin.ruolo} Â· {spin.eta} anni Â· {spin.club}</small></span>
-              <em>{milioni(spin.ingaggio)}</em>
-              <footer>
-                <button className="button button--primary" type="button" disabled={inCorso} onClick={() => void ingaggiaSpin(spin)}>Ingaggia</button>
-                <button className="button button--secondary" type="button" disabled={inCorso} onClick={() => void mandaSpinAlMercato(spin)}>Manda al mercato</button>
-              </footer>
-            </article>)}
-        </div>
-        {spinOffseason.spin.some((spin) => spin.stato !== 'proposto') && <ul className="mercato-spin-log">
-          {spinOffseason.spin.filter((spin) => spin.stato !== 'proposto').slice(0, 5).map((spin) => <li key={spin.id}>
-            <strong>{cognome(spin.nome)}</strong>
-            <span>{spin.stato === 'ingaggiato' ? 'Ingaggiato' : 'Negli svincolati'}</span>
-          </li>)}
-        </ul>}
-      </section>}
 
       {/* ---- Ricevute: la cosa piu' urgente, quindi per prima ---- */}
       <section className="mercato-blocco">

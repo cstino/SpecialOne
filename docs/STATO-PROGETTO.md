@@ -1924,3 +1924,30 @@ bucket. Conseguenza accettata: un partecipante autenticato può anche elencare i
 - Verifiche: build e lint frontend OK; lint del database remoto senza errori né warning. Il test transazionale
   `tools/validazione/test_offseason_timer_24h.sql` verifica timer, blocco della chiusura anticipata,
   completamento automatico a 21, primo calcio alle 23:00 e cancellazione degli avvisi.
+
+### Rimossa la funzionalità "spin off-season"
+
+Richiesta diretta dell'utente, 27 agosto 2026: non piaciuta, va tolta del tutto — non solo
+disattivata per una lega. Erano le 5 occasioni extra per pescare un giocatore libero durante la
+finestra di preparazione (ingaggio diretto o invio agli svincolati del giorno).
+
+Rimossi `public.spin_offseason`, `ingaggia_spin_offseason`, `manda_spin_al_mercato`,
+`stato_spin_offseason`, `private.offseason_spin_corrente` e la tabella `offseason_spins`
+(nessuna FK entrante, verificato prima di cancellarla). Ripulite le due funzioni collegate:
+`finalizza_offseason` non chiude più spin rimasti in sospeso (non ne esistono più), e
+`estrai_svincolati_lega` non esclude più i giocatori con uno spin proposto dal sorteggio —
+resta invece l'esclusione per `private.rilasci_in_coda`, introdotta il giorno prima e senza
+relazione con questa rimozione.
+
+Attenzione al nome: "spin" indica anche il meccanismo di estrazione delle carte nel draft "BY
+ROLE" (`draft_by_role_spin`) — tutt'altra funzionalità, non toccata da questa rimozione.
+
+Lato frontend, tolta l'intera sezione da `Mercato.tsx` (stato, fetch, le tre funzioni
+`usaSpin`/`ingaggiaSpin`/`mandaSpinAlMercato`, il blocco JSX con l'animazione) e il relativo CSS
+morto. Restano intenzionalmente **il tipo `origine: 'spin_offseason'`** su `Asta` e il badge che
+lo mostra nelle card: esistono ancora aste storiche generate da vecchi spin (senza alcun vincolo
+verso la tabella rimossa), e restano visibili come aste normali.
+
+Verificato prima dell'esecuzione reale: solo Real Fampionato aveva spin legati a un'off-season
+ancora aperta (10 righe, delle due squadre entranti, tutte già risolte — nessuno restava "a
+metà" con la rimozione). Applicata prima in transazione con rollback, poi per davvero.
