@@ -7,7 +7,17 @@ stagione 2, 39 giocatori in procinto di essere svincolati d'ufficio).
 Questo file è **vincolante** quanto `CLAUDE.md`. Dove contraddice `docs/design.md`,
 vince questo file: è più recente.
 
-**Stato: approvato, non ancora implementato.**
+**Stato: in corso di implementazione.**
+
+| Passo | Contenuto | Stato |
+|---|---|---|
+| 1 | Fondamenta: tetto, capienza, verifica | fatto |
+| 2 | Contratti annuali | fatto |
+| 3a | Aste sugli svincolati | fatto |
+| 3b | Percorsi delle squadre PC (offerte, rinnovi, proposte, risposte) | fatto |
+| 4 | Draft | da fare |
+| 5 | Scambi umani, rimozione del modello a cassa | da fare |
+| 6 | Pulizia frontend | da fare |
 
 ---
 
