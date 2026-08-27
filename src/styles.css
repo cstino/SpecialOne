@@ -2330,7 +2330,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .tabellone { display:grid;gap:1.1rem; }
 .tabellone-vincitore { color:#c8b6dd;font-size:.85rem; }
 .tabellone-vincitore b { color:#fff; }
-.tabellone--playout .tabellone-vincitore b { color:#67e8b0; }
+.tabellone--draft .tabellone-vincitore b { color:#67e8b0; }
 .tabellone-turno { display:grid;gap:.7rem; }
 .tabellone-turno h3 { margin:0;color:#b99dce;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase; }
 .tabellone-tie { display:grid;gap:.35rem;border:1px solid #332b40;border-radius:12px;padding:.7rem .8rem;background:#1b1626; }
@@ -2345,7 +2345,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .tabellone-gol em { font-style:normal;color:#b99dce;font-weight:500;font-size:.82rem; }
 .tabellone-riga.e-vincitore .tabellone-nome { color:#fff; }
 .tabellone-riga.e-vincitore .tabellone-gol { color:#9b43f5; }
-.tabellone--playout .tabellone-riga.e-vincitore .tabellone-gol { color:#34d399; }
+.tabellone--draft .tabellone-riga.e-vincitore .tabellone-gol { color:#34d399; }
 .tabellone-riga:not(.e-vincitore) { color:#a9a0b7; }
 .tabellone-mani { display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.3rem;padding-top:.5rem;border-top:1px solid #2a2336; }
 .tabellone-mano { font-size:.76rem;color:#a9a0b7;background:#241d30;border:1px solid #332b40;border-radius:7px;padding:.25rem .5rem; }

@@ -60,7 +60,7 @@ export function AlboDOro({ membership, onNavigate }: Props) {
       supabase.from('standings').select('*').eq('league_id', league.id).in('season_id', idsStagioni),
       supabase.from('brackets').select('season_id, vincitore_team_id')
         .eq('league_id', league.id).in('season_id', idsStagioni)
-        .eq('tipo', 'playoff').eq('stato', 'concluso'),
+        .eq('tipo', 'title').eq('stato', 'concluso'),
     ])
     if (classificheRes.error || playoffRes.error) {
       setError(classificheRes.error?.message ?? playoffRes.error?.message ?? 'Dati non disponibili.')
@@ -129,7 +129,7 @@ export function AlboDOro({ membership, onNavigate }: Props) {
         <div>
           <p className="kicker">{league.nome}</p>
           <h1>Albo d'oro.</h1>
-          <p>Le squadre che hanno scritto la storia della lega, stagione dopo stagione. Dalla stagione 2 il titolo si assegna ai playoff, non in classifica.</p>
+          <p>Le squadre che hanno scritto la storia della lega, stagione dopo stagione. Dalla stagione 2 il titolo si assegna al Title Playoff, non in classifica.</p>
         </div>
         <div className="honors-cup" aria-hidden="true"><span>★</span><small>{campioni.length}</small><b>titoli assegnati</b></div>
       </section>
@@ -144,7 +144,7 @@ export function AlboDOro({ membership, onNavigate }: Props) {
             <h2>{ultimoCampione.squadra?.nome ?? 'Squadra non disponibile'}</h2>
             <span>
               {ultimoCampione.daPlayoff
-                ? <>Vincitore dei playoff · {ultimoCampione.classifica.posizione}ª in stagione regolare</>
+                ? <>Vincitore del Title Playoff · {ultimoCampione.classifica.posizione}ª in stagione regolare</>
                 : <>{ultimoCampione.classifica.punti} punti · {ultimoCampione.classifica.vittorie} vittorie</>}
             </span>
           </div>
@@ -160,7 +160,7 @@ export function AlboDOro({ membership, onNavigate }: Props) {
             <Crest value={campione.squadra?.stemma_url ?? null} imageUrl={campione.stemmaFirmato} />
             <strong>{campione.squadra?.nome ?? 'Squadra non disponibile'}</strong>
             <span className="honors-list__record">
-              {campione.daPlayoff && <b className="honors-badge">PLAYOFF</b>}
+              {campione.daPlayoff && <b className="honors-badge">TITLE PLAYOFF</b>}
               {campione.classifica.punti} PT <i>·</i> {campione.classifica.vittorie}V {campione.classifica.pareggi}N {campione.classifica.sconfitte}P
             </span>
             {indice === 0 && <em>IN CARICA</em>}

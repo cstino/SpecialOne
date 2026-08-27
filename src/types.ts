@@ -76,7 +76,7 @@ export type Fixture = {
   data_sim: string
   stato: 'programmata' | 'in_corso' | 'simulata' | 'annullata'
   campo_neutro: boolean
-  // Valorizzati solo per le partite di playoff/playout (design §10.7).
+  // Valorizzati solo per le partite di Title/Draft Playoff (docs/decisioni-draft-picks.md §1).
   bracket_tie_id: number | null
   mano: 1 | 2 | null
 }
@@ -87,7 +87,7 @@ export type Bracket = {
   id: number
   league_id: number
   season_id: number
-  tipo: 'playoff' | 'playout'
+  tipo: 'title' | 'draft'
   stato: 'in_corso' | 'concluso'
   vincitore_team_id: number | null
   finalista_team_id: number | null

@@ -8,10 +8,10 @@ import { useSeasonData } from '../lib/useSeasonData'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; onOpenMatch: (id: number) => void }
 
-const TITOLO: Record<Bracket['tipo'], string> = { playoff: 'Playoff', playout: 'Playout' }
+const TITOLO: Record<Bracket['tipo'], string> = { title: 'Title Playoff', draft: 'Draft Playoff' }
 const SOTTOTITOLO: Record<Bracket['tipo'], string> = {
-  playoff: 'Si compete per il titolo di campione.',
-  playout: 'Si compete per il bonus in denaro: al vincitore e al finalista.',
+  title: 'Si compete per il titolo di campione.',
+  draft: 'Si compete per le prime scelte del prossimo draft.',
 }
 
 // Il nome del turno si legge da quanti ne restano, non da quanti ne sono
@@ -88,16 +88,16 @@ export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
       <section className="help-heading">
         <p className="kicker">{league.nome}</p>
         <h1>Tabellone</h1>
-        <p>Playoff e playout della stagione {league.stagione_corrente}.</p>
+        <p>Title Playoff e Draft Playoff della stagione {league.stagione_corrente}.</p>
       </section>
 
       {bracketsStagione.length === 0 && <section className="offseason-card">
         <p className="kicker">Non ancora</p>
         <h2>I tabelloni non sono ancora nati</h2>
         <p>
-          Playoff e playout si formano da soli quando finisce l’ultima giornata di campionato:
-          la metà alta della classifica si gioca il titolo, la metà bassa un bonus in denaro.
-          Servono almeno 8 squadre.
+          Title Playoff e Draft Playoff si formano da soli quando finisce l’ultima giornata di
+          campionato: le prime 8 in classifica si giocano il titolo, il resto si gioca l’ordine
+          di scelta del prossimo draft. Servono almeno 8 squadre.
         </p>
       </section>}
 
@@ -110,7 +110,7 @@ export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
             <div><p className="kicker">{SOTTOTITOLO[bracket.tipo]}</p><h2>{TITOLO[bracket.tipo]}</h2></div>
             {bracket.stato === 'concluso' && bracket.vincitore_team_id && (
               <span className="tabellone-vincitore">
-                {bracket.tipo === 'playoff' ? 'Campione' : 'Vince il playout'}: <b>{teamById.get(bracket.vincitore_team_id)?.nome ?? '—'}</b>
+                {bracket.tipo === 'title' ? 'Campione' : 'Vince il Draft Playoff'}: <b>{teamById.get(bracket.vincitore_team_id)?.nome ?? '—'}</b>
               </span>
             )}
           </div>
