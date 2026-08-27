@@ -118,9 +118,37 @@ bassa (vedi §3.3).
 
 ### 3.1 Due finestre per stagione
 
-- **ON-Season X** — mercato a metà della stagione X, apre dopo la giornata
+- **ON-Season X** — l'estrazione avviene a metà della stagione X, dopo la giornata
   `⌊giornate_totali / 2⌋` (vedi §6).
-- **OFF-Season X** — mercato durante l'off-season che porta alla stagione X.
+- **OFF-Season X** — l'estrazione avviene durante l'off-season che porta alla stagione X.
+
+### 3.1 bis Quando si vede il pool e fino a quando si modificano le preferenze
+
+*Precisato dall'utente il 28 agosto 2026.*
+
+Il pool **non** si svela poco prima dell'estrazione: si svela **appena si chiude lo
+stadio precedente**, e da quel momento le preferenze si possono già indicare. Il
+tempo di riflessione è quindi lungo, non una finestra stretta a ridosso del sorteggio.
+
+| Momento | Cosa succede |
+|---|---|
+| L'off-season finisce e comincia la stagione X | Si svela il pool di **ON-Season X**, preferenze aperte |
+| Si risolve il draft ON-Season X | Si svela il pool di **OFF-Season X**, preferenze aperte |
+| Si risolve il draft OFF-Season X | Il ciclo riprende con la stagione successiva |
+
+**Le preferenze restano modificabili fino a un'ora prima dell'estrazione.**
+Nell'ultima ora la lista è congelata: è la stessa logica delle buste chiuse, evita
+il ritocco dell'ultimo secondo e dà alla risoluzione un input stabile.
+
+Ne segue che ogni finestra ha bisogno di un **istante di estrazione noto in
+anticipo**, non ricavato al volo quando il cron gira: serve sia per calcolare il
+congelamento a −1h, sia per mostrare un conto alla rovescia onesto in interfaccia.
+È registrato in `public.finestre_scelte`.
+
+> Il pool resta **immobile** dal momento in cui si svela fino alla risoluzione
+> (§6 bis). È proprio perché le preferenze si compilano con largo anticipo che il
+> pool non può cambiare sotto ai piedi: è la ragione per cui il mercato di
+> emergenza è stato limitato a overall ≤ 75.
 
 ### 3.2 Le scelte come asset scambiabile
 
