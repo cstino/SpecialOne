@@ -85,10 +85,12 @@ export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
       <span>Tabellone</span>
     </header>
     <div className="season-page season-page--narrow">
-      <section className="help-heading">
-        <p className="kicker">{league.nome}</p>
-        <h1>Tabellone</h1>
-        <p>Title Playoff e Draft Playoff della stagione {league.stagione_corrente}.</p>
+      <section className="season-title-row">
+        <div>
+          <p className="kicker">{league.nome}</p>
+          <h1>Tabellone.</h1>
+          <p>Title Playoff e Draft Playoff della stagione {league.stagione_corrente}.</p>
+        </div>
       </section>
 
       {bracketsStagione.length === 0 && <section className="offseason-card">

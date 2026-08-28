@@ -131,14 +131,20 @@ export function Scelte({ membership, onNavigate }: Props) {
       <span>Draft</span>
     </header>
     <div className="season-page season-page--narrow">
-      <section className="help-heading">
-        <p className="kicker">{league.nome}</p>
-        <h1>Draft.</h1>
-        <p>
-          Ogni ticket rappresenta una scelta in un mercato ON-Season o OFF-Season futuro. Lo
-          stemma è sempre quello della squadra che l'ha guadagnata con il proprio piazzamento
-          nei playoff — non cambia se la scelta viene scambiata, solo il proprietario cambia.
-        </p>
+      <section className="season-title-row">
+        <div>
+          <p className="kicker">{league.nome}</p>
+          <h1>Draft.</h1>
+          <p>
+            Ogni ticket rappresenta una scelta in un mercato ON-Season o OFF-Season futuro. Lo
+            stemma è sempre quello della squadra che l'ha guadagnata con il proprio piazzamento
+            nei playoff — non cambia se la scelta viene scambiata, solo il proprietario cambia.
+          </p>
+        </div>
+        <div className="season-total">
+          <strong>{mieScelte.length}</strong>
+          <span>{mieScelte.length === 1 ? 'scelta' : 'scelte'}</span>
+        </div>
       </section>
 
       {esito && <p className="notice">{esito}</p>}

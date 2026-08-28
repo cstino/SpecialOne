@@ -181,10 +181,16 @@ export function Finanza({ membership, onNavigate }: Props) {
     <GameNav league={league} active="finanza" onNavigate={naviga} />
     <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>Finanza</span></header>
     <div className="season-page season-page--narrow finanza-page">
-      <section className="help-heading">
-        <p className="kicker">{league.nome}</p>
-        <h1>Finanza</h1>
-        <p>Entrate, uscite e stipendi maturati giornata dopo giornata.</p>
+      <section className="season-title-row">
+        <div>
+          <p className="kicker">{league.nome}</p>
+          <h1>Finanza.</h1>
+          <p>Entrate, uscite e stipendi maturati giornata dopo giornata.</p>
+        </div>
+        <div className="season-total">
+          <strong>{money(membership.budget - (membership.budget_ingaggi_riservato ?? 0))}</strong>
+          <span>disponibile</span>
+        </div>
       </section>
 
       <SeasonState loading={loading} error={error} onRetry={carica} />
