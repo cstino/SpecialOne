@@ -1289,6 +1289,13 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .season-team-button:focus-visible { outline: 1px solid #9f5fd0; outline-offset: 4px; }
 .season-team strong { min-width: 0; overflow: hidden; color: #eee9f4; font-size: .87rem; text-overflow: ellipsis; white-space: nowrap; }
 .season-team--reversed { flex-direction: row-reverse; text-align: right; }
+/* Card "Ultima/Prossima partita" ridisegnate (SeasonOverview): il nome
+   affiancato allo stemma tronca quasi subito perche' il punteggio in
+   grande al centro lascia poco spazio orizzontale. Nome sotto lo stemma,
+   centrato e libero di andare a capo su due righe invece di troncare. */
+.overview-fixture-teams .season-team,
+.overview-fixture-teams .season-team--reversed { flex: 1; min-width: 0; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.overview-fixture-teams .season-team strong { max-width: 100%; overflow: visible; white-space: normal; text-overflow: clip; font-size: .78rem; line-height: 1.15; }
 .next-match-duel .season-team { flex-direction: column; text-align: center; }
 .next-match-duel .season-team .crest { width: 82px; filter: drop-shadow(0 13px 20px rgba(0,0,0,.3)); }
 .next-match-duel .season-team strong { max-width: 180px; font-size: 1rem; white-space: normal; }

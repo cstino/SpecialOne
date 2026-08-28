@@ -96,7 +96,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
                   {ultimaVista ? 'Dettagli ›' : 'Vedi risultato ›'}
                 </span>
               </div>
-              <div className="flex items-center justify-between gap-3">
+              <div className="overview-fixture-teams flex items-center justify-between gap-3">
                 <TeamLabel team={data.teamById.get(data.lastFixture.home_team_id)} imageUrl={data.crestUrlByTeamId.get(data.lastFixture.home_team_id)} onClick={() => onOpenTeam(data.lastFixture!.home_team_id)} />
                 <FixtureScore fixture={data.lastFixture} match={ultimaPartita} reveal={!ultimaVista} />
                 <TeamLabel team={data.teamById.get(data.lastFixture.away_team_id)} imageUrl={data.crestUrlByTeamId.get(data.lastFixture.away_team_id)} reversed onClick={() => onOpenTeam(data.lastFixture!.away_team_id)} />
@@ -116,7 +116,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
               </span>
             </div>
             {data.nextFixture ? (
-              <div className="flex items-center justify-between gap-3">
+              <div className="overview-fixture-teams flex items-center justify-between gap-3">
                 <TeamLabel team={data.teamById.get(data.nextFixture.home_team_id)} imageUrl={data.crestUrlByTeamId.get(data.nextFixture.home_team_id)} onClick={() => onOpenTeam(data.nextFixture!.home_team_id)} />
                 <FixtureScore fixture={data.nextFixture} match={data.matchByFixture.get(data.nextFixture.id)} />
                 <TeamLabel team={data.teamById.get(data.nextFixture.away_team_id)} imageUrl={data.crestUrlByTeamId.get(data.nextFixture.away_team_id)} reversed onClick={() => onOpenTeam(data.nextFixture!.away_team_id)} />
