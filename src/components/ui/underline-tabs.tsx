@@ -33,11 +33,11 @@ export function UnderlineTabs<T extends string>({ tabs, value, onChange, layoutI
             aria-selected={active}
             disabled={tab.disabled}
             onClick={() => onChange(tab.value)}
-            className={`relative pb-3 text-[.8rem] font-bold tracking-tight transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${active ? 'text-white' : 'text-white/45 hover:text-white/70'}`}
+            className={`relative flex items-center pb-3 text-[.8rem] font-bold tracking-tight transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${active ? 'text-white' : 'text-white/45 hover:text-white/70'}`}
           >
             {tab.label}
             {tab.badge != null && (
-              <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[.65rem] font-extrabold tabular-nums ${active ? 'bg-white/15 text-white' : 'bg-white/[0.06] text-white/40'}`}>
+              <span className={`ml-1.5 flex items-center rounded-full px-1.5 py-0.5 text-[.65rem] font-extrabold tabular-nums leading-none ${active ? 'bg-white/15 text-white' : 'bg-white/[0.06] text-white/40'}`}>
                 {tab.badge}
               </span>
             )}

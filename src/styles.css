@@ -114,7 +114,7 @@ button { color: inherit; }
    specifica gia' sfondo/bordo/padding, quindi vince comunque su questa
    per specificita' — il reset tocca solo i bottoni "nudi" che oggi non
    hanno alcuna regola a coprire l'aspetto nativo. */
-button { appearance: none; -webkit-appearance: none; background: none; border: 0; padding: 0; margin: 0; text-align: inherit; cursor: pointer; }
+button { appearance: none; -webkit-appearance: none; background: none; border: 0; padding: 0; margin: 0; text-align: inherit; cursor: pointer; line-height: normal; }
 button, label, input, select { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, input:focus-visible, select:focus-visible {
   outline: 3px solid var(--warning);
