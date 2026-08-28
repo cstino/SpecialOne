@@ -1190,6 +1190,25 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .scelte-pool b { min-width:30px; color:#c58cff; font-size:1.1rem; text-align:center; }
 .scelte-pool span { display:grid; gap:2px; }
 .scelte-pool small { color:#948aa8; font-size:.76rem; }
+.scelte-pool--scelta { max-height:340px; overflow-y:auto; margin-top:10px; }
+.scelte-pool--scelta li { justify-content:space-between; }
+
+.scelte-preferenze { margin-top:22px; padding-top:18px; border-top:1px dashed rgba(255,255,255,.14); }
+.scelte-preferenze + .scelte-preferenze { margin-top:22px; }
+.scelte-preferenze__testa { display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:10px; }
+.scelte-preferenze__testa strong { font-size:1.05rem; color:#fff; }
+.scelte-preferenze__testa span { color:#d9c6f5; font-size:.78rem; }
+.scelte-preferenze__lista { display:grid; gap:6px; list-style:none; margin:0 0 10px; padding:0; }
+.scelte-preferenze__lista li { display:flex; align-items:center; gap:12px; padding:8px 12px; border-radius:10px; background:rgba(0,0,0,.2); }
+.scelte-preferenze__lista b { min-width:20px; color:#fff; }
+.scelte-preferenze__lista span { flex:1; color:#fbf8ff; font-size:.85rem; }
+.scelte-preferenze__azioni { display:flex; gap:4px; }
+.scelte-preferenze__azioni button { width:26px; height:26px; border:1px solid rgba(255,255,255,.2); border-radius:7px; color:#fff; background:transparent; cursor:pointer; font-size:.72rem; }
+.scelte-preferenze__azioni button:disabled { opacity:.35; cursor:default; }
+.scelte-preferenze__vuota { color:#e5c8ff; font-size:.82rem; padding:8px 0; }
+.scelte-preferenze__aggiungi { margin-bottom:12px; }
+.scelte-preferenze__aggiungi summary { cursor:pointer; color:#fff; font-weight:800; font-size:.82rem; }
+.scelte-preferenze__aggiungi .scelte-pool li { background:rgba(0,0,0,.2); border-color:rgba(255,255,255,.1); }
 .season-round-stamp { width: 132px; aspect-ratio: 1; display: grid; place-content: center; justify-items: center; border: 1px solid #4b3a5f; border-radius: 20px; background: linear-gradient(145deg, #24192f, #17141f); box-shadow: 0 18px 45px rgba(0,0,0,.26); }
 .season-round-stamp small { color: #af88cf; font-size: .58rem; font-weight: 900; letter-spacing: .16em; }
 .season-round-stamp strong { margin: 2px 0 -3px; color: #fff; font-family: "Aptos Narrow", "Arial Narrow", sans-serif; font-size: 3.7rem; line-height: 1; }

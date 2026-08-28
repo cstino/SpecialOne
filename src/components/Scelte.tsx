@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
-import { MACRO_LABEL, macroRuolo, type MacroRuolo } from '../lib/ruoli'
 import { formatCountdown, useOraCorrente } from '../lib/countdown'
 import type { League, Membership, SceltaDraft } from '../types'
 import { GameNav, type GameView } from './GameNav'
@@ -20,49 +19,47 @@ const ETICHETTA_STATO: Record<SceltaDraft['stato'], string> = {
 }
 
 type GiocatorePool = { id: number; nome: string; club: string; posizioni: string[]; overall: number; eta: number }
-
-// Le 13:00 di Roma dello stesso giorno solare di una data ISO, robusto al
-// cambio ora legale/solare: si prova prima il candidato in CET poi in CEST
-// e si tiene quello che l'orologio di Roma legge davvero come 13:00.
-function alle13RomaStessoGiorno(dataIso: string): Date {
-  const giorno = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(dataIso))
-  for (const scarto of [1, 2]) {
-    const candidato = new Date(`${giorno}T${String(13 - scarto).padStart(2, '0')}:00:00Z`)
-    const oraRoma = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit', hour12: false }).format(candidato)
-    if (oraRoma === '13:00') return candidato
-  }
-  return new Date(`${giorno}T13:00:00Z`)
+type FinestraScelte = {
+  league_id: number; stagione: number; finestra: SceltaDraft['finestra']
+  svelata_il: string; estrazione_il: string | null; risolta_il: string | null
 }
+type Preferenza = { scelta_id: number; ordine: number; player_id: number }
 
 export function Scelte({ membership, onNavigate }: Props) {
   const league = membership.league as League
   const dati = useSeasonData(membership)
   const adesso = useOraCorrente()
   const [scelte, setScelte] = useState<SceltaDraft[]>([])
-  const [pool, setPool] = useState<GiocatorePool[]>([])
-  const [poolCaricato, setPoolCaricato] = useState(false)
-  const [filtroRuolo, setFiltroRuolo] = useState<MacroRuolo>('ALL')
+  const [finestre, setFinestre] = useState<FinestraScelte[]>([])
+  const [preferenze, setPreferenze] = useState<Preferenza[]>([])
+  const [pool, setPool] = useState<Map<string, GiocatorePool[]>>(new Map())
   const [loading, setLoading] = useState(true)
   const [errore, setErrore] = useState<string | null>(null)
+  const [esito, setEsito] = useState<string | null>(null)
+  const [salvataggioInCorso, setSalvataggioInCorso] = useState<number | null>(null)
+  // Bozze locali: scelta_id -> lista ordinata di player_id, inizializzate
+  // dalle preferenze già salvate e poi editate liberamente finché non si
+  // preme "Salva" (che sostituisce integralmente la lista sul server).
+  const [bozze, setBozze] = useState<Record<number, number[]>>({})
 
-  useEffect(() => {
-    let vivo = true
-    async function carica() {
-      setLoading(true)
-      const { data, error } = await supabase.from('scelte_draft').select('*').eq('league_id', league.id)
-        .order('stagione').order('finestra')
-      if (!vivo) return
-      if (error) { setErrore(error.message); setLoading(false); return }
-      setScelte((data ?? []) as SceltaDraft[])
-      setLoading(false)
-    }
-    void carica()
-    return () => { vivo = false }
-  }, [league.id])
+  const carica = async () => {
+    setLoading(true)
+    const [sceltaRes, finestreRes, prefRes] = await Promise.all([
+      supabase.from('scelte_draft').select('*').eq('league_id', league.id).order('stagione').order('finestra'),
+      supabase.from('finestre_scelte').select('*').eq('league_id', league.id),
+      supabase.from('scelte_preferenze').select('scelta_id, ordine, player_id').order('ordine'),
+    ])
+    const primoErrore = sceltaRes.error ?? finestreRes.error ?? prefRes.error
+    if (primoErrore) { setErrore(primoErrore.message); setLoading(false); return }
+    setScelte((sceltaRes.data ?? []) as SceltaDraft[])
+    setFinestre((finestreRes.data ?? []) as FinestraScelte[])
+    setPreferenze((prefRes.data ?? []) as Preferenza[])
+    setLoading(false)
+  }
+
+  useEffect(() => { void carica() }, [league.id])
 
   const teamById = useMemo(() => new Map(dati.teams.map((t) => [t.id, t])), [dati.teams])
-  // ON prima di OFF a parita' di stagione: e' l'ordine in cui le due finestre
-  // si aprono davvero durante l'anno.
   const ordineFinestra: Record<SceltaDraft['finestra'], number> = { on: 0, off: 1 }
   const mieScelte = useMemo(
     () => scelte.filter((s) => s.team_proprietario_id === membership.id)
@@ -70,60 +67,64 @@ export function Scelte({ membership, onNavigate }: Props) {
     [scelte, membership.id],
   )
 
-  // Finestra ON-Season: si apre a giornata ⌊totali/2⌋ (appena giocata la
-  // precedente) e scade alle 13:00 del giorno in cui si gioca quella
-  // giornata (10h prima della simulazione, docs/decisioni-draft-picks.md
-  // deciso il 27/8 in chat). Nessuna finestra prima della stagione 2: le
-  // scelte partono da li' (§3.2).
-  const giornataMezza = dati.giornateStagione ? Math.floor(dati.giornateStagione / 2) : null
-  const fixtureMezza = giornataMezza
-    ? dati.fixtures.find((f) => f.giornata === giornataMezza && f.bracket_tie_id == null)
-    : null
-  const onSeasonVisibile = league.stagione_corrente >= 2 && league.fase_carriera !== 'offseason'
-    && fixtureMezza != null && dati.currentGiornata === giornataMezza
-  const onSeasonScadenza = fixtureMezza ? alle13RomaStessoGiorno(fixtureMezza.data_sim) : null
-
-  // Finestra OFF-Season: usa la stessa scadenza dell'off-season vera e
-  // propria (leagues.offseason_fine, sempre 24h dall'apertura — trigger
-  // offseasons_durata_un_giorno). Non è una finestra separata: è l'ultima
-  // fase dell'off-season stessa.
-  const offSeasonVisibile = league.fase_carriera === 'offseason' && league.offseason_fine != null
-  const offSeasonScadenza = league.offseason_fine ? new Date(league.offseason_fine) : null
-
-  const finestraAttiva = offSeasonVisibile
-    ? { label: `OFF-Season ${league.stagione_corrente + 1}`, scadenza: offSeasonScadenza!, stagione: league.stagione_corrente + 1, finestra: 'off' as const }
-    : onSeasonVisibile
-      ? { label: `ON-Season ${league.stagione_corrente}`, scadenza: onSeasonScadenza!, stagione: league.stagione_corrente, finestra: 'on' as const }
-      : null
-
-  // Il pool non è "tutti gli svincolati overall>75": è un'estrazione dedicata
-  // alla finestra (10 per ruolo, 40 totali, private.estrai_pool_scelte),
-  // stabile finché la finestra non si risolve — non una query dal vivo che
-  // cambierebbe ad ogni refresh sotto ai piedi di chi sta scegliendo.
-  useEffect(() => {
-    if (!finestraAttiva) { setPool([]); setPoolCaricato(true); return }
-    let vivo = true
-    async function carica() {
-      setPoolCaricato(false)
-      const { data, error } = await supabase.from('scelte_pool')
-        .select('player_id, players(id, nome, club, posizioni, overall, eta)')
-        .eq('league_id', league.id).eq('stagione', finestraAttiva!.stagione).eq('finestra', finestraAttiva!.finestra)
-      if (!vivo) return
-      if (error) { setErrore(error.message); setPoolCaricato(true); return }
-      setPool((data ?? [])
-        .map((r) => r.players as unknown as GiocatorePool | null)
-        .filter((g): g is GiocatorePool => g != null)
-        .sort((a, b) => b.overall - a.overall))
-      setPoolCaricato(true)
-    }
-    void carica()
-    return () => { vivo = false }
-  }, [league.id, finestraAttiva?.stagione, finestraAttiva?.finestra])
-
-  const poolFiltrato = useMemo(
-    () => pool.filter((g) => filtroRuolo === 'ALL' || macroRuolo(g.posizioni) === filtroRuolo),
-    [pool, filtroRuolo],
+  // Le finestre "attive" sono quelle svelate e non ancora risolte: e' li'
+  // che si possono ancora comporre le preferenze. Di solito una sola alla
+  // volta, ma niente impedisce (per un attimo) di averne due.
+  const finestreAttive = useMemo(
+    () => finestre.filter((f) => f.risolta_il == null)
+      .sort((a, b) => a.stagione - b.stagione || ordineFinestra[a.finestra] - ordineFinestra[b.finestra]),
+    [finestre],
   )
+
+  // Il pool non è "tutti gli svincolati overall>75": è l'estrazione dedicata
+  // alla finestra (private.estrai_pool_scelte, 10 per ruolo), stabile finché
+  // la finestra non si risolve.
+  useEffect(() => {
+    let vivo = true
+    async function caricaPool() {
+      const mappa = new Map<string, GiocatorePool[]>()
+      await Promise.all(finestreAttive.map(async (f) => {
+        const chiave = `${f.stagione}-${f.finestra}`
+        const { data, error } = await supabase.from('scelte_pool')
+          .select('player_id, players(id, nome, club, posizioni, overall, eta)')
+          .eq('league_id', league.id).eq('stagione', f.stagione).eq('finestra', f.finestra)
+        if (error) { if (vivo) setErrore(error.message); return }
+        mappa.set(chiave, (data ?? [])
+          .map((r) => r.players as unknown as GiocatorePool | null)
+          .filter((g): g is GiocatorePool => g != null)
+          .sort((a, b) => b.overall - a.overall))
+      }))
+      if (vivo) setPool(mappa)
+    }
+    void caricaPool()
+    return () => { vivo = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [league.id, finestreAttive.map((f) => `${f.stagione}-${f.finestra}`).join(',')])
+
+  // Inizializza le bozze dalle preferenze già salvate, una sola volta per
+  // scelta (non deve sovrascrivere cio' che l'utente sta ancora editando).
+  useEffect(() => {
+    setBozze((correnti) => {
+      const nuove = { ...correnti }
+      for (const s of mieScelte) {
+        if (nuove[s.id] !== undefined) continue
+        nuove[s.id] = preferenze.filter((p) => p.scelta_id === s.id).sort((a, b) => a.ordine - b.ordine).map((p) => p.player_id)
+      }
+      return nuove
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mieScelte, preferenze])
+
+  async function salvaPreferenze(sceltaId: number) {
+    setSalvataggioInCorso(sceltaId)
+    setEsito(null)
+    const { error } = await supabase.rpc('salva_preferenze_scelta', {
+      p_scelta_id: sceltaId, p_player_ids: bozze[sceltaId] ?? [],
+    })
+    setEsito(error ? error.message : 'Preferenze salvate.')
+    if (!error) await carica()
+    setSalvataggioInCorso(null)
+  }
 
   return <main className="app-shell season-shell">
     <GameNav league={league} active="scelte" onNavigate={onNavigate} />
@@ -142,33 +143,104 @@ export function Scelte({ membership, onNavigate }: Props) {
         </p>
       </section>
 
-      {finestraAttiva
-        ? <section className="offseason-card offseason-card--accent">
-            <p className="kicker">Finestra aperta</p>
-            <h2>{finestraAttiva.label}</h2>
-            <p className="scelte-countdown">{formatCountdown(Math.max(0, finestraAttiva.scadenza.getTime() - adesso))}</p>
-            <p>Allo scadere del countdown i giocatori vengono attribuiti in base alle liste di preferenze.</p>
-          </section>
-        : <section className="offseason-card">
-            <p className="kicker">Nessuna finestra aperta</p>
-            <h2>Prossima finestra non ancora iniziata</h2>
-            <p>L'ON-Season si apre a metà stagione, l'OFF-Season durante l'ultima fase dell'off-season.</p>
-          </section>}
-
-      <section className="offseason-card">
-        <p className="kicker">In arrivo</p>
-        <h2>Liste di preferenze</h2>
-        <p>
-          La sezione per indicare le preferenze sui giocatori del pool qui sotto (fino a N
-          scelte, dove N è la posizione del ticket) arriva in un passo successivo. Manca
-          ancora anche l'estrazione automatica del pool all'apertura della finestra: per ora
-          va lanciata a mano.
-        </p>
-      </section>
+      {esito && <p className="notice">{esito}</p>}
 
       {(dati.loading || loading || dati.error || errore) && <SeasonState loading={dati.loading || loading} error={dati.error ?? errore} onRetry={dati.reload} />}
 
       {!dati.loading && !loading && !dati.error && !errore && <>
+
+      {finestreAttive.length === 0 && <section className="offseason-card">
+        <p className="kicker">Nessuna finestra aperta</p>
+        <h2>Prossima finestra non ancora iniziata</h2>
+        <p>L'ON-Season si apre a metà stagione, l'OFF-Season durante l'ultima fase dell'off-season.</p>
+      </section>}
+
+      {finestreAttive.map((f) => {
+        const chiave = `${f.stagione}-${f.finestra}`
+        const label = `${ETICHETTA_FINESTRA[f.finestra]} ${f.stagione}`
+        const scadenza = f.estrazione_il ? new Date(f.estrazione_il) : null
+        const congelate = scadenza != null && adesso >= scadenza.getTime() - 60 * 60 * 1000
+        const poolFinestra = pool.get(chiave) ?? []
+        const mieScelteFinestra = mieScelte.filter((s) => s.stagione === f.stagione && s.finestra === f.finestra && s.stato === 'determinata')
+
+        return <section className="offseason-card offseason-card--accent" key={chiave}>
+          <p className="kicker">Finestra aperta</p>
+          <h2>{label}</h2>
+          {scadenza
+            ? <>
+                <p className="scelte-countdown">{formatCountdown(Math.max(0, scadenza.getTime() - adesso))}</p>
+                <p>{congelate
+                  ? 'Le preferenze sono congelate: mancano meno di un\'ora all\'estrazione.'
+                  : 'Le preferenze restano modificabili fino a un\'ora prima dell\'estrazione.'}</p>
+              </>
+            : <p>La scadenza non è ancora fissata (l'off-season non è ancora iniziata): le preferenze restano modificabili liberamente.</p>}
+
+          {mieScelteFinestra.length === 0
+            ? <p className="season-empty">Non hai scelte pronte in questa finestra.</p>
+            : mieScelteFinestra.map((s) => {
+                const bozza = bozze[s.id] ?? []
+                const salvate = preferenze.filter((p) => p.scelta_id === s.id).sort((a, b) => a.ordine - b.ordine).map((p) => p.player_id)
+                const modificata = JSON.stringify(bozza) !== JSON.stringify(salvate)
+                function giocatore(id: number) { return poolFinestra.find((g) => g.id === id) }
+                function aggiungi(id: number) {
+                  setBozze((correnti) => ({ ...correnti, [s.id]: [...(correnti[s.id] ?? []), id] }))
+                }
+                function rimuovi(indice: number) {
+                  setBozze((correnti) => ({ ...correnti, [s.id]: (correnti[s.id] ?? []).filter((_, i) => i !== indice) }))
+                }
+                function sposta(indice: number, delta: number) {
+                  setBozze((correnti) => {
+                    const lista = [...(correnti[s.id] ?? [])]
+                    const target = indice + delta
+                    if (target < 0 || target >= lista.length) return correnti
+                    ;[lista[indice], lista[target]] = [lista[target], lista[indice]]
+                    return { ...correnti, [s.id]: lista }
+                  })
+                }
+                return <div className="scelte-preferenze" key={s.id}>
+                  <div className="scelte-preferenze__testa">
+                    <strong>{s.posizione}ª scelta</strong>
+                    <span>fino a {s.posizione} {s.posizione === 1 ? 'preferenza' : 'preferenze'}</span>
+                  </div>
+
+                  <ol className="scelte-preferenze__lista">
+                    {bozza.length === 0
+                      ? <li className="scelte-preferenze__vuota">Nessuna preferenza indicata: se nessuno viene esercitato, resti senza giocatore.</li>
+                      : bozza.map((id, indice) => {
+                          const g = giocatore(id)
+                          return <li key={id}>
+                            <b>{indice + 1}</b>
+                            <span>{g ? `${cognome(g.nome)} · ${g.overall}` : `#${id}`}</span>
+                            <div className="scelte-preferenze__azioni">
+                              <button type="button" disabled={congelate || indice === 0} onClick={() => sposta(indice, -1)} aria-label="Sposta su">↑</button>
+                              <button type="button" disabled={congelate || indice === bozza.length - 1} onClick={() => sposta(indice, 1)} aria-label="Sposta giù">↓</button>
+                              <button type="button" disabled={congelate} onClick={() => rimuovi(indice)} aria-label="Rimuovi">✕</button>
+                            </div>
+                          </li>
+                        })}
+                  </ol>
+
+                  {!congelate && bozza.length < (s.posizione ?? 0) && <details className="scelte-preferenze__aggiungi">
+                    <summary>Aggiungi dal pool ({poolFinestra.length - bozza.length} disponibili)</summary>
+                    <ul className="scelte-pool scelte-pool--scelta">
+                      {poolFinestra.filter((g) => !bozza.includes(g.id)).map((g) => <li key={g.id}>
+                        <b>{g.overall}</b>
+                        <span><strong>{cognome(g.nome)}</strong><small>{g.club} · {(g.posizioni ?? []).join(' / ')} · {g.eta} anni</small></span>
+                        <button type="button" className="button button--secondary" onClick={() => aggiungi(g.id)}>Aggiungi</button>
+                      </li>)}
+                    </ul>
+                  </details>}
+
+                  <button className="button button--primary" type="button"
+                    disabled={congelate || !modificata || salvataggioInCorso === s.id}
+                    onClick={() => void salvaPreferenze(s.id)}>
+                    {salvataggioInCorso === s.id ? 'Salvo…' : 'Salva preferenze'}
+                  </button>
+                </div>
+              })}
+        </section>
+      })}
+
       <section className="mercato-blocco">
         <div className="sezione-testa">
           <div><p className="kicker">Le mie scelte</p><h2>{mieScelte.length} ticket</h2></div>
@@ -197,33 +269,6 @@ export function Scelte({ membership, onNavigate }: Props) {
               })}
             </ul>}
       </section>
-
-      {finestraAttiva && <section className="mercato-blocco">
-        <div className="sezione-testa">
-          <div><p className="kicker">10 per ruolo</p><h2>Pool di {finestraAttiva.label}</h2></div>
-          <small>{poolFiltrato.length} giocatori</small>
-        </div>
-        {!poolCaricato
-          ? <p className="season-empty">Carico il pool…</p>
-          : pool.length === 0
-            ? <p className="season-empty">Il pool di questa finestra non è ancora stato estratto.</p>
-            : <>
-                <nav className="free-agent-ruoli" aria-label="Ruolo del pool">
-                  {(['ALL', 'GK', 'DEF', 'MID', 'ATT'] as MacroRuolo[]).map((r) => <button
-                    key={r} type="button" className={filtroRuolo === r ? 'is-attivo' : ''}
-                    onClick={() => setFiltroRuolo(r)}
-                  >
-                    <span>{r === 'ALL' ? 'Tutti' : MACRO_LABEL[r]}</span><b>{pool.filter((g) => r === 'ALL' || macroRuolo(g.posizioni) === r).length}</b>
-                  </button>)}
-                </nav>
-                <ul className="scelte-pool">
-                  {poolFiltrato.map((g) => <li key={g.id}>
-                    <b>{g.overall}</b>
-                    <span><strong>{cognome(g.nome)}</strong><small>{g.club} · {(g.posizioni ?? []).join(' / ')} · {g.eta} anni</small></span>
-                  </li>)}
-                </ul>
-              </>}
-      </section>}
       </>}
     </div>
   </main>
