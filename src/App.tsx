@@ -178,7 +178,16 @@ export default function App() {
     return () => listener.subscription.unsubscribe()
   }, [])
 
-  const loadMemberships = useCallback(async () => {
+  // L'orologio del dispositivo puo' risultare momentaneamente avanti
+  // rispetto al server subito dopo una risincronizzazione (es. al risveglio
+  // dallo standby): il token sembra "emesso nel futuro" e Supabase lo
+  // rifiuta con questo messaggio. E' transitorio — ricaricare la pagina
+  // basta a farlo sparire — quindi prima di mostrare la schermata d'errore
+  // si tenta un refresh silenzioso del token, un paio di volte al massimo
+  // per non entrare in un loop se la causa fosse un'altra.
+  const eErroreOrologio = (messaggio: string) => messaggio.includes('issued at future')
+
+  const loadMemberships = useCallback(async (tentativo = 0): Promise<void> => {
     if (!session?.user) return
     setDataLoading(true)
     setError(null)
@@ -189,6 +198,11 @@ export default function App() {
       .order('creata_il', { ascending: false })
 
     if (teamError) {
+      if (eErroreOrologio(teamError.message) && tentativo < 2) {
+        await supabase.auth.refreshSession()
+        await new Promise((resolve) => window.setTimeout(resolve, 700))
+        return loadMemberships(tentativo + 1)
+      }
       setError(teamError.message)
       setDataLoading(false)
       return
@@ -207,6 +221,11 @@ export default function App() {
       .in('id', teams.map((team) => team.league_id))
 
     if (leagueError) {
+      if (eErroreOrologio(leagueError.message) && tentativo < 2) {
+        await supabase.auth.refreshSession()
+        await new Promise((resolve) => window.setTimeout(resolve, 700))
+        return loadMemberships(tentativo + 1)
+      }
       setError(leagueError.message)
       setDataLoading(false)
       return
