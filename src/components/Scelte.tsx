@@ -233,9 +233,28 @@ export function Scelte({ membership, onNavigate }: Props) {
                       ? <li className="scelte-preferenze__vuota">Nessuna preferenza indicata: se nessuno viene esercitato, resti senza giocatore.</li>
                       : bozza.map((id, indice) => {
                           const g = giocatore(id)
+                          const [primario, ...secondari] = g?.posizioni ?? []
+                          const macro = macroRuolo(g?.posizioni ?? [])
                           return <li key={id}>
-                            <b>{indice + 1}</b>
-                            <span>{g ? `${cognome(g.nome)} · ${g.overall}` : `#${id}`}</span>
+                            <span className="scelte-preferenze__rango">{indice + 1}</span>
+                            <div className="scelte-preferenze__foto">
+                              {g && foto.get(g.id)
+                                ? <img src={foto.get(g.id)} alt="" loading="lazy" />
+                                : <span aria-hidden="true">{g ? g.nome.charAt(0) : '?'}</span>}
+                            </div>
+                            {g
+                              ? <>
+                                  <b>{g.overall}</b>
+                                  <div className="scelte-preferenze__dettagli">
+                                    <strong>{cognome(g.nome)}</strong>
+                                    <div className="scelte-preferenze__ruoli">
+                                      <span className={`role-pill role-pill--${macro.toLowerCase()}`}>{primario ?? '—'}</span>
+                                      {secondari.length > 0 && <small>{secondari.join(' / ')}</small>}
+                                    </div>
+                                    <span className="scelte-preferenze__meta">{g.eta} anni · {(g.ingaggio_teorico / 1_000_000).toFixed(1)} M€</span>
+                                  </div>
+                                </>
+                              : <div className="scelte-preferenze__dettagli"><strong>#{id}</strong></div>}
                             <div className="scelte-preferenze__azioni">
                               <button type="button" disabled={congelate || indice === 0} onClick={() => sposta(indice, -1)} aria-label="Sposta su">↑</button>
                               <button type="button" disabled={congelate || indice === bozza.length - 1} onClick={() => sposta(indice, 1)} aria-label="Sposta giù">↓</button>
