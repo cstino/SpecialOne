@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useSeasonData } from '../lib/useSeasonData'
 import { formatCountdown, useOraCorrente } from '../lib/countdown'
-import { SFONDO_FASE, useFaseSquadra, type FaseSquadra } from '../lib/faseSquadra'
+import { LOGO_FASE, SFONDO_FASE, useFaseSquadra, type FaseSquadra } from '../lib/faseSquadra'
 import type { League, Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { Crest } from './Crest'
@@ -50,11 +50,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
           <div className="flex min-w-0 items-center gap-5">
             <Crest value={miaSquadra?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(membership.id)} size="large" />
             <div className="min-w-0">
-              <p className="flex items-center gap-2 text-[.68rem] font-extrabold uppercase tracking-[.12em] text-white/60">
-                <span>{LABEL_FASE[fase]}</span>
-                <span className="text-white/25">·</span>
-                <span>{league.nome}</span>
-              </p>
+              <img src={LOGO_FASE[fase]} alt={LABEL_FASE[fase]} className="h-6 w-auto mix-blend-screen md:h-8" />
               <TitoloAdattivo
                 testo={miaSquadra?.nome ?? 'La tua squadra'}
                 className="font-display mt-1 leading-none tracking-tight text-white drop-shadow-[0_4px_20px_rgba(0,0,0,.5)]"

@@ -12,6 +12,15 @@ export const SFONDO_FASE: Record<FaseSquadra, string> = {
   draft: '/sfondi-fase/draft_playoffs.png',
 }
 
+// Loghi testuali delle fasi, su sfondo nero: renderizzati con
+// mix-blend-mode: screen cosi' il nero diventa trasparente e resta solo la
+// scritta, senza dover ritagliare a mano lo sfondo di ogni immagine.
+export const LOGO_FASE: Record<FaseSquadra, string> = {
+  regular: '/loghi-fase/regular-season.png',
+  title: '/loghi-fase/title-playoffs.png',
+  draft: '/loghi-fase/draft-playoffs.png',
+}
+
 // In quale fase si trova una squadra: guarda se partecipa a un tabellone
 // ancora in corso per la stagione data. Nessun tabellone attivo (stagione
 // regolare, o tabelloni già tutti conclusi) ricade su 'regular'.
