@@ -1591,7 +1591,8 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .standings-panel footer small { margin-left: auto; }
 .standings-legend-dot { width: 3px; height: 15px; border-radius: 3px; background: #bd68ff; }
 .standings-zona { display: flex; justify-content: center; }
-.standings-zona__chip { width: 18px; height: 13px; border-radius: 4px; }
+.standings-zona__chip { width: 7px; height: 30px; border-radius: 3px; }
+.standings-panel footer .standings-zona__chip { height: 15px; }
 .standings-zona__chip.is-title { background: #2f6bff; box-shadow: 0 0 10px rgba(47,107,255,.5); }
 .standings-zona__chip.is-draft { background: #ff8a2b; box-shadow: 0 0 10px rgba(255,138,43,.4); }
 
