@@ -40,7 +40,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
           tocca i bordi, il testo poggia in basso su un velo scuro, una
           sola striscia di colore (per fase) fa da unica decorazione. */}
       <section
-        className="relative isolate flex min-h-[300px] w-full items-end overflow-hidden bg-cover bg-center md:min-h-[420px]"
+        className="relative isolate -mt-[76px] flex min-h-[376px] w-full items-end overflow-hidden bg-cover bg-center md:min-h-[496px]"
         style={{ backgroundImage: `url(${SFONDO_FASE[fase]})` }}
       >
         <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-black/10 via-black/45 to-black/95" />
