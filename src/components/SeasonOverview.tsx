@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useSeasonData } from '../lib/useSeasonData'
 import { formatCountdown, useOraCorrente } from '../lib/countdown'
+import { SFONDO_FASE, useFaseSquadra } from '../lib/faseSquadra'
 import type { League, Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { Crest } from './Crest'
@@ -14,6 +15,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
   const data = useSeasonData(membership)
   const adesso = useOraCorrente()
   const forma = useMemo(() => formaPerSquadra(data.fixtures, data.matchByFixture), [data.fixtures, data.matchByFixture])
+  const fase = useFaseSquadra(league.id, membership.id, data.season?.id)
   const miaSquadra = data.teamById.get(membership.id)
   const miaClassifica = data.standings.find((riga) => riga.team_id === membership.id)
   const ultimaPartita = data.lastFixture ? data.matchByFixture.get(data.lastFixture.id) : undefined
@@ -32,8 +34,9 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
     <SeasonState loading={data.loading} error={data.error} onRetry={data.reload} />
     {!data.loading && !data.error && <div className="season-page">
       {/* L'eroe porta l'identita' della squadra, non uno slogan: posizione,
-          punti e forma sono le tre cose che si cercano per prime. */}
-      <section className="season-hero">
+          punti e forma sono le tre cose che si cercano per prime. Lo sfondo
+          cambia con la fase (stagione regolare / Title / Draft Playoff). */}
+      <section className={`season-hero season-hero--${fase}`} style={{ backgroundImage: `url(${SFONDO_FASE[fase]})` }}>
         <div className="season-hero__squadra">
           <Crest value={miaSquadra?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(membership.id)} size="large" />
           <div>

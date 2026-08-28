@@ -4,6 +4,7 @@ import { ROSA_MASSIMA, ROSA_MINIMA } from '../lib/league'
 import { supabase } from '../lib/supabase'
 import { STEMMA_SQUADRA_DEFAULT } from '../lib/teamCrests'
 import { useSeasonData } from '../lib/useSeasonData'
+import { SFONDO_FASE, useFaseSquadra } from '../lib/faseSquadra'
 import type { CrestChoice, Fixture, League, MatchPlayerStat, Membership, Team } from '../types'
 import { Crest } from './Crest'
 import { CrestPicker } from './CrestPicker'
@@ -102,6 +103,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [rosterNotice, setRosterNotice] = useState<string | null>(null)
   const team = teamOverride?.id === teamId ? teamOverride : seasonData.teamById.get(teamId)
   const ownTeam = teamId === membership.id
+  const fase = useFaseSquadra(league.id, teamId, seasonData.season?.id)
 
   // Notifica di successo (svincolo): sparisce da sola dopo 2 secondi. Il
   // cleanup annulla il timer se nel frattempo arriva un altro avviso o si
@@ -323,7 +325,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>{ownTeam ? 'La tua squadra' : 'Profilo avversario'}</span></header>
     <SeasonState loading={seasonData.loading} error={seasonData.error} onRetry={seasonData.reload} />
     {!seasonData.loading && !seasonData.error && team && <div className="season-page team-profile-page">
-      <section className="team-profile-hero">
+      <section className={`team-profile-hero team-profile-hero--${fase}`} style={{ backgroundImage: `url(${SFONDO_FASE[fase]})` }}>
         <div className="team-profile-crest"><Crest value={team.stemma_url} imageUrl={crestUrl} size="large" /></div>
         <div>
           <p className="kicker">{league.nome} · Stagione {league.stagione_corrente}</p>

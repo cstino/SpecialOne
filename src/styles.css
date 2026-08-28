@@ -1329,7 +1329,34 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .menu-azione b { display: block; font-size: .88rem; font-weight: 800; }
 .menu-azione small { display: block; margin-top: 3px; color: #8a80a0; font-size: .66rem; line-height: 1.35; }
 
-/* ---- Overview: eroe con l'identita' della squadra ---- */
+/* ---- Overview: eroe con l'identita' della squadra ----
+   Sfondo a piena larghezza, diverso per fase (stagione regolare / Title
+   Playoff / Draft Playoff — docs/decisioni-draft-picks.md §1), con un
+   velo scuro in basso per tenere il testo leggibile qualunque sia
+   l'immagine. Il colore del bordo/glow segue la fase, cosi' l'identita'
+   visiva non dipende solo dalla foto ma e' anche codificata nel colore. */
+.season-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid #2c2837;
+  border-radius: 26px;
+  padding: clamp(24px, 5vw, 44px);
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 30px 70px rgba(0,0,0,.4);
+}
+.season-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(8,7,13,.25) 0%, rgba(8,7,13,.55) 50%, rgba(8,7,13,.92) 100%);
+}
+.season-hero--regular { border-color: #1f6b45; box-shadow: 0 30px 70px rgba(21,140,80,.22); }
+.season-hero--title { border-color: #2a4fb8; box-shadow: 0 30px 70px rgba(40,90,220,.24); }
+.season-hero--draft { border-color: #b8611f; box-shadow: 0 30px 70px rgba(230,140,40,.22); }
+
 .season-hero__squadra { min-width: 0; display: flex; align-items: center; gap: 20px; }
 .season-hero__squadra > div { min-width: 0; }
 .season-hero__squadra .crest { flex-shrink: 0; filter: drop-shadow(0 12px 26px rgba(0,0,0,.45)); }
@@ -1636,7 +1663,25 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .match-scorers em { color: #6f6780; font-size: .63rem; font-style: normal; }
 
 .team-profile-page { display: grid; gap: 18px; }
-.team-profile-hero { display: grid; grid-template-columns: 128px minmax(0,1fr) auto; align-items: center; gap: 26px; padding: 30px; border: 1px solid #3b3048; border-radius: 19px; background: radial-gradient(circle at 8% 50%, rgba(137,56,221,.34), transparent 22rem), linear-gradient(120deg,#20172a,#15131c); }
+/* Stesso principio dell'eroe di overview: sfondo per fase con velo scuro
+   per la leggibilita', bordo/glow che ne rinforza il colore. */
+.team-profile-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid; grid-template-columns: 128px minmax(0,1fr) auto; align-items: center; gap: 26px;
+  padding: 30px; border: 1px solid #3b3048; border-radius: 19px;
+  background-size: cover; background-position: center;
+  box-shadow: 0 26px 60px rgba(0,0,0,.35);
+}
+.team-profile-hero::before {
+  content: "";
+  position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(120deg, rgba(8,7,13,.55), rgba(8,7,13,.8)), linear-gradient(180deg, rgba(8,7,13,.1), rgba(8,7,13,.75));
+}
+.team-profile-hero--regular { border-color: #1f6b45; box-shadow: 0 26px 60px rgba(21,140,80,.2); }
+.team-profile-hero--title { border-color: #2a4fb8; box-shadow: 0 26px 60px rgba(40,90,220,.22); }
+.team-profile-hero--draft { border-color: #b8611f; box-shadow: 0 26px 60px rgba(230,140,40,.2); }
 /* Solo lo stemma: il riquadro dietro lo incorniciava e lo faceva sembrare una miniatura. */
 .team-profile-crest { width: 128px; aspect-ratio: 1; display: grid; place-items: center; }
 .team-profile-crest .crest { filter: drop-shadow(0 12px 26px rgba(0,0,0,.45)); }
