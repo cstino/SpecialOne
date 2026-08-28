@@ -854,11 +854,6 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    mostrare (campo per i titolari, lista per panchina/tribuna) invece di
    aprire un pannello aggiuntivo. Sostituiscono la vecchia card "Gestione
    rosa". */
-.formation-zone-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-bottom: 16px; }
-.formation-zone-tabs button { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 7px; min-width: 0; min-height: 42px; padding: 8px 11px; color: #aaa2b7; border: 1px solid #373143; border-radius: 9px; background: #1a1825; text-align: left; cursor: pointer; }
-.formation-zone-tabs button:hover, .formation-zone-tabs button.is-active { color: #fff; border-color: #8e47d6; background: linear-gradient(135deg, #49236f, #241833); }
-.formation-zone-tabs button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .76rem; font-weight: 800; }
-.formation-zone-tabs button b { display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; color: #e9d6ff; background: #312540; font-size: .65rem; }
 .formation-swap-hint { margin: -8px 0 16px; color: #c88cff; font-size: .78rem; font-weight: 700; text-align: center; }
 .formation-player-tray { display: flex; gap: 9px; margin-top: 10px; padding: 10px 3px 4px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-color: #7540a5 transparent; }
 /* Contenitore ad altezza fissa condiviso da campo e liste panchina/tribuna:
@@ -1137,7 +1132,6 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .modale-rosa__ingaggio { font-size: .74rem; }
   .formation-module-menu { width: min(360px, calc(100vw - 64px)); grid-template-columns: 1fr 1fr; }
   .formation-stile-menu { width: min(280px, calc(100vw - 64px)); }
-  .formation-zone-tabs button { padding: 7px; }
   .formation-view-card { width: 100%; aspect-ratio: .66; }.pitch-grid { inset: 6% 2.5%; }.pitch-row { gap: 1px; }.pitch-slot .lineup-player { width: min(100%, 82px); }.pitch-slot--scostato-giu { transform: translateY(10px); }.pitch-slot--scostato-su { transform: translateY(-10px); }.lineup-player__portrait { width: clamp(39px, 11vw, 52px); }.lineup-player__plate { gap: 2px; padding: 4px 3px 4px; }.lineup-player__plate strong { font-size: clamp(.48rem, 1.75vw, .59rem); }.lineup-player__position { font-size: .48rem; min-width: 19px; height: 16px; padding: 0 2px; }.lineup-player__plate b { font-size: .68rem; }.lineup-player__meta { gap: 4px; }.bench-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .player-modal-backdrop { place-items: end center; padding: 0; }.player-modal { width: 100%; max-height: 88dvh; padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); border-width: 1px 0 0; border-radius: 20px 20px 0 0; }.player-modal__hero { grid-template-columns: 82px minmax(0, 1fr) auto; gap: 11px; padding-right: 34px; }.player-modal__photo { width: 82px; }.player-modal__overall { min-width: 58px; padding: 10px 7px; font-size: 1.55rem; }.player-modal__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }.player-modal__facts div:last-child:nth-child(odd) { grid-column: 1 / -1; }.player-stats-grid { gap: 9px 13px; }
   .lobby-grid { padding: 16px; grid-template-columns: 1fr; }

@@ -7,6 +7,7 @@ import { GameNav } from './GameNav'
 import { SchedaGiocatore } from './SchedaGiocatore'
 import type { GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
+import { UnderlineTabs } from './ui/underline-tabs'
 
 // Tetti fissi di rosa in campo (design.md §6): 11 titolari sempre, panchina
 // fino a 9. La tribuna non ha un tetto suo — e' semplicemente "il resto
@@ -579,9 +580,17 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
               </div>
             </div>
           </div>
-          <div className="formation-zone-tabs" role="tablist" aria-label="Vista formazione">
-            {([['starter', 'Titolari'], ['bench', 'Panchina'], ['tribuna', 'Tribuna']] as const).map(([zone, label]) => <button className={openZone === zone ? 'is-active' : ''} type="button" role="tab" aria-selected={openZone === zone} key={zone} onClick={() => setOpenZone(zone)}><span>{label}</span><b>{locations[zone].length}</b></button>)}
-          </div>
+          <UnderlineTabs
+            tabs={[
+              { value: 'starter', label: 'Titolari', badge: locations.starter.length },
+              { value: 'bench', label: 'Panchina', badge: locations.bench.length },
+              { value: 'tribuna', label: 'Tribuna', badge: locations.tribuna.length },
+            ] as const}
+            value={openZone}
+            onChange={setOpenZone}
+            layoutId="formazione-zone-indicator"
+            className="mb-4"
+          />
           {selected && <p className="formation-swap-hint">Tocca il giocatore (o uno slot libero) con cui spostare {selectedPlayer?.nome ?? ''}.</p>}
           <div className="formation-view-card">
             {openZone === 'starter' ? (

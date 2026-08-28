@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { motion } from 'motion/react'
 
 // Barra di tab con indicatore sottolineato animato (riferimento: pagina
@@ -9,18 +10,19 @@ import { motion } from 'motion/react'
 // versione usa motion (già una dipendenza del progetto, vedi Draft.tsx)
 // con layoutId per l'animazione condivisa: stesso effetto, senza
 // introdurre un pacchetto con un pezzo mancante.
-type UnderlineTab<T extends string> = { value: T; label: string }
+type UnderlineTab<T extends string> = { value: T; label: string; badge?: ReactNode }
 
 type UnderlineTabsProps<T extends string> = {
   tabs: readonly UnderlineTab<T>[]
   value: T
   onChange: (value: T) => void
   layoutId?: string
+  className?: string
 }
 
-export function UnderlineTabs<T extends string>({ tabs, value, onChange, layoutId = 'underline-tab-indicator' }: UnderlineTabsProps<T>) {
+export function UnderlineTabs<T extends string>({ tabs, value, onChange, layoutId = 'underline-tab-indicator', className = '' }: UnderlineTabsProps<T>) {
   return (
-    <div className="flex gap-7 border-b border-white/10" role="tablist">
+    <div className={`flex gap-7 border-b border-white/10 ${className}`} role="tablist">
       {tabs.map((tab) => {
         const active = tab.value === value
         return (
@@ -33,6 +35,11 @@ export function UnderlineTabs<T extends string>({ tabs, value, onChange, layoutI
             className={`relative pb-3 text-[.8rem] font-bold tracking-tight transition-colors ${active ? 'text-white' : 'text-white/45 hover:text-white/70'}`}
           >
             {tab.label}
+            {tab.badge != null && (
+              <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[.65rem] font-extrabold tabular-nums ${active ? 'bg-white/15 text-white' : 'bg-white/[0.06] text-white/40'}`}>
+                {tab.badge}
+              </span>
+            )}
             {active && (
               <motion.span
                 layoutId={layoutId}
