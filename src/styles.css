@@ -1674,6 +1674,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .esito--N { background: #7c7590; color: #12101a; }
 .esito--P { background: #f2444e; color: #1a0508; }
 .esito--vuoto { background: #241e30; color: #6f6780; }
+.esito--nascosto { background: #2b2438; color: #c59be8; border: 1px dashed #6a4f8a; }
 .esito-riga { position: relative; }
 .esito-riga::before { content: ""; position: absolute; left: 8px; top: 12px; bottom: 12px; width: 3px; border-radius: 3px; }
 /* Nel calendario la riga ha padding proprio: la striscia si allinea al bordo. */

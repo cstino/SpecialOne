@@ -113,10 +113,20 @@ export function formaPerSquadra(fixtures: Fixture[], matchByFixture: Map<number,
   return mappa
 }
 
-export function Forma({ esiti, slot = 5 }: { esiti?: Esito[]; slot?: number }) {
+// nascondiUltimo: l'ultima partita giocata può non essere ancora stata
+// "rivelata" da chi guarda (design del reveal, VEDI RISULTATO): mostrare
+// già l'esito qui sarebbe uno spoiler silenzioso, quindi quello slot resta
+// un punto interrogativo finché non viene aperto.
+export function Forma({ esiti, slot = 5, nascondiUltimo = false }: { esiti?: Esito[]; slot?: number; nascondiUltimo?: boolean }) {
   const lista = esiti ?? []
   return <span className="forma-chip">
-    {lista.map((esito, indice) => <span className={`esito esito--${esito}`} key={`e${indice}`}>{esito}</span>)}
+    {lista.map((esito, indice) => {
+      const ultimo = indice === lista.length - 1
+      if (ultimo && nascondiUltimo) {
+        return <span className="esito esito--nascosto" key={`e${indice}`} aria-label="Risultato non ancora rivelato">?</span>
+      }
+      return <span className={`esito esito--${esito}`} key={`e${indice}`}>{esito}</span>
+    })}
     {Array.from({ length: Math.max(0, slot - lista.length) }).map((_, indice) => <span className="esito esito--vuoto" key={`v${indice}`} aria-hidden="true">·</span>)}
   </span>
 }
