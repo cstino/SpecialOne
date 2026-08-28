@@ -771,7 +771,13 @@ h1, h2, h3, strong { color: var(--ink); }
 .game-online-dot { width: 7px; height: 7px; border-radius: 50%; background: #59db87; box-shadow: 0 0 10px #59db87; }
 .game-version { margin-left: auto; color: #5f596d; font-size: .6rem; }
 .game-mobilebar, .game-mobile-nav { display: none; }
-.topbar { min-height: 76px; padding: 18px 34px; border-bottom-color: #272332; background: rgba(12,11,18,.72); }
+.topbar {
+  min-height: 76px; padding: 18px 34px; border-bottom-color: rgba(255,255,255,.08);
+  position: sticky; top: 0; z-index: 20;
+  background: rgba(12,11,18,.5);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+}
 .topbar .brand-lockup--dark { color: #fff; }
 .topbar .text-button { color: #aaa4b7; }
 .user-email { color: #9891a8; }
