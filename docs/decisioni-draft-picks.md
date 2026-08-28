@@ -264,12 +264,20 @@ scambi). Nessuno dei due deriva dall'altro.
   resta la stessa finché la finestra non si risolve (altrimenti la lista di preferenze
   sottomessa non avrebbe senso: cambierebbe sotto ai piedi delle squadre).
 
-## 7. Punti aperti rimanenti
+## 7. Punti risolti il 28 agosto 2026 (seconda tornata)
 
-- Le squadre PC (controllate dal bot) partecipano al mercato a scelte? Con quale logica di
-  scambio e di lista preferenze?
-- Cosa succede a una scelta non ancora "nata" (es. OFF-Season 5) se la squadra di origine
-  viene rimossa dalla lega prima che arrivi quella stagione?
-- Limite di scelte scambiabili contemporaneamente in una proposta, o vincoli tipo la regola
-  Stepien NBA (non si possono cedere le proprie prime scelte per due anni consecutivi)? Non
-  menzionato, si assume nessun vincolo finché non specificato.
+- **Squadre PC**: partecipano con una logica automatica, non raffinata — stesso spirito
+  delle altre decisioni prese per il bot. Per ogni scelta propria pronta in una finestra
+  aperta, prendono i migliori overall disponibili nel pool fino alla propria posizione
+  (`private.preferenze_squadre_pc`, richiamata dal cron ad ogni giro).
+- **Scelta non ancora nata di una squadra rimossa**: si annulla. Se la squadra di origine
+  viene rimossa dalla lega (`prepara_offseason`) e la sua scelta per una stagione futura è
+  ancora `'futura'` (posizione non assegnata), la riga viene cancellata — non ha più senso
+  senza una squadra che l'abbia guadagnata. Una scelta già `'determinata'` non viene
+  toccata: è già un impegno reale della transizione in corso.
+- **Regola Stepien in stile NBA**: non si può cedere la propria scelta d'origine (quella
+  guadagnata col proprio piazzamento, non una acquisita per scambio) per due stagioni
+  consecutive nella stessa finestra (ON o OFF). Controllata sia alla proposta
+  (`proponi_scambio`) sia all'accettazione (`rispondi_a_proposta`, nel caso lo stato sia
+  cambiato nel frattempo) — `private.viola_regola_stepien`. Riguarda solo le scelte ancora
+  vive (`futura`/`determinata`): una già esercitata o andata a vuoto è storia.
