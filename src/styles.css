@@ -1576,7 +1576,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .fixture-row > .fixture-time, .fixture-row > .fixture-score, .fixture-row > .fixture-reveal, .fixture-row > .fixture-status, .fixture-row > .fixture-score-wrap { justify-self: center; text-align: center; }
 .fixture-row > small { position: absolute; top: 6px; right: 9px; color: #c78cf0; font-size: .48rem; font-weight: 900; letter-spacing: .1em; }
 .standings-panel { overflow-x: auto; }
-.standings-head, .standings-row { min-width: 760px; display: grid; grid-template-columns: 48px minmax(220px, 1fr) repeat(7, 50px) 62px; align-items: center; }
+.standings-head, .standings-row { min-width: 760px; display: grid; grid-template-columns: 48px minmax(220px, 1fr) repeat(7, 50px) 62px 34px; align-items: center; }
 .standings-head { min-height: 42px; padding: 0 18px; color: #716b7c; border-bottom: 1px solid #302b39; background: #111017; font-size: .56rem; font-weight: 900; letter-spacing: .08em; }
 .standings-head span:not(:nth-child(2)) { text-align: center; }
 .standings-row { min-height: 68px; padding: 0 18px; color: #aaa3b4; border-bottom: 1px solid #292530; font-size: .76rem; }
@@ -1586,9 +1586,14 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .standings-row > strong { color: #fff; font-size: 1rem; }
 .standings-position { color: #8d849a; font-weight: 900; }
 .standings-row:nth-child(1) .standings-position { color: #e8c65e; }
-.standings-panel footer { min-width: 760px; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 14px 20px; color: #7f788b; border-top: 1px solid #302b39; background: #111017; font-size: .62rem; }
+.standings-panel footer { min-width: 760px; display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 20px; padding: 14px 20px; color: #7f788b; border-top: 1px solid #302b39; background: #111017; font-size: .62rem; }
 .standings-panel footer span { display: flex; align-items: center; gap: 7px; }
-.standings-panel footer i { width: 3px; height: 15px; border-radius: 3px; background: #bd68ff; }
+.standings-panel footer small { margin-left: auto; }
+.standings-legend-dot { width: 3px; height: 15px; border-radius: 3px; background: #bd68ff; }
+.standings-zona { display: flex; justify-content: center; }
+.standings-zona__chip { width: 18px; height: 13px; border-radius: 4px; }
+.standings-zona__chip.is-title { background: #2f6bff; box-shadow: 0 0 10px rgba(47,107,255,.5); }
+.standings-zona__chip.is-draft { background: #ff8a2b; box-shadow: 0 0 10px rgba(255,138,43,.4); }
 
 /* Albo d'oro: un archivio celebrativo, non una classifica travestita. */
 .honors-shell { background:radial-gradient(circle at 78% -12%,rgba(211,163,56,.18),transparent 29rem),radial-gradient(circle at 15% 90%,rgba(111,47,187,.18),transparent 32rem),#0c0b12; }
@@ -1945,9 +1950,10 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .team-roster-player > dl { grid-column: 3 / -1; padding-top: 7px; border-top: 1px solid #29242f; }
   .team-roster-player > div small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .standings-panel { overflow-x: hidden; }
-  .standings-head, .standings-row { min-width: 0; grid-template-columns: 34px minmax(0, 1fr) 34px 40px 44px; gap: 4px; padding-inline: 9px; }
+  .standings-head, .standings-row { min-width: 0; grid-template-columns: 34px minmax(0, 1fr) 34px 40px 44px 26px; gap: 4px; padding-inline: 9px; }
   .standings-head span:nth-child(n+4):nth-child(-n+8), .standings-row > span:nth-child(n+4):nth-child(-n+8) { display: none; }
-  .standings-head span:nth-child(9), .standings-head span:nth-child(10), .standings-row > span:nth-child(9), .standings-row > strong { display: block; }
+  .standings-head span:nth-child(9), .standings-head span:nth-child(10), .standings-head span:nth-child(11), .standings-row > span:nth-child(9), .standings-row > strong, .standings-row > span:nth-child(11) { display: block; }
+  .standings-row > span.standings-zona { display: flex; }
   .standings-row .crest { width: 29px; }
   .standings-row .season-team { gap: 6px; }
   .standings-row .season-team strong { font-size: .68rem; }
