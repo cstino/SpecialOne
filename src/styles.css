@@ -2073,7 +2073,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .rumors-paginazione button { width: 28px; height: 28px; padding: 0; border: 1px solid #342847; border-radius: 50%; color: #d9c9e7; background: #1a1622; font-size: 1rem; line-height: 1; cursor: pointer; }
 .rumors-paginazione button:disabled { opacity: .35; cursor: default; }
 .rumors-paginazione span { color: #9c93a6; font-size: .68rem; font-weight: 800; }
-.free-agent-daily, .free-agent-archive { display:grid; gap:14px; padding:14px; border:1px solid #2f283a; border-radius:15px; background:rgba(13,12,18,.58); }
+.free-agent-daily, .free-agent-archive { display:grid; gap:14px; padding:20px 0; border-top:1px solid #2b2739; }
 .free-agent-heading { display:flex; flex-wrap:wrap; align-items:end; justify-content:space-between; gap:16px; }
 .free-agent-heading > div:first-child { min-width: 0; }
 .free-agent-heading h3 { margin:0; color:#fff; font-size:1.05rem; overflow-wrap: anywhere; }
