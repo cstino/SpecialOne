@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ROSA_MASSIMA } from '../lib/league'
 import { cognome } from '../lib/nomi'
-import { MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
+import { MACRO_COLORE, MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
 import { useSeasonData } from '../lib/useSeasonData'
 import { formatCountdown, useOraCorrente } from '../lib/countdown'
@@ -555,7 +555,7 @@ export function Mercato({ membership, onNavigate }: Props) {
                 <UnderlineTabs
                   tabs={ORDINE_MACRO_RUOLO.map((ruolo) => {
                     const gruppo = gruppiAsta.find((voce) => voce.ruolo === ruolo)
-                    return { value: ruolo, label: MACRO_LABEL[ruolo], badge: gruppo?.aste.length ?? 0, disabled: !gruppo }
+                    return { value: ruolo, label: MACRO_LABEL[ruolo], badge: gruppo?.aste.length ?? 0, disabled: !gruppo, activeColor: MACRO_COLORE[ruolo] }
                   })}
                   value={paginaAstaRuolo}
                   onChange={setPaginaAstaRuolo}

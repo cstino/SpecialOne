@@ -24,6 +24,17 @@ export const MACRO_LABEL: Record<MacroRuolo, string> = {
 
 export const ORDINE_MACRO_RUOLO: MacroRuolo[] = ['GK', 'DEF', 'MID', 'ATT']
 
+// Stessi colori di .role-pill--gk/def/mid/att in styles.css: un solo posto
+// da cui prenderli quando serve il colore del reparto fuori da quella classe
+// (es. il tab attivo del selettore ruolo nel mercato svincolati).
+export const MACRO_COLORE: Record<MacroRuolo, string> = {
+  ALL: '#c58cff',
+  GK: '#ffa33f',
+  DEF: '#55c7ee',
+  MID: '#5be08c',
+  ATT: '#ff5972',
+}
+
 // Ordine di reparto fine, GK -> ST, per liste che vogliono seguire la
 // progressione classica del campo invece dei soli 4 macro-reparti (es. il
 // tabellino partita). Le posizioni non elencate finiscono in coda.

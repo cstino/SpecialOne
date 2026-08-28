@@ -10,7 +10,7 @@ import { motion } from 'motion/react'
 // versione usa motion (già una dipendenza del progetto, vedi Draft.tsx)
 // con layoutId per l'animazione condivisa: stesso effetto, senza
 // introdurre un pacchetto con un pezzo mancante.
-type UnderlineTab<T extends string> = { value: T; label: string; badge?: ReactNode; disabled?: boolean }
+type UnderlineTab<T extends string> = { value: T; label: string; badge?: ReactNode; disabled?: boolean; activeColor?: string }
 
 type UnderlineTabsProps<T extends string> = {
   tabs: readonly UnderlineTab<T>[]
@@ -22,9 +22,15 @@ type UnderlineTabsProps<T extends string> = {
 
 export function UnderlineTabs<T extends string>({ tabs, value, onChange, layoutId = 'underline-tab-indicator', className = '' }: UnderlineTabsProps<T>) {
   return (
-    <div className={`flex justify-center gap-7 overflow-x-auto border-b border-white/10 ${className}`} role="tablist">
+    // overflow-y-visible e' necessario: impostare solo overflow-x-auto fa si'
+    // che il browser converta da solo overflow-y da "visible" ad "auto" (regola
+    // della spec CSS Overflow), che qui tagliava a meta' le lettere delle
+    // etichette perche' la riga si comportava come un contenitore con altezza
+    // fissa invece che libera di contenere il testo.
+    <div className={`flex justify-center gap-7 overflow-x-auto overflow-y-visible border-b border-white/10 ${className}`} role="tablist">
       {tabs.map((tab) => {
         const active = tab.value === value
+        const colore = active ? tab.activeColor : undefined
         return (
           <button
             key={tab.value}
@@ -33,18 +39,23 @@ export function UnderlineTabs<T extends string>({ tabs, value, onChange, layoutI
             aria-selected={active}
             disabled={tab.disabled}
             onClick={() => onChange(tab.value)}
-            className={`relative flex shrink-0 items-center whitespace-nowrap pb-3 text-[.8rem] font-bold tracking-tight transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${active ? 'text-white' : 'text-white/45 hover:text-white/70'}`}
+            style={colore ? { color: colore } : undefined}
+            className={`relative flex shrink-0 items-center whitespace-nowrap pb-3 text-[.8rem] font-bold tracking-tight transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${active ? (colore ? '' : 'text-white') : 'text-white/45 hover:text-white/70'}`}
           >
             {tab.label}
             {tab.badge != null && (
-              <span className={`ml-1.5 flex items-center rounded-full px-1.5 py-0.5 text-[.65rem] font-extrabold tabular-nums leading-none ${active ? 'bg-white/15 text-white' : 'bg-white/[0.06] text-white/40'}`}>
+              <span
+                style={colore ? { backgroundColor: `${colore}26`, color: colore } : undefined}
+                className={`ml-1.5 flex items-center rounded-full px-1.5 py-0.5 text-[.65rem] font-extrabold tabular-nums leading-none ${active ? (colore ? '' : 'bg-white/15 text-white') : 'bg-white/[0.06] text-white/40'}`}
+              >
                 {tab.badge}
               </span>
             )}
             {active && (
               <motion.span
                 layoutId={layoutId}
-                className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-white"
+                style={{ backgroundColor: colore ?? '#fff' }}
+                className="absolute inset-x-0 -bottom-px h-[2px] rounded-full"
                 transition={{ type: 'spring', stiffness: 500, damping: 40 }}
               />
             )}
