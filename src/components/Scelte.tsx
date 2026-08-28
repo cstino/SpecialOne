@@ -246,12 +246,17 @@ export function Scelte({ membership, onNavigate }: Props) {
                     <summary>Aggiungi dal pool ({poolFinestra.length - bozza.length} disponibili)</summary>
                     <ul className="scelte-pool scelte-pool--scelta">
                       {poolFinestra.filter((g) => !bozza.includes(g.id)).map((g) => <li key={g.id}>
-                        <div className="modale-rosa__foto">
+                        <div className="modale-rosa__foto scelte-pool__foto">
                           {foto.get(g.id) ? <img src={foto.get(g.id)} alt="" loading="lazy" /> : <span aria-hidden="true">{g.nome.charAt(0)}</span>}
                         </div>
                         <b>{g.overall}</b>
-                        <span><strong>{cognome(g.nome)}</strong><small>{(g.posizioni ?? []).join(' / ')} · {g.eta} anni · {(g.ingaggio_teorico / 1_000_000).toFixed(1)} M€</small></span>
-                        <button type="button" className="button button--secondary" onClick={() => aggiungi(g.id)}>Aggiungi</button>
+                        <span>
+                          <strong>{cognome(g.nome)}</strong>
+                          <small>{(g.posizioni ?? []).join(' / ')}</small>
+                          <small>{g.eta} anni</small>
+                          <small>{(g.ingaggio_teorico / 1_000_000).toFixed(1)} M€</small>
+                        </span>
+                        <button type="button" className="scelte-pool__add" aria-label={`Aggiungi ${cognome(g.nome)} alla lista`} onClick={() => aggiungi(g.id)}>+</button>
                       </li>)}
                     </ul>
                   </details>}
