@@ -11,6 +11,7 @@ import { CrestPicker } from './CrestPicker'
 import { GameNav, type GameView } from './GameNav'
 import { SchedaGiocatore, type EsitoRinnovo, type PropostaRinnovo, type StatsStagione } from './SchedaGiocatore'
 import { FixtureScore, SeasonState, TeamLabel } from './SeasonUI'
+import { UnderlineTabs } from './ui/underline-tabs'
 
 type Props = {
   membership: Membership
@@ -84,6 +85,7 @@ function buonuscita(player: RosterPlayer, stagioneCorrente: number) {
 export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTeamUpdated }: Props) {
   const league = membership.league as League
   const seasonData = useSeasonData(membership)
+  const [tab, setTab] = useState<'sommario' | 'rosa'>('sommario')
   const [teamOverride, setTeamOverride] = useState<Team | null>(null)
   const [crestUrl, setCrestUrl] = useState<string | null>(null)
   const [players, setPlayers] = useState<RosterPlayer[]>([])
@@ -354,34 +356,46 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         <button className="button button--primary" type="submit" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva modifiche'}</button>
       </form>}
 
-      {/* Una statistica domina, le altre servono: quattro riquadri identici
-          appiattivano la pagina e non dicevano cosa guardare per primo. */}
-      <section className="team-profile-stats">
-        <article className="stat-guida">
-          <span className="stat-guida__numero">{standing?.posizione ?? '—'}<sup>ª</sup></span>
-          <span className="stat-guida__testo">
-            <b>Posizione in classifica</b>
-            <span>{standing?.punti ?? 0} punti · {standing?.vittorie ?? 0} {standing?.vittorie === 1 ? 'vittoria' : 'vittorie'}</span>
-          </span>
-        </article>
-        <div className="stat-fila">
-          <article><small>Bilancio</small><b>{standing ? `${standing.vittorie}-${standing.pareggi}-${standing.sconfitte}` : '0-0-0'}</b></article>
-          <article><small>Reti</small><b className={(standing?.differenza_reti ?? 0) < 0 ? 'is-negativo' : (standing?.differenza_reti ?? 0) > 0 ? 'is-positivo' : ''}>{standing && standing.differenza_reti > 0 ? `+${standing.differenza_reti}` : standing?.differenza_reti ?? 0}</b></article>
-          <article><small>Overall</small><b>{players.length ? (players.reduce((sum, player) => sum + player.overall, 0) / players.length).toFixed(1) : '—'}</b></article>
-        </div>
-      </section>
+      {/* Due tab, non cinque per imitare un riferimento: sono i due
+          raggruppamenti di contenuto che esistono davvero in questa
+          pagina. Forzarne altri avrebbe voluto dire inventare contenuti
+          vuoti solo per somigliare a un'app con più dati da mostrare. */}
+      <UnderlineTabs
+        tabs={[{ value: 'sommario', label: 'Sommario' }, { value: 'rosa', label: `Rosa (${players.length})` }] as const}
+        value={tab}
+        onChange={setTab}
+      />
 
-      <section className="team-profile-grid">
-        <article className="team-profile-panel team-recent-panel"><div className="season-card__heading"><div><p className="kicker">Forma recente</p><h2>Ultime partite</h2></div></div>{recentFixtures.length ? recentFixtures.map((fixture) => { const match = seasonData.matchByFixture.get(fixture.id); return <button className={`esito-riga esito-riga--${esitoDi(fixture) ?? 'N'}`} type="button" key={fixture.id} onClick={() => match && onOpenMatch(match.id)}><TeamLabel team={seasonData.teamById.get(fixture.home_team_id)} imageUrl={seasonData.crestUrlByTeamId.get(fixture.home_team_id)} /><FixtureScore fixture={fixture} match={match} /><TeamLabel team={seasonData.teamById.get(fixture.away_team_id)} imageUrl={seasonData.crestUrlByTeamId.get(fixture.away_team_id)} reversed /></button> }) : <p className="season-empty">Nessuna partita disputata.</p>}</article>
-        <article className="team-profile-panel team-budget-panel"><p className="kicker">Gestione rosa</p><h2>{players.length} giocatori</h2><dl><div><dt>Valore ingaggi</dt><dd>{money(totalWage)}</dd></div>{ownTeam ? <div><dt>Budget disponibile</dt><dd>{money(team.budget)}</dd></div> : <div><dt>Gol segnati</dt><dd>{standing?.gol_fatti ?? 0}</dd></div>}<div><dt>Overall medio</dt><dd>{players.length ? (players.reduce((sum, player) => sum + player.overall, 0) / players.length).toFixed(1) : '—'}</dd></div></dl></article>
-      </section>
+      {tab === 'sommario' && <>
+        {/* Una statistica domina, le altre servono: quattro riquadri identici
+            appiattivano la pagina e non dicevano cosa guardare per primo. */}
+        <section className="team-profile-stats">
+          <article className="stat-guida">
+            <span className="stat-guida__numero">{standing?.posizione ?? '—'}<sup>ª</sup></span>
+            <span className="stat-guida__testo">
+              <b>Posizione in classifica</b>
+              <span>{standing?.punti ?? 0} punti · {standing?.vittorie ?? 0} {standing?.vittorie === 1 ? 'vittoria' : 'vittorie'}</span>
+            </span>
+          </article>
+          <div className="stat-fila">
+            <article><small>Bilancio</small><b>{standing ? `${standing.vittorie}-${standing.pareggi}-${standing.sconfitte}` : '0-0-0'}</b></article>
+            <article><small>Reti</small><b className={(standing?.differenza_reti ?? 0) < 0 ? 'is-negativo' : (standing?.differenza_reti ?? 0) > 0 ? 'is-positivo' : ''}>{standing && standing.differenza_reti > 0 ? `+${standing.differenza_reti}` : standing?.differenza_reti ?? 0}</b></article>
+            <article><small>Overall</small><b>{players.length ? (players.reduce((sum, player) => sum + player.overall, 0) / players.length).toFixed(1) : '—'}</b></article>
+          </div>
+        </section>
 
-      <section className="team-roster-panel">
+        <section className="team-profile-grid">
+          <article className="team-profile-panel team-recent-panel"><div className="season-card__heading"><div><p className="kicker">Forma recente</p><h2>Ultime partite</h2></div></div>{recentFixtures.length ? recentFixtures.map((fixture) => { const match = seasonData.matchByFixture.get(fixture.id); return <button className={`esito-riga esito-riga--${esitoDi(fixture) ?? 'N'}`} type="button" key={fixture.id} onClick={() => match && onOpenMatch(match.id)}><TeamLabel team={seasonData.teamById.get(fixture.home_team_id)} imageUrl={seasonData.crestUrlByTeamId.get(fixture.home_team_id)} /><FixtureScore fixture={fixture} match={match} /><TeamLabel team={seasonData.teamById.get(fixture.away_team_id)} imageUrl={seasonData.crestUrlByTeamId.get(fixture.away_team_id)} reversed /></button> }) : <p className="season-empty">Nessuna partita disputata.</p>}</article>
+          <article className="team-profile-panel team-budget-panel"><p className="kicker">Gestione rosa</p><h2>{players.length} giocatori</h2><dl><div><dt>Valore ingaggi</dt><dd>{money(totalWage)}</dd></div>{ownTeam ? <div><dt>Budget disponibile</dt><dd>{money(team.budget)}</dd></div> : <div><dt>Gol segnati</dt><dd>{standing?.gol_fatti ?? 0}</dd></div>}<div><dt>Overall medio</dt><dd>{players.length ? (players.reduce((sum, player) => sum + player.overall, 0) / players.length).toFixed(1) : '—'}</dd></div></dl></article>
+        </section>
+      </>}
+
+      {tab === 'rosa' && <section className="team-roster-panel">
         <div className="season-card__heading"><div><p className="kicker">Rosa completa</p><h2>Dal portiere all’attacco</h2></div><span>{players.length} giocatori · min {ROSA_MINIMA} · max {ROSA_MASSIMA}</span></div>
         {rosterNotice && <p className="notice notice--success">{rosterNotice}</p>}
         {rosterError && <p className="notice notice--error">{rosterError}</p>}
         {rosterLoading ? <p className="season-empty">Carico la rosa…</p> : <div className="team-roster-list">{players.map((player) => <button className={`team-roster-player team-roster-player--${department(player.posizioni[0])}`} type="button" key={player.id} onClick={() => openPlayer(player)} aria-label={`Scheda di ${player.nome}`}><i /><span className="team-roster-role">{player.posizioni[0] ?? '—'}</span><div><strong>{player.nome}</strong><small>{player.posizioni.join(' · ')} · {player.eta} anni · <em>{money(player.ingaggio)}/stagione</em> · <em className={contratto(player, league.stagione_corrente).urgente ? 'contratto-urgente' : 'contratto-residuo'}>{contratto(player, league.stagione_corrente).testo}</em></small></div><b>{player.overall}</b><dl><span>{player.minuti}<small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span></dl></button>)}</div>}
-      </section>
+      </section>}
 
       {schedaAperta && <SchedaGiocatore
         giocatore={{
