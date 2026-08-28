@@ -324,21 +324,28 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     <GameNav league={league} active="team" onNavigate={onNavigate} />
     <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>{ownTeam ? 'La tua squadra' : 'Profilo avversario'}</span></header>
     <SeasonState loading={seasonData.loading} error={seasonData.error} onRetry={seasonData.reload} />
-    {!seasonData.loading && !seasonData.error && team && <div className="season-page team-profile-page">
+    {!seasonData.loading && !seasonData.error && team && <>
+      {/* Sfondo a piena larghezza come in Overview: fuori da season-page
+          apposta, cosi' l'immagine tocca i bordi invece di restare chiusa
+          in una card. */}
       <section className={`team-profile-hero team-profile-hero--${fase}`} style={{ backgroundImage: `url(${SFONDO_FASE[fase]})` }}>
-        <div className="team-profile-crest"><Crest value={team.stemma_url} imageUrl={crestUrl} size="large" /></div>
-        <div>
-          <p className="kicker">{league.nome} · Stagione {league.stagione_corrente}</p>
-          <h1>{team.nome}</h1>
-          {allenatore && <p className="team-allenatore">Allenatore · <b>{allenatore}</b></p>}
-          <div className="team-form">
-            <span className="team-form__eti">FORMA</span>
-            {forma.map((esito, indice) => <span className={`esito esito--${esito}`} key={`e${indice}`}>{esito}</span>)}
-            {Array.from({ length: Math.max(0, 5 - forma.length) }).map((_, indice) => <span className="esito esito--vuoto" key={`v${indice}`} aria-hidden="true">·</span>)}
+        <div className="team-profile-hero__inner">
+          <div className="team-profile-crest"><Crest value={team.stemma_url} imageUrl={crestUrl} size="large" /></div>
+          <div>
+            <p className="kicker">{league.nome} · Stagione {league.stagione_corrente}</p>
+            <h1>{team.nome}</h1>
+            {allenatore && <p className="team-allenatore">Allenatore · <b>{allenatore}</b></p>}
+            <div className="team-form">
+              <span className="team-form__eti">FORMA</span>
+              {forma.map((esito, indice) => <span className={`esito esito--${esito}`} key={`e${indice}`}>{esito}</span>)}
+              {Array.from({ length: Math.max(0, 5 - forma.length) }).map((_, indice) => <span className="esito esito--vuoto" key={`v${indice}`} aria-hidden="true">·</span>)}
+            </div>
           </div>
+          {ownTeam && <button className="button team-edit-button" type="button" onClick={() => setEditing((value) => !value)}>{editing ? 'Chiudi modifica' : 'Modifica squadra'}</button>}
         </div>
-        {ownTeam && <button className="button team-edit-button" type="button" onClick={() => setEditing((value) => !value)}>{editing ? 'Chiudi modifica' : 'Modifica squadra'}</button>}
       </section>
+
+      <div className="season-page team-profile-page">
 
       {ownTeam && editing && <form className="team-settings-panel" onSubmit={saveProfile}>
         <div><p className="kicker">Impostazioni squadra</p><h2>Nome e logo</h2><label>Nome squadra<input type="text" minLength={2} maxLength={40} required value={teamName} onChange={(event) => setTeamName(event.target.value)} /></label></div>
@@ -451,6 +458,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         } : undefined}
         onClose={() => setSchedaAperta(null)}
       />}
-    </div>}
+      </div>
+    </>}
   </main>
 }

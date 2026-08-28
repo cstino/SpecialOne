@@ -32,26 +32,31 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
     <GameNav league={league} active="overview" onNavigate={onNavigate} />
     <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>Stagione {league.stagione_corrente}</span></header>
     <SeasonState loading={data.loading} error={data.error} onRetry={data.reload} />
-    {!data.loading && !data.error && <div className="season-page">
+    {!data.loading && !data.error && <>
       {/* L'eroe porta l'identita' della squadra, non uno slogan: posizione,
-          punti e forma sono le tre cose che si cercano per prime. Lo sfondo
-          cambia con la fase (stagione regolare / Title / Draft Playoff). */}
+          punti e forma sono le tre cose che si cercano per prime. Sfondo a
+          piena larghezza, diverso per fase (stagione regolare / Title /
+          Draft Playoff) — fuori da season-page apposta, cosi' l'immagine
+          tocca i bordi invece di restare chiusa in una card. */}
       <section className={`season-hero season-hero--${fase}`} style={{ backgroundImage: `url(${SFONDO_FASE[fase]})` }}>
-        <div className="season-hero__squadra">
-          <Crest value={miaSquadra?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(membership.id)} size="large" />
-          <div>
-            <p className="kicker">{league.nome} · Stagione {league.stagione_corrente}</p>
-            <TitoloAdattivo testo={miaSquadra?.nome ?? 'La tua squadra'} />
-            <div className="season-hero__stato">
-              <span className="season-hero__posizione"><small>Posizione</small><b>{miaClassifica?.posizione ?? '—'}<sup>ª</sup></b></span>
-              <span className="season-hero__punti">{miaClassifica?.punti ?? 0} punti</span>
-              <Forma esiti={forma.get(membership.id)} nascondiUltimo={!ultimaVista} />
+        <div className="season-hero__inner">
+          <div className="season-hero__squadra">
+            <Crest value={miaSquadra?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(membership.id)} size="large" />
+            <div>
+              <p className="kicker">{league.nome} · Stagione {league.stagione_corrente}</p>
+              <TitoloAdattivo testo={miaSquadra?.nome ?? 'La tua squadra'} />
+              <div className="season-hero__stato">
+                <span className="season-hero__posizione"><small>Posizione</small><b>{miaClassifica?.posizione ?? '—'}<sup>ª</sup></b></span>
+                <span className="season-hero__punti">{miaClassifica?.punti ?? 0} punti</span>
+                <Forma esiti={forma.get(membership.id)} nascondiUltimo={!ultimaVista} />
+              </div>
             </div>
           </div>
+          <div className="season-round-stamp"><small>GIORNATA</small><strong>{data.currentGiornata}</strong><span>di {data.giornateStagione}</span></div>
         </div>
-        <div className="season-round-stamp"><small>GIORNATA</small><strong>{data.currentGiornata}</strong><span>di {data.giornateStagione}</span></div>
       </section>
 
+      <div className="season-page">
       <section className="season-dashboard">
         {data.lastFixture && ultimaPartita && <article className={`season-card season-card--last ${ultimaVista ? 'is-revealed' : ''}`} onClick={apriUltimaPartita} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); apriUltimaPartita() } }} role="button" tabIndex={0}>
           <div className="season-card__heading"><div><p className="kicker">Ultima partita</p><h2>Giornata {data.lastFixture.giornata}</h2></div><span className="matchday-chip">{ultimaVista ? 'DETTAGLI ›' : 'VEDI RISULTATO ›'}</span></div>
@@ -80,6 +85,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
           </div>
         </article>
       </section>
-    </div>}
+      </div>
+    </>}
   </main>
 }
