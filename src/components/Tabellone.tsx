@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Bracket, BracketTie, Fixture, League, Match, Membership, Team } from '../types'
+import type { Bracket, BracketTie, Fixture, League, Membership, Team } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { SeasonState } from './SeasonUI'
 import { Crest } from './Crest'

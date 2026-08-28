@@ -1,3 +1,11 @@
+/* Tailwind solo per le utility (flex/grid/spaziature/tipografia): niente
+   preflight, che resetterebbe gli stili globali di bottoni/titoli/liste
+   scritti a mano qui sotto e usati in tutto il resto dell'app. Le due
+   convenzioni convivono: styles.css per tutto ciò che già esiste, classi
+   Tailwind per le pagine in fase di redesign (Overview e a seguire). */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
 :root {
   color: #18221c;
   background: #f3f1e8;

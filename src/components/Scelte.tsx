@@ -98,7 +98,6 @@ export function Scelte({ membership, onNavigate }: Props) {
     }
     void caricaPool()
     return () => { vivo = false }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [league.id, finestreAttive.map((f) => `${f.stagione}-${f.finestra}`).join(',')])
 
   // Inizializza le bozze dalle preferenze già salvate, una sola volta per
@@ -112,7 +111,6 @@ export function Scelte({ membership, onNavigate }: Props) {
       }
       return nuove
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mieScelte, preferenze])
 
   async function salvaPreferenze(sceltaId: number) {
