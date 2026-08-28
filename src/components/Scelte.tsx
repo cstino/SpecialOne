@@ -6,6 +6,7 @@ import type { League, Membership, SceltaDraft } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { SeasonState } from './SeasonUI'
 import { Crest } from './Crest'
+import { firmaFoto } from './RosaElenco'
 import { useSeasonData } from '../lib/useSeasonData'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
@@ -18,7 +19,7 @@ const ETICHETTA_STATO: Record<SceltaDraft['stato'], string> = {
   vuota: 'Andata a vuoto',
 }
 
-type GiocatorePool = { id: number; nome: string; club: string; posizioni: string[]; overall: number; eta: number }
+type GiocatorePool = { id: number; nome: string; posizioni: string[]; overall: number; eta: number; foto_url: string | null; ingaggio_teorico: number }
 type FinestraScelte = {
   league_id: number; stagione: number; finestra: SceltaDraft['finestra']
   svelata_il: string; estrazione_il: string | null; risolta_il: string | null
@@ -33,6 +34,7 @@ export function Scelte({ membership, onNavigate }: Props) {
   const [finestre, setFinestre] = useState<FinestraScelte[]>([])
   const [preferenze, setPreferenze] = useState<Preferenza[]>([])
   const [pool, setPool] = useState<Map<string, GiocatorePool[]>>(new Map())
+  const [foto, setFoto] = useState<Map<number, string>>(new Map())
   const [loading, setLoading] = useState(true)
   const [errore, setErrore] = useState<string | null>(null)
   const [esito, setEsito] = useState<string | null>(null)
@@ -86,11 +88,14 @@ export function Scelte({ membership, onNavigate }: Props) {
       await Promise.all(finestreAttive.map(async (f) => {
         const chiave = `${f.stagione}-${f.finestra}`
         const { data, error } = await supabase.from('scelte_pool')
-          .select('player_id, players(id, nome, club, posizioni, overall, eta)')
+          .select('ingaggio_teorico, players(id, nome, posizioni, overall, eta, foto_url)')
           .eq('league_id', league.id).eq('stagione', f.stagione).eq('finestra', f.finestra)
         if (error) { if (vivo) setErrore(error.message); return }
         mappa.set(chiave, (data ?? [])
-          .map((r) => r.players as unknown as GiocatorePool | null)
+          .map((r) => {
+            const p = r.players as unknown as Omit<GiocatorePool, 'ingaggio_teorico'> | null
+            return p ? { ...p, ingaggio_teorico: r.ingaggio_teorico as number } : null
+          })
           .filter((g): g is GiocatorePool => g != null)
           .sort((a, b) => b.overall - a.overall))
       }))
@@ -99,6 +104,19 @@ export function Scelte({ membership, onNavigate }: Props) {
     void caricaPool()
     return () => { vivo = false }
   }, [league.id, finestreAttive.map((f) => `${f.stagione}-${f.finestra}`).join(',')])
+
+  // Stesse firme del modale del draft e della rosa: senza, il pool
+  // mostrerebbe sempre gli iniziali al posto delle foto.
+  useEffect(() => {
+    let vivo = true
+    async function firma() {
+      const tutti = [...pool.values()].flat()
+      const voci = await Promise.all(tutti.map(async (g) => [g.id, await firmaFoto(g.foto_url)] as const))
+      if (vivo) setFoto(new Map(voci.filter((v): v is [number, string] => Boolean(v[1]))))
+    }
+    void firma()
+    return () => { vivo = false }
+  }, [pool])
 
   // Inizializza le bozze dalle preferenze già salvate, una sola volta per
   // scelta (non deve sovrascrivere cio' che l'utente sta ancora editando).
@@ -228,8 +246,11 @@ export function Scelte({ membership, onNavigate }: Props) {
                     <summary>Aggiungi dal pool ({poolFinestra.length - bozza.length} disponibili)</summary>
                     <ul className="scelte-pool scelte-pool--scelta">
                       {poolFinestra.filter((g) => !bozza.includes(g.id)).map((g) => <li key={g.id}>
+                        <div className="modale-rosa__foto">
+                          {foto.get(g.id) ? <img src={foto.get(g.id)} alt="" loading="lazy" /> : <span aria-hidden="true">{g.nome.charAt(0)}</span>}
+                        </div>
                         <b>{g.overall}</b>
-                        <span><strong>{cognome(g.nome)}</strong><small>{g.club} · {(g.posizioni ?? []).join(' / ')} · {g.eta} anni</small></span>
+                        <span><strong>{cognome(g.nome)}</strong><small>{(g.posizioni ?? []).join(' / ')} · {g.eta} anni · {(g.ingaggio_teorico / 1_000_000).toFixed(1)} M€</small></span>
                         <button type="button" className="button button--secondary" onClick={() => aggiungi(g.id)}>Aggiungi</button>
                       </li>)}
                     </ul>
