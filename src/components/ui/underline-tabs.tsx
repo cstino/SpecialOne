@@ -10,7 +10,7 @@ import { motion } from 'motion/react'
 // versione usa motion (già una dipendenza del progetto, vedi Draft.tsx)
 // con layoutId per l'animazione condivisa: stesso effetto, senza
 // introdurre un pacchetto con un pezzo mancante.
-type UnderlineTab<T extends string> = { value: T; label: string; badge?: ReactNode }
+type UnderlineTab<T extends string> = { value: T; label: string; badge?: ReactNode; disabled?: boolean }
 
 type UnderlineTabsProps<T extends string> = {
   tabs: readonly UnderlineTab<T>[]
@@ -31,8 +31,9 @@ export function UnderlineTabs<T extends string>({ tabs, value, onChange, layoutI
             type="button"
             role="tab"
             aria-selected={active}
+            disabled={tab.disabled}
             onClick={() => onChange(tab.value)}
-            className={`relative pb-3 text-[.8rem] font-bold tracking-tight transition-colors ${active ? 'text-white' : 'text-white/45 hover:text-white/70'}`}
+            className={`relative pb-3 text-[.8rem] font-bold tracking-tight transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${active ? 'text-white' : 'text-white/45 hover:text-white/70'}`}
           >
             {tab.label}
             {tab.badge != null && (

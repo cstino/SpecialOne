@@ -10,6 +10,7 @@ import { Crest } from './Crest'
 import { GameNav, type GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
 import { SchedaGiocatore } from './SchedaGiocatore'
+import { UnderlineTabs } from './ui/underline-tabs'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
@@ -441,14 +442,13 @@ export function Scambi({ membership, onNavigate }: Props) {
         </div>}
 
         {avversaria && <>
-          <nav className="scambi-tab-asset" aria-label="Tipo di asset">
-            <button type="button" className={tabComposer === 'giocatori' ? 'is-attivo' : ''} onClick={() => setTabComposer('giocatori')}>
-              Giocatori
-            </button>
-            <button type="button" className={tabComposer === 'scelte' ? 'is-attivo' : ''} onClick={() => setTabComposer('scelte')}>
-              Scelte di draft
-            </button>
-          </nav>
+          <UnderlineTabs
+            tabs={[{ value: 'giocatori', label: 'Giocatori' }, { value: 'scelte', label: 'Scelte di draft' }] as const}
+            value={tabComposer}
+            onChange={setTabComposer}
+            layoutId="scambi-composer-indicator"
+            className="mb-4"
+          />
 
           <div className="scambi-colonne">
             <div>

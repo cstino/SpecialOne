@@ -9,6 +9,7 @@ import type { League, Membership } from '../types'
 import { Crest } from './Crest'
 import { GameNav, type GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
+import { UnderlineTabs } from './ui/underline-tabs'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
@@ -551,22 +552,16 @@ export function Mercato({ membership, onNavigate }: Props) {
           {nuoviDelGiorno.length === 0
             ? <p className="season-empty">Nessuna estrazione ancora. I nuovi svincolati escono ogni giorno alle 23:30.</p>
             : <>
-                <nav className="free-agent-ruoli" aria-label="Ruolo degli svincolati">
-                  {ORDINE_MACRO_RUOLO.map((ruolo) => {
+                <UnderlineTabs
+                  tabs={ORDINE_MACRO_RUOLO.map((ruolo) => {
                     const gruppo = gruppiAsta.find((voce) => voce.ruolo === ruolo)
-                    const attivo = paginaAsta?.ruolo === ruolo
-                    return <button
-                      key={ruolo}
-                      type="button"
-                      className={attivo ? 'is-attivo' : ''}
-                      disabled={!gruppo}
-                      aria-current={attivo ? 'page' : undefined}
-                      onClick={() => setPaginaAstaRuolo(ruolo)}
-                    >
-                      <span>{MACRO_LABEL[ruolo]}</span><b>{gruppo?.aste.length ?? 0}</b>
-                    </button>
+                    return { value: ruolo, label: MACRO_LABEL[ruolo], badge: gruppo?.aste.length ?? 0, disabled: !gruppo }
                   })}
-                </nav>
+                  value={paginaAstaRuolo}
+                  onChange={setPaginaAstaRuolo}
+                  layoutId="mercato-ruolo-indicator"
+                  className="mb-4"
+                />
                 {paginaAsta && <div className="free-agent-gruppo">
                   <p className="free-agent-gruppo__titolo">{MACRO_LABEL[paginaAsta.ruolo]} · {paginaAsta.aste.length} giocatori</p>
                   <div className="free-agent-grid">{paginaAsta.aste.map((a) => cardSvincolato(a))}</div>

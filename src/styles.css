@@ -2073,13 +2073,6 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .free-agent-gruppo { margin-bottom:16px; }
 .free-agent-gruppo:last-child { margin-bottom:0; }
 .free-agent-gruppo__titolo { margin:0 0 8px; color:#b78ee4; font-size:.66rem; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
-.free-agent-ruoli { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; margin:2px 0 4px; }
-.free-agent-ruoli button { min-width:0; display:grid; gap:3px; padding:10px 7px; border:1px solid #3a2b49; border-radius:11px; color:#a99ab7; background:#19151f; cursor:pointer; font:inherit; text-align:left; transition:background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease; }
-.free-agent-ruoli button:hover:not(:disabled) { border-color:#76519d; color:#fff; transform:translateY(-1px); }
-.free-agent-ruoli button.is-attivo { border-color:#c58cff; color:#fff; background:#2b1b3b; box-shadow:0 8px 18px rgba(0,0,0,.18); }
-.free-agent-ruoli button:disabled { cursor:default; opacity:.42; }
-.free-agent-ruoli button span { overflow:hidden; font-size:.62rem; font-weight:850; text-overflow:ellipsis; white-space:nowrap; }
-.free-agent-ruoli button b { color:#c58cff; font-size:1rem; line-height:1; }
 .free-agent-filters { display:grid; grid-template-columns:1fr repeat(3,minmax(120px,auto)); gap:9px; align-items:end; }
 .free-agent-filters label, .range-filter { min-width:0; display:grid; gap:5px; margin:0; padding:0; border:0; }
 .free-agent-filters span, .range-filter legend { color:#9e8bb5; font-size:.6rem; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
@@ -2547,20 +2540,20 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    pagina del tetto salariale" rispetto a Free Agent e Off-season.
    ============================================================ */
 .scambi-shell { background:
-  radial-gradient(circle at 82% -8%, rgba(45,212,191,.20), transparent 34rem),
-  radial-gradient(circle at 12% 90%, rgba(217,155,45,.14), transparent 30rem),
+  radial-gradient(circle at 78% -12%, rgba(135,57,221,.24), transparent 33rem),
+  radial-gradient(circle at 20% 92%, rgba(24,112,79,.11), transparent 28rem),
   #0c0b12; }
 .scambi-page { padding-bottom: 90px; }
-.scambi-title { background: linear-gradient(120deg, #fff 30%, #6ee7d8 78%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.scambi-title { background: linear-gradient(120deg, #fff 30%, #c58cff 78%); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
 /* ---- Gauge di capienza: il numero che sostituisce il budget ---- */
-.scambi-gauge { min-width: 240px; display: grid; gap: 8px; padding: 16px 18px; border: 1px solid #234943; border-radius: 16px; background: linear-gradient(155deg, #102422, #0f141b); box-shadow: 0 14px 34px rgba(0,0,0,.28); }
+.scambi-gauge { min-width: 240px; display: grid; gap: 8px; padding: 16px 18px; border: 1px solid #292536; border-radius: 16px; background: #15141e; box-shadow: 0 14px 34px rgba(0,0,0,.28); }
 .scambi-gauge__numeri { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.scambi-gauge__numeri strong { color: #7fe9d8; font-family: "Aptos Narrow", "Arial Narrow", sans-serif; font-size: 1.9rem; line-height: 1; }
-.scambi-gauge__numeri span { color: #7c8f8c; font-size: .62rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; text-align: right; }
-.scambi-gauge__barra { position: relative; height: 8px; overflow: hidden; border-radius: 999px; background: #172520; }
-.scambi-gauge__riempimento { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2dd4bf, #22a99b); }
-.scambi-gauge small { color: #6d8480; font-size: .64rem; }
+.scambi-gauge__numeri strong { color: #c58cff; font-family: "Aptos Narrow", "Arial Narrow", sans-serif; font-size: 1.9rem; line-height: 1; }
+.scambi-gauge__numeri span { color: #8b8397; font-size: .62rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; text-align: right; }
+.scambi-gauge__barra { position: relative; height: 8px; overflow: hidden; border-radius: 999px; background: #201c2c; }
+.scambi-gauge__riempimento { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #9b4cff, #6c2fc4); }
+.scambi-gauge small { color: #8b8397; font-size: .64rem; }
 .scambi-gauge.is-critica { border-color: #5c2a2a; background: linear-gradient(155deg, #241212, #17100f); }
 .scambi-gauge.is-critica .scambi-gauge__numeri strong { color: #ff8a80; }
 .scambi-gauge.is-critica .scambi-gauge__barra { background: #2a1616; }
@@ -2569,7 +2562,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 /* ---- Blocchi e card ---- */
 .scambi-blocco { display: grid; gap: 14px; margin-top: 26px; padding: 20px; border: 1px solid #24303a; border-radius: 16px; background: #12181f; }
 .scambi-blocco h3 { margin: 0 0 9px; color: #b7d6cf; font-size: .74rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
-.scambi-badge-contatore { display: grid; place-items: center; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 999px; color: #0c1a17; background: #4fd8c4; font-size: .72rem; font-weight: 950; }
+.scambi-badge-contatore { display: grid; place-items: center; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 999px; color: #0c1a17; background: #9b4cff; font-size: .72rem; font-weight: 950; }
 .scambi-vuoto { margin: 8px 0; color: #6c7d78; font-size: .78rem; font-style: italic; }
 .scambi-nessuno { color: #64756f; font-style: italic; font-size: .76rem; }
 .scambi-messaggio { margin: 0; color: #8ca39d; font-size: .74rem; font-style: italic; }
@@ -2581,18 +2574,18 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .scambi-card > header strong { font-size: .86rem; color: #eafaf5; }
 .scambi-card > footer { display: flex; flex-wrap: wrap; gap: 9px; }
 .scambi-card > footer .button { flex: 1; min-width: 130px; }
-.scambi-card > footer.scambi-rifiuto-aperto { padding-top: 10px; border-top: 1px solid rgba(79,216,196,.18); }
+.scambi-card > footer.scambi-rifiuto-aperto { padding-top: 10px; border-top: 1px solid rgba(155,76,255,.18); }
 
 .scambi-riepilogo { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 10px; }
 .scambi-riepilogo__lato { min-width: 0; display: grid; gap: 6px; }
 .scambi-riepilogo__lato small { color: #6f8480; font-size: .62rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
 .scambi-riepilogo__chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.scambi-riepilogo__freccia { align-self: center; color: #4fd8c4; font-style: normal; font-size: 1.1rem; }
+.scambi-riepilogo__freccia { align-self: center; color: #9b4cff; font-style: normal; font-size: 1.1rem; }
 
 /* ---- Chip riassuntivi: giocatore (link) o scelta (pillola colorata) ---- */
 .scambi-chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 4px 10px; font-size: .72rem; font-weight: 750; line-height: 1.3; }
 .scambi-chip--player { border: 0; color: #dcf6f0; background: #1c2b27; cursor: pointer; text-decoration: underline; text-decoration-color: transparent; transition: color .15s, text-decoration-color .15s, background .15s; }
-.scambi-chip--player:hover, .scambi-chip--player:focus-visible { color: #fff; background: #234038; text-decoration-color: #4fd8c4; }
+.scambi-chip--player:hover, .scambi-chip--player:focus-visible { color: #fff; background: #234038; text-decoration-color: #9b4cff; }
 .scambi-chip--pick { color: #12201d; font-weight: 900; }
 .scambi-chip--pick-on { background: #5be0c9; }
 .scambi-chip--pick-off { background: #f2b354; }
@@ -2602,24 +2595,20 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .scambi-scelta-squadra { display: grid; grid-template-columns: repeat(auto-fill, 76px); justify-content: start; gap: 10px; }
 .scambi-scelta-squadra button { aspect-ratio: 1; display: grid; place-items: center; padding: 14px; border: 1px solid #24312c; border-radius: 18px; background: #131b19; cursor: pointer; transition: border-color .16s ease, background .16s ease, transform .16s ease; }
 .scambi-scelta-squadra button:hover { border-color: #3f9683; transform: translateY(-2px); }
-.scambi-scelta-squadra button.is-scelto { border-color: #4fd8c4; background: linear-gradient(135deg, #14453c, #0e2b25); box-shadow: 0 0 0 1px rgba(79,216,196,.35), 0 8px 20px rgba(20,120,100,.3); }
+.scambi-scelta-squadra button.is-scelto { border-color: #9b4cff; background: linear-gradient(135deg, #40208a, #26134f); box-shadow: 0 0 0 1px rgba(155,76,255,.35), 0 8px 20px rgba(90,30,180,.3); }
 .scambi-scelta-squadra .crest { width: 100%; height: 100%; object-fit: contain; }
 
-.scambi-tab-asset { display: flex; gap: 8px; margin: 4px 0 4px; }
-.scambi-tab-asset button { flex: 1; padding: 11px 16px; border: 1px solid #253a33; border-radius: 12px; color: #9fb8b1; background: #121b18; cursor: pointer; font: inherit; font-weight: 800; text-align: center; transition: background .18s ease, border-color .18s ease, color .18s ease; }
-.scambi-tab-asset button:hover { border-color: #3f9683; color: #fff; }
-.scambi-tab-asset button.is-attivo { border-color: #4fd8c4; color: #08130f; background: linear-gradient(120deg, #5be0c9, #35b39d); box-shadow: 0 8px 18px rgba(0,0,0,.2); }
 
 .scambi-colonne { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .scambi-asset-grid { max-height: 340px; margin: 0; padding: 0 2px 0 0; display: grid; gap: 6px; list-style: none; overflow-y: auto; }
 .scambi-asset-card { width: 100%; display: grid; grid-template-columns: 34px minmax(0, 1fr) 20px; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid transparent; border-radius: 10px; color: #d9ece7; background: #131c19; font-family: inherit; text-align: left; cursor: pointer; transition: border-color .14s, background .14s, transform .1s; }
 .scambi-asset-card:hover { border-color: #3a5750; transform: translateX(1px); }
-.scambi-asset-card.is-scelto { border-color: #4fd8c4; background: linear-gradient(135deg, #16463d, #102b26); }
+.scambi-asset-card.is-scelto { border-color: #9b4cff; background: linear-gradient(135deg, #16463d, #102b26); }
 .scambi-asset-card__ovr { display: grid; place-items: center; height: 28px; border-radius: 7px; font-size: .74rem; font-weight: 950; color: #101016; }
 .scambi-asset-card__info { min-width: 0; display: grid; gap: 1px; }
 .scambi-asset-card__info strong { overflow: hidden; font-size: .8rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; color: #eafaf5; }
 .scambi-asset-card__info small { overflow: hidden; color: #7f958f; font-size: .64rem; text-overflow: ellipsis; white-space: nowrap; }
-.scambi-asset-card__check { color: #4fd8c4; font-weight: 950; }
+.scambi-asset-card__check { color: #9b4cff; font-weight: 950; }
 .scambi-asset-card--pick .scambi-asset-card__pickbadge { display: grid; place-items: center; height: 28px; border-radius: 7px; font-size: .62rem; font-weight: 950; color: #101016; }
 .scambi-asset-card--pick-on .scambi-asset-card__pickbadge { background: #5be0c9; }
 .scambi-asset-card--pick-off .scambi-asset-card__pickbadge { background: #f2b354; }
@@ -2627,9 +2616,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .scambi-asset-card--pick.is-scelto .scambi-asset-card__check { color: #f2b354; }
 
 .scambi-anteprima { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; margin-top: 4px; padding: 14px 16px; border: 1px solid #2a3d33; border-radius: 14px; background: #0f1613; }
-.scambi-anteprima > i { color: #4fd8c4; font-size: 1.2rem; font-style: normal; }
+.scambi-anteprima > i { color: #9b4cff; font-size: 1.2rem; font-style: normal; }
 .scambi-anteprima__lato { min-width: 0; display: flex; align-items: center; gap: 10px; }
-.scambi-anteprima__conteggio { display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0; border-radius: 999px; color: #08130f; background: #4fd8c4; font-weight: 950; }
+.scambi-anteprima__conteggio { display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0; border-radius: 999px; color: #08130f; background: #9b4cff; font-weight: 950; }
 .scambi-anteprima__chips { min-width: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 
 .scambi-messaggio-riga { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 6px; }
@@ -2644,12 +2633,12 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .scambi-rumor-conteggio { display: grid; place-items: center; gap: 1px; }
 .scambi-rumor-conteggio b { color: #dcf6f0; font-size: .92rem; }
 .scambi-rumor-conteggio small { color: #6f8480; font-size: .6rem; font-weight: 800; text-transform: uppercase; }
-.scambi-rumor-riga > i { color: #4fd8c4; text-align: center; font-style: normal; }
+.scambi-rumor-riga > i { color: #9b4cff; text-align: center; font-style: normal; }
 
 /* ---- Trasparenza ---- */
 .scambi-trasparenza { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .scambi-operazione { display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #223029; border-radius: 12px; background: #10161d; }
-.scambi-operazione > i { color: #4fd8c4; font-style: normal; }
+.scambi-operazione > i { color: #9b4cff; font-style: normal; }
 .scambi-operazione__lato { min-width: 0; display: flex; align-items: center; gap: 8px; }
 .scambi-operazione__lato--destra { flex-direction: row-reverse; }
 .scambi-operazione__chips { min-width: 0; display: flex; flex-wrap: wrap; gap: 5px; }
