@@ -1632,9 +1632,6 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .alerts-empty h2 { margin:16px 0 6px; color:#f2f8fb; font-size:1.25rem; }
 .alerts-empty p { max-width:410px; margin:0; font-size:.78rem; line-height:1.5; }
 
-.standings-tabs { display: flex; gap: 6px; margin: 4px 0 14px; }
-.standings-tabs button { flex: 1; padding: 10px 12px; border: 1px solid #332d40; border-radius: 11px; color: #aaa3b4; background: #17151f; font-size: .72rem; font-weight: 800; cursor: pointer; transition: color .15s, background .15s, border-color .15s; }
-.standings-tabs button.is-active { color: #fff; border-color: #7b3fd4; background: linear-gradient(120deg, rgba(139,63,220,.35), rgba(139,63,220,.1)); }
 .players-standings-body { display: grid; }
 .players-standings-row { display: grid; grid-template-columns: 40px minmax(0,1fr) 48px 90px; align-items: center; gap: 10px; padding: 10px 18px; border-bottom: 1px solid #292530; }
 .players-standings-row:last-child { border-bottom: 0; }

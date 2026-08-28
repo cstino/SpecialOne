@@ -6,6 +6,7 @@ import type { League, Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { Forma, formaPerSquadra, SeasonState, TeamLabel } from './SeasonUI'
 import { Crest } from './Crest'
+import { UnderlineTabs } from './ui/underline-tabs'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; onOpenTeam: (teamId: number) => void }
 
@@ -133,9 +134,13 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
     {!data.loading && !data.error && <div className="season-page season-page--narrow">
       <section className="season-title-row"><div><p className="kicker">Stagione {league.stagione_corrente} · {league.nome}</p><h1>Classifica.</h1><p>Punti, risultati e differenza reti aggiornati dopo ogni simulazione.</p></div><div className="season-total"><strong>{league.n_squadre}</strong><span>squadre</span></div></section>
 
-      <div className="standings-tabs" role="tablist">
-        {SCHEDE.map((voce) => <button key={voce} type="button" role="tab" aria-selected={scheda === voce} className={scheda === voce ? 'is-active' : ''} onClick={() => setScheda(voce)}>{ETICHETTE_SCHEDA[voce]}</button>)}
-      </div>
+      <UnderlineTabs
+        tabs={SCHEDE.map((voce) => ({ value: voce, label: ETICHETTE_SCHEDA[voce] }))}
+        value={scheda}
+        onChange={setScheda}
+        layoutId="standings-scheda-indicator"
+        className="mb-4"
+      />
 
       <section className="standings-panel" onTouchStart={alTouchStart} onTouchEnd={alTouchEnd}>
         {scheda === 'classifica' && <>
