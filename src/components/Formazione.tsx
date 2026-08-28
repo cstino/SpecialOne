@@ -253,10 +253,22 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         const tribunaSalvata = current.tribuna.filter((id) => idsRosa.has(id))
         const giaInDistinta = new Set([...titolariSalvati, ...panchinaSalvata, ...tribunaSalvata])
         const nuoviArrivi = loaded.filter((player) => !giaInDistinta.has(player.id)).map((player) => player.id)
+        // Se molti titolari salvati sono usciti dalla rosa (rinnovi mancati,
+        // ricambio a fine stagione), il filtro sopra puo' accorciare
+        // l'array ben sotto agli 11 slot del modulo. Un array piu' corto
+        // e' un problema vero, non solo estetico: gli aggiornamenti per
+        // indice (`.map((v,i)=>i===index?id:v)`) su un array che non ha
+        // ancora quell'indice non lo creano, quindi lo slot resterebbe
+        // permanentemente non assegnabile. Si riempie il resto con 0
+        // (sentinella "vuoto": nessun player_instance ha mai id 0).
+        const slotTitolari = MODULI[current.modulo]?.length ?? 11
+        const titolariCompleti = titolariSalvati.length >= slotTitolari
+          ? titolariSalvati
+          : [...titolariSalvati, ...Array(slotTitolari - titolariSalvati.length).fill(0)]
         setModulo(current.modulo)
         setStile(current.stile_gioco)
         setSalvataIl(current.salvata_il)
-        setTitolari(titolariSalvati)
+        setTitolari(titolariCompleti)
         setPanchina(panchinaSalvata)
         setTribuna([...tribunaSalvata, ...nuoviArrivi])
       } else {
@@ -447,6 +459,34 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     setError(null)
   }
 
+  // Equivalente di selectEmptySlot per uno slot titolare vuoto (id 0: nessun
+  // player_instance ha mai quell'id). A differenza di panchina e tribuna,
+  // che sono liste libere dove "arrivare" significa accodarsi, un titolare
+  // ha una posizione fissa legata al modulo: bisogna scrivere esattamente
+  // in quell'indice, non in coda. Instradarlo invece per selectPlayer (lo
+  // scambio) lascerebbe un id 0 fittizio nella zona di partenza — un
+  // "fantasma" che poi il salvataggio manderebbe al server.
+  function selectEmptyStarter(index: number) {
+    if (!selected) return
+    setSaved(false)
+    if (selected.zone === 'starter' && selected.index === index) { setSelected(null); return }
+    const id = playerAt(selected)
+    const player = players.find((item) => item.id === id)
+    if ((player?.infortunato_fino_a ?? 0) > 0) {
+      setError('Un giocatore infortunato può essere spostato soltanto in tribuna.')
+      return
+    }
+    if (selected.zone === 'bench') setPanchina((current) => current.filter((_value, i) => i !== selected.index))
+    else if (selected.zone === 'tribuna') setTribuna((current) => current.filter((_value, i) => i !== selected.index))
+    setTitolari((current) => current.map((value, i) => {
+      if (i === index) return id
+      if (selected.zone === 'starter' && i === selected.index) return 0
+      return value
+    }))
+    setSelected(null)
+    setError(null)
+  }
+
   function handlePlayerClick(event: ReactMouseEvent<HTMLButtonElement>, location: PlayerLocation, player: Player | undefined) {
     if (selected) {
       setPlayerAction(null)
@@ -464,6 +504,11 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
 
   async function save() {
     setSaving(true); setSaved(false); setError(null)
+    if (titolari.length !== slots.length || titolari.some((id) => !id)) {
+      setError('Completa tutti e undici i titolari prima di salvare.')
+      setSaving(false)
+      return
+    }
     const cleanBench = panchina.filter((id) => !titolari.includes(id)).slice(0, PANCHINA_MAX)
     const indisponibili = [...titolari, ...cleanBench].filter((id) => (players.find((player) => player.id === id)?.infortunato_fino_a ?? 0) > 0)
     if (indisponibili.length) {
@@ -545,7 +590,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
                 <div className="pitch-field__circle" />
                 <div className="pitch-field__box pitch-field__box--top" /><div className="pitch-field__box pitch-field__box--bottom" />
                 <div className="pitch-grid">
-                  {rows.map((row, rowIndex) => <div className={`pitch-row pitch-row--${rowIndex}`} style={{ '--row-count': row.length } as CSSProperties} key={rowIndex}>{row.map(({ slot, index }) => { const player = players.find((item) => item.id === titolari[index]); const location = { zone: 'starter', index, id: titolari[index] ?? 0 } as PlayerLocation; return <div className={`pitch-slot pitch-slot--${reparto(slot)}${index === scostamentoIndex ? ` pitch-slot--scostato-${scostamentoDirezione}` : ''}`} key={`${slot}-${index}`}><PlayerPortrait player={player} imageUrl={imageUrls[player?.id ?? 0]} position={slot} selected={selected?.zone === 'starter' && selected.index === index} onClick={(event) => handlePlayerClick(event, location, player)} /></div> })}</div>)}
+                  {rows.map((row, rowIndex) => <div className={`pitch-row pitch-row--${rowIndex}`} style={{ '--row-count': row.length } as CSSProperties} key={rowIndex}>{row.map(({ slot, index }) => { const player = players.find((item) => item.id === titolari[index]); const location = { zone: 'starter', index, id: titolari[index] ?? 0 } as PlayerLocation; return <div className={`pitch-slot pitch-slot--${reparto(slot)}${index === scostamentoIndex ? ` pitch-slot--scostato-${scostamentoDirezione}` : ''}`} key={`${slot}-${index}`}><PlayerPortrait player={player} empty={!player} imageUrl={imageUrls[player?.id ?? 0]} position={slot} selected={selected?.zone === 'starter' && selected.index === index} onClick={player ? (event) => handlePlayerClick(event, location, player) : () => selectEmptyStarter(index)} /></div> })}</div>)}
                 </div>
               </div>
             ) : (
