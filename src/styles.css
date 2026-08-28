@@ -69,12 +69,11 @@
 .offseason-stepper { display:grid;grid-template-columns:38px 48px 38px;align-items:center;overflow:hidden;border:1px solid #4b3a5c;border-radius:11px;background:#211a29; }.offseason-stepper button { width:38px;height:42px;border:0;color:#d8b4ef;background:transparent;font-size:1.25rem;cursor:pointer; }.offseason-stepper button:disabled { opacity:.25; }.offseason-stepper output { color:#fff;font-weight:900;text-align:center; }
 .offseason-launch__footer { display:flex;align-items:center;justify-content:space-between;gap:20px;padding-top:20px; }.offseason-launch__footer>div { display:grid;gap:4px; }.offseason-launch__footer small { color:#776f82;font-size:.52rem;font-weight:900;letter-spacing:.12em; }.offseason-launch__footer strong { color:#fff;font-size:1.15rem; }
 .offseason-open-button { min-height:54px;display:flex;align-items:center;gap:22px;padding:0 8px 0 21px;border:0;border-radius:12px;color:#fff;background:linear-gradient(100deg,#963cff,#7022c8);font-weight:900;box-shadow:0 10px 28px rgba(126,38,211,.25);cursor:pointer; }.offseason-open-button i { width:39px;height:39px;display:grid;place-items:center;border-radius:9px;background:rgba(255,255,255,.14);font-style:normal; }.offseason-open-button:disabled { opacity:.55;cursor:wait; }
-.offseason-card { border:1px solid #382e45;border-radius:18px;background:linear-gradient(145deg,#1c1825,#14121b);padding:clamp(1.25rem,4vw,2.2rem);margin:1rem 0;box-shadow:0 24px 70px rgba(0,0,0,.25); }.offseason-card--accent { border-color:#8046aa;background:radial-gradient(circle at 90% 0,rgba(138,46,255,.28),transparent 45%),#17131f; }.offseason-card h2 { font-size:clamp(1.7rem,4vw,2.6rem);margin:.25rem 0 1rem; }
-.offseason-countdown { position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:24px;margin:1rem 0;padding:clamp(1.35rem,4vw,2.4rem);border:1px solid #7442a0;border-radius:20px;background:radial-gradient(circle at 100% 50%,rgba(179,71,255,.28),transparent 20rem),linear-gradient(135deg,#21152d,#13101a);box-shadow:0 24px 70px rgba(0,0,0,.32); }
-.offseason-countdown::before { content:"";position:absolute;inset:0;opacity:.12;background:repeating-linear-gradient(115deg,transparent 0 35px,rgba(255,255,255,.14) 36px 37px);pointer-events:none; }
-.offseason-countdown>* { position:relative;z-index:1; }.offseason-countdown h2 { margin:.2rem 0 .55rem;color:#fff;font-size:clamp(1.8rem,5vw,3rem); }.offseason-countdown p:last-child { max-width:620px;margin:0;color:#a99fb3;font-size:.78rem;line-height:1.55; }
+.offseason-card { padding:clamp(1.25rem,4vw,2.2rem) 0;margin:1rem 0;border-bottom:1px solid #2b2739; }.offseason-card h2 { font-size:clamp(1.7rem,4vw,2.6rem);margin:.25rem 0 1rem; }
+.offseason-countdown { position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:24px;margin:1rem 0;padding:clamp(1.35rem,4vw,2.4rem) 0;border-bottom:1px solid #2b2739; }
+.offseason-countdown h2 { margin:.2rem 0 .55rem;color:#fff;font-size:clamp(1.8rem,5vw,3rem); }.offseason-countdown p:last-child { max-width:620px;margin:0;color:#a99fb3;font-size:.78rem;line-height:1.55; }
 .offseason-countdown time { min-width:210px;display:grid;justify-items:end;gap:6px;padding-left:24px;border-left:1px solid #604178;font-style:normal; }.offseason-countdown time span { color:#b990d9;font-size:.58rem;font-weight:900;letter-spacing:.16em; }.offseason-countdown time strong { color:#fff;font-family:"Aptos Narrow","Arial Narrow",sans-serif;font-size:clamp(2.2rem,6vw,4rem);font-variant-numeric:tabular-nums;letter-spacing:.04em;line-height:.9;text-shadow:0 0 28px rgba(190,91,255,.42); }
-.offseason-countdown.is-expired { border-color:#2f8a5d;background:radial-gradient(circle at 100% 50%,rgba(50,205,128,.23),transparent 20rem),linear-gradient(135deg,#14261d,#12151a); }.offseason-countdown.is-expired time { border-color:#326048; }.offseason-countdown.is-expired time strong { color:#69e6a0;font-size:clamp(1.35rem,4vw,2rem); }
+.offseason-countdown.is-expired time { border-color:#326048; }.offseason-countdown.is-expired time strong { color:#69e6a0;font-size:clamp(1.35rem,4vw,2rem); }
 .offseason-summary { display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;margin:1rem 0; }.offseason-summary div { border:1px solid #382e45;border-radius:14px;background:#17141f;padding:1.1rem;display:flex;flex-direction:column;gap:.35rem; }.offseason-summary small { color:#aa8dc5;letter-spacing:.13em;font-weight:800; }.offseason-summary strong { font-size:1.15rem; }
 .renewal-list { display:grid;gap:.65rem;margin-top:1.2rem; }.renewal-row { display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(260px,auto);gap:1rem;align-items:center;border-top:1px solid #332b40;padding:1rem 0; }.renewal-row>div:first-child { display:flex;flex-direction:column; }.renewal-row small { color:#a9a0b7; }.renewal-actions { display:flex;gap:.45rem; }.renewal-actions input,.renewal-actions select,.renewal-actions button { min-height:42px;border:1px solid #4a3e5d;border-radius:9px;background:#1d1827;color:#fff;padding:.55rem .7rem; }.renewal-actions input { width:90px; }.renewal-actions button { border-color:#9b43f5;cursor:pointer; }.renewal-status { text-transform:uppercase;font-size:.75rem;letter-spacing:.1em;color:#b99dce; }.offseason-readiness { display:grid;gap:.5rem;margin:1rem 0 1.5rem; }.offseason-readiness div { display:flex;justify-content:space-between;border-bottom:1px solid #332b40;padding:.7rem 0; }.offseason-readiness span { color:#aaa1b6; }.offseason-readiness div[role="button"] { cursor:pointer;border-radius:8px;margin:0 -.4rem;padding:.7rem .4rem;transition:background-color .15s; }.offseason-readiness div[role="button"]:hover,.offseason-readiness div[role="button"]:focus-visible { background-color:#241d30; }
 .renewal-counter { grid-column:1/-1; width:max-content; padding:.32rem .5rem; border:1px solid #7b4bb0; border-radius:999px; color:#efccff; background:#2b1939; font-size:.56rem; font-weight:900; letter-spacing:.12em; text-transform:uppercase; }
@@ -702,8 +701,8 @@ input:disabled { opacity: 0.65; }
    se' un `grid-area: foto` pensato per un altro layout a grid-template-areas
    (le card del pacchetto) e in questo contesto, senza quelle aree definite,
    spostava la foto fuori posto invece di lasciarla nella prima colonna. */
-.modale-rosa__riga { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; padding: 10px; border: 1px solid #262133; border-radius: 12px; background: #1a1825; }
-.modale-rosa__riga:last-child { margin-bottom: 0; }
+.modale-rosa__riga { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #262133; }
+.modale-rosa__reparto .modale-rosa__riga:last-child { border-bottom: 0; }
 
 .modale-rosa__foto { flex: 0 0 auto; position: relative; width: 48px; height: 56px; display: grid; place-items: center; overflow: hidden; border-radius: 9px; background: radial-gradient(circle at 50% 35%, #503767, #17131f 72%); color: #8c7c9b; font-size: 1rem; font-weight: 950; }
 .modale-rosa__foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }
@@ -1265,14 +1264,13 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .last-match-duel .fixture-score { justify-content: center; font-size: 2rem; }
 .season-card--next { position: relative; grid-row: span 2; padding: 30px; background: radial-gradient(circle at 50% 105%, rgba(98,35,158,.34), transparent 45%), linear-gradient(145deg, #1d1928, #14121c); }
 .season-card--next::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .13; background: repeating-linear-gradient(112deg, transparent 0 54px, rgba(255,255,255,.12) 55px 56px); }
-.league-news { position:relative;min-width:0;overflow:hidden;border:1px solid #4a315e;border-radius:17px;background:radial-gradient(circle at 100% 0,rgba(157,57,230,.25),transparent 18rem),linear-gradient(145deg,#1d1727,#111018);box-shadow:0 18px 50px rgba(0,0,0,.22); }
-.league-news::before { content:"";position:absolute;inset:0;opacity:.09;background:repeating-linear-gradient(112deg,transparent 0 39px,rgba(255,255,255,.13) 40px 41px);pointer-events:none; }
-.league-news__heading { position:relative;z-index:1;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:20px 20px 0; }.league-news__heading .kicker { margin:0 0 5px;color:#c57eff;font-size:.62rem; }.league-news__heading h2 { margin:0;color:#fff;font-size:1.45rem; }.league-news__heading>span { display:flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;color:#f8dce4;background:#6e1f38;font-size:.52rem;font-weight:950;letter-spacing:.08em; }.league-news__heading>span::before { content:"";width:5px;height:5px;border-radius:50%;background:#ff6684;box-shadow:0 0 8px #ff6684; }
-.league-news__viewport { position:relative;z-index:1;overflow:hidden; }.league-news__story { width:100%;min-height:260px;display:grid;grid-template-columns:minmax(0,1fr) 112px;align-items:stretch;gap:5px;padding:18px 18px 14px;border:0;color:inherit;background:transparent;font-family:inherit;text-align:left;cursor:pointer; }.league-news__story:disabled { cursor:default;opacity:1; }.league-news__copy { min-width:0;display:grid;align-content:center;gap:9px; }.league-news__copy small { color:#9c6ac4;font-size:.54rem;font-weight:950;letter-spacing:.11em; }.league-news__copy strong { color:#fff;font-size:clamp(1.25rem,2.4vw,1.75rem);line-height:1.02;letter-spacing:-.035em; }.league-news__copy p { margin:0;color:#9c93a6;font-size:.7rem;line-height:1.5; }.league-news__copy em { color:#d69cff;font-size:.65rem;font-style:normal;font-weight:900; }
+.league-news { position:relative;min-width:0;padding-bottom:14px;border-bottom:1px solid #2b2739; }
+.league-news__heading { position:relative;z-index:1;display:flex;align-items:flex-start;justify-content:space-between;gap:12px; }.league-news__heading .kicker { margin:0 0 5px;color:#c57eff;font-size:.62rem; }.league-news__heading h2 { margin:0;color:#fff;font-size:1.45rem; }.league-news__heading>span { display:flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;color:#f8dce4;background:#6e1f38;font-size:.52rem;font-weight:950;letter-spacing:.08em; }.league-news__heading>span::before { content:"";width:5px;height:5px;border-radius:50%;background:#ff6684;box-shadow:0 0 8px #ff6684; }
+.league-news__viewport { position:relative;z-index:1; }.league-news__story { width:100%;min-height:260px;display:grid;grid-template-columns:minmax(0,1fr) 112px;align-items:stretch;gap:5px;padding:18px 0 14px;border:0;color:inherit;background:transparent;font-family:inherit;text-align:left;cursor:pointer; }.league-news__story:disabled { cursor:default;opacity:1; }.league-news__copy { min-width:0;display:grid;align-content:center;gap:9px; }.league-news__copy small { color:#9c6ac4;font-size:.54rem;font-weight:950;letter-spacing:.11em; }.league-news__copy strong { color:#fff;font-size:clamp(1.25rem,2.4vw,1.75rem);line-height:1.02;letter-spacing:-.035em; }.league-news__copy p { margin:0;color:#9c93a6;font-size:.7rem;line-height:1.5; }.league-news__copy em { color:#d69cff;font-size:.65rem;font-style:normal;font-weight:900; }
 .league-news__visual { position:relative;align-self:stretch;display:grid;place-items:end center;overflow:hidden; }.league-news__visual::before { content:"";position:absolute;inset:10% -30% -10%;background:radial-gradient(circle,rgba(77,216,202,.25),rgba(159,63,230,.16) 40%,transparent 70%);filter:blur(8px); }.league-news__visual>img:not(.league-news__mark) { position:relative;z-index:1;width:130%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 12px 10px rgba(0,0,0,.5)); }.league-news__mark { position:relative;z-index:1;width:74px;opacity:.42;filter:drop-shadow(0 0 22px rgba(185,82,255,.5)); }
 .league-news__duel { position:relative;z-index:1;display:grid;grid-template-columns:1fr;justify-items:center;gap:7px; }.league-news__duel .crest { width:58px; }.league-news__duel b { color:#9b8aa9;font-size:.54rem;letter-spacing:.12em; }
-.league-news__controls { position:relative;z-index:2;display:grid;grid-template-columns:34px 1fr 34px;align-items:center;gap:9px;padding:0 16px 15px; }.league-news__controls>button { width:32px;height:32px;padding:0;border:1px solid #493558;border-radius:50%;color:#d9c9e7;background:#211a2a;font-size:1.15rem;line-height:1;cursor:pointer; }.league-news__controls>div { display:flex;justify-content:center;gap:5px; }.league-news__controls>div button { width:6px;height:6px;padding:0;border:0;border-radius:999px;background:#55475f;cursor:pointer;transition:width .18s ease,background .18s ease; }.league-news__controls>div button.is-active { width:20px;background:#bf68ff; }
-.league-news--partita { border-color:#354b5c;background:radial-gradient(circle at 100% 0,rgba(45,170,186,.22),transparent 18rem),linear-gradient(145deg,#151f27,#101117); }.league-news--partita .league-news__copy small { color:#60d5cf; }.league-news--mercato .league-news__copy small { color:#d28cff; }
+.league-news__controls { position:relative;z-index:2;display:grid;grid-template-columns:34px 1fr 34px;align-items:center;gap:9px;padding:0; }.league-news__controls>button { width:32px;height:32px;padding:0;border:1px solid #493558;border-radius:50%;color:#d9c9e7;background:#211a2a;font-size:1.15rem;line-height:1;cursor:pointer; }.league-news__controls>div { display:flex;justify-content:center;gap:5px; }.league-news__controls>div button { width:6px;height:6px;padding:0;border:0;border-radius:999px;background:#55475f;cursor:pointer;transition:width .18s ease,background .18s ease; }.league-news__controls>div button.is-active { width:20px;background:#bf68ff; }
+.league-news--partita .league-news__copy small { color:#60d5cf; }.league-news--mercato .league-news__copy small { color:#d28cff; }
 .season-card__heading { position: relative; display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; }
 .season-card .kicker { margin-bottom: 7px; color: #bf78f7; font-size: .66rem; }
 .season-card h2 { margin: 0; color: #f8f5fb; font-size: clamp(1.45rem, 3vw, 2.1rem); }
@@ -1767,7 +1765,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .team-settings-panel > .notice, .team-settings-panel > .button { grid-column: 1 / -1; }
 /* Una statistica guida, tre di supporto. */
 .team-profile-stats { display: grid; gap: 10px; }
-.stat-guida { display: flex; align-items: center; gap: 18px; padding: 16px 20px; border: 1px solid #332c40; border-radius: 16px; background: linear-gradient(120deg,#211b2d,#17151f); }
+.stat-guida { display: flex; align-items: center; gap: 18px; padding: 16px 0; border-bottom: 1px solid #2b2739; }
 .stat-guida__numero { display: flex; align-items: baseline; gap: 2px; color: #fff; font-size: 3.1rem; font-weight: 800; letter-spacing: -.03em; line-height: .85; font-variant-numeric: tabular-nums; }
 .stat-guida__numero sup { color: #c77dff; font-size: .95rem; font-weight: 800; }
 .stat-guida__testo { display: grid; gap: 3px; }
@@ -1798,7 +1796,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .esito-riga--N::before { background: #7c7590; }
 .esito-riga--P::before { background: #f2444e; }
 .team-profile-grid { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(270px,.7fr); gap: 14px; }
-.team-profile-panel, .team-roster-panel { padding: 24px; border: 1px solid #332c40; border-radius: 17px; background: #17151f; }
+.team-profile-panel, .team-roster-panel { padding: 24px 0; border-top: 1px solid #2b2739; }
 .team-recent-panel > button { width: 100%; min-height: 72px; display: grid; grid-template-columns: minmax(0,1fr) 66px minmax(0,1fr); align-items: center; gap: 12px; padding: 12px 14px 12px 22px; border: 0; border-bottom: 1px solid #2b2632; color: inherit; background: transparent; cursor: pointer; }
 .team-recent-panel > button:last-child { border-bottom: 0; }
 .team-recent-panel > button:hover { background: #211a29; }
@@ -2010,10 +2008,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .mercato-finestra { padding: 5px 11px; border: 1px solid #40364e; border-radius: 999px; color: #9791a6; font-size: .68rem; font-weight: 800; letter-spacing: .04em; }
 .mercato-finestra.e-aperto { color: #8fe8b0; border-color: #2c6a45; background: #14301f; }
 
-.mercato-blocco { display: grid; gap: 14px; margin-top: 26px; padding: 20px; border: 1px solid #292536; border-radius: 16px; background: #15141e; }
+.mercato-blocco { display: grid; gap: 14px; margin-top: 26px; padding: 20px 0; border-top: 1px solid #2b2739; }
 .mercato-blocco h3 { margin: 0 0 9px; color: #cfc6e0; font-size: .74rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .mercato-nota { margin: -4px 0 0; color: #7f7789; font-size: .72rem; line-height: 1.5; }
-.mercato-svincolati { border-color:#46325e; background:radial-gradient(circle at 0 0, rgba(104,52,180,.2), transparent 34%), #15141e; }
 .mercato-svincolati > .sezione-testa > span { min-width:86px; height:38px; display:grid; place-items:center; border:1px solid #65428d; border-radius:10px; color:#e7ccff; background:#211633; font-size:.68rem; font-weight:900; }
 
 .mercato-rumors { padding: 16px 18px 18px; }
@@ -2056,10 +2053,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .free-agent-heading small { color:#8e8498; font-size:.68rem; font-weight:850; }
 .free-agent-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
 .free-agent-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; max-height:620px; overflow:auto; padding-right:4px; }
-.free-agent-card { position:relative; min-width:0; display:grid; grid-template-columns:92px minmax(0,1fr); gap:12px; overflow:hidden; padding:12px; border:1px solid #342847; border-radius:16px; background:linear-gradient(145deg,#21162d,#111018); box-shadow:0 18px 42px rgba(0,0,0,.24); }
-.free-agent-card::before { content:''; position:absolute; inset:-40% -20% auto; height:120px; background:radial-gradient(circle,rgba(141,64,232,.32),transparent 62%); pointer-events:none; }
+.free-agent-card { position:relative; min-width:0; display:grid; grid-template-columns:92px minmax(0,1fr); gap:12px; padding:14px 0; border-bottom:1px solid #2b2739; }
 .free-agent-card.is-closed { opacity:.74; }
-.free-agent-card__portrait { position:relative; align-self:start; width:92px; height:112px; display:grid; place-items:end center; overflow:hidden; border-radius:15px; background:radial-gradient(circle at 50% 35%,#293241,#11131a 68%); }
+.free-agent-card__portrait { position:relative; align-self:start; width:92px; height:112px; display:grid; place-items:end center; overflow:hidden; }
 .free-agent-card__portrait img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:top center; filter:drop-shadow(0 12px 12px rgba(0,0,0,.38)); }
 .free-agent-card__portrait span { align-self:center; color:#76717d; font-size:2.4rem; font-weight:950; }
 .free-agent-card__portrait b { position:absolute; left:7px; bottom:7px; min-width:34px; height:28px; display:grid; place-items:center; border-radius:9px; color:#150f1c; background:#c58cff; font-size:.8rem; font-weight:950; }
@@ -2076,7 +2072,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .free-agent-card__bid small { grid-column:1/-1; color:#b78ee4; font-size:.65rem; font-weight:850; }
 .free-agent-card__bid-azioni { display:flex; gap:6px; }
 .free-agent-card__bid-azioni .button { padding:0 11px; font-size:.72rem; white-space:nowrap; }
-.free-agent-card.is-compact { grid-template-columns:62px minmax(0,1fr) auto; align-items:center; padding:9px; border-radius:13px; box-shadow:none; }
+.free-agent-card.is-compact { grid-template-columns:62px minmax(0,1fr) auto; align-items:center; padding:9px 0; }
 .free-agent-card.is-compact .free-agent-card__portrait { width:62px; height:70px; border-radius:11px; }
 .free-agent-card.is-compact .free-agent-card__portrait b { min-width:28px; height:22px; font-size:.65rem; }
 .free-agent-card.is-compact .free-agent-card__body strong { font-size:.84rem; }
@@ -2576,7 +2572,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .scambi-gauge.is-critica .scambi-gauge__riempimento { background: linear-gradient(90deg, #ff6b6b, #d64545); }
 
 /* ---- Blocchi e card ---- */
-.scambi-blocco { display: grid; gap: 14px; margin-top: 26px; padding: 20px; border: 1px solid #24303a; border-radius: 16px; background: #12181f; }
+.scambi-blocco { display: grid; gap: 14px; margin-top: 26px; padding: 20px 0; border-top: 1px solid #2b2739; }
 .scambi-blocco h3 { margin: 0 0 9px; color: #b7d6cf; font-size: .74rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .scambi-badge-contatore { display: grid; place-items: center; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 999px; color: #0c1a17; background: #9b4cff; font-size: .72rem; font-weight: 950; }
 .scambi-vuoto { margin: 8px 0; color: #6c7d78; font-size: .78rem; font-style: italic; }
@@ -2584,7 +2580,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .scambi-messaggio { margin: 0; color: #8ca39d; font-size: .74rem; font-style: italic; }
 
 .scambi-proposte-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-.scambi-card { display: grid; gap: 12px; padding: 16px; border: 1px solid #223029; border-radius: 14px; background: linear-gradient(160deg, #151f1c, #121a19); }
+.scambi-card { display: grid; gap: 12px; padding: 16px 0; border-bottom: 1px solid #2b2739; }
 .scambi-card > header { display: flex; align-items: center; gap: 10px; }
 .scambi-card > header .crest { width: 28px; }
 .scambi-card > header strong { font-size: .86rem; color: #eafaf5; }
