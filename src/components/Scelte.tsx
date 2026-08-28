@@ -223,7 +223,9 @@ export function Scelte({ membership, onNavigate }: Props) {
                 return <div className="scelte-preferenze" key={s.id}>
                   <div className="scelte-preferenze__testa">
                     <strong>{s.posizione}ª scelta</strong>
-                    <span>fino a {s.posizione} {s.posizione === 1 ? 'preferenza' : 'preferenze'}</span>
+                    <span className={`scelte-preferenze__conteggio ${bozza.length >= (s.posizione ?? 0) ? 'is-completo' : ''}`}>
+                      {bozza.length}<i>/{s.posizione}</i> {s.posizione === 1 ? 'preferenza' : 'preferenze'}
+                    </span>
                   </div>
 
                   <ol className="scelte-preferenze__lista">
@@ -244,9 +246,10 @@ export function Scelte({ membership, onNavigate }: Props) {
                   </ol>
 
                   {!congelate && bozza.length < (s.posizione ?? 0) && <details className="scelte-preferenze__aggiungi">
-                    <summary>Aggiungi dal pool ({poolFinestra.length - bozza.length} disponibili)</summary>
-                    <ul className="mt-2.5 flex max-h-[360px] flex-col divide-y divide-white/10 overflow-y-auto">
+                    <summary><span>Aggiungi dal pool</span><b>{poolFinestra.length - bozza.length} disponibili</b></summary>
+                    <ul className="mt-2.5 flex max-h-[360px] list-none flex-col divide-y divide-white/10 overflow-y-auto p-0">
                       {poolFinestra.filter((g) => !bozza.includes(g.id)).map((g) => {
+                        const [primario, ...secondari] = g.posizioni ?? []
                         const macro = macroRuolo(g.posizioni ?? [])
                         return <li className="flex items-center gap-3 py-3.5" key={g.id}>
                           <div className="h-14 w-12 flex-none">
@@ -257,7 +260,10 @@ export function Scelte({ membership, onNavigate }: Props) {
                           <span className="w-9 flex-none text-center text-xl font-extrabold text-purple-300">{g.overall}</span>
                           <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
                             <strong className="truncate text-[.92rem] font-extrabold text-white">{cognome(g.nome)}</strong>
-                            <span className={`role-pill role-pill--${macro.toLowerCase()}`}>{(g.posizioni ?? []).join(' / ')}</span>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className={`role-pill role-pill--${macro.toLowerCase()}`}>{primario ?? '—'}</span>
+                              {secondari.length > 0 && <span className="text-[.68rem] font-semibold text-white/35">{secondari.join(' / ')}</span>}
+                            </div>
                             <span className="text-[.72rem] font-semibold text-white/45">{g.eta} anni</span>
                             <span className="text-[.74rem] font-extrabold text-purple-300">{(g.ingaggio_teorico / 1_000_000).toFixed(1)} M€</span>
                           </div>
