@@ -47,26 +47,28 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px]" style={{ background: ACCENT_FASE[fase], boxShadow: `0 0 20px 1px ${ACCENT_FASE[fase]}99` }} />
 
         <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-6 px-5 pb-7 pt-8 md:flex-row md:items-end md:justify-between md:px-8 md:pb-9">
-          <div className="flex min-w-0 items-center gap-5">
-            <Crest value={miaSquadra?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(membership.id)} size="large" />
-            <div className="min-w-0">
-              <img src={LOGO_FASE[fase]} alt={LABEL_FASE[fase]} className="h-32 w-auto mix-blend-screen md:h-40" />
-              <TitoloAdattivo
-                testo={miaSquadra?.nome ?? 'La tua squadra'}
-                className="font-display mt-1 leading-none tracking-tight text-white drop-shadow-[0_4px_20px_rgba(0,0,0,.5)]"
-              />
-              <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
-                <span className="flex items-baseline gap-1">
-                  <b className="font-display text-2xl font-extrabold tabular-nums text-white">{miaClassifica?.posizione ?? '—'}</b>
-                  <sup className="text-[.6rem] font-bold text-white/50">ª</sup>
-                  <small className="ml-1 text-[.62rem] font-extrabold uppercase tracking-[.1em] text-white/50">posizione</small>
-                </span>
-                <span className="flex items-baseline gap-1">
-                  <b className="font-display text-2xl font-extrabold tabular-nums text-white">{miaClassifica?.punti ?? 0}</b>
-                  <small className="ml-1 text-[.62rem] font-extrabold uppercase tracking-[.1em] text-white/50">punti</small>
-                </span>
-                <Forma esiti={forma.get(membership.id)} nascondiUltimo={!ultimaVista} />
+          <div className="min-w-0">
+            <img src={LOGO_FASE[fase]} alt={LABEL_FASE[fase]} className="mt-4 h-32 w-auto mix-blend-screen md:h-40" />
+            <div className="mt-3 flex min-w-0 items-center gap-5">
+              <Crest value={miaSquadra?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(membership.id)} size="large" />
+              <div className="min-w-0">
+                <TitoloAdattivo
+                  testo={miaSquadra?.nome ?? 'La tua squadra'}
+                  className="font-display leading-none tracking-tight text-white drop-shadow-[0_4px_20px_rgba(0,0,0,.5)]"
+                />
               </div>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+              <span className="flex items-baseline gap-1">
+                <b className="font-display text-2xl font-extrabold tabular-nums text-white">{miaClassifica?.posizione ?? '—'}</b>
+                <sup className="text-[.6rem] font-bold text-white/50">ª</sup>
+                <small className="ml-1 text-[.62rem] font-extrabold uppercase tracking-[.1em] text-white/50">posizione</small>
+              </span>
+              <span className="flex items-baseline gap-1">
+                <b className="font-display text-2xl font-extrabold tabular-nums text-white">{miaClassifica?.punti ?? 0}</b>
+                <small className="ml-1 text-[.62rem] font-extrabold uppercase tracking-[.1em] text-white/50">punti</small>
+              </span>
+              <Forma esiti={forma.get(membership.id)} nascondiUltimo={!ultimaVista} />
             </div>
           </div>
 
