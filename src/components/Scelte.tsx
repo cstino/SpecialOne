@@ -270,7 +270,7 @@ export function Scelte({ membership, onNavigate }: Props) {
                       {poolFinestra.filter((g) => !bozza.includes(g.id)).map((g) => {
                         const [primario, ...secondari] = g.posizioni ?? []
                         const macro = macroRuolo(g.posizioni ?? [])
-                        return <li className="flex items-center gap-3 py-3.5" key={g.id}>
+                        return <li className="flex items-center gap-3 py-3.5 pr-1.5" key={g.id}>
                           <div className="h-14 w-12 flex-none">
                             {foto.get(g.id)
                               ? <img className="h-full w-full object-contain object-bottom" src={foto.get(g.id)} alt="" loading="lazy" />
