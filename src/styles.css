@@ -1313,6 +1313,18 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .overview-fixture-teams .season-team,
 .overview-fixture-teams .season-team--reversed { flex: 1; min-width: 0; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
 .overview-fixture-teams .season-team strong { max-width: 100%; overflow: visible; white-space: normal; text-overflow: clip; font-size: .78rem; line-height: 1.15; }
+/* L'hero si estende dietro la barra in alto fin dal primo istante (non solo
+   scorrendo): l'offset negativo deve combaciare con l'altezza reale della
+   barra visibile in quel momento. Sopra gli 899px e' .topbar (76px fissi).
+   Sotto e' .game-mobilebar, la cui altezza dipende dal safe-area-inset-top
+   del dispositivo (tacca/Dynamic Island): stessa formula usata li'. */
+.overview-hero { margin-top: -76px; min-height: 496px; }
+@media (max-width: 899px) {
+  .overview-hero {
+    margin-top: calc(-56px - env(safe-area-inset-top, 0px));
+    min-height: calc(300px + 56px + env(safe-area-inset-top, 0px));
+  }
+}
 .next-match-duel .season-team { flex-direction: column; text-align: center; }
 .next-match-duel .season-team .crest { width: 82px; filter: drop-shadow(0 13px 20px rgba(0,0,0,.3)); }
 .next-match-duel .season-team strong { max-width: 180px; font-size: 1rem; white-space: normal; }
@@ -2344,7 +2356,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 @media (max-width:899px) {
   .game-mobile-nav { display:none !important; }
   .app-shell { padding-bottom:0; }
-  .game-mobilebar { position:sticky;z-index:42;top:0;min-height:68px;padding:max(12px,env(safe-area-inset-top)) 16px 12px;background:rgba(17,15,24,.94);backdrop-filter:blur(18px);box-shadow:0 12px 34px rgba(0,0,0,.22); }
+  .game-mobilebar { position:sticky;z-index:42;top:0;min-height:68px;padding:max(12px,env(safe-area-inset-top)) 16px 12px;background:rgba(17,15,24,.42);backdrop-filter:blur(18px);box-shadow:0 12px 34px rgba(0,0,0,.22); border-bottom:1px solid rgba(255,255,255,.06); }
   .game-mobilebar .game-sidebar__brand { width:auto;height:auto;border:0;background:transparent; }
   .game-mobilebar__league { margin-left:auto;text-align:right; }
   .game-mobilebar__menu { flex:0 0 42px !important;width:42px !important;height:42px !important;display:grid !important;align-content:center;gap:5px;padding:0 10px !important;border:1px solid #48355d !important;border-radius:12px !important;background:linear-gradient(145deg,#2c213b,#1c1726) !important;box-shadow:0 8px 22px rgba(0,0,0,.28); }

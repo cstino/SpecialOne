@@ -40,7 +40,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
           tocca i bordi, il testo poggia in basso su un velo scuro, una
           sola striscia di colore (per fase) fa da unica decorazione. */}
       <section
-        className="relative isolate -mt-[76px] flex min-h-[376px] w-full items-end overflow-hidden bg-cover bg-center md:min-h-[496px]"
+        className="overview-hero relative isolate flex w-full items-end overflow-hidden bg-cover bg-center"
         style={{ backgroundImage: `url(${SFONDO_FASE[fase]})` }}
       >
         <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-black/10 via-black/45 to-black/95" />
@@ -50,7 +50,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
           <div className="flex min-w-0 items-center gap-5">
             <Crest value={miaSquadra?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(membership.id)} size="large" />
             <div className="min-w-0">
-              <img src={LOGO_FASE[fase]} alt={LABEL_FASE[fase]} className="h-6 w-auto mix-blend-screen md:h-8" />
+              <img src={LOGO_FASE[fase]} alt={LABEL_FASE[fase]} className="h-10 w-auto mix-blend-screen md:h-14" />
               <TitoloAdattivo
                 testo={miaSquadra?.nome ?? 'La tua squadra'}
                 className="font-display mt-1 leading-none tracking-tight text-white drop-shadow-[0_4px_20px_rgba(0,0,0,.5)]"
