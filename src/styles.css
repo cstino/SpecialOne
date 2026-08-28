@@ -1534,8 +1534,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .scheda-quote small { grid-column: 1 / -1; color: #6f6780; font-size: .58rem; }
 
 /* ---- Calendario a giornate ---- */
-.sezione-testa { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin: 26px 0 12px; }
-.sezione-testa h2 { margin: 4px 0 0; color: #f6f1fc; font-size: 1.05rem; }
+.sezione-testa { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px; margin: 26px 0 12px; }
+.sezione-testa > div:first-child { min-width: 0; }
+.sezione-testa h2 { margin: 4px 0 0; color: #f6f1fc; font-size: 1.05rem; overflow-wrap: anywhere; }
 .sezione-conteggio { min-width: 34px; padding: 5px 11px; border: 1px solid #3d3050; border-radius: 999px; color: #c77dff; background: rgba(139,61,255,.12); font-size: .78rem; font-weight: 850; text-align: center; font-variant-numeric: tabular-nums; }
 
 /* Le giornate completate si sfogliano: impilarle tutte allungava la pagina
@@ -2073,8 +2074,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .rumors-paginazione button:disabled { opacity: .35; cursor: default; }
 .rumors-paginazione span { color: #9c93a6; font-size: .68rem; font-weight: 800; }
 .free-agent-daily, .free-agent-archive { display:grid; gap:14px; padding:14px; border:1px solid #2f283a; border-radius:15px; background:rgba(13,12,18,.58); }
-.free-agent-heading { display:flex; align-items:end; justify-content:space-between; gap:16px; }
-.free-agent-heading h3 { margin:0; color:#fff; font-size:1.05rem; }
+.free-agent-heading { display:flex; flex-wrap:wrap; align-items:end; justify-content:space-between; gap:16px; }
+.free-agent-heading > div:first-child { min-width: 0; }
+.free-agent-heading h3 { margin:0; color:#fff; font-size:1.05rem; overflow-wrap: anywhere; }
 .free-agent-heading small { color:#8e8498; font-size:.68rem; font-weight:850; }
 .free-agent-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
 .free-agent-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; max-height:620px; overflow:auto; padding-right:4px; }

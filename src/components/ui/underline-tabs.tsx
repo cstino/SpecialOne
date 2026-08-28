@@ -22,7 +22,7 @@ type UnderlineTabsProps<T extends string> = {
 
 export function UnderlineTabs<T extends string>({ tabs, value, onChange, layoutId = 'underline-tab-indicator', className = '' }: UnderlineTabsProps<T>) {
   return (
-    <div className={`flex justify-center gap-7 border-b border-white/10 ${className}`} role="tablist">
+    <div className={`flex justify-center gap-7 overflow-x-auto border-b border-white/10 ${className}`} role="tablist">
       {tabs.map((tab) => {
         const active = tab.value === value
         return (
@@ -33,7 +33,7 @@ export function UnderlineTabs<T extends string>({ tabs, value, onChange, layoutI
             aria-selected={active}
             disabled={tab.disabled}
             onClick={() => onChange(tab.value)}
-            className={`relative flex items-center pb-3 text-[.8rem] font-bold tracking-tight transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${active ? 'text-white' : 'text-white/45 hover:text-white/70'}`}
+            className={`relative flex shrink-0 items-center whitespace-nowrap pb-3 text-[.8rem] font-bold tracking-tight transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${active ? 'text-white' : 'text-white/45 hover:text-white/70'}`}
           >
             {tab.label}
             {tab.badge != null && (
