@@ -99,6 +99,22 @@ html { min-width: 320px; background: var(--paper); -webkit-text-size-adjust: 100
 body { margin: 0; min-width: 320px; min-height: 100vh; overflow-x: hidden; touch-action: pan-x pan-y; }
 button, input, select, textarea { font: inherit; }
 button { color: inherit; }
+/* Il progetto disattiva di proposito il preflight di Tailwind (vedi il
+   commento in cima al file, prima dell'@import) per non toccare gli
+   stili scritti a mano qui sotto — ma il preflight e' anche cio' che
+   normalmente toglie il cromo nativo del browser dai bottoni. Senza
+   questo reset, un <button> con SOLE classi Tailwind di testo (nessuna
+   background/border/padding esplicita, come un link "Vedi tutta →")
+   mostra lo sfondo bianco/grigiastro nativo del browser con la propria
+   regola "color: inherit" qui sopra che lo fa scrivere in bianco sopra:
+   bianco su bianco, illeggibile, con dimensioni diverse da bottone a
+   bottone perche' il padding nativo dipende dal contenuto. Sicuro da
+   aggiungere: ogni bottone gia' disegnato a mano ha una propria regola
+   con classe (es. ".button--primary", ".mercato-rosa button") che
+   specifica gia' sfondo/bordo/padding, quindi vince comunque su questa
+   per specificita' — il reset tocca solo i bottoni "nudi" che oggi non
+   hanno alcuna regola a coprire l'aspetto nativo. */
+button { appearance: none; -webkit-appearance: none; background: none; border: 0; padding: 0; margin: 0; text-align: inherit; cursor: pointer; }
 button, label, input, select { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, input:focus-visible, select:focus-visible {
   outline: 3px solid var(--warning);
