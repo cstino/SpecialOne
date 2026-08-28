@@ -50,7 +50,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
           <div className="flex min-w-0 items-center gap-5">
             <Crest value={miaSquadra?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(membership.id)} size="large" />
             <div className="min-w-0">
-              <img src={LOGO_FASE[fase]} alt={LABEL_FASE[fase]} className="h-10 w-auto mix-blend-screen md:h-14" />
+              <img src={LOGO_FASE[fase]} alt={LABEL_FASE[fase]} className="h-20 w-auto mix-blend-screen md:h-28" />
               <TitoloAdattivo
                 testo={miaSquadra?.nome ?? 'La tua squadra'}
                 className="font-display mt-1 leading-none tracking-tight text-white drop-shadow-[0_4px_20px_rgba(0,0,0,.5)]"
