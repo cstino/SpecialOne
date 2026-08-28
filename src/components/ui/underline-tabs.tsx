@@ -22,7 +22,7 @@ type UnderlineTabsProps<T extends string> = {
 
 export function UnderlineTabs<T extends string>({ tabs, value, onChange, layoutId = 'underline-tab-indicator', className = '' }: UnderlineTabsProps<T>) {
   return (
-    <div className={`flex gap-7 border-b border-white/10 ${className}`} role="tablist">
+    <div className={`flex justify-center gap-7 border-b border-white/10 ${className}`} role="tablist">
       {tabs.map((tab) => {
         const active = tab.value === value
         return (

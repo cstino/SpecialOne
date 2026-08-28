@@ -828,6 +828,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 
 .formation-save-row { grid-area: save; display: flex; justify-content: flex-end; align-items: center; gap: 14px; }
 .formation-save-button { min-height: 40px; padding: .6rem 1.3rem; }
+.overview-cta-button { min-height: 42px; padding: .6rem 1.3rem; font-size: .8rem; }
 .formation-save-stato { display: grid; gap: 2px; }
 .formation-save-stato span { font-size: .74rem; font-weight: 800; color: #cbb98a; }
 .formation-save-stato small { color: #9990aa; font-size: .66rem; }

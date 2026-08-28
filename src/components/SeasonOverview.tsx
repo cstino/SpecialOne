@@ -122,8 +122,8 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
                 <TeamLabel team={data.teamById.get(data.nextFixture.away_team_id)} imageUrl={data.crestUrlByTeamId.get(data.nextFixture.away_team_id)} reversed onClick={() => onOpenTeam(data.nextFixture!.away_team_id)} />
               </div>
             ) : <p className="text-sm text-white/40">Non ci sono altre partite programmate.</p>}
-            <div className="mt-1 flex items-center gap-4 border-t border-white/10 pt-4">
-              <button className="rounded-full bg-white px-4 py-2 text-[.76rem] font-extrabold text-black transition hover:bg-white/85" type="button" onClick={() => onNavigate('squad')}>Prepara formazione</button>
+            <div className="mt-1 flex items-center justify-center gap-4 border-t border-white/10 pt-4">
+              <button className="overview-cta-button button button--primary" type="button" onClick={() => onNavigate('squad')}>Prepara formazione</button>
               <button className="text-[.76rem] font-bold text-white/60 transition hover:text-white" type="button" onClick={() => onNavigate('matches')}>Tutto il calendario →</button>
             </div>
           </article>
