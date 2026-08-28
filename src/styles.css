@@ -6,6 +6,14 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 
+/* Stesso font condensato già in uso nelle intestazioni scritte a mano
+   (.season-hero__squadra h1 ecc.): disponibile come classe font-display
+   nelle pagine Tailwind, così il redesign non introduce un secondo stile
+   tipografico. */
+@theme {
+  --font-display: "Aptos Narrow", "Arial Narrow", "Roboto Condensed", sans-serif;
+}
+
 :root {
   color: #18221c;
   background: #f3f1e8;
