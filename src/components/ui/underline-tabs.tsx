@@ -22,12 +22,20 @@ type UnderlineTabsProps<T extends string> = {
 
 export function UnderlineTabs<T extends string>({ tabs, value, onChange, layoutId = 'underline-tab-indicator', className = '' }: UnderlineTabsProps<T>) {
   return (
-    // overflow-y-visible e' necessario: impostare solo overflow-x-auto fa si'
-    // che il browser converta da solo overflow-y da "visible" ad "auto" (regola
-    // della spec CSS Overflow), che qui tagliava a meta' le lettere delle
-    // etichette perche' la riga si comportava come un contenitore con altezza
-    // fissa invece che libera di contenere il testo.
-    <div className={`flex justify-center gap-7 overflow-x-auto overflow-y-visible border-b border-white/10 ${className}`} role="tablist">
+    // overflow-x/y non possono essere uno "auto" e l'altro "visible" insieme
+    // (regola della spec CSS Overflow: se uno dei due non e' "visible",
+    // l'altro diventa "auto" anche se scritto "visible"): tentare
+    // overflow-y-visible accanto a overflow-x-auto non aveva alcun effetto.
+    // overflow-y-hidden invece e' esplicito e prevedibile, e touch-action:
+    // pan-x dice al touch di iOS/Android di scorrere solo in orizzontale —
+    // senza, Safari lascia trascinare la riga anche in verticale (il difetto
+    // segnalato) perche' un overflow-y "auto" implicito resta comunque
+    // scrollabile col dito anche senza nulla da scorrere.
+    <div
+      className={`flex justify-center gap-7 overflow-x-auto overflow-y-hidden border-b border-white/10 ${className}`}
+      style={{ touchAction: 'pan-x' }}
+      role="tablist"
+    >
       {tabs.map((tab) => {
         const active = tab.value === value
         const colore = active ? tab.activeColor : undefined
