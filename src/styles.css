@@ -1220,16 +1220,6 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .scelta-ticket__stato--vuota { color:#f0567c; background:#33141d; }
 
 .scelte-countdown { font-variant-numeric:tabular-nums; font-size:clamp(2.2rem,6vw,3.2rem); font-weight:900; color:#e5c8ff; margin:6px 0; }
-.scelte-pool { display:grid; gap:8px; list-style:none; margin:0; padding:0; }
-.scelte-pool li { display:flex; align-items:center; gap:14px; padding:11px 15px; border:1px solid #2c2837; border-radius:12px; background:#19151f; }
-.scelte-pool b { min-width:30px; color:#c58cff; font-size:1.1rem; text-align:center; }
-.scelte-pool span { display:grid; gap:2px; }
-.scelte-pool small { color:#948aa8; font-size:.76rem; }
-.scelte-pool--scelta { max-height:340px; overflow-y:auto; margin-top:10px; }
-.scelte-pool--scelta li { justify-content:space-between; }
-/* Foto senza il riquadro colorato dietro la testa: qui il ritaglio del
-   giocatore basta da solo, il fondo serve solo quando manca la foto. */
-.scelte-pool__foto { background: none; border-radius: 0; }
 .scelte-pool__add { flex: 0 0 auto; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 999px; color: #fff; background: linear-gradient(135deg, #9b4cff, #6726c4); font-size: 1.35rem; font-weight: 800; line-height: 1; box-shadow: 0 4px 14px rgba(122,48,215,.32); transition: transform 160ms ease, box-shadow 160ms ease; }
 .scelte-pool__add:hover { transform: scale(1.06); box-shadow: 0 6px 18px rgba(122,48,215,.42); }
 .scelte-pool__add:active { transform: scale(0.94); }
@@ -1249,7 +1239,6 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .scelte-preferenze__vuota { color:#e5c8ff; font-size:.82rem; padding:8px 0; }
 .scelte-preferenze__aggiungi { margin-bottom:12px; }
 .scelte-preferenze__aggiungi summary { cursor:pointer; color:#fff; font-weight:800; font-size:.82rem; }
-.scelte-preferenze__aggiungi .scelte-pool li { background:rgba(0,0,0,.2); border-color:rgba(255,255,255,.1); }
 .season-round-stamp { width: 132px; aspect-ratio: 1; display: grid; place-content: center; justify-items: center; border: 1px solid #4b3a5f; border-radius: 20px; background: linear-gradient(145deg, #24192f, #17141f); box-shadow: 0 18px 45px rgba(0,0,0,.26); }
 .season-round-stamp small { color: #af88cf; font-size: .58rem; font-weight: 900; letter-spacing: .16em; }
 .season-round-stamp strong { margin: 2px 0 -3px; color: #fff; font-family: "Aptos Narrow", "Arial Narrow", sans-serif; font-size: 3.7rem; line-height: 1; }

@@ -7,6 +7,7 @@ import { GameNav, type GameView } from './GameNav'
 import { SeasonState } from './SeasonUI'
 import { Crest } from './Crest'
 import { firmaFoto } from './RosaElenco'
+import { macroRuolo } from '../lib/ruoli'
 import { useSeasonData } from '../lib/useSeasonData'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
@@ -244,20 +245,25 @@ export function Scelte({ membership, onNavigate }: Props) {
 
                   {!congelate && bozza.length < (s.posizione ?? 0) && <details className="scelte-preferenze__aggiungi">
                     <summary>Aggiungi dal pool ({poolFinestra.length - bozza.length} disponibili)</summary>
-                    <ul className="scelte-pool scelte-pool--scelta">
-                      {poolFinestra.filter((g) => !bozza.includes(g.id)).map((g) => <li key={g.id}>
-                        <div className="modale-rosa__foto scelte-pool__foto">
-                          {foto.get(g.id) ? <img src={foto.get(g.id)} alt="" loading="lazy" /> : <span aria-hidden="true">{g.nome.charAt(0)}</span>}
-                        </div>
-                        <b>{g.overall}</b>
-                        <span>
-                          <strong>{cognome(g.nome)}</strong>
-                          <small>{(g.posizioni ?? []).join(' / ')}</small>
-                          <small>{g.eta} anni</small>
-                          <small>{(g.ingaggio_teorico / 1_000_000).toFixed(1)} M€</small>
-                        </span>
-                        <button type="button" className="scelte-pool__add" aria-label={`Aggiungi ${cognome(g.nome)} alla lista`} onClick={() => aggiungi(g.id)}>+</button>
-                      </li>)}
+                    <ul className="mt-2.5 flex max-h-[360px] flex-col gap-2 overflow-y-auto">
+                      {poolFinestra.filter((g) => !bozza.includes(g.id)).map((g) => {
+                        const macro = macroRuolo(g.posizioni ?? [])
+                        return <li className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3" key={g.id}>
+                          <div className="h-14 w-12 flex-none">
+                            {foto.get(g.id)
+                              ? <img className="h-full w-full object-contain object-bottom" src={foto.get(g.id)} alt="" loading="lazy" />
+                              : <div className="grid h-full w-full place-items-center rounded-lg bg-white/[0.05] text-lg font-extrabold text-white/25" aria-hidden="true">{g.nome.charAt(0)}</div>}
+                          </div>
+                          <span className="w-9 flex-none text-center text-xl font-extrabold text-purple-300">{g.overall}</span>
+                          <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
+                            <strong className="truncate text-[.92rem] font-extrabold text-white">{cognome(g.nome)}</strong>
+                            <span className={`role-pill role-pill--${macro.toLowerCase()}`}>{(g.posizioni ?? []).join(' / ')}</span>
+                            <span className="text-[.72rem] font-semibold text-white/45">{g.eta} anni</span>
+                            <span className="text-[.74rem] font-extrabold text-purple-300">{(g.ingaggio_teorico / 1_000_000).toFixed(1)} M€</span>
+                          </div>
+                          <button type="button" className="scelte-pool__add" aria-label={`Aggiungi ${cognome(g.nome)} alla lista`} onClick={() => aggiungi(g.id)}>+</button>
+                        </li>
+                      })}
                     </ul>
                   </details>}
 
