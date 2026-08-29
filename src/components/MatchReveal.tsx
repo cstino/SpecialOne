@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
 import { ricostruisciEventiStorici, type StatEventoStorico } from '../lib/matchEvents'
@@ -151,7 +151,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
 
   useEffect(() => {
     if (minutoCorrente < 0 || minutoCorrente >= 90) return
-    const timer = window.setTimeout(() => setMinutoCorrente((valore) => valore + 1), 1000)
+    const timer = window.setTimeout(() => setMinutoCorrente((valore) => valore + 1), 700)
     return () => window.clearTimeout(timer)
   }, [minutoCorrente])
 
@@ -185,7 +185,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   }
 
   return <div className="match-reveal-backdrop" role="dialog" aria-modal="true" aria-label="Cronaca della partita">
-    <section className="match-reveal" style={{ backgroundImage: `url(${SFONDO_FASE_VERTICALE[fase]})` }}>
+    <section className="match-reveal" style={{ '--match-reveal-sfondo': `url(${SFONDO_FASE_VERTICALE[fase]})` } as CSSProperties}>
       <button className="match-reveal__close" type="button" onClick={onClose} aria-label="Chiudi cronaca">×</button>
       <header className="match-reveal__header">
         <div><Crest value={casa?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /><strong>{casa?.nome}</strong></div>
@@ -207,8 +207,8 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
           {[15, 30, 45, 60, 75, 90].map((tacca) => (
             <span className={`match-reveal__marker ${tacca === 45 || tacca === 90 ? 'is-forte' : ''}`} style={{ top: `${tacca / 90 * 100}%` }} key={tacca}>{tacca}’</span>
           ))}
-          <div className="match-reveal__events match-reveal__events--home">{visibili.filter((evento) => evento.lato === 'casa').map((evento, i) => <p className={classeEvento(evento)} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
-          <div className="match-reveal__events match-reveal__events--away">{visibili.filter((evento) => evento.lato === 'ospite').map((evento, i) => <p className={classeEvento(evento)} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
+          <div className="match-reveal__events match-reveal__events--home">{visibili.filter((evento) => evento.lato === 'casa').map((evento, i) => <p className={classeEvento(evento)} style={{ top: `${Math.min(100, evento.minuto / 90 * 100)}%` }} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
+          <div className="match-reveal__events match-reveal__events--away">{visibili.filter((evento) => evento.lato === 'ospite').map((evento, i) => <p className={classeEvento(evento)} style={{ top: `${Math.min(100, evento.minuto / 90 * 100)}%` }} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
         </div>
         <footer className="match-reveal__footer">
           {inCorso ? <span className="match-reveal__in-corso"><i aria-hidden="true" />La partita è in corso…</span>

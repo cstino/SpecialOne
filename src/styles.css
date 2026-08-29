@@ -2584,8 +2584,13 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 }
 
 .match-reveal-backdrop { position: fixed; z-index: 80; inset: 0; padding: 0; background: #0a0812; }
-.match-reveal { position: relative; display: flex; flex-direction: column; width: 100%; height: 100dvh; overflow: hidden; background-color: #0a0812; background-size: cover; background-position: center; }
-.match-reveal::before { content: ''; position: absolute; z-index: -1; inset: 0; background: radial-gradient(circle at 50% -10%, rgba(155,76,255,.18), transparent 55%), rgba(8,6,14,.86); }
+.match-reveal { position: relative; display: flex; flex-direction: column; width: 100%; height: 100dvh; overflow: hidden; background-color: #0a0812; }
+/* Vetro fumè: l'immagine di fase vive sfocata su un layer suo, separato dal
+   contenuto (un filter sull'elemento con i figli sfocherebbe anche il
+   testo). Il layer sporge oltre i bordi (inset negativo) cosi' la sfocatura
+   non lascia un alone trasparente sul perimetro. */
+.match-reveal::before { content: ''; position: absolute; z-index: -2; inset: -30px; background-image: var(--match-reveal-sfondo); background-size: cover; background-position: center; filter: blur(28px) brightness(.4) saturate(.9); }
+.match-reveal::after { content: ''; position: absolute; z-index: -1; inset: 0; background: radial-gradient(circle at 50% -10%, rgba(155,76,255,.14), transparent 55%), rgba(8,6,14,.72); }
 .match-reveal__header, .match-reveal__footer { backdrop-filter: blur(16px); background: rgba(10,8,18,.4); }
 .match-reveal__close { position: absolute; z-index: 2; top: max(13px, env(safe-area-inset-top)); right: 15px; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.14); border-radius: 50%; color: #ede6f7; background: rgba(255,255,255,.06); backdrop-filter: blur(8px); font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .match-reveal__header { position: relative; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 20px; padding: max(22px, env(safe-area-inset-top)) 58px 20px 20px; border-bottom: 1px solid rgba(255,255,255,.08); }
@@ -2601,23 +2606,27 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .match-reveal__half { position: absolute; z-index: 0; left: 0; width: 100%; height: 50%; padding: 18px 25px; color: rgba(255,255,255,.12); font: 900 .6rem/1 Inter, Arial, sans-serif; letter-spacing: .2em; }
 .match-reveal__half--second { top: 50%; border-top: 1px dashed rgba(255,255,255,.07); }
 .match-reveal__line { position: absolute; z-index: 1; top: 28px; bottom: 28px; left: 50%; width: 4px; overflow: visible; border-radius: 99px; background: rgba(255,255,255,.07); transform: translateX(-50%); }
-.match-reveal__line span { display: block; width: 100%; border-radius: inherit; background: linear-gradient(#e29bff, #8a4bff); box-shadow: 0 0 14px rgba(180,110,255,.55); transition: height 1s linear; }
-.match-reveal__minute { position: absolute; z-index: 2; left: 50%; display: grid; place-items: center; width: 46px; height: 26px; border: 1px solid rgba(226,155,255,.6); border-radius: 20px; color: #fff; background: linear-gradient(135deg, #9b4cff, #6726c4); font-size: .68rem; font-weight: 800; box-shadow: 0 4px 16px rgba(122,48,215,.5); transform: translate(-50%, -50%); transition: top 1s linear; }
+.match-reveal__line span { display: block; width: 100%; border-radius: inherit; background: linear-gradient(#e29bff, #8a4bff); box-shadow: 0 0 14px rgba(180,110,255,.55); transition: height .7s linear; }
+.match-reveal__minute { position: absolute; z-index: 2; left: 50%; display: grid; place-items: center; width: 46px; height: 26px; border: 1px solid rgba(226,155,255,.6); border-radius: 20px; color: #fff; background: linear-gradient(135deg, #9b4cff, #6726c4); font-size: .68rem; font-weight: 800; box-shadow: 0 4px 16px rgba(122,48,215,.5); transform: translate(-50%, -50%); transition: top .7s linear; }
 .match-reveal__minute.is-live::before { content: ''; position: absolute; inset: -6px; border-radius: inherit; border: 1px solid rgba(226,155,255,.5); animation: match-reveal-ring 1.8s ease-out infinite; }
 .match-reveal__marker { position: absolute; z-index: 1; left: 50%; color: rgba(255,255,255,.28); font-size: .56rem; font-weight: 700; transform: translate(-50%, -50%); }
 .match-reveal__marker.is-forte { color: rgba(255,255,255,.5); font-weight: 900; }
-.match-reveal__events { z-index: 1; display: flex; flex-direction: column; gap: 8px; padding: 28px 16px; }
-.match-reveal__events p { position: relative; overflow: hidden; margin: 0; padding: 9px 12px; border-radius: 10px; color: rgba(255,255,255,.82); background: rgba(255,255,255,.04); font-size: .74rem; line-height: 1.4; animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both; }
+/* Ogni evento e' posizionato in assoluto sul proprio minuto reale (stessa
+   proporzione 0-90 della linea del tempo al centro), non impilato in ordine
+   di comparsa: altrimenti un gol al 52' finiva visivamente nella meta' campo
+   del primo tempo solo perche' era il secondo evento della lista. */
+.match-reveal__events { position: relative; z-index: 1; padding: 28px 14px; }
+.match-reveal__events p { position: absolute; left: 14px; right: 14px; overflow: hidden; margin: 0; padding: 9px 12px; border-radius: 10px; color: rgba(255,255,255,.82); background: rgba(255,255,255,.04); font-size: .74rem; line-height: 1.4; transform: translateY(-50%); animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both; }
 /* Tiri e sostituzioni sono eventi minori: comparsa normale, poi svaniscono
    da soli 2 secondi dopo per non riempire la cronaca. Gol e infortuni non
    hanno questa classe e restano fissi. */
-.match-reveal__events p.is-transitorio { animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both, evento-transitorio-esci .45s ease-in 2s forwards; }
-@keyframes evento-transitorio-esci { from { opacity: 1; max-height: 120px; } to { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; } }
+.match-reveal__events p.is-transitorio { animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both, evento-transitorio-esci .4s ease-in 2s forwards; }
+@keyframes evento-transitorio-esci { from { opacity: 1; } to { opacity: 0; } }
 .match-reveal__events--home p::before, .match-reveal__events--away p::before { content: ''; position: absolute; top: 6px; bottom: 6px; width: 2px; border-radius: 2px; background: rgba(255,255,255,.14); }
 .match-reveal__events--home p::before { right: 0; }.match-reveal__events--away p::before { left: 0; }
 .match-reveal__events time { display: block; margin-bottom: 2px; color: #c9a7ff; font-size: .6rem; font-weight: 900; }
 .match-reveal__events strong { color: #fff; font-weight: 800; }
-.match-reveal__events p.is-goal { color: #fff; background: linear-gradient(110deg, rgba(155,76,255,.28), rgba(122,48,215,.14)); animation: reveal-goal .45s cubic-bezier(.2,.8,.2,1) both; }
+.match-reveal__events p.is-goal { z-index: 1; color: #fff; background: linear-gradient(110deg, rgba(155,76,255,.28), rgba(122,48,215,.14)); animation: reveal-goal .45s cubic-bezier(.2,.8,.2,1) both; }
 .match-reveal__events p.is-goal::before { background: linear-gradient(#e29bff, #8a4bff); box-shadow: 0 0 8px rgba(180,110,255,.6); }
 .match-reveal__events p.is-goal time { color: #fff; }
 .match-reveal__events--home { grid-column: 1; text-align: right; }.match-reveal__events--away { grid-column: 3; text-align: left; }
