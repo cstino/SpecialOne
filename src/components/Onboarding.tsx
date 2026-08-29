@@ -279,8 +279,9 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
             </button>
           </div>
           <RangeField label="Budget iniziale" value={budget} min={50} max={200} step={10} suffix=" M€" onChange={setBudget} disabled={pending} />
+          <p className="field-help">È il tetto salariale della lega: la somma degli ingaggi attivi di una squadra non può mai superarlo, in nessuna stagione. Uguale per tutte le squadre e non cambia mai.</p>
           <RangeField label="Budget draft" value={budgetDraft} min={20} max={budget} step={10} suffix=" M€" onChange={setBudgetDraft} disabled={pending} />
-          <p className="field-help">Monte ingaggi utilizzabile nel draft. Il resto del budget iniziale resta liquido per il mercato della stagione 1. Abbassalo rispetto al budget iniziale per rose più equilibrate.</p>
+          <p className="field-help">Quota del tetto salariale spendibile durante il draft di creazione squadra: il resto resta disponibile sotto il tetto per rinnovi, aste e scambi durante la stagione. Abbassalo rispetto al budget iniziale per rose più equilibrate.</p>
           <RangeField label="Reroll" value={rerolls} min={0} max={30} onChange={setRerolls} disabled={pending} />
           <p className="field-help">{draftMode === '2_of_4' ? 'Rosa fissata a 24 giocatori: 12 pacchetti da 2 carte a testa.' : 'Rosa fissata a 24 giocatori: sei tu a decidere quanti spin dedicare a ogni reparto.'}</p>
         </div>
