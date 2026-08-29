@@ -58,16 +58,39 @@ function testoEvento(evento: EventoPartita, nomi: Map<number, Player>) {
   return null
 }
 
-// Gol e infortuni restano fissi in cronaca; tiri (parati o fuori) e
-// sostituzioni sono eventi minori che altrimenti riempirebbero la lista, e
-// scompaiono da soli qualche secondo dopo essere comparsi (is-transitorio,
-// vedi l'animazione di uscita in styles.css). L'engine non modella ancora
-// ammonizioni/espulsioni: quando arriveranno andranno aggiunte qui fra i
-// permanenti, non fra i transitori.
+// Gol, infortuni e sostituzioni restano fissi in cronaca; solo i tiri
+// (parati o fuori) sono eventi minori che altrimenti riempirebbero la
+// lista, e scompaiono da soli qualche secondo dopo essere comparsi
+// (is-transitorio, vedi l'animazione di uscita in styles.css). L'engine non
+// modella ancora ammonizioni/espulsioni: quando arriveranno andranno
+// aggiunte qui fra i permanenti, non fra i transitori.
 function classeEvento(evento: EventoPartita): string {
   if (isEventoGol(evento)) return 'is-goal'
   if (evento.tipo === 'infortunio' || evento.tipo === 'sostituzione') return ''
   return 'is-transitorio'
+}
+
+// Il posizionamento sul minuto esatto (top: minuto/90*100%) e' corretto per
+// non far comparire un evento del secondo tempo nel primo, ma due eventi
+// vicini nel tempo finiscono a occupare lo stesso spazio. Qui si scorrono
+// gli eventi in ordine di minuto e si spinge in basso chi e' troppo vicino
+// al precedente gia' posizionato: la posizione resta quella vera quando c'e'
+// spazio, si allontana solo quando serve. GAP_MINIMO e' una percentuale
+// dell'altezza del campo, non pixel: non conosciamo l'altezza reale (dipende
+// dallo schermo), ma una percentuale fissa basta a evitare la sovrapposizione
+// nella grande maggioranza dei casi reali.
+const GAP_MINIMO_PERCENTUALE = 7
+function posizionaEventi(eventi: EventoPartita[]): Array<{ evento: EventoPartita; top: number }> {
+  const ordinati = [...eventi].sort((a, b) => a.minuto - b.minuto)
+  const posizionati: Array<{ evento: EventoPartita; top: number }> = []
+  let ultimoTop = -Infinity
+  for (const evento of ordinati) {
+    const ideale = Math.min(97, (evento.minuto / 90) * 100)
+    const top = Math.max(ideale, ultimoTop + GAP_MINIMO_PERCENTUALE)
+    posizionati.push({ evento, top })
+    ultimoTop = top
+  }
+  return posizionati
 }
 
 export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenReport }: Props) {
@@ -208,8 +231,8 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
           {[15, 30, 45, 60, 75, 90].map((tacca) => (
             <span className={`match-reveal__marker ${tacca === 45 || tacca === 90 ? 'is-forte' : ''}`} style={{ top: `${tacca / 90 * 100}%` }} key={tacca}>{tacca}’</span>
           ))}
-          <div className="match-reveal__events match-reveal__events--home">{visibili.filter((evento) => evento.lato === 'casa').map((evento, i) => <p className={classeEvento(evento)} style={{ top: `${Math.min(100, evento.minuto / 90 * 100)}%` }} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
-          <div className="match-reveal__events match-reveal__events--away">{visibili.filter((evento) => evento.lato === 'ospite').map((evento, i) => <p className={classeEvento(evento)} style={{ top: `${Math.min(100, evento.minuto / 90 * 100)}%` }} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
+          <div className="match-reveal__events match-reveal__events--home">{posizionaEventi(visibili.filter((evento) => evento.lato === 'casa')).map(({ evento, top }, i) => <p className={classeEvento(evento)} style={{ top: `${top}%` }} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
+          <div className="match-reveal__events match-reveal__events--away">{posizionaEventi(visibili.filter((evento) => evento.lato === 'ospite')).map(({ evento, top }, i) => <p className={classeEvento(evento)} style={{ top: `${top}%` }} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
         </div>
         <footer className="match-reveal__footer">
           {inCorso ? <span className="match-reveal__in-corso"><i aria-hidden="true" />La partita è in corso…</span>
