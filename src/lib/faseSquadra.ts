@@ -18,9 +18,9 @@ export const SFONDO_FASE: Record<FaseSquadra, string> = {
 // (l'hero di Overview) e su schermo verticale verrebbero ritagliate parecchio
 // invece di mostrare la composizione pensata per quel formato.
 export const SFONDO_FASE_VERTICALE: Record<FaseSquadra, string> = {
-  regular: '/sfondi-fase-verticali/regular_season.png',
-  title: '/sfondi-fase-verticali/title_playoffs.png',
-  draft: '/sfondi-fase-verticali/draft_playoffs.png',
+  regular: '/sfondi-fase-verticali/regular_season_vert.png',
+  title: '/sfondi-fase-verticali/title_playoffs_vert.png',
+  draft: '/sfondi-fase-verticali/draft_playoffs_vert.png',
 }
 
 // Loghi testuali delle fasi: un vero canale alpha (non mix-blend-mode, che
