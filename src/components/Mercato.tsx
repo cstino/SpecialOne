@@ -122,7 +122,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   const [paginaAstaRuolo, setPaginaAstaRuolo] = useState<MacroRuolo>('GK')
   // Offrire impegna il denaro: quello che conta non e' il budget ma cio' che
   // resta dopo aver messo da parte le offerte ancora in gioco.
-  const [conti, setConti] = useState<{ disponibile: number; impegnato: number; slot_liberi: number } | null>(null)
+  const [conti, setConti] = useState<{ capienza: number; slot_liberi: number } | null>(null)
   const [caricamento, setCaricamento] = useState(true)
   const [errore, setErrore] = useState<string | null>(null)
 
@@ -153,7 +153,7 @@ export function Mercato({ membership, onNavigate }: Props) {
         .select('id, giorno, tornata, player_id, ingaggio_teorico, stato, origine, vincitore_team_id, ingaggio_finale')
         .eq('league_id', league.id).order('giorno', { ascending: false }).order('id').limit(500),
       supabase.from('free_agent_bids').select('auction_id, ingaggio_offerto'),
-      supabase.rpc('budget_disponibile', { p_league_id: league.id }),
+      supabase.rpc('capienza_squadra', { p_league_id: league.id }),
     ])
     const primoErrore = istanzeRes.error ?? asteRes.error ?? offerteRes.error
     if (primoErrore) { setErrore(primoErrore.message); setCaricamento(false); return }
@@ -187,7 +187,7 @@ export function Mercato({ membership, onNavigate }: Props) {
     setAste(asteRighe)
     setMieOfferte(new Map((offerteRes.data ?? []).map((o) => [o.auction_id, o.ingaggio_offerto])))
     // Un errore qui non deve impedire di usare il mercato: e' un indicatore.
-    setConti(contiRes.error ? null : contiRes.data as typeof conti)
+    setConti(contiRes.error ? null : contiRes.data as { capienza: number; slot_liberi: number })
     setSvincolati(new Map(asteRighe.map((a) => [a.player_id, {
       nome: cognome(perId.get(a.player_id)?.nome ?? '—'),
       ruolo: perId.get(a.player_id)?.posizioni?.[0] ?? '—',
@@ -322,6 +322,9 @@ export function Mercato({ membership, onNavigate }: Props) {
         : 'Mercato chiuso · in attesa della prossima partita'
     : aperto ? 'Mercato aperto · chiude alle 21:00' : 'Mercato chiuso · apre alle 23:30'
   const mieProposteAperte = nuoviDelGiorno.filter((a) => a.stato === 'aperta' && mieOfferte.has(a.id))
+  // Quanto delle mie offerte ancora aperte occupa già capienza (docs/decisioni-economia.md
+  // §3): non pro-rata come nel vecchio modello a cassa, l'ingaggio offerto per intero.
+  const impegnatoAste = aste.reduce((somma, a) => somma + (a.stato === 'aperta' ? (mieOfferte.get(a.id) ?? 0) : 0), 0)
   const giocatoriSottoContratto = new Set(rose.map((g) => g.player_id))
 
   const archivioSvincolati = Array.from(new Map(aste
@@ -519,15 +522,14 @@ export function Mercato({ membership, onNavigate }: Props) {
           <p>Asta a busta chiusa: si offre dalle 23:30 alle 21:00.</p>
         </div>
         <div className="season-total">
-          <strong>{milioni(conti ? conti.disponibile : membership.budget)}</strong>
-          <span>{conti && conti.impegnato > 0 ? 'disponibile' : 'budget'}</span>
+          <strong>{milioni(conti ? conti.capienza : 0)}</strong>
+          <span>capienza libera</span>
         </div>
       </section>
 
-      {conti && conti.impegnato > 0 && <p className="mercato-impegno">
-        <strong>{milioni(conti.impegnato)}</strong> sono impegnati in offerte ancora aperte (ingaggio
-        pro-rata sulle giornate rimanenti, non l'importo pieno offerto) e tornano disponibili se le
-        perdi o le ritiri. Posti liberi in rosa: <strong>{conti.slot_liberi}</strong>.
+      {impegnatoAste > 0 && <p className="mercato-impegno">
+        <strong>{milioni(impegnatoAste)}</strong> sono impegnati in offerte ancora aperte (l'ingaggio pieno
+        offerto) e tornano disponibili se le perdi o le ritiri. Posti liberi in rosa: <strong>{conti?.slot_liberi ?? '—'}</strong>.
       </p>}
 
       {esito && <p className="notice">{esito}</p>}

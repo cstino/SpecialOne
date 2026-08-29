@@ -38,7 +38,7 @@ type DraftPacchetto = {
   pick_numero: number
   stato: 'in_corso' | 'concluso'
   reroll_rimasti: number
-  budget: number
+  speso: number
   slot_occupati: number
   carte: DraftCard[]
 }
@@ -95,7 +95,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
   const [fotoCarte, setFotoCarte] = useState<Map<number, string>>(new Map())
   const [selezionati, setSelezionati] = useState<number[]>([])
   const [fase, setFase] = useState<'vuoto' | 'girando' | 'rivelato'>('vuoto')
-  const [budgetAttuale, setBudgetAttuale] = useState<number>(membership.budget)
+  const [spesoDraft, setSpesoDraft] = useState<number>(0)
   const [rosaAperta, setRosaAperta] = useState(false)
   const [loading, setLoading] = useState(true)
   const [pending, setPending] = useState(false)
@@ -170,13 +170,13 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
     let active = true
     async function load() {
       setLoading(true); setError(null); setSelezionati([])
-      const [{ data: teamState, error: stateError }, { data: team }, { count: iscritte }] = await Promise.all([
+      const [{ data: teamState, error: stateError }, { data: istanze }, { count: iscritte }] = await Promise.all([
         supabase.from('draft_team_state').select('*').eq('team_id', membership.id).maybeSingle(),
-        supabase.from('teams').select('budget').eq('id', membership.id).maybeSingle(),
+        supabase.from('player_instances').select('ingaggio').eq('league_id', league.id).eq('team_id', membership.id),
         supabase.from('teams').select('id', { count: 'exact', head: true }).eq('league_id', league.id),
       ])
       if (!active) return
-      if (team) setBudgetAttuale(team.budget)
+      setSpesoDraft((istanze ?? []).reduce((somma, i) => somma + i.ingaggio, 0))
       setSquadreIscritte(iscritte ?? null)
       if (stateError || !teamState) { setError(stateError?.message ?? 'Stato del tuo draft non disponibile.'); setLoading(false); return }
       const nextState = teamState as DraftTeamState
@@ -313,7 +313,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
   const picks = state?.pick_numero ?? 0
   const total = league.slot_rosa
   const tetto = league.budget_draft
-  const speso = league.budget_iniziale - budgetAttuale
+  const speso = spesoDraft
   const disponibile = Math.max(0, tetto - speso)
   const progressoSpesa = tetto > 0 ? Math.min(100, (speso / tetto) * 100) : 0
   // Stessa formula del vincolo di solvibilita' server-side (private.pick_sostenibile,

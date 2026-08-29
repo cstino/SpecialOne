@@ -5,7 +5,7 @@ import type { League, Membership, Team } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { Crest } from './Crest'
 
-type StatoTeam = { id: number; nome: string; attiva: boolean; entrante: boolean; rosa: number; draft: string | null; budget: number }
+type StatoTeam = { id: number; nome: string; attiva: boolean; entrante: boolean; rosa: number; draft: string | null }
 type StatoOffseason = { fase: string; stagione_corrente: number; stagione_prossima: number; scade_il: string | null; posti_nuovi: number; squadre_attese: number; squadre: StatoTeam[] }
 type Props = { user: User; membership: Membership; onNavigate: (view: GameView) => void; onOpenTeam: (teamId: number) => void; onRefresh: () => Promise<void> }
 

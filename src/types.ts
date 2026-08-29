@@ -7,6 +7,7 @@ export type League = {
   n_gironi: number
   budget_iniziale: number
   budget_draft: number
+  tetto_ingaggi: number
   reroll_draft: number
   slot_rosa: number
   portieri_minimi: number
@@ -29,8 +30,6 @@ export type Team = {
   user_id: string
   nome: string
   stemma_url: string | null
-  budget: number
-  budget_ingaggi_riservato: number
   reroll_rimasti: number
   ordine_draft: number | null
   attiva: boolean
