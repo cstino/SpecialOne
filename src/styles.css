@@ -2508,14 +2508,18 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .match-intro__chiudi { top: max(16px, env(safe-area-inset-top)); left: 16px; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.18); border-radius: 50%; color: #ede6f7; background: rgba(18,15,25,.55); backdrop-filter: blur(8px); font-size: 1.35rem; line-height: 1; }
 .match-intro__salta { top: max(16px, env(safe-area-inset-top)); right: 16px; padding: 9px 15px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; color: #ede6f7; background: rgba(18,15,25,.55); backdrop-filter: blur(8px); font-size: .74rem; font-weight: 800; }
 
-.match-intro__locandina { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 34px; padding: 24px; text-align: center; animation: match-intro-in .6s cubic-bezier(.2,.8,.2,1) both; }
-.match-intro__competizione { margin: 0; color: #cbb9e6; font-size: .72rem; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; }
-.match-intro__sfida { display: flex; align-items: center; gap: 28px; }
-.match-intro__sfida-squadra { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 128px; }
-.match-intro__sfida-squadra .crest--large { width: 92px; filter: drop-shadow(0 14px 26px rgba(0,0,0,.5)); }
-.match-intro__sfida-squadra strong { color: #fff; font-size: 1rem; font-weight: 900; line-height: 1.15; }
-.match-intro__vs { color: rgba(255,255,255,.35); font-family: "Aptos Narrow", "Arial Narrow", sans-serif; font-size: 1.6rem; font-weight: 900; }
-.match-intro__turno { margin: 0; padding: 10px 22px; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; color: #fff; background: rgba(255,255,255,.06); font-size: .82rem; font-weight: 800; }
+.match-intro__locandina { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 26px; padding: 24px; text-align: center; animation: match-intro-in .6s cubic-bezier(.2,.8,.2,1) both; }
+.match-intro__logo-fase { height: 46px; width: auto; max-width: 82vw; object-fit: contain; mix-blend-mode: screen; filter: drop-shadow(0 6px 18px rgba(0,0,0,.5)); }
+.match-intro__competizione { margin: 0; color: #cbb9e6; font-size: .68rem; font-weight: 900; letter-spacing: .22em; text-transform: uppercase; }
+.match-intro__sfida { position: relative; display: flex; align-items: center; gap: 30px; padding: 22px 6px; }
+.match-intro__sfida::before { content: ''; position: absolute; z-index: -1; inset: 0; border-radius: 24px; background: radial-gradient(circle, rgba(155,76,255,.16), transparent 72%); }
+.match-intro__sfida-squadra { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 128px; }
+.match-intro__sfida-squadra .crest--large { width: 96px; filter: drop-shadow(0 16px 28px rgba(0,0,0,.55)); animation: match-intro-crest .55s cubic-bezier(.2,.8,.2,1) both; }
+.match-intro__sfida-squadra:last-child .crest--large { animation-delay: .1s; }
+.match-intro__sfida-squadra strong { color: #fff; font-size: 1.02rem; font-weight: 900; line-height: 1.15; text-shadow: 0 2px 10px rgba(0,0,0,.4); }
+.match-intro__vs { position: relative; color: #fff; font-family: "Aptos Narrow", "Arial Narrow", sans-serif; font-size: 1.9rem; font-weight: 900; text-shadow: 0 0 24px rgba(196,120,255,.6); }
+.match-intro__turno { margin: 0; padding: 10px 24px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; color: #fff; background: rgba(255,255,255,.07); backdrop-filter: blur(6px); font-size: .8rem; font-weight: 800; letter-spacing: .02em; }
+@keyframes match-intro-crest { from { opacity: 0; transform: scale(.7) rotate(-6deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
 
 .match-intro__formazione { position: relative; z-index: 1; display: flex; height: 100%; width: 100%; max-width: 640px; flex-direction: column; padding: 100px 20px 40px; animation: match-intro-in .5s ease-out both; }
 .match-intro__formazione-testa { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
@@ -2558,6 +2562,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .match-intro__sfondo, .match-intro__locandina, .match-intro__formazione, .match-intro__giocatore { animation: none; opacity: 1; }
 }
 @media (max-width: 480px) {
+  .match-intro__logo-fase { height: 34px; }
   .match-intro__sfida { gap: 16px; }
   .match-intro__sfida-squadra { width: 104px; }
   .match-intro__sfida-squadra .crest--large { width: 76px; }

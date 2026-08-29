@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
-import { MUSICA_FASE, type FaseSquadra } from '../lib/faseSquadra'
+import { LOGO_FASE, MUSICA_FASE, type FaseSquadra } from '../lib/faseSquadra'
 import { righeFormazione } from '../lib/formazioni'
 import { firmaFoto } from './RosaElenco'
 import type { useSeasonData } from '../lib/useSeasonData'
@@ -186,6 +186,7 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
 
       {beat.tipo === 'locandina' && (
         <div className="match-intro__locandina">
+          <img className="match-intro__logo-fase" src={LOGO_FASE[fase]} alt="" />
           <p className="match-intro__competizione">{league?.nome}</p>
           <div className="match-intro__sfida">
             <div className="match-intro__sfida-squadra">
