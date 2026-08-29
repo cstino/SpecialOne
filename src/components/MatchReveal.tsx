@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
 import { ricostruisciEventiStorici, type StatEventoStorico } from '../lib/matchEvents'
@@ -185,7 +185,8 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   }
 
   return <div className="match-reveal-backdrop" role="dialog" aria-modal="true" aria-label="Cronaca della partita">
-    <section className="match-reveal" style={{ '--match-reveal-sfondo': `url(${SFONDO_FASE_VERTICALE[fase]})` } as CSSProperties}>
+    <section className="match-reveal">
+      <div className="match-reveal__sfondo" style={{ backgroundImage: `url(${SFONDO_FASE_VERTICALE[fase]})` }} />
       <button className="match-reveal__close" type="button" onClick={onClose} aria-label="Chiudi cronaca">×</button>
       <header className="match-reveal__header">
         <div><Crest value={casa?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /><strong>{casa?.nome}</strong></div>

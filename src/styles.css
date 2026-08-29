@@ -2589,7 +2589,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    contenuto (un filter sull'elemento con i figli sfocherebbe anche il
    testo). Il layer sporge oltre i bordi (inset negativo) cosi' la sfocatura
    non lascia un alone trasparente sul perimetro. */
-.match-reveal::before { content: ''; position: absolute; z-index: -2; inset: -30px; background-image: var(--match-reveal-sfondo); background-size: cover; background-position: center; filter: blur(22px) brightness(.75) saturate(1); }
+.match-reveal__sfondo { position: absolute; z-index: -2; inset: -30px; background-size: cover; background-position: center; filter: blur(22px) brightness(.75) saturate(1); }
 .match-reveal::after { content: ''; position: absolute; z-index: -1; inset: 0; background: radial-gradient(circle at 50% -10%, rgba(155,76,255,.14), transparent 55%), rgba(8,6,14,.4); }
 .match-reveal__header, .match-reveal__footer { backdrop-filter: blur(16px); background: rgba(10,8,18,.4); }
 .match-reveal__close { position: absolute; z-index: 2; top: max(13px, env(safe-area-inset-top)); right: 15px; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.14); border-radius: 50%; color: #ede6f7; background: rgba(255,255,255,.06); backdrop-filter: blur(8px); font-size: 1.4rem; line-height: 1; cursor: pointer; }
