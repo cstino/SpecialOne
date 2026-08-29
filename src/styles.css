@@ -2797,7 +2797,10 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .scambi-chip--pick-off { background: #f2b354; }
 
 /* ---- Compositore ---- */
-.scambi-compositore { border-color: #2a3d33; background: linear-gradient(160deg, #131c17, #10161d); }
+/* A differenza degli altri .scambi-blocco (che si appoggiano al margine
+   della pagina, essendo trasparenti) questo ha un fondo suo: senza un
+   padding orizzontale proprio il testo tocca il bordo del riquadro. */
+.scambi-compositore { padding-inline: 16px; border-color: #2a3d33; border-radius: 18px; background: linear-gradient(160deg, #131c17, #10161d); }
 .scambi-scelta-squadra { display: grid; grid-template-columns: repeat(auto-fill, 76px); justify-content: start; gap: 10px; }
 .scambi-scelta-squadra button { aspect-ratio: 1; display: grid; place-items: center; padding: 14px; border: 1px solid #24312c; border-radius: 18px; background: #131b19; cursor: pointer; transition: border-color .16s ease, background .16s ease, transform .16s ease; }
 .scambi-scelta-squadra button:hover { border-color: #3f9683; transform: translateY(-2px); }
