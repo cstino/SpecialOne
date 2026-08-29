@@ -57,6 +57,7 @@ type AvanzamentoDraft = {
   stato: 'in_corso' | 'concluso'
   giocatori: number
   obiettivo: number
+  nome_allenatore: string | null
 }
 type DraftProps = {
   user: User
@@ -401,7 +402,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
                   <span className="draft-waiting-list__stato" aria-hidden="true">{completa ? '✓' : ''}</span>
                   <div>
                     <strong>{riga.nome}{riga.controllata_da_pc ? <small>PC</small> : null}</strong>
-                    <span>{completa ? 'Rosa completata' : riga.controllata_da_pc ? 'Estrazione in corso' : 'In attesa del giocatore'}</span>
+                    <span>{riga.nome_allenatore ? `${riga.nome_allenatore} · ` : ''}{completa ? 'Rosa completata' : riga.controllata_da_pc ? 'Estrazione in corso' : 'In attesa del giocatore'}</span>
                     <div className="draft-waiting-list__bar"><i style={{ width: `${quota}%` }} /></div>
                   </div>
                   <b>{riga.giocatori}/{riga.obiettivo}</b>
