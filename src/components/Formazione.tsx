@@ -65,7 +65,7 @@ const STILE_DESCRIZIONI: Record<string, string> = {
 }
 
 type PlayerStats = Record<string, number | null>
-type Player = { id: number; fc_id: number; nome: string; club: string; nazionalita: string | null; overall_corrente: number; eta_corrente: number; posizioni: string[]; piede: string | null; altezza: number | null; condizione: number; infortunato_fino_a: number; ritiro_annunciato: boolean; attributi: PlayerStats; foto_url: string | null }
+type Player = { id: number; fc_id: number; nome: string; club: string; nazionalita: string | null; overall_corrente: number; eta_corrente: number; posizioni: string[]; piede: string | null; altezza: number | null; condizione: number; infortunato_fino_a: number; squalificato_fino_a: number; ritiro_annunciato: boolean; attributi: PlayerStats; foto_url: string | null }
 type SavedLineup = { modulo: string; stile_gioco: string; titolari: number[]; panchina: number[]; tribuna: number[]; salvata_il: string }
 
 const formatSalvataIl = (iso: string) => new Intl.DateTimeFormat('it-IT', {
@@ -133,9 +133,16 @@ function overallEfficacePosizione(player: Player, slot: string): number {
 // sostituito da solo, quindi e' li' che l'avviso deve diventare rosso.
 function livelloEnergia(player: Player) {
   if (player.infortunato_fino_a > 0) return 'infortunato'
+  if (player.squalificato_fino_a > 0) return 'squalificato'
   if (player.condizione < 55) return 'scarica'
   if (player.condizione < 75) return 'media'
   return 'piena'
+}
+
+// Infortunato o squalificato: stesso vincolo di disponibilita', non
+// selezionabile fra titolari o panchina in nessuno dei due casi.
+function indisponibile(player: Pick<Player, 'infortunato_fino_a' | 'squalificato_fino_a'> | undefined | null) {
+  return (player?.infortunato_fino_a ?? 0) > 0 || (player?.squalificato_fino_a ?? 0) > 0
 }
 
 function AnonymousPlayer() {
@@ -157,8 +164,12 @@ function PlayerPortrait({ player, imageUrl, position, selected = false, onClick,
     <span className={`lineup-player__portrait lineup-player__portrait--${reparto(position)} ${imageUrl ? 'has-photo' : ''}`}>
       <AnonymousPlayer />
       {imageUrl && <img src={imageUrl} alt="" onError={(event) => { event.currentTarget.hidden = true; event.currentTarget.parentElement?.classList.remove('has-photo') }} />}
-      {player && <span className={`energia energia--${livelloEnergia(player)}`} title={player.infortunato_fino_a > 0 ? `Infortunato: salta ancora ${player.infortunato_fino_a} ${player.infortunato_fino_a === 1 ? 'giornata' : 'giornate'}` : `Energia ${player.condizione}%`}>
-        {player.infortunato_fino_a > 0 ? '✚' : `${player.condizione}%`}
+      {player && <span className={`energia energia--${livelloEnergia(player)}`} title={
+        player.infortunato_fino_a > 0 ? `Infortunato: salta ancora ${player.infortunato_fino_a} ${player.infortunato_fino_a === 1 ? 'giornata' : 'giornate'}`
+        : player.squalificato_fino_a > 0 ? `Squalificato: salta ancora ${player.squalificato_fino_a} ${player.squalificato_fino_a === 1 ? 'giornata' : 'giornate'}`
+        : `Energia ${player.condizione}%`
+      }>
+        {player.infortunato_fino_a > 0 ? '✚' : player.squalificato_fino_a > 0 ? '■' : `${player.condizione}%`}
       </span>}
       {fit !== 'natural' && <i className={`position-warning position-warning--${fit}`} title={fit === 'adapted' ? 'Giocatore adattato in un ruolo vicino' : 'Giocatore completamente fuori posizione'} aria-label={fit === 'adapted' ? 'Fuori posizione di poco' : 'Completamente fuori posizione'}>!</i>}
     </span>
@@ -208,7 +219,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     async function load() {
       const { data: instances, error: rosterError } = await supabase
         .from('player_instances')
-        .select('id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ritiro_annunciato, player_id')
+        .select('id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, player_id')
         .eq('league_id', league.id)
         .eq('team_id', membership.id)
         .order('overall_corrente', { ascending: false })
@@ -390,12 +401,13 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     const firstPlayer = players.find((player) => player.id === firstId)
     const secondPlayer = players.find((player) => player.id === secondId)
 
-    // Se si sostituisce un titolare infortunato con una riserva sana,
-    // l'infortunato va direttamente in tribuna e lascia libero il suo posto
-    // in panchina: non deve servire un secondo scambio manuale.
-    const injuredStarter = (firstPlayer?.infortunato_fino_a ?? 0) > 0 && selected.zone === 'starter'
+    // Se si sostituisce un titolare indisponibile (infortunato o squalificato)
+    // con una riserva disponibile, l'indisponibile va direttamente in tribuna
+    // e lascia libero il suo posto in panchina: non deve servire un secondo
+    // scambio manuale.
+    const injuredStarter = indisponibile(firstPlayer) && selected.zone === 'starter'
       ? selected
-      : (secondPlayer?.infortunato_fino_a ?? 0) > 0 && location.zone === 'starter'
+      : indisponibile(secondPlayer) && location.zone === 'starter'
         ? location
         : null
     const healthyBench = injuredStarter === selected && location.zone === 'bench'
@@ -408,7 +420,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       const replacementId = playerAt(healthyBench)
       const benchReplacement = tribuna
         .map((id, index) => ({ id, index, player: players.find((item) => item.id === id) }))
-        .filter((item) => (item.player?.infortunato_fino_a ?? 0) === 0)
+        .filter((item) => !indisponibile(item.player))
         .sort((left, right) => (right.player?.overall_corrente ?? 0) - (left.player?.overall_corrente ?? 0))[0]
       setTitolari((current) => current.map((value, index) => index === injuredStarter.index ? replacementId : value))
       setPanchina((current) => benchReplacement
@@ -424,9 +436,9 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
 
     const firstDestination = location.zone
     const secondDestination = selected.zone
-    if (((firstPlayer?.infortunato_fino_a ?? 0) > 0 && firstDestination !== 'tribuna')
-      || ((secondPlayer?.infortunato_fino_a ?? 0) > 0 && secondDestination !== 'tribuna')) {
-      setError('Un giocatore infortunato può essere spostato soltanto in tribuna.')
+    if ((indisponibile(firstPlayer) && firstDestination !== 'tribuna')
+      || (indisponibile(secondPlayer) && secondDestination !== 'tribuna')) {
+      setError('Un giocatore infortunato o squalificato può essere spostato soltanto in tribuna.')
       return
     }
     setPlayerAt(selected, secondId)
@@ -448,8 +460,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     if (selected.zone === zone) { setSelected(null); return }
     const id = playerAt(selected)
     const player = players.find((item) => item.id === id)
-    if ((player?.infortunato_fino_a ?? 0) > 0 && zone !== 'tribuna') {
-      setError('Un giocatore infortunato può essere spostato soltanto in tribuna.')
+    if (indisponibile(player) && zone !== 'tribuna') {
+      setError('Un giocatore infortunato o squalificato può essere spostato soltanto in tribuna.')
       return
     }
     if (selected.zone === 'bench') setPanchina((current) => current.filter((_value, index) => index !== selected.index))
@@ -473,8 +485,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     if (selected.zone === 'starter' && selected.index === index) { setSelected(null); return }
     const id = playerAt(selected)
     const player = players.find((item) => item.id === id)
-    if ((player?.infortunato_fino_a ?? 0) > 0) {
-      setError('Un giocatore infortunato può essere spostato soltanto in tribuna.')
+    if (indisponibile(player)) {
+      setError('Un giocatore infortunato o squalificato può essere spostato soltanto in tribuna.')
       return
     }
     if (selected.zone === 'bench') setPanchina((current) => current.filter((_value, i) => i !== selected.index))
@@ -511,9 +523,9 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       return
     }
     const cleanBench = panchina.filter((id) => !titolari.includes(id)).slice(0, PANCHINA_MAX)
-    const indisponibili = [...titolari, ...cleanBench].filter((id) => (players.find((player) => player.id === id)?.infortunato_fino_a ?? 0) > 0)
-    if (indisponibili.length) {
-      setError('Sposta tutti i giocatori infortunati in tribuna prima di salvare.')
+    const nonSelezionabili = [...titolari, ...cleanBench].filter((id) => indisponibile(players.find((player) => player.id === id)))
+    if (nonSelezionabili.length) {
+      setError('Sposta tutti i giocatori infortunati o squalificati in tribuna prima di salvare.')
       setSaving(false)
       return
     }
@@ -649,6 +661,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           altezza: detailPlayer.altezza,
           condizione: detailPlayer.condizione,
           infortunatoFinoA: detailPlayer.infortunato_fino_a,
+          squalificatoFinoA: detailPlayer.squalificato_fino_a,
           ritiroAnnunciato: detailPlayer.ritiro_annunciato,
           attributi: detailPlayer.attributi,
         }}

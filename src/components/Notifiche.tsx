@@ -14,6 +14,7 @@ const ICONE: Record<TipoNotifica, string> = {
   giornata_simulata: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18m0 4 4.3 3.1-1.6 5h-5.4l-1.6-5z',
   formazione_mancante: 'M12 3.5v10m0 4.2v.3M4.2 19.5h15.6L12 4.5z',
   infortunio: 'M9.5 3h5v6.5H21v5h-6.5V21h-5v-6.5H3v-5h6.5z',
+  squalifica: 'M7 3h10a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z',
   mercato_proposta: 'M4 8h13m0 0-3.2-3.2M17 8l-3.2 3.2M20 16H7m0 0 3.2-3.2M7 16l3.2 3.2',
   mercato_esito: 'M4.5 12.5 9.5 17.5 19.5 6.5',
   mercato_asta: 'M6 20h8M9.5 16.5 16 10M4 9.5 9.5 4l4 4L8 13.5zM13.5 8 19 13.5',

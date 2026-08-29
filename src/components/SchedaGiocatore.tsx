@@ -25,6 +25,7 @@ export type DatiScheda = {
   altezza?: number | null
   condizione?: number
   infortunatoFinoA?: number
+  squalificatoFinoA?: number
   /** Ingaggio annuo in euro (design §5.1: la scala e' annuale). */
   ingaggio?: number
   /** Ultima stagione coperta dal contratto, con la stagione in corso per il confronto. */
@@ -327,16 +328,20 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
         </div>}
       </dl>
 
-      {typeof giocatore.condizione === 'number' && <section className={`player-modal__fitness ${(giocatore.infortunatoFinoA ?? 0) > 0 ? 'is-injured' : ''}`}>
+      {typeof giocatore.condizione === 'number' && <section className={`player-modal__fitness ${(giocatore.infortunatoFinoA ?? 0) > 0 ? 'is-injured' : (giocatore.squalificatoFinoA ?? 0) > 0 ? 'is-suspended' : ''}`}>
         <div>
           <span>Forma fisica</span>
           {(giocatore.infortunatoFinoA ?? 0) > 0
             ? <strong>Infortunato</strong>
-            : <strong>{giocatore.condizione}%</strong>}
+            : (giocatore.squalificatoFinoA ?? 0) > 0
+              ? <strong>Squalificato</strong>
+              : <strong>{giocatore.condizione}%</strong>}
         </div>
         {(giocatore.infortunatoFinoA ?? 0) > 0
           ? <p>Rientro previsto tra {giocatore.infortunatoFinoA} {giocatore.infortunatoFinoA === 1 ? 'giornata' : 'giornate'}.</p>
-          : <><div className="player-modal__fitness-bar"><i style={{ width: `${giocatore.condizione}%` }} /></div><p>{giocatore.condizione >= 75 ? 'Pronto per giocare.' : giocatore.condizione >= 55 ? 'Condizione da gestire.' : 'Rischio elevato di sostituzione.'}</p></>}
+          : (giocatore.squalificatoFinoA ?? 0) > 0
+            ? <p>Salta ancora {giocatore.squalificatoFinoA} {giocatore.squalificatoFinoA === 1 ? 'giornata' : 'giornate'}.</p>
+            : <><div className="player-modal__fitness-bar"><i style={{ width: `${giocatore.condizione}%` }} /></div><p>{giocatore.condizione >= 75 ? 'Pronto per giocare.' : giocatore.condizione >= 55 ? 'Condizione da gestire.' : 'Rischio elevato di sostituzione.'}</p></>}
       </section>}
 
       {typeof giocatore.morale === 'number' && <section className={`player-modal__morale morale--${etichettaMorale(giocatore.morale).classe}`}>

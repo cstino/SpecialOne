@@ -5,6 +5,7 @@ export type TipoNotifica =
   | 'giornata_simulata'
   | 'formazione_mancante'
   | 'infortunio'
+  | 'squalifica'
   | 'mercato_proposta'
   | 'mercato_esito'
   | 'mercato_asta'

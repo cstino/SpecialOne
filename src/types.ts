@@ -177,7 +177,13 @@ export type EventoInfortunio = EventoBase & {
   entra: number
 }
 
-export type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio
+export type EventoCartellino = EventoBase & {
+  tipo: 'cartellino'
+  giocatore: number
+  colore: 'giallo' | 'rosso_diretto' | 'doppio_giallo'
+}
+
+export type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio | EventoCartellino
 
 export function isEventoGol(evento: EventoPartita): evento is EventoGol {
   return evento.tipo === 'gol' || 'marcatore' in evento

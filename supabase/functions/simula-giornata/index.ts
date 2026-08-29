@@ -18,10 +18,11 @@ type EventoGol = { tipo: 'gol'; minuto: number; blocco: number; lato: Lato; team
 type EventoTiro = { tipo: 'tiro_parato' | 'tiro_fuori'; minuto: number; blocco: number; lato: Lato; team_id: number; giocatore: number }
 type EventoSostituzione = { tipo: 'sostituzione'; minuto: number; blocco: number; lato: Lato; team_id: number; esce: number; entra: number }
 type EventoInfortunio = { tipo: 'infortunio'; minuto: number; blocco: number; lato: Lato; team_id: number; esce: number; entra: number }
-type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio
+type EventoCartellino = { tipo: 'cartellino'; minuto: number; blocco: number; lato: Lato; team_id: number; giocatore: number; colore: 'giallo' | 'rosso_diretto' | 'doppio_giallo' }
+type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio | EventoCartellino
 type DbPlayer = { id: number; nome: string; posizioni: string[]; attributi: Record<string, number> }
-type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number }
-type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; gk: number; condizione: number; infortunatoFinoA: number }
+type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number }
+type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; gk: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number }
 type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number> }
 type DbLineup = { team_id: number; giornata?: number; modulo: string; titolari: number[]; panchina: number[]; tribuna: number[]; stile_gioco: string; automatica: boolean }
 type EngineLineup = { modulo: string; slots: string[]; titolari: EnginePlayer[]; panchina: EnginePlayer[]; cambiFatti: number }
@@ -44,6 +45,7 @@ function adaptPlayer(instance: Instance, player: DbPlayer): EnginePlayer {
     eta: instance.eta_corrente,
     condizione: instance.condizione,
     infortunatoFinoA: instance.infortunato_fino_a,
+    squalificatoFinoA: instance.squalificato_fino_a,
   })) {
     if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`Giocatore ${instance.id}: campo ${field} assente.`)
   }
@@ -61,6 +63,7 @@ function adaptPlayer(instance: Instance, player: DbPlayer): EnginePlayer {
     gk: requiredNumber(player.attributi, 'gk', instance.id),
     condizione: instance.condizione,
     infortunatoFinoA: instance.infortunato_fino_a,
+    squalificatoFinoA: instance.squalificato_fino_a,
   }
 }
 
@@ -80,18 +83,19 @@ function buildLineup(lineup: DbLineup, roster: EngineRoster): EngineLineup {
     .map((id) => byId.get(id))
     .filter((giocatore): giocatore is EnginePlayer => Boolean(giocatore))
 
-  // Stessa logica per gli infortunati: `schiera()` scarta gli indisponibili,
-  // ma qui la formazione arriva dal database e il motore controlla gli
-  // infortuni solo a fine partita, quindi senza questo blocco un infortunato
-  // scenderebbe in campo.
+  // Stessa logica per gli infortunati e per gli squalificati: `schiera()`
+  // scarta gli indisponibili, ma qui la formazione arriva dal database e il
+  // motore non sa nulla di cartellini o squalifiche (e' un vincolo di
+  // disponibilita', non un effetto di gioco), quindi senza questo blocco uno
+  // squalificato scenderebbe in campo.
   const undici: Array<EnginePlayer | undefined> = titolari
   const rimpiazzi: Array<{ esce: string; entra: string }> = []
   for (let i = 0; i < undici.length; i++) {
     const attuale = undici[i]
-    if (attuale && attuale.infortunatoFinoA <= 0) continue
+    if (attuale && attuale.infortunatoFinoA <= 0 && attuale.squalificatoFinoA <= 0) continue
     const inCampo = new Set(undici.filter(Boolean).map((giocatore) => giocatore!.id))
     const candidati = [...riserveSalvate, ...roster.giocatori]
-      .filter((giocatore) => giocatore.infortunatoFinoA <= 0 && !inCampo.has(giocatore.id))
+      .filter((giocatore) => giocatore.infortunatoFinoA <= 0 && giocatore.squalificatoFinoA <= 0 && !inCampo.has(giocatore.id))
     if (candidati.length === 0) continue
     let migliore = candidati[0]
     for (const candidato of candidati) {
@@ -114,7 +118,7 @@ function buildLineup(lineup: DbLineup, roster: EngineRoster): EngineLineup {
   const panchina: EnginePlayer[] = []
   const inPanchina = new Set<number>()
   const aggiungiInPanchina = (giocatore: EnginePlayer) => {
-    if (panchina.length >= 9 || giocatore.infortunatoFinoA > 0 || inCampo.has(giocatore.id) || inPanchina.has(giocatore.id)) return
+    if (panchina.length >= 9 || giocatore.infortunatoFinoA > 0 || giocatore.squalificatoFinoA > 0 || inCampo.has(giocatore.id) || inPanchina.has(giocatore.id)) return
     panchina.push(giocatore)
     inPanchina.add(giocatore.id)
   }
@@ -150,6 +154,12 @@ function mapValue(map: Map<number, number> | undefined, id: number) {
 // ============================================================
 
 const GIORNATE_DI_TARATURA = 28
+
+// Diffida: ogni 5 ammonizioni nella stagione scatta una squalifica automatica
+// di 1 giornata (stesso regolamento del calcio vero, es. Serie A). Il conto
+// si azzera qui quando scatta, e separatamente prima dei playoff/tabelloni
+// di fine stagione (private.crea_tabelloni) — mai a meta' campionato.
+const DIFFIDA_SOGLIA = 5
 
 function scalaInfortunio(giornateOriginali: number, giornateTotali: number) {
   if (giornateOriginali <= 0 || giornateTotali <= 0) return giornateOriginali
@@ -348,6 +358,7 @@ function costruisciEventiPartita(
   gol: EventoGol[],
   lati: Array<{ lato: Lato; teamId: number; presenzePerBlocco: number[][]; stats: Array<Record<string, number>> }>,
   infortuni: Array<{ lato: Lato; blocco: number; esce: number; entra: number }>,
+  cartellini: Array<{ lato: Lato; blocco: number; giocatore: number; tipo: 'giallo' | 'rosso_diretto' | 'doppio_giallo' }>,
   seed: number,
 ): EventoPartita[] {
   const rnd = creaRng(seed ^ 0x9e3779b9)
@@ -410,6 +421,19 @@ function costruisciEventiPartita(
       team_id: lato.teamId,
       esce: infortunio.esce,
       entra: infortunio.entra,
+    })
+  }
+  for (const cartellino of cartellini) {
+    const lato = lati.find((item) => item.lato === cartellino.lato)
+    if (!lato) continue
+    eventi.push({
+      tipo: 'cartellino',
+      minuto: Math.min(90, cartellino.blocco * MINUTI_PER_BLOCCO),
+      blocco: cartellino.blocco,
+      lato: cartellino.lato,
+      team_id: lato.teamId,
+      giocatore: cartellino.giocatore,
+      colore: cartellino.tipo,
     })
   }
   return eventi.sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.team_id - destra.team_id)
@@ -571,7 +595,7 @@ export default {
 
       const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult] = await Promise.all([
         ctx.supabaseAdmin.from('teams').select('id, nome, user_id, controllata_da_pc').eq('league_id', leagueId).in('id', teamIds),
-        ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a').eq('league_id', leagueId).in('team_id', teamIds),
+        ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a').eq('league_id', leagueId).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
         ctx.supabaseAdmin.from('formation_xp').select('team_id, modulo, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),
@@ -617,7 +641,15 @@ export default {
         if (inherited) {
           fallback = { team_id: teamId, modulo: inherited.modulo, titolari: inherited.titolari, panchina: inherited.panchina, tribuna: inherited.tribuna, stile_gioco: inherited.stile_gioco, automatica: true }
         } else {
-          const automatic = schiera(roster, '4-3-3')
+          // schiera() del motore scarta gia' da sola gli infortunati
+          // (infortunatoFinoA), ma non sa nulla di squalifiche: buildLineup()
+          // più avanti rimpiazzerebbe comunque un eventuale squalificato
+          // scelto qui, ma solo nel suo slot specifico, senza poter
+          // riottimizzare l'undici. Filtrando la rosa PRIMA di schiera() la
+          // formazione automatica resta la migliore possibile fra i
+          // davvero disponibili, non solo una toppa sopra un errore.
+          const disponibiliPerAutomatica = { ...roster, giocatori: roster.giocatori.filter((player) => player.squalificatoFinoA <= 0) }
+          const automatic = schiera(disponibiliPerAutomatica, '4-3-3')
           const starters = automatic.titolari.map((player: EnginePlayer) => player.id)
           const bench = automatic.panchina.map((player: EnginePlayer) => player.id)
           const tribuna = roster.giocatori.filter((player) => !starters.includes(player.id) && !bench.includes(player.id)).map((player) => player.id)
@@ -638,6 +670,7 @@ export default {
       }
 
       const summaries = []
+      const cartelliniGiornata: Array<{ teamId: number; giocatore: number; colore: 'giallo' | 'rosso_diretto' | 'doppio_giallo' }> = []
       for (const fixture of fixtures) {
         const homeRoster = rosters.get(fixture.home_team_id)!
         const awayRoster = rosters.get(fixture.away_team_id)!
@@ -699,10 +732,21 @@ export default {
         ]
         rendiTiriCoerenti(stats.filter((stat) => stat.team_id === fixture.home_team_id), result.statsCasa)
         rendiTiriCoerenti(stats.filter((stat) => stat.team_id === fixture.away_team_id), result.statsOspite)
+        const cartelliniPartita = result.cartelliniInPartita as Array<{ lato: Lato; blocco: number; giocatore: number; tipo: 'giallo' | 'rosso_diretto' | 'doppio_giallo' }>
         const cronaca = normalizzaCronaca(costruisciEventiPartita(eventi, [
           { lato: 'casa', teamId: fixture.home_team_id, presenzePerBlocco: presenzePerBlocco.casa, stats: stats.filter((stat) => stat.team_id === fixture.home_team_id) },
           { lato: 'ospite', teamId: fixture.away_team_id, presenzePerBlocco: presenzePerBlocco.ospite, stats: stats.filter((stat) => stat.team_id === fixture.away_team_id) },
-        ], result.infortuniInPartita as Array<{ lato: Lato; blocco: number; esce: number; entra: number }>, seed))
+        ], result.infortuniInPartita as Array<{ lato: Lato; blocco: number; esce: number; entra: number }>, cartelliniPartita, seed))
+        // Raccolti qui per la diffida (§ post-simulazione): serve sapere di
+        // quale squadra e' ciascun cartellino, dato che il motore conosce
+        // solo casa/ospite, non gli id reali.
+        for (const cartellino of cartelliniPartita) {
+          cartelliniGiornata.push({
+            teamId: cartellino.lato === 'casa' ? fixture.home_team_id : fixture.away_team_id,
+            giocatore: cartellino.giocatore,
+            colore: cartellino.tipo,
+          })
+        }
         const { data: saved, error: saveError } = await ctx.supabaseAdmin.rpc('registra_risultato_partita', {
           p_fixture_id: fixture.id,
           p_seed: seed,
@@ -766,6 +810,47 @@ export default {
         p_valori: valoriCondizione,
       })
       if (condizioneError) throw condizioneError
+
+      // Ammonizioni e squalifiche: chi ha giocato oggi sconta una giornata di
+      // squalifica gia' in corso (come per gli infortuni, il conto alla
+      // rovescia avanza a ogni giornata della SQUADRA, non solo per chi era
+      // davvero in campo — non potrebbe esserlo, e' squalificato). Sopra
+      // questo, applichiamo i cartellini di oggi: un giallo o un secondo
+      // giallo aggiunge un'ammonizione stagionale; ogni 5 (DIFFIDA_SOGLIA)
+      // scatta la diffida (si azzera il conto e si aggiunge una giornata di
+      // squalifica); un rosso, diretto o da doppio giallo, aggiunge sempre
+      // una giornata di squalifica per conto suo.
+      const instanceById = new Map(instances.map((instance) => [instance.id, instance]))
+      const valoriCartellini: Array<{ id: number; ammonizioni_stagione: number; squalificato_fino_a: number }> = []
+      const nuoveSqualifiche: Array<{ teamId: number; playerId: number; nome: string; motivo: 'rosso_diretto' | 'doppio_giallo' | 'diffida' }> = []
+      for (const [teamId, roster] of rosters) {
+        for (const giocatore of roster.giocatori) {
+          const instance = instanceById.get(giocatore.id)
+          let ammonizioni = instance?.ammonizioni_stagione ?? 0
+          let squalifica = Math.max(0, (instance?.squalificato_fino_a ?? 0) - 1)
+          for (const cartellino of cartelliniGiornata) {
+            if (cartellino.giocatore !== giocatore.id) continue
+            let causa: 'rosso_diretto' | 'doppio_giallo' | 'diffida' | null = null
+            if (cartellino.colore === 'giallo' || cartellino.colore === 'doppio_giallo') {
+              ammonizioni++
+              if (ammonizioni >= DIFFIDA_SOGLIA) { ammonizioni = 0; causa = 'diffida' }
+            }
+            if (cartellino.colore === 'rosso_diretto' || cartellino.colore === 'doppio_giallo') {
+              causa = causa ?? cartellino.colore
+            }
+            if (causa) {
+              squalifica = Math.max(squalifica, 1)
+              nuoveSqualifiche.push({ teamId, playerId: giocatore.id, nome: giocatore.nome, motivo: causa })
+            }
+          }
+          valoriCartellini.push({ id: giocatore.id, ammonizioni_stagione: ammonizioni, squalificato_fino_a: squalifica })
+        }
+      }
+      const { error: cartelliniError } = await ctx.supabaseAdmin.rpc('aggiorna_cartellini_rosa', {
+        p_league_id: leagueId,
+        p_valori: valoriCartellini,
+      })
+      if (cartelliniError) throw cartelliniError
 
       // Ogni quarto della stagione aggiorna gli overall di tutte le rose. La
       // RPC è idempotente e recupera anche un checkpoint rimasto in sospeso
@@ -839,6 +924,23 @@ export default {
             titolo: `${infortunio.nome} si è infortunato`,
             corpo: `Sarà indisponibile per ${infortunio.giornate} ${infortunio.giornate === 1 ? 'giornata' : 'giornate'}. Controlla la formazione.`,
             dati: { view: 'squad', player_instance_id: infortunio.playerId, giornata },
+          })
+        }
+
+        for (const squalifica of nuoveSqualifiche) {
+          if (!squadreConPartitaNuova.has(squalifica.teamId)) continue
+          const userId = teamUsers.get(squalifica.teamId)
+          if (!userId) continue
+          const motivo = squalifica.motivo === 'rosso_diretto' ? 'espulso con un cartellino rosso'
+            : squalifica.motivo === 'doppio_giallo' ? 'espulso per doppia ammonizione'
+            : `diffidato dopo ${DIFFIDA_SOGLIA} ammonizioni in stagione`
+          righe.push({
+            user_id: userId,
+            league_id: leagueId,
+            tipo: 'squalifica',
+            titolo: `${squalifica.nome} salterà la prossima giornata`,
+            corpo: `${motivo[0].toUpperCase()}${motivo.slice(1)}. Controlla la formazione.`,
+            dati: { view: 'squad', player_instance_id: squalifica.playerId, giornata },
           })
         }
 

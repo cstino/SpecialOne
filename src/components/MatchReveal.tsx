@@ -55,18 +55,22 @@ function testoEvento(evento: EventoPartita, nomi: Map<number, Player>) {
   if (evento.tipo === 'tiro_fuori') return <>Il tiro di <strong>{nome(evento.giocatore)}</strong> termina fuori.</>
   if (evento.tipo === 'infortunio') return <><strong>{nome(evento.esce)}</strong> si infortuna ed esce. Al suo posto <strong>{nome(evento.entra)}</strong>.</>
   if (evento.tipo === 'sostituzione') return <><strong>{nome(evento.esce)}</strong> viene sostituito da <strong>{nome(evento.entra)}</strong>.</>
+  if (evento.tipo === 'cartellino') return evento.colore === 'giallo'
+    ? <>Ammonito <strong>{nome(evento.giocatore)}</strong>.</>
+    : evento.colore === 'doppio_giallo'
+      ? <>Secondo giallo per <strong>{nome(evento.giocatore)}</strong>: espulso.</>
+      : <>Cartellino rosso per <strong>{nome(evento.giocatore)}</strong>: espulso.</>
   return null
 }
 
-// Gol, infortuni e sostituzioni restano fissi in cronaca; solo i tiri
-// (parati o fuori) sono eventi minori che altrimenti riempirebbero la
+// Gol, infortuni, sostituzioni e cartellini restano fissi in cronaca; solo i
+// tiri (parati o fuori) sono eventi minori che altrimenti riempirebbero la
 // lista, e scompaiono da soli qualche secondo dopo essere comparsi
-// (is-transitorio, vedi l'animazione di uscita in styles.css). L'engine non
-// modella ancora ammonizioni/espulsioni: quando arriveranno andranno
-// aggiunte qui fra i permanenti, non fra i transitori.
+// (is-transitorio, vedi l'animazione di uscita in styles.css).
 function classeEvento(evento: EventoPartita): string {
   if (isEventoGol(evento)) return 'is-goal'
   if (evento.tipo === 'infortunio' || evento.tipo === 'sostituzione') return ''
+  if (evento.tipo === 'cartellino') return evento.colore === 'giallo' ? 'is-giallo' : 'is-rosso'
   return 'is-transitorio'
 }
 

@@ -32,6 +32,7 @@ type RosterPlayer = {
   ingaggio: number
   condizione: number
   infortunatoFinoA: number
+  squalificatoFinoA: number
   piede: string | null
   altezza: number | null
   attributi: Record<string, number | null>
@@ -156,7 +157,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       setRosterLoading(true)
       setRosterError(null)
       const [instancesResult, statsResult] = await Promise.all([
-        supabase.from('player_instances').select('id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato, morale, contratto_scadenza, rinnovo_stagione, rinnovo_tentativi, sul_mercato').eq('league_id', league.id).eq('team_id', teamId),
+        supabase.from('player_instances').select('id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, morale, contratto_scadenza, rinnovo_stagione, rinnovo_tentativi, sul_mercato').eq('league_id', league.id).eq('team_id', teamId),
         supabase.from('match_stats').select('match_id, player_instance_id, minuti, gol, assist, tiri, tiri_porta, passaggi_tentati, passaggi_riusciti, contrasti_vinti, dribbling').eq('league_id', league.id).eq('team_id', teamId),
       ])
       const firstError = instancesResult.error ?? statsResult.error
@@ -181,7 +182,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           id: instance.id, nome: info?.nome ?? `Giocatore ${instance.id}`, club: info?.club ?? '—',
           nazionalita: info?.nazionalita ?? null, posizioni: info?.posizioni ?? [],
           overall: instance.overall_corrente, eta: instance.eta_corrente, ingaggio: instance.ingaggio,
-          condizione: instance.condizione, infortunatoFinoA: instance.infortunato_fino_a, piede: info?.piede ?? null, altezza: info?.altezza ?? null,
+          condizione: instance.condizione, infortunatoFinoA: instance.infortunato_fino_a, squalificatoFinoA: instance.squalificato_fino_a, piede: info?.piede ?? null, altezza: info?.altezza ?? null,
           attributi: (info?.attributi ?? {}) as Record<string, number | null>, foto_url: info?.foto_url ?? null,
           ritiroAnnunciato: instance.ritiro_annunciato,
           morale: instance.morale,
@@ -409,6 +410,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           ingaggio: schedaAperta.ingaggio,
           condizione: schedaAperta.condizione,
           infortunatoFinoA: schedaAperta.infortunatoFinoA,
+          squalificatoFinoA: schedaAperta.squalificatoFinoA,
           ritiroAnnunciato: schedaAperta.ritiroAnnunciato,
           morale: ownTeam ? schedaAperta.morale : undefined,
           contrattoScadenza: ownTeam ? schedaAperta.contrattoScadenza : undefined,
