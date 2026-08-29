@@ -213,7 +213,7 @@ export function Scelte({ membership, onNavigate }: Props) {
         </div>
         <div className="season-total">
           <strong>{mieScelte.length}</strong>
-          <span>{mieScelte.length === 1 ? 'scelta' : 'scelte'}</span>
+          <span>ticket</span>
         </div>
       </section>
 
