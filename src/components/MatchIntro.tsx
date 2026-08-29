@@ -263,6 +263,10 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
             </div>
           </header>
           <div className="match-intro__righe">
+            <div className="match-intro__campo" aria-hidden="true">
+              <span className="match-intro__campo-linea" />
+              <span className="match-intro__campo-cerchio" />
+            </div>
             {righe.map((riga, indiceRiga) => (
               <div className="match-intro__riga" key={indiceRiga}>
                 {riga.map((slot) => {

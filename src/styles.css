@@ -2547,8 +2547,19 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .match-intro__tie-squadra--destra { flex-direction: row-reverse; text-align: right; }
 .match-intro__tie-stato { flex: none; color: #c9a7ff; font-size: .6rem; font-weight: 900; letter-spacing: .08em; }
 
-.match-intro__righe { display: flex; flex: 1; flex-direction: column; justify-content: space-evenly; }
-.match-intro__riga { display: flex; justify-content: center; gap: 22px; }
+.match-intro__righe { position: relative; display: flex; flex: 1; flex-direction: column; justify-content: space-evenly; }
+/* Campo stilizzato dietro le righe di formazione, stessa identita' visiva
+   del campo interattivo di Formazione.tsx (.pitch-field) ma senza il
+   rapporto d'aspetto fisso: qui deve riempire lo spazio verticale
+   disponibile, qualunque esso sia. Porta e area solo in alto (lato
+   portiere): agli attaccanti in fondo non serve un'area propria, e' una
+   presentazione, non uno schema tattico completo. */
+.match-intro__campo { position: absolute; z-index: 0; inset: -12px -20px; overflow: hidden; border-radius: 18px; background: radial-gradient(ellipse at 50% 8%, rgba(90,150,120,.16), transparent 40%), repeating-linear-gradient(180deg, rgba(255,255,255,.02) 0 42px, transparent 42px 84px), linear-gradient(180deg, #112318, #0b160f 55%, #0a130e); box-shadow: inset 0 0 90px rgba(0,0,0,.6); }
+.match-intro__campo::before { content: ''; position: absolute; inset: 3% 8%; border: 1.5px solid rgba(255,255,255,.14); border-radius: 4px; }
+.match-intro__campo::after { content: ''; position: absolute; top: 3%; left: 30%; right: 30%; height: 9%; border: 1.5px solid rgba(255,255,255,.14); border-top: 0; }
+.match-intro__campo-linea { position: absolute; left: 8%; right: 8%; top: 52%; border-top: 1.5px solid rgba(255,255,255,.14); }
+.match-intro__campo-cerchio { position: absolute; top: 52%; left: 50%; width: 96px; height: 96px; margin: -48px 0 0 -48px; border: 1.5px solid rgba(255,255,255,.14); border-radius: 50%; }
+.match-intro__riga { position: relative; z-index: 1; display: flex; justify-content: center; gap: 22px; }
 .match-intro__giocatore { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 76px; opacity: 0; animation: match-intro-giocatore .5s ease-out both; }
 .match-intro__giocatore-foto { position: relative; width: 58px; height: 58px; display: grid; place-items: center; overflow: hidden; border-radius: 50%; border: 2px solid rgba(255,255,255,.22); background: radial-gradient(circle at 50% 35%, #3a2c4d, #16111f 72%); box-shadow: 0 10px 22px rgba(0,0,0,.4); }
 .match-intro__giocatore-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
