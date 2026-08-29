@@ -21,6 +21,15 @@ export const LOGO_FASE: Record<FaseSquadra, string> = {
   draft: '/loghi-fase/draft-playoffs.png',
 }
 
+// Musica dell'intro pre-partita (MatchIntro.tsx): una traccia per fase, la
+// stessa in loop per tutti i 25 secondi, non una per ogni schermata
+// dell'intro. File da aggiungere in public/musica-fase/ (mp3).
+export const MUSICA_FASE: Record<FaseSquadra, string> = {
+  regular: '/musica-fase/regular-season.mp3',
+  title: '/musica-fase/title-playoffs.mp3',
+  draft: '/musica-fase/draft-playoffs.mp3',
+}
+
 // In quale fase si trova una squadra: guarda se partecipa a un tabellone
 // ancora in corso per la stagione data. Nessun tabellone attivo (stagione
 // regolare, o tabelloni già tutti conclusi) ricade su 'regular'.

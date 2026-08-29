@@ -2492,6 +2492,60 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 /* Reveal partita: una cronaca a due colonne attorno alla linea dei 90 minuti.
    L'overlay resta volutamente leggero: la partita e' gia' simulata, qui la si
    rivela in sequenza senza fingere un live server. */
+/* ============================================================
+   MATCH INTRO — presentazione pre-partita (25s: 5 locandina + 10+10
+   formazioni), prima del calcio d'inizio della cronaca minuto per minuto.
+   ============================================================ */
+.match-intro { position: fixed; z-index: 80; inset: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0a0812; }
+.match-intro__sfondo { position: absolute; inset: -5%; z-index: 0; background-size: cover; background-position: center; filter: brightness(.4) saturate(1.1); animation: match-intro-kenburns 25s ease-out forwards; }
+.match-intro__sfondo::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, rgba(20,14,32,.35), rgba(8,6,14,.92) 72%); }
+.match-intro__sfondo[data-fase="regular"] { background-image: url(/sfondi-fase/regular_season.png); }
+.match-intro__sfondo[data-fase="title"] { background-image: url(/sfondi-fase/title_playoffs.png); }
+.match-intro__sfondo[data-fase="draft"] { background-image: url(/sfondi-fase/draft_playoffs.png); }
+@keyframes match-intro-kenburns { from { transform: scale(1.08); } to { transform: scale(1); } }
+
+.match-intro__chiudi, .match-intro__salta { position: absolute; z-index: 3; cursor: pointer; }
+.match-intro__chiudi { top: max(16px, env(safe-area-inset-top)); left: 16px; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.18); border-radius: 50%; color: #ede6f7; background: rgba(18,15,25,.55); backdrop-filter: blur(8px); font-size: 1.35rem; line-height: 1; }
+.match-intro__salta { top: max(16px, env(safe-area-inset-top)); right: 16px; padding: 9px 15px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; color: #ede6f7; background: rgba(18,15,25,.55); backdrop-filter: blur(8px); font-size: .74rem; font-weight: 800; }
+
+.match-intro__locandina { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 34px; padding: 24px; text-align: center; animation: match-intro-in .6s cubic-bezier(.2,.8,.2,1) both; }
+.match-intro__competizione { margin: 0; color: #cbb9e6; font-size: .72rem; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; }
+.match-intro__sfida { display: flex; align-items: center; gap: 28px; }
+.match-intro__sfida-squadra { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 128px; }
+.match-intro__sfida-squadra .crest--large { width: 92px; filter: drop-shadow(0 14px 26px rgba(0,0,0,.5)); }
+.match-intro__sfida-squadra strong { color: #fff; font-size: 1rem; font-weight: 900; line-height: 1.15; }
+.match-intro__vs { color: rgba(255,255,255,.35); font-family: "Aptos Narrow", "Arial Narrow", sans-serif; font-size: 1.6rem; font-weight: 900; }
+.match-intro__turno { margin: 0; padding: 10px 22px; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; color: #fff; background: rgba(255,255,255,.06); font-size: .82rem; font-weight: 800; }
+
+.match-intro__formazione { position: relative; z-index: 1; display: flex; height: 100%; width: 100%; max-width: 640px; flex-direction: column; padding: 100px 20px 40px; animation: match-intro-in .5s ease-out both; }
+.match-intro__formazione-testa { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+.match-intro__formazione-testa .crest--small { width: 46px; }
+.match-intro__formazione-testa strong { display: block; color: #fff; font-size: 1.2rem; font-weight: 900; }
+.match-intro__formazione-testa small { color: #cbb9e6; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.match-intro__righe { display: flex; flex: 1; flex-direction: column; justify-content: space-evenly; }
+.match-intro__riga { display: flex; justify-content: center; gap: 22px; }
+.match-intro__giocatore { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 76px; opacity: 0; animation: match-intro-giocatore .5s ease-out both; }
+.match-intro__giocatore-foto { position: relative; width: 58px; height: 58px; display: grid; place-items: center; overflow: hidden; border-radius: 50%; border: 2px solid rgba(255,255,255,.22); background: radial-gradient(circle at 50% 35%, #3a2c4d, #16111f 72%); box-shadow: 0 10px 22px rgba(0,0,0,.4); }
+.match-intro__giocatore-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+.match-intro__giocatore-foto span { color: #877aa0; font-size: 1.2rem; font-weight: 950; }
+.match-intro__giocatore-ruolo { padding: 1px 7px; border-radius: 999px; color: #16101d; background: #c9a7ff; font-size: .56rem; font-weight: 950; letter-spacing: .04em; }
+.match-intro__giocatore strong { overflow: hidden; max-width: 100%; color: #fff; font-size: .72rem; font-weight: 800; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+
+@keyframes match-intro-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes match-intro-giocatore { from { opacity: 0; transform: translateY(16px) scale(.85); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .match-intro__sfondo, .match-intro__locandina, .match-intro__formazione, .match-intro__giocatore { animation: none; opacity: 1; }
+}
+@media (max-width: 480px) {
+  .match-intro__sfida { gap: 16px; }
+  .match-intro__sfida-squadra { width: 104px; }
+  .match-intro__sfida-squadra .crest--large { width: 76px; }
+  .match-intro__formazione { padding: 84px 8px 28px; }
+  .match-intro__riga { gap: 10px; }
+  .match-intro__giocatore { width: 60px; }
+  .match-intro__giocatore-foto { width: 46px; height: 46px; }
+}
+
 .match-reveal-backdrop { position: fixed; z-index: 80; inset: 0; padding: 0; background: #100b17; }
 .match-reveal { position: relative; display: flex; flex-direction: column; width: 100%; height: 100dvh; overflow: hidden; background: radial-gradient(circle at top, #2a1742, #15111c 45%); }
 .match-reveal__close { position: absolute; z-index: 2; top: 13px; right: 15px; width: 33px; height: 33px; border: 1px solid #684982; border-radius: 50%; color: #eddef9; background: #25172f; font-size: 1.4rem; line-height: 1; cursor: pointer; }

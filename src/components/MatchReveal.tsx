@@ -5,6 +5,7 @@ import { ricostruisciEventiStorici, type StatEventoStorico } from '../lib/matchE
 import { useSeasonData } from '../lib/useSeasonData'
 import { isEventoGol, type EventoPartita, type Membership } from '../types'
 import { Crest } from './Crest'
+import { MatchIntro } from './MatchIntro'
 
 type Props = { membership: Membership; matchId: number; onClose: () => void; onRevealed: (matchId: number) => void; onOpenReport: () => void }
 type Player = { id: number; nome: string }
@@ -135,12 +136,29 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const ospite = data.teamById.get(fixture.away_team_id)
   const visibili = eventi.filter((evento) => evento.minuto <= minuto)
 
+  // L'intro (musica di fase, locandina, formazioni) precede il calcio
+  // d'inizio solo quando c'e' davvero una cronaca da vivere: per le partite
+  // simulate prima della cronaca estesa non avrebbe nulla da presentare.
+  if (minutoCorrente < 0 && eventi.length > 0) {
+    return <MatchIntro
+      membership={membership}
+      fixture={fixture}
+      homeTeam={casa}
+      awayTeam={ospite}
+      homeCrestUrl={data.crestUrlByTeamId.get(fixture.home_team_id)}
+      awayCrestUrl={data.crestUrlByTeamId.get(fixture.away_team_id)}
+      onSkip={() => setMinutoCorrente(0)}
+      onFinish={() => setMinutoCorrente(0)}
+      onClose={onClose}
+    />
+  }
+
   return <div className="match-reveal-backdrop" role="dialog" aria-modal="true" aria-label="Cronaca della partita">
     <section className="match-reveal">
       <button className="match-reveal__close" type="button" onClick={onClose} aria-label="Chiudi cronaca">×</button>
       <header className="match-reveal__header">
         <div><Crest value={casa?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /><strong>{casa?.nome}</strong></div>
-        <div className="match-reveal__score"><small>{minutoCorrente < 0 ? 'IN ATTESA DEL CALCIO D’INIZIO' : completata ? 'RISULTATO FINALE' : `${minuto}’`}</small><b>{punteggio.casa} <i>–</i> {punteggio.ospite}</b></div>
+        <div className="match-reveal__score"><small>{completata ? 'RISULTATO FINALE' : `${minuto}’`}</small><b>{punteggio.casa} <i>–</i> {punteggio.ospite}</b></div>
         <div><strong>{ospite?.nome}</strong><Crest value={ospite?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" /></div>
       </header>
 
@@ -157,9 +175,8 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
           <div className="match-reveal__events match-reveal__events--away">{visibili.filter((evento) => evento.lato === 'ospite').map((evento, i) => <p className={isEventoGol(evento) ? 'is-goal' : ''} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
         </div>
         <footer className="match-reveal__footer">
-          {minutoCorrente < 0 ? <button className="button button--primary" type="button" onClick={() => setMinutoCorrente(0)}>Calcio d’inizio</button>
-            : inCorso ? <span>La partita è in corso…</span>
-              : <button className="button button--primary" type="button" onClick={onOpenReport}>Vedi rapporto partita</button>}
+          {inCorso ? <span>La partita è in corso…</span>
+            : <button className="button button--primary" type="button" onClick={onOpenReport}>Vedi rapporto partita</button>}
         </footer>
       </>}
     </section>
