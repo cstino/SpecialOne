@@ -25,9 +25,9 @@ export const LOGO_FASE: Record<FaseSquadra, string> = {
 // stessa in loop per tutti i 25 secondi, non una per ogni schermata
 // dell'intro. File da aggiungere in public/musica-fase/ (mp3).
 export const MUSICA_FASE: Record<FaseSquadra, string> = {
-  regular: '/musica-fase/regular-season.mp3',
-  title: '/musica-fase/title-playoffs.mp3',
-  draft: '/musica-fase/draft-playoffs.mp3',
+  regular: '/musica-fase/regular_season.m4a',
+  title: '/musica-fase/titleplayoffs.mp3',
+  draft: '/musica-fase/draftplayoffs.mp3',
 }
 
 // In quale fase si trova una squadra: guarda se partecipa a un tabellone
