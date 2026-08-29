@@ -7,7 +7,7 @@ stagione 2, 39 giocatori in procinto di essere svincolati d'ufficio).
 Questo file è **vincolante** quanto `CLAUDE.md`. Dove contraddice `docs/design.md`,
 vince questo file: è più recente.
 
-**Stato: in corso di implementazione.**
+**Stato: implementato.** (29 agosto 2026)
 
 | Passo | Contenuto | Stato |
 |---|---|---|
@@ -17,7 +17,14 @@ vince questo file: è più recente.
 | 3b | Percorsi delle squadre PC (offerte, rinnovi, proposte, risposte) | fatto |
 | 4 | Draft | fatto |
 | 5 | Scambi umani (giocatori + scelte, niente conguaglio) | fatto |
-| 6 | Rimozione di teams.budget/budget_ingaggi_riservato e pulizia frontend | da fare |
+| 6 | Rimozione di teams.budget/budget_ingaggi_riservato e pulizia frontend | fatto |
+
+Il passo 6 ha anche smontato un pezzo non elencato sopra: l'intero draft
+(2-of-4 e BY ROLE, umano e PC) tracciava ancora la spesa aggiornando
+`teams.budget`, oltre a pagare "premi partita" ogni notte e ad accreditare
+sponsor/premi/partecipazione in `prepara_offseason` — tre motori a cassa
+rimasti accesi in parallelo al tetto. Vedi
+`supabase/migrations/20260829040000_smontaggio_economia_a_cassa.sql`.
 
 ---
 
