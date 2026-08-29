@@ -19,7 +19,7 @@ export const ROSA_MASSIMA = 30
 // codice invito. Lo stesso controllo vive anche lato server, in
 // public.crea_lega — questo e' solo per non mostrare un bottone che
 // fallirebbe sempre.
-const EMAIL_PROPRIETARIO = 'cristianobraccili@gmail.com'
+const EMAIL_PROPRIETARIO = 'cr.96bc@gmail.com'
 export function puoCreareLeghe(email: string | null | undefined) {
   return email === EMAIL_PROPRIETARIO
 }
