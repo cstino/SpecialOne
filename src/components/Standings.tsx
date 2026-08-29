@@ -6,6 +6,7 @@ import type { League, Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { Forma, formaPerSquadra, SeasonState, TeamLabel } from './SeasonUI'
 import { Crest } from './Crest'
+import { UnderlineTabs } from './ui/underline-tabs'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; onOpenTeam: (teamId: number) => void }
 
@@ -133,24 +134,43 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
     {!data.loading && !data.error && <div className="season-page season-page--narrow">
       <section className="season-title-row"><div><p className="kicker">Stagione {league.stagione_corrente} · {league.nome}</p><h1>Classifica.</h1><p>Punti, risultati e differenza reti aggiornati dopo ogni simulazione.</p></div><div className="season-total"><strong>{league.n_squadre}</strong><span>squadre</span></div></section>
 
-      <div className="standings-tabs" role="tablist">
-        {SCHEDE.map((voce) => <button key={voce} type="button" role="tab" aria-selected={scheda === voce} className={scheda === voce ? 'is-active' : ''} onClick={() => setScheda(voce)}>{ETICHETTE_SCHEDA[voce]}</button>)}
-      </div>
+      <UnderlineTabs
+        tabs={SCHEDE.map((voce) => ({ value: voce, label: ETICHETTE_SCHEDA[voce] }))}
+        value={scheda}
+        onChange={setScheda}
+        layoutId="standings-scheda-indicator"
+        className="mb-4"
+      />
 
       <section className="standings-panel" onTouchStart={alTouchStart} onTouchEnd={alTouchEnd}>
         {scheda === 'classifica' && <>
-          <div className="standings-head"><span>POS</span><span>SQUADRA</span><span>PG</span><span>V</span><span>N</span><span>P</span><span>GF</span><span>GS</span><span>DR</span><span>PT</span></div>
+          <div className="standings-head"><span>POS</span><span>SQUADRA</span><span>PG</span><span>V</span><span>N</span><span>P</span><span>GF</span><span>GS</span><span>DR</span><span>PT</span><span /></div>
           <div className="standings-body">
-            {data.standings.map((standing, index) => <div className={`standings-row ${standing.team_id === membership.id ? 'is-mine' : ''}`} key={standing.team_id}>
-              <span className="standings-position">{standing.posizione ?? index + 1}</span>
-              <div className="standings-squadra">
-                <TeamLabel team={data.teamById.get(standing.team_id)} imageUrl={data.crestUrlByTeamId.get(standing.team_id)} onClick={() => onOpenTeam(standing.team_id)} />
-                <Forma esiti={forma.get(standing.team_id)} />
+            {data.standings.map((standing, index) => {
+              const posizione = standing.posizione ?? index + 1
+              // Title/Draft Playoff (docs/decisioni-draft-picks.md §1.1): sempre le
+              // prime 8, indipendentemente da N. Sotto le 8 squadre non c'e' nessun
+              // playoff (Tabellone.tsx), quindi niente zona da segnalare.
+              const zonaPlayoff = data.standings.length >= 8 ? (posizione <= 8 ? 'title' : 'draft') : null
+              return <div className={`standings-row ${standing.team_id === membership.id ? 'is-mine' : ''}`} key={standing.team_id}>
+                <span className="standings-position">{posizione}</span>
+                <div className="standings-squadra">
+                  <TeamLabel team={data.teamById.get(standing.team_id)} imageUrl={data.crestUrlByTeamId.get(standing.team_id)} onClick={() => onOpenTeam(standing.team_id)} />
+                  <Forma esiti={forma.get(standing.team_id)} />
+                </div>
+                <span>{standing.giocate}</span><span>{standing.vittorie}</span><span>{standing.pareggi}</span><span>{standing.sconfitte}</span><span>{standing.gol_fatti}</span><span>{standing.gol_subiti}</span><span>{standing.differenza_reti > 0 ? `+${standing.differenza_reti}` : standing.differenza_reti}</span><strong>{standing.punti}</strong>
+                <span className="standings-zona">
+                  {zonaPlayoff && <i className={`standings-zona__chip is-${zonaPlayoff}`} aria-label={zonaPlayoff === 'title' ? 'Zona Title Playoff' : 'Zona Draft Playoff'} />}
+                </span>
               </div>
-              <span>{standing.giocate}</span><span>{standing.vittorie}</span><span>{standing.pareggi}</span><span>{standing.sconfitte}</span><span>{standing.gol_fatti}</span><span>{standing.gol_subiti}</span><span>{standing.differenza_reti > 0 ? `+${standing.differenza_reti}` : standing.differenza_reti}</span><strong>{standing.punti}</strong>
-            </div>)}
+            })}
           </div>
-          <footer><span><i /> La tua squadra</span><small>Ordine: punti · scontri diretti · differenza reti · gol fatti</small></footer>
+          <footer>
+            <span><i className="standings-legend-dot" /> La tua squadra</span>
+            <span><i className="standings-zona__chip is-title" /> Title Playoff</span>
+            <span><i className="standings-zona__chip is-draft" /> Draft Playoff</span>
+            <small>Ordine: punti · scontri diretti · differenza reti · gol fatti</small>
+          </footer>
         </>}
 
         {scheda === 'marcatori' && (caricoGiocatori

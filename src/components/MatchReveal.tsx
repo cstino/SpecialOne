@@ -3,8 +3,10 @@ import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
 import { ricostruisciEventiStorici, type StatEventoStorico } from '../lib/matchEvents'
 import { useSeasonData } from '../lib/useSeasonData'
+import { SFONDO_FASE_VERTICALE, type FaseSquadra } from '../lib/faseSquadra'
 import { isEventoGol, type EventoPartita, type Membership } from '../types'
 import { Crest } from './Crest'
+import { MatchIntro } from './MatchIntro'
 
 type Props = { membership: Membership; matchId: number; onClose: () => void; onRevealed: (matchId: number) => void; onOpenReport: () => void }
 type Player = { id: number; nome: string }
@@ -56,6 +58,18 @@ function testoEvento(evento: EventoPartita, nomi: Map<number, Player>) {
   return null
 }
 
+// Gol, infortuni e sostituzioni restano fissi in cronaca; solo i tiri
+// (parati o fuori) sono eventi minori che altrimenti riempirebbero la
+// lista, e scompaiono da soli qualche secondo dopo essere comparsi
+// (is-transitorio, vedi l'animazione di uscita in styles.css). L'engine non
+// modella ancora ammonizioni/espulsioni: quando arriveranno andranno
+// aggiunte qui fra i permanenti, non fra i transitori.
+function classeEvento(evento: EventoPartita): string {
+  if (isEventoGol(evento)) return 'is-goal'
+  if (evento.tipo === 'infortunio' || evento.tipo === 'sostituzione') return ''
+  return 'is-transitorio'
+}
+
 export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenReport }: Props) {
   const data = useSeasonData(membership)
   const match = data.matches.find((item) => item.id === matchId)
@@ -66,6 +80,23 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   // Un secondo reale per ogni minuto di gioco: il reveal non salta da
   // un'azione all'altra, ma percorre tutta la partita come una cronaca.
   const [minutoCorrente, setMinutoCorrente] = useState(-1)
+  // Fase della partita, solo per lo sfondo a vetro dietro la cronaca (stessa
+  // immagine dell'intro): non serve il dettaglio del tabellone qui, solo
+  // sapere quale delle tre immagini di fase mostrare.
+  const [fase, setFase] = useState<FaseSquadra>('regular')
+
+  useEffect(() => {
+    let vivo = true
+    async function carica() {
+      if (!fixture?.bracket_tie_id) { if (vivo) setFase('regular'); return }
+      const { data: tie } = await supabase.from('bracket_ties').select('bracket_id').eq('id', fixture.bracket_tie_id).single()
+      if (!tie || !vivo) return
+      const { data: bracket } = await supabase.from('brackets').select('tipo').eq('id', tie.bracket_id).single()
+      if (vivo) setFase((bracket?.tipo as FaseSquadra | undefined) ?? 'regular')
+    }
+    void carica()
+    return () => { vivo = false }
+  }, [fixture?.bracket_tie_id])
 
   const eventi = useMemo(() => {
     if (!match) return []
@@ -120,7 +151,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
 
   useEffect(() => {
     if (minutoCorrente < 0 || minutoCorrente >= 90) return
-    const timer = window.setTimeout(() => setMinutoCorrente((valore) => valore + 1), 1000)
+    const timer = window.setTimeout(() => setMinutoCorrente((valore) => valore + 1), 700)
     return () => window.clearTimeout(timer)
   }, [minutoCorrente])
 
@@ -135,12 +166,34 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const ospite = data.teamById.get(fixture.away_team_id)
   const visibili = eventi.filter((evento) => evento.minuto <= minuto)
 
+  // L'intro (musica di fase, locandina, formazioni) precede il calcio
+  // d'inizio solo quando c'e' davvero una cronaca da vivere: per le partite
+  // simulate prima della cronaca estesa non avrebbe nulla da presentare.
+  if (minutoCorrente < 0 && eventi.length > 0) {
+    return <MatchIntro
+      membership={membership}
+      fixture={fixture}
+      data={data}
+      homeTeam={casa}
+      awayTeam={ospite}
+      homeCrestUrl={data.crestUrlByTeamId.get(fixture.home_team_id)}
+      awayCrestUrl={data.crestUrlByTeamId.get(fixture.away_team_id)}
+      onSkip={() => setMinutoCorrente(0)}
+      onFinish={() => setMinutoCorrente(0)}
+      onClose={onClose}
+    />
+  }
+
   return <div className="match-reveal-backdrop" role="dialog" aria-modal="true" aria-label="Cronaca della partita">
     <section className="match-reveal">
+      <div className="match-reveal__sfondo" style={{ backgroundImage: `url(${SFONDO_FASE_VERTICALE[fase]})` }} />
       <button className="match-reveal__close" type="button" onClick={onClose} aria-label="Chiudi cronaca">×</button>
       <header className="match-reveal__header">
         <div><Crest value={casa?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /><strong>{casa?.nome}</strong></div>
-        <div className="match-reveal__score"><small>{minutoCorrente < 0 ? 'IN ATTESA DEL CALCIO D’INIZIO' : completata ? 'RISULTATO FINALE' : `${minuto}’`}</small><b>{punteggio.casa} <i>–</i> {punteggio.ospite}</b></div>
+        <div className="match-reveal__score">
+          <small>{completata ? 'RISULTATO FINALE' : <><i className="match-reveal__live-dot" aria-hidden="true" />{minuto}’</>}</small>
+          <b>{punteggio.casa} <i>–</i> {punteggio.ospite}</b>
+        </div>
         <div><strong>{ospite?.nome}</strong><Crest value={ospite?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" /></div>
       </header>
 
@@ -150,16 +203,17 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
           <div className="match-reveal__half match-reveal__half--second">2º TEMPO</div>
           <div className="match-reveal__line">
             <span style={{ height: `${Math.min(100, minuto / 90 * 100)}%` }} />
-            <b className="match-reveal__minute" style={{ top: `${Math.min(100, minuto / 90 * 100)}%` }}>{minuto}’</b>
+            <b className={`match-reveal__minute ${inCorso ? 'is-live' : ''}`} style={{ top: `${Math.min(100, minuto / 90 * 100)}%` }}>{minuto}’</b>
           </div>
-          <span className="match-reveal__marker match-reveal__marker--half">45’</span><span className="match-reveal__marker match-reveal__marker--end">90’</span>
-          <div className="match-reveal__events match-reveal__events--home">{visibili.filter((evento) => evento.lato === 'casa').map((evento, i) => <p className={isEventoGol(evento) ? 'is-goal' : ''} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
-          <div className="match-reveal__events match-reveal__events--away">{visibili.filter((evento) => evento.lato === 'ospite').map((evento, i) => <p className={isEventoGol(evento) ? 'is-goal' : ''} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
+          {[15, 30, 45, 60, 75, 90].map((tacca) => (
+            <span className={`match-reveal__marker ${tacca === 45 || tacca === 90 ? 'is-forte' : ''}`} style={{ top: `${tacca / 90 * 100}%` }} key={tacca}>{tacca}’</span>
+          ))}
+          <div className="match-reveal__events match-reveal__events--home">{visibili.filter((evento) => evento.lato === 'casa').map((evento, i) => <p className={classeEvento(evento)} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
+          <div className="match-reveal__events match-reveal__events--away">{visibili.filter((evento) => evento.lato === 'ospite').map((evento, i) => <p className={classeEvento(evento)} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
         </div>
         <footer className="match-reveal__footer">
-          {minutoCorrente < 0 ? <button className="button button--primary" type="button" onClick={() => setMinutoCorrente(0)}>Calcio d’inizio</button>
-            : inCorso ? <span>La partita è in corso…</span>
-              : <button className="button button--primary" type="button" onClick={onOpenReport}>Vedi rapporto partita</button>}
+          {inCorso ? <span className="match-reveal__in-corso"><i aria-hidden="true" />La partita è in corso…</span>
+            : <button className="button button--primary" type="button" onClick={onOpenReport}>Vedi rapporto partita</button>}
         </footer>
       </>}
     </section>

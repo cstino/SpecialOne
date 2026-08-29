@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNotificheContesto, useTornaAllaHome } from '../lib/navigazione'
 import type { League } from '../types'
 
@@ -108,6 +108,14 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
   // su cui schierare chi si compra, e le RPC lo rifiuterebbero comunque.
   const tornaAllaHome = useTornaAllaHome()
   const notifiche = useNotificheContesto()
+  // Il contesto e' condiviso da tutte le leghe (un solo canale Realtime per
+  // utente, vedi lib/navigazione.ts): il conteggio va quindi ristretto qui
+  // alla lega corrente, altrimenti il pallino mescola gli avvisi non letti
+  // di leghe diverse.
+  const nonLetteLega = useMemo(
+    () => notifiche?.notifiche.filter((n) => (n.league_id === league.id || n.league_id === null) && !n.letta_il).length ?? 0,
+    [notifiche, league.id],
+  )
   const baseItems = league.fase_carriera === 'offseason'
     ? offseasonItems
     : league.stato === 'draft'
@@ -185,7 +193,7 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
       return <button className={`game-nav-item ${active === voce.view ? 'is-active' : ''}`} key={voce.view} type="button" onClick={() => vai(voce.view)} aria-current={active === voce.view ? 'page' : undefined}>
         <i aria-hidden="true"><Icona nome={voce.view} /></i>
         <span>{perMobile && voce.view === 'squad' ? 'Rosa' : voce.label}</span>
-        {voce.view === 'notifications' && notifiche && notifiche.nonLette > 0 && <em className="game-nav-item__badge">{notifiche.nonLette > 9 ? '9+' : notifiche.nonLette}</em>}
+        {voce.view === 'notifications' && nonLetteLega > 0 && <em className="game-nav-item__badge">{nonLetteLega > 9 ? '9+' : nonLetteLega}</em>}
         {active === voce.view && <b />}
       </button>
     })

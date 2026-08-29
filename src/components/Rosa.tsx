@@ -40,9 +40,9 @@ export function Rosa({ membership, onNavigate }: RosaProps) {
   const wage = players.reduce((sum, player) => sum + player.ingaggio, 0)
   const progress = `${players.length} / ${league.slot_rosa}`
   return (
-    <main className="app-shell roster-shell">
+    <main className="app-shell season-shell">
       <GameNav league={league} active="squad" onNavigate={onNavigate} />
-      <header className="topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span className="kicker">La tua rosa</span></header>
+      <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>La tua rosa</span></header>
       <section className="roster-hero"><div><p className="kicker">Squadra · {membership.nome}</p><h1>La mia rosa.</h1><p>Qui puoi controllare le scelte già fatte senza interrompere il draft.</p></div><div className="roster-summary"><span>Completamento</span><strong>{progress}</strong><small>{(wage / 1_000_000).toFixed(1)} M€ di ingaggi</small></div></section>
       {error && <p className="notice notice--error" role="alert">{error}</p>}
       {/* Stessa lista raggruppata per reparto del modale nel draft: era l'unica
