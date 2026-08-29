@@ -132,7 +132,7 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
       const vociGrezze = istanze.map((istanza) => {
         const anagrafica = anagraficaPerGiocatore.get(istanza.player_id)
         return anagrafica ? [istanza.id, anagrafica] as const : null
-      }).filter((voce): voce is readonly [number, { nome: string; foto_url: string | null }] => voce != null)
+      }).filter((voce): voce is readonly [number, { id: number; nome: string; foto_url: string | null }] => voce != null)
 
       const foto = await Promise.all(vociGrezze.map(async ([id, anagrafica]) => [id, await firmaFoto(anagrafica.foto_url)] as const))
       const fotoPerIstanza = new Map(foto)
