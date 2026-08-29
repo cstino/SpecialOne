@@ -317,7 +317,7 @@ export function Scelte({ membership, onNavigate }: Props) {
 
                   {!congelate && bozza.length < (s.posizione ?? 0) && <details className="scelte-preferenze__aggiungi">
                     <summary><span>Aggiungi dal pool</span><b>{poolFinestra.length - bozza.length} disponibili</b></summary>
-                    <ul className="mt-2.5 flex max-h-[360px] list-none flex-col divide-y divide-white/10 overflow-y-auto p-0">
+                    <ul className="mt-2.5 flex max-h-[620px] list-none flex-col divide-y divide-white/10 overflow-y-auto p-0">
                       {poolFinestra.filter((g) => !bozza.includes(g.id)).map((g) => {
                         const [primario, ...secondari] = g.posizioni ?? []
                         const macro = macroRuolo(g.posizioni ?? [])
