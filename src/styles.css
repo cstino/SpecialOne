@@ -2509,7 +2509,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .match-intro__salta { top: max(16px, env(safe-area-inset-top)); right: 16px; padding: 9px 15px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; color: #ede6f7; background: rgba(18,15,25,.55); backdrop-filter: blur(8px); font-size: .74rem; font-weight: 800; }
 
 .match-intro__locandina { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 26px; padding: 24px; text-align: center; animation: match-intro-in .6s cubic-bezier(.2,.8,.2,1) both; }
-.match-intro__logo-fase { height: 46px; width: auto; max-width: 82vw; object-fit: contain; mix-blend-mode: screen; filter: drop-shadow(0 6px 18px rgba(0,0,0,.5)); }
+.match-intro__logo-fase { height: 46px; width: auto; max-width: 82vw; object-fit: contain; filter: drop-shadow(0 6px 18px rgba(0,0,0,.5)); }
 .match-intro__competizione { margin: 0; color: #cbb9e6; font-size: .68rem; font-weight: 900; letter-spacing: .22em; text-transform: uppercase; }
 .match-intro__sfida { position: relative; display: flex; align-items: center; gap: 30px; padding: 22px 6px; }
 .match-intro__sfida::before { content: ''; position: absolute; z-index: -1; inset: 0; border-radius: 24px; background: radial-gradient(circle, rgba(155,76,255,.16), transparent 72%); }

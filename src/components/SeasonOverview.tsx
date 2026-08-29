@@ -48,7 +48,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
 
         <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-6 px-5 pb-7 pt-8 md:flex-row md:items-end md:justify-between md:px-8 md:pb-9">
           <div className="min-w-0">
-            <img src={LOGO_FASE[fase]} alt={LABEL_FASE[fase]} className="mt-4 h-9 w-auto mix-blend-screen md:h-11" />
+            <img src={LOGO_FASE[fase]} alt={LABEL_FASE[fase]} className="mt-4 h-9 w-auto md:h-11" />
             <div className="mt-2 flex min-w-0 items-center gap-5">
               <Crest value={miaSquadra?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(membership.id)} size="large" />
               <div className="min-w-0 flex-1">
