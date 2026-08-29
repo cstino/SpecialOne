@@ -2584,7 +2584,13 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 }
 
 .match-reveal-backdrop { position: fixed; z-index: 80; inset: 0; padding: 0; background: #0a0812; }
-.match-reveal { position: relative; display: flex; flex-direction: column; width: 100%; height: 100dvh; overflow: hidden; background-color: #0a0812; }
+/* z-index:0 qui e' essenziale, non decorativo: senza, .match-reveal non
+   crea un proprio stacking context (position:relative da sola non basta) e
+   i figli con z-index negativo (lo sfondo sfocato) "scappano" a dipingersi
+   dietro l'intero backdrop invece che solo dietro il contenuto di questa
+   sezione — risultato, sfondo completamente invisibile anche se presente
+   nel DOM con l'URL corretto. */
+.match-reveal { position: relative; z-index: 0; display: flex; flex-direction: column; width: 100%; height: 100dvh; overflow: hidden; background-color: #0a0812; }
 /* Vetro fumè: l'immagine di fase vive sfocata su un layer suo, separato dal
    contenuto (un filter sull'elemento con i figli sfocherebbe anche il
    testo). Il layer sporge oltre i bordi (inset negativo) cosi' la sfocatura
@@ -2615,16 +2621,15 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    proporzione 0-90 della linea del tempo al centro), non impilato in ordine
    di comparsa: altrimenti un gol al 52' finiva visivamente nella meta' campo
    del primo tempo solo perche' era il secondo evento della lista. */
-/* Colonna divisa in due meta' uguali (1'-45' e 46'-90'), ciascuna impilata
-   normalmente dall'alto: garantisce che un evento del secondo tempo non
-   possa mai comparire visivamente nella meta' del primo (il difetto
-   originale) SENZA rischiare sovrapposizioni fra eventi vicini nel tempo —
-   il posizionamento assoluto sul minuto esatto, provato prima, le causava. */
-.match-reveal__events { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100%; }
-.match-reveal__eventi-meta { flex: 1 1 0; display: flex; flex-direction: column; gap: 8px; min-height: 0; padding: 14px; overflow-y: auto; }
-.match-reveal__eventi-meta:first-child { padding-top: 28px; }
-.match-reveal__eventi-meta:last-child { padding-bottom: 28px; }
-.match-reveal__events p { position: relative; flex: none; overflow: hidden; margin: 0; padding: 9px 12px; border-radius: 10px; color: rgba(255,255,255,.82); background: rgba(255,255,255,.04); font-size: .74rem; line-height: 1.4; animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both; }
+/* Ogni evento e' posizionato in assoluto sul proprio minuto reale (stessa
+   proporzione 0-90 della linea del tempo al centro): garantisce che un
+   evento del secondo tempo non compaia mai nella meta' del primo. Le
+   sovrapposizioni fra eventi vicini nel tempo restano possibili (compromesso
+   accettato): l'alternativa provata, due meta' impilate normalmente, evitava
+   le sovrapposizioni ma andava in overflow quando un tempo aveva molti
+   eventi, nascondendo tutto il resto. */
+.match-reveal__events { position: relative; z-index: 1; padding: 28px 14px; }
+.match-reveal__events p { position: absolute; left: 14px; right: 14px; overflow: hidden; margin: 0; padding: 9px 12px; border-radius: 10px; color: rgba(255,255,255,.82); background: rgba(255,255,255,.04); font-size: .74rem; line-height: 1.4; transform: translateY(-50%); animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both; }
 /* Tiri (parati o fuori) sono eventi minori: comparsa normale, poi
    svaniscono da soli 2 secondi dopo per non riempire la cronaca. Gol,
    infortuni e sostituzioni non hanno questa classe e restano fissi. */
