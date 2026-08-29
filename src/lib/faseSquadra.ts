@@ -12,9 +12,21 @@ export const SFONDO_FASE: Record<FaseSquadra, string> = {
   draft: '/sfondi-fase/draft_playoffs.png',
 }
 
-// Loghi testuali delle fasi, su sfondo nero: renderizzati con
-// mix-blend-mode: screen cosi' il nero diventa trasparente e resta solo la
-// scritta, senza dover ritagliare a mano lo sfondo di ogni immagine.
+// Stesse immagini, formato verticale: per le schermate a pieno schermo in
+// verticale (MatchIntro.tsx, lo sfondo dietro la cronaca live in
+// MatchReveal.tsx). Quelle di SFONDO_FASE sono pensate per una fascia larga
+// (l'hero di Overview) e su schermo verticale verrebbero ritagliate parecchio
+// invece di mostrare la composizione pensata per quel formato.
+export const SFONDO_FASE_VERTICALE: Record<FaseSquadra, string> = {
+  regular: '/sfondi-fase-verticali/regular_season.png',
+  title: '/sfondi-fase-verticali/title_playoffs.png',
+  draft: '/sfondi-fase-verticali/draft_playoffs.png',
+}
+
+// Loghi testuali delle fasi: un vero canale alpha (non mix-blend-mode, che
+// lasciava un alone se lo sfondo dell'immagine non era un nero perfetto),
+// calcolato dalla luminanza di ogni pixel — nero diventa trasparente, la
+// scritta resta piena.
 export const LOGO_FASE: Record<FaseSquadra, string> = {
   regular: '/loghi-fase/regular-season.png',
   title: '/loghi-fase/title-playoffs.png',

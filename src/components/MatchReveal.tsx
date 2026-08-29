@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
 import { ricostruisciEventiStorici, type StatEventoStorico } from '../lib/matchEvents'
 import { useSeasonData } from '../lib/useSeasonData'
-import { SFONDO_FASE, type FaseSquadra } from '../lib/faseSquadra'
+import { SFONDO_FASE_VERTICALE, type FaseSquadra } from '../lib/faseSquadra'
 import { isEventoGol, type EventoPartita, type Membership } from '../types'
 import { Crest } from './Crest'
 import { MatchIntro } from './MatchIntro'
@@ -185,7 +185,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   }
 
   return <div className="match-reveal-backdrop" role="dialog" aria-modal="true" aria-label="Cronaca della partita">
-    <section className="match-reveal" style={{ backgroundImage: `url(${SFONDO_FASE[fase]})` }}>
+    <section className="match-reveal" style={{ backgroundImage: `url(${SFONDO_FASE_VERTICALE[fase]})` }}>
       <button className="match-reveal__close" type="button" onClick={onClose} aria-label="Chiudi cronaca">×</button>
       <header className="match-reveal__header">
         <div><Crest value={casa?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /><strong>{casa?.nome}</strong></div>
