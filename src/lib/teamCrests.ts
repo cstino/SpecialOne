@@ -19,6 +19,7 @@ export const STEMMI_SQUADRA = [
   { id: 'leoni', nome: 'Leoni', src: '/stemmi-squadra/thumbs/leoni.png' },
   { id: 'lions', nome: 'Lions', src: '/stemmi-squadra/thumbs/lions.png' },
   { id: 'lupo', nome: 'Lupo', src: '/stemmi-squadra/thumbs/lupo.png' },
+  { id: 'maomao', nome: 'Maomao', src: '/stemmi-squadra/thumbs/maomao.png' },
   { id: 'massoni', nome: 'Massoni', src: '/stemmi-squadra/thumbs/massoni.png' },
   { id: 'mcdonald', nome: 'McDonald', src: '/stemmi-squadra/thumbs/mcdonald.png' },
   { id: 'musk', nome: 'Musk', src: '/stemmi-squadra/thumbs/musk.png' },
