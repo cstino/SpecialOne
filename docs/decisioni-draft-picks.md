@@ -258,7 +258,8 @@ scambi). Nessuno dei due deriva dall'altro.
   fargli da contrappeso.
 
 - **Composizione del pool**: non "tutti gli svincolati overall > 75", ma un'**estrazione
-  dedicata** alla finestra, **10 giocatori per ruolo (GK/DEF/MID/ATT) = 40 totali**, stesso
+  dedicata** alla finestra — **5 portieri e 6 per ciascuno degli altri tre ruoli
+  (DEF/MID/ATT) = 23 totali** (ridotto da 40 il 30 agosto 2026, deciso con l'utente), stesso
   meccanismo dell'estrazione del mercato di emergenza (`private.estrai_svincolati_lega`) ma
   filtrato a overall > 75 e senza tornate giornaliere: un'estrazione sola per finestra, che
   resta la stessa finché la finestra non si risolve (altrimenti la lista di preferenze

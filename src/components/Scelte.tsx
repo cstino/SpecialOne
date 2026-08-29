@@ -131,8 +131,8 @@ export function Scelte({ membership, onNavigate }: Props) {
   }, [scelteUltimaSessione])
 
   // Il pool non è "tutti gli svincolati overall>75": è l'estrazione dedicata
-  // alla finestra (private.estrai_pool_scelte, 10 per ruolo), stabile finché
-  // la finestra non si risolve.
+  // alla finestra (private.estrai_pool_scelte, 5 portieri e 6 per ciascun
+  // altro ruolo), stabile finché la finestra non si risolve.
   useEffect(() => {
     let vivo = true
     async function caricaPool() {
