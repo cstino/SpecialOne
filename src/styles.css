@@ -2589,8 +2589,8 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    contenuto (un filter sull'elemento con i figli sfocherebbe anche il
    testo). Il layer sporge oltre i bordi (inset negativo) cosi' la sfocatura
    non lascia un alone trasparente sul perimetro. */
-.match-reveal::before { content: ''; position: absolute; z-index: -2; inset: -30px; background-image: var(--match-reveal-sfondo); background-size: cover; background-position: center; filter: blur(28px) brightness(.4) saturate(.9); }
-.match-reveal::after { content: ''; position: absolute; z-index: -1; inset: 0; background: radial-gradient(circle at 50% -10%, rgba(155,76,255,.14), transparent 55%), rgba(8,6,14,.72); }
+.match-reveal::before { content: ''; position: absolute; z-index: -2; inset: -30px; background-image: var(--match-reveal-sfondo); background-size: cover; background-position: center; filter: blur(22px) brightness(.75) saturate(1); }
+.match-reveal::after { content: ''; position: absolute; z-index: -1; inset: 0; background: radial-gradient(circle at 50% -10%, rgba(155,76,255,.14), transparent 55%), rgba(8,6,14,.4); }
 .match-reveal__header, .match-reveal__footer { backdrop-filter: blur(16px); background: rgba(10,8,18,.4); }
 .match-reveal__close { position: absolute; z-index: 2; top: max(13px, env(safe-area-inset-top)); right: 15px; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.14); border-radius: 50%; color: #ede6f7; background: rgba(255,255,255,.06); backdrop-filter: blur(8px); font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .match-reveal__header { position: relative; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 20px; padding: max(22px, env(safe-area-inset-top)) 58px 20px 20px; border-bottom: 1px solid rgba(255,255,255,.08); }
@@ -2615,11 +2615,19 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    proporzione 0-90 della linea del tempo al centro), non impilato in ordine
    di comparsa: altrimenti un gol al 52' finiva visivamente nella meta' campo
    del primo tempo solo perche' era il secondo evento della lista. */
-.match-reveal__events { position: relative; z-index: 1; padding: 28px 14px; }
-.match-reveal__events p { position: absolute; left: 14px; right: 14px; overflow: hidden; margin: 0; padding: 9px 12px; border-radius: 10px; color: rgba(255,255,255,.82); background: rgba(255,255,255,.04); font-size: .74rem; line-height: 1.4; transform: translateY(-50%); animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both; }
-/* Tiri e sostituzioni sono eventi minori: comparsa normale, poi svaniscono
-   da soli 2 secondi dopo per non riempire la cronaca. Gol e infortuni non
-   hanno questa classe e restano fissi. */
+/* Colonna divisa in due meta' uguali (1'-45' e 46'-90'), ciascuna impilata
+   normalmente dall'alto: garantisce che un evento del secondo tempo non
+   possa mai comparire visivamente nella meta' del primo (il difetto
+   originale) SENZA rischiare sovrapposizioni fra eventi vicini nel tempo —
+   il posizionamento assoluto sul minuto esatto, provato prima, le causava. */
+.match-reveal__events { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100%; }
+.match-reveal__eventi-meta { flex: 1 1 0; display: flex; flex-direction: column; gap: 8px; min-height: 0; padding: 14px; overflow-y: auto; }
+.match-reveal__eventi-meta:first-child { padding-top: 28px; }
+.match-reveal__eventi-meta:last-child { padding-bottom: 28px; }
+.match-reveal__events p { position: relative; flex: none; overflow: hidden; margin: 0; padding: 9px 12px; border-radius: 10px; color: rgba(255,255,255,.82); background: rgba(255,255,255,.04); font-size: .74rem; line-height: 1.4; animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both; }
+/* Tiri (parati o fuori) sono eventi minori: comparsa normale, poi
+   svaniscono da soli 2 secondi dopo per non riempire la cronaca. Gol,
+   infortuni e sostituzioni non hanno questa classe e restano fissi. */
 .match-reveal__events p.is-transitorio { animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both, evento-transitorio-esci .4s ease-in 2s forwards; }
 @keyframes evento-transitorio-esci { from { opacity: 1; } to { opacity: 0; } }
 .match-reveal__events--home p::before, .match-reveal__events--away p::before { content: ''; position: absolute; top: 6px; bottom: 6px; width: 2px; border-radius: 2px; background: rgba(255,255,255,.14); }

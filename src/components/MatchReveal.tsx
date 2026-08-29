@@ -66,7 +66,7 @@ function testoEvento(evento: EventoPartita, nomi: Map<number, Player>) {
 // permanenti, non fra i transitori.
 function classeEvento(evento: EventoPartita): string {
   if (isEventoGol(evento)) return 'is-goal'
-  if (evento.tipo === 'infortunio') return ''
+  if (evento.tipo === 'infortunio' || evento.tipo === 'sostituzione') return ''
   return 'is-transitorio'
 }
 
@@ -207,8 +207,20 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
           {[15, 30, 45, 60, 75, 90].map((tacca) => (
             <span className={`match-reveal__marker ${tacca === 45 || tacca === 90 ? 'is-forte' : ''}`} style={{ top: `${tacca / 90 * 100}%` }} key={tacca}>{tacca}’</span>
           ))}
-          <div className="match-reveal__events match-reveal__events--home">{visibili.filter((evento) => evento.lato === 'casa').map((evento, i) => <p className={classeEvento(evento)} style={{ top: `${Math.min(100, evento.minuto / 90 * 100)}%` }} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
-          <div className="match-reveal__events match-reveal__events--away">{visibili.filter((evento) => evento.lato === 'ospite').map((evento, i) => <p className={classeEvento(evento)} style={{ top: `${Math.min(100, evento.minuto / 90 * 100)}%` }} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
+          {(['casa', 'ospite'] as const).map((lato) => {
+            const propri = visibili.filter((evento) => evento.lato === lato)
+            const primoTempo = propri.filter((evento) => evento.minuto <= 45)
+            const secondoTempo = propri.filter((evento) => evento.minuto > 45)
+            const riga = (evento: EventoPartita, i: number) => (
+              <p className={classeEvento(evento)} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>
+            )
+            return (
+              <div className={`match-reveal__events match-reveal__events--${lato === 'casa' ? 'home' : 'away'}`} key={lato}>
+                <div className="match-reveal__eventi-meta">{primoTempo.map(riga)}</div>
+                <div className="match-reveal__eventi-meta">{secondoTempo.map(riga)}</div>
+              </div>
+            )
+          })}
         </div>
         <footer className="match-reveal__footer">
           {inCorso ? <span className="match-reveal__in-corso"><i aria-hidden="true" />La partita è in corso…</span>
