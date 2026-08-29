@@ -2568,7 +2568,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 }
 
 .match-reveal-backdrop { position: fixed; z-index: 80; inset: 0; padding: 0; background: #0a0812; }
-.match-reveal { position: relative; display: flex; flex-direction: column; width: 100%; height: 100dvh; overflow: hidden; background: radial-gradient(circle at 50% -10%, rgba(155,76,255,.16), transparent 55%), #0a0812; }
+.match-reveal { position: relative; display: flex; flex-direction: column; width: 100%; height: 100dvh; overflow: hidden; background-color: #0a0812; background-size: cover; background-position: center; }
+.match-reveal::before { content: ''; position: absolute; z-index: -1; inset: 0; background: radial-gradient(circle at 50% -10%, rgba(155,76,255,.18), transparent 55%), rgba(8,6,14,.86); }
+.match-reveal__header, .match-reveal__footer { backdrop-filter: blur(16px); background: rgba(10,8,18,.4); }
 .match-reveal__close { position: absolute; z-index: 2; top: max(13px, env(safe-area-inset-top)); right: 15px; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.14); border-radius: 50%; color: #ede6f7; background: rgba(255,255,255,.06); backdrop-filter: blur(8px); font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .match-reveal__header { position: relative; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 20px; padding: max(22px, env(safe-area-inset-top)) 58px 20px 20px; border-bottom: 1px solid rgba(255,255,255,.08); }
 .match-reveal__header > div:not(.match-reveal__score) { display: flex; align-items: center; gap: 10px; min-width: 0; color: #f5eff8; font-size: .82rem; font-weight: 700; }
@@ -2589,7 +2591,12 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .match-reveal__marker { position: absolute; z-index: 1; left: 50%; color: rgba(255,255,255,.28); font-size: .56rem; font-weight: 700; transform: translate(-50%, -50%); }
 .match-reveal__marker.is-forte { color: rgba(255,255,255,.5); font-weight: 900; }
 .match-reveal__events { z-index: 1; display: flex; flex-direction: column; gap: 8px; padding: 28px 16px; }
-.match-reveal__events p { position: relative; margin: 0; padding: 9px 12px; border-radius: 10px; color: rgba(255,255,255,.82); background: rgba(255,255,255,.04); font-size: .74rem; line-height: 1.4; animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both; }
+.match-reveal__events p { position: relative; overflow: hidden; margin: 0; padding: 9px 12px; border-radius: 10px; color: rgba(255,255,255,.82); background: rgba(255,255,255,.04); font-size: .74rem; line-height: 1.4; animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both; }
+/* Tiri e sostituzioni sono eventi minori: comparsa normale, poi svaniscono
+   da soli 2 secondi dopo per non riempire la cronaca. Gol e infortuni non
+   hanno questa classe e restano fissi. */
+.match-reveal__events p.is-transitorio { animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both, evento-transitorio-esci .45s ease-in 2s forwards; }
+@keyframes evento-transitorio-esci { from { opacity: 1; max-height: 120px; } to { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; } }
 .match-reveal__events--home p::before, .match-reveal__events--away p::before { content: ''; position: absolute; top: 6px; bottom: 6px; width: 2px; border-radius: 2px; background: rgba(255,255,255,.14); }
 .match-reveal__events--home p::before { right: 0; }.match-reveal__events--away p::before { left: 0; }
 .match-reveal__events time { display: block; margin-bottom: 2px; color: #c9a7ff; font-size: .6rem; font-weight: 900; }
