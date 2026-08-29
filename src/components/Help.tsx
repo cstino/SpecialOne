@@ -249,6 +249,31 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     </>,
   },
   {
+    id: 'cartellini',
+    titolo: 'Cartellini e squalifiche',
+    corpo: <>
+      <p>In partita i giocatori possono essere ammoniti o espulsi, con lo stesso regolamento
+        del calcio vero. Un'<strong>espulsione</strong> (rosso diretto o secondo giallo) toglie
+        subito quel giocatore dalla partita in corso, senza sostituzione: la sua squadra resta
+        in inferiorità numerica per il resto del match, con l'effetto reale che questo comporta
+        in campo, non solo simbolico.</p>
+      <p>Ogni cartellino giallo si accumula in un contatore personale del giocatore, valido per
+        tutta la stagione. Al <strong>quinto giallo</strong> scatta la <strong>diffida</strong>:
+        automatica, come un'espulsione vera — una giornata di squalifica, e il contatore torna a
+        zero. Anche un'espulsione, diretta o per doppio giallo, comporta sempre una giornata di
+        squalifica automatica, oltre all'uscita dalla partita in cui è avvenuta.</p>
+      <p>Un giocatore squalificato non è selezionabile in formazione per la giornata che deve
+        scontare, né come titolare né in panchina — condivide lo stesso vincolo di un
+        infortunato, e se non schieri di persona la formazione automatica lo esclude comunque.
+        Nella pagina Formazione lo riconosci dal simbolo <strong>■</strong> sul ritratto (contro
+        il <strong>✚</strong> dell'infortunio), e la sua scheda indica quante giornate gli
+        restano da scontare.</p>
+      <p>Il contatore delle ammonizioni si azzera anche all'inizio dei playoff, per ripartire
+        con una lavagna pulita nella fase decisiva della stagione — ma una squalifica già
+        maturata resta valida e si sconta comunque, playoff compresi.</p>
+    </>,
+  },
+  {
     id: 'mercato-scambi',
     titolo: 'Mercato — scambi tra squadre',
     corpo: <>
