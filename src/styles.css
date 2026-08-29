@@ -535,12 +535,15 @@ input:disabled { opacity: 0.65; }
 .draft-waiting-total > i, .draft-waiting-list__bar > i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #782bd0, #c260ff); transition: width .35s ease; }
 .draft-waiting-total > i { box-shadow: 0 0 15px rgba(183,76,255,.55); }
 .draft-waiting-list { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
-.draft-waiting-list li { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 13px; border: 1px solid #302a3d; border-radius: 12px; background: rgba(9,8,14,.28); }
-.draft-waiting-list li > div { display: grid; gap: 5px; min-width: 0; }
-.draft-waiting-list li > div > strong { display: flex; align-items: center; gap: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.draft-waiting-list li > div > strong small { padding: 2px 6px; color: #c486ff; border: 1px solid rgba(180,91,255,.28); border-radius: 99px; font-size: .55rem; letter-spacing: .08em; }
-.draft-waiting-list li > div > span { color: #8f869d; font-size: .69rem; }
-.draft-waiting-list li > b { color: #bdb3c9; font-size: .8rem; font-variant-numeric: tabular-nums; }
+.draft-waiting-list li { border-radius: 12px; }
+.draft-waiting-list__row { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; padding: 13px; border: 1px solid #302a3d; border-radius: 12px; background: rgba(9,8,14,.28); font: inherit; color: inherit; text-align: left; cursor: pointer; transition: border-color .16s ease, transform .16s ease; }
+.draft-waiting-list__row:hover { border-color: #a257ed; }
+.draft-waiting-list__row:focus-visible { outline: 2px solid #c77dff; outline-offset: 2px; }
+.draft-waiting-list__row > div { display: grid; gap: 5px; min-width: 0; }
+.draft-waiting-list__row > div > strong { display: flex; align-items: center; gap: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.draft-waiting-list__row > div > strong small { padding: 2px 6px; color: #c486ff; border: 1px solid rgba(180,91,255,.28); border-radius: 99px; font-size: .55rem; letter-spacing: .08em; }
+.draft-waiting-list__row > div > span { color: #8f869d; font-size: .69rem; }
+.draft-waiting-list__row > b { color: #bdb3c9; font-size: .8rem; font-variant-numeric: tabular-nums; }
 .draft-waiting-list__stato { display: grid; width: 30px; height: 30px; place-items: center; color: #101812; border-radius: 50%; background: #302a3c; font-weight: 950; }
 .draft-waiting-list li.is-complete .draft-waiting-list__stato { background: #43d47e; box-shadow: 0 0 16px rgba(67,212,126,.2); }
 .draft-waiting-list li.is-loading .draft-waiting-list__stato::after { content: ''; width: 12px; height: 12px; border: 2px solid #b25cff; border-right-color: transparent; border-radius: 50%; animation: button-spin .75s linear infinite; }

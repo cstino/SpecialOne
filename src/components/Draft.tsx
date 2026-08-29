@@ -107,6 +107,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
   const [fase, setFase] = useState<'vuoto' | 'girando' | 'rivelato'>('vuoto')
   const [spesoDraft, setSpesoDraft] = useState<number>(0)
   const [rosaAperta, setRosaAperta] = useState(false)
+  const [squadraVista, setSquadraVista] = useState<{ id: number; nome: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -392,13 +393,19 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
               const completa = riga.stato === 'concluso'
               const quota = Math.min(100, (riga.giocatori / Math.max(riga.obiettivo, 1)) * 100)
               return <li key={riga.team_id} className={completa ? 'is-complete' : 'is-loading'}>
-                <span className="draft-waiting-list__stato" aria-hidden="true">{completa ? '✓' : ''}</span>
-                <div>
-                  <strong>{riga.nome}{riga.controllata_da_pc ? <small>PC</small> : null}</strong>
-                  <span>{completa ? 'Rosa completata' : riga.controllata_da_pc ? 'Estrazione in corso' : 'In attesa del giocatore'}</span>
-                  <div className="draft-waiting-list__bar"><i style={{ width: `${quota}%` }} /></div>
-                </div>
-                <b>{riga.giocatori}/{riga.obiettivo}</b>
+                <button
+                  type="button"
+                  className="draft-waiting-list__row"
+                  onClick={() => setSquadraVista({ id: riga.team_id, nome: riga.nome })}
+                >
+                  <span className="draft-waiting-list__stato" aria-hidden="true">{completa ? '✓' : ''}</span>
+                  <div>
+                    <strong>{riga.nome}{riga.controllata_da_pc ? <small>PC</small> : null}</strong>
+                    <span>{completa ? 'Rosa completata' : riga.controllata_da_pc ? 'Estrazione in corso' : 'In attesa del giocatore'}</span>
+                    <div className="draft-waiting-list__bar"><i style={{ width: `${quota}%` }} /></div>
+                  </div>
+                  <b>{riga.giocatori}/{riga.obiettivo}</b>
+                </button>
               </li>
             })}
           </ul>
@@ -544,12 +551,13 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
         </section>
       )}
       {state?.stato !== 'concluso' && fase === 'vuoto' && <button className="text-button draft-refresh" type="button" onClick={() => setRefresh((value) => value + 1)}>Aggiorna stato</button>}
-      {rosaAperta && <RosaModale league={league} membership={membership} onClose={() => setRosaAperta(false)} />}
+      {rosaAperta && <RosaModale league={league} teamId={membership.id} nome={membership.nome} onClose={() => setRosaAperta(false)} />}
+      {squadraVista && <RosaModale league={league} teamId={squadraVista.id} nome={squadraVista.nome} onClose={() => setSquadraVista(null)} />}
     </main>
   )
 }
 
-function RosaModale({ league, membership, onClose }: { league: League; membership: Membership; onClose: () => void }) {
+function RosaModale({ league, teamId, nome, onClose }: { league: League; teamId: number; nome: string; onClose: () => void }) {
   const [giocatori, setGiocatori] = useState<RosterPlayer[]>([])
   const [foto, setFoto] = useState<Map<number, string>>(new Map())
   const [loading, setLoading] = useState(true)
@@ -559,7 +567,7 @@ function RosaModale({ league, membership, onClose }: { league: League; membershi
     async function load() {
       const { data: instances } = await supabase.from('player_instances')
         .select('id, player_id, ingaggio, overall_corrente, eta_corrente')
-        .eq('league_id', league.id).eq('team_id', membership.id)
+        .eq('league_id', league.id).eq('team_id', teamId)
       const ids = (instances ?? []).map((i) => i.player_id)
       const { data: catalogo } = ids.length
         ? await supabase.from('players').select('id, nome, club, posizioni, foto_url').in('id', ids)
@@ -585,7 +593,7 @@ function RosaModale({ league, membership, onClose }: { league: League; membershi
     }
     void load()
     return () => { active = false }
-  }, [league.id, membership.id])
+  }, [league.id, teamId])
 
   const speso = giocatori.reduce((somma, g) => somma + g.ingaggio, 0)
 
@@ -593,7 +601,7 @@ function RosaModale({ league, membership, onClose }: { league: League; membershi
     <div className="modale-sfondo" role="dialog" aria-modal="true" onClick={onClose}>
       <div className="modale-rosa" onClick={(e) => e.stopPropagation()}>
         <div className="modale-rosa__testa">
-          <div><p className="kicker">{membership.nome}</p><h2>{giocatori.length} / {league.slot_rosa} giocatori</h2><small>{milioni(speso)} di ingaggi complessivi</small></div>
+          <div><p className="kicker">{nome}</p><h2>{giocatori.length} / {league.slot_rosa} giocatori</h2><small>{milioni(speso)} di ingaggi complessivi</small></div>
           <button className="button-icona" type="button" onClick={onClose} aria-label="Chiudi">✕</button>
         </div>
         <RosaElenco giocatori={giocatori} foto={foto} loading={loading} />
