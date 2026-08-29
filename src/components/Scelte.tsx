@@ -21,6 +21,7 @@ const ETICHETTA_STATO: Record<SceltaDraft['stato'], string> = {
 }
 
 type GiocatorePool = { id: number; nome: string; posizioni: string[]; overall: number; eta: number; foto_url: string | null; ingaggio_teorico: number }
+type GiocatoreAssegnato = { nome: string; posizioni: string[]; overall: number; foto: string | null }
 type FinestraScelte = {
   league_id: number; stagione: number; finestra: SceltaDraft['finestra']
   svelata_il: string; estrazione_il: string | null; risolta_il: string | null
@@ -36,6 +37,7 @@ export function Scelte({ membership, onNavigate }: Props) {
   const [preferenze, setPreferenze] = useState<Preferenza[]>([])
   const [pool, setPool] = useState<Map<string, GiocatorePool[]>>(new Map())
   const [foto, setFoto] = useState<Map<number, string>>(new Map())
+  const [giocatoriAssegnati, setGiocatoriAssegnati] = useState<Map<number, GiocatoreAssegnato>>(new Map())
   const [loading, setLoading] = useState(true)
   const [errore, setErrore] = useState<string | null>(null)
   const [esito, setEsito] = useState<string | null>(null)
@@ -64,8 +66,11 @@ export function Scelte({ membership, onNavigate }: Props) {
 
   const teamById = useMemo(() => new Map(dati.teams.map((t) => [t.id, t])), [dati.teams])
   const ordineFinestra: Record<SceltaDraft['finestra'], number> = { on: 0, off: 1 }
+  // Una volta risolta la finestra, il ticket "usata"/"vuota" ha esaurito il suo
+  // scopo di asset scambiabile: sparisce da qui (badge e lista), ma la riga
+  // resta in scelte_draft — è la fonte del riepilogo dell'ultima sessione più sotto.
   const mieScelte = useMemo(
-    () => scelte.filter((s) => s.team_proprietario_id === membership.id)
+    () => scelte.filter((s) => s.team_proprietario_id === membership.id && s.stato !== 'usata' && s.stato !== 'vuota')
       .sort((a, b) => a.stagione - b.stagione || ordineFinestra[a.finestra] - ordineFinestra[b.finestra]),
     [scelte, membership.id],
   )
@@ -78,6 +83,52 @@ export function Scelte({ membership, onNavigate }: Props) {
       .sort((a, b) => a.stagione - b.stagione || ordineFinestra[a.finestra] - ordineFinestra[b.finestra]),
     [finestre],
   )
+
+  // L'ultima sessione conclusa: la finestra con la risoluzione più recente,
+  // per mostrare chi ha preso chi anche dopo che i ticket "usata"/"vuota"
+  // di quella finestra spariscono dalla lista "Le mie scelte" (v. sotto).
+  const ultimaFinestraRisolta = useMemo(() => {
+    const risolte = finestre.filter((f): f is FinestraScelte & { risolta_il: string } => f.risolta_il != null)
+    if (risolte.length === 0) return null
+    return risolte.reduce((a, b) => (new Date(a.risolta_il) > new Date(b.risolta_il) ? a : b))
+  }, [finestre])
+
+  const scelteUltimaSessione = useMemo(() => {
+    if (!ultimaFinestraRisolta) return []
+    return scelte.filter((s) => s.stagione === ultimaFinestraRisolta.stagione && s.finestra === ultimaFinestraRisolta.finestra
+        && (s.stato === 'usata' || s.stato === 'vuota'))
+      .sort((a, b) => (a.posizione ?? 0) - (b.posizione ?? 0))
+  }, [scelte, ultimaFinestraRisolta])
+
+  // Anagrafica dei giocatori assegnati nell'ultima sessione: player_instance_id
+  // (fissato su scelte_draft alla risoluzione) -> player_id -> nome/foto/overall.
+  useEffect(() => {
+    let vivo = true
+    async function carica() {
+      const idIstanze = [...new Set(scelteUltimaSessione.map((s) => s.player_instance_id).filter((id): id is number => id != null))]
+      if (idIstanze.length === 0) { setGiocatoriAssegnati(new Map()); return }
+      const { data: istanze } = await supabase.from('player_instances').select('id, player_id').in('id', idIstanze)
+      if (!vivo) return
+      const idGiocatori = [...new Set((istanze ?? []).map((i) => i.player_id))]
+      const { data: anagrafica } = idGiocatori.length
+        ? await supabase.from('players').select('id, nome, posizioni, overall, foto_url').in('id', idGiocatori)
+        : { data: [] }
+      if (!vivo) return
+      const fotoFirmate = await Promise.all((anagrafica ?? []).filter((p) => p.foto_url)
+        .map(async (p) => [p.id, await firmaFoto(p.foto_url)] as const))
+      if (!vivo) return
+      const fotoPerGiocatore = new Map(fotoFirmate.filter((v): v is [number, string] => Boolean(v[1])))
+      const anagraficaPerId = new Map((anagrafica ?? []).map((p) => [p.id, p]))
+      const mappa = new Map<number, GiocatoreAssegnato>()
+      for (const i of istanze ?? []) {
+        const p = anagraficaPerId.get(i.player_id)
+        if (p) mappa.set(i.id, { nome: p.nome, posizioni: p.posizioni, overall: p.overall, foto: fotoPerGiocatore.get(p.id) ?? null })
+      }
+      setGiocatoriAssegnati(mappa)
+    }
+    void carica()
+    return () => { vivo = false }
+  }, [scelteUltimaSessione])
 
   // Il pool non è "tutti gli svincolati overall>75": è l'estrazione dedicata
   // alla finestra (private.estrai_pool_scelte, 10 per ruolo), stabile finché
@@ -330,6 +381,41 @@ export function Scelte({ membership, onNavigate }: Props) {
               })}
             </ul>}
       </section>
+
+      {ultimaFinestraRisolta && scelteUltimaSessione.length > 0 && <section className="mercato-blocco">
+        <div className="sezione-testa">
+          <div>
+            <p className="kicker">Ultima sessione</p>
+            <h2>{ETICHETTA_FINESTRA[ultimaFinestraRisolta.finestra]} {ultimaFinestraRisolta.stagione}</h2>
+          </div>
+        </div>
+        <ul className="riepilogo-scelte">
+          {scelteUltimaSessione.map((s) => {
+            const squadra = teamById.get(s.team_proprietario_id)
+            const g = s.player_instance_id != null ? giocatoriAssegnati.get(s.player_instance_id) : undefined
+            const [primario] = g?.posizioni ?? []
+            return <li className="riepilogo-scelte__riga" key={s.id}>
+              <span className="riepilogo-scelte__posizione">{s.posizione}ª</span>
+              <div className="riepilogo-scelte__squadra">
+                <Crest value={squadra?.stemma_url ?? null} imageUrl={squadra ? dati.crestUrlByTeamId.get(squadra.id) : undefined} />
+                <small>{squadra?.nome ?? 'Squadra sconosciuta'}</small>
+              </div>
+              {g
+                ? <div className="riepilogo-scelte__giocatore">
+                    <div className="riepilogo-scelte__foto">
+                      {g.foto ? <img src={g.foto} alt="" loading="lazy" /> : <span aria-hidden="true">{g.nome.charAt(0)}</span>}
+                    </div>
+                    <div className="riepilogo-scelte__dettagli">
+                      <strong>{cognome(g.nome)}</strong>
+                      <span className={`role-pill role-pill--${macroRuolo(g.posizioni ?? []).toLowerCase()}`}>{primario ?? '—'}</span>
+                    </div>
+                    <b>{g.overall}</b>
+                  </div>
+                : <span className="riepilogo-scelte__vuota">Andata a vuoto</span>}
+            </li>
+          })}
+        </ul>
+      </section>}
       </>}
     </div>
   </main>
