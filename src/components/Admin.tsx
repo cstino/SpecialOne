@@ -21,6 +21,8 @@ export function Admin({ membership, onNavigate }: AdminProps) {
   const [esitoSimula, setEsitoSimula] = useState<EsitoAzione | null>(null)
   const [esitoApri, setEsitoApri] = useState<EsitoAzione | null>(null)
   const [esitoChiudi, setEsitoChiudi] = useState<EsitoAzione | null>(null)
+  const [forzandoScelte, setForzandoScelte] = useState(false)
+  const [esitoForzaScelte, setEsitoForzaScelte] = useState<EsitoAzione | null>(null)
   const [confermaEliminazione, setConfermaEliminazione] = useState(false)
   const [nomeDigitato, setNomeDigitato] = useState('')
   const [eliminando, setEliminando] = useState(false)
@@ -80,6 +82,20 @@ export function Admin({ membership, onNavigate }: AdminProps) {
     const aste = data?.aste_risolte ?? 0
     const proposte = data?.proposte_scadute ?? 0
     setEsitoChiudi({ tono: 'ok', testo: `${aste} ${aste === 1 ? 'asta risolta' : 'aste risolte'}, ${proposte} ${proposte === 1 ? 'proposta scaduta' : 'proposte scadute'}.` })
+  }
+
+  async function forzaEstrazioneScelte() {
+    setForzandoScelte(true); setEsitoForzaScelte(null)
+    const { data, error } = await supabase.rpc('admin_forza_estrazione_scelte', { p_league_id: league.id })
+    setForzandoScelte(false)
+    if (error) { setEsitoForzaScelte({ tono: 'errore', testo: error.message }); return }
+    const numero = (data as { numero?: number } | null)?.numero ?? 0
+    setEsitoForzaScelte({
+      tono: 'ok',
+      testo: numero > 0
+        ? `${numero} ${numero === 1 ? 'finestra risolta' : 'finestre risolte'}.`
+        : 'Nessuna finestra ON-Season in sospeso da risolvere in questo momento.',
+    })
   }
 
   async function inviaAnnuncio() {
@@ -145,6 +161,20 @@ export function Admin({ membership, onNavigate }: AdminProps) {
           </div>
           {esitoApri && <p className={esitoApri.tono === 'errore' ? 'notice notice--error' : 'notice'}>{esitoApri.testo}</p>}
           {esitoChiudi && <p className={esitoChiudi.tono === 'errore' ? 'notice notice--error' : 'notice'}>{esitoChiudi.testo}</p>}
+        </section>
+
+        <section className="mercato-blocco">
+          <div className="sezione-testa"><div><p className="kicker">Mercato a scelte</p><h2>Forza estrazione</h2></div></div>
+          <p className="mercato-nota">
+            La data di estrazione di una finestra ON-Season è fissata all'inizio della stagione (una giornata al
+            giorno, il ritmo del cron notturno): se simuli velocemente con "Simula giornata" la stagione può
+            arrivare ai playoff prima che quella data reale sia arrivata, lasciando la finestra bloccata su
+            "Pronta". Questo bottone la risolve subito, ignorando la data — utile solo per testare.
+          </p>
+          {esitoForzaScelte && <p className={esitoForzaScelte.tono === 'errore' ? 'notice notice--error' : 'notice'}>{esitoForzaScelte.testo}</p>}
+          <button className="button button--secondary" type="button" disabled={forzandoScelte} onClick={() => void forzaEstrazioneScelte()}>
+            {forzandoScelte ? 'Forzo…' : 'Forza estrazione ON-Season'}
+          </button>
         </section>
         </>}
 
