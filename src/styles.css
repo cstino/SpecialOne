@@ -2621,15 +2621,15 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    proporzione 0-90 della linea del tempo al centro), non impilato in ordine
    di comparsa: altrimenti un gol al 52' finiva visivamente nella meta' campo
    del primo tempo solo perche' era il secondo evento della lista. */
-/* Ogni evento e' posizionato in assoluto sul proprio minuto reale (stessa
-   proporzione 0-90 della linea del tempo al centro): garantisce che un
-   evento del secondo tempo non compaia mai nella meta' del primo. Le
-   sovrapposizioni fra eventi vicini nel tempo restano possibili (compromesso
-   accettato): l'alternativa provata, due meta' impilate normalmente, evitava
-   le sovrapposizioni ma andava in overflow quando un tempo aveva molti
-   eventi, nascondendo tutto il resto. */
-.match-reveal__events { position: relative; z-index: 1; padding: 28px 14px; }
-.match-reveal__events p { position: absolute; left: 14px; right: 14px; overflow: hidden; margin: 0; padding: 9px 12px; border-radius: 10px; color: rgba(255,255,255,.82); background: rgba(255,255,255,.04); font-size: .74rem; line-height: 1.4; transform: translateY(-50%); animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both; }
+/* Lista semplice, impilata in ordine di comparsa: piu' provi di
+   posizionamento per minuto (esatto, poi a due meta', poi con
+   distanziamento anti-sovrapposizione) hanno tutti introdotto un difetto
+   diverso — sovrapposizioni, overflow fuori controllo, o entrambi. Deciso
+   con l'utente il 29 agosto 2026 di tornare alla lista piatta: non importa
+   se un evento non e' esattamente all'altezza del proprio minuto, l'importante
+   e' che sia sempre leggibile. */
+.match-reveal__events { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 8px; padding: 28px 16px; }
+.match-reveal__events p { position: relative; overflow: hidden; margin: 0; padding: 9px 12px; border-radius: 10px; color: rgba(255,255,255,.82); background: rgba(255,255,255,.04); font-size: .74rem; line-height: 1.4; animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both; }
 /* Tiri (parati o fuori) sono eventi minori: comparsa normale, poi
    svaniscono da soli 2 secondi dopo per non riempire la cronaca. Gol,
    infortuni e sostituzioni non hanno questa classe e restano fissi. */
