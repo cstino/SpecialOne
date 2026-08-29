@@ -14,6 +14,16 @@ export const CAMPIONATI = [
 export const ROSA_MINIMA = 21
 export const ROSA_MASSIMA = 30
 
+// Solo il proprietario del progetto puo' creare nuove leghe (richiesta
+// esplicita, 29 agosto 2026): gli altri restano liberi di entrare con un
+// codice invito. Lo stesso controllo vive anche lato server, in
+// public.crea_lega — questo e' solo per non mostrare un bottone che
+// fallirebbe sempre.
+const EMAIL_PROPRIETARIO = 'cristianobraccili@gmail.com'
+export function puoCreareLeghe(email: string | null | undefined) {
+  return email === EMAIL_PROPRIETARIO
+}
+
 export function calcolaGiornateTotali(squadre: number, gironi: number) {
   return (squadre - 1 + (squadre % 2)) * gironi
 }

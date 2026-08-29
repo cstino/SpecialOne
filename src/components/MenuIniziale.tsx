@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import type { User } from '@supabase/supabase-js'
+import { puoCreareLeghe } from '../lib/league'
 import type { Notifica } from '../lib/notifiche'
 import { supabase } from '../lib/supabase'
 import type { Membership, Season, Standing } from '../types'
@@ -205,17 +206,17 @@ export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, 
           <p className="kicker">Il tuo spogliatoio</p>
           <h1>Bentornato{nomeAllenatore ? `, ${nomeAllenatore}` : ''}.</h1>
           <p className="menu-hero__sotto">{memberships.length === 0
-            ? 'Non partecipi ancora a nessuna lega. Creane una o entra con un codice invito.'
+            ? puoCreareLeghe(user.email) ? 'Non partecipi ancora a nessuna lega. Creane una o entra con un codice invito.' : 'Non partecipi ancora a nessuna lega. Entra con un codice invito.'
             : `Partecipi a ${memberships.length} ${memberships.length === 1 ? 'lega' : 'leghe'}.`}</p>
         </section>
 
         <section className="menu-azioni">
-          <button className="menu-azione menu-azione--primaria" type="button" onClick={onCreaLega}>
+          {puoCreareLeghe(user.email) && <button className="menu-azione menu-azione--primaria" type="button" onClick={onCreaLega}>
             <span className="menu-azione__icona" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             </span>
             <span><b>Crea una lega</b><small>Scegli formato, budget e regole del draft</small></span>
-          </button>
+          </button>}
           <button className="menu-azione" type="button" onClick={onEntraConCodice}>
             <span className="menu-azione__icona" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M15 7h3a4 4 0 0 1 0 8h-3M9 17H6a4 4 0 0 1 0-8h3M8 12h8" /></svg>

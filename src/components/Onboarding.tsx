@@ -7,6 +7,7 @@ import {
   calcolaPartitePerSquadra,
   dataFineStagione,
   normalizzaCodice,
+  puoCreareLeghe,
 } from '../lib/league'
 import { supabase } from '../lib/supabase'
 import { STEMMA_SQUADRA_DEFAULT, STEMMI_SQUADRA } from '../lib/teamCrests'
@@ -94,11 +95,17 @@ async function eliminaStemmaSeOrfano(path: string) {
 const CHIAVE_SESSIONE_MODO = 'onboarding_modo'
 
 export function Onboarding({ user, onComplete, onCancel, modoIniziale = 'choose' }: OnboardingProps) {
+  const puoCreare = puoCreareLeghe(user.email)
   const [mode, setMode] = useState<'choose' | 'create' | 'join'>(() => {
+    // Chi non e' il proprietario del progetto non deve finire nel ramo
+    // "create" nemmeno da uno stato salvato (sessionStorage) o da un link
+    // diretto: la RPC lo rifiuterebbe comunque, ma e' meglio non fargli
+    // vedere il modulo prima di scoprirlo.
+    if (modoIniziale === 'create' && !puoCreare) return 'choose'
     if (modoIniziale !== 'choose') return modoIniziale
     try {
       const salvato = sessionStorage.getItem(CHIAVE_SESSIONE_MODO)
-      if (salvato === 'join' || salvato === 'create') return salvato
+      if (salvato === 'join' || (salvato === 'create' && puoCreare)) return salvato
     } catch { /* storage non disponibile (privacy mode e simili) */ }
     return 'choose'
   })
@@ -133,12 +140,12 @@ export function Onboarding({ user, onComplete, onCancel, modoIniziale = 'choose'
             <p>Crea le regole del campionato oppure usa il codice ricevuto dall’admin.</p>
           </div>
           <div className="choice-actions">
-            <button className="choice-action choice-action--create" type="button" onClick={() => setMode('create')}>
+            {puoCreare && <button className="choice-action choice-action--create" type="button" onClick={() => setMode('create')}>
               <span className="choice-index">ADMIN</span>
               <strong>Crea una lega</strong>
               <span>Scegli squadre, durata, budget e campionati.</span>
               <i aria-hidden="true">→</i>
-            </button>
+            </button>}
             <button className="choice-action" type="button" onClick={() => setMode('join')}>
               <span className="choice-index">INVITO</span>
               <strong>Entra con un codice</strong>
