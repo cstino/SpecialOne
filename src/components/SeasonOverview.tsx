@@ -72,11 +72,20 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-3 self-start rounded-full border border-white/15 bg-black/30 py-2 pl-4 pr-2 backdrop-blur-sm md:self-auto">
-            <span className="text-[.6rem] font-extrabold uppercase tracking-[.14em] text-white/55">Giornata</span>
-            <span className="font-display text-xl font-extrabold text-white">{data.currentGiornata}</span>
-            <span className="text-[.7rem] font-semibold text-white/45">di {data.giornateStagione}</span>
-          </div>
+          {fase === 'regular'
+            ? <div className="flex shrink-0 items-center gap-3 self-start rounded-full border border-white/15 bg-black/30 py-2 pl-4 pr-2 backdrop-blur-sm md:self-auto">
+                <span className="text-[.6rem] font-extrabold uppercase tracking-[.14em] text-white/55">Giornata</span>
+                <span className="font-display text-xl font-extrabold text-white">{data.currentGiornata}</span>
+                <span className="text-[.7rem] font-semibold text-white/45">di {data.giornateStagione}</span>
+              </div>
+            : <div className="flex shrink-0 items-center self-start rounded-full border border-white/15 bg-black/30 px-4 py-2 backdrop-blur-sm md:self-auto">
+                {/* Fuori dalla stagione regolare la numerazione delle giornate
+                    non e' piu' un dato utile da mostrare qui: le partite di
+                    tabellone continuano a incrementarla oltre giornate_totali
+                    (docs/decisioni-draft-picks.md), producendo cose come
+                    "17 di 14". Meglio lo stato del tabellone di questa squadra. */}
+                <span className="text-[.68rem] font-extrabold uppercase tracking-[.1em] text-white">{LABEL_FASE[fase]} in corso</span>
+              </div>}
         </div>
       </section>
 
