@@ -281,3 +281,43 @@ scambi). Nessuno dei due deriva dall'altro.
   (`proponi_scambio`) sia all'accettazione (`rispondi_a_proposta`, nel caso lo stato sia
   cambiato nel frattempo) — `private.viola_regola_stepien`. Riguarda solo le scelte ancora
   vive (`futura`/`determinata`): una già esercitata o andata a vuoto è storia.
+
+## 8. Punti risolti il 29 agosto 2026 — bootstrap della stagione 1 e correzione OFF-Season
+
+Emerso creando una nuova lega da zero: **ON-Season 1 e OFF-Season 1 non sono mai esistite**
+per nessuna lega. `private.genera_scelte_draft` genera solo `stagione_corrente+1..+4`, quindi
+la primissima stagione di una lega non riceve mai le proprie scelte — verificato sui dati
+reali (LegaBot non ha nessuna riga `scelte_draft` con stagione=1). §2.1 copriva solo il caso
+di una lega già esistente che migra al sistema (Real Fampionato, con un vero draft e una vera
+classifica di stagione 1 alle spalle): non il caso di una lega che nasce già con questo
+sistema attivo.
+
+- **ON-Season 1**: nessun playoff precedente esiste. Si assegna dalla **spesa nel draft di
+  creazione squadra, crescente** (chi ha speso meno sceglie prima), pareggio spezzato **a
+  caso** — la stessa formula già usata da `private.assegna_posizioni_transizione` per le
+  squadre "nuove" di una transizione, qui applicata a tutte le squadre della lega perché sono
+  tutte nuove alla stagione 1. Assegnata subito, alla conclusione del draft di creazione,
+  perché la spesa è già interamente nota a quel punto.
+- **OFF-Season 1**: aspetta il playoff della stagione 1 stessa (Title/Draft Playoff), come
+  qualunque altra OFF-Season a regime — vedi il punto successivo.
+
+**Correzione alla regola a regime (§2)**: `private.assegna_posizioni_playoff` abbinava
+finora ON-Season e OFF-Season della stessa stagione N+1, assegnandole **insieme** dal
+piazzamento della stagione N. Ma OFF-Season N si risolve alla fine dell'off-season che segue
+la stagione N — cioè quando il playoff di N è già concluso da un pezzo, e quindi è
+un'informazione più recente di quella di N−1 che si stava usando. **Quando i playoff della
+stagione N si concludono, si assegnano invece OFF-Season N (che aspettava proprio questo) e
+ON-Season N+1** (che non ha ancora un playoff più recente a disposizione). Il calcolo del
+piazzamento (vittorie nel tabellone, spareggio di classifica) non cambia: cambia solo quali
+due righe riceve.
+
+Sequenza completa per una lega nuova: ON-Season 1 = spesa draft · OFF-Season 1 = playoff
+stagione 1 · ON-Season 2 = playoff stagione 1 · OFF-Season 2 = playoff stagione 2 · ON-Season
+3 = playoff stagione 2 · e così via — ogni finestra usa il playoff più recente disponibile
+nel momento in cui si risolve.
+
+Vedi `supabase/migrations/20260829050000_bootstrap_scelte_stagione_1.sql`. Compatibilità con
+le leghe in corso: dove una finestra è già stata assegnata dalla vecchia regola (es. OFF-Season
+2 di LegaBot, già `determinata` dalla transizione di §2.1), la nuova `assegna_posizioni_playoff`
+la lascia stare e assegna solo ciò che è ancora `futura` — nessun doppio assegnamento, nessun
+errore.
