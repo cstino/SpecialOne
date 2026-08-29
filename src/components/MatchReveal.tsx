@@ -143,6 +143,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     return <MatchIntro
       membership={membership}
       fixture={fixture}
+      data={data}
       homeTeam={casa}
       awayTeam={ospite}
       homeCrestUrl={data.crestUrlByTeamId.get(fixture.home_team_id)}

@@ -2522,6 +2522,27 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .match-intro__formazione-testa .crest--small { width: 46px; }
 .match-intro__formazione-testa strong { display: block; color: #fff; font-size: 1.2rem; font-weight: 900; }
 .match-intro__formazione-testa small { color: #cbb9e6; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+/* Battuta "classifica" (stagione regolare) e "tabellone" (playoff): stesso
+   ruolo nella scaletta, contenuto diverso a seconda della fase. */
+.match-intro__classifica, .match-intro__tabellone { position: relative; z-index: 1; display: flex; width: 100%; max-width: 460px; flex-direction: column; gap: 16px; padding: 100px 20px 40px; animation: match-intro-in .5s ease-out both; }
+.match-intro__classifica-titolo { margin: 0; text-align: center; color: #cbb9e6; font-size: .72rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.match-intro__classifica ol { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.match-intro__classifica li { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 10px; color: rgba(255,255,255,.65); font-size: .8rem; }
+.match-intro__classifica li.is-evidenziata { color: #fff; background: rgba(155,76,255,.18); box-shadow: inset 3px 0 #c58cff; }
+.match-intro__classifica-pos { width: 20px; flex: none; text-align: center; font-weight: 900; color: rgba(255,255,255,.4); }
+.match-intro__classifica li.is-evidenziata .match-intro__classifica-pos { color: #c58cff; }
+.match-intro__classifica strong { flex: 1; min-width: 0; overflow: hidden; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.match-intro__classifica b { font-variant-numeric: tabular-nums; }
+
+.match-intro__tie-lista { display: flex; flex-direction: column; gap: 10px; }
+.match-intro__tie { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; background: rgba(255,255,255,.03); }
+.match-intro__tie.is-in-corso { border-color: rgba(197,140,255,.55); background: rgba(155,76,255,.14); box-shadow: 0 0 22px rgba(155,76,255,.22); }
+.match-intro__tie-squadra { display: flex; min-width: 0; flex: 1; align-items: center; gap: 8px; color: rgba(255,255,255,.75); font-size: .78rem; font-weight: 700; }
+.match-intro__tie-squadra span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.match-intro__tie-squadra span.is-vincitrice { color: #fff; font-weight: 900; }
+.match-intro__tie-squadra--destra { flex-direction: row-reverse; text-align: right; }
+.match-intro__tie-stato { flex: none; color: #c9a7ff; font-size: .6rem; font-weight: 900; letter-spacing: .08em; }
+
 .match-intro__righe { display: flex; flex: 1; flex-direction: column; justify-content: space-evenly; }
 .match-intro__riga { display: flex; justify-content: center; gap: 22px; }
 .match-intro__giocatore { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 76px; opacity: 0; animation: match-intro-giocatore .5s ease-out both; }
