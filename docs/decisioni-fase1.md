@@ -214,11 +214,17 @@ di −0,23 punti di overall a 14 giornate. Trascurabile, nessuna azione. Segnala
 
 ## 8. Draft a pacchetti al posto dello spin-club. Rosa fissa a 24.
 
-**Decisione: il draft non estrae più un club.** Estrae **4 carte, una per macro-ruolo**
-(GK/DEF/MID/ATT) da tutto il pool delle leghe attive, non da un club. Il giocatore ne tiene
-**2**; le altre 2 restano semplicemente non-draftate — nessuno stato di "scarto", nessuna
-tabella nuova: `player_instances` nasce solo al pick (già vero prima di questa decisione),
-quindi una carta non scelta è indistinguibile da una mai pescata.
+**Decisione: il draft non estrae più un club.** Estrae **7 carte** — 1 portiere, 2 difensori,
+2 centrocampisti, 2 attaccanti — da tutto il pool delle leghe attive, non da un club. Il
+giocatore ne tiene **2**, liberamente fra le 7; le altre 5 restano semplicemente
+non-draftate — nessuno stato di "scarto", nessuna tabella nuova: `player_instances` nasce
+solo al pick (già vero prima di questa decisione), quindi una carta non scelta è
+indistinguibile da una mai pescata.
+
+> **Aggiornamento 29 agosto 2026:** il pacchetto pescava inizialmente 4 carte (1 per
+> macro-ruolo, GK/DEF/MID/ATT). Deciso con l'utente di estrarne 7 come sopra — il numero di
+> carte tenute (2) e il resto della meccanica non cambiano. Vedi
+> `supabase/migrations/20260829110000_pacchetto_7_carte.sql`.
 
 ### Motivo
 
@@ -250,7 +256,7 @@ attivo" già esistente), non è mai stato un problema pratico.
 
 ### Meccanica esatta
 
-- Pacchetto giocabile = **almeno 2 carte su 4 ingaggiabili** (design §4.4, stessa formula di
+- Pacchetto giocabile = **almeno 2 carte su 7 ingaggiabili** (design §4.4, stessa formula di
   solvibilità di prima, senza il termine `portieri_minimi` che è sempre 0).
 - Sotto soglia: le carte già ingaggiabili restano ferme, **solo le altre** vengono ripescate
   automaticamente — stile slot machine, i rulli buoni si fermano — finché il pacchetto non è

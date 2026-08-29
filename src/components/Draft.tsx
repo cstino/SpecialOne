@@ -13,9 +13,12 @@ type DraftTeamState = {
   pick_numero: number
   stato: 'in_corso' | 'concluso'
   carta_gk: number | null
-  carta_def: number | null
-  carta_mid: number | null
-  carta_att: number | null
+  carta_def1: number | null
+  carta_def2: number | null
+  carta_mid1: number | null
+  carta_mid2: number | null
+  carta_att1: number | null
+  carta_att2: number | null
   carta_ruolo: number | null
   ruolo_scelto: MacroRuolo | null
 }
@@ -70,9 +73,16 @@ const NOME_RUOLO: Record<DraftCard['ruolo'], string> = {
   ATT: 'Attaccante',
 }
 
-// Un pacchetto ha sempre esattamente questi 4 ruoli, in quest'ordine: e' la
-// struttura fissa usata anche per mostrare i segnaposto prima di aprirlo.
+// Usato solo dal draft BY ROLE (un pulsante di spin per reparto): 4 ruoli
+// distinti, uno a scelta.
 const ORDINE_RUOLI_PACCHETTO: DraftCard['ruolo'][] = ['GK', 'DEF', 'MID', 'ATT']
+
+// Un pacchetto "2 of 4" (in realta' 7 carte, non piu' 4: 1 portiere, 2
+// difensori, 2 centrocampisti, 2 attaccanti) ha sempre questi 7 slot, in
+// quest'ordine: e' la struttura fissa usata anche per i segnaposto prima
+// che il pacchetto sia aperto/rivelato. Il backend (private.pacchetto_
+// payload) restituisce le carte gia' in questo stesso ordine.
+const ORDINE_CARTE_PACCHETTO: DraftCard['ruolo'][] = ['GK', 'DEF', 'DEF', 'MID', 'MID', 'ATT', 'ATT']
 
 // Nomi decorativi per la fase di rotazione del pacchetto: mai reali, servono
 // solo alla suspense visiva. Cambiano troppo in fretta per essere letti.
@@ -102,7 +112,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
   const [error, setError] = useState<string | null>(null)
   const [refresh, setRefresh] = useState(0)
   const spinRef = useRef<number | null>(null)
-  const [nomiSpin, setNomiSpin] = useState<string[]>(['', '', '', ''])
+  const [nomiSpin, setNomiSpin] = useState<string[]>(['', '', '', '', '', '', ''])
   // Con il draft che parte squadra per squadra, chi entra per primo non vede
   // piu' la Lobby: senza questo pezzo perderebbe l'unico posto dove il
   // codice invito era mostrato dopo la creazione della lega.
@@ -217,7 +227,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
     setSelezionati([])
     if (spinRef.current) window.clearInterval(spinRef.current)
     spinRef.current = window.setInterval(() => {
-      setNomiSpin([0, 1, 2, 3].map(() => NOMI_SPIN[Math.floor(Math.random() * NOMI_SPIN.length)]))
+      setNomiSpin([0, 1, 2, 3, 4, 5, 6].map(() => NOMI_SPIN[Math.floor(Math.random() * NOMI_SPIN.length)]))
     }, 65)
     window.setTimeout(async () => {
       if (spinRef.current) { window.clearInterval(spinRef.current); spinRef.current = null }
@@ -231,7 +241,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
     setFase('girando')
     if (spinRef.current) window.clearInterval(spinRef.current)
     spinRef.current = window.setInterval(() => {
-      setNomiSpin([NOMI_SPIN[Math.floor(Math.random() * NOMI_SPIN.length)], '', '', ''])
+      setNomiSpin([NOMI_SPIN[Math.floor(Math.random() * NOMI_SPIN.length)], '', '', '', '', '', ''])
     }, 65)
     window.setTimeout(async () => {
       if (spinRef.current) { window.clearInterval(spinRef.current); spinRef.current = null }
@@ -467,7 +477,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
           <div className="section-heading-row">
             <div>
               <p className="kicker">{fase === 'vuoto' ? 'Pronto per il prossimo spin' : fase === 'girando' ? 'Apertura in corso…' : 'Pacchetto aperto'}</p>
-              <h2>{fase === 'vuoto' ? '4 giocatori, uno per ruolo.' : fase === 'girando' ? 'Scouting il pool attivo.' : 'Scegli 2 carte su 4.'}</h2>
+              <h2>{fase === 'vuoto' ? '7 giocatori: 1 portiere, 2 difensori, 2 centrocampisti, 2 attaccanti.' : fase === 'girando' ? 'Scouting il pool attivo.' : 'Scegli 2 carte su 7.'}</h2>
             </div>
             {fase === 'vuoto' ? (
               <button className="draft-spin-viola" type="button" disabled={pending} onClick={apriPacchetto}><span className="draft-azione-testo">Spin</span></button>
@@ -477,10 +487,11 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
           </div>
           {fase === 'vuoto' && <p>Selezionane 2, gli altri sono scartati.</p>}
           <div className="draft-pacchetto-grid">
-            {(fase === 'vuoto' ? ORDINE_RUOLI_PACCHETTO : payload?.carte.map((c) => c.ruolo) ?? ORDINE_RUOLI_PACCHETTO).map((ruolo, indice) => {
-              const carta = payload?.carte.find((c) => c.ruolo === ruolo)
+            {ORDINE_CARTE_PACCHETTO.map((ruoloSegnaposto, indice) => {
+              const carta = payload?.carte[indice]
+              const ruolo = carta?.ruolo ?? ruoloSegnaposto
               return (
-                <div key={ruolo} className={`draft-carta-slot draft-carta-slot--${ruolo.toLowerCase()}`}>
+                <div key={indice} className={`draft-carta-slot draft-carta-slot--${ruolo.toLowerCase()}`}>
                   <span className={`draft-ruolo-badge draft-ruolo-badge--${ruolo.toLowerCase()}`}>{NOME_RUOLO[ruolo]}</span>
                   {fase === 'vuoto' && (
                     <div className="draft-carta draft-carta--vuota" aria-hidden="true">

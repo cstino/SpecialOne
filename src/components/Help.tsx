@@ -38,11 +38,12 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     titolo: 'Il draft',
     corpo: <>
       <p>Il draft si gioca a <strong>pacchetti</strong>. Ogni volta che apri un pacchetto,
-        il sistema pesca <strong>4 carte</strong>, una per macro-ruolo (portiere, difensore,
-        centrocampista, attaccante), da tutto il pool di giocatori disponibili — non da un
-        singolo club. Tu ne scegli <strong>2</strong> e le ingaggi; le altre 2 restano nel pool,
-        ripescabili in un pacchetto futuro o dalle aste a stagione iniziata.</p>
-      <p>Se meno di 2 carte su 4 sono davvero ingaggiabili (per budget o per il vincolo di
+        il sistema pesca <strong>7 carte</strong> — un portiere, due difensori, due
+        centrocampisti, due attaccanti — da tutto il pool di giocatori disponibili — non da un
+        singolo club. Tu ne scegli <strong>2</strong>, liberamente fra tutte e sette, e le
+        ingaggi; le altre 5 restano nel pool, ripescabili in un pacchetto futuro o dalle aste a
+        stagione iniziata.</p>
+      <p>Se meno di 2 carte su 7 sono davvero ingaggiabili (per budget o per il vincolo di
         solvibilità qui sotto), quelle giocabili restano ferme e solo le altre vengono
         ripescate automaticamente, senza consumarti un reroll — così la sfortuna non ti blocca
         il draft. Puoi anche usare un <strong>reroll</strong> per sostituire tutto il pacchetto,
