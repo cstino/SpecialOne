@@ -61,56 +61,43 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     </>,
   },
   {
-    id: 'finanza-entrate',
-    titolo: 'Finanza — da dove arrivano i soldi',
+    id: 'finanza-tetto',
+    titolo: 'Finanza — il tetto salariale',
     corpo: <>
-      <p>All'inizio della prima stagione ogni squadra riceve una <strong>dotazione
-        iniziale</strong>, il cui importo lo decide l'admin quando crea la lega. È <strong>una
-        tantum</strong>: non si ripete alle stagioni successive. Da lì in poi le entrate sono
-        tre, tutte ricorrenti:</p>
-      <ul>
-        <li><strong>Sponsor</strong>: fisso, il 20% della dotazione iniziale, incassato a
-          inizio di ogni stagione.</li>
-        <li><strong>Premi partita</strong>: si incassano dopo ogni giornata, in base al
-          risultato. Una vittoria vale il doppio di un pareggio, che vale il doppio di una
-          sconfitta; tutti e tre sono proporzionati al numero di partite della tua lega, così
-          l'economia regge qualsiasi formato (più partite ci sono, più piccolo è il singolo
-          premio, in modo che il totale a fine stagione resti equilibrato).</li>
-        <li><strong>Premio posizione</strong>: si incassa una sola volta, a fine stagione, in
-          base al piazzamento finale in classifica. È volutamente molto sbilanciato verso i
-          primi posti — il primo guadagna diverse decine di volte più dell'ultimo — per rendere
-          ogni piazzamento importante fino all'ultima giornata.</li>
-      </ul>
-      <p>I trasferimenti fra squadre non creano né distruggono denaro: quello che una squadra
-        paga, l'altra lo incassa.</p>
+      <p>Non esistono entrate: niente sponsor, niente premi partita, niente premio di
+        classifica, niente dotazione che si rinnova a ogni stagione. L'unica regola economica
+        della lega è questa: <strong>la somma degli ingaggi attivi di una squadra non può mai
+        superare il tetto</strong>. Il tetto lo sceglie l'admin quando crea la lega, è
+        <strong> identico per tutte le squadre</strong> e <strong>non cambia mai</strong>, né tra
+        una stagione e l'altra né in base ai risultati.</p>
+      <p>Non è un portafoglio che si riempie e si svuota: è un limite di spazio. Ingaggiare un
+        giocatore non "costa" denaro, <strong>occupa</strong> una fetta di quel limite; svincolarlo
+        libera di nuovo lo spazio, senza alcun movimento di cassa. Vincere non porta nessun
+        vantaggio economico: il premio per i risultati in classifica è solo sportivo, mai un
+        euro in più di margine sotto il tetto.</p>
     </>,
   },
   {
     id: 'finanza-ingaggi',
-    titolo: 'Finanza — ingaggi e insolvenza',
+    titolo: 'Finanza — ingaggi e contratti',
     corpo: <>
       <p>L'ingaggio annuale di un giocatore dipende dal suo overall e dalla sua età: più forte
-        è, più costa; un giovane già forte costa <strong>di più</strong> di un adulto di pari
-        livello, perché sta pagando anche il suo potenziale futuro, non solo quello che rende
-        oggi. Un veterano oltre i 30 anni costa invece progressivamente meno, verso fine
+        è, più occupa; un giovane già forte occupa <strong>di più</strong> di un adulto di pari
+        livello, perché sta "pagando" anche il suo potenziale futuro, non solo quello che rende
+        oggi. Un veterano oltre i 30 anni occupa invece progressivamente meno, verso fine
         carriera.</p>
-      <p>Il monte ingaggi dell'intera rosa viene addebitato <strong>per intero a inizio di ogni
-        stagione</strong>. Comprare un giocatore a stagione in corso costa il prezzo del
-        trasferimento più l'ingaggio calcolato solo sulle giornate rimanenti, non su tutto
-        l'anno. Svincolare un giocatore non dà mai nessun rimborso, ma se ha ancora stagioni di
-        contratto oltre a quella in corso, per liberarlo devi pagargli una
-        <strong> buonuscita</strong>: metà (arrotondata per difetto) dell'ingaggio che gli
-        restava da percepire nelle stagioni residue. Se è l'ultima stagione di contratto, o il
-        giocatore ha già annunciato il ritiro, lo svincolo resta gratuito.</p>
-      <p>Il budget non può mai andare sotto zero. Se a inizio stagione il monte ingaggi della
-        tua rosa non è copribile con quello che hai, il sistema svincola automaticamente i
-        giocatori partendo da quello con l'ingaggio più alto, finché il conto non torna in
-        pari — in modo pubblico, notificato a tutta la lega. Vendere in tempo, prima che
-        scatti da sola, è una delle decisioni più importanti dell'off-season.</p>
-      <p>Chi accumula un monte ingaggi molto alto (sopra l'85% della dotazione iniziale) paga
-        anche una <strong>tassa progressiva</strong> a inizio stagione: più il monte supera
-        quella soglia, più cresce il sovrapprezzo. Serve a rallentare la squadra che si
-        accaparra tutti i campioni, senza vietarle nulla.</p>
+      <p>Ogni contratto dura <strong>esattamente una stagione</strong>. Un giocatore preso a
+        stagione in corso — da un'asta sugli svincolati o da uno scambio — ha un contratto che
+        scade comunque a fine della stagione in corso, non di quella successiva: alla prima
+        off-season utile va rinnovato come tutti gli altri, o lascia la rosa. Svincolare un
+        giocatore, in qualsiasi momento, libera subito lo spazio che occupava, senza nessuna
+        penalità.</p>
+      <p>Il sistema verifica la capienza <strong>prima</strong> di eseguire un acquisto, un'asta
+        vinta o un rinnovo, quindi in condizioni normali non si supera mai il tetto. Alla
+        chiusura dell'off-season c'è comunque un controllo finale di sicurezza: se una rosa
+        risultasse sopra il tetto, il sistema svincola automaticamente i giocatori partendo da
+        quello con l'ingaggio più alto, finché non rientra — in modo pubblico, notificato a tutta
+        la lega.</p>
     </>,
   },
   {
@@ -277,17 +264,18 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     id: 'mercato-scambi',
     titolo: 'Mercato — scambi tra squadre',
     corpo: <>
-      <p>In qualsiasi momento in cui il mercato è aperto puoi proporre a un'altra squadra un
-        <strong> acquisto secco</strong> (soldi per un giocatore), uno <strong>scambio</strong>{' '}
-        (giocatore per giocatore) o uno <strong>scambio con conguaglio</strong> (giocatore più
-        soldi per un altro giocatore). Chi riceve la proposta può accettarla o rifiutarla; se
-        non risponde entro la chiusura del mercato del giorno, la proposta scade da sola.</p>
-      <p>Il sistema controlla sempre che chi compra abbia davvero il budget per coprire il
-        costo e l'ingaggio residuo del giocatore, e che entrambe le rose restino fra 21 e 30
-        giocatori dopo l'operazione.</p>
-      <p>Tutte le trattative concluse sono visibili a <strong>tutta la lega</strong>, con
-        giocatori scambiati e cifre: è una scelta deliberata, per scoraggiare accordi
-        sottobanco fra amici.</p>
+      <p>In qualsiasi momento in cui il mercato è aperto puoi proporre a un'altra squadra uno
+        <strong> scambio</strong>: giocatori contro giocatori, giocatori contro scelte del
+        draft, o scelte contro scelte, anche in pacchetti misti. Non passa mai denaro: qui non
+        esiste un "acquisto secco" né un conguaglio in soldi, solo giocatori e scelte. Chi riceve
+        la proposta può accettarla o rifiutarla; se non risponde entro la chiusura del mercato
+        del giorno, la proposta scade da sola.</p>
+      <p>Il sistema controlla sempre che, dopo l'operazione, il monte ingaggi di
+        <strong> entrambe</strong> le squadre resti sotto il tetto, e che entrambe le rose
+        restino fra 21 e 30 giocatori.</p>
+      <p>Tutte le trattative concluse sono visibili a <strong>tutta la lega</strong>, con il
+        dettaglio di cosa è passato da una squadra all'altra: è una scelta deliberata, per
+        scoraggiare accordi sottobanco fra amici.</p>
     </>,
   },
   {
@@ -304,8 +292,9 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         più alta. Offerte sotto soglia vengono scartate. Puoi modificare o ritirare la tua
         offerta finché l'asta è aperta — dalla card "Le mie proposte" nella pagina Mercato — ma
         modificarla ti fa perdere la precedenza in caso di parità con un'altra offerta identica.</p>
-      <p>Offrire impegna subito budget e uno slot di rosa: puoi offrire su tutti i giocatori che
-        vuoi, ma solo per l'importo totale che puoi davvero permetterti. Alla chiusura del
+      <p>Offrire impegna subito lo spazio salariale corrispondente e uno slot di rosa: puoi
+        offrire su tutti i giocatori che vuoi, ma solo entro la capienza che ti resta sotto il
+        tetto. Alla chiusura del
         mercato vince l'offerta più alta sopra soglia per ciascun giocatore, e tutte le offerte
         vincenti (chi ha preso chi, e per quanto) vengono rivelate a tutta la lega. Le offerte
         perdenti restano private.</p>
@@ -330,9 +319,9 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     corpo: <>
       <p>A stagione in corso puoi aprire una trattativa di rinnovo dalla scheda di un tuo
         giocatore, anche se il suo contratto non è ancora scaduto. È il giocatore ad aprire con
-        una sua richiesta di ingaggio e una durata: da lì <strong>tratti su entrambi gli
-        assi</strong>. Se ti allontani dalla durata che chiede, per convincerlo devi offrire di
-        più in ingaggio, e viceversa.</p>
+        una sua richiesta di ingaggio, e da lì <strong>tratti solo su quello</strong>: la
+        durata non si negozia mai, un rinnovo estende il contratto di
+        <strong> esattamente una stagione</strong>.</p>
       <p>Ogni giocatore ha una tolleranza personale — quanto è disposto a scendere sotto la sua
         richiesta iniziale — che dipende dal suo umore del momento e dalla sua personalità (vedi
         la voce "Mentalità e morale"): non è mai mostrata esplicitamente, va intuita
@@ -342,9 +331,9 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         li esaurisci tutti e tre, il giocatore <strong>non rinnova più con la tua squadra</strong>:
         andrà a scadenza e lascerà la rosa a fine stagione, entrando nel pool degli svincolati. Il
         contatore dei tentativi si azzera solo quando il rinnovo va a buon fine.</p>
-      <p>Rinnovare oggi non muove denaro oggi: la stagione corrente è già stata pagata per
-        intero a inizio anno. Il nuovo ingaggio concordato parte dalle stagioni successive — è
-        un impegno futuro, non una spesa immediata.</p>
+      <p>Rinnovare non muove nulla subito: il nuovo ingaggio concordato occupa spazio sotto il
+        tetto solo dalla stagione successiva in poi, non su quella in corso — è un impegno
+        futuro, verificato per essere sempre sostenibile, non una spesa immediata.</p>
     </>,
   },
   {
@@ -409,7 +398,7 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         giocatori del solito ogni giorno, con spin extra per ogni squadra.</p>
       <p>Allo scadere delle 24 ore l'off-season si chiude da sola. Se una squadra fosse rimasta
         sotto il minimo di 21 giocatori, il sistema la completa automaticamente scegliendo gli
-        svincolati più economici e sostenibili per il suo budget. La prima giornata della nuova
+        svincolati più economici e sostenibili sotto il suo tetto ingaggi. La prima giornata della nuova
         stagione si gioca alla prima mezzanotte di simulazione (23:00) utile dopo la chiusura.</p>
     </>,
   },
