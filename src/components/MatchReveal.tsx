@@ -85,12 +85,33 @@ function posizionaEventi(eventi: EventoPartita[]): Array<{ evento: EventoPartita
   const posizionati: Array<{ evento: EventoPartita; top: number }> = []
   let ultimoTop = -Infinity
   for (const evento of ordinati) {
-    const ideale = Math.min(97, (evento.minuto / 90) * 100)
-    const top = Math.max(ideale, ultimoTop + GAP_MINIMO_PERCENTUALE)
+    const ideale = (evento.minuto / 90) * 100
+    // Tetto a 97: anche nel raro caso di troppi eventi permanenti ravvicinati
+    // (parecchi gol/sostituzioni/infortuni nello stesso giro di minuti), la
+    // spinta verso il basso non deve mai poter uscire dall'area visibile —
+    // meglio un lieve accavallamento in un caso estremo che una riga
+    // scorrevole enorme fuori controllo (il difetto appena trovato).
+    const top = Math.min(97, Math.max(ideale, ultimoTop + GAP_MINIMO_PERCENTUALE))
     posizionati.push({ evento, top })
     ultimoTop = top
   }
   return posizionati
+}
+
+// La CAUSA VERA della riga scorrevole finita fuori controllo: un tiro
+// svanito (is-transitorio, animazione CSS a 2s) resta comunque per sempre
+// dentro `eventi`/`visibili` — solo invisibile, non rimosso. posizionaEventi
+// lo contava comunque e continuava a spingere in basso tutto quello che
+// veniva dopo, senza fermarsi mai, per l'intera partita. Qui si esclude dal
+// calcolo un transitorio ormai scomparso, cosi' non occupa piu' spazio.
+// 3 giri di minuto (~2.1s a 700ms l'uno, con margine sopra i 2s
+// dell'animazione) invece di leggere l'orologio reale: e' lo stesso
+// contatore che gia' guida la cronaca, niente timer separato da tenere
+// sincronizzato a mano.
+const TICK_PRIMA_DI_SPARIRE_DAL_LAYOUT = 3
+function contaAncoraPerIlLayout(evento: EventoPartita, minutoAttuale: number): boolean {
+  if (classeEvento(evento) !== 'is-transitorio') return true
+  return minutoAttuale - evento.minuto <= TICK_PRIMA_DI_SPARIRE_DAL_LAYOUT
 }
 
 export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenReport }: Props) {
@@ -231,8 +252,8 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
           {[15, 30, 45, 60, 75, 90].map((tacca) => (
             <span className={`match-reveal__marker ${tacca === 45 || tacca === 90 ? 'is-forte' : ''}`} style={{ top: `${tacca / 90 * 100}%` }} key={tacca}>{tacca}’</span>
           ))}
-          <div className="match-reveal__events match-reveal__events--home">{posizionaEventi(visibili.filter((evento) => evento.lato === 'casa')).map(({ evento, top }, i) => <p className={classeEvento(evento)} style={{ top: `${top}%` }} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
-          <div className="match-reveal__events match-reveal__events--away">{posizionaEventi(visibili.filter((evento) => evento.lato === 'ospite')).map(({ evento, top }, i) => <p className={classeEvento(evento)} style={{ top: `${top}%` }} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
+          <div className="match-reveal__events match-reveal__events--home">{posizionaEventi(visibili.filter((evento) => evento.lato === 'casa' && contaAncoraPerIlLayout(evento, minuto))).map(({ evento, top }, i) => <p className={classeEvento(evento)} style={{ top: `${top}%` }} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
+          <div className="match-reveal__events match-reveal__events--away">{posizionaEventi(visibili.filter((evento) => evento.lato === 'ospite' && contaAncoraPerIlLayout(evento, minuto))).map(({ evento, top }, i) => <p className={classeEvento(evento)} style={{ top: `${top}%` }} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
         </div>
         <footer className="match-reveal__footer">
           {inCorso ? <span className="match-reveal__in-corso"><i aria-hidden="true" />La partita è in corso…</span>
