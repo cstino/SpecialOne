@@ -159,7 +159,10 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
       <button className="match-reveal__close" type="button" onClick={onClose} aria-label="Chiudi cronaca">×</button>
       <header className="match-reveal__header">
         <div><Crest value={casa?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /><strong>{casa?.nome}</strong></div>
-        <div className="match-reveal__score"><small>{completata ? 'RISULTATO FINALE' : `${minuto}’`}</small><b>{punteggio.casa} <i>–</i> {punteggio.ospite}</b></div>
+        <div className="match-reveal__score">
+          <small>{completata ? 'RISULTATO FINALE' : <><i className="match-reveal__live-dot" aria-hidden="true" />{minuto}’</>}</small>
+          <b>{punteggio.casa} <i>–</i> {punteggio.ospite}</b>
+        </div>
         <div><strong>{ospite?.nome}</strong><Crest value={ospite?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" /></div>
       </header>
 
@@ -169,14 +172,16 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
           <div className="match-reveal__half match-reveal__half--second">2º TEMPO</div>
           <div className="match-reveal__line">
             <span style={{ height: `${Math.min(100, minuto / 90 * 100)}%` }} />
-            <b className="match-reveal__minute" style={{ top: `${Math.min(100, minuto / 90 * 100)}%` }}>{minuto}’</b>
+            <b className={`match-reveal__minute ${inCorso ? 'is-live' : ''}`} style={{ top: `${Math.min(100, minuto / 90 * 100)}%` }}>{minuto}’</b>
           </div>
-          <span className="match-reveal__marker match-reveal__marker--half">45’</span><span className="match-reveal__marker match-reveal__marker--end">90’</span>
+          {[15, 30, 45, 60, 75, 90].map((tacca) => (
+            <span className={`match-reveal__marker ${tacca === 45 || tacca === 90 ? 'is-forte' : ''}`} style={{ top: `${tacca / 90 * 100}%` }} key={tacca}>{tacca}’</span>
+          ))}
           <div className="match-reveal__events match-reveal__events--home">{visibili.filter((evento) => evento.lato === 'casa').map((evento, i) => <p className={isEventoGol(evento) ? 'is-goal' : ''} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
           <div className="match-reveal__events match-reveal__events--away">{visibili.filter((evento) => evento.lato === 'ospite').map((evento, i) => <p className={isEventoGol(evento) ? 'is-goal' : ''} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}</div>
         </div>
         <footer className="match-reveal__footer">
-          {inCorso ? <span>La partita è in corso…</span>
+          {inCorso ? <span className="match-reveal__in-corso"><i aria-hidden="true" />La partita è in corso…</span>
             : <button className="button button--primary" type="button" onClick={onOpenReport}>Vedi rapporto partita</button>}
         </footer>
       </>}
