@@ -61,6 +61,24 @@ export const CFG = {
   INFORTUNIO_BASE: 0.025,
   INFORTUNIO_DIV_COND: 50,
 
+  // --- Cartellini ---
+  // Media per squadra per blocco. Con 6 blocchi: ~1,8 gialli e ~0,08 rossi
+  // diretti a partita per squadra (~3,6 gialli e ~0,16 rossi diretti in
+  // totale, in linea con le medie dei campionati reali). Il doppio giallo
+  // (seconda ammonizione nella stessa gara) non ha una propria costante:
+  // e' un giallo normale che diventa espulsione perche' il giocatore ne ha
+  // gia' uno.
+  CARTELLINO_GIALLO_LAMBDA_BLOCCO: 0.30,
+  CARTELLINO_ROSSO_DIRETTO_LAMBDA_BLOCCO: 0.009,
+  // Chi ha gia' un giallo in questa partita gioca piu' attento: stesso
+  // principio di DAMPING_MARCATORE, qui riduce il rischio di un secondo
+  // cartellino (giallo o rosso) invece del peso di segnare ancora. Senza
+  // questo smorzamento il peso per ruolo si concentra troppo su pochi slot
+  // (CB/CDM) e il doppio giallo diventa implausibile: verificato che senza
+  // smorzamento un'espulsione capitava nel 33% delle partite, contro il
+  // 10-15% reale.
+  DAMPING_AMMONITO: 0.18,
+
   // --- Sostituzioni ---
   FINESTRE_CAMBI: [3, 4, 5], // fine di questi blocchi
   MAX_CAMBI: 5,

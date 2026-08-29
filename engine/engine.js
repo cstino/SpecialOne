@@ -186,6 +186,68 @@ function durataInfortunio(rng) {
        : 8 + Math.floor(rng() * 8);
 }
 
+// ---------- Cartellini ----------
+// Stesso RNG locale (non il flusso condiviso di random.js) e stesso spirito
+// degli infortuni: il flusso di xG/gol validato non deve spostarsi di una
+// virgola per l'aggiunta di un meccanismo nuovo.
+
+function poissonLocale(lambda, rng) {
+  if (lambda <= 0) return 0;
+  const L = Math.exp(-lambda);
+  let k = 0, p = 1;
+  do { k++; p *= rng(); } while (p > L);
+  return k - 1;
+}
+
+function scegliPesatoLocale(items, pesi, rng) {
+  const tot = pesi.reduce((a, b) => a + b, 0);
+  if (tot <= 0) return items[Math.floor(rng() * items.length)];
+  let r = rng() * tot;
+  for (let i = 0; i < items.length; i++) { r -= pesi[i]; if (r <= 0) return items[i]; }
+  return items[items.length - 1];
+}
+
+// Chi rischia il cartellino: stesso peso di ruolo gia' usato per distribuire
+// i contrasti (PESI_STAT.contrasti — difensori e mediani centrali in testa),
+// scalato sull'attitudine al contrasto del giocatore (tackle). +0.02 fisso
+// perche' anche un attaccante puo' prendere un giallo (proteste, simulazione,
+// fallo tattico), non solo chi tackla per mestiere.
+function candidatiCartellino(lineup, ammoniti) {
+  const candidati = [], pesi = [];
+  for (let i = 0; i < lineup.titolari.length; i++) {
+    const g = lineup.titolari[i];
+    if (!g) continue;
+    candidati.push({ g, i });
+    let peso = pesoStat('contrasti', lineup.slots[i]) * (g.tackle / 100) + 0.02;
+    if (ammoniti.get(g.id)) peso *= CFG.DAMPING_AMMONITO;
+    pesi.push(peso);
+  }
+  return { candidati, pesi };
+}
+
+// Applica un cartellino: un giallo a chi non ne ha gia' uno in questa
+// partita, un'espulsione (doppio giallo) a chi ce l'ha gia'. Nessun cambio
+// possibile per un'espulsione: lo slot resta vuoto per il resto della gara,
+// esattamente come vuole il regolamento — ed e' proprio questo a produrre
+// l'effetto reale dell'uomo in meno: forzeLinee() non trova piu' quello slot
+// e il peso di quella linea (wDEF/wMID/wATT) scende, quindi strutturale()
+// applica gia' da solo un malus piu' severo. Nessuna formula nuova.
+function applicaCartellino(lineup, scelto, ammoniti, tipoSeDiretto, lato, blocco, eventi) {
+  const gia = ammoniti.get(scelto.g.id);
+  if (tipoSeDiretto) {
+    lineup.titolari[scelto.i] = null;
+    eventi.push({ lato, blocco, giocatore: scelto.g.id, tipo: 'rosso_diretto' });
+    return;
+  }
+  if (gia) {
+    lineup.titolari[scelto.i] = null;
+    eventi.push({ lato, blocco, giocatore: scelto.g.id, tipo: 'doppio_giallo' });
+  } else {
+    ammoniti.set(scelto.g.id, true);
+    eventi.push({ lato, blocco, giocatore: scelto.g.id, tipo: 'giallo' });
+  }
+}
+
 // ---------- Statistiche individuali ----------
 
 function distribuisci(lineup, tipo, totale, attributo) {
@@ -205,13 +267,16 @@ function distribuisci(lineup, tipo, totale, attributo) {
   return out;
 }
 
-function marcatori(lineup, nGol) {
+// Pesca fra chi e' STATO in campo in un momento qualsiasi della partita
+// (slotStorico), non solo chi c'e' ancora alla fine: un cambio o
+// un'espulsione non deve escludere chi ha segnato prima di uscire.
+function marcatori(rosa, slotStorico, nGol) {
   const gio = [], pesi = [];
-  for (let i = 0; i < lineup.slots.length; i++) {
-    const g = lineup.titolari[i];
-    if (!g || lineup.slots[i] === 'GK') continue;
+  for (const g of rosa.giocatori) {
+    const slot = slotStorico.get(g.id);
+    if (!slot || slot === 'GK') continue;
     gio.push(g);
-    pesi.push(PESI_SLOT[lineup.slots[i]].ATT * Math.pow(g.finishing / 100, 1.5) + 0.001);
+    pesi.push(PESI_SLOT[slot].ATT * Math.pow(g.finishing / 100, 1.5) + 0.001);
   }
   const res = [];
   for (let k = 0; k < nGol; k++) {
@@ -241,6 +306,12 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   // della fixture; il fallback rende riproducibili anche i test standalone.
   const seedInfortuni = opt.seedInfortuni ?? ((rosaCasa.giocatori[0]?.id || 1) * 1103515245 + (rosaOspite.giocatori[0]?.id || 1));
   const rndInfortunio = creaRngInfortuni(seedInfortuni);
+  // Stesso principio, flusso proprio: i cartellini non devono spostare ne'
+  // lo stream dei gol ne' quello degli infortuni.
+  const rndCartellino = creaRngInfortuni(opt.seedCartellini ?? (seedInfortuni + 97));
+  const ammonitiCasa = new Map(); // id -> true se ha gia' un giallo in questa partita
+  const ammonitiOspite = new Map();
+  const cartelliniInPartita = [];
   // La condizione e' un valore persistente fra le giornate: il rischio della
   // gara parte da quella fotografata al calcio d'inizio, non dall'usura dei
   // singoli blocchi di questa stessa partita.
@@ -257,6 +328,11 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   const presenzeCasaPerBlocco = [];
   const presenzeOspitePerBlocco = [];
   const infortuniInPartita = [];
+  // id -> ultimo slot occupato: sopravvive a cambi ed espulsioni, cosi'
+  // marcatori() puo' considerare anche chi non e' piu' in campo a fine
+  // partita (vedi nota sopra, nel loop di presenza).
+  const slotStoricoCasa = new Map();
+  const slotStoricoOspite = new Map();
 
   // Supplementari (design §10.7): si aggiungono IN CORSA, solo se alla fine dei
   // regolamentari l'eliminatoria e' ancora in parita'. opt.scartoAndata e' il
@@ -309,12 +385,18 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     // condizione: nel calcio vero non si stanca come un giocatore di movimento,
     // resta stabile salvo infortuni (stesso spirito dell'esclusione dai cambi
     // per stanchezza, poco sopra).
-    for (const [L, presenzeBlocco] of [[lc, presenzeCasaPerBlocco], [lo, presenzeOspitePerBlocco]]) {
+    for (const [L, presenzeBlocco, slotStorico] of [[lc, presenzeCasaPerBlocco, slotStoricoCasa], [lo, presenzeOspitePerBlocco, slotStoricoOspite]]) {
       const idsBlocco = [];
       for (let i = 0; i < L.titolari.length; i++) {
         const g = L.titolari[i];
         if (!g) continue;
         inCampo.set(g.id, (inCampo.get(g.id) || 0) + 1);
+        // Chi e' stato tolto (per un cambio o un'espulsione) uscirebbe da
+        // lineup.titolari: se marcatori() leggesse solo la formazione FINALE
+        // perderebbe chi ha segnato prima di uscire. Tenendo lo slot storico
+        // per ogni giocatore che e' stato davvero in campo, marcatori() puo'
+        // considerare anche chi non c'e' piu' senza toccare la formula del peso.
+        slotStorico.set(g.id, L.slots[i]);
         idsBlocco.push(g.id);
         if (usaCondizione && L.slots[i] !== 'GK') {
           g.condizione = Math.max(0, g.condizione - (CFG.CONSUMO_BASE - CFG.CONSUMO_MOD_STAMINA * (g.stamina / 100)));
@@ -339,6 +421,28 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
           g.infortunatoFinoA = durataInfortunio(rndInfortunio);
           g._nuovoInfortunio = true;
           infortuniInPartita.push({ lato, blocco: b + 1, ...cambio, giornate: g.infortunatoFinoA });
+        }
+      }
+
+      // Cartellini: stessa logica per entrambe le squadre. I gialli prima,
+      // i rossi diretti dopo — cosi' un'espulsione diretta non "ruba" a un
+      // giocatore un giallo che tecnicamente avrebbe preso comunque nello
+      // stesso blocco (ordine arbitrario ma ininfluente sul risultato, dato
+      // che sono due estrazioni indipendenti).
+      for (const [lato, L, ammoniti] of [['casa', lc, ammonitiCasa], ['ospite', lo, ammonitiOspite]]) {
+        const nGialli = poissonLocale(CFG.CARTELLINO_GIALLO_LAMBDA_BLOCCO, rndCartellino);
+        for (let k = 0; k < nGialli; k++) {
+          const { candidati, pesi } = candidatiCartellino(L, ammoniti);
+          if (candidati.length === 0) break;
+          const scelto = scegliPesatoLocale(candidati, pesi, rndCartellino);
+          applicaCartellino(L, scelto, ammoniti, false, lato, b + 1, cartelliniInPartita);
+        }
+        const nRossi = poissonLocale(CFG.CARTELLINO_ROSSO_DIRETTO_LAMBDA_BLOCCO, rndCartellino);
+        for (let k = 0; k < nRossi; k++) {
+          const { candidati, pesi } = candidatiCartellino(L, ammoniti);
+          if (candidati.length === 0) break;
+          const scelto = scegliPesatoLocale(candidati, pesi, rndCartellino);
+          applicaCartellino(L, scelto, ammoniti, true, lato, b + 1, cartelliniInPartita);
         }
       }
     }
@@ -379,8 +483,8 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   const sO = mk(lo, golO, 1 - ctrlMedio, forzeLinee(lo), xgTotO);
 
   const perGiocatore = opt.statsGiocatori ? (() => {
-    const marcatoriCasa = marcatori(lc, golC);
-    const marcatoriOspite = marcatori(lo, golO);
+    const marcatoriCasa = marcatori(rosaCasa, slotStoricoCasa, golC);
+    const marcatoriOspite = marcatori(rosaOspite, slotStoricoOspite, golO);
     const minuti = rosa => new Map(rosa.giocatori
       .map(g => [g.id, Math.round((inCampo.get(g.id) || 0) * 90 / CFG.BLOCCHI_PARTITA)])
       .filter(([, valore]) => valore > 0));
@@ -433,6 +537,7 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     golC, golO, statsCasa: sC, statsOspite: sO, perGiocatore, golPerBlocco,
     presenzePerBlocco: { casa: presenzeCasaPerBlocco, ospite: presenzeOspitePerBlocco },
     infortuniInPartita,
+    cartelliniInPartita,
     // golC/golO sono il risultato FINALE (supplementari inclusi). Chi presenta
     // la partita ha qui anche il parziale dei 90', e se i supplementari sono
     // stati davvero giocati.
