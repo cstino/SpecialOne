@@ -1873,10 +1873,6 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .team-budget-panel dl div { display: flex; justify-content: space-between; gap: 15px; padding: 13px 0; border-top: 1px solid #2e2936; }
 .team-budget-panel dt { color: #8e8697; font-size: .72rem; }
 .team-budget-panel dd { margin: 0; color: #eee8f3; font-size: .8rem; font-weight: 850; }
-
-.team-picks-grid { max-height: none; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); overflow-y: visible; margin-top: 18px; }
-.team-picks-grid .scambi-asset-card { cursor: default; }
-.team-picks-grid .scambi-asset-card:hover { border-color: transparent; transform: none; }
 .team-roster-panel > .season-card__heading { margin-bottom: 18px; }
 .team-roster-panel > .season-card__heading > span { color: #a97acc; font-size: .72rem; font-weight: 900; }
 .team-roster-list { display: grid; gap: 6px; }

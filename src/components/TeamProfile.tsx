@@ -429,21 +429,26 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         <section className="team-profile-panel team-picks-panel">
           <div className="season-card__heading"><div><p className="kicker">Portafoglio scelte</p><h2>{scelte.length ? `${scelte.length} in mano` : 'Nessuna scelta'}</h2></div></div>
           {scelteLoading ? <p className="season-empty">Carico le scelte…</p> : scelte.length ? (
-            <ul className="scambi-asset-grid team-picks-grid">
-              {scelte.map((s) => (
-                <li key={s.id}>
-                  <div className={`scambi-asset-card scambi-asset-card--pick scambi-asset-card--pick-${s.finestra}`}>
-                    <span className="scambi-asset-card__pickbadge">{s.finestra === 'on' ? 'ON' : 'OFF'}</span>
-                    <span className="scambi-asset-card__info">
-                      <strong>Stagione {s.stagione}</strong>
-                      <small>
-                        {s.stato === 'determinata' && s.posizione ? `${s.posizione}ª scelta` : 'posizione da definire'}
-                        {s.team_origine_id !== teamId && ` · origine ${seasonData.teamById.get(s.team_origine_id)?.nome ?? 'squadra rimossa'}`}
-                      </small>
-                    </span>
+            <ul className="scelte-lista">
+              {scelte.map((s) => {
+                const origine = seasonData.teamById.get(s.team_origine_id)
+                return <li className={`scelta-ticket scelta-ticket--${s.finestra}`} key={s.id}>
+                  <div className="scelta-ticket__taglio" aria-hidden="true">
+                    <span className="scelta-ticket__stagione">S{s.stagione}</span>
+                    <span className={`scelta-ticket__finestra scelta-ticket__finestra--${s.finestra}`}>{(s.finestra === 'on' ? 'ON-Season' : 'OFF-Season').toUpperCase()}</span>
+                  </div>
+                  <div className="scelta-ticket__corpo">
+                    <div className="scelta-ticket__origine">
+                      <Crest value={origine?.stemma_url ?? null} imageUrl={origine ? seasonData.crestUrlByTeamId.get(origine.id) : undefined} />
+                      <small>{origine?.nome ?? 'Squadra sconosciuta'}</small>
+                    </div>
+                    <div className="scelta-ticket__dettagli">
+                      <strong>{s.stato === 'determinata' && s.posizione ? `${s.posizione}ª scelta` : 'Posizione da determinare'}</strong>
+                      <span className={`scelta-ticket__stato scelta-ticket__stato--${s.stato}`}>{s.stato === 'determinata' ? 'Pronta' : 'Posizione da determinare'}</span>
+                    </div>
                   </div>
                 </li>
-              ))}
+              })}
             </ul>
           ) : <p className="season-empty">Nessuna scelta futura in portafoglio.</p>}
         </section>
