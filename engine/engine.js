@@ -414,7 +414,12 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
           const g = L.titolari[i];
           if (!g || L.cambiFatti >= CFG.MAX_CAMBI || L.panchina.length === 0) continue;
           const modEta = g.eta < 24 ? 0.85 : g.eta <= 30 ? 1.0 : g.eta <= 33 ? 1.25 : 1.5;
-          const pPartita = CFG.INFORTUNIO_BASE * (1 + (100 - g._condizioneInizioPartita) / CFG.INFORTUNIO_DIV_COND) * modEta;
+          // Deciso con l'utente il 31 agosto 2026: il portiere non fa i
+          // contrasti e gli sforzi esplosivi ripetuti di un giocatore di
+          // movimento (coerente col non consumare condizione per fatica,
+          // vedi sopra), quindi rischia la meta'.
+          const modRuolo = L.slots[i] === 'GK' ? 0.5 : 1.0;
+          const pPartita = CFG.INFORTUNIO_BASE * (1 + (100 - g._condizioneInizioPartita) / CFG.INFORTUNIO_DIV_COND) * modEta * modRuolo;
           if (rndInfortunio() >= pPartita / CFG.BLOCCHI_PARTITA) continue;
           const cambio = sostituisciInfortunato(L, i);
           if (!cambio) continue;
