@@ -296,9 +296,6 @@ export function Mercato({ membership, onNavigate }: Props) {
     .map((a) => a.tornata))
   const nuoviDelGiorno = asteDelGiorno.filter((a) =>
     a.origine === 'estrazione' && a.tornata === tornataLive && a.stato === 'aperta')
-  // Un'apertura manuale e' valida anche fuori orario, ma solo per le aste
-  // dell'ultima estrazione: aste residue di giorni precedenti non devono
-  // tenere artificialmente aperta tutta la pagina.
   const ultimaPartitaIl = useMemo(() => dati.matches.reduce<number | null>((ultima, partita) => {
     const istante = new Date(partita.simulata_il).getTime()
     return ultima == null || istante > ultima ? istante : ultima
@@ -313,7 +310,14 @@ export function Mercato({ membership, onNavigate }: Props) {
   const chiusuraMercatoIl = prossimaPartitaIl == null ? null : prossimaPartitaIl - 2 * 60 * 60 * 1000
   const mercatoDinamicoAperto = cicloDinamico && aperturaMercatoIl != null && chiusuraMercatoIl != null
     && adesso >= aperturaMercatoIl && adesso < chiusuraMercatoIl
-  const aperto = (cicloDinamico ? mercatoDinamicoAperto : mercatoAperto()) || nuoviDelGiorno.length > 0
+  // Bug corretto il 30 agosto 2026: qui c'era anche "|| nuoviDelGiorno.length
+  // > 0", pensato per riflettere una riapertura manuale dell'admin fuori
+  // orario. Ma l'estrazione automatica di ogni sera lascia SEMPRE almeno
+  // un'asta aperta nell'ultima tornata per gran parte del giorno dopo,
+  // quindi quella condizione era vera quasi sempre — mostrava il mercato
+  // aperto (e il modulo di offerta attivo) anche ben oltre le 21:00, salvo
+  // poi farsi rifiutare l'offerta dalla RPC, che applica la regola vera.
+  const aperto = cicloDinamico ? mercatoDinamicoAperto : mercatoAperto()
   const etichettaMercato = cicloDinamico
     ? aperto
       ? `Mercato aperto · chiude tra ${formatCountdown(Math.max(0, (chiusuraMercatoIl ?? adesso) - adesso))}`
