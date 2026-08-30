@@ -303,7 +303,8 @@ function costruisciEventiGol(
       ? (evento.blocco - 1) * MINUTI_PER_BLOCCO + 1
       : Math.min(90, evento.blocco * MINUTI_PER_BLOCCO + 1)
     const fine = Math.min(90, inizio + MINUTI_PER_BLOCCO - 1)
-    const minutiUsati = minutiUsatiPerSquadra.get(evento.team_id) ?? new Set<number>()
+    let minutiUsati = minutiUsatiPerSquadra.get(evento.team_id)
+    if (!minutiUsati) { minutiUsati = new Set<number>(); minutiUsatiPerSquadra.set(evento.team_id, minutiUsati) }
     let candidati = Array.from({ length: fine - inizio + 1 }, (_, indice) => inizio + indice)
       .filter((minuto) => !minutiUsati.has(minuto))
     if (!candidati.length) candidati = Array.from({ length: fine - inizio + 1 }, (_, indice) => inizio + indice)
