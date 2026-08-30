@@ -155,15 +155,17 @@ export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
         const turniTotali = turniTotaliDa(suoi)
         const tieMap = new Map(suoi.map((t) => [`${t.turno}:${t.posizione}`, t]))
 
-        return <section className={`tabellone-card tabellone-card--${bracket.tipo}`}>
-          <div className="sezione-testa">
-            <div><p className="kicker">{SOTTOTITOLO[bracket.tipo]}</p><h2>{TITOLO[bracket.tipo]}</h2></div>
-            {bracket.stato === 'concluso' && bracket.vincitore_team_id && (
-              <span className="tabellone-vincitore">
-                {bracket.tipo === 'title' ? 'Campione' : 'Vince il Draft Playoff'}: <b>{teamById.get(bracket.vincitore_team_id)?.nome ?? '—'}</b>
-              </span>
-            )}
-          </div>
+        return <div className={`tabellone-blocco tabellone-blocco--${bracket.tipo}`}>
+          <section className={`tabellone-card tabellone-card--${bracket.tipo}`}>
+            <div className="sezione-testa">
+              <div><p className="kicker">{SOTTOTITOLO[bracket.tipo]}</p><h2>{TITOLO[bracket.tipo]}</h2></div>
+              {bracket.stato === 'concluso' && bracket.vincitore_team_id && (
+                <span className="tabellone-vincitore">
+                  {bracket.tipo === 'title' ? 'Campione' : 'Vince il Draft Playoff'}: <b>{teamById.get(bracket.vincitore_team_id)?.nome ?? '—'}</b>
+                </span>
+              )}
+            </div>
+          </section>
 
           {turniTotali > 0 && <div className="bracket-scroll">
             <NodoBracket
@@ -171,7 +173,7 @@ export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
               tieMap={tieMap} dati={datiComuni}
             />
           </div>}
-        </section>
+        </div>
       })()}
     </div>
   </main>
