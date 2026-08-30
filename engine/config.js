@@ -101,6 +101,14 @@ export const REPARTO = {
 
 const ADIACENTI = { DEF: ['MID'], MID: ['DEF', 'ATT'], ATT: ['MID'] };
 
+// Eccezione mirata (decisa con l'utente, 30 agosto 2026): pochissimi
+// giocatori del dataset hanno LWB/RWB come posizione elencata, quindi il
+// 3-5-2 era quasi ingiocabile a piena efficacia. Un terzino o un esterno di
+// centrocampo che gioca da quinto e' una scelta ragionevole nel calcio vero
+// quanto una posizione secondaria elencata in scheda: stessa penalita' (0.98),
+// non quella di reparto/adiacenza. Non tocca nessun'altra combinazione slot/ruolo.
+const QUASI_NATURALI = { LWB: ['LB', 'LM'], RWB: ['RB', 'RM'] };
+
 export function penalitaRuolo(posizioni, slot) {
   const repSlot = REPARTO[slot];
   const repNat = REPARTO[posizioni[0]];
@@ -110,6 +118,7 @@ export function penalitaRuolo(posizioni, slot) {
 
   if (posizioni[0] === slot) return 1.00;
   if (posizioni.includes(slot)) return 0.98;
+  if (QUASI_NATURALI[slot] && QUASI_NATURALI[slot].includes(posizioni[0])) return 0.98;
   if (repNat === repSlot) return 0.91;
   if (ADIACENTI[repNat] && ADIACENTI[repNat].includes(repSlot)) return 0.80;
   return 0.65;

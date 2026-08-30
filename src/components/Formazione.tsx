@@ -102,9 +102,15 @@ const POSIZIONI_CONFINANTI: Record<string, string[]> = {
   RB: ['RWB', 'RM'], RWB: ['RB', 'RM', 'RW'], RM: ['RB', 'RWB', 'RW'], RW: ['RWB', 'RM'],
   CB: ['CDM'], CDM: ['CB'], CAM: ['CF'], CF: ['CAM', 'ST'], ST: ['CF'],
 }
+// Stessa eccezione mirata di engine/config.js (penalitaRuolo, decisa con
+// l'utente il 30 agosto 2026): LB/LM per LWB, RB/RM per RWB valgono come una
+// posizione secondaria elencata in scheda (0.98, "natural" ai fini del
+// warning), non la penalita' di reparto/adiacenza.
+const QUASI_NATURALI: Record<string, string[]> = { LWB: ['LB', 'LM'], RWB: ['RB', 'RM'] }
 
 function positionFit(slot: string, preferred: string[]): PositionFit {
   if (preferred.includes(slot)) return 'natural'
+  if (QUASI_NATURALI[slot]?.some((position) => preferred.includes(position))) return 'natural'
   if (preferred.some((position) => reparto(position) === reparto(slot))) return 'adapted'
   if (preferred.some((position) => POSIZIONI_CONFINANTI[slot]?.includes(position) || POSIZIONI_CONFINANTI[position]?.includes(slot))) return 'adapted'
   return 'out'
@@ -124,6 +130,7 @@ function overallEfficacePosizione(player: Player, slot: string): number {
   if (repSlot === 'GK' && repNat === 'GK') return player.overall_corrente
   if (player.posizioni[0] === slot) return player.overall_corrente
   if (player.posizioni.includes(slot)) return player.overall_corrente * 0.98
+  if (QUASI_NATURALI[slot]?.includes(player.posizioni[0])) return player.overall_corrente * 0.98
   if (repNat === repSlot) return player.overall_corrente * 0.91
   if (ADIACENTI_REPARTO[repNat]?.includes(repSlot)) return player.overall_corrente * 0.80
   return player.overall_corrente * 0.65
