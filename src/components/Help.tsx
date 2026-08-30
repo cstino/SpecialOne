@@ -283,9 +283,13 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     id: 'mercato-asta',
     titolo: 'Mercato — asta a busta chiusa sugli svincolati',
     corpo: <>
-      <p>Ogni giorno, quando il mercato riapre, il sistema estrae automaticamente 12 nuovi
-        giocatori svincolati (3 per ciascun macro-ruolo). Restano in evidenza per un giorno; se
-        nessuno li prende, restano comunque nell'archivio e possono ricevere offerte nei giorni
+      <p>Ogni giorno, quando il mercato riapre, il sistema estrae automaticamente 20 nuovi
+        giocatori svincolati (5 per ciascun macro-ruolo, 10 durante l'off-season). Chi viene
+        svincolato da una squadra si aggiunge invece garantito, oltre a quella quota — così
+        chi è stato appena tagliato torna subito visibile a tutti, non deve aspettare un
+        sorteggio casuale: capita quindi che un ruolo mostri più giocatori degli altri in un
+        giorno con parecchi svincoli. Tutti restano in evidenza per un giorno; se nessuno li
+        prende, restano comunque nell'archivio e possono ricevere offerte nei giorni
         successivi.</p>
       <p>Puoi fare <strong>una sola offerta per giocatore</strong>, indicando l'ingaggio annuale
         che sei disposto a pagargli. L'interfaccia mostra un "ingaggio minimo" di riferimento,
