@@ -2702,33 +2702,77 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .offerta-spinner { display: inline-block; width: .85em; height: .85em; margin-right: .55em; border: 2px solid currentColor; border-left-color: transparent; border-radius: 50%; animation: button-spin .7s linear infinite; vertical-align: -.08em; }
 @keyframes button-spin { to { transform: rotate(360deg); } }
 
-/* ---- Tabellone playoff/playout (design §10.7) ---- */
-.tabellone { display:grid;gap:1.1rem; }
-.tabellone-vincitore { color:#c8b6dd;font-size:.85rem; }
-.tabellone-vincitore b { color:#fff; }
-.tabellone--draft .tabellone-vincitore b { color:#67e8b0; }
-.tabellone-turno { display:grid;gap:.7rem; }
-.tabellone-turno h3 { margin:0;color:#b99dce;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase; }
-.tabellone-tie { display:grid;gap:.35rem;border:1px solid #332b40;border-radius:12px;padding:.7rem .8rem;background:#1b1626; }
-.tabellone-tie--bye { opacity:.75; }
-.tabellone-tie--bye small { color:#8f86a0;font-size:.76rem; }
-.tabellone-riga { display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:.6rem;align-items:center; }
-.tabellone-riga .crest { width:28px;height:28px; }
-.tabellone-riga--vuota { color:#8f86a0;font-style:italic;grid-template-columns:1fr; }
-.tabellone-nome { display:flex;gap:.45rem;align-items:center;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
-.tabellone-seed { flex:none;font-style:normal;font-size:.7rem;color:#8f86a0;border:1px solid #3d3450;border-radius:5px;padding:0 .3rem; }
-.tabellone-gol { font-weight:700;font-variant-numeric:tabular-nums; }
-.tabellone-gol em { font-style:normal;color:#b99dce;font-weight:500;font-size:.82rem; }
-.tabellone-riga.e-vincitore .tabellone-nome { color:#fff; }
-.tabellone-riga.e-vincitore .tabellone-gol { color:#9b43f5; }
-.tabellone--draft .tabellone-riga.e-vincitore .tabellone-gol { color:#34d399; }
-.tabellone-riga:not(.e-vincitore) { color:#a9a0b7; }
-.tabellone-mani { display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.3rem;padding-top:.5rem;border-top:1px solid #2a2336; }
-.tabellone-mano { font-size:.76rem;color:#a9a0b7;background:#241d30;border:1px solid #332b40;border-radius:7px;padding:.25rem .5rem; }
-.tabellone-mano em { font-style:normal;color:#8f86a0; }
-.tabellone-mano--link { cursor:pointer; }
-.tabellone-mano--link:hover { border-color:#9b43f5;color:#fff; }
-.tabellone-badge { font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:#b99dce;background:#2a2140;border-radius:7px;padding:.25rem .5rem; }
+/* ---- Tabellone playoff/playout (design §10.7) — vero bracket a eliminazione ---- */
+
+.tabellone-shell { position: relative; }
+.tabellone-sfondo { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.tabellone-sfondo::before {
+  content: ''; position: absolute; inset: -4%; background-size: cover; background-position: center top;
+  filter: brightness(.4) saturate(1.15);
+}
+.tabellone-sfondo[data-fase="title"]::before { background-image: url(/sfondi-fase-verticali/title_playoffs_vert.png); }
+.tabellone-sfondo[data-fase="draft"]::before { background-image: url(/sfondi-fase-verticali/draft_playoffs_vert.png); }
+.tabellone-sfondo::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(8,7,13,.32), rgba(8,7,13,.88) 55%, #0c0b12 92%);
+}
+.tabellone-page { position: relative; z-index: 1; }
+
+.tabellone-segmented { max-width: 420px; margin-bottom: 28px; }
+
+.tabellone-card {
+  padding: 24px; margin-bottom: 24px; border-radius: 18px;
+  background: linear-gradient(135deg, rgba(43,29,61,.42), rgba(19,18,27,.34));
+  backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(178,140,220,.2); box-shadow: 0 18px 44px rgba(0,0,0,.32);
+}
+.tabellone-vincitore { color: #c8b6dd; font-size: .85rem; }
+.tabellone-vincitore b { color: #fff; }
+.tabellone-card--draft .tabellone-vincitore b { color: #67e8b0; }
+
+.bracket-scroll { display: flex; overflow-x: auto; padding: 28px 6px 18px; margin: 0 -6px; -webkit-overflow-scrolling: touch; }
+.bracket-nodo { display: flex; flex-direction: row; align-items: center; flex: none; }
+.bracket-nodo__figli { display: flex; flex-direction: column; gap: 24px; flex: none; }
+.bracket-nodo__connettore {
+  flex: none; align-self: stretch; width: 22px;
+  border: 2px solid rgba(201,167,255,.32); border-left: none; border-radius: 0 10px 10px 0;
+}
+
+.bracket-match {
+  display: flex; flex-direction: column; justify-content: center; gap: 5px; flex: none;
+  width: 232px; box-sizing: border-box; padding: 10px 13px;
+  background: linear-gradient(135deg, rgba(43,29,61,.55), rgba(19,18,27,.5));
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(178,140,220,.24); border-radius: 14px; box-shadow: 0 10px 24px rgba(0,0,0,.28);
+}
+.bracket-match__turno { margin: 0 0 1px; color: #9d8fb5; font-size: .58rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.bracket-match__nota { margin: 2px 0 0; color: #8f86a0; font-size: .72rem; font-style: italic; }
+.bracket-match__mani { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.08); }
+.bracket-match__mano {
+  font-size: .66rem; font-weight: 700; color: #cabfd8; background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1); border-radius: 6px; padding: 2px 6px;
+}
+.bracket-match__mano--link { cursor: pointer; }
+.bracket-match__mano--link:hover { border-color: #9b43f5; color: #fff; }
+.bracket-match__badge {
+  font-size: .6rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #b99dce;
+  background: rgba(155,67,245,.16); border-radius: 6px; padding: 2px 6px;
+}
+
+.bracket-riga { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 8px; align-items: center; color: #a9a0b7; }
+.bracket-riga .crest { width: 24px; height: 24px; }
+.bracket-riga--vuota { color: #7d7489; font-style: italic; grid-template-columns: 1fr; }
+.bracket-nome { display: flex; gap: 6px; align-items: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .82rem; font-weight: 650; }
+.bracket-seed { flex: none; font-style: normal; font-size: .62rem; color: #8f86a0; border: 1px solid rgba(255,255,255,.14); border-radius: 5px; padding: 0 4px; }
+.bracket-gol { font-weight: 800; font-variant-numeric: tabular-nums; font-size: .84rem; }
+.bracket-gol em { font-style: normal; color: #b99dce; font-weight: 600; font-size: .74rem; }
+.bracket-riga.e-vincitore { color: #fff; }
+.bracket-riga.e-vincitore .bracket-gol { color: #c68aff; }
+.tabellone-card--draft .bracket-riga.e-vincitore .bracket-gol { color: #34d399; }
+
+@media (max-width: 720px) {
+  .bracket-match { width: 200px; }
+}
 
 /* ---- Calci di rigore nel tabellino ---- */
 .rigori-punteggio { display:grid;grid-template-columns:1fr auto 1fr;gap:1rem;align-items:center;margin:.8rem 0; }
