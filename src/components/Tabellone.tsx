@@ -5,14 +5,11 @@ import { GameNav, type GameView } from './GameNav'
 import { SeasonState } from './SeasonUI'
 import { Crest } from './Crest'
 import { useSeasonData } from '../lib/useSeasonData'
+import { LOGO_FASE } from '../lib/faseSquadra'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; onOpenMatch: (id: number) => void }
 
 const TITOLO: Record<Bracket['tipo'], string> = { title: 'Title Playoff', draft: 'Draft Playoff' }
-const SOTTOTITOLO: Record<Bracket['tipo'], string> = {
-  title: 'Si compete per il titolo di campione.',
-  draft: 'Si compete per le prime scelte del prossimo draft.',
-}
 
 // Altezza fissa di ogni carta-incontro e spaziatura verticale fra due
 // sorelle: sono le uniche due costanti da cui dipende la geometria del
@@ -157,8 +154,8 @@ export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
 
         return <div className={`tabellone-blocco tabellone-blocco--${bracket.tipo}`}>
           <section className={`tabellone-card tabellone-card--${bracket.tipo}`}>
-            <div className="sezione-testa">
-              <div><p className="kicker">{SOTTOTITOLO[bracket.tipo]}</p><h2>{TITOLO[bracket.tipo]}</h2></div>
+            <div className="tabellone-testa">
+              <img className="tabellone-logo-fase" src={LOGO_FASE[bracket.tipo]} alt={TITOLO[bracket.tipo]} />
               {bracket.stato === 'concluso' && bracket.vincitore_team_id && (
                 <span className="tabellone-vincitore">
                   {bracket.tipo === 'title' ? 'Campione' : 'Vince il Draft Playoff'}: <b>{teamById.get(bracket.vincitore_team_id)?.nome ?? '—'}</b>
