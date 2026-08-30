@@ -49,6 +49,16 @@ type RosterPlayer = {
   assist: number
 }
 
+type Scelta = {
+  id: number
+  team_origine_id: number
+  team_proprietario_id: number
+  stagione: number
+  finestra: 'on' | 'off'
+  posizione: number | null
+  stato: 'futura' | 'determinata'
+}
+
 const ROLE_ORDER: Record<string, number> = { GK: 0, DEF: 1, MID: 2, ATT: 3 }
 const DEF = new Set(['LB', 'CB', 'RB', 'LWB', 'RWB'])
 const MID = new Set(['CDM', 'CM', 'CAM', 'LM', 'RM'])
@@ -104,6 +114,8 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [releasePending, setReleasePending] = useState(false)
   const [releaseError, setReleaseError] = useState<string | null>(null)
   const [rosterNotice, setRosterNotice] = useState<string | null>(null)
+  const [scelte, setScelte] = useState<Scelta[]>([])
+  const [scelteLoading, setScelteLoading] = useState(true)
   const team = teamOverride?.id === teamId ? teamOverride : seasonData.teamById.get(teamId)
   const ownTeam = teamId === membership.id
   const fase = useFaseSquadra(league.id, teamId, seasonData.season?.id)
@@ -201,6 +213,24 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       if (active) { setPlayers(loaded); setStatRows((statsResult.data ?? []) as MatchPlayerStat[]); setRosterLoading(false) }
     }
     void loadRoster()
+    return () => { active = false }
+  }, [league.id, teamId])
+
+  // Scelte ancora scambiabili (le usate/svuotate non sono piu' un asset):
+  // visibili a tutta la lega, servono a chi guarda una squadra avversaria
+  // per valutare se proporre uno scambio che le coinvolga.
+  useEffect(() => {
+    let active = true
+    async function loadScelte() {
+      setScelteLoading(true)
+      const { data } = await supabase.from('scelte_draft')
+        .select('id, team_origine_id, team_proprietario_id, stagione, finestra, posizione, stato')
+        .eq('league_id', league.id).eq('team_proprietario_id', teamId)
+        .in('stato', ['futura', 'determinata'])
+        .order('stagione').order('finestra')
+      if (active) { setScelte((data ?? []) as Scelta[]); setScelteLoading(false) }
+    }
+    void loadScelte()
     return () => { active = false }
   }, [league.id, teamId])
 
@@ -388,6 +418,28 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         <section className="team-profile-grid">
           <article className="team-profile-panel team-recent-panel"><div className="season-card__heading"><div><p className="kicker">Forma recente</p><h2>Ultime partite</h2></div></div>{recentFixtures.length ? recentFixtures.map((fixture) => { const match = seasonData.matchByFixture.get(fixture.id); return <button className={`esito-riga esito-riga--${esitoDi(fixture) ?? 'N'}`} type="button" key={fixture.id} onClick={() => match && onOpenMatch(match.id)}><TeamLabel team={seasonData.teamById.get(fixture.home_team_id)} imageUrl={seasonData.crestUrlByTeamId.get(fixture.home_team_id)} /><FixtureScore fixture={fixture} match={match} /><TeamLabel team={seasonData.teamById.get(fixture.away_team_id)} imageUrl={seasonData.crestUrlByTeamId.get(fixture.away_team_id)} reversed /></button> }) : <p className="season-empty">Nessuna partita disputata.</p>}</article>
           <article className="team-profile-panel team-budget-panel"><p className="kicker">Gestione rosa</p><h2>{players.length} giocatori</h2><dl><div><dt>Valore ingaggi</dt><dd>{money(totalWage)}</dd></div>{ownTeam ? <div><dt>Capienza residua</dt><dd>{money(Math.max(0, league.tetto_ingaggi - totalWage))}</dd></div> : <div><dt>Gol segnati</dt><dd>{standing?.gol_fatti ?? 0}</dd></div>}<div><dt>Overall medio</dt><dd>{players.length ? (players.reduce((sum, player) => sum + player.overall, 0) / players.length).toFixed(1) : '—'}</dd></div></dl></article>
+        </section>
+
+        {/* In fondo, cosi' chi guarda una squadra avversaria sa subito cosa
+            possiede in scelte future prima di valutare uno scambio. */}
+        <section className="team-profile-panel team-picks-panel">
+          <div className="season-card__heading"><div><p className="kicker">Portafoglio scelte</p><h2>{scelte.length ? `${scelte.length} in mano` : 'Nessuna scelta'}</h2></div></div>
+          {scelteLoading ? <p className="season-empty">Carico le scelte…</p> : scelte.length ? (
+            <ul className="team-picks-list">
+              {scelte.map((s) => (
+                <li className={`team-pick-chip team-pick-chip--${s.finestra}`} key={s.id}>
+                  <span className="team-pick-chip__finestra">{s.finestra === 'on' ? 'ON' : 'OFF'}</span>
+                  <div>
+                    <strong>{s.finestra === 'on' ? 'ON' : 'OFF'}-Season {s.stagione}</strong>
+                    <small>
+                      {s.stato === 'determinata' && s.posizione ? `${s.posizione}ª scelta` : 'posizione da definire'}
+                      {s.team_origine_id !== teamId && ` · origine ${seasonData.teamById.get(s.team_origine_id)?.nome ?? 'squadra rimossa'}`}
+                    </small>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : <p className="season-empty">Nessuna scelta futura in portafoglio.</p>}
         </section>
       </>}
 
