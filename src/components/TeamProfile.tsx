@@ -227,8 +227,12 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         .select('id, team_origine_id, team_proprietario_id, stagione, finestra, posizione, stato')
         .eq('league_id', league.id).eq('team_proprietario_id', teamId)
         .in('stato', ['futura', 'determinata'])
-        .order('stagione').order('finestra')
-      if (active) { setScelte((data ?? []) as Scelta[]); setScelteLoading(false) }
+        .order('stagione')
+      // ON prima di OFF a parita' di stagione: l'ordine alfabetico di
+      // .order('finestra') metterebbe "off" prima di "on".
+      const ordinate = ((data ?? []) as Scelta[]).sort((a, b) =>
+        a.stagione - b.stagione || (a.finestra === b.finestra ? 0 : a.finestra === 'on' ? -1 : 1))
+      if (active) { setScelte(ordinate); setScelteLoading(false) }
     }
     void loadScelte()
     return () => { active = false }
@@ -425,16 +429,18 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         <section className="team-profile-panel team-picks-panel">
           <div className="season-card__heading"><div><p className="kicker">Portafoglio scelte</p><h2>{scelte.length ? `${scelte.length} in mano` : 'Nessuna scelta'}</h2></div></div>
           {scelteLoading ? <p className="season-empty">Carico le scelte…</p> : scelte.length ? (
-            <ul className="team-picks-list">
+            <ul className="scambi-asset-grid team-picks-grid">
               {scelte.map((s) => (
-                <li className={`team-pick-chip team-pick-chip--${s.finestra}`} key={s.id}>
-                  <span className="team-pick-chip__finestra">{s.finestra === 'on' ? 'ON' : 'OFF'}</span>
-                  <div>
-                    <strong>{s.finestra === 'on' ? 'ON' : 'OFF'}-Season {s.stagione}</strong>
-                    <small>
-                      {s.stato === 'determinata' && s.posizione ? `${s.posizione}ª scelta` : 'posizione da definire'}
-                      {s.team_origine_id !== teamId && ` · origine ${seasonData.teamById.get(s.team_origine_id)?.nome ?? 'squadra rimossa'}`}
-                    </small>
+                <li key={s.id}>
+                  <div className={`scambi-asset-card scambi-asset-card--pick scambi-asset-card--pick-${s.finestra}`}>
+                    <span className="scambi-asset-card__pickbadge">{s.finestra === 'on' ? 'ON' : 'OFF'}</span>
+                    <span className="scambi-asset-card__info">
+                      <strong>Stagione {s.stagione}</strong>
+                      <small>
+                        {s.stato === 'determinata' && s.posizione ? `${s.posizione}ª scelta` : 'posizione da definire'}
+                        {s.team_origine_id !== teamId && ` · origine ${seasonData.teamById.get(s.team_origine_id)?.nome ?? 'squadra rimossa'}`}
+                      </small>
+                    </span>
                   </div>
                 </li>
               ))}

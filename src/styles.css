@@ -1874,14 +1874,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .team-budget-panel dt { color: #8e8697; font-size: .72rem; }
 .team-budget-panel dd { margin: 0; color: #eee8f3; font-size: .8rem; font-weight: 850; }
 
-.team-picks-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin: 18px 0 0; padding: 0; list-style: none; }
-.team-pick-chip { display: flex; align-items: center; gap: 10px; padding: 11px 13px; border: 1px solid #2e2936; border-radius: 12px; background: #17131f; }
-.team-pick-chip__finestra { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; font-size: .68rem; font-weight: 950; color: #101016; }
-.team-pick-chip--on .team-pick-chip__finestra { background: #5be0c9; }
-.team-pick-chip--off .team-pick-chip__finestra { background: #f2b354; }
-.team-pick-chip div { min-width: 0; display: grid; gap: 2px; }
-.team-pick-chip strong { color: #eee8f3; font-size: .84rem; }
-.team-pick-chip small { color: #8e8697; font-size: .68rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-picks-grid { max-height: none; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); overflow-y: visible; margin-top: 18px; }
+.team-picks-grid .scambi-asset-card { cursor: default; }
+.team-picks-grid .scambi-asset-card:hover { border-color: transparent; transform: none; }
 .team-roster-panel > .season-card__heading { margin-bottom: 18px; }
 .team-roster-panel > .season-card__heading > span { color: #a97acc; font-size: .72rem; font-weight: 900; }
 .team-roster-list { display: grid; gap: 6px; }
