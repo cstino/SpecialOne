@@ -1093,7 +1093,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .rinnovo-risposta--accettato { color: #9ff0c4; border: 1px solid #2f6a4c; background: rgba(47,106,76,.18); }
 .rinnovo-offerta { width: 100%; padding: 14px; border: 1px solid #4a3568; border-radius: 12px; background: #1c1726; text-align: left; }
 .rinnovo-offerta .kicker { margin: 0 0 10px; color: #c88cff; }
-.rinnovo-offerta > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.rinnovo-offerta > div { display: grid; grid-template-columns: 1fr; gap: 10px; }
 .rinnovo-offerta label { display: grid; gap: 4px; min-width: 0; }
 .rinnovo-offerta label > span { color: #958b9e; font-size: .64rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
 .rinnovo-offerta input, .rinnovo-offerta select { min-height: 44px; width: 100%; box-sizing: border-box; padding: .5rem .7rem; color: #fff; border: 1px solid #4a3e5d; border-radius: 9px; background: #1d1827; font-size: 1rem; font-weight: 800; }

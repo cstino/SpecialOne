@@ -76,8 +76,8 @@ type Props = {
     nomeAllenatore?: string | null
     /** Legge la proposta dal server: e' il giocatore a fare la prima cifra. */
     onCarica: () => Promise<PropostaRinnovo>
-    /** Manda una controproposta. La soglia la valuta il server, mai il browser. */
-    onOffri: (ingaggio: number, durata: number) => Promise<EsitoRinnovo>
+    /** Manda una controproposta. La soglia la valuta il server, mai il browser. Durata sempre di una stagione: non si negozia. */
+    onOffri: (ingaggio: number) => Promise<EsitoRinnovo>
     /** Se valorizzato, il bottone e' disabilitato e questo e' il motivo. */
     bloccato?: string
   }
@@ -138,7 +138,6 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
   // Offerta in M€ come stringa: l'utente digita "3,4" e non deve combattere
   // con l'arrotondamento mentre scrive.
   const [offertaM, setOffertaM] = useState('')
-  const [offertaDurata, setOffertaDurata] = useState(1)
   const [inLista, setInLista] = useState(listaMercato?.inLista ?? false)
   const [listaInCorso, setListaInCorso] = useState(false)
   const [listaEsito, setListaEsito] = useState<string | null>(null)
@@ -179,7 +178,6 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
       const dati = await rinnovo.onCarica()
       setProposta(dati)
       setOffertaM((dati.richiesta / 1_000_000).toFixed(1).replace('.', ','))
-      setOffertaDurata(dati.durata)
     } catch (errore) {
       setRinnovoErrore(errore instanceof Error ? errore.message : 'Proposta non disponibile.')
     }
@@ -194,7 +192,7 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
     setRinnovoInCorso(true)
     setRinnovoErrore(null)
     try {
-      const risposta = await rinnovo.onOffri(offertaEuro, offertaDurata)
+      const risposta = await rinnovo.onOffri(offertaEuro)
       setEsito(risposta)
       setProposta({ ...proposta, tentativi_usati: risposta.tentativi_usati, trattativa_chiusa: risposta.esito === 'chiusa' })
     } catch (errore) {
@@ -254,17 +252,10 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
                 <input type="text" inputMode="decimal" value={offertaM} onChange={(evento) => setOffertaM(evento.target.value)} aria-label="Ingaggio offerto in milioni" />
                 <small>M€ a stagione</small>
               </label>
-              <label>
-                <span>Durata</span>
-                <select value={offertaDurata} onChange={(evento) => setOffertaDurata(Number(evento.target.value))} aria-label="Durata offerta">
-                  {[1, 2, 3, 4].map((n) => <option value={n} key={n}>{stagioni(n)}</option>)}
-                </select>
-                <small>{offertaDurata === proposta.durata ? 'quella che chiede' : 'diversa da quella che chiede'}</small>
-              </label>
             </div>
           </div>
           <p className="rinnovo-nota">
-            Allontanarsi dalla durata che chiede rende l’offerta meno appetibile: va compensata con l’ingaggio.
+            La durata non si negozia: un rinnovo estende sempre il contratto di una stagione.
             {' '}Il nuovo ingaggio decorre dalla prossima stagione — questa è già stata pagata.
           </p>
           <p className="rinnovo-tentativi">

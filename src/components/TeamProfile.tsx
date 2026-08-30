@@ -513,9 +513,9 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
             if (error) throw new Error(error.message)
             return data as PropostaRinnovo
           },
-          onOffri: async (ingaggio, durata) => {
+          onOffri: async (ingaggio) => {
             const { data, error } = await supabase.rpc('offri_rinnovo', {
-              p_instance_id: schedaAperta.id, p_ingaggio: ingaggio, p_durata: durata,
+              p_instance_id: schedaAperta.id, p_ingaggio: ingaggio, p_durata: 1,
             })
             if (error) throw new Error(error.message)
             const risposta = data as EsitoRinnovo
