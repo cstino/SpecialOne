@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { formatoStemma, generaUuidV4, preparaStemma } from '../lib/crest'
 import { ROSA_MASSIMA, ROSA_MINIMA } from '../lib/league'
 import { supabase } from '../lib/supabase'
-import { STEMMA_SQUADRA_DEFAULT } from '../lib/teamCrests'
+import { STEMMA_SQUADRA_DEFAULT, stemmaPresetDaValore } from '../lib/teamCrests'
 import { useSeasonData } from '../lib/useSeasonData'
-import { SFONDO_FASE, useFaseSquadra } from '../lib/faseSquadra'
+import { useFaseSquadra } from '../lib/faseSquadra'
 import type { CrestChoice, Fixture, League, MatchPlayerStat, Membership, Team } from '../types'
 import { Crest } from './Crest'
 import { CrestPicker } from './CrestPicker'
@@ -119,6 +119,12 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const team = teamOverride?.id === teamId ? teamOverride : seasonData.teamById.get(teamId)
   const ownTeam = teamId === membership.id
   const fase = useFaseSquadra(league.id, teamId, seasonData.season?.id)
+  // Sfondo dell'hero: il logo della squadra stessa, non quello di fase (quello
+  // resta solo in Overview). Un preset risolve subito a un file statico; uno
+  // stemma caricato ha bisogno della URL firmata già recuperata per il <Crest>.
+  const crestBgUrl = team?.stemma_url?.startsWith('preset:')
+    ? stemmaPresetDaValore(team.stemma_url)?.src ?? null
+    : crestUrl
 
   // Notifica di successo (svincolo): sparisce da sola dopo 2 secondi. Il
   // cleanup annulla il timer se nel frattempo arriva un altro avviso o si
@@ -362,13 +368,15 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>{ownTeam ? 'La tua squadra' : 'Profilo avversario'}</span></header>
     <SeasonState loading={seasonData.loading} error={seasonData.error} onRetry={seasonData.reload} />
     {!seasonData.loading && !seasonData.error && team && <>
-      {/* Sfondo a piena larghezza come in Overview: fuori da season-page
-          apposta, cosi' l'immagine tocca i bordi invece di restare chiusa
-          in una card. */}
-      <section className={`team-profile-hero team-profile-hero--${fase}`} style={{ backgroundImage: `url(${SFONDO_FASE[fase]})` }}>
+      {/* Sfondo a piena larghezza come in Overview (fuori da season-page
+          apposta, cosi' tocca i bordi), ma qui e' il logo della squadra
+          stessa, satinato e sfocato — quello di fase resta solo in
+          Overview, dove indica la competizione e non la squadra. */}
+      <section className={`team-profile-hero team-profile-hero--${fase}`}>
+        {crestBgUrl && <div className="team-profile-hero__vetro" style={{ backgroundImage: `url(${crestBgUrl})` }} aria-hidden="true" />}
         <div className="team-profile-hero__inner">
           <div className="team-profile-crest"><Crest value={team.stemma_url} imageUrl={crestUrl} size="large" /></div>
-          <div>
+          <div className="team-profile-hero__testo">
             <p className="kicker">{league.nome} · Stagione {league.stagione_corrente}</p>
             <h1>{team.nome}</h1>
             {allenatore && <p className="team-allenatore">Allenatore · <b>{allenatore}</b></p>}

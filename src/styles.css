@@ -1790,15 +1790,28 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   isolation: isolate;
   overflow: hidden;
   width: 100%;
-  min-height: clamp(280px, 36vw, 400px);
+  min-height: clamp(240px, 32vw, 360px);
   display: flex;
   align-items: flex-end;
-  background-size: cover; background-position: center;
+  background: #120d1a;
+}
+/* Il logo della squadra, ingrandito e sfocato: fa da ambientazione cromatica
+   invece dello sfondo di fase (quello resta solo in Overview, indica la
+   competizione, non la squadra). "contain" invece di "cover" perche' uno
+   stemma e' quasi sempre un badge centrato su fondo trasparente: tagliarlo
+   ai bordi lo avrebbe reso irriconoscibile. */
+.team-profile-hero__vetro {
+  position: absolute; inset: -15%; z-index: -2;
+  background-repeat: no-repeat; background-position: center; background-size: contain;
+  filter: blur(36px) saturate(1.6) brightness(.9);
+  opacity: .85;
 }
 .team-profile-hero::before {
   content: "";
   position: absolute; inset: 0; z-index: -1;
-  background: linear-gradient(180deg, rgba(8,7,13,.1) 0%, rgba(8,7,13,.45) 55%, rgba(8,7,13,.94) 100%);
+  background: linear-gradient(175deg, rgba(28,18,42,.5) 0%, rgba(13,10,19,.78) 45%, rgba(8,7,13,.97) 100%);
+  backdrop-filter: blur(8px) saturate(1.15);
+  -webkit-backdrop-filter: blur(8px) saturate(1.15);
 }
 .team-profile-hero::after {
   content: "";
@@ -1815,13 +1828,21 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   padding: 28px clamp(20px, 4vw, 32px) 30px;
   display: grid; grid-template-columns: 128px minmax(0,1fr) auto; align-items: center; gap: 26px;
 }
-/* Solo lo stemma: il riquadro dietro lo incorniciava e lo faceva sembrare una miniatura. */
-.team-profile-crest { width: 128px; aspect-ratio: 1; display: grid; place-items: center; }
-.team-profile-crest .crest { filter: drop-shadow(0 12px 26px rgba(0,0,0,.45)); }
-.team-profile-crest .crest { width: 92px; }
-.team-profile-hero__inner .kicker { color: #d9c3ff; }
-.team-profile-hero__inner h1 { margin: 4px 0 9px; color: #fff; font-size: clamp(3rem,6vw,5.8rem); overflow-wrap: break-word; word-break: break-word; }
-.team-profile-hero__inner p:last-child { margin: 0; color: #9d94a8; }
+/* Un piccolo disco di vetro satinato dietro lo stemma nitido, cosi' resta
+   leggibile anche quando lo sfondo sfocato dietro e' molto chiaro o denso. */
+.team-profile-crest {
+  width: 128px; aspect-ratio: 1; display: grid; place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255,255,255,.1), rgba(255,255,255,.02));
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: 0 14px 30px rgba(0,0,0,.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.team-profile-crest .crest { filter: drop-shadow(0 8px 18px rgba(0,0,0,.4)); width: 92px; }
+.team-profile-hero__testo { min-width: 0; }
+.team-profile-hero__testo .kicker { color: #d9c3ff; }
+.team-profile-hero__testo h1 { margin: 4px 0 9px; color: #fff; font-size: clamp(3rem,6vw,5.8rem); overflow-wrap: break-word; word-break: break-word; }
 .team-allenatore { margin: 6px 0 0; color: #9d94a8; font-size: .78rem; }
 .team-allenatore b { color: #c9a6ff; font-weight: 800; }
 .team-edit-button { border-color: #704c8a; color: #e0b6fb; background: #2a1d36; }
@@ -1901,7 +1922,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .league-news { min-height:0; }
   .match-player-columns { grid-template-columns: 1fr; }
   .team-profile-hero__inner { grid-template-columns: 96px minmax(0,1fr); }
-  .team-profile-crest { width: 96px; border-radius: 18px; }
+  .team-profile-crest { width: 96px; }
   .team-profile-crest .crest { width: 70px; }
   .team-edit-button { grid-column: 1 / -1; }
   .team-profile-grid { grid-template-columns: 1fr; }
@@ -1981,7 +2002,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .game-mobile-nav button span { font-size: .62rem; }
   .team-profile-hero { min-height: clamp(240px, 70vw, 340px); }
   .team-profile-hero__inner { grid-template-columns: 72px minmax(0,1fr); gap: 15px; }
-  .team-profile-crest { width: 72px; border-radius: 14px; }
+  .team-profile-crest { width: 72px; }
   .team-profile-crest .crest { width: 54px; }
   .team-profile-hero__inner h1 { font-size: clamp(2.3rem,12vw,3.4rem); }
   .team-profile-hero__inner p:last-child { font-size: .75rem; }
