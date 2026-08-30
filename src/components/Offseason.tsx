@@ -194,10 +194,12 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
 
 function formatCountdown(milliseconds: number) {
   const totaleSecondi = Math.max(0, Math.ceil(milliseconds / 1000))
-  const ore = Math.floor(totaleSecondi / 3600)
+  const giorni = Math.floor(totaleSecondi / 86400)
+  const ore = Math.floor((totaleSecondi % 86400) / 3600)
   const minuti = Math.floor((totaleSecondi % 3600) / 60)
   const secondi = totaleSecondi % 60
-  return [ore, minuti, secondi].map((parte) => String(parte).padStart(2, '0')).join(':')
+  const orologio = [ore, minuti, secondi].map((parte) => String(parte).padStart(2, '0')).join(':')
+  return giorni > 0 ? `${giorni}g ${orologio}` : orologio
 }
 
 
