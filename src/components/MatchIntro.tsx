@@ -5,8 +5,59 @@ import { LOGO_FASE, MUSICA_FASE, type FaseSquadra } from '../lib/faseSquadra'
 import { righeFormazione } from '../lib/formazioni'
 import { firmaFoto } from './RosaElenco'
 import type { useSeasonData } from '../lib/useSeasonData'
-import type { BracketTie, Fixture, Membership, Team } from '../types'
+import type { BracketTie, Fixture, Match, Membership, Team } from '../types'
 import { Crest } from './Crest'
+
+type RigaClassificaStorica = { teamId: number; punti: number; differenzaReti: number; golFatti: number; posizione: number }
+
+// La classifica del riepilogo non deve mai anticipare l'esito della partita
+// che sta per essere presentata: data.standings e' sempre quella LIVE, gia'
+// aggiornata dalla giornata in scena (e da eventuali giornate successive gia'
+// simulate ma non ancora "viste"). Va ricostruita da zero usando solo i
+// risultati con giornata precedente a quella della fixture, con lo stesso
+// criterio del server (punti, scontri diretti fra chi e' a pari punti,
+// differenza reti, gol fatti — vedi registra_risultato_partita).
+function classificaFinoA(fixtures: Fixture[], matchByFixture: Map<number, Match>, teamIds: number[], giornataEsclusiva: number): RigaClassificaStorica[] {
+  const stato = new Map<number, { punti: number; golFatti: number; golSubiti: number }>(
+    teamIds.map((id) => [id, { punti: 0, golFatti: 0, golSubiti: 0 }])
+  )
+  const risultati = fixtures
+    .filter((fixture) => fixture.bracket_tie_id == null && fixture.giornata < giornataEsclusiva)
+    .map((fixture) => ({ fixture, match: matchByFixture.get(fixture.id) }))
+    .filter((riga): riga is { fixture: Fixture; match: Match } => riga.match != null)
+
+  for (const { fixture, match } of risultati) {
+    const casa = stato.get(fixture.home_team_id)
+    const ospite = stato.get(fixture.away_team_id)
+    if (!casa || !ospite) continue
+    casa.golFatti += match.gol_home; casa.golSubiti += match.gol_away
+    ospite.golFatti += match.gol_away; ospite.golSubiti += match.gol_home
+    if (match.gol_home > match.gol_away) casa.punti += 3
+    else if (match.gol_home < match.gol_away) ospite.punti += 3
+    else { casa.punti += 1; ospite.punti += 1 }
+  }
+
+  function puntiDiretti(teamId: number, puntiRiferimento: number) {
+    let totale = 0
+    for (const { fixture, match } of risultati) {
+      const avversario = fixture.home_team_id === teamId ? fixture.away_team_id
+        : fixture.away_team_id === teamId ? fixture.home_team_id : null
+      if (avversario == null || stato.get(avversario)?.punti !== puntiRiferimento) continue
+      const golPropri = fixture.home_team_id === teamId ? match.gol_home : match.gol_away
+      const golAltrui = fixture.home_team_id === teamId ? match.gol_away : match.gol_home
+      totale += golPropri > golAltrui ? 3 : golPropri === golAltrui ? 1 : 0
+    }
+    return totale
+  }
+
+  return teamIds
+    .map((teamId) => {
+      const riga = stato.get(teamId)!
+      return { teamId, punti: riga.punti, differenzaReti: riga.golFatti - riga.golSubiti, golFatti: riga.golFatti, puntiDiretti: puntiDiretti(teamId, riga.punti) }
+    })
+    .sort((a, b) => b.punti - a.punti || b.puntiDiretti - a.puntiDiretti || b.differenzaReti - a.differenzaReti || b.golFatti - a.golFatti || a.teamId - b.teamId)
+    .map((riga, indice) => ({ teamId: riga.teamId, punti: riga.punti, differenzaReti: riga.differenzaReti, golFatti: riga.golFatti, posizione: indice + 1 }))
+}
 
 type Props = {
   membership: Membership
@@ -177,6 +228,11 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
   const totaleSlot = Math.max(1, ordineComparsa.size)
   const margineFineBattuta = 1 // secondi di margine prima della fine della battuta, cosi' l'ultimo giocatore resta visibile
 
+  const classificaPrecedente = useMemo(
+    () => classificaFinoA(data.fixtures, data.matchByFixture, data.teams.map((team) => team.id), fixture.giornata),
+    [data.fixtures, data.matchByFixture, data.teams, fixture.giornata]
+  )
+
   return (
     <div className="match-intro" role="dialog" aria-modal="true" aria-label="Presentazione della partita">
       <audio src={MUSICA_FASE[fase]} autoPlay loop />
@@ -204,16 +260,16 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
       )}
 
       {beat.tipo === 'classifica' && (
-        <div className="match-intro__classifica">
-          <p className="match-intro__classifica-titolo">Classifica · Stagione regolare</p>
+        <div className="match-intro__classifica" style={{ '--n-squadre': classificaPrecedente.length } as React.CSSProperties}>
+          <p className="match-intro__classifica-titolo">Classifica · Prima della giornata {fixture.giornata}</p>
           <ol>
-            {data.standings.map((riga, indice) => {
-              const evidenziata = riga.team_id === fixture.home_team_id || riga.team_id === fixture.away_team_id
-              const squadra = data.teamById.get(riga.team_id)
+            {classificaPrecedente.map((riga) => {
+              const evidenziata = riga.teamId === fixture.home_team_id || riga.teamId === fixture.away_team_id
+              const squadra = data.teamById.get(riga.teamId)
               return (
-                <li className={evidenziata ? 'is-evidenziata' : ''} key={riga.team_id}>
-                  <span className="match-intro__classifica-pos">{riga.posizione ?? indice + 1}</span>
-                  <Crest value={squadra?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(riga.team_id)} size="small" />
+                <li className={evidenziata ? 'is-evidenziata' : ''} key={riga.teamId}>
+                  <span className="match-intro__classifica-pos">{riga.posizione}</span>
+                  <Crest value={squadra?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(riga.teamId)} size="small" />
                   <strong>{squadra?.nome ?? 'Squadra'}</strong>
                   <b>{riga.punti}</b>
                 </li>

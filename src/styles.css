@@ -2568,10 +2568,15 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 /* Battuta "classifica" (stagione regolare) e "tabellone" (playoff): stesso
    ruolo nella scaletta, contenuto diverso a seconda della fase. */
 .match-intro__classifica, .match-intro__tabellone { position: relative; z-index: 1; display: flex; width: 100%; max-width: 460px; flex-direction: column; gap: 16px; padding: 100px 20px 40px; animation: match-intro-in .5s ease-out both; }
-.match-intro__classifica-titolo { margin: 0; text-align: center; color: #cbb9e6; font-size: .72rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
-.match-intro__classifica ol { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
-.match-intro__classifica li { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 10px; color: rgba(255,255,255,.65); font-size: .8rem; }
+/* La lista non deve mai scorrere: che siano 4 squadre o 20, righe e stemmi si
+   comprimono in proporzione (--n-squadre, impostata da MatchIntro) per stare
+   tutte nell'altezza fissa dell'overlay (.match-intro e' position:fixed). */
+.match-intro__classifica { height: 100%; max-height: 100vh; box-sizing: border-box; overflow: hidden; }
+.match-intro__classifica-titolo { margin: 0; flex: none; text-align: center; color: #cbb9e6; font-size: .72rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.match-intro__classifica ol { display: flex; flex: 1; min-height: 0; flex-direction: column; justify-content: space-between; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.match-intro__classifica li { display: flex; flex: 1 1 0; min-height: 0; align-items: center; gap: clamp(6px, calc(14px - var(--n-squadre, 8) * .4px), 12px); padding: 0 10px; border-radius: 10px; color: rgba(255,255,255,.65); font-size: clamp(.56rem, calc(1.05rem - var(--n-squadre, 8) * .022rem), .8rem); }
 .match-intro__classifica li.is-evidenziata { color: #fff; background: rgba(155,76,255,.18); box-shadow: inset 3px 0 #c58cff; }
+.match-intro__classifica .crest--small { width: clamp(16px, calc(52px - var(--n-squadre, 8) * 1.7px), 44px); }
 .match-intro__classifica-pos { width: 20px; flex: none; text-align: center; font-weight: 900; color: rgba(255,255,255,.4); }
 .match-intro__classifica li.is-evidenziata .match-intro__classifica-pos { color: #c58cff; }
 .match-intro__classifica strong { flex: 1; min-width: 0; overflow: hidden; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
