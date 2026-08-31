@@ -159,6 +159,11 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     return () => { active = false }
   }, [team?.stemma_url])
 
+  const stemmiUsati = useMemo(
+    () => seasonData.teams.filter((t) => t.attiva && t.id !== teamId).map((t) => t.stemma_url).filter((value): value is string => !!value),
+    [seasonData.teams, teamId]
+  )
+
   useEffect(() => {
     if (!team) return
     setTeamName(team.nome)
@@ -394,7 +399,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
 
       {ownTeam && editing && <form className="team-settings-panel" onSubmit={saveProfile}>
         <div><p className="kicker">Impostazioni squadra</p><h2>Nome e logo</h2><label>Nome squadra<input type="text" minLength={2} maxLength={40} required value={teamName} onChange={(event) => setTeamName(event.target.value)} /></label></div>
-        <CrestPicker value={crest} onChange={setCrest} disabled={saving} />
+        <CrestPicker value={crest} onChange={setCrest} disabled={saving} disabledValues={stemmiUsati} />
         {saveError && <p className="notice notice--error">{saveError}</p>}
         <button className="button button--primary" type="submit" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva modifiche'}</button>
       </form>}
