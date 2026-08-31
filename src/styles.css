@@ -1328,7 +1328,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .season-team-button { padding: 0; border: 0; color: inherit; background: transparent; font: inherit; cursor: pointer; }
 .season-team-button:hover strong, .season-team-button:focus-visible strong { color: #d99cff; }
 .season-team-button:focus-visible { outline: 1px solid #9f5fd0; outline-offset: 4px; }
-.season-team strong { min-width: 0; overflow: hidden; color: #eee9f4; font-size: .87rem; text-overflow: ellipsis; white-space: nowrap; }
+.season-team strong { display: block; min-width: 0; overflow: hidden; color: #eee9f4; font-size: .87rem; text-overflow: ellipsis; white-space: nowrap; }
 .season-team--reversed { flex-direction: row-reverse; text-align: right; }
 /* Card "Ultima/Prossima partita" ridisegnate (SeasonOverview): il nome
    affiancato allo stemma tronca quasi subito perche' il punteggio in
