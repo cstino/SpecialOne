@@ -59,6 +59,13 @@ type Scelta = {
   stato: 'futura' | 'determinata'
 }
 
+type VivaioProspetto = {
+  id: number
+  ingaggio: number
+  entrata_stagione: number
+  giocatore: { nome: string; posizioni: string[]; overall: number; potential: number; eta: number; nazionalita: string | null }
+}
+
 const ROLE_ORDER: Record<string, number> = { GK: 0, DEF: 1, MID: 2, ATT: 3 }
 const DEF = new Set(['LB', 'CB', 'RB', 'LWB', 'RWB'])
 const MID = new Set(['CDM', 'CM', 'CAM', 'LM', 'RM'])
@@ -96,7 +103,7 @@ function buonuscita(player: RosterPlayer, stagioneCorrente: number) {
 export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTeamUpdated }: Props) {
   const league = membership.league as League
   const seasonData = useSeasonData(membership)
-  const [tab, setTab] = useState<'sommario' | 'rosa'>('sommario')
+  const [tab, setTab] = useState<'sommario' | 'rosa' | 'vivaio'>('sommario')
   const [teamOverride, setTeamOverride] = useState<Team | null>(null)
   const [crestUrl, setCrestUrl] = useState<string | null>(null)
   const [players, setPlayers] = useState<RosterPlayer[]>([])
@@ -116,6 +123,12 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [rosterNotice, setRosterNotice] = useState<string | null>(null)
   const [scelte, setScelte] = useState<Scelta[]>([])
   const [scelteLoading, setScelteLoading] = useState(true)
+  const [vivaioProspetti, setVivaioProspetti] = useState<VivaioProspetto[]>([])
+  const [vivaioLoading, setVivaioLoading] = useState(true)
+  const [vivaioErrore, setVivaioErrore] = useState<string | null>(null)
+  const [vivaioAmpiezza, setVivaioAmpiezza] = useState(15)
+  const [vivaioSlotMassimi, setVivaioSlotMassimi] = useState(1)
+  const [vivaioAzioneInCorso, setVivaioAzioneInCorso] = useState<number | null>(null)
   const team = teamOverride?.id === teamId ? teamOverride : seasonData.teamById.get(teamId)
   const ownTeam = teamId === membership.id
   const fase = useFaseSquadra(league.id, teamId, seasonData.season?.id)
@@ -248,6 +261,47 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     void loadScelte()
     return () => { active = false }
   }, [league.id, teamId])
+
+  // Chi e' in cantiera e' visibile a tutta la lega (stessa policy delle
+  // scelte, scoutare gli avversari e' voluto): l'overall e' sempre quello
+  // vero, il potenziale si mostra come una fascia che si stringe salendo
+  // di livello VIVAIO (ampiezza_range di private.effetti_ramo).
+  const caricaVivaio = useCallback(async () => {
+    setVivaioLoading(true); setVivaioErrore(null)
+    const [prospettiResult, tabellaResult, risorseResult] = await Promise.all([
+      supabase.from('vivaio_prospetti')
+        .select('id, ingaggio, entrata_stagione, giocatore:players(nome, posizioni, overall, potential, eta, nazionalita)')
+        .eq('league_id', league.id).eq('team_id', teamId),
+      supabase.rpc('tabella_risorse'),
+      supabase.from('team_risorse').select('livello_vivaio').eq('team_id', teamId).maybeSingle(),
+    ])
+    if (prospettiResult.error) { setVivaioErrore(prospettiResult.error.message); setVivaioLoading(false); return }
+    const livello = (risorseResult.data as { livello_vivaio: number } | null)?.livello_vivaio ?? 0
+    const scala = (tabellaResult.data as { rami?: { vivaio?: { ampiezza_range: number; slot: number }[] } } | null)?.rami?.vivaio
+    setVivaioAmpiezza(scala?.[livello]?.ampiezza_range ?? 15)
+    setVivaioSlotMassimi(scala?.[livello]?.slot ?? 1)
+    setVivaioProspetti((prospettiResult.data ?? []) as unknown as VivaioProspetto[])
+    setVivaioLoading(false)
+  }, [league.id, teamId])
+
+  useEffect(() => { void caricaVivaio() }, [caricaVivaio])
+
+  async function promuovi(id: number) {
+    setVivaioAzioneInCorso(id); setVivaioErrore(null)
+    const { error } = await supabase.rpc('promuovi_vivaio', { p_vivaio_id: id })
+    setVivaioAzioneInCorso(null)
+    if (error) { setVivaioErrore(error.message); return }
+    await caricaVivaio()
+    await onTeamUpdated()
+  }
+
+  async function rilascia(id: number) {
+    setVivaioAzioneInCorso(id); setVivaioErrore(null)
+    const { error } = await supabase.rpc('rilascia_vivaio', { p_vivaio_id: id })
+    setVivaioAzioneInCorso(null)
+    if (error) { setVivaioErrore(error.message); return }
+    await caricaVivaio()
+  }
 
   const standing = seasonData.standings.find((item) => item.team_id === teamId)
   const recentFixtures = useMemo(() => [...seasonData.fixtures].reverse().filter((fixture) => fixture.stato === 'simulata' && (fixture.home_team_id === teamId || fixture.away_team_id === teamId)).slice(0, 5), [seasonData.fixtures, teamId])
@@ -409,7 +463,11 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           pagina. Forzarne altri avrebbe voluto dire inventare contenuti
           vuoti solo per somigliare a un'app con più dati da mostrare. */}
       <UnderlineTabs
-        tabs={[{ value: 'sommario', label: 'Sommario' }, { value: 'rosa', label: `Rosa (${players.length})` }] as const}
+        tabs={[
+          { value: 'sommario', label: 'Sommario' },
+          { value: 'rosa', label: `Rosa (${players.length})` },
+          { value: 'vivaio', label: `Vivaio (${vivaioProspetti.length}/${vivaioSlotMassimi})` },
+        ] as const}
         value={tab}
         onChange={setTab}
       />
@@ -472,6 +530,46 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         {rosterNotice && <p className="notice notice--success">{rosterNotice}</p>}
         {rosterError && <p className="notice notice--error">{rosterError}</p>}
         {rosterLoading ? <p className="season-empty">Carico la rosa…</p> : <div className="team-roster-list">{players.map((player) => <button className={`team-roster-player team-roster-player--${department(player.posizioni[0])}`} type="button" key={player.id} onClick={() => openPlayer(player)} aria-label={`Scheda di ${player.nome}`}><i /><span className="team-roster-role">{player.posizioni[0] ?? '—'}</span><div><strong>{player.nome}</strong><small>{player.posizioni.join(' · ')} · {player.eta} anni · <em>{money(player.ingaggio)}/stagione</em> · <em className={contratto(player, league.stagione_corrente).urgente ? 'contratto-urgente' : 'contratto-residuo'}>{contratto(player, league.stagione_corrente).testo}</em></small></div><b>{player.overall}</b><dl><span>{player.minuti}<small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span></dl></button>)}</div>}
+      </section>}
+
+      {tab === 'vivaio' && <section className="team-roster-panel">
+        <div className="season-card__heading">
+          <div><p className="kicker">Settore giovanile</p><h2>Prospetti in cantiera</h2></div>
+          <span>{vivaioProspetti.length} / {vivaioSlotMassimi} slot</span>
+        </div>
+        <p className="field-help">
+          Fuori dal conteggio rosa. {ownTeam ? 'Entro la fine dell’off-season devi promuoverli in prima squadra o torneranno sul mercato UNDER.' : 'Il potenziale mostrato è una fascia: si stringe salendo di livello VIVAIO.'}
+        </p>
+        {vivaioErrore && <p className="notice notice--error">{vivaioErrore}</p>}
+        {vivaioLoading ? <p className="season-empty">Carico il vivaio…</p>
+          : vivaioProspetti.length === 0 ? <p className="season-empty">Nessun prospetto in cantiera.</p>
+          : <div className="team-roster-list">
+              {vivaioProspetti.map((prospetto) => {
+                const g = prospetto.giocatore
+                const meta = Math.max(40, g.potential - Math.round(vivaioAmpiezza / 2))
+                const alta = Math.min(99, g.potential + Math.round(vivaioAmpiezza / 2))
+                const inCorso = vivaioAzioneInCorso === prospetto.id
+                return (
+                  <div className={`team-roster-player team-roster-player--${department(g.posizioni[0])}`} key={prospetto.id}>
+                    <i />
+                    <span className="team-roster-role">{g.posizioni[0] ?? '—'}</span>
+                    <div>
+                      <strong>{g.nome}</strong>
+                      <small>{g.posizioni.join(' · ')} · {g.eta} anni · <em>{money(prospetto.ingaggio)}/stagione</em> · potenziale {vivaioAmpiezza === 0 ? g.potential : `${meta}-${alta}`}</small>
+                    </div>
+                    <b>{g.overall}</b>
+                    {ownTeam && <div className="vivaio-azioni">
+                      <button className="button button--primary" type="button" disabled={inCorso} onClick={() => void promuovi(prospetto.id)}>
+                        {inCorso ? '…' : 'Promuovi'}
+                      </button>
+                      <button className="button button--danger-ghost" type="button" disabled={inCorso} onClick={() => void rilascia(prospetto.id)}>
+                        Rilascia
+                      </button>
+                    </div>}
+                  </div>
+                )
+              })}
+            </div>}
       </section>}
 
       {schedaAperta && <SchedaGiocatore

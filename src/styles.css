@@ -1899,6 +1899,11 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .team-roster-list { display: grid; gap: 6px; }
 .team-roster-player { position: relative; width: 100%; min-height: 68px; display: grid; grid-template-columns: 4px 46px minmax(0,1fr) 50px 180px; align-items: center; gap: 12px; padding: 8px 14px 8px 8px; overflow: hidden; border: 1px solid #2e2937; border-radius: 10px; color: inherit; background: #121118; font-family: inherit; text-align: left; cursor: pointer; transition: border-color .16s ease, background .16s ease; }
 .team-roster-player:hover { border-color: #7a45c0; background: #191426; }
+/* Riga vivaio: e' un div (non un button, ha due bottoni dentro), stessa
+   griglia della riga rosa ma niente hover/cursore da elemento cliccabile. */
+.team-roster-player:has(.vivaio-azioni) { cursor: default; }
+.vivaio-azioni { display: flex; flex-direction: column; gap: 6px; }
+.vivaio-azioni .button { padding: 0 10px; min-height: 30px; font-size: .68rem; white-space: nowrap; }
 .team-roster-player:focus-visible { outline: 2px solid #c77dff; outline-offset: 2px; }
 .team-roster-player > i { align-self: stretch; border-radius: 4px; background: #e89935; }
 .team-roster-player--DEF > i { background: #45bde5; }
