@@ -59,7 +59,10 @@ export function PopupSpiegazione({ userId, hintKey, titolo, children }: Props) {
     <div className="popup-spiegazione-sfondo" role="dialog" aria-modal="true" aria-label={titolo}>
       <div className="popup-spiegazione">
         <h2>{titolo}</h2>
-        <div className="popup-spiegazione__corpo">{children}</div>
+        <div className="popup-spiegazione__corpo">
+          {children}
+          <p className="popup-spiegazione__rimando">Se vuoi avere maggiori dettagli, consulta la sezione Aiuto.</p>
+        </div>
         <label className="popup-spiegazione__checkbox">
           <input type="checkbox" checked={nonMostrare} onChange={(e) => setNonMostrare(e.target.checked)} />
           Non mostrare più

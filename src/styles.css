@@ -2471,6 +2471,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .popup-spiegazione h2 { margin: 0; color: #fff; font-size: 1.35rem; }
 .popup-spiegazione__corpo { display: grid; gap: 12px; color: #cabfd6; font-size: .84rem; line-height: 1.55; }
 .popup-spiegazione__corpo strong { color: #fff; }
+.popup-spiegazione__rimando { margin-top: 2px; color: #9b90a7; font-size: .74rem; font-style: italic; }
 .popup-spiegazione__checkbox { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid #443557; border-radius: 12px; background: #1a1625; color: #eee9f4; font-size: .82rem; font-weight: 750; cursor: pointer; }
 .popup-spiegazione__checkbox input { width: 19px; height: 19px; accent-color: #9b4cff; cursor: pointer; }
 @keyframes popup-spiegazione-sfondo { from { opacity: 0; } }

@@ -574,6 +574,10 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         <p>Più usi lo stesso modulo, più la squadra ci prende confidenza e rende meglio in quello schema
           (familiarità del modulo). Se non schieri entro le <strong>23:00</strong>, il sistema genera una
           formazione automatica di riserva per non farti saltare la giornata.</p>
+        <p>La percentuale sulla foto di ogni giocatore è la sua <strong>energia</strong>: più è bassa, più
+          rischia di infortunarsi. Recupera da sola fra una partita e l'altra, più in fretta se investi nel
+          Reparto medico in Gestione risorse. Un giocatore infortunato o squalificato non può scendere in
+          campo: va spostato in tribuna finché non torna disponibile.</p>
       </PopupSpiegazione>
       <section className="formation-hero"><p className="kicker">La tua distinta · {league.nome}</p><h1>Schiera la squadra.</h1></section>
       {error && <p className="notice notice--error" role="alert">{error}</p>}
