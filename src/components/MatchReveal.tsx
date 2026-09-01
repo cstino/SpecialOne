@@ -4,12 +4,13 @@ import { cognome } from '../lib/nomi'
 import { ricostruisciEventiStorici, type StatEventoStorico } from '../lib/matchEvents'
 import { useSeasonData } from '../lib/useSeasonData'
 import { SFONDO_FASE_VERTICALE, type FaseSquadra } from '../lib/faseSquadra'
-import { isEventoGol, type EventoPartita, type Membership } from '../types'
+import { isEventoGol, type EventoGol, type EventoPartita, type Membership } from '../types'
 import { Crest } from './Crest'
+import { firmaFoto } from './RosaElenco'
 import { MatchIntro } from './MatchIntro'
 
 type Props = { membership: Membership; matchId: number; onClose: () => void; onRevealed: (matchId: number) => void; onOpenReport: () => void }
-type Player = { id: number; nome: string }
+type Player = { id: number; nome: string; foto?: string }
 
 // Le cronache salvate dal backend piu' recente hanno sempre `minuto`. Alcune
 // partite gia' registrate (o scritte durante un deploy parziale) possono pero'
@@ -159,6 +160,10 @@ function classeEvento(evento: EventoPartita): string {
 }
 
 const TACCHE = [15, 30, 45, 60, 75, 90]
+// Quanto resta in scena la card del gol: stessa durata del file audio
+// dell'esultanza (~2,4s), un filo piu' corta cosi' il boato non viene
+// interrotto a meta'.
+const DURATA_POPUP_GOL_MS = 2200
 
 export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenReport }: Props) {
   const data = useSeasonData(membership)
@@ -180,7 +185,14 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const [altezzaVisibile, setAltezzaVisibile] = useState(0)
   const [stretto, setStretto] = useState(false)
   const suonoGolRef = useRef<HTMLAudioElement>(null)
-  const golGiaSonorizzati = useRef<Set<EventoPartita>>(new Set())
+  // Il gol appena segnato resta in scena da solo (simulazione ferma) prima di
+  // "sistemarsi" nella cronaca: popupGol e' quello in scena ora, codaGolRef
+  // quelli in attesa (due gol nello stesso minuto sono rari ma possibili).
+  // inTimeline segna quali sono gia' passati dalla card grande alla cronaca:
+  // finche' un gol non c'e' dentro, resta escluso da eventiCasa/eventiOspite.
+  const [popupGol, setPopupGol] = useState<EventoGol | null>(null)
+  const codaGolRef = useRef<EventoGol[]>([])
+  const [inTimeline, setInTimeline] = useState<Set<EventoPartita>>(new Set())
 
   useEffect(() => {
     let vivo = true
@@ -234,9 +246,17 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
       const { data: istanze, error } = await supabase.from('player_instances').select('id, player_id').in('id', ids)
       if (error || !attivo) return
       const playerIds = [...new Set((istanze ?? []).map((istanza) => istanza.player_id))]
-      const { data: giocatori } = playerIds.length ? await supabase.from('players').select('id, nome').in('id', playerIds) : { data: [] }
+      const { data: giocatori } = playerIds.length
+        ? await supabase.from('players').select('id, nome, foto_url').in('id', playerIds)
+        : { data: [] }
       if (!attivo) return
-      const perCatalogo = new Map((giocatori ?? []).map((giocatore) => [giocatore.id, giocatore as Player]))
+      // La foto serve solo per la card del gol, ma firmarla per tutti evita di
+      // dover distinguere marcatori da chi esce/entra in un cambio: sono
+      // comunque poche foto (una manciata di giocatori a partita).
+      const foto = await Promise.all((giocatori ?? []).map(async (giocatore) => [giocatore.id, await firmaFoto(giocatore.foto_url)] as const))
+      if (!attivo) return
+      const fotoPerGiocatore = new Map(foto)
+      const perCatalogo = new Map((giocatori ?? []).map((giocatore) => [giocatore.id, { id: giocatore.id, nome: giocatore.nome, foto: fotoPerGiocatore.get(giocatore.id) } as Player]))
       setNomi(new Map((istanze ?? []).flatMap((istanza) => {
         const giocatore = perCatalogo.get(istanza.player_id)
         return giocatore ? [[istanza.id, giocatore] as const] : []
@@ -246,11 +266,37 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     return () => { attivo = false }
   }, [eventi])
 
+  // L'avanzamento si ferma mentre c'e' un gol in scena: riprende da solo
+  // quando popupGol torna null (vedi l'effetto piu' sotto).
   useEffect(() => {
-    if (minutoCorrente < 0 || minutoCorrente >= 90) return
-    const timer = window.setTimeout(() => setMinutoCorrente((valore) => valore + 1), 700)
+    if (minutoCorrente < 0 || minutoCorrente >= 90 || popupGol) return
+    const timer = window.setTimeout(() => {
+      const prossimo = minutoCorrente + 1
+      const golAlMinuto = eventi.filter((evento): evento is EventoGol => isEventoGol(evento) && evento.minuto === prossimo)
+      setMinutoCorrente(prossimo)
+      if (golAlMinuto.length) {
+        codaGolRef.current.push(...golAlMinuto.slice(1))
+        setPopupGol(golAlMinuto[0])
+      }
+    }, 700)
     return () => window.clearTimeout(timer)
-  }, [minutoCorrente])
+  }, [minutoCorrente, popupGol, eventi])
+
+  // Ogni gol resta in scena da solo per DURATA_POPUP_GOL_MS (sincronizzato col
+  // boato dell'esultanza), poi passa al prossimo in coda o si riprende la
+  // simulazione. Solo a quel punto il gol entra in inTimeline e compare nella
+  // sua porzione del grafico: prima card grande, poi cronaca, mai insieme.
+  useEffect(() => {
+    if (!popupGol) return
+    const audio = suonoGolRef.current
+    if (audio) { audio.currentTime = 0; void audio.play().catch(() => {}) }
+    const timer = window.setTimeout(() => {
+      const golConcluso = popupGol
+      setInTimeline((precedente) => new Set(precedente).add(golConcluso))
+      setPopupGol(codaGolRef.current.shift() ?? null)
+    }, DURATA_POPUP_GOL_MS)
+    return () => window.clearTimeout(timer)
+  }, [popupGol])
 
   useEffect(() => {
     if (minutoCorrente < 90 || revealRegistrato.current) return
@@ -281,25 +327,13 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
 
   // Un evento minore sparisce da solo dopo qualche minuto di gioco: da qui in
   // poi esce proprio dalla lista, non resta piu' una card invisibile a
-  // occupare spazio (era la causa dei buchi enormi in cronaca).
+  // occupare spazio (era la causa dei buchi enormi in cronaca). Un gol invece
+  // resta escluso finche' non e' passato dalla card grande (inTimeline).
   const visibili = useMemo(() => eventi.filter((evento) => evento.minuto <= minuto
-    && (!eTransitorio(evento) || minuto - evento.minuto < MINUTI_VITA_TRANSITORIO)), [eventi, minuto])
+    && (!isEventoGol(evento) || inTimeline.has(evento))
+    && (!eTransitorio(evento) || minuto - evento.minuto < MINUTI_VITA_TRANSITORIO)), [eventi, minuto, inTimeline])
   const eventiCasa = useMemo(() => visibili.filter((evento) => evento.lato === 'casa'), [visibili])
   const eventiOspite = useMemo(() => visibili.filter((evento) => evento.lato === 'ospite'), [visibili])
-
-  // Boato del pubblico quando un gol entra in cronaca. golGiaSonorizzati e'
-  // per riferimento d'oggetto (non per id): eventi resta lo stesso array a
-  // ogni tick (e' un useMemo con [fixture, match, statsStoriche]), quindi
-  // ogni evento e' sempre lo stesso oggetto e il Set lo riconosce senza dover
-  // inventare una chiave. Due gol nello stesso minuto suonano insieme: va
-  // bene, e' raro e comunque dura solo un paio di secondi.
-  useEffect(() => {
-    const nuoviGol = visibili.filter((evento) => isEventoGol(evento) && !golGiaSonorizzati.current.has(evento))
-    if (!nuoviGol.length) return
-    nuoviGol.forEach((evento) => golGiaSonorizzati.current.add(evento))
-    const audio = suonoGolRef.current
-    if (audio) { audio.currentTime = 0; void audio.play().catch(() => {}) }
-  }, [visibili])
 
   // Di norma la cronaca sta esattamente in una schermata. Solo se una partita
   // fittissima non ci sta il canvas cresce, e cresce per tutti: linea, tacche
@@ -337,11 +371,32 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     />
   }
 
+  const squadraGol = popupGol && (popupGol.lato === 'casa' ? casa : ospite)
+  const crestGolUrl = popupGol && data.crestUrlByTeamId.get(popupGol.lato === 'casa' ? fixture.home_team_id : fixture.away_team_id)
+  const marcatore = popupGol && nomi.get(popupGol.marcatore)
+
   return <div className="match-reveal-backdrop" role="dialog" aria-modal="true" aria-label="Cronaca della partita">
-    <audio ref={suonoGolRef} src="/suoni-effetti/gol.mp3" preload="auto" />
+    <audio ref={suonoGolRef} src="/suoni-effetti/esultanza-gol.m4a" preload="auto" />
+    {eventi.length > 0 && (inCorso || popupGol) && <audio src="/suoni-effetti/stadio-sottofondo.m4a" loop autoPlay />}
     <section className="match-reveal">
       <div className="match-reveal__sfondo" style={{ backgroundImage: `url(${SFONDO_FASE_VERTICALE[fase]})` }} />
       <button className="match-reveal__close" type="button" onClick={onClose} aria-label="Chiudi cronaca">×</button>
+
+      {popupGol && <div className="match-reveal__gol-popup" role="alert">
+        <div className="match-reveal__gol-popup-card">
+          <p className="match-reveal__gol-popup-titolo">GOOOL!</p>
+          <div className="match-reveal__gol-popup-foto">
+            {marcatore?.foto ? <img src={marcatore.foto} alt="" /> : <span aria-hidden="true">{cognome(marcatore?.nome ?? '?').charAt(0)}</span>}
+          </div>
+          <strong>{cognome(marcatore?.nome ?? 'Giocatore')}</strong>
+          <div className="match-reveal__gol-popup-squadra">
+            <Crest value={squadraGol?.stemma_url ?? null} imageUrl={crestGolUrl ?? undefined} size="small" />
+            <span>{squadraGol?.nome ?? 'Squadra'}</span>
+            <b>{popupGol.minuto}’</b>
+          </div>
+        </div>
+      </div>}
+
       <header className="match-reveal__header">
         <div><Crest value={casa?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /><strong>{casa?.nome}</strong></div>
         <div className="match-reveal__score">

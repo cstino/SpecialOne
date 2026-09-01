@@ -2643,6 +2643,19 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .match-reveal::after { content: ''; position: absolute; z-index: -1; inset: 0; background: radial-gradient(circle at 50% -10%, rgba(155,76,255,.14), transparent 55%), rgba(8,6,14,.4); }
 .match-reveal__header, .match-reveal__footer { backdrop-filter: blur(16px); background: rgba(10,8,18,.4); }
 .match-reveal__close { position: absolute; z-index: 2; top: max(13px, env(safe-area-inset-top)); right: 15px; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.14); border-radius: 50%; color: #ede6f7; background: rgba(255,255,255,.06); backdrop-filter: blur(8px); font-size: 1.4rem; line-height: 1; cursor: pointer; }
+/* Card del gol: ferma la scena al centro dello schermo finche' non e'
+   "sistemata" nella sua porzione di cronaca (vedi popupGol in MatchReveal). */
+.match-reveal__gol-popup { position: absolute; z-index: 10; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(6,4,12,.72); backdrop-filter: blur(6px); animation: gol-popup-sfondo .25s ease-out both; }
+.match-reveal__gol-popup-card { display: grid; justify-items: center; gap: 10px; max-width: 260px; padding: 28px 32px; border-radius: 24px; text-align: center; background: linear-gradient(160deg, rgba(155,76,255,.24), rgba(20,14,32,.92)); border: 1px solid rgba(226,155,255,.35); box-shadow: 0 20px 60px rgba(0,0,0,.5); animation: gol-popup-card .4s cubic-bezier(.2,.8,.2,1.4) both; }
+.match-reveal__gol-popup-titolo { margin: 0; color: #fff; font: 900 1.9rem/1 "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .04em; text-shadow: 0 0 24px rgba(180,110,255,.7); }
+.match-reveal__gol-popup-foto { width: 92px; height: 92px; overflow: hidden; border-radius: 50%; border: 3px solid rgba(226,155,255,.6); background: #241a30; display: grid; place-items: center; }
+.match-reveal__gol-popup-foto img { width: 100%; height: 100%; object-fit: cover; }
+.match-reveal__gol-popup-foto span { color: rgba(255,255,255,.5); font: 900 2rem/1 Inter, Arial, sans-serif; }
+.match-reveal__gol-popup-card > strong { color: #fff; font-size: 1.1rem; font-weight: 900; }
+.match-reveal__gol-popup-squadra { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,.75); font-size: .78rem; font-weight: 700; }
+.match-reveal__gol-popup-squadra b { color: #e29bff; font-variant-numeric: tabular-nums; }
+@keyframes gol-popup-sfondo { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gol-popup-card { 0% { opacity: 0; transform: scale(.7); } 60% { transform: scale(1.06); } 100% { opacity: 1; transform: scale(1); } }
 .match-reveal__header { position: relative; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 20px; padding: max(22px, env(safe-area-inset-top)) 58px 20px 20px; border-bottom: 1px solid rgba(255,255,255,.08); }
 .match-reveal__header > div:not(.match-reveal__score) { display: flex; align-items: center; gap: 10px; min-width: 0; color: #f5eff8; font-size: .82rem; font-weight: 700; }
 .match-reveal__header > div:last-child { justify-content: flex-end; text-align: right; }
@@ -2712,7 +2725,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 }
 
 @media (max-width: 560px) {
-  .match-reveal__header { gap: 6px; padding: max(18px, env(safe-area-inset-top)) 40px 16px 14px; }.match-reveal__header > div:not(.match-reveal__score) { font-size: .63rem; }.match-reveal__header .crest { width: 30px; height: 30px; }.match-reveal__score { min-width: 84px; }.match-reveal__score b { font-size: 1.9rem; }.match-reveal__score small { font-size: .48rem; }.match-reveal__canvas { grid-template-columns: 1fr 42px 1fr; }.match-reveal__events p { left: 6px; right: 6px; padding: 7px 8px; font-size: .63rem; }.match-reveal__events time { font-size: .54rem; }.match-reveal__half { padding: 14px 7px; font-size: .48rem; }.match-reveal__minute { width: 38px; height: 22px; font-size: .58rem; }.match-reveal__footer { padding: 16px; }
+  .match-reveal__header { gap: 6px; padding: max(18px, env(safe-area-inset-top)) 40px 16px 14px; }.match-reveal__header > div:not(.match-reveal__score) { font-size: .63rem; }.match-reveal__header .crest { width: 30px; height: 30px; }.match-reveal__score { min-width: 84px; }.match-reveal__score b { font-size: 1.9rem; }.match-reveal__score small { font-size: .48rem; }.match-reveal__canvas { grid-template-columns: 1fr 42px 1fr; }.match-reveal__events p { left: 6px; right: 6px; padding: 7px 8px; font-size: .63rem; }.match-reveal__events time { font-size: .54rem; }.match-reveal__half { padding: 14px 7px; font-size: .48rem; }.match-reveal__minute { width: 38px; height: 22px; font-size: .58rem; }.match-reveal__footer { padding: 16px; }.match-reveal__gol-popup-card { max-width: 210px; padding: 22px 20px; gap: 8px; }.match-reveal__gol-popup-titolo { font-size: 1.5rem; }.match-reveal__gol-popup-foto { width: 74px; height: 74px; }
 }
 .finanza-tooltip span { color: #a79db8; font-size: .68rem; }
 
