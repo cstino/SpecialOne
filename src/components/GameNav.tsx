@@ -23,6 +23,7 @@ const ICONE: Record<string, ReactNode> = {
   admin: <><path d="M12 3.5 5 6.5v5c0 4.5 3 7.2 7 9 4-1.8 7-4.5 7-9v-5z" /><path d="m9.2 12 1.9 1.9 3.7-3.9" /></>,
   help: <><circle cx="12" cy="12" r="9" /><path d="M9.3 9.3a2.7 2.7 0 1 1 3.6 2.5c-.8.4-1.4 1-1.4 2v.4" /><path d="M12 16.8v.1" /></>,
   finanza: <><path d="M4 8h13.5A2.5 2.5 0 0 1 20 10.5v7A2.5 2.5 0 0 1 17.5 20H6.5A2.5 2.5 0 0 1 4 17.5z" /><path d="M4 8V6.5A2.5 2.5 0 0 1 6.5 4h9" /><circle cx="16" cy="14" r="1.6" /></>,
+  risorse: <><path d="M12 3.5 5 9.5 12 20.5 19 9.5z" /><path d="M5 9.5h14M9 9.5l3-6 3 6" /></>,
   chevron: <path d="m8 10 4 4 4-4" />,
 }
 
