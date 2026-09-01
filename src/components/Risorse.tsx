@@ -71,13 +71,20 @@ export function Risorse({ membership, onNavigate }: Props) {
   const [caricamento, setCaricamento] = useState(true)
   const [errore, setErrore] = useState<string | null>(null)
   const [ramoInCorso, setRamoInCorso] = useState<Ramo | null>(null)
+  // Prossima giornata di sblocco: stessa scansione a quarti di
+  // assegna_punti_abilita (docs in 20260901000000), calcolata qui sulle
+  // giornate vere della stagione (season.giornate_totali, non
+  // league.giornate_totali: quella cambia anche per stagioni concluse se
+  // l'admin aggiunge squadre dopo, vedi useSeasonData).
+  const [prossimoSblocco, setProssimoSblocco] = useState<number | null>(null)
 
   const carica = useCallback(async () => {
-    const [statoResult, tabellaResult] = await Promise.all([
+    const [statoResult, tabellaResult, seasonResult] = await Promise.all([
       supabase.from('team_risorse')
         .select('team_id, punti_ricevuti, livello_vivaio, livello_training, livello_medico')
         .eq('team_id', membership.id).maybeSingle(),
       supabase.rpc('tabella_risorse'),
+      supabase.from('seasons').select('id, giornate_totali').eq('league_id', league.id).eq('numero', league.stagione_corrente).maybeSingle(),
     ])
     if (statoResult.error) { setErrore(statoResult.error.message); setCaricamento(false); return }
     if (tabellaResult.error) { setErrore(tabellaResult.error.message); setCaricamento(false); return }
@@ -89,8 +96,19 @@ export function Risorse({ membership, onNavigate }: Props) {
       livello_vivaio: 0, livello_training: 0, livello_medico: 0,
     })
     setTabella(tabellaResult.data as Tabella)
+
+    const stagione = seasonResult.data as { id: number; giornate_totali: number } | null
+    if (stagione) {
+      const { data: checkpoints } = await supabase.from('season_punti_checkpoints')
+        .select('checkpoint').eq('season_id', stagione.id)
+      const applicati = new Set((checkpoints ?? []).map((c) => c.checkpoint as number))
+      const prossimo = [1, 2, 3, 4].find((step) => !applicati.has(step))
+      setProssimoSblocco(prossimo ? Math.ceil(stagione.giornate_totali * prossimo / 4) : null)
+    } else {
+      setProssimoSblocco(null)
+    }
     setCaricamento(false)
-  }, [membership.id])
+  }, [membership.id, league.id, league.stagione_corrente])
 
   useEffect(() => { void carica() }, [carica])
 
@@ -139,6 +157,7 @@ export function Risorse({ membership, onNavigate }: Props) {
           <strong>{disponibili}</strong>
           <span>{disponibili === 1 ? 'punto da spendere' : 'punti da spendere'}</span>
           <small>{risorse.punti_ricevuti} / {tabella.punti_massimi} ricevuti{esauriti ? ' · esauriti' : ''}</small>
+          {!esauriti && prossimoSblocco != null && <small>Prossimo sblocco: giornata {prossimoSblocco}</small>}
         </div>
       </section>
 
