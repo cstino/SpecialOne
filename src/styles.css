@@ -3007,6 +3007,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    cosi' il testo sotto resta leggibile senza un secondo bordo interno. */
 .risorse-ramo__foto {
   position: relative;
+  z-index: 0;
   height: 128px;
   background-size: cover;
   background-position: center;
@@ -3016,7 +3017,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(21,20,30,0) 45%, #15141e 100%);
 }
-.risorse-ramo__corpo { display: flex; flex-direction: column; gap: 12px; padding: 16px 18px 18px; margin-top: -28px; }
+/* position+z-index espliciti: senza, il testo che risale sopra la foto (il
+   margine negativo) finiva a tratti dietro di lei invece che sopra. */
+.risorse-ramo__corpo { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 12px; padding: 16px 18px 18px; margin-top: -28px; }
 .risorse-ramo__corpo > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .risorse-ramo__corpo > header h2 { margin: 2px 0 0; color: #fff; font-size: 1.25rem; }
 .risorse-ramo__corpo > header b { flex: none; color: #c58cff; font: 900 1.5rem/1 "Aptos Narrow", "Arial Narrow", sans-serif; }
