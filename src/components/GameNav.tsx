@@ -121,6 +121,20 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
     () => notifiche?.notifiche.filter((n) => (n.league_id === league.id || n.league_id === null) && !n.letta_il).length ?? 0,
     [notifiche, league.id],
   )
+  // Segnalino per singola voce di menu: le notifiche che portano un
+  // dati.view (es. 'risorse' sui punti abilità, 'team' su un infortunio)
+  // accendono il pallino anche li', non solo sulla campanella Avvisi. Le
+  // notifiche senza quel campo restano visibili solo li', come sempre.
+  const nonLettePerView = useMemo(() => {
+    const mappa = new Map<GameView, number>()
+    for (const n of notifiche?.notifiche ?? []) {
+      if (n.letta_il || (n.league_id !== league.id && n.league_id !== null)) continue
+      const view = n.dati?.view
+      if (typeof view === 'string') mappa.set(view as GameView, (mappa.get(view as GameView) ?? 0) + 1)
+    }
+    return mappa
+  }, [notifiche, league.id])
+  const contaVoce = (view: GameView) => view === 'notifications' ? nonLetteLega : (nonLettePerView.get(view) ?? 0)
   const baseItems = league.fase_carriera === 'offseason'
     ? offseasonItems
     : league.stato === 'draft'
@@ -173,6 +187,7 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
   function vociMenu(perMobile: boolean) {
     return items.map((voce) => {
       if (eGruppo(voce)) {
+        const nonLetteGruppo = voce.children.reduce((totale, figlio) => totale + contaVoce(figlio.view), 0)
         return <div className="game-nav-group" key={voce.group}>
           <button
             className={`game-nav-item ${dentroGruppoMercato ? 'is-active' : ''}`}
@@ -181,24 +196,31 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
             aria-expanded={mercatoAperto}
           >
             <i aria-hidden="true"><Icona nome="mercato" /></i><span>{voce.label}</span>
+            {!mercatoAperto && nonLetteGruppo > 0 && <em className="game-nav-item__badge">{nonLetteGruppo > 9 ? '9+' : nonLetteGruppo}</em>}
             <i className={`game-nav-chevron ${mercatoAperto ? 'is-aperto' : ''}`} aria-hidden="true"><Icona nome="chevron" /></i>
             {dentroGruppoMercato && <b />}
           </button>
           {mercatoAperto && <div className="game-nav-sottomenu">
-            {voce.children.map((figlio) => <button
-              className={`game-nav-item game-nav-item--figlio ${active === figlio.view ? 'is-active' : ''}`}
-              key={figlio.view} type="button" onClick={() => vai(figlio.view)}
-              aria-current={active === figlio.view ? 'page' : undefined}
-            >
-              <span>{figlio.label}</span>{active === figlio.view && <b />}
-            </button>)}
+            {voce.children.map((figlio) => {
+              const contoFiglio = contaVoce(figlio.view)
+              return <button
+                className={`game-nav-item game-nav-item--figlio ${active === figlio.view ? 'is-active' : ''}`}
+                key={figlio.view} type="button" onClick={() => vai(figlio.view)}
+                aria-current={active === figlio.view ? 'page' : undefined}
+              >
+                <span>{figlio.label}</span>
+                {contoFiglio > 0 && <em className="game-nav-item__badge">{contoFiglio > 9 ? '9+' : contoFiglio}</em>}
+                {active === figlio.view && <b />}
+              </button>
+            })}
           </div>}
         </div>
       }
+      const conto = contaVoce(voce.view)
       return <button className={`game-nav-item ${active === voce.view ? 'is-active' : ''}`} key={voce.view} type="button" onClick={() => vai(voce.view)} aria-current={active === voce.view ? 'page' : undefined}>
         <i aria-hidden="true"><Icona nome={voce.view} /></i>
         <span>{perMobile && voce.view === 'squad' ? 'Rosa' : voce.label}</span>
-        {voce.view === 'notifications' && nonLetteLega > 0 && <em className="game-nav-item__badge">{nonLetteLega > 9 ? '9+' : nonLetteLega}</em>}
+        {conto > 0 && <em className="game-nav-item__badge">{conto > 9 ? '9+' : conto}</em>}
         {active === voce.view && <b />}
       </button>
     })
