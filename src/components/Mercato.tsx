@@ -462,9 +462,9 @@ export function Mercato({ membership, onNavigate }: Props) {
           {a.stato !== 'aperta' && <i>{a.stato === 'assegnata' ? 'Assegnato' : 'Svincolato storico'}</i>}
         </footer>
       </div>
-      <div className="free-agent-card__bid">
+      <div className={`free-agent-card__bid${!aperto ? ' is-mercato-chiuso' : ''}`}>
         <input
-          type="text" inputMode="decimal"
+          type="text" inputMode="decimal" disabled={!aperto}
           placeholder={mia ? (mia / 1_000_000).toFixed(1).replace('.', ',') : 'M€'}
           value={bozzaOfferta[a.id] ?? ''}
           onChange={(e) => setBozzaOfferta({ ...bozzaOfferta, [a.id]: e.target.value })}
@@ -472,7 +472,7 @@ export function Mercato({ membership, onNavigate }: Props) {
         <div className="free-agent-card__bid-azioni">
           <button className={`button button--secondary${azioneInCorso && azioneInCorso !== 'ritira' ? ' offerta-in-corso' : ''}`} type="button"
             disabled={inCorso || !aperto} onClick={() => void (a.stato === 'aperta' ? offri(a) : offriArchivio(a))}>
-            {azioneInCorso && azioneInCorso !== 'ritira' ? <><span className="offerta-spinner" role="status" aria-label="Operazione sull'offerta in corso" />{azioneInCorso === 'modifica' ? 'Aggiorno…' : 'Invio…'}</> : mia ? 'Modifica' : a.stato === 'aperta' ? 'Offri' : 'Rioffri'}
+            {azioneInCorso && azioneInCorso !== 'ritira' ? <><span className="offerta-spinner" role="status" aria-label="Operazione sull'offerta in corso" />{azioneInCorso === 'modifica' ? 'Aggiorno…' : 'Invio…'}</> : !aperto ? 'Chiuso' : mia ? 'Modifica' : a.stato === 'aperta' ? 'Offri' : 'Rioffri'}
           </button>
           {mia !== undefined && a.stato === 'aperta' && <button className={`button button--danger-ghost${azioneInCorso === 'ritira' ? ' offerta-in-corso' : ''}`} type="button"
             disabled={inCorso || !aperto} onClick={() => void ritiraOfferta(a)}>
@@ -668,16 +668,16 @@ export function Mercato({ membership, onNavigate }: Props) {
                     <small>{g?.ruolo} · {g?.eta} anni · ingaggio minimo {milioni(a.ingaggio_teorico)}</small>
                   </span>
                   {a.stato === 'aperta'
-                    ? <div className="mercato-asta-offerta">
+                    ? <div className={`mercato-asta-offerta${!aperto ? ' is-mercato-chiuso' : ''}`}>
                         <input
-                          type="text" inputMode="decimal"
+                          type="text" inputMode="decimal" disabled={!aperto}
                           placeholder={mia ? (mia / 1_000_000).toFixed(1).replace('.', ',') : 'M€'}
                           value={bozzaOfferta[a.id] ?? ''}
                           onChange={(e) => setBozzaOfferta({ ...bozzaOfferta, [a.id]: e.target.value })}
                         />
                         <button className="button button--secondary" type="button"
                           disabled={inCorso || !aperto} onClick={() => void offri(a)}>
-                          {mia ? 'Modifica' : 'Offri'}
+                          {!aperto ? 'Chiuso' : mia ? 'Modifica' : 'Offri'}
                         </button>
                         {mia !== undefined && <button className="button button--danger-ghost" type="button"
                           disabled={inCorso || !aperto} onClick={() => void ritiraOfferta(a)}>
