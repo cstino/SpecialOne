@@ -59,6 +59,15 @@ type Scelta = {
   stato: 'futura' | 'determinata'
 }
 
+type CambioRuoloRiga = {
+  id: number
+  player_instance_id: number
+  ruolo_precedente: string
+  ruolo_target: string
+  avviato_giornata: number
+  completa_giornata: number
+}
+
 type VivaioProspetto = {
   id: number
   ingaggio: number
@@ -129,6 +138,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [vivaioAmpiezza, setVivaioAmpiezza] = useState(15)
   const [vivaioSlotMassimi, setVivaioSlotMassimi] = useState(1)
   const [vivaioAzioneInCorso, setVivaioAzioneInCorso] = useState<number | null>(null)
+  const [cambiRuolo, setCambiRuolo] = useState<Map<number, CambioRuoloRiga>>(new Map())
   const team = teamOverride?.id === teamId ? teamOverride : seasonData.teamById.get(teamId)
   const ownTeam = teamId === membership.id
   const fase = useFaseSquadra(league.id, teamId, seasonData.season?.id)
@@ -187,23 +197,23 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         : { type: 'preset', value: STEMMA_SQUADRA_DEFAULT })
   }, [team, crestUrl])
 
-  useEffect(() => {
-    let active = true
-    async function loadRoster() {
+  const caricaRoster = useCallback(async () => {
       setRosterLoading(true)
       setRosterError(null)
-      const [instancesResult, statsResult] = await Promise.all([
-        supabase.from('player_instances').select('id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, morale, contratto_scadenza, rinnovo_stagione, rinnovo_tentativi, sul_mercato').eq('league_id', league.id).eq('team_id', teamId),
+      const [instancesResult, statsResult, cambiRuoloResult] = await Promise.all([
+        supabase.from('player_instances').select('id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, morale, contratto_scadenza, rinnovo_stagione, rinnovo_tentativi, sul_mercato, posizioni_override').eq('league_id', league.id).eq('team_id', teamId),
         supabase.from('match_stats').select('match_id, player_instance_id, minuti, gol, assist, tiri, tiri_porta, passaggi_tentati, passaggi_riusciti, contrasti_vinti, dribbling').eq('league_id', league.id).eq('team_id', teamId),
+        supabase.from('cambi_ruolo').select('id, player_instance_id, ruolo_precedente, ruolo_target, avviato_giornata, completa_giornata').eq('league_id', league.id).eq('team_id', teamId).is('completato_il', null),
       ])
+      setCambiRuolo(new Map(((cambiRuoloResult.data ?? []) as CambioRuoloRiga[]).map((riga) => [riga.player_instance_id, riga])))
       const firstError = instancesResult.error ?? statsResult.error
-      if (firstError) { if (active) { setRosterError(firstError.message); setRosterLoading(false) }; return }
+      if (firstError) { setRosterError(firstError.message); setRosterLoading(false); return }
       const instances = instancesResult.data ?? []
       const playerIds = instances.map((item) => item.player_id)
       const { data: catalog, error: catalogError } = playerIds.length
         ? await supabase.from('players').select('id, nome, club, nazionalita, posizioni, piede, altezza, attributi, foto_url, mentalita_bandiera, mentalita_economia, mentalita_vittorie').in('id', playerIds)
         : { data: [], error: null }
-      if (catalogError) { if (active) { setRosterError(catalogError.message); setRosterLoading(false) }; return }
+      if (catalogError) { setRosterError(catalogError.message); setRosterLoading(false); return }
       const catalogById = new Map((catalog ?? []).map((item) => [item.id, item]))
       const totals = new Map<number, { minuti: number; gol: number; assist: number }>()
       for (const stat of (statsResult.data ?? []) as MatchPlayerStat[]) {
@@ -216,7 +226,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         const total = totals.get(instance.id) ?? { minuti: 0, gol: 0, assist: 0 }
         return {
           id: instance.id, nome: info?.nome ?? `Giocatore ${instance.id}`, club: info?.club ?? '—',
-          nazionalita: info?.nazionalita ?? null, posizioni: info?.posizioni ?? [],
+          nazionalita: info?.nazionalita ?? null, posizioni: instance.posizioni_override ?? info?.posizioni ?? [],
           overall: instance.overall_corrente, eta: instance.eta_corrente, ingaggio: instance.ingaggio,
           condizione: instance.condizione, infortunatoFinoA: instance.infortunato_fino_a, squalificatoFinoA: instance.squalificato_fino_a, piede: info?.piede ?? null, altezza: info?.altezza ?? null,
           attributi: (info?.attributi ?? {}) as Record<string, number | null>, foto_url: info?.foto_url ?? null,
@@ -234,11 +244,10 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           ...total,
         }
       }).sort((left, right) => ROLE_ORDER[department(left.posizioni[0])] - ROLE_ORDER[department(right.posizioni[0])] || right.overall - left.overall || left.nome.localeCompare(right.nome, 'it'))
-      if (active) { setPlayers(loaded); setStatRows((statsResult.data ?? []) as MatchPlayerStat[]); setRosterLoading(false) }
-    }
-    void loadRoster()
-    return () => { active = false }
+      setPlayers(loaded); setStatRows((statsResult.data ?? []) as MatchPlayerStat[]); setRosterLoading(false)
   }, [league.id, teamId])
+
+  useEffect(() => { void caricaRoster() }, [caricaRoster])
 
   // Scelte ancora scambiabili (le usate/svuotate non sono piu' un asset):
   // visibili a tutta la lega, servono a chi guarda una squadra avversaria
@@ -301,6 +310,33 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     setVivaioAzioneInCorso(null)
     if (error) { setVivaioErrore(error.message); return }
     await caricaVivaio()
+  }
+
+  // Prima giornata ancora da giocare: stima locale per il conto alla
+  // rovescia del cambio ruolo, il server e' comunque l'unica fonte vera.
+  const prossimaGiornata = useMemo(() => {
+    const programmate = seasonData.fixtures.filter((f) => f.stato === 'programmata').map((f) => f.giornata)
+    return programmate.length ? Math.min(...programmate) : null
+  }, [seasonData.fixtures])
+
+  async function caricaTargetCambioRuolo(instanceId: number) {
+    const { data, error } = await supabase.rpc('ruoli_target_cambio', { p_instance_id: instanceId })
+    if (error) throw new Error(error.message)
+    return (data ?? []) as string[]
+  }
+
+  async function avviaCambioRuolo(instanceId: number, ruoloTarget: string) {
+    const { error } = await supabase.rpc('avvia_cambio_ruolo', { p_instance_id: instanceId, p_ruolo_target: ruoloTarget })
+    if (error) throw new Error(error.message)
+    await caricaRoster()
+  }
+
+  async function annullaCambioRuolo(instanceId: number) {
+    const cambio = cambiRuolo.get(instanceId)
+    if (!cambio) return
+    const { error } = await supabase.rpc('annulla_cambio_ruolo', { p_id: cambio.id })
+    if (error) throw new Error(error.message)
+    await caricaRoster()
   }
 
   const standing = seasonData.standings.find((item) => item.team_id === teamId)
@@ -645,6 +681,16 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
             if (error) throw new Error(error.message)
             setPlayers((current) => current.map((item) => item.id === schedaAperta.id ? { ...item, sulMercato: valore } : item))
           },
+        } : undefined}
+        cambioRuolo={ownTeam && league.stato === 'stagione' && !schedaAperta.ritiroAnnunciato ? {
+          inCorso: (() => {
+            const cambio = cambiRuolo.get(schedaAperta.id)
+            return cambio ? { ruoloPrecedente: cambio.ruolo_precedente, ruoloTarget: cambio.ruolo_target, completaGiornata: cambio.completa_giornata } : null
+          })(),
+          prossimaGiornata,
+          onCaricaTarget: () => caricaTargetCambioRuolo(schedaAperta.id),
+          onAvvia: (ruoloTarget) => avviaCambioRuolo(schedaAperta.id, ruoloTarget),
+          onAnnulla: () => annullaCambioRuolo(schedaAperta.id),
         } : undefined}
         onClose={() => setSchedaAperta(null)}
       />}

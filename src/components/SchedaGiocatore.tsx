@@ -85,6 +85,14 @@ type Props = {
     inLista: boolean
     onCambia: (valore: boolean) => Promise<void>
   }
+  cambioRuolo?: {
+    inCorso: { ruoloPrecedente: string; ruoloTarget: string; completaGiornata: number } | null
+    /** Giornata di riferimento per il conto alla rovescia: solo indicativa, il server decide davvero. */
+    prossimaGiornata: number | null
+    onCaricaTarget: () => Promise<string[]>
+    onAvvia: (ruoloTarget: string) => Promise<void>
+    onAnnulla: () => Promise<void>
+  }
   onClose: () => void
 }
 
@@ -128,7 +136,7 @@ const RAMI_MENTALITA: Array<[keyof NonNullable<DatiScheda['mentalita']>, string,
   ['vittorie', 'Vittorie', 'Prima i risultati: vuole vincere, il resto conta meno.'],
 ]
 
-export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa, rinnovo, listaMercato, onClose }: Props) {
+export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa, rinnovo, listaMercato, cambioRuolo, onClose }: Props) {
   const [confermaAperta, setConfermaAperta] = useState(false)
   const [vistaRinnovo, setVistaRinnovo] = useState(false)
   const [proposta, setProposta] = useState<PropostaRinnovo | null>(null)
@@ -142,6 +150,11 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
   const [listaInCorso, setListaInCorso] = useState(false)
   const [listaEsito, setListaEsito] = useState<string | null>(null)
   const [listaErrore, setListaErrore] = useState<string | null>(null)
+  const [cambioAperto, setCambioAperto] = useState(false)
+  const [cambioTarget, setCambioTarget] = useState<string[] | null>(null)
+  const [cambioScelto, setCambioScelto] = useState('')
+  const [cambioInCorso, setCambioInCorso] = useState(false)
+  const [cambioErrore, setCambioErrore] = useState<string | null>(null)
 
   // Notifica di successo: sparisce da sola dopo un secondo. Il cleanup annulla
   // il timer se nel frattempo arriva un altro esito o si chiude la scheda,
@@ -186,6 +199,44 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
   // 0,1 M€ è il passo della scala ingaggi (design §5.1): si arrotonda lì.
   const offertaEuro = Math.round(parseFloat(offertaM.replace(',', '.')) * 10) * 100_000
   const offertaValida = Number.isFinite(offertaEuro) && offertaEuro >= 500_000
+
+  async function apriCambioRuolo() {
+    if (!cambioRuolo) return
+    setCambioAperto(true)
+    setCambioErrore(null)
+    try {
+      const target = await cambioRuolo.onCaricaTarget()
+      setCambioTarget(target)
+      setCambioScelto(target[0] ?? '')
+    } catch (errore) {
+      setCambioErrore(errore instanceof Error ? errore.message : 'Ruoli raggiungibili non disponibili.')
+    }
+  }
+
+  async function avviaCambioRuolo() {
+    if (!cambioRuolo || !cambioScelto) return
+    setCambioInCorso(true)
+    setCambioErrore(null)
+    try {
+      await cambioRuolo.onAvvia(cambioScelto)
+      setCambioAperto(false)
+    } catch (errore) {
+      setCambioErrore(errore instanceof Error ? errore.message : 'Cambio ruolo non riuscito.')
+    }
+    setCambioInCorso(false)
+  }
+
+  async function annullaCambioRuolo() {
+    if (!cambioRuolo) return
+    setCambioInCorso(true)
+    setCambioErrore(null)
+    try {
+      await cambioRuolo.onAnnulla()
+    } catch (errore) {
+      setCambioErrore(errore instanceof Error ? errore.message : 'Annullamento non riuscito.')
+    }
+    setCambioInCorso(false)
+  }
 
   async function inviaOfferta() {
     if (!rinnovo || !proposta || !offertaValida) return
@@ -391,7 +442,7 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
         </div>
       </div>
 
-      {(azionePericolosa || rinnovo || listaMercato) && <div className="player-modal__danger">
+      {(azionePericolosa || rinnovo || listaMercato || cambioRuolo) && <div className="player-modal__danger">
         {!confermaAperta
           ? <div className="player-modal__azioni">
               {azionePericolosa && <button className="button button--danger-ghost" type="button" onClick={() => setConfermaAperta(true)}>{azionePericolosa.etichetta}</button>}
@@ -401,6 +452,7 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
               {listaMercato && <button className={`button player-modal__lista ${inLista ? 'button--secondary' : 'button--primary'}`} type="button" disabled={listaInCorso} onClick={cambiaLista}>
                 {listaInCorso ? 'Attendi…' : inLista ? 'Rimuovi dal mercato' : 'Metti sul mercato'}
               </button>}
+              {cambioRuolo && !cambioRuolo.inCorso && !cambioAperto && <button className="button button--secondary" type="button" onClick={apriCambioRuolo}>Cambia ruolo</button>}
               {listaEsito && <p className="player-modal__lista-esito" role="status">{listaEsito}</p>}
               {listaErrore && <p className="notice notice--error player-modal__lista-esito" role="alert">{listaErrore}</p>}
             </div>
@@ -412,6 +464,39 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
                 <button className="button button--secondary" type="button" disabled={azionePericolosa.inCorso} onClick={() => setConfermaAperta(false)}>Annulla</button>
               </div>
             </div>}
+
+        {cambioRuolo?.inCorso && <div className="player-modal__cambio-ruolo">
+          <p>
+            Riqualificazione in corso: da <b>{cambioRuolo.inCorso.ruoloPrecedente}</b> a <b>{cambioRuolo.inCorso.ruoloTarget}</b>.
+            {' '}{cambioRuolo.prossimaGiornata != null
+              ? ` Pronto tra ${Math.max(0, cambioRuolo.inCorso.completaGiornata - cambioRuolo.prossimaGiornata)} giornate.`
+              : ` Completa alla giornata ${cambioRuolo.inCorso.completaGiornata}.`}
+          </p>
+          {cambioErrore && <p className="notice notice--error">{cambioErrore}</p>}
+          <button className="button button--danger-ghost" type="button" disabled={cambioInCorso} onClick={annullaCambioRuolo}>
+            {cambioInCorso ? 'Attendi…' : 'Annulla riqualificazione'}
+          </button>
+        </div>}
+
+        {cambioRuolo && !cambioRuolo.inCorso && cambioAperto && <div className="player-modal__cambio-ruolo">
+          {cambioErrore && <p className="notice notice--error">{cambioErrore}</p>}
+          {cambioTarget === null ? <p className="season-empty">Carico i ruoli raggiungibili…</p>
+            : cambioTarget.length === 0 ? <p className="season-empty">Nessun ruolo vicino raggiungibile (i portieri non si riqualificano).</p>
+            : <>
+                <label>
+                  <span>Nuovo ruolo</span>
+                  <select value={cambioScelto} onChange={(evento) => setCambioScelto(evento.target.value)}>
+                    {cambioTarget.map((ruolo) => <option value={ruolo} key={ruolo}>{ruolo}</option>)}
+                  </select>
+                </label>
+                <div>
+                  <button className="button button--primary" type="button" disabled={cambioInCorso} onClick={avviaCambioRuolo}>
+                    {cambioInCorso ? 'Avvio…' : 'Avvia riqualificazione'}
+                  </button>
+                  <button className="button button--secondary" type="button" disabled={cambioInCorso} onClick={() => setCambioAperto(false)}>Annulla</button>
+                </div>
+              </>}
+        </div>}
       </div>}
     </section>
   </div>

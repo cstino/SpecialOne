@@ -1061,6 +1061,12 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .admin-zona-pericolo { border-color: #5a2a35; }
 .player-modal__azioni { display: flex; flex-wrap: wrap; gap: 8px; }
 .player-modal__azioni .button { flex: 1 1 auto; }
+.player-modal__cambio-ruolo { display: grid; gap: 12px; margin-top: 12px; padding: 14px; border: 1px solid #4a3e5d; border-radius: 13px; background: linear-gradient(145deg, rgba(74,62,93,.24), rgba(27,20,31,.9)); }
+.player-modal__cambio-ruolo p { margin: 0; color: #d6cede; font-size: .78rem; line-height: 1.55; }
+.player-modal__cambio-ruolo label { display: grid; gap: 4px; }
+.player-modal__cambio-ruolo label > span { color: #958b9e; font-size: .64rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.player-modal__cambio-ruolo select { min-height: 44px; width: 100%; box-sizing: border-box; padding: .5rem .7rem; color: #fff; border: 1px solid #4a3e5d; border-radius: 9px; background: #1d1827; font-size: 1rem; font-weight: 800; }
+.player-modal__cambio-ruolo > div { display: flex; flex-wrap: wrap; gap: 8px; }
 /* "Metti sul mercato" sta sotto agli altri due e ne occupa l'intera larghezza:
    e' un'azione di natura diversa (annuncio pubblico, reversibile), non una
    variante di svincola/rinnovo. */
