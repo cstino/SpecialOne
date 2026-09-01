@@ -3001,12 +3001,27 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .risorse-punti small { color: #8d84a0; font-size: .62rem; font-weight: 700; }
 
 .risorse-rami { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 20px; }
-.risorse-ramo { display: flex; flex-direction: column; gap: 12px; padding: 18px; border: 1px solid #2b2739; border-radius: 16px; background: #15141e; }
-.risorse-ramo > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.risorse-ramo > header h2 { margin: 2px 0 0; color: #fff; font-size: 1.25rem; }
-.risorse-ramo > header b { flex: none; color: #c58cff; font: 900 1.5rem/1 "Aptos Narrow", "Arial Narrow", sans-serif; }
-.risorse-ramo > header b i { color: #6f6683; font-size: .9rem; font-style: normal; }
-.risorse-ramo > header b.is-massimo { color: #69e6a0; }
+.risorse-ramo { display: flex; flex-direction: column; overflow: hidden; border: 1px solid #2b2739; border-radius: 16px; background: #15141e; }
+/* Foto di ambientazione in cima alla card, stessa idea dell'hero squadra:
+   una dissolvenza verso il fondo della card invece di un riquadro isolato,
+   cosi' il testo sotto resta leggibile senza un secondo bordo interno. */
+.risorse-ramo__foto {
+  position: relative;
+  height: 128px;
+  background-size: cover;
+  background-position: center;
+}
+.risorse-ramo__foto::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(21,20,30,0) 45%, #15141e 100%);
+}
+.risorse-ramo__corpo { display: flex; flex-direction: column; gap: 12px; padding: 16px 18px 18px; margin-top: -28px; }
+.risorse-ramo__corpo > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.risorse-ramo__corpo > header h2 { margin: 2px 0 0; color: #fff; font-size: 1.25rem; }
+.risorse-ramo__corpo > header b { flex: none; color: #c58cff; font: 900 1.5rem/1 "Aptos Narrow", "Arial Narrow", sans-serif; }
+.risorse-ramo__corpo > header b i { color: #6f6683; font-size: .9rem; font-style: normal; }
+.risorse-ramo__corpo > header b.is-massimo { color: #69e6a0; }
 
 .risorse-scala { display: flex; gap: 3px; }
 .risorse-scala span { flex: 1; height: 7px; border-radius: 99px; background: rgba(255,255,255,.08); }

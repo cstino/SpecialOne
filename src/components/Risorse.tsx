@@ -23,24 +23,27 @@ type Tabella = {
   rami: Record<Ramo, EffettiLivello[]>
 }
 
-const RAMI: readonly { id: Ramo; nome: string; occhiello: string; descrizione: string }[] = [
+const RAMI: readonly { id: Ramo; nome: string; occhiello: string; descrizione: string; immagine: string }[] = [
   {
     id: 'vivaio',
     nome: 'Vivaio',
     occhiello: 'Settore giovanile',
     descrizione: 'Quanti giovani puoi tenere in cantiera e quanto vedi chiaramente il loro potenziale nel mercato UNDER.',
+    immagine: '/risorse/vivaio.jpg',
   },
   {
     id: 'training',
     nome: 'Training',
     occhiello: 'Allenamento',
     descrizione: 'Quanto in fretta crescono i tuoi giocatori e quanto tempo serve per riqualificarne uno su un altro ruolo.',
+    immagine: '/risorse/training.jpg',
   },
   {
     id: 'medico',
     nome: 'Reparto medico',
     occhiello: 'Staff sanitario',
     descrizione: 'Quanto resistono i tuoi giocatori agli infortuni e quanta più condizione recuperano a fine partita.',
+    immagine: '/risorse/medico.jpg',
   },
 ]
 
@@ -154,52 +157,56 @@ export function Risorse({ membership, onNavigate }: Props) {
           const chiavi = Object.keys(ora).filter((chiave) => chiave !== 'livello')
           return (
             <article className="risorse-ramo" key={ramo.id}>
-              <header>
-                <div>
-                  <p className="kicker">{ramo.occhiello}</p>
-                  <h2>{ramo.nome}</h2>
+              <div className="risorse-ramo__foto" style={{ backgroundImage: `url(${ramo.immagine})` }} role="img" aria-label={ramo.nome} />
+
+              <div className="risorse-ramo__corpo">
+                <header>
+                  <div>
+                    <p className="kicker">{ramo.occhiello}</p>
+                    <h2>{ramo.nome}</h2>
+                  </div>
+                  <b className={alMassimo ? 'is-massimo' : ''}>{livello}<i>/{tabella.livello_massimo}</i></b>
+                </header>
+
+                <div className="risorse-scala" role="img" aria-label={`Livello ${livello} su ${tabella.livello_massimo}`}>
+                  {Array.from({ length: tabella.livello_massimo }, (_, i) => (
+                    <span className={i < livello ? 'is-attivo' : ''} key={i} />
+                  ))}
                 </div>
-                <b className={alMassimo ? 'is-massimo' : ''}>{livello}<i>/{tabella.livello_massimo}</i></b>
-              </header>
 
-              <div className="risorse-scala" role="img" aria-label={`Livello ${livello} su ${tabella.livello_massimo}`}>
-                {Array.from({ length: tabella.livello_massimo }, (_, i) => (
-                  <span className={i < livello ? 'is-attivo' : ''} key={i} />
-                ))}
+                <p className="risorse-ramo__descrizione">{ramo.descrizione}</p>
+
+                <dl className="risorse-effetti">
+                  {chiavi.map((chiave) => {
+                    const etichetta = ETICHETTE[chiave]
+                    if (!etichetta) return null
+                    const valoreOra = etichetta.formato(ora[chiave])
+                    const valoreDopo = dopo ? etichetta.formato(dopo[chiave]) : null
+                    const migliora = valoreDopo !== null && valoreDopo !== valoreOra
+                    return (
+                      <div key={chiave}>
+                        <dt>{etichetta.testo}</dt>
+                        <dd>
+                          <strong>{valoreOra}</strong>
+                          {migliora && <em>→ {valoreDopo}</em>}
+                        </dd>
+                      </div>
+                    )
+                  })}
+                </dl>
+
+                <button
+                  className="button button--primary"
+                  type="button"
+                  disabled={alMassimo || disponibili <= 0 || ramoInCorso !== null}
+                  onClick={() => void spendi(ramo.id)}
+                >
+                  {ramoInCorso === ramo.id ? 'Assegno…'
+                    : alMassimo ? 'Al massimo'
+                    : disponibili <= 0 ? 'Nessun punto'
+                    : `Investi 1 punto → livello ${livello + 1}`}
+                </button>
               </div>
-
-              <p className="risorse-ramo__descrizione">{ramo.descrizione}</p>
-
-              <dl className="risorse-effetti">
-                {chiavi.map((chiave) => {
-                  const etichetta = ETICHETTE[chiave]
-                  if (!etichetta) return null
-                  const valoreOra = etichetta.formato(ora[chiave])
-                  const valoreDopo = dopo ? etichetta.formato(dopo[chiave]) : null
-                  const migliora = valoreDopo !== null && valoreDopo !== valoreOra
-                  return (
-                    <div key={chiave}>
-                      <dt>{etichetta.testo}</dt>
-                      <dd>
-                        <strong>{valoreOra}</strong>
-                        {migliora && <em>→ {valoreDopo}</em>}
-                      </dd>
-                    </div>
-                  )
-                })}
-              </dl>
-
-              <button
-                className="button button--primary"
-                type="button"
-                disabled={alMassimo || disponibili <= 0 || ramoInCorso !== null}
-                onClick={() => void spendi(ramo.id)}
-              >
-                {ramoInCorso === ramo.id ? 'Assegno…'
-                  : alMassimo ? 'Al massimo'
-                  : disponibili <= 0 ? 'Nessun punto'
-                  : `Investi 1 punto → livello ${livello + 1}`}
-              </button>
             </article>
           )
         })}
