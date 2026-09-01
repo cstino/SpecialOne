@@ -33,6 +33,7 @@ import type { GameView } from './components/GameNav'
 import { Lobby } from './components/Lobby'
 import { LoadingLogo } from './components/LoadingLogo'
 import { MenuIniziale } from './components/MenuIniziale'
+import { NovitaBenvenuto, useNovitaBenvenuto } from './components/NovitaBenvenuto'
 import { Onboarding } from './components/Onboarding'
 import { ContestoHome, ContestoNotifiche } from './lib/navigazione'
 import { useNotifiche, type Notifica } from './lib/notifiche'
@@ -73,6 +74,7 @@ export default function App() {
   const [modoOnboarding, setModoOnboarding] = useState<'choose' | 'create' | 'join'>('choose')
   const [error, setError] = useState<string | null>(null)
   const centroNotifiche = useNotifiche(session?.user.id)
+  const novita = useNovitaBenvenuto(session?.user.id)
 
   const apriMenu = useCallback(() => setNelMenu(true), [])
 
@@ -273,6 +275,10 @@ export default function App() {
     setShowOnboarding(false)
     setModoOnboarding('choose')
     setNelMenu(false)
+    // Chi crea la squadra ora non ha mai visto la versione "prima": il
+    // carrello novita' non gli serve, e senza questo lo vedrebbe comparire
+    // subito dopo l'onboarding, prima ancora di entrare nella sua lega.
+    if (memberships.length === 0) void novita.segnaVista()
     await loadMemberships()
   }
 
@@ -290,6 +296,14 @@ export default function App() {
       onCancel={memberships.length ? () => { setShowOnboarding(false); setModoOnboarding('choose') } : undefined}
       modoIniziale={modoOnboarding}
     />
+  }
+
+  // Il carrello novita' precede tutto il resto (menu, lobby, draft, viste di
+  // gioco): deve essere la primissima cosa che un utente gia' registrato
+  // vede alla riapertura, non una schermata fra le tante. Chi sta ancora
+  // facendo l'onboarding (ramo sopra) non ci arriva mai.
+  if (novita.pronto && novita.daMostrare) {
+    return <NovitaBenvenuto onChiudi={() => void novita.segnaVista()} />
   }
 
   const active = memberships.find((item) => item.league_id === activeLeagueId) ?? memberships[0]

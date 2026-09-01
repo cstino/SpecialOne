@@ -2477,6 +2477,24 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 @keyframes popup-spiegazione-sfondo { from { opacity: 0; } }
 @keyframes popup-spiegazione-entra { from { opacity: 0; transform: translateY(10px) scale(.97); } }
 
+/* ============================================================
+   CARRELLO "NOVITÀ" — annuncio a slide alla riapertura dell'app
+   ============================================================ */
+.novita-sfondo { position: fixed; z-index: 200; inset: 0; display: grid; place-items: center; padding: 20px; background: #0a0812; animation: popup-spiegazione-sfondo .2s ease-out both; }
+.novita-cassetta { position: relative; display: flex; flex-direction: column; width: min(100%, 460px); max-height: min(680px, 92vh); padding: 46px 26px 22px; border-radius: 22px; border: 1px solid #40345a; background: linear-gradient(165deg, #211a33, #16121f); box-shadow: 0 30px 70px rgba(0,0,0,.5); animation: popup-spiegazione-entra .3s cubic-bezier(.2,.8,.2,1) both; }
+.novita-salta { position: absolute; top: 14px; right: 14px; padding: 7px 13px; border: 1px solid #443557; border-radius: 99px; background: rgba(255,255,255,.04); color: #b4a9c0; font-size: .72rem; font-weight: 750; cursor: pointer; }
+.novita-corpo { flex: 1; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 6px 4px 18px; }
+.novita-icona { display: grid; place-items: center; width: 62px; height: 62px; margin-bottom: 6px; border-radius: 18px; background: linear-gradient(150deg, rgba(155,76,255,.28), rgba(103,38,196,.14)); border: 1px solid rgba(226,155,255,.3); color: #d9b8ff; }
+.novita-icona svg { width: 30px; height: 30px; }
+.novita-corpo h2 { margin: 0; color: #fff; font-size: 1.3rem; line-height: 1.25; }
+.novita-testo { display: grid; gap: 10px; color: #cabfd6; font-size: .86rem; line-height: 1.6; }
+.novita-testo strong { color: #fff; }
+.novita-piede { display: grid; gap: 16px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.06); }
+.novita-puntini { display: flex; justify-content: center; gap: 6px; }
+.novita-puntino { width: 6px; height: 6px; border-radius: 99px; background: #443557; transition: background .2s, width .2s; }
+.novita-puntino.is-attivo { width: 18px; background: #9b4cff; }
+.novita-azioni { display: flex; justify-content: flex-end; gap: 10px; }
+
 /* Banner codice invito nella schermata di draft: visibile finche' la lega
    non e' piena, unico posto dove condividere il codice ora che chi entra
    comincia subito a draftare invece di passare dalla Lobby. */
