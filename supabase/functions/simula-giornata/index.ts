@@ -23,7 +23,9 @@ type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortu
 type DbPlayer = { id: number; nome: string; posizioni: string[]; attributi: Record<string, number> }
 type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number }
 type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; gk: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number }
-type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number> }
+// moltiplicatoreInfortuni e' facoltativo: se assente l'engine usa 1 (nessun
+// effetto), esattamente come nella suite di validazione.
+type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number>; moltiplicatoreInfortuni?: number }
 type DbLineup = { team_id: number; giornata?: number; modulo: string; titolari: number[]; panchina: number[]; tribuna: number[]; stile_gioco: string; automatica: boolean }
 type EngineLineup = { modulo: string; slots: string[]; titolari: EnginePlayer[]; panchina: EnginePlayer[]; cambiFatti: number }
 type Fixture = { id: number; season_id: number; league_id: number; giornata: number; home_team_id: number; away_team_id: number; stato: string; campo_neutro: boolean; bracket_tie_id: number | null; mano: number | null }
@@ -594,15 +596,21 @@ export default {
         }
       }
 
-      const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult] = await Promise.all([
+      const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult, medicoResult] = await Promise.all([
         ctx.supabaseAdmin.from('teams').select('id, nome, user_id, controllata_da_pc').eq('league_id', leagueId).in('id', teamIds),
         ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a').eq('league_id', leagueId).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
         ctx.supabaseAdmin.from('formation_xp').select('team_id, modulo, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),
+        // Reparto medico: moltiplicatore di resistenza agli infortuni per
+        // squadra (1 = nessun effetto). Curva in private.effetti_ramo, letta
+        // tramite l'unico varco pubblico (PostgREST non espone lo schema
+        // private).
+        ctx.supabaseAdmin.rpc('moltiplicatori_infortuni_squadre', { p_team_ids: teamIds }),
       ])
-      const loadError = teamsResult.error ?? instancesResult.error ?? lineupsResult.error ?? previousLineupsResult.error ?? xpResult.error
+      const loadError = teamsResult.error ?? instancesResult.error ?? lineupsResult.error ?? previousLineupsResult.error ?? xpResult.error ?? medicoResult.error
       if (loadError) throw loadError
+      const moltiplicatoriInfortuni = new Map<number, number>((medicoResult.data ?? []).map((riga: { team_id: number; moltiplicatore: number }) => [riga.team_id, riga.moltiplicatore]))
 
       const instances = (instancesResult.data ?? []) as Instance[]
       const playerIds = [...new Set(instances.map((instance) => instance.player_id))]
@@ -624,6 +632,7 @@ export default {
           nome: teamNames.get(teamId) ?? `Squadra ${teamId}`,
           giocatori: instances.filter((instance) => instance.team_id === teamId).map((instance) => adaptPlayer(instance, catalog.get(instance.player_id)!)),
           esperienzaModulo,
+          moltiplicatoreInfortuni: moltiplicatoriInfortuni.get(teamId),
         })
       }
 

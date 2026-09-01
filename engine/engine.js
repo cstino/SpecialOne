@@ -410,6 +410,13 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     // un infortunio produce un cambio forzato prima dei cambi per stanchezza.
     if (usaCondizione) {
       for (const [lato, L] of [['casa', lc], ['ospite', lo]]) {
+        // Modificatore facoltativo per squadra (reparto medico, deciso con
+        // l'utente il 1 settembre 2026): assente in validazione e ovunque il
+        // chiamante non lo imposti, quindi 1 = nessun effetto, formula
+        // invariata. Chi lo popola (edge function) legge il livello da
+        // team_risorse, la curva resta l'unica fonte di verita' in SQL.
+        const rosaLato = lato === 'casa' ? rosaCasa : rosaOspite;
+        const modMedico = rosaLato.moltiplicatoreInfortuni ?? 1;
         for (let i = 0; i < L.titolari.length; i++) {
           const g = L.titolari[i];
           if (!g || L.cambiFatti >= CFG.MAX_CAMBI || L.panchina.length === 0) continue;
@@ -419,7 +426,7 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
           // movimento (coerente col non consumare condizione per fatica,
           // vedi sopra), quindi rischia la meta'.
           const modRuolo = L.slots[i] === 'GK' ? 0.5 : 1.0;
-          const pPartita = CFG.INFORTUNIO_BASE * (1 + (100 - g._condizioneInizioPartita) / CFG.INFORTUNIO_DIV_COND) * modEta * modRuolo;
+          const pPartita = CFG.INFORTUNIO_BASE * (1 + (100 - g._condizioneInizioPartita) / CFG.INFORTUNIO_DIV_COND) * modEta * modRuolo * modMedico;
           if (rndInfortunio() >= pPartita / CFG.BLOCCHI_PARTITA) continue;
           const cambio = sostituisciInfortunato(L, i);
           if (!cambio) continue;
