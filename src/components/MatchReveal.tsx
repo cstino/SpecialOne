@@ -179,6 +179,8 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const [pitchEl, setPitchEl] = useState<HTMLDivElement | null>(null)
   const [altezzaVisibile, setAltezzaVisibile] = useState(0)
   const [stretto, setStretto] = useState(false)
+  const suonoGolRef = useRef<HTMLAudioElement>(null)
+  const golGiaSonorizzati = useRef<Set<EventoPartita>>(new Set())
 
   useEffect(() => {
     let vivo = true
@@ -285,6 +287,20 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const eventiCasa = useMemo(() => visibili.filter((evento) => evento.lato === 'casa'), [visibili])
   const eventiOspite = useMemo(() => visibili.filter((evento) => evento.lato === 'ospite'), [visibili])
 
+  // Boato del pubblico quando un gol entra in cronaca. golGiaSonorizzati e'
+  // per riferimento d'oggetto (non per id): eventi resta lo stesso array a
+  // ogni tick (e' un useMemo con [fixture, match, statsStoriche]), quindi
+  // ogni evento e' sempre lo stesso oggetto e il Set lo riconosce senza dover
+  // inventare una chiave. Due gol nello stesso minuto suonano insieme: va
+  // bene, e' raro e comunque dura solo un paio di secondi.
+  useEffect(() => {
+    const nuoviGol = visibili.filter((evento) => isEventoGol(evento) && !golGiaSonorizzati.current.has(evento))
+    if (!nuoviGol.length) return
+    nuoviGol.forEach((evento) => golGiaSonorizzati.current.add(evento))
+    const audio = suonoGolRef.current
+    if (audio) { audio.currentTime = 0; void audio.play().catch(() => {}) }
+  }, [visibili])
+
   // Di norma la cronaca sta esattamente in una schermata. Solo se una partita
   // fittissima non ci sta il canvas cresce, e cresce per tutti: linea, tacche
   // ed eventi condividono la stessa altezza, quindi restano allineati anche
@@ -322,6 +338,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   }
 
   return <div className="match-reveal-backdrop" role="dialog" aria-modal="true" aria-label="Cronaca della partita">
+    <audio ref={suonoGolRef} src="/suoni-effetti/gol.mp3" preload="auto" />
     <section className="match-reveal">
       <div className="match-reveal__sfondo" style={{ backgroundImage: `url(${SFONDO_FASE_VERTICALE[fase]})` }} />
       <button className="match-reveal__close" type="button" onClick={onClose} aria-label="Chiudi cronaca">×</button>
