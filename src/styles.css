@@ -2652,10 +2652,14 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .match-reveal__live-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff4d6d; box-shadow: 0 0 8px #ff4d6d; animation: match-reveal-pulse 1.4s ease-in-out infinite; }
 .match-reveal__score b { color: #fff; font-family: "Aptos Narrow", "Arial Narrow", "Impact", sans-serif; font-size: 2.6rem; font-weight: 900; letter-spacing: .02em; text-shadow: 0 0 30px rgba(196,120,255,.35); }
 .match-reveal__score i { color: rgba(255,255,255,.3); font-style: normal; }
-.match-reveal__pitch { position: relative; flex: 1; display: grid; grid-template-columns: 1fr 64px 1fr; min-height: 0; overflow-y: auto; }
+.match-reveal__pitch { position: relative; flex: 1; min-height: 0; overflow-y: auto; }
+/* Il canvas e' il sistema di riferimento di tutto: linea, tacche ed eventi
+   sono posizionati sulla sua altezza, quindi restano allineati fra loro anche
+   quando (raramente) deve crescere oltre la schermata. */
+.match-reveal__canvas { position: relative; display: grid; grid-template-columns: 1fr 64px 1fr; grid-template-rows: minmax(0, 1fr); width: 100%; }
 .match-reveal__half { position: absolute; z-index: 0; left: 0; width: 100%; height: 50%; padding: 18px 25px; color: rgba(255,255,255,.12); font: 900 .6rem/1 Inter, Arial, sans-serif; letter-spacing: .2em; }
 .match-reveal__half--second { top: 50%; border-top: 1px dashed rgba(255,255,255,.07); }
-.match-reveal__line { position: absolute; z-index: 1; top: 28px; bottom: 28px; left: 50%; width: 4px; overflow: visible; border-radius: 99px; background: rgba(255,255,255,.07); transform: translateX(-50%); }
+.match-reveal__line { position: absolute; z-index: 1; left: 50%; width: 4px; overflow: visible; border-radius: 99px; background: rgba(255,255,255,.07); transform: translateX(-50%); }
 .match-reveal__line span { display: block; width: 100%; border-radius: inherit; background: linear-gradient(#e29bff, #8a4bff); box-shadow: 0 0 14px rgba(180,110,255,.55); transition: height .7s linear; }
 .match-reveal__minute { position: absolute; z-index: 2; left: 50%; display: grid; place-items: center; width: 46px; height: 26px; border: 1px solid rgba(226,155,255,.6); border-radius: 20px; color: #fff; background: linear-gradient(135deg, #9b4cff, #6726c4); font-size: .68rem; font-weight: 800; box-shadow: 0 4px 16px rgba(122,48,215,.5); transform: translate(-50%, -50%); transition: top .7s linear; }
 .match-reveal__minute.is-live::before { content: ''; position: absolute; inset: -6px; border-radius: inherit; border: 1px solid rgba(226,155,255,.5); animation: match-reveal-ring 1.8s ease-out infinite; }
@@ -2672,8 +2676,11 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    con l'utente il 29 agosto 2026 di tornare alla lista piatta: non importa
    se un evento non e' esattamente all'altezza del proprio minuto, l'importante
    e' che sia sempre leggibile. */
-.match-reveal__events { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 8px; padding: 28px 16px; }
-.match-reveal__events p { position: relative; overflow: hidden; margin: 0; padding: 9px 12px; border-radius: 10px; color: rgba(255,255,255,.82); background: rgba(255,255,255,.04); font-size: .74rem; line-height: 1.4; animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both; }
+.match-reveal__events { position: relative; z-index: 1; }
+/* Ogni card e' ancorata al proprio minuto (top calcolato in JS) e ha altezza
+   fissa: il testo viene troncato a due righe, cosi' la disposizione si puo'
+   calcolare senza dover misurare ogni card prima di posizionarla. */
+.match-reveal__events p { position: absolute; left: 16px; right: 16px; box-sizing: border-box; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin: 0; padding: 9px 12px; border-radius: 10px; color: rgba(255,255,255,.82); background: rgba(255,255,255,.04); font-size: .74rem; line-height: 1.4; animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both; transition: top .35s cubic-bezier(.2,.8,.2,1); }
 /* Tiri (parati o fuori) sono eventi minori: comparsa normale, poi
    svaniscono da soli 2 secondi dopo per non riempire la cronaca. Gol,
    infortuni e sostituzioni non hanno questa classe e restano fissi. */
@@ -2681,7 +2688,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 @keyframes evento-transitorio-esci { from { opacity: 1; } to { opacity: 0; } }
 .match-reveal__events--home p::before, .match-reveal__events--away p::before { content: ''; position: absolute; top: 6px; bottom: 6px; width: 2px; border-radius: 2px; background: rgba(255,255,255,.14); }
 .match-reveal__events--home p::before { right: 0; }.match-reveal__events--away p::before { left: 0; }
-.match-reveal__events time { display: block; margin-bottom: 2px; color: #c9a7ff; font-size: .6rem; font-weight: 900; }
+/* Il minuto sta in linea col testo, non su una riga propria: e' quello che
+   permette alla card di stare in due righe e restare compatta. */
+.match-reveal__events time { margin-right: 6px; color: #c9a7ff; font-size: .62rem; font-weight: 900; }
 .match-reveal__events strong { color: #fff; font-weight: 800; }
 .match-reveal__events p.is-goal { z-index: 1; color: #fff; background: linear-gradient(110deg, rgba(155,76,255,.28), rgba(122,48,215,.14)); animation: reveal-goal .45s cubic-bezier(.2,.8,.2,1) both; }
 .match-reveal__events p.is-goal::before { background: linear-gradient(#e29bff, #8a4bff); box-shadow: 0 0 8px rgba(180,110,255,.6); }
@@ -2703,7 +2712,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 }
 
 @media (max-width: 560px) {
-  .match-reveal__header { gap: 6px; padding: max(18px, env(safe-area-inset-top)) 40px 16px 14px; }.match-reveal__header > div:not(.match-reveal__score) { font-size: .63rem; }.match-reveal__header .crest { width: 30px; height: 30px; }.match-reveal__score { min-width: 84px; }.match-reveal__score b { font-size: 1.9rem; }.match-reveal__score small { font-size: .48rem; }.match-reveal__pitch { grid-template-columns: 1fr 42px 1fr; }.match-reveal__events { gap: 6px; padding: 24px 6px; }.match-reveal__events p { padding: 7px 8px; font-size: .63rem; }.match-reveal__events time { font-size: .54rem; }.match-reveal__half { padding: 14px 7px; font-size: .48rem; }.match-reveal__minute { width: 38px; height: 22px; font-size: .58rem; }.match-reveal__footer { padding: 16px; }
+  .match-reveal__header { gap: 6px; padding: max(18px, env(safe-area-inset-top)) 40px 16px 14px; }.match-reveal__header > div:not(.match-reveal__score) { font-size: .63rem; }.match-reveal__header .crest { width: 30px; height: 30px; }.match-reveal__score { min-width: 84px; }.match-reveal__score b { font-size: 1.9rem; }.match-reveal__score small { font-size: .48rem; }.match-reveal__canvas { grid-template-columns: 1fr 42px 1fr; }.match-reveal__events p { left: 6px; right: 6px; padding: 7px 8px; font-size: .63rem; }.match-reveal__events time { font-size: .54rem; }.match-reveal__half { padding: 14px 7px; font-size: .48rem; }.match-reveal__minute { width: 38px; height: 22px; font-size: .58rem; }.match-reveal__footer { padding: 16px; }
 }
 .finanza-tooltip span { color: #a79db8; font-size: .68rem; }
 
