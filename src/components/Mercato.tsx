@@ -9,6 +9,7 @@ import type { League, Membership } from '../types'
 import { Crest } from './Crest'
 import { GameNav, type GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
+import { PopupSpiegazione } from './PopupSpiegazione'
 import { UnderlineTabs } from './ui/underline-tabs'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
@@ -519,6 +520,15 @@ export function Mercato({ membership, onNavigate }: Props) {
     {errore && <div className="season-page"><p className="season-empty">{errore}</p></div>}
 
     {!caricamento && !errore && <div className="season-page season-page--narrow">
+      <PopupSpiegazione userId={membership.user_id} hintKey="mercato-free-agent" titolo="Come funziona il Free Agent">
+        <p>Ogni giorno escono nuovi giocatori svincolati bilanciati per ruolo: portieri, difensori,
+          centrocampisti e attaccanti. È un'asta a busta chiusa dalle 23:30 alle 21:00: offri l'ingaggio
+          annuale che sei disposto a pagare, ma <strong>nessuno vede le offerte altrui</strong>, e nemmeno tu
+          vedi quanto chiede davvero il giocatore.</p>
+        <p>Alle 21:00 vince l'offerta più alta che supera la richiesta nascosta. A parità vince chi ha
+          offerto prima. Offrire <strong>impegna la capienza salariale</strong> finché l'asta non si chiude:
+          se perdi o ritiri l'offerta, torna libera.</p>
+      </PopupSpiegazione>
       <section className="season-title-row">
         <div>
           <p className="kicker">Stagione {league.stagione_corrente} · {league.nome}</p>
@@ -544,12 +554,6 @@ export function Mercato({ membership, onNavigate }: Props) {
           <div><p className="kicker">Asta a busta chiusa</p><h2>Mercato svincolati live</h2></div>
           <span>{league.fase_carriera === 'offseason' ? '10 per ruolo' : '5 per ruolo'}</span>
         </div>
-        <p className="mercato-nota">
-          Ogni giorno escono nuovi giocatori bilanciati per ruolo: portieri, difensori, centrocampisti
-          e attaccanti. Offri l'ingaggio annuale: nessuno vede le offerte altrui e alle 21:00 vince
-          l'offerta piu alta sopra la richiesta nascosta. A parita vince chi ha offerto prima.
-        </p>
-
         <div className="free-agent-daily">
           <div className="free-agent-heading">
             <div><p className="kicker">Asta a busta chiusa</p><h3>{nuoviDelGiorno.length} occasioni</h3></div>

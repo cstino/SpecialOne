@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Bracket, BracketTie, Fixture, League, Membership, Team } from '../types'
 import { GameNav, type GameView } from './GameNav'
+import { PopupSpiegazione } from './PopupSpiegazione'
 import { SeasonState } from './SeasonUI'
 import { Crest } from './Crest'
 import { useSeasonData } from '../lib/useSeasonData'
@@ -118,11 +119,19 @@ export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
       <span>Tabellone</span>
     </header>
     <div className="season-page season-page--narrow tabellone-page">
+      <PopupSpiegazione userId={membership.user_id} hintKey="tabellone-playoff" titolo="Come funzionano i playoff">
+        <p>A fine stagione regolare la classifica si divide in due tabelloni a eliminazione diretta,
+          disputati in parallelo. Il <strong>Title Playoff</strong> prende sempre le prime 8 in classifica e
+          assegna il titolo di campione. Il <strong>Draft Playoff</strong> prende tutte le altre squadre,
+          qualunque sia il numero totale di partecipanti.</p>
+        <p>Il Draft Playoff non è un ripiego: come va lì incide sull'ordine di scelta nel prossimo mercato a
+          scelte, quindi vale la pena giocarselo fino in fondo. La classifica finale della lega nasce
+          combinando l'esito di entrambi i tabelloni, non solo del Title Playoff.</p>
+      </PopupSpiegazione>
       <section className="season-title-row">
         <div>
           <p className="kicker">{league.nome}</p>
           <h1>Tabellone.</h1>
-          <p>Title Playoff e Draft Playoff della stagione {league.stagione_corrente}.</p>
         </div>
       </section>
 

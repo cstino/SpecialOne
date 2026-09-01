@@ -5,6 +5,7 @@ import { useSeasonData } from '../lib/useSeasonData'
 import { formatCountdown, useOraCorrente } from '../lib/countdown'
 import type { Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
+import { PopupSpiegazione } from './PopupSpiegazione'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
@@ -111,15 +112,19 @@ export function Under({ membership, onNavigate }: Props) {
     </header>
 
     <div className="season-page season-page--narrow">
+      <PopupSpiegazione userId={membership.user_id} hintKey="mercato-under" titolo="Come funziona il mercato UNDER">
+        <p>Giovani promesse di 15 anni per il vivaio, generate ogni giorno. L'overall che vedi è quello vero,
+          ma il potenziale è mostrato come una fascia — l'incertezza si stringe salendo di livello nel ramo
+          VIVAIO di Gestione risorse, fino a diventare un valore esatto.</p>
+        <p>È un'asta a busta chiusa come quella degli svincolati, ma un giovane preso qui va nel vivaio, non
+          nella rosa: <strong>non conta</strong> nel limite di 21-30 giocatori, e l'ingaggio minimo è di soli
+          0,1 M€. Quanti ne puoi tenere in cantiera dipende dagli slot vivaio, anche quelli sbloccati salendo
+          di livello.</p>
+      </PopupSpiegazione>
       <section className="season-title-row">
         <div>
           <p className="kicker">{league.nome}</p>
           <h1>Mercato UNDER.</h1>
-          <p>
-            Giovani promesse di 15 anni per il vivaio, generate ogni giorno. Overall vero, potenziale mostrato come
-            fascia — si stringe salendo di livello VIVAIO in Gestione risorse. Asta a busta chiusa come i
-            svincolati, ma fuori dal conteggio rosa: minimo 0,1 M€.
-          </p>
         </div>
         <span className={`mercato-finestra ${aperto ? 'e-aperto' : ''}`}>{etichetta}</span>
       </section>

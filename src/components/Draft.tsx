@@ -8,6 +8,7 @@ import { GameNav } from './GameNav'
 import type { GameView } from './GameNav'
 import { firmaFoto, RosaElenco, type RosterPlayer } from './RosaElenco'
 import { LoadingLogo } from './LoadingLogo'
+import { PopupSpiegazione } from './PopupSpiegazione'
 
 type DraftTeamState = {
   pick_numero: number
@@ -342,6 +343,22 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
     <main className="app-shell draft-shell">
       <GameNav league={league} active="draft" onNavigate={onNavigate} />
       <header className="topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span className="user-email">{user.email}</span></header>
+      <PopupSpiegazione userId={membership.user_id} hintKey={`draft-${isByRole ? 'by-role' : '2-of-4'}`} titolo="Come funziona il Draft">
+        {isByRole ? <>
+          <p>A ogni turno scegli un ruolo e fai uno spin: pesca un giocatore disponibile per quel ruolo.
+            Puoi ingaggiarlo subito o rifare lo spin (i reroll sono limitati). Ogni giocatore è unico in
+            tutta la lega: appena qualcuno lo ingaggia, sparisce per tutti gli altri.</p>
+        </> : <>
+          <p>Apri un pacchetto per reparto: 4 carte, ne scegli 2. Se meno di 2 carte sono ingaggiabili,
+            quelle ingaggiabili restano ferme e solo le altre si ripescano automaticamente, senza consumarti
+            un reroll. Ogni giocatore è unico in tutta la lega: appena qualcuno lo prende, sparisce per gli
+            altri.</p>
+        </>}
+        <p>Nessun ordine di turno: tutte le squadre draftano in contemporanea, a modo e velocità loro. Il
+          budget del draft è una parte del budget iniziale della lega, e ogni ingaggio deve restare
+          sostenibile per completare l'intera rosa — il sistema blocca una scelta che ti lascerebbe senza
+          margine per finirla.</p>
+      </PopupSpiegazione>
       <section className="draft-hero">
         <div><p className="kicker">Draft {isByRole ? 'BY ROLE' : '2 of 4'} · {league.nome}</p><h1>{state?.stato === 'concluso' ? 'Rosa completa.' : 'Scegli bene.'}</h1><p>{isByRole ? `Hai completato ${picks} spin su ${total}. Scegli liberamente il reparto del prossimo.` : `La tua squadra è al pacchetto ${Math.min(Math.floor(picks / 2) + 1, total / 2)} su ${total / 2}.`} Le altre squadre possono draftare contemporaneamente.</p></div>
         <button className="draft-turn-board draft-turn-board--clickable" type="button" onClick={() => setRosaAperta(true)}>

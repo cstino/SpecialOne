@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import type { League, Membership, Team } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { Crest } from './Crest'
+import { PopupSpiegazione } from './PopupSpiegazione'
 
 type StatoTeam = { id: number; nome: string; attiva: boolean; entrante: boolean; rosa: number; draft: string | null }
 type StatoOffseason = { fase: string; stagione_corrente: number; stagione_prossima: number; scade_il: string | null; posti_nuovi: number; squadre_attese: number; squadre: StatoTeam[] }
@@ -104,11 +105,19 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
   return <main className="app-shell offseason-shell">
     <GameNav league={league} active="offseason" onNavigate={onNavigate} />
     <section className="season-page offseason-page">
+      <PopupSpiegazione userId={membership.user_id} hintKey="offseason" titolo="Come funziona l'Off-season">
+        <p>Prima l'admin conferma quali squadre proseguono: i giocatori di quelle escluse finiscono fra gli
+          svincolati. Poi si apre una finestra a tempo per i <strong>rinnovi dei contratti</strong> — ogni
+          contratto dura una stagione, chi non rinnova entro la scadenza lascia la squadra ed entra nel
+          mercato svincolati — insieme a un giorno di mercato e all'ingresso di eventuali nuove squadre con
+          un mini-draft.</p>
+        <p>Se una rosa scende sotto il minimo di 21 giocatori, il sistema la completa da solo pescando
+          svincolati sostenibili sotto il tetto: meglio non arrivarci, ma non si resta mai bloccati.</p>
+      </PopupSpiegazione>
       <header className="offseason-hero">
         <div>
           <p className="kicker">{league.nome} · Carriera</p>
           <h1>{league.fase_carriera === 'offseason' ? 'Costruisci il futuro.' : 'Fine stagione. Nuove scelte.'}</h1>
-          <p>Rinnovi, mercato e nuovi ingressi. La prossima stagione comincia qui.</p>
         </div>
         <div className="offseason-transition" aria-label={`Passaggio dalla stagione ${league.stagione_corrente} alla ${league.stagione_corrente + 1}`}>
           <span><small>STAGIONE</small>{league.stagione_corrente}</span><i aria-hidden="true">→</i><strong><small>PROSSIMA</small>{league.stagione_corrente + 1}</strong>

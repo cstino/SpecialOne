@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
+import { PopupSpiegazione } from './PopupSpiegazione'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
@@ -142,16 +143,19 @@ export function Risorse({ membership, onNavigate }: Props) {
     </header>
 
     <div className="season-page season-page--narrow risorse-page">
+      <PopupSpiegazione userId={membership.user_id} hintKey="gestione-risorse" titolo="Come funziona Gestione risorse">
+        <p>
+          Ogni quarto di stagione ricevi {tabella.punti_per_checkpoint} punti abilità, fino a un
+          massimo di {tabella.punti_massimi} in tutta la vita della lega. I rami hanno{' '}
+          {tabella.livello_massimo} livelli ciascuno, {tabella.livello_massimo * RAMI.length} in
+          totale: non potrai mai riempirli tutti, quindi la scelta conta.
+        </p>
+        <p>I punti investiti non si possono riassegnare: una volta messi su un ramo restano lì.</p>
+      </PopupSpiegazione>
       <section className="season-title-row">
         <div>
           <p className="kicker">{league.nome}</p>
           <h1>Gestione risorse.</h1>
-          <p>
-            Ogni quarto di stagione ricevi {tabella.punti_per_checkpoint} punti abilità, fino a un
-            massimo di {tabella.punti_massimi} in tutta la vita della lega. I rami hanno{' '}
-            {tabella.livello_massimo} livelli ciascuno, {tabella.livello_massimo * RAMI.length} in
-            totale: non potrai mai riempirli tutti, quindi la scelta conta.
-          </p>
         </div>
         <div className="risorse-punti">
           <strong>{disponibili}</strong>
@@ -226,10 +230,9 @@ export function Risorse({ membership, onNavigate }: Props) {
       </div>
 
       <p className="risorse-nota">
-        I punti investiti non si possono riassegnare: una volta messi su un ramo restano lì.
         {esauriti
-          ? ' Hai già ricevuto tutti i punti che la lega distribuisce: quelli che hai adesso sono definitivi.'
-          : ' I prossimi arrivano al quarto di stagione successivo.'}
+          ? 'Hai già ricevuto tutti i punti che la lega distribuisce: quelli che hai adesso sono definitivi.'
+          : 'I prossimi punti arrivano al quarto di stagione successivo.'}
       </p>
     </div>
   </main>

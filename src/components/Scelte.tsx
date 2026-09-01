@@ -4,6 +4,7 @@ import { cognome } from '../lib/nomi'
 import { formatCountdown, useOraCorrente } from '../lib/countdown'
 import type { League, Membership, SceltaDraft } from '../types'
 import { GameNav, type GameView } from './GameNav'
+import { PopupSpiegazione } from './PopupSpiegazione'
 import { SeasonState } from './SeasonUI'
 import { Crest } from './Crest'
 import { firmaFoto } from './RosaElenco'
@@ -201,15 +202,20 @@ export function Scelte({ membership, onNavigate }: Props) {
       <span>Draft</span>
     </header>
     <div className="season-page season-page--narrow">
+      <PopupSpiegazione userId={membership.user_id} hintKey="scelte-draft" titolo="Come funziona il mercato a scelte">
+        <p>Ogni ticket rappresenta una scelta in un mercato ON-Season o OFF-Season futuro. Lo stemma è
+          sempre quello della squadra che l'ha guadagnata con il proprio piazzamento nei playoff — non
+          cambia se la scelta viene scambiata, solo il proprietario cambia.</p>
+        <p>Quando la finestra si apre, componi una lista di preferenze fra i giocatori del pool. All'estrazione
+          le scelte vengono esercitate in ordine di posizione: ciascuna prende la prima preferenza ancora
+          disponibile e che entra sotto il tuo tetto ingaggi. Se nessuna delle tue preferenze è più
+          disponibile o sostenibile, la scelta resta vuota per quella finestra — non si perde, semplicemente
+          non assegna nessuno stavolta.</p>
+      </PopupSpiegazione>
       <section className="season-title-row">
         <div>
           <p className="kicker">{league.nome}</p>
           <h1>Draft.</h1>
-          <p>
-            Ogni ticket rappresenta una scelta in un mercato ON-Season o OFF-Season futuro. Lo
-            stemma è sempre quello della squadra che l'ha guadagnata con il proprio piazzamento
-            nei playoff — non cambia se la scelta viene scambiata, solo il proprietario cambia.
-          </p>
         </div>
         <div className="season-total">
           <strong>{mieScelte.length}</strong>

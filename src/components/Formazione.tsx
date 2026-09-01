@@ -7,6 +7,7 @@ import { GameNav } from './GameNav'
 import { SchedaGiocatore } from './SchedaGiocatore'
 import type { GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
+import { PopupSpiegazione } from './PopupSpiegazione'
 import { UnderlineTabs } from './ui/underline-tabs'
 
 // Tetti fissi di rosa in campo (design.md §6): 11 titolari sempre, panchina
@@ -566,7 +567,15 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     <main className="app-shell formation-shell">
       <GameNav league={league} active="squad" onNavigate={onNavigate} />
       <header className="topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span className="kicker">Giornata {giornata}</span></header>
-      <section className="formation-hero"><p className="kicker">La tua distinta · {league.nome}</p><h1>Schiera la squadra.</h1><p>Scegli il modulo e assegna i giocatori slot per slot. Il server controlla rosa, indisponibilità e duplicati prima del salvataggio.</p></section>
+      <PopupSpiegazione userId={membership.user_id} hintKey="formazione" titolo="Come funziona la Formazione">
+        <p>Scegli uno dei moduli disponibili e assegna un giocatore a ogni slot: titolari, panchina e il
+          resto in tribuna. Un giocatore fuori dal suo ruolo naturale gioca comunque, ma con un
+          <strong> malus di rendimento</strong> — più marcato quanto più il ruolo è lontano dal suo.</p>
+        <p>Più usi lo stesso modulo, più la squadra ci prende confidenza e rende meglio in quello schema
+          (familiarità del modulo). Se non schieri entro le <strong>23:00</strong>, il sistema genera una
+          formazione automatica di riserva per non farti saltare la giornata.</p>
+      </PopupSpiegazione>
+      <section className="formation-hero"><p className="kicker">La tua distinta · {league.nome}</p><h1>Schiera la squadra.</h1></section>
       {error && <p className="notice notice--error" role="alert">{error}</p>}
       {players.length < 11 ? <section className="formation-panel"><h2>Rosa incompleta</h2><p>Servono almeno 11 giocatori prima di poter salvare una formazione.</p></section> : (
         <section className="formation-panel formation-panel--tactical">

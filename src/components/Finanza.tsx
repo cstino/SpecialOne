@@ -4,6 +4,7 @@ import { motion } from 'motion/react'
 import { supabase } from '../lib/supabase'
 import type { League, Membership, Season, Transaction } from '../types'
 import { GameNav, type GameView } from './GameNav'
+import { PopupSpiegazione } from './PopupSpiegazione'
 import { SeasonState } from './SeasonUI'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
@@ -110,11 +111,17 @@ export function Finanza({ membership, onNavigate }: Props) {
     <GameNav league={league} active="finanza" onNavigate={naviga} />
     <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>Finanza</span></header>
     <div className="season-page season-page--narrow finanza-page">
+      <PopupSpiegazione userId={membership.user_id} hintKey="finanza" titolo="Come funziona la Finanza">
+        <p>Il tetto ingaggi è uguale per tutte le squadre della lega e <strong>non cambia mai</strong> fra le
+          stagioni. Non è cassa da spendere: è spazio salariale, uno stipendio lo occupa finché il contratto è
+          attivo, non è mai una spesa "una tantum".</p>
+        <p>Ogni contratto dura <strong>una sola stagione</strong>: chi non viene rinnovato entro la fine
+          dell'off-season lascia la squadra ed entra tra gli svincolati.</p>
+      </PopupSpiegazione>
       <section className="season-title-row">
         <div>
           <p className="kicker">{league.nome}</p>
           <h1>Finanza.</h1>
-          <p>Tetto ingaggi, capienza e contratti della rosa. Il tetto è uguale per tutti e non cambia mai tra le stagioni.</p>
         </div>
         {capienza && <div className={`scambi-gauge ${capienzaCritica ? 'is-critica' : ''}`}>
           <div className="scambi-gauge__numeri">
@@ -147,7 +154,6 @@ export function Finanza({ membership, onNavigate }: Props) {
             <div><dt>Confermati per la stagione entrante</dt><dd>{confermati.length} giocatori · {money(ingaggioConfermati)}</dd></div>
             <div><dt>In scadenza a fine stagione corrente</dt><dd>{inScadenza.length} giocatori · {money(ingaggioInScadenza)}</dd></div>
           </dl>
-          <p className="mercato-nota">Ogni contratto dura una stagione: chi non viene rinnovato entro la fine dell'off-season lascia la squadra ed entra tra gli svincolati.</p>
         </section>
 
         {categorie.length === 0

@@ -9,6 +9,7 @@ import type { League, Membership } from '../types'
 import { Crest } from './Crest'
 import { GameNav, type GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
+import { PopupSpiegazione } from './PopupSpiegazione'
 import { SchedaGiocatore } from './SchedaGiocatore'
 import { UnderlineTabs } from './ui/underline-tabs'
 
@@ -368,11 +369,19 @@ export function Scambi({ membership, onNavigate }: Props) {
     {errore && <div className="season-page"><p className="season-empty">{errore}</p></div>}
 
     {!caricamento && !errore && <div className="season-page season-page--narrow scambi-page">
+      <PopupSpiegazione userId={membership.user_id} hintKey="scambi" titolo="Come funzionano gli Scambi">
+        <p>Si scambiano giocatori e scelte di draft insieme, come in NBA: <strong>nessun conguaglio in denaro</strong>,
+          si tratta alla pari sotto lo stesso tetto salariale per tutti.</p>
+        <p>Dopo lo scambio entrambe le rose devono restare fra 21 e 30 giocatori e sotto il tetto ingaggi. Una
+          scelta di draft ceduta non può lasciare una squadra senza una propria scelta d'origine per due
+          finestre consecutive (regola Stepien) — evita di svendere tutto il futuro in un colpo solo. Un
+          giocatore appena scambiato è comunque scambiabile di nuovo subito: il vincolo delle 10 giornate prima
+          di poter essere svincolato riguarda solo lo svincolo, non un nuovo scambio.</p>
+      </PopupSpiegazione>
       <section className="season-title-row">
         <div>
           <p className="kicker">Stagione {league.stagione_corrente} · {league.nome}</p>
           <h1 className="scambi-title">Scambi.</h1>
-          <p>Giocatori e scelte di draft, come in NBA. Nessun conguaglio: si tratta alla pari, sotto lo stesso tetto salariale per tutti.</p>
         </div>
         {capienza && <div className={`scambi-gauge ${capienzaCritica ? 'is-critica' : ''}`}>
           <div className="scambi-gauge__numeri">

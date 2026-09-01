@@ -2463,6 +2463,19 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 @keyframes drawer-fade { from { opacity:0; } }
 @keyframes drawer-enter { from { transform:translateX(100%); } }
 
+/* ============================================================
+   POPUP DI SPIEGAZIONE ALLA PRIMA APERTURA DI UNA PAGINA
+   ============================================================ */
+.popup-spiegazione-sfondo { position: fixed; z-index: 90; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(6,4,12,.72); backdrop-filter: blur(6px); animation: popup-spiegazione-sfondo .2s ease-out both; }
+.popup-spiegazione { display: grid; gap: 16px; width: min(100%, 460px); max-height: min(600px, 88vh); overflow-y: auto; padding: 26px 24px; border-radius: 20px; border: 1px solid #40345a; background: linear-gradient(165deg, #211a33, #16121f); box-shadow: 0 30px 70px rgba(0,0,0,.5); animation: popup-spiegazione-entra .3s cubic-bezier(.2,.8,.2,1) both; }
+.popup-spiegazione h2 { margin: 0; color: #fff; font-size: 1.35rem; }
+.popup-spiegazione__corpo { display: grid; gap: 12px; color: #cabfd6; font-size: .84rem; line-height: 1.55; }
+.popup-spiegazione__corpo strong { color: #fff; }
+.popup-spiegazione__checkbox { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid #443557; border-radius: 12px; background: #1a1625; color: #eee9f4; font-size: .82rem; font-weight: 750; cursor: pointer; }
+.popup-spiegazione__checkbox input { width: 19px; height: 19px; accent-color: #9b4cff; cursor: pointer; }
+@keyframes popup-spiegazione-sfondo { from { opacity: 0; } }
+@keyframes popup-spiegazione-entra { from { opacity: 0; transform: translateY(10px) scale(.97); } }
+
 /* Banner codice invito nella schermata di draft: visibile finche' la lega
    non e' piena, unico posto dove condividere il codice ora che chi entra
    comincia subito a draftare invece di passare dalla Lobby. */

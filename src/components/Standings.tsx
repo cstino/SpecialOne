@@ -6,6 +6,7 @@ import type { League, Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { Forma, formaPerSquadra, SeasonState, TeamLabel } from './SeasonUI'
 import { Crest } from './Crest'
+import { PopupSpiegazione } from './PopupSpiegazione'
 import { UnderlineTabs } from './ui/underline-tabs'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; onOpenTeam: (teamId: number) => void }
@@ -132,7 +133,14 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
     <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>Aggiornata alla giornata {Math.max(0, data.currentGiornata - 1)}</span></header>
     <SeasonState loading={data.loading} error={data.error} onRetry={data.reload} />
     {!data.loading && !data.error && <div className="season-page season-page--narrow">
-      <section className="season-title-row"><div><p className="kicker">Stagione {league.stagione_corrente} · {league.nome}</p><h1>Classifica.</h1><p>Punti, risultati e differenza reti aggiornati dopo ogni simulazione.</p></div><div className="season-total"><strong>{league.n_squadre}</strong><span>squadre</span></div></section>
+      <PopupSpiegazione userId={membership.user_id} hintKey="classifica" titolo="Come si legge la Classifica">
+        <p>In caso di parità di punti si guarda, nell'ordine: gli <strong>scontri diretti</strong> (solo contro
+          le squadre attualmente a pari punti, non tutta la stagione), poi la <strong>differenza reti</strong>,
+          poi i <strong>gol fatti</strong>.</p>
+        <p>Le prime 8 posizioni vanno al Title Playoff, che assegna il titolo di campione; tutte le altre al
+          Draft Playoff, che decide l'ordine di scelta nel prossimo mercato a scelte.</p>
+      </PopupSpiegazione>
+      <section className="season-title-row"><div><p className="kicker">Stagione {league.stagione_corrente} · {league.nome}</p><h1>Classifica.</h1></div><div className="season-total"><strong>{league.n_squadre}</strong><span>squadre</span></div></section>
 
       <UnderlineTabs
         tabs={SCHEDE.map((voce) => ({ value: voce, label: ETICHETTE_SCHEDA[voce] }))}
