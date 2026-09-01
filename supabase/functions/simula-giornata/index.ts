@@ -298,15 +298,37 @@ function costruisciEventiGol(
     evento.marcatore = marcatore
     evento.assist = scegliAssist(lato.lineup, marcatore, presenti, rnd)
 
-    // `presenzePerBlocco` fotografa il cambio al confine del blocco: un
-    // subentrato al 60' puo' quindi comparire gia' nel blocco 46'-60'. Il
-    // gol puo' essere del blocco per il motore, ma non puo' essere raccontato
-    // prima del suo ingresso. Lo spostiamo al blocco successivo (61'-75') e
-    // separiamo i gol della stessa squadra quando lo spazio lo consente.
-    const eraGiaInCampo = evento.blocco === 1 || (lato.presenzePerBlocco[evento.blocco - 2] ?? []).includes(marcatore)
-    const inizio = eraGiaInCampo
-      ? (evento.blocco - 1) * MINUTI_PER_BLOCCO + 1
-      : Math.min(90, evento.blocco * MINUTI_PER_BLOCCO + 1)
+    let inizio: number
+    if (presenti.includes(marcatore)) {
+      // Caso comune: il marcatore scelto era davvero presente in questo
+      // blocco. `presenzePerBlocco` fotografa il cambio al confine del
+      // blocco: un subentrato al 60' puo' quindi comparire gia' nel blocco
+      // 46'-60'. Se pero' non c'era ancora nel blocco precedente (e' appena
+      // subentrato), il gol non puo' essere raccontato dal suo primissimo
+      // minuto: lo spostiamo al blocco successivo (61'-75'), corretto il 4
+      // agosto 2026.
+      const eraGiaInCampo = evento.blocco === 1 || (lato.presenzePerBlocco[evento.blocco - 2] ?? []).includes(marcatore)
+      inizio = eraGiaInCampo
+        ? (evento.blocco - 1) * MINUTI_PER_BLOCCO + 1
+        : Math.min(90, evento.blocco * MINUTI_PER_BLOCCO + 1)
+    } else {
+      // Fallback del ripescaggio qui sopra (nessuno dei "rimasti" presente in
+      // questo blocco, evento raro): il marcatore forzato puo' non essere
+      // mai stato in questo blocco, anche perche' e' gia' uscito per cambio
+      // o infortunio (segnalazione utente, lega reale: un marcatore usciva
+      // per infortunio al 45' e un suo secondo gol restava agganciato al
+      // blocco finale, dopo la sua uscita). Si cerca il blocco vero piu'
+      // vicino in cui risultava presente, e si racconta li'.
+      let distanzaMinima = Infinity
+      let bloccoReale = evento.blocco
+      for (let b = 1; b <= lato.presenzePerBlocco.length; b++) {
+        if (!(lato.presenzePerBlocco[b - 1] ?? []).includes(marcatore)) continue
+        const distanza = Math.abs(b - evento.blocco)
+        if (distanza < distanzaMinima) { distanzaMinima = distanza; bloccoReale = b }
+      }
+      evento.blocco = bloccoReale
+      inizio = (bloccoReale - 1) * MINUTI_PER_BLOCCO + 1
+    }
     const fine = Math.min(90, inizio + MINUTI_PER_BLOCCO - 1)
     let minutiUsati = minutiUsatiPerSquadra.get(evento.team_id)
     if (!minutiUsati) { minutiUsati = new Set<number>(); minutiUsatiPerSquadra.set(evento.team_id, minutiUsati) }
