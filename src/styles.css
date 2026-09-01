@@ -2424,8 +2424,11 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .game-mobilebar { position:sticky;z-index:42;top:0;min-height:68px;padding:max(12px,env(safe-area-inset-top)) 16px 12px;background:rgba(17,15,24,.42);backdrop-filter:blur(18px);box-shadow:0 12px 34px rgba(0,0,0,.22); border-bottom:1px solid rgba(255,255,255,.06); }
   .game-mobilebar .game-sidebar__brand { width:auto;height:auto;border:0;background:transparent; }
   .game-mobilebar__league { margin-left:auto;text-align:right; }
-  .game-mobilebar__menu { flex:0 0 42px !important;width:42px !important;height:42px !important;display:grid !important;align-content:center;gap:5px;padding:0 10px !important;border:1px solid #48355d !important;border-radius:12px !important;background:linear-gradient(145deg,#2c213b,#1c1726) !important;box-shadow:0 8px 22px rgba(0,0,0,.28); }
-  .game-mobilebar__menu span { width:100%;height:2px;border-radius:2px;background:#f3eafa;transition:transform .18s ease; }
+  /* Icona nuda, senza il riquadro/sfondo di prima: coerente col resto della
+     topbar (logo e nome lega non hanno una "card" attorno). */
+  .game-mobilebar__menu { position:relative;flex:0 0 42px !important;width:42px !important;height:42px !important;display:grid !important;place-items:center;padding:0 !important;border:0 !important;border-radius:0 !important;background:transparent !important;box-shadow:none !important;color:#f3eafa !important; }
+  .game-mobilebar__menu svg { width:24px;height:24px; }
+  .game-mobilebar__menu-badge { position:absolute;top:2px;right:2px;min-width:16px;height:16px;display:grid;place-items:center;padding:0 4px;border-radius:999px;color:#fff;background:linear-gradient(135deg,#f0567c,#c62f57);box-shadow:0 0 0 2px #15141e;font-size:.56rem;font-style:normal;font-weight:900;line-height:1; }
 
   .game-drawer-layer { position:fixed;z-index:100;inset:0;display:flex;justify-content:flex-end;background:rgba(3,2,7,.7);backdrop-filter:blur(5px);animation:drawer-fade .2s ease-out; }
   .game-drawer { width:min(88vw,370px);height:100%;display:flex;flex-direction:column;overflow-y:auto;padding:max(18px,env(safe-area-inset-top)) 16px max(18px,env(safe-area-inset-bottom));border-left:1px solid #4b3562;background:radial-gradient(circle at 100% 0,rgba(151,61,244,.22),transparent 19rem),linear-gradient(170deg,#191520,#0f0d14 68%);box-shadow:-28px 0 80px rgba(0,0,0,.55);animation:drawer-enter .24s cubic-bezier(.2,.8,.2,1); }

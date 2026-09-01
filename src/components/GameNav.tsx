@@ -25,6 +25,7 @@ const ICONE: Record<string, ReactNode> = {
   finanza: <><path d="M4 8h13.5A2.5 2.5 0 0 1 20 10.5v7A2.5 2.5 0 0 1 17.5 20H6.5A2.5 2.5 0 0 1 4 17.5z" /><path d="M4 8V6.5A2.5 2.5 0 0 1 6.5 4h9" /><circle cx="16" cy="14" r="1.6" /></>,
   risorse: <><path d="M12 3.5 5 9.5 12 20.5 19 9.5z" /><path d="M5 9.5h14M9 9.5l3-6 3 6" /></>,
   chevron: <path d="m8 10 4 4 4-4" />,
+  menu: <><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></>,
 }
 
 function Icona({ nome }: { nome: string }) {
@@ -240,7 +241,8 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
         {marchio('mobile')}
         <span className="game-mobilebar__league">{league.nome}</span>
         <button className="game-mobilebar__menu" type="button" onClick={() => setMenuMobileAperto(true)} aria-label="Apri menu" aria-expanded={menuMobileAperto}>
-          <span /><span /><span />
+          <Icona nome="menu" />
+          {nonLetteLega > 0 && <em className="game-mobilebar__menu-badge">{nonLetteLega > 9 ? '9+' : nonLetteLega}</em>}
         </button>
       </div>
       {menuMobileAperto && <div className="game-drawer-layer" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) setMenuMobileAperto(false) }}>
