@@ -271,7 +271,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     return () => { active = false }
   }, [league.id, teamId])
 
-  // Chi e' in cantiera e' visibile a tutta la lega (stessa policy delle
+  // Chi e' in cantera e' visibile a tutta la lega (stessa policy delle
   // scelte, scoutare gli avversari e' voluto): l'overall e' sempre quello
   // vero, il potenziale si mostra come una fascia che si stringe salendo
   // di livello VIVAIO (ampiezza_range di private.effetti_ramo).
@@ -570,7 +570,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
 
       {tab === 'vivaio' && <section className="team-roster-panel">
         <div className="season-card__heading">
-          <div><p className="kicker">Settore giovanile</p><h2>Prospetti in cantiera</h2></div>
+          <div><p className="kicker">Settore giovanile</p><h2>Prospetti in cantera</h2></div>
           <span>{vivaioProspetti.length} / {vivaioSlotMassimi} slot</span>
         </div>
         <p className="field-help">
@@ -578,7 +578,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         </p>
         {vivaioErrore && <p className="notice notice--error">{vivaioErrore}</p>}
         {vivaioLoading ? <p className="season-empty">Carico il vivaio…</p>
-          : vivaioProspetti.length === 0 ? <p className="season-empty">Nessun prospetto in cantiera.</p>
+          : vivaioProspetti.length === 0 ? <p className="season-empty">Nessun prospetto in cantera.</p>
           : <div className="team-roster-list">
               {vivaioProspetti.map((prospetto) => {
                 const g = prospetto.giocatore

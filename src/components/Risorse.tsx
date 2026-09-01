@@ -28,7 +28,7 @@ const RAMI: readonly { id: Ramo; nome: string; descrizione: string; immagine: st
   {
     id: 'vivaio',
     nome: 'Vivaio',
-    descrizione: 'Quanti giovani puoi tenere in cantiera e quanto vedi chiaramente il loro potenziale nel mercato UNDER.',
+    descrizione: 'Quanti giovani puoi tenere in cantera e quanto vedi chiaramente il loro potenziale nel mercato UNDER.',
     immagine: '/risorse/vivaio.jpg',
   },
   {

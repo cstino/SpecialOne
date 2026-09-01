@@ -118,7 +118,7 @@ export function Under({ membership, onNavigate }: Props) {
           VIVAIO di Gestione risorse, fino a diventare un valore esatto.</p>
         <p>È un'asta a busta chiusa come quella degli svincolati, ma un giovane preso qui va nel vivaio, non
           nella rosa: <strong>non conta</strong> nel limite di 21-30 giocatori, e l'ingaggio minimo è di soli
-          0,1 M€. Quanti ne puoi tenere in cantiera dipende dagli slot vivaio, anche quelli sbloccati salendo
+          0,1 M€. Quanti ne puoi tenere in cantera dipende dagli slot vivaio, anche quelli sbloccati salendo
           di livello.</p>
       </PopupSpiegazione>
       <section className="season-title-row">
