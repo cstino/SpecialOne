@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNotificheContesto, useTornaAllaHome } from '../lib/navigazione'
 import type { League } from '../types'
 
-export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza'
+export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse'
 type GameNavProps = { league: League; active: GameView; onNavigate?: (view: GameView) => void }
 
 // Icone disegnate a mano: i glifi Unicode di prima (▦ ♜ ♙ ◆ ◉ ≡) venivano resi dal
@@ -64,6 +64,7 @@ const seasonItems: readonly NavEntry[] = [
   { view: 'squad', label: 'Rosa' },
   { view: 'team', label: 'Squadra' },
   { view: 'finanza', label: 'Finanza' },
+  { view: 'risorse', label: 'Risorse' },
   gruppoMercato,
   { view: 'matches', label: 'Partite' },
   { view: 'table', label: 'Classifica' },
@@ -77,6 +78,7 @@ const offseasonItems: readonly NavEntry[] = [
   { view: 'offseason', label: 'Off-season' },
   { view: 'team', label: 'Squadra' },
   { view: 'finanza', label: 'Finanza' },
+  { view: 'risorse', label: 'Risorse' },
   gruppoMercato,
   { view: 'matches', label: 'Partite' },
   { view: 'table', label: 'Classifica' },
@@ -91,6 +93,7 @@ const concludedItems: readonly NavEntry[] = [
   { view: 'overview', label: 'Overview' },
   { view: 'team', label: 'Squadra' },
   { view: 'finanza', label: 'Finanza' },
+  { view: 'risorse', label: 'Risorse' },
   { view: 'matches', label: 'Partite' },
   { view: 'table', label: 'Classifica' },
   { view: 'tabellone', label: 'Tabellone' },

@@ -13,6 +13,7 @@ import { Avvisi } from './components/Avvisi'
 import { AuthScreen } from './components/AuthScreen'
 import { Draft } from './components/Draft'
 import { Finanza } from './components/Finanza'
+import { Risorse } from './components/Risorse'
 import { Formazione } from './components/Formazione'
 import { Help } from './components/Help'
 import { Rosa } from './components/Rosa'
@@ -392,6 +393,7 @@ export default function App() {
       : gameView === 'admin' ? <Admin membership={active} onNavigate={navigateGame} />
       : gameView === 'help' ? <Help membership={active} onNavigate={navigateGame} />
       : gameView === 'finanza' ? <Finanza membership={active} onNavigate={navigateGame} />
+      : gameView === 'risorse' ? <Risorse membership={active} onNavigate={navigateGame} />
       : <SeasonOverview membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} onOpenMatch={(id) => setOpenMatch({ id, from: 'overview' })} onRevealMatch={(id) => setRevealMatch({ id, from: 'overview' })} onOpenTeam={openTeam} />
   return conContesti(<>
     {schermata}

@@ -871,6 +871,15 @@ export default {
       })
       if (moraleError) throw moraleError
 
+      // Terzo meccanismo sullo stesso quarto di stagione: i punti abilita' da
+      // spendere sui rami vivaio/training/medico. Registro e funzione separati
+      // dagli altri due, per la stessa ragione di sempre.
+      const { error: puntiError } = await ctx.supabaseAdmin.rpc('assegna_punti_abilita', {
+        p_league_id: leagueId,
+        p_giornata: giornata,
+      })
+      if (puntiError) throw puntiError
+
       // Lo stipendio e' una rata per giornata, non un addebito anticipato.
       // L'RPC e' idempotente: se il cron ritenta dopo un errore, ogni quota
       // gia' scritta nella tabella privata resta una sola volta.

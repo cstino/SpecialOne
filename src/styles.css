@@ -2978,3 +2978,44 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .scambi-rumor-riga { grid-template-columns: 28px 1fr 1fr 28px; }
   .scambi-rumor-riga > i { display: none; }
 }
+
+/* ------------------------------------------------------------------
+   Gestione risorse: punti abilita' sui tre rami (vivaio/training/medico).
+   La curva degli effetti vive nel database (private.effetti_ramo): qui
+   c'e' solo la sua rappresentazione.
+   ------------------------------------------------------------------ */
+.risorse-punti { min-width: 190px; display: grid; justify-items: center; gap: 2px; padding: 16px 22px; border: 1px solid #3b2a55; border-radius: 16px; background: linear-gradient(160deg, rgba(155,76,255,.16), #15141e); box-shadow: 0 14px 34px rgba(0,0,0,.28); }
+.risorse-punti strong { color: #fff; font: 900 2.6rem/1 "Aptos Narrow", "Arial Narrow", sans-serif; }
+.risorse-punti span { color: #d7c3ef; font-size: .72rem; font-weight: 800; }
+.risorse-punti small { color: #8d84a0; font-size: .62rem; font-weight: 700; }
+
+.risorse-rami { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 20px; }
+.risorse-ramo { display: flex; flex-direction: column; gap: 12px; padding: 18px; border: 1px solid #2b2739; border-radius: 16px; background: #15141e; }
+.risorse-ramo > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.risorse-ramo > header h2 { margin: 2px 0 0; color: #fff; font-size: 1.25rem; }
+.risorse-ramo > header b { flex: none; color: #c58cff; font: 900 1.5rem/1 "Aptos Narrow", "Arial Narrow", sans-serif; }
+.risorse-ramo > header b i { color: #6f6683; font-size: .9rem; font-style: normal; }
+.risorse-ramo > header b.is-massimo { color: #69e6a0; }
+
+.risorse-scala { display: flex; gap: 3px; }
+.risorse-scala span { flex: 1; height: 7px; border-radius: 99px; background: rgba(255,255,255,.08); }
+.risorse-scala span.is-attivo { background: linear-gradient(90deg, #e29bff, #8a4bff); box-shadow: 0 0 10px rgba(180,110,255,.45); }
+
+.risorse-ramo__descrizione { margin: 0; color: #9f95ab; font-size: .72rem; line-height: 1.45; }
+
+.risorse-effetti { display: grid; gap: 7px; margin: 0; padding: 12px 0 0; border-top: 1px solid #262234; }
+.risorse-effetti > div { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.risorse-effetti dt { color: #8d84a0; font-size: .68rem; font-weight: 700; }
+.risorse-effetti dd { margin: 0; display: flex; align-items: baseline; gap: 7px; }
+.risorse-effetti dd strong { color: #eee9f4; font-size: .78rem; font-weight: 850; }
+/* Anteprima del livello successivo: si vede solo dove il punto cambia
+   davvero qualcosa, cosi' e' chiaro cosa si compra col prossimo punto. */
+.risorse-effetti dd em { color: #69e6a0; font-size: .72rem; font-style: normal; font-weight: 850; }
+
+.risorse-ramo .button { margin-top: auto; width: 100%; justify-content: center; }
+.risorse-nota { margin: 18px 0 0; color: #776f82; font-size: .68rem; line-height: 1.5; }
+
+@media (max-width: 560px) {
+  .risorse-punti { min-width: 0; width: 100%; }
+  .risorse-rami { grid-template-columns: 1fr; }
+}
