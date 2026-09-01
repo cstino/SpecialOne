@@ -9,7 +9,7 @@ import { PopupSpiegazione } from './PopupSpiegazione'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
-type Prospetto = { id: number; nome: string; posizioni: string[]; overall: number; potential: number; eta: number }
+type Prospetto = { id: number; nome: string; posizioni: string[]; overall: number; potential: number; eta: number; foto_firmata?: string }
 type Asta = { id: number; player_id: number; giorno: string; stato: 'aperta' | 'assegnata' | 'deserta'; vincitore_team_id: number | null; ingaggio_finale: number | null }
 type Offerta = { id: number; auction_id: number; team_id: number; ingaggio_offerto: number }
 
@@ -51,8 +51,16 @@ export function Under({ membership, onNavigate }: Props) {
     const playerIds = [...new Set(righeAste.map((a) => a.player_id))]
     if (playerIds.length) {
       const { data: giocatori } = await supabase.from('players')
-        .select('id, nome, posizioni, overall, potential, eta').in('id', playerIds)
-      setProspetti(new Map((giocatori ?? []).map((g: Prospetto) => [g.id, g])))
+        .select('id, nome, posizioni, overall, potential, eta, foto_url').in('id', playerIds)
+      // Foto in prestito da un giocatore vero (private.genera_prospetto_vivaio):
+      // stesso schema di firma usato per gli svincolati in Mercato.tsx.
+      const fotoPerId = new Map(await Promise.all(
+        (giocatori ?? []).filter((g) => g.foto_url).map(async (g) => {
+          const { data } = await supabase.storage.from('player-photos').createSignedUrl(g.foto_url!, 3600)
+          return [g.id, data?.signedUrl] as const
+        })
+      ))
+      setProspetti(new Map((giocatori ?? []).map((g) => [g.id, { ...g, foto_firmata: fotoPerId.get(g.id) }])))
     }
     setCaricamento(false)
   }, [league.id, membership.id])
@@ -139,7 +147,10 @@ export function Under({ membership, onNavigate }: Props) {
               const macro: MacroRuolo = macroRuolo(g?.posizioni ?? [])
               const mia = mieOfferte.get(a.id)
               return <article className="free-agent-card is-compact" key={a.id}>
-                <div className="free-agent-card__portrait"><span aria-hidden="true">{g?.nome.charAt(0) ?? '?'}</span><b>{g?.overall ?? '—'}</b></div>
+                <div className="free-agent-card__portrait">
+                  {g?.foto_firmata ? <img src={g.foto_firmata} alt="" loading="lazy" /> : <span aria-hidden="true">{g?.nome.charAt(0) ?? '?'}</span>}
+                  <b>{g?.overall ?? '—'}</b>
+                </div>
                 <div className="free-agent-card__body">
                   <header><span className={`role-pill role-pill--${macro.toLowerCase()}`} style={{ background: MACRO_COLORE[macro] }}>{g?.posizioni?.[0] ?? '—'}</span><small>{MACRO_LABEL[macro]}</small></header>
                   <strong>{g?.nome ?? `#${a.player_id}`}</strong>
