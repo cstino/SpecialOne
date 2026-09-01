@@ -23,25 +23,22 @@ type Tabella = {
   rami: Record<Ramo, EffettiLivello[]>
 }
 
-const RAMI: readonly { id: Ramo; nome: string; occhiello: string; descrizione: string; immagine: string }[] = [
+const RAMI: readonly { id: Ramo; nome: string; descrizione: string; immagine: string }[] = [
   {
     id: 'vivaio',
     nome: 'Vivaio',
-    occhiello: 'Settore giovanile',
     descrizione: 'Quanti giovani puoi tenere in cantiera e quanto vedi chiaramente il loro potenziale nel mercato UNDER.',
     immagine: '/risorse/vivaio.jpg',
   },
   {
     id: 'training',
     nome: 'Training',
-    occhiello: 'Allenamento',
     descrizione: 'Quanto in fretta crescono i tuoi giocatori e quanto tempo serve per riqualificarne uno su un altro ruolo.',
     immagine: '/risorse/training.jpg',
   },
   {
     id: 'medico',
     nome: 'Reparto medico',
-    occhiello: 'Staff sanitario',
     descrizione: 'Quanto resistono i tuoi giocatori agli infortuni e quanta più condizione recuperano a fine partita.',
     immagine: '/risorse/medico.jpg',
   },
@@ -161,10 +158,7 @@ export function Risorse({ membership, onNavigate }: Props) {
 
               <div className="risorse-ramo__corpo">
                 <header>
-                  <div>
-                    <p className="kicker">{ramo.occhiello}</p>
-                    <h2>{ramo.nome}</h2>
-                  </div>
+                  <h2>{ramo.nome}</h2>
                   <b className={alMassimo ? 'is-massimo' : ''}>{livello}<i>/{tabella.livello_massimo}</i></b>
                 </header>
 

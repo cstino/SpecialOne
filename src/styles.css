@@ -3020,8 +3020,8 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 /* position+z-index espliciti: senza, il testo che risale sopra la foto (il
    margine negativo) finiva a tratti dietro di lei invece che sopra. */
 .risorse-ramo__corpo { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 12px; padding: 16px 18px 18px; margin-top: -28px; }
-.risorse-ramo__corpo > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.risorse-ramo__corpo > header h2 { margin: 2px 0 0; color: #fff; font-size: 1.25rem; }
+.risorse-ramo__corpo > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.risorse-ramo__corpo > header h2 { margin: 0; color: #fff; font-size: 1.6rem; font-weight: 900; letter-spacing: -.01em; }
 .risorse-ramo__corpo > header b { flex: none; color: #c58cff; font: 900 1.5rem/1 "Aptos Narrow", "Arial Narrow", sans-serif; }
 .risorse-ramo__corpo > header b i { color: #6f6683; font-size: .9rem; font-style: normal; }
 .risorse-ramo__corpo > header b.is-massimo { color: #69e6a0; }
