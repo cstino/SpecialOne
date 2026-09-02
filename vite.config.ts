@@ -13,5 +13,8 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    // Permette di testare da reti diverse da quella di casa tramite un
+    // tunnel cloudflared temporaneo (sottodominio nuovo ogni volta).
+    allowedHosts: ['.trycloudflare.com'],
   },
 })

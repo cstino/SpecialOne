@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { Bar, BarChart, LabelList, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
+import { Progress } from './ui/progress'
 import { UnderlineTabs } from './ui/underline-tabs'
 
 export type StatsStagione = {
@@ -109,11 +111,77 @@ type Props = {
   onClose: () => void
 }
 
-const ETICHETTE_ATTRIBUTI: Array<[string, string]> = [
-  ['pace', 'Velocità'], ['shooting', 'Tiro'], ['passing', 'Passaggio'], ['dribbling_generale', 'Dribbling'], ['defending', 'Difesa'], ['physic', 'Fisico'],
-  ['stamina', 'Resistenza'], ['finishing', 'Finalizzazione'], ['short_passing', 'Passaggi corti'], ['standing_tackle', 'Contrasti'],
-  ['gk_diving', 'Tuffo'], ['gk_handling', 'Presa'], ['gk_kicking', 'Rinvio'], ['gk_positioning', 'Posizionamento'], ['gk_reflexes', 'Riflessi'],
+// I 6 valori del radar, stessa forma delle card FIFA/FM: pace/shooting/
+// passing/dribbling/defending/physic sono i macro-voti gia' importati,
+// composti a loro volta dai sotto-attributi qui sotto.
+const MACRO_RADAR: Array<[string, string]> = [
+  ['pace', 'RIT'], ['shooting', 'TIR'], ['passing', 'PAS'], ['dribbling_generale', 'DRI'], ['defending', 'DIF'], ['physic', 'FIS'],
 ]
+
+// Tutti i sotto-attributi importati (normalizza.py, 2 settembre 2026),
+// raggruppati per macro-categoria. "Portiere" compare solo per chi gioca
+// GK: gli altri hanno comunque un valore (bassa media FC26), ma mostrarlo
+// sarebbe solo rumore.
+type Attributo = { chiave: string; etichetta: string }
+type GruppoAttributi = { titolo: string; soloGk?: boolean; voci: Attributo[] }
+
+const GRUPPI_ATTRIBUTI: GruppoAttributi[] = [
+  { titolo: 'Ritmo', voci: [
+    { chiave: 'movement_acceleration', etichetta: 'Accelerazione' },
+    { chiave: 'movement_sprint_speed', etichetta: 'Velocità di scatto' },
+  ] },
+  { titolo: 'Tiro', voci: [
+    { chiave: 'finishing', etichetta: 'Finalizzazione' },
+    { chiave: 'power_shot_power', etichetta: 'Potenza di tiro' },
+    { chiave: 'power_long_shots', etichetta: 'Tiri da lontano' },
+    { chiave: 'attacking_volleys', etichetta: 'Volée' },
+    { chiave: 'mentality_penalties', etichetta: 'Rigori' },
+    { chiave: 'mentality_positioning', etichetta: 'Attacco alla porta' },
+  ] },
+  { titolo: 'Passaggio', voci: [
+    { chiave: 'short_passing', etichetta: 'Passaggi corti' },
+    { chiave: 'skill_long_passing', etichetta: 'Passaggi lunghi' },
+    { chiave: 'attacking_crossing', etichetta: 'Cross' },
+    { chiave: 'skill_curve', etichetta: 'Effetto' },
+    { chiave: 'skill_fk_accuracy', etichetta: 'Punizioni' },
+    { chiave: 'mentality_vision', etichetta: 'Visione di gioco' },
+  ] },
+  { titolo: 'Dribbling', voci: [
+    { chiave: 'dribbling', etichetta: 'Dribbling' },
+    { chiave: 'skill_ball_control', etichetta: 'Controllo palla' },
+    { chiave: 'movement_agility', etichetta: 'Agilità' },
+    { chiave: 'movement_balance', etichetta: 'Equilibrio' },
+    { chiave: 'movement_reactions', etichetta: 'Reattività' },
+    { chiave: 'mentality_composure', etichetta: 'Compostezza' },
+  ] },
+  { titolo: 'Difesa', voci: [
+    { chiave: 'standing_tackle', etichetta: 'Contrasti' },
+    { chiave: 'defending_sliding_tackle', etichetta: 'Scivolate' },
+    { chiave: 'defending_marking_awareness', etichetta: 'Marcatura' },
+    { chiave: 'mentality_interceptions', etichetta: 'Intercetti' },
+    { chiave: 'mentality_aggression', etichetta: 'Aggressività' },
+  ] },
+  { titolo: 'Fisico', voci: [
+    { chiave: 'stamina', etichetta: 'Resistenza' },
+    { chiave: 'power_strength', etichetta: 'Forza' },
+    { chiave: 'power_jumping', etichetta: 'Elevazione' },
+  ] },
+  { titolo: 'Portiere', soloGk: true, voci: [
+    { chiave: 'gk_diving', etichetta: 'Tuffo' },
+    { chiave: 'gk_handling', etichetta: 'Presa' },
+    { chiave: 'gk_kicking', etichetta: 'Rinvio' },
+    { chiave: 'gk_positioning', etichetta: 'Posizionamento' },
+    { chiave: 'gk_reflexes', etichetta: 'Riflessi' },
+    { chiave: 'goalkeeping_speed', etichetta: 'Rapidità in uscita' },
+  ] },
+]
+
+// Lookup piatta derivata dai gruppi qui sopra: usata per le etichette nel
+// confronto prima/dopo dell'allenamento (le uniche 5 chiave che il motore
+// legge vivono tutte in uno dei gruppi, niente elenco separato da tenere
+// allineato a mano).
+const ETICHETTE_ATTRIBUTI: Array<[string, string]> = GRUPPI_ATTRIBUTI.flatMap((gruppo) =>
+  gruppo.voci.map((voce) => [voce.chiave, voce.etichetta] as [string, string]))
 
 function reparto(slot = '') {
   if (slot === 'GK') return 'GK'
@@ -168,20 +236,66 @@ function progressoAllenamento(a: { avviatoGiornata: number; completaGiornata: nu
 // Confronto prima/dopo per le stat toccate da una specializzazione, stile
 // scheda FIFA/Football Manager: pista con la stat attuale piena e il
 // guadagno evidenziato in coda, valori numerici a fianco.
+// Etichetta "56 → 63" alla fine della barra impilata (base + guadagno):
+// x/width arrivano gia' sommati dal segmento "guadagno", che e' l'ultimo
+// dello stack, quindi x+width e' proprio il bordo destro della barra intera.
+function EtichettaConfronto(props: unknown) {
+  const { x, y, width, height, payload } = props as { x: number; y: number; width: number; height: number; payload?: { prima: number; dopo: number } }
+  if (!payload) return null
+  return <text x={x + width + 10} y={y + height / 2} dy={5} fontSize={13} fontWeight={800}>
+    <tspan fill="#8e8498">{payload.prima}</tspan>
+    <tspan fill="#675c73"> → </tspan>
+    <tspan fill="#e29bff">{payload.dopo}</tspan>
+  </text>
+}
+
 function ConfrontoAttributi({ deltas, attributi }: { deltas: Array<[string, number]>; attributi: Record<string, number | null> }) {
+  const dati = deltas.map(([chiave, delta]) => {
+    const prima = Math.max(0, Math.min(99, Math.round(attributi[chiave] ?? 0)))
+    const guadagno = Math.max(0, Math.min(99 - prima, delta))
+    return { chiave, etichetta: etichettaAttributo(chiave), prima, guadagno, dopo: prima + guadagno }
+  })
   return <div className="player-training-confronto">
-    {deltas.map(([chiave, delta]) => {
-      const prima = Math.max(0, Math.min(99, Math.round(attributi[chiave] ?? 0)))
-      const dopo = Math.min(99, prima + delta)
-      return <div className="player-training-confronto__riga" key={chiave}>
-        <span className="player-training-confronto__etichetta">{etichettaAttributo(chiave)}</span>
-        <div className="player-training-confronto__pista">
-          <i className="player-training-confronto__base" style={{ width: `${prima}%` }} />
-          <i className="player-training-confronto__guadagno" style={{ left: `${prima}%`, width: `${dopo - prima}%` }} />
-        </div>
-        <span className="player-training-confronto__valori">
-          <b>{prima}</b><em aria-hidden="true">→</em><b className="is-dopo">{dopo}</b>
-        </span>
+    <ResponsiveContainer width="100%" height={dati.length * 40 + 8}>
+      <BarChart data={dati} layout="vertical" margin={{ top: 4, right: 66, left: 4, bottom: 4 }} barCategoryGap={14}>
+        <XAxis type="number" domain={[0, 99]} hide />
+        <YAxis type="category" dataKey="etichetta" width={104} stroke="#524a5f" tick={{ fill: '#c6bfce', fontSize: 12 }} axisLine={false} tickLine={false} />
+        <Bar dataKey="prima" stackId="s" fill="#3a3348" radius={[5, 0, 0, 5]} isAnimationActive={false} />
+        <Bar dataKey="guadagno" stackId="s" fill="#a354e8" radius={[0, 5, 5, 0]} isAnimationActive={false}>
+          <LabelList dataKey="guadagno" content={EtichettaConfronto} />
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  </div>
+}
+
+// Radar delle 6 macro-categorie FIFA, stile card FIFA/Football Manager.
+function RadarAbilita({ attributi }: { attributi: Record<string, number | null> }) {
+  const dati = MACRO_RADAR.map(([chiave, etichetta]) => ({ etichetta, valore: typeof attributi[chiave] === 'number' ? attributi[chiave] as number : 0 }))
+  return <ResponsiveContainer width="100%" height={210}>
+    <RadarChart data={dati} outerRadius="72%">
+      <PolarGrid stroke="#332c3e" />
+      <PolarAngleAxis dataKey="etichetta" tick={{ fill: '#c6bfce', fontSize: 11, fontWeight: 800 }} />
+      <PolarRadiusAxis domain={[0, 99]} tick={false} axisLine={false} />
+      <Radar dataKey="valore" stroke="#a354e8" strokeWidth={2} fill="#a354e8" fillOpacity={0.35} isAnimationActive={false} />
+    </RadarChart>
+  </ResponsiveContainer>
+}
+
+// Un gruppo di sotto-attributi (Tiro, Passaggio, ...): barre shadcn/Radix,
+// solo le chiavi che il giocatore ha davvero (il portiere non compare per
+// chi non gioca GK, vedi GruppoAttributi.soloGk).
+function GruppoAbilita({ gruppo, attributi }: { gruppo: GruppoAttributi; attributi: Record<string, number | null> }) {
+  const voci = gruppo.voci.filter((voce) => typeof attributi[voce.chiave] === 'number')
+  if (voci.length === 0) return null
+  return <div className="player-abilita-gruppo">
+    <h4>{gruppo.titolo}</h4>
+    {voci.map((voce) => {
+      const valore = attributi[voce.chiave] as number
+      return <div className="player-abilita-riga" key={voce.chiave}>
+        <span>{voce.etichetta}</span>
+        <Progress value={(valore / 99) * 100} className="player-abilita-barra" />
+        <b>{valore}</b>
       </div>
     })}
   </div>
@@ -635,14 +749,12 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
           </div>}
 
           <div className="player-modal__stats">
-            <h3>Attributi</h3>
-            <div className="player-stats-grid">
-              {ETICHETTE_ATTRIBUTI.map(([chiave, etichetta]) => {
-                const valore = giocatore.attributi[chiave]
-                return typeof valore === 'number'
-                  ? <div className="player-stat" key={chiave}><span>{etichetta}</span><b>{valore}</b><i><span style={{ width: `${valore}%` }} /></i></div>
-                  : null
-              })}
+            <h3>Abilità</h3>
+            <RadarAbilita attributi={giocatore.attributi} />
+            <div className="player-abilita-gruppi">
+              {GRUPPI_ATTRIBUTI.filter((gruppo) => !gruppo.soloGk || rep === 'GK').map((gruppo) => (
+                <GruppoAbilita gruppo={gruppo} attributi={giocatore.attributi} key={gruppo.titolo} />
+              ))}
             </div>
           </div>
 

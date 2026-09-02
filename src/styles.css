@@ -1106,16 +1106,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 /* Confronto prima/dopo delle stat toccate dalla specializzazione
    selezionata: pista piena fino al valore attuale, coda evidenziata per
    il guadagno (stile scheda FIFA/Football Manager). */
-.player-training-confronto { display: grid; gap: 10px; padding: 14px; border: 1px solid #332c3e; border-radius: 12px; background: #1c1826; animation: player-modal-fade .15s ease-out; }
-.player-training-confronto__riga { display: grid; grid-template-columns: 92px 1fr 74px; align-items: center; gap: 10px; }
-.player-training-confronto__etichetta { color: #b3a8bd; font-size: .72rem; font-weight: 700; }
-.player-training-confronto__pista { position: relative; height: 7px; border-radius: 99px; background: #2c2440; overflow: hidden; }
-.player-training-confronto__base { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 99px; background: #5a4f6c; }
-.player-training-confronto__guadagno { position: absolute; top: 0; bottom: 0; border-radius: 99px; background: linear-gradient(90deg, #a354e8, #e29bff); box-shadow: 0 0 8px rgba(180,110,255,.6); }
-.player-training-confronto__valori { display: flex; align-items: center; justify-content: flex-end; gap: 5px; font-size: .78rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-.player-training-confronto__valori b { color: #8e8498; }
-.player-training-confronto__valori b.is-dopo { color: #e29bff; }
-.player-training-confronto__valori em { color: #675c73; font-style: normal; font-size: .7rem; }
+.player-training-confronto { padding: 10px 4px 4px; border: 1px solid #332c3e; border-radius: 12px; background: #1c1826; animation: player-modal-fade .15s ease-out; }
 /* "Metti sul mercato" sta sotto agli altri due e ne occupa l'intera larghezza:
    e' un'azione di natura diversa (annuncio pubblico, reversibile), non una
    variante di svincola/rinnovo. */
@@ -1163,12 +1154,18 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .team-roster-player em.contratto-urgente { color: #ff7188; font-style: normal; font-weight: 800; }
 .rinnovo-azioni { width: 100%; display: flex; flex-wrap: wrap; gap: 8px; }
 .rinnovo-azioni .button { flex: 1 1 140px; }
-.player-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 18px; }
-.player-stat { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 5px 10px; min-width: 0; }
-.player-stat > span { overflow: hidden; color: #b6adbf; font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
-.player-stat > b { color: #fff; font-size: .76rem; }
-.player-stat > i { grid-column: 1 / -1; height: 5px; overflow: hidden; border-radius: 3px; background: #302a38; }
-.player-stat > i > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #7133c2, #d277ff); }
+/* Radar delle 6 macro-categorie + gruppi di sotto-attributi (2 settembre
+   2026, sostituisce la vecchia griglia piatta .player-stats-grid ora che
+   il catalogo FC26 e' importato per intero): barre Progress di shadcn/
+   Radix, ricolorate sui toni viola dell'app invece del default shadcn
+   (che qui non ha token --primary configurato). */
+.player-abilita-gruppi { display: grid; gap: 18px; margin-top: 4px; }
+.player-abilita-gruppo h4 { margin: 0 0 10px; color: #d8cee4; font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.player-abilita-riga { display: grid; grid-template-columns: minmax(0, 1fr) 2fr auto; align-items: center; gap: 10px; padding: 5px 0; }
+.player-abilita-riga > span { overflow: hidden; color: #b6adbf; font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
+.player-abilita-riga > b { color: #fff; font-size: .78rem; font-variant-numeric: tabular-nums; }
+.player-abilita-barra[data-slot="progress"] { height: 6px; background: #2c2440; }
+.player-abilita-barra [data-slot="progress-indicator"] { background: linear-gradient(90deg, #7133c2, #d277ff); }
 @keyframes player-modal-fade { from { opacity: 0; } }
 @keyframes player-modal-rise { from { opacity: 0; transform: translateY(14px) scale(.98); } }
 .role-bar { display: inline-block; width: 4px; min-width: 4px; height: 18px; border-radius: 2px; background: #aaa; }.role-bar--GK { background: #f59b45; }.role-bar--DEF { background: #55c9ed; }.role-bar--MID { background: #5dd17b; }.role-bar--ATT { background: #ed6375; }
@@ -1216,7 +1213,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .formation-module-menu { width: min(360px, calc(100vw - 64px)); grid-template-columns: 1fr 1fr; }
   .formation-stile-menu { width: min(280px, calc(100vw - 64px)); }
   .formation-view-card { width: 100%; aspect-ratio: .66; }.pitch-grid { inset: 6% 2.5%; }.pitch-row { gap: 1px; }.pitch-slot .lineup-player { width: min(100%, 82px); }.pitch-slot--scostato-giu { transform: translateY(10px); }.pitch-slot--scostato-su { transform: translateY(-10px); }.lineup-player__portrait { width: clamp(39px, 11vw, 52px); }.lineup-player__plate { gap: 2px; padding: 4px 3px 4px; }.lineup-player__plate strong { font-size: clamp(.48rem, 1.75vw, .59rem); }.lineup-player__position { font-size: .48rem; min-width: 19px; height: 16px; padding: 0 2px; }.lineup-player__plate b { font-size: .68rem; }.lineup-player__meta { gap: 4px; }.bench-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .player-modal-backdrop { place-items: end center; padding: 0; }.player-modal { width: 100%; max-height: 88dvh; padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); border-width: 1px 0 0; border-radius: 20px 20px 0 0; }.player-modal__hero { grid-template-columns: 82px minmax(0, 1fr) auto; gap: 11px; padding-right: 34px; }.player-modal__photo { width: 82px; }.player-modal__overall { min-width: 58px; padding: 10px 7px; font-size: 1.55rem; }.player-modal__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }.player-modal__facts div:last-child:nth-child(odd) { grid-column: 1 / -1; }.player-stats-grid { gap: 9px 13px; }
+  .player-modal-backdrop { place-items: end center; padding: 0; }.player-modal { width: 100%; max-height: 88dvh; padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); border-width: 1px 0 0; border-radius: 20px 20px 0 0; }.player-modal__hero { grid-template-columns: 82px minmax(0, 1fr) auto; gap: 11px; padding-right: 34px; }.player-modal__photo { width: 82px; }.player-modal__overall { min-width: 58px; padding: 10px 7px; font-size: 1.55rem; }.player-modal__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }.player-modal__facts div:last-child:nth-child(odd) { grid-column: 1 / -1; }.player-abilita-riga { grid-template-columns: minmax(0, 1fr) 1.4fr auto; }
   .lobby-grid { padding: 16px; grid-template-columns: 1fr; }
   .squad-list, .league-sheet, .draft-action-panel, .draft-club-panel, .formation-panel { padding: 20px; }
   .league-switcher { margin: 16px; }
