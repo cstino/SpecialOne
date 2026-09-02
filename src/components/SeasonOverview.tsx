@@ -60,12 +60,12 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
               <span className="flex items-baseline gap-1">
-                <b className="font-display text-2xl font-extrabold tabular-nums text-white">{miaClassifica?.posizione ?? '—'}</b>
-                <sup className="text-[.6rem] font-bold text-white/50">ª</sup>
+                <b className="font-display text-2xl font-extrabold tabular-nums text-white">{ultimaVista ? miaClassifica?.posizione ?? '—' : '?'}</b>
+                {ultimaVista && <sup className="text-[.6rem] font-bold text-white/50">ª</sup>}
                 <small className="ml-1 text-[.62rem] font-extrabold uppercase tracking-[.1em] text-white/50">posizione</small>
               </span>
               <span className="flex items-baseline gap-1">
-                <b className="font-display text-2xl font-extrabold tabular-nums text-white">{miaClassifica?.punti ?? 0}</b>
+                <b className="font-display text-2xl font-extrabold tabular-nums text-white">{ultimaVista ? miaClassifica?.punti ?? 0 : '?'}</b>
                 <small className="ml-1 text-[.62rem] font-extrabold uppercase tracking-[.1em] text-white/50">punti</small>
               </span>
               <Forma esiti={forma.get(membership.id)} nascondiUltimo={!ultimaVista} />
