@@ -996,6 +996,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .player-modal__close { position: absolute; z-index: 2; top: 12px; right: 12px; width: 36px; height: 36px; display: grid; place-items: center; padding: 0; color: #d8cee4; border: 1px solid #4a3d58; border-radius: 50%; background: rgba(18,15,25,.82); font-size: 1.45rem; line-height: 1; cursor: pointer; }
 .player-modal__hero { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; align-items: center; gap: 18px; padding: 10px 42px 20px 0; border-bottom: 1px solid #342b40; }
 .player-modal__hero h2 { margin: 4px 0; font-size: clamp(1.55rem, 5vw, 2.35rem); line-height: .96; }
+.player-modal__nome-riga { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.player-modal__nome-riga h2 { margin: 4px 0; }
+.player-modal__nome-riga .role-pill { flex: none; }
 .player-modal__hero p:last-child { margin: 0; color: #a69aaf; font-size: .78rem; }
 .player-modal__photo { position: relative; width: 112px; aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; border: 3px solid #5dd17b; border-radius: 50%; color: #fff; background: radial-gradient(circle at 50% 35%, #71647e, #2f2440 72%); font-size: 1.25rem; font-weight: 950; box-shadow: 0 0 0 6px rgba(93,209,123,.1), 0 13px 28px rgba(0,0,0,.42); }
 .player-modal__photo--GK { border-color: #f59b45; }.player-modal__photo--DEF { border-color: #55c9ed; }.player-modal__photo--MID { border-color: #5dd17b; }.player-modal__photo--ATT { border-color: #ed6375; }
@@ -1062,11 +1065,18 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .player-modal__azioni { display: flex; flex-wrap: wrap; gap: 8px; }
 .player-modal__azioni .button { flex: 1 1 auto; }
 /* Scheda giocatore a due pagine (Scheda / Training): niente animazione a
-   scorrimento sincronizzata, le altezze delle due pagine sono troppo
-   diverse — si mostra/nasconde con display, lo swipe cambia solo la tab
-   attiva. UnderlineTabs per il tocco, onTouchStart/End per lo swipe. */
+   scorrimento sincronizzata, lo swipe cambia solo la tab attiva.
+   UnderlineTabs per il tocco, onTouchStart/End per lo swipe.
+   Le due pagine restano entrambe nel flusso, impilate nella stessa cella
+   di griglia: cosi' il contenitore si dimensiona sempre sulla piu' alta
+   delle due, e passare da Scheda a Training (molto piu' corta) non fa
+   piu' "saltare" la card. display:none romperebbe questo effetto
+   (un elemento a display:none ha altezza zero e non conta nel calcolo),
+   quindi la pagina nascosta usa visibility, non display. */
 .player-modal__tabs { margin: 4px 0 14px; }
-.player-modal__page.is-nascosta { display: none; }
+.player-modal__pager { display: grid; }
+.player-modal__page { grid-area: 1 / 1; min-width: 0; }
+.player-modal__page.is-nascosta { visibility: hidden; pointer-events: none; }
 .player-training-intro { margin: 0 0 4px; color: #9f95ab; font-size: .74rem; line-height: 1.5; }
 /* Stessa impalcatura di .player-modal__danger: un filo superiore separa i
    gruppi, niente riquadro annidato dentro il modale. */

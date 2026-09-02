@@ -517,7 +517,10 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
             </div>
             <div>
               <p className="kicker">Scheda giocatore</p>
-              <h2 id="player-modal-title">{giocatore.nome}</h2>
+              <div className="player-modal__nome-riga">
+                <h2 id="player-modal-title">{giocatore.nome}</h2>
+                {giocatore.posizioni[0] && <span className={`role-pill role-pill--${rep.toLowerCase()}`}>{giocatore.posizioni[0]}</span>}
+              </div>
               <p>{[giocatore.club, giocatore.nazionalita].filter(Boolean).join(' · ') || '—'}</p>
             </div>
             <strong className="player-modal__overall"><span>OVR</span>{giocatore.overall}</strong>
@@ -527,7 +530,7 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
 
           <dl className="player-modal__facts">
             <div><dt>Età</dt><dd>{giocatore.eta}</dd></div>
-            <div><dt>Ruoli</dt><dd>{giocatore.posizioni.join(' · ') || '—'}</dd></div>
+            <div><dt>Ruoli secondari</dt><dd>{giocatore.posizioni.slice(1).join(' · ') || 'Nessuno'}</dd></div>
             <div><dt>Piede</dt><dd>{giocatore.piede ?? '—'}</dd></div>
             <div><dt>Altezza</dt><dd>{giocatore.altezza ? `${giocatore.altezza} cm` : '—'}</dd></div>
             {typeof giocatore.ingaggio === 'number' && <div className="fatto-ingaggio">
