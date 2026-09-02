@@ -655,9 +655,11 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         {rosterNotice && <p className="notice notice--success">{rosterNotice}</p>}
         {rosterError && <p className="notice notice--error">{rosterError}</p>}
         {rosterLoading ? <p className="season-empty">Carico la rosa…</p> : <div className="team-roster-list">{players.map((player) => <button className={`team-roster-player team-roster-player--${department(player.posizioni[0])}`} type="button" key={player.id} onClick={() => openPlayer(player)} aria-label={`Scheda di ${player.nome}`}>
-                  <span className="team-roster-player__portrait">
-                    {player.fotoFirmata ? <img src={player.fotoFirmata} alt="" loading="lazy" /> : <b aria-hidden="true">{player.nome.charAt(0)}</b>}
-                    <i>{player.posizioni[0] ?? '—'}</i>
+                  <span className="team-roster-player__avatar">
+                    <span className="team-roster-player__portrait">
+                      {player.fotoFirmata ? <img src={player.fotoFirmata} alt="" loading="lazy" /> : <b aria-hidden="true">{player.nome.charAt(0)}</b>}
+                    </span>
+                    <i className="team-roster-player__ruolo">{player.posizioni[0] ?? '—'}</i>
                   </span>
                   <div><strong>{player.nome}</strong><small>{player.posizioni.join(' · ')} · {player.eta} anni · <em>{money(player.ingaggio)}/stagione</em> · <em className={contratto(player, league.stagione_corrente).urgente ? 'contratto-urgente' : 'contratto-residuo'}>{contratto(player, league.stagione_corrente).testo}</em></small></div>
                   <b>{player.overall}</b>
@@ -682,9 +684,11 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                 const inCorso = vivaioAzioneInCorso === prospetto.id
                 return (
                   <div className={`team-roster-player team-roster-player--${department(g.posizioni[0])}`} key={prospetto.id}>
-                    <span className="team-roster-player__portrait">
-                      {prospetto.fotoFirmata ? <img src={prospetto.fotoFirmata} alt="" loading="lazy" /> : <b aria-hidden="true">{g.nome.charAt(0)}</b>}
-                      <i>{g.posizioni[0] ?? '—'}</i>
+                    <span className="team-roster-player__avatar">
+                      <span className="team-roster-player__portrait">
+                        {prospetto.fotoFirmata ? <img src={prospetto.fotoFirmata} alt="" loading="lazy" /> : <b aria-hidden="true">{g.nome.charAt(0)}</b>}
+                      </span>
+                      <i className="team-roster-player__ruolo">{g.posizioni[0] ?? '—'}</i>
                     </span>
                     <div>
                       <strong>{g.nome}</strong>
