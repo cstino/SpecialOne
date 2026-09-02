@@ -32,9 +32,17 @@ CAMPIONATI_BASE = {
 }
 
 RUOLI_VALIDI = {
-    "GK", "CB", "LB", "RB", "LWB", "RWB",
+    "GK", "CB", "LB", "RB",
     "CDM", "CM", "CAM", "LM", "RM", "LW", "RW", "ST", "CF",
 }
+
+# LWB/RWB rimossi dalla tassonomia (deciso con l'utente, 2 settembre 2026):
+# un quinto di centrocampo e' gia' trattato bene dal motore (engine/config.js
+# QUASI_NATURALI) senza bisogno che sia una posizione a se'. Un giocatore col
+# ruolo listato diventa un esterno di centrocampo (primario) con il terzino
+# della stessa fascia come secondario, PRIMA della validazione — cosi'
+# RUOLI_VALIDI non deve piu' conoscere LWB/RWB.
+RIMPIAZZO_RUOLI = {"LWB": ["LM", "LB"], "RWB": ["RM", "RB"]}
 
 COLONNE_OBBLIGATORIE = {
     "player_id", "fifa_version", "short_name", "player_positions",
@@ -137,8 +145,15 @@ def intero_opzionale(riga: dict[str, str], campo: str) -> int | None:
 
 
 def normalizza_ruoli(riga: dict[str, str]) -> list[str]:
-    ruoli = [ruolo.strip().upper() for ruolo in riga["player_positions"].split(",")]
-    if not 1 <= len(ruoli) <= 6 or len(set(ruoli)) != len(ruoli):
+    grezzi = [ruolo.strip().upper() for ruolo in riga["player_positions"].split(",")]
+    ruoli: list[str] = []
+    for ruolo in grezzi:
+        ruoli.extend(RIMPIAZZO_RUOLI.get(ruolo, [ruolo]))
+    # Dedup preservando l'ordine: un giocatore listato come "LWB, LM" non deve
+    # ritrovarsi con LM duplicato dopo il rimpiazzo.
+    visti: set[str] = set()
+    ruoli = [r for r in ruoli if not (r in visti or visti.add(r))]  # type: ignore[func-returns-value]
+    if not 1 <= len(ruoli) <= 6:
         raise ErroreDataset(f"player_id={riga['player_id']}: ruoli non validi {ruoli}")
     sconosciuti = set(ruoli) - RUOLI_VALIDI
     if sconosciuti:

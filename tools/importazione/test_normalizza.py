@@ -67,6 +67,22 @@ class NormalizzazioneTest(unittest.TestCase):
         with self.assertRaises(ErroreDataset):
             normalizza_riga(riga)
 
+    def test_lwb_rwb_diventano_esterno_piu_terzino(self):
+        riga = riga_valida()
+        riga["player_positions"] = "LWB"
+        giocatore = normalizza_riga(riga)
+        self.assertEqual(giocatore["posizioni"], ["LM", "LB"])
+
+        riga["player_positions"] = "RWB, CM"
+        giocatore = normalizza_riga(riga)
+        self.assertEqual(giocatore["posizioni"], ["RM", "RB", "CM"])
+
+    def test_lwb_rimpiazzo_non_duplica_ruolo_gia_elencato(self):
+        riga = riga_valida()
+        riga["player_positions"] = "LWB, LM"
+        giocatore = normalizza_riga(riga)
+        self.assertEqual(giocatore["posizioni"], ["LM", "LB"])
+
     def test_upsert_non_azzera_foto_storage(self):
         sql = sql_riga(normalizza_riga(riga_valida()))
         self.assertNotIn("player_face_url", sql)
