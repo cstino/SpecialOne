@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from 'recharts'
+import { PopupSpiegazione } from './PopupSpiegazione'
 import { Progress } from './ui/progress'
 import { UnderlineTabs } from './ui/underline-tabs'
 
@@ -68,6 +69,8 @@ export type EsitoRinnovo = {
 type AllenamentoInCorso = { etichettaPrima: string | null; etichettaDopo: string; avviatoGiornata: number; completaGiornata: number }
 
 type Props = {
+  /** Solo per il popup di spiegazione della pagina Training (hint_visti). */
+  userId?: string
   giocatore: DatiScheda
   fotoUrl?: string
   stagione?: StatsStagione
@@ -387,7 +390,7 @@ function PannelloAllenamento({
   </section>
 }
 
-export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa, rinnovo, listaMercato, cambioRuolo, specializzazione, onClose }: Props) {
+export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePericolosa, rinnovo, listaMercato, cambioRuolo, specializzazione, onClose }: Props) {
   const [confermaAperta, setConfermaAperta] = useState(false)
   const [vistaRinnovo, setVistaRinnovo] = useState(false)
   const [proposta, setProposta] = useState<PropostaRinnovo | null>(null)
@@ -789,6 +792,18 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
         </div>
 
         {haTraining && <div className={`player-modal__page player-modal__page--training ${pagina !== 'training' ? 'is-nascosta' : ''}`}>
+          {userId && <PopupSpiegazione userId={userId} hintKey="training-giocatore" titolo="Come funziona il Training">
+            <p><strong>Cambio ruolo</strong> sostituisce il ruolo primario con uno vicino (es. un CB può diventare
+              terzino o mediano, non ala). <strong>Specializzazione</strong> resta nel ruolo attuale ma allena un
+              archetipo (es. un CC può diventare regista, box-to-box...): alza tre stat vere — quelle che il motore
+              usa davvero in partita — più un piccolo bonus overall. Sono mutuamente esclusivi: un allenamento alla
+              volta per giocatore.</p>
+            <p>Quanto rende la specializzazione dipende da età e margine dal potenziale: un giocatore giovane con
+              ampio margine ottiene il pieno beneficio, uno già maturo o vicino al proprio potenziale ne ricava
+              poco o nulla — la vedi in anteprima prima di avviarla.</p>
+            <p>Non sostituisce la crescita automatica di fine trimestre, che continua comunque per tutti: la
+              specializzazione è un allenamento extra che si <strong>somma</strong> sopra, non un'alternativa.</p>
+          </PopupSpiegazione>}
           <p className="player-training-intro">Allenamento di {giocatore.nome}: cambio di ruolo e specializzazione, dal ramo TRAINING di Gestione risorse.</p>
 
           {cambioRuolo && <PannelloAllenamento

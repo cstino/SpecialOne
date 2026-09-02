@@ -680,6 +680,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       </section>}
 
       {schedaAperta && <SchedaGiocatore
+        userId={membership.user_id}
         giocatore={{
           nome: schedaAperta.nome,
           nazionalita: schedaAperta.nazionalita,
