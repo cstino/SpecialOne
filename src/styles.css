@@ -1067,24 +1067,32 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    attiva. UnderlineTabs per il tocco, onTouchStart/End per lo swipe. */
 .player-modal__tabs { margin: 4px 0 14px; }
 .player-modal__page.is-nascosta { display: none; }
-.player-training-intro { margin: 0 0 16px; color: #9f95ab; font-size: .74rem; line-height: 1.5; }
-.player-training-blocco { display: grid; gap: 10px; margin-bottom: 16px; padding: 16px; border: 1px solid #2b2739; border-radius: 15px; background: #17141f; }
-.player-training-blocco:last-child { margin-bottom: 0; }
-.player-training-blocco > header h3 { margin: 2px 0 0; color: #fff; font-size: 1.05rem; }
+.player-training-intro { margin: 0 0 4px; color: #9f95ab; font-size: .74rem; line-height: 1.5; }
+/* Stessa impalcatura di .player-modal__danger: un filo superiore separa i
+   gruppi, niente riquadro annidato dentro il modale. */
+.player-training-sezione { margin-top: 22px; padding-top: 18px; border-top: 1px solid #262234; }
+.player-training-sezione:first-of-type { margin-top: 18px; }
+.player-training-sezione h3 { margin: 0 0 14px; color: #fff; font-size: 1.05rem; }
 .player-training-corso { display: grid; gap: 10px; }
 .player-training-corso__frecce { display: flex; align-items: center; gap: 8px; color: #d6cede; font-size: .9rem; font-weight: 800; }
 .player-training-corso__frecce i { color: #a97dde; font-style: normal; }
 .player-training-corso__frecce b { color: #fff; font-size: 1.05rem; }
 .player-training-barra { height: 7px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
-.player-training-barra i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #e29bff, #8a4bff); box-shadow: 0 0 10px rgba(180,110,255,.45); transition: width .3s ease; }
+.player-training-barra i { display: block; width: 100%; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #e29bff, #8a4bff); box-shadow: 0 0 10px rgba(180,110,255,.45); transform: scaleX(var(--percent, 0)); transform-origin: left; transition: transform .3s ease; }
 .player-training-scelta { display: grid; gap: 10px; }
-.player-training-opzioni { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
-.player-training-opzioni__voce { display: grid; gap: 3px; padding: 11px; color: #ddd5e5; border: 1px solid #393141; border-radius: 11px; background: #201b28; text-align: left; cursor: pointer; }
-.player-training-opzioni__voce:hover { border-color: #664182; }
-.player-training-opzioni__voce.is-active { color: #fff; border-color: #a354e8; background: linear-gradient(135deg, #4d2668, #291c35); }
-.player-training-opzioni__voce strong { font-size: .84rem; }
-.player-training-opzioni__voce small { color: #958b9e; font-size: .62rem; line-height: 1.4; }
-.player-training-opzioni__voce.is-active small { color: #d6b8ff; }
+/* Elenco verticale con indicatore radio, non una griglia di card: ogni
+   riga e' un'opzione di ruolo/specializzazione, non un contenuto a se'. */
+.player-training-opzioni { display: flex; flex-direction: column; }
+.player-training-opzioni__voce { display: flex; align-items: center; gap: 13px; padding: 12px 4px; border: 0; border-bottom: 1px solid #262234; background: transparent; text-align: left; cursor: pointer; }
+.player-training-opzioni__voce:last-child { border-bottom: 0; }
+.player-training-opzioni__voce:hover { background: rgba(163,84,232,.06); }
+.player-training-opzioni__pallino { flex: none; width: 21px; height: 21px; display: grid; place-items: center; color: transparent; border: 1.5px solid #4a3e5d; border-radius: 50%; font-style: normal; font-size: .68rem; font-weight: 900; transition: background .15s ease, border-color .15s ease; }
+.player-training-opzioni__voce.is-active .player-training-opzioni__pallino { color: #fff; border-color: #a354e8; background: #a354e8; }
+.player-training-opzioni__voce > span { display: grid; gap: 2px; }
+.player-training-opzioni__voce strong { color: #ddd5e5; font-size: .86rem; font-weight: 800; }
+.player-training-opzioni__voce.is-active strong { color: #fff; }
+.player-training-opzioni__voce small { color: #958b9e; font-size: .66rem; line-height: 1.4; }
+.player-training-opzioni__voce.is-active small { color: #c9a6ff; }
 /* "Metti sul mercato" sta sotto agli altri due e ne occupa l'intera larghezza:
    e' un'azione di natura diversa (annuncio pubblico, reversibile), non una
    variante di svincola/rinnovo. */

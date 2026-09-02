@@ -168,10 +168,9 @@ function progressoAllenamento(a: { avviatoGiornata: number; completaGiornata: nu
 // Riquadro comune a cambio ruolo e specializzazione: stato in corso con
 // barra di avanzamento, o picker a schede quando non c'e' nulla in corso.
 function PannelloAllenamento({
-  titolo, sottotitolo, attuale, inCorso, prossimaGiornata, opzioni, opzioniCaricamento, scelta, onScegli, onAvvia, onAnnulla, inviando, errore, descrizioneScelta,
+  titolo, attuale, inCorso, prossimaGiornata, opzioni, opzioniCaricamento, scelta, onScegli, onAvvia, onAnnulla, inviando, errore, descrizioneScelta, bloccatoDa,
 }: {
   titolo: string
-  sottotitolo: string
   attuale: string | null
   inCorso: AllenamentoInCorso | null
   prossimaGiornata: number | null
@@ -184,12 +183,11 @@ function PannelloAllenamento({
   inviando: boolean
   errore: string | null
   descrizioneScelta?: string
+  /** Nome dell'altro allenamento gia' in corso: sono mutuamente esclusivi, un giocatore ne fa uno alla volta. */
+  bloccatoDa?: string | null
 }) {
-  return <section className="player-training-blocco">
-    <header>
-      <p className="kicker">{sottotitolo}</p>
-      <h3>{titolo}</h3>
-    </header>
+  return <section className="player-training-sezione">
+    <h3>{titolo}</h3>
 
     {inCorso ? <div className="player-training-corso">
       <div className="player-training-corso__frecce">
@@ -200,7 +198,7 @@ function PannelloAllenamento({
       {(() => {
         const { percent, mancano } = progressoAllenamento(inCorso, prossimaGiornata)
         return <>
-          <div className="player-training-barra"><i style={{ width: `${percent}%` }} /></div>
+          <div className="player-training-barra"><i style={{ '--percent': percent / 100 } as React.CSSProperties} /></div>
           <p className="field-help">
             {prossimaGiornata != null ? `Pronto tra ${mancano} ${mancano === 1 ? 'giornata' : 'giornate'}.` : `Completa alla giornata ${inCorso.completaGiornata}.`}
           </p>
@@ -210,6 +208,9 @@ function PannelloAllenamento({
       <button className="button button--danger-ghost" type="button" disabled={inviando} onClick={onAnnulla}>
         {inviando ? 'Attendi…' : 'Annulla allenamento'}
       </button>
+    </div> : bloccatoDa ? <div className="player-training-scelta">
+      {attuale && <p className="field-help">Attuale: <b>{attuale}</b></p>}
+      <p className="season-empty">Non disponibile: {bloccatoDa} già in corso. Un giocatore segue un solo allenamento alla volta.</p>
     </div> : <div className="player-training-scelta">
       {attuale && <p className="field-help">Attuale: <b>{attuale}</b></p>}
       {errore && <p className="notice notice--error">{errore}</p>}
@@ -217,15 +218,18 @@ function PannelloAllenamento({
         : !opzioni ? null
         : opzioni.length === 0 ? <p className="season-empty">Nessuna opzione disponibile per questo giocatore.</p>
         : <>
-            <div className="player-training-opzioni">
+            <div className="player-training-opzioni" role="radiogroup" aria-label={titolo}>
               {opzioni.map((opzione) => (
                 <button
                   className={`player-training-opzioni__voce ${scelta === opzione.chiave ? 'is-active' : ''}`}
-                  type="button" key={opzione.chiave}
+                  type="button" role="radio" aria-checked={scelta === opzione.chiave} key={opzione.chiave}
                   onClick={() => onScegli(opzione.chiave)}
                 >
-                  <strong>{opzione.etichetta}</strong>
-                  {opzione.sottotesto && <small>{opzione.sottotesto}</small>}
+                  <i className="player-training-opzioni__pallino" aria-hidden="true">{scelta === opzione.chiave && '✓'}</i>
+                  <span>
+                    <strong>{opzione.etichetta}</strong>
+                    {opzione.sottotesto && <small>{opzione.sottotesto}</small>}
+                  </span>
                 </button>
               ))}
             </div>
@@ -642,7 +646,7 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
           <p className="player-training-intro">Allenamento di {giocatore.nome}: cambio di ruolo e specializzazione, dal ramo TRAINING di Gestione risorse.</p>
 
           {cambioRuolo && <PannelloAllenamento
-            titolo="Cambio ruolo" sottotitolo="Riqualificazione"
+            titolo="Cambio ruolo"
             attuale={null}
             inCorso={cambioRuolo.inCorso ? {
               etichettaPrima: cambioRuolo.inCorso.ruoloPrecedente, etichettaDopo: cambioRuolo.inCorso.ruoloTarget,
@@ -658,10 +662,11 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
             onAnnulla={annullaCambioRuolo}
             inviando={cambioInCorso}
             errore={cambioErrore}
+            bloccatoDa={specializzazione?.inCorso ? 'un allenamento di specializzazione' : null}
           />}
 
           {specializzazione && <PannelloAllenamento
-            titolo="Specializzazione" sottotitolo="Allenamento mirato"
+            titolo="Specializzazione"
             attuale={specializzazione.attiva}
             inCorso={specializzazione.inCorso ? {
               etichettaPrima: specializzazione.inCorso.specializzazionePrecedente, etichettaDopo: specializzazione.inCorso.specializzazioneTarget,
@@ -679,6 +684,7 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
             onAnnulla={annullaSpecializzazione}
             inviando={specInCorso}
             errore={specErrore}
+            bloccatoDa={cambioRuolo?.inCorso ? 'un cambio ruolo' : null}
           />}
         </div>}
       </div>
