@@ -118,7 +118,7 @@ create or replace function public.specializzazioni_disponibili(p_instance_id big
 returns jsonb
 language sql
 stable
-security invoker
+security definer
 set search_path = ''
 as $$
   select private.specializzazioni_ruolo(private.macro_ruolo(coalesce(pi.posizioni_override, p.posizioni)))
