@@ -126,6 +126,82 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     </>,
   },
   {
+    id: 'gestione-risorse',
+    titolo: 'Gestione risorse',
+    corpo: <>
+      <p>Ogni squadra riceve <strong>punti abilità</strong> quattro volte a stagione (agli stessi
+        checkpoint della progressione overall), fino a un tetto massimo per tutta la vita della
+        lega. Si investono su tre rami — <strong>Vivaio</strong>, <strong>Training</strong> e
+        <strong> Reparto medico</strong> — ciascuno fino a un livello massimo: i punti totali non
+        bastano a riempirli tutti, quindi la direzione che scegli conta davvero. Non si possono
+        riassegnare: una volta messi su un ramo restano lì per il resto della lega.</p>
+      <p><strong>Vivaio</strong> allarga quanti prospetti puoi tenere in cantera e restringe la
+        fascia di incertezza sul loro potenziale nascosto (vedi "Vivaio e mercato UNDER").
+        <strong> Training</strong> accelera la crescita dei giovani e riduce i tempi di cambio
+        ruolo e di specializzazione (vedi le voci dedicate). <strong>Reparto medico</strong>
+        riduce il rischio di infortunio e fa recuperare più condizione a fine partita.</p>
+    </>,
+  },
+  {
+    id: 'vivaio-under',
+    titolo: 'Vivaio e mercato UNDER',
+    corpo: <>
+      <p>Ogni giorno il sistema estrae automaticamente un piccolo gruppo di quindicenni per il
+        <strong> mercato UNDER</strong>, con un'asta a busta chiusa identica nel meccanismo a
+        quella degli svincolati (vedi quella voce), ma con un ingaggio minimo molto più basso.
+        Chi vince porta il giovane nel proprio <strong>vivaio</strong>, non nella rosa vera: non
+        conta nel minimo né nel massimo di rosa, e ha un tetto di slot a parte, legato al livello
+        Vivaio.</p>
+      <p>L'overall che vedi su un prospetto è sempre quello vero, ma il <strong>potenziale è
+        nascosto</strong>: si mostra come una fascia (es. "68-88"), apposta non centrata sul
+        valore reale — fare la media dei due estremi non lo svela. La fascia si stringe salendo
+        di livello nel ramo Vivaio, fino a diventare un valore esatto al livello massimo.</p>
+      <p>Entro la fine dell'off-season un prospetto in cantera va <strong>promosso</strong> in
+        prima squadra (da quel momento è un giocatore come tutti gli altri, con ingaggio e
+        contratto) oppure <strong>rilasciato</strong>: se non decidi in tempo, torna comunque sul
+        mercato UNDER.</p>
+    </>,
+  },
+  {
+    id: 'cambio-ruolo',
+    titolo: 'Cambio ruolo',
+    corpo: <>
+      <p>Dalla scheda di un giocatore in rosa puoi avviare una <strong>riqualificazione</strong>
+        verso un ruolo vicino a quello che gioca oggi — un difensore centrale può diventare
+        terzino o mediano, non ala; un centrocampista centrale può spostarsi su una fascia, non
+        diventare portiere. Il nuovo ruolo <strong>sostituisce</strong> quello attuale, non si
+        affianca.</p>
+      <p>Il tempo di attesa (in giornate, non in giorni di calendario) dipende da quanti ruoli il
+        giocatore conosce già — chi è già versatile impara più in fretta un ruolo vicino — e si
+        riduce ulteriormente salendo di livello nel ramo Training.</p>
+      <p>Un giocatore segue <strong>un allenamento alla volta</strong>: non puoi avviare un
+        cambio di ruolo se ha già una specializzazione in corso, e viceversa. Puoi annullarlo in
+        qualsiasi momento prima che si completi, senza penalità.</p>
+    </>,
+  },
+  {
+    id: 'specializzazione',
+    titolo: 'Specializzazione',
+    corpo: <>
+      <p>Sempre restando nel ruolo che gioca oggi, un giocatore può allenare un
+        <strong> archetipo</strong> specifico di quella posizione — un centrocampista centrale
+        può diventare regista, box-to-box, recupera palloni o mezz'ala d'inserimento, e così via
+        per ogni posizione (nessuno per il portiere, il cui rendimento in partita è un unico
+        valore aggregato). Ogni archetipo alza <strong>tre statistiche vere</strong> del
+        giocatore — quelle che il motore usa davvero in partita, non l'overall direttamente —
+        più un piccolo bonus overall che ne consegue.</p>
+      <p>Quanto rende dipende da <strong>età e margine dal potenziale</strong>: un giovane con
+        ampio spazio di crescita ottiene il pieno beneficio, un giocatore già maturo o vicino al
+        proprio potenziale ne ricava poco o nulla — lo vedi in anteprima, con i valori veri, prima
+        di avviarla.</p>
+      <p>Non sostituisce la crescita automatica di fine trimestre (vedi "Overall e
+        progressione"), che continua comunque per tutti: è un allenamento extra che si
+        <strong> somma</strong> sopra, non un'alternativa. Riallenare un giocatore verso un altro
+        archetipo sostituisce il precedente, non li accumula. Stesso vincolo di "un allenamento
+        alla volta" del cambio ruolo.</p>
+    </>,
+  },
+  {
     id: 'posizione-campo',
     titolo: 'Posizione in campo',
     corpo: <>
