@@ -756,7 +756,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         cambioRuolo={ownTeam && league.stato === 'stagione' && !schedaAperta.ritiroAnnunciato ? {
           inCorso: (() => {
             const cambio = cambiRuolo.get(schedaAperta.id)
-            return cambio ? { ruoloPrecedente: cambio.ruolo_precedente, ruoloTarget: cambio.ruolo_target, completaGiornata: cambio.completa_giornata } : null
+            return cambio ? { ruoloPrecedente: cambio.ruolo_precedente, ruoloTarget: cambio.ruolo_target, avviatoGiornata: cambio.avviato_giornata, completaGiornata: cambio.completa_giornata } : null
           })(),
           prossimaGiornata,
           onCaricaTarget: () => caricaTargetCambioRuolo(schedaAperta.id),
@@ -775,6 +775,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                 ? specEtichette.get(allenamento.specializzazione_precedente) ?? allenamento.specializzazione_precedente
                 : null,
               specializzazioneTarget: specEtichette.get(allenamento.specializzazione_target) ?? allenamento.specializzazione_target,
+              avviatoGiornata: allenamento.avviato_giornata,
               completaGiornata: allenamento.completa_giornata,
             }
           })(),

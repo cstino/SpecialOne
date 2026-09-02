@@ -1061,12 +1061,30 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .admin-zona-pericolo { border-color: #5a2a35; }
 .player-modal__azioni { display: flex; flex-wrap: wrap; gap: 8px; }
 .player-modal__azioni .button { flex: 1 1 auto; }
-.player-modal__cambio-ruolo { display: grid; gap: 12px; margin-top: 12px; padding: 14px; border: 1px solid #4a3e5d; border-radius: 13px; background: linear-gradient(145deg, rgba(74,62,93,.24), rgba(27,20,31,.9)); }
-.player-modal__cambio-ruolo p { margin: 0; color: #d6cede; font-size: .78rem; line-height: 1.55; }
-.player-modal__cambio-ruolo label { display: grid; gap: 4px; }
-.player-modal__cambio-ruolo label > span { color: #958b9e; font-size: .64rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
-.player-modal__cambio-ruolo select { min-height: 44px; width: 100%; box-sizing: border-box; padding: .5rem .7rem; color: #fff; border: 1px solid #4a3e5d; border-radius: 9px; background: #1d1827; font-size: 1rem; font-weight: 800; }
-.player-modal__cambio-ruolo > div { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Scheda giocatore a due pagine (Scheda / Training): niente animazione a
+   scorrimento sincronizzata, le altezze delle due pagine sono troppo
+   diverse — si mostra/nasconde con display, lo swipe cambia solo la tab
+   attiva. UnderlineTabs per il tocco, onTouchStart/End per lo swipe. */
+.player-modal__tabs { margin: 4px 0 14px; }
+.player-modal__page.is-nascosta { display: none; }
+.player-training-intro { margin: 0 0 16px; color: #9f95ab; font-size: .74rem; line-height: 1.5; }
+.player-training-blocco { display: grid; gap: 10px; margin-bottom: 16px; padding: 16px; border: 1px solid #2b2739; border-radius: 15px; background: #17141f; }
+.player-training-blocco:last-child { margin-bottom: 0; }
+.player-training-blocco > header h3 { margin: 2px 0 0; color: #fff; font-size: 1.05rem; }
+.player-training-corso { display: grid; gap: 10px; }
+.player-training-corso__frecce { display: flex; align-items: center; gap: 8px; color: #d6cede; font-size: .9rem; font-weight: 800; }
+.player-training-corso__frecce i { color: #a97dde; font-style: normal; }
+.player-training-corso__frecce b { color: #fff; font-size: 1.05rem; }
+.player-training-barra { height: 7px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+.player-training-barra i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #e29bff, #8a4bff); box-shadow: 0 0 10px rgba(180,110,255,.45); transition: width .3s ease; }
+.player-training-scelta { display: grid; gap: 10px; }
+.player-training-opzioni { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.player-training-opzioni__voce { display: grid; gap: 3px; padding: 11px; color: #ddd5e5; border: 1px solid #393141; border-radius: 11px; background: #201b28; text-align: left; cursor: pointer; }
+.player-training-opzioni__voce:hover { border-color: #664182; }
+.player-training-opzioni__voce.is-active { color: #fff; border-color: #a354e8; background: linear-gradient(135deg, #4d2668, #291c35); }
+.player-training-opzioni__voce strong { font-size: .84rem; }
+.player-training-opzioni__voce small { color: #958b9e; font-size: .62rem; line-height: 1.4; }
+.player-training-opzioni__voce.is-active small { color: #d6b8ff; }
 /* "Metti sul mercato" sta sotto agli altri due e ne occupa l'intera larghezza:
    e' un'azione di natura diversa (annuncio pubblico, reversibile), non una
    variante di svincola/rinnovo. */

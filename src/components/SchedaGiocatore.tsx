@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { UnderlineTabs } from './ui/underline-tabs'
 
 export type StatsStagione = {
   presenze: number
@@ -61,6 +62,9 @@ export type EsitoRinnovo = {
   ingaggio?: number
 }
 
+/** Allenamento (cambio ruolo o specializzazione) in corso: stessa forma per entrambi i rami. */
+type AllenamentoInCorso = { etichettaPrima: string | null; etichettaDopo: string; avviatoGiornata: number; completaGiornata: number }
+
 type Props = {
   giocatore: DatiScheda
   fotoUrl?: string
@@ -86,7 +90,7 @@ type Props = {
     onCambia: (valore: boolean) => Promise<void>
   }
   cambioRuolo?: {
-    inCorso: { ruoloPrecedente: string; ruoloTarget: string; completaGiornata: number } | null
+    inCorso: { ruoloPrecedente: string; ruoloTarget: string; avviatoGiornata: number; completaGiornata: number } | null
     /** Giornata di riferimento per il conto alla rovescia: solo indicativa, il server decide davvero. */
     prossimaGiornata: number | null
     onCaricaTarget: () => Promise<string[]>
@@ -96,7 +100,7 @@ type Props = {
   specializzazione?: {
     /** Etichetta della specializzazione gia' attiva, se nessun allenamento e' in corso. */
     attiva: string | null
-    inCorso: { specializzazionePrecedente: string | null; specializzazioneTarget: string; completaGiornata: number } | null
+    inCorso: { specializzazionePrecedente: string | null; specializzazioneTarget: string; avviatoGiornata: number; completaGiornata: number } | null
     prossimaGiornata: number | null
     onCaricaOpzioni: () => Promise<Array<{ chiave: string; etichetta: string; deltas: Array<[string, number]> }>>
     onAvvia: (specializzazione: string) => Promise<void>
@@ -149,6 +153,91 @@ function etichettaAttributo(chiave: string) {
   return ETICHETTE_ATTRIBUTI.find(([k]) => k === chiave)?.[1] ?? chiave
 }
 
+// Percentuale di avanzamento di un allenamento (cambio ruolo o
+// specializzazione): quante giornate sono gia' passate rispetto alla durata
+// totale. prossimaGiornata e' solo un'indicazione lato client (il server
+// decide davvero quando completare), quindi in sua assenza si mostra la
+// barra vuota invece di indovinare.
+function progressoAllenamento(a: { avviatoGiornata: number; completaGiornata: number }, prossimaGiornata: number | null) {
+  const durata = a.completaGiornata - a.avviatoGiornata
+  if (durata <= 0 || prossimaGiornata == null) return { percent: 0, mancano: Math.max(0, a.completaGiornata - (prossimaGiornata ?? a.avviatoGiornata)) }
+  const fatte = Math.max(0, Math.min(durata, prossimaGiornata - a.avviatoGiornata))
+  return { percent: Math.round((fatte / durata) * 100), mancano: Math.max(0, a.completaGiornata - prossimaGiornata) }
+}
+
+// Riquadro comune a cambio ruolo e specializzazione: stato in corso con
+// barra di avanzamento, o picker a schede quando non c'e' nulla in corso.
+function PannelloAllenamento({
+  titolo, sottotitolo, attuale, inCorso, prossimaGiornata, opzioni, opzioniCaricamento, scelta, onScegli, onAvvia, onAnnulla, inviando, errore, descrizioneScelta,
+}: {
+  titolo: string
+  sottotitolo: string
+  attuale: string | null
+  inCorso: AllenamentoInCorso | null
+  prossimaGiornata: number | null
+  opzioni: Array<{ chiave: string; etichetta: string; sottotesto?: string }> | null
+  opzioniCaricamento: boolean
+  scelta: string
+  onScegli: (chiave: string) => void
+  onAvvia: () => void
+  onAnnulla: () => void
+  inviando: boolean
+  errore: string | null
+  descrizioneScelta?: string
+}) {
+  return <section className="player-training-blocco">
+    <header>
+      <p className="kicker">{sottotitolo}</p>
+      <h3>{titolo}</h3>
+    </header>
+
+    {inCorso ? <div className="player-training-corso">
+      <div className="player-training-corso__frecce">
+        {inCorso.etichettaPrima && <span>{inCorso.etichettaPrima}</span>}
+        <i aria-hidden="true">→</i>
+        <b>{inCorso.etichettaDopo}</b>
+      </div>
+      {(() => {
+        const { percent, mancano } = progressoAllenamento(inCorso, prossimaGiornata)
+        return <>
+          <div className="player-training-barra"><i style={{ width: `${percent}%` }} /></div>
+          <p className="field-help">
+            {prossimaGiornata != null ? `Pronto tra ${mancano} ${mancano === 1 ? 'giornata' : 'giornate'}.` : `Completa alla giornata ${inCorso.completaGiornata}.`}
+          </p>
+        </>
+      })()}
+      {errore && <p className="notice notice--error">{errore}</p>}
+      <button className="button button--danger-ghost" type="button" disabled={inviando} onClick={onAnnulla}>
+        {inviando ? 'Attendi…' : 'Annulla allenamento'}
+      </button>
+    </div> : <div className="player-training-scelta">
+      {attuale && <p className="field-help">Attuale: <b>{attuale}</b></p>}
+      {errore && <p className="notice notice--error">{errore}</p>}
+      {opzioniCaricamento ? <p className="season-empty">Carico le opzioni…</p>
+        : !opzioni ? null
+        : opzioni.length === 0 ? <p className="season-empty">Nessuna opzione disponibile per questo giocatore.</p>
+        : <>
+            <div className="player-training-opzioni">
+              {opzioni.map((opzione) => (
+                <button
+                  className={`player-training-opzioni__voce ${scelta === opzione.chiave ? 'is-active' : ''}`}
+                  type="button" key={opzione.chiave}
+                  onClick={() => onScegli(opzione.chiave)}
+                >
+                  <strong>{opzione.etichetta}</strong>
+                  {opzione.sottotesto && <small>{opzione.sottotesto}</small>}
+                </button>
+              ))}
+            </div>
+            {descrizioneScelta && <p className="field-help">{descrizioneScelta}</p>}
+            <button className="button button--primary" type="button" disabled={inviando || !scelta} onClick={onAvvia}>
+              {inviando ? 'Avvio…' : 'Avvia allenamento'}
+            </button>
+          </>}
+    </div>}
+  </section>
+}
+
 export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa, rinnovo, listaMercato, cambioRuolo, specializzazione, onClose }: Props) {
   const [confermaAperta, setConfermaAperta] = useState(false)
   const [vistaRinnovo, setVistaRinnovo] = useState(false)
@@ -163,16 +252,109 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
   const [listaInCorso, setListaInCorso] = useState(false)
   const [listaEsito, setListaEsito] = useState<string | null>(null)
   const [listaErrore, setListaErrore] = useState<string | null>(null)
-  const [cambioAperto, setCambioAperto] = useState(false)
+
+  // Pagina "Training" (cambio ruolo + specializzazione): esiste solo se c'e'
+  // almeno uno dei due rami, altrimenti la scheda resta a pagina singola
+  // (es. profilo di un avversario, dove queste azioni non sono disponibili).
+  const haTraining = Boolean(cambioRuolo || specializzazione)
+  const [pagina, setPagina] = useState<'scheda' | 'training'>('scheda')
+  const pagerRef = useRef<HTMLDivElement>(null)
+  const touchStartX = useRef<number | null>(null)
+
+  function onTouchStart(evento: React.TouchEvent) { touchStartX.current = evento.touches[0]?.clientX ?? null }
+  function onTouchEnd(evento: React.TouchEvent) {
+    if (touchStartX.current == null || !haTraining) return
+    const dx = (evento.changedTouches[0]?.clientX ?? touchStartX.current) - touchStartX.current
+    touchStartX.current = null
+    if (Math.abs(dx) < 60) return
+    if (dx < 0 && pagina === 'scheda') setPagina('training')
+    if (dx > 0 && pagina === 'training') setPagina('scheda')
+  }
+
   const [cambioTarget, setCambioTarget] = useState<string[] | null>(null)
   const [cambioScelto, setCambioScelto] = useState('')
   const [cambioInCorso, setCambioInCorso] = useState(false)
   const [cambioErrore, setCambioErrore] = useState<string | null>(null)
-  const [specAperto, setSpecAperto] = useState(false)
+  const [cambioCaricamento, setCambioCaricamento] = useState(false)
   const [specOpzioni, setSpecOpzioni] = useState<Array<{ chiave: string; etichetta: string; deltas: Array<[string, number]> }> | null>(null)
   const [specScelta, setSpecScelta] = useState('')
   const [specInCorso, setSpecInCorso] = useState(false)
   const [specErrore, setSpecErrore] = useState<string | null>(null)
+  const [specCaricamento, setSpecCaricamento] = useState(false)
+
+  // Le opzioni si caricano una volta sola, quando si entra nella pagina
+  // Training e non c'e' gia' un allenamento in corso da mostrare — cosi'
+  // il picker e' gia' pronto appena si scorre, niente bottone "Cambia
+  // ruolo" separato da premere prima.
+  useEffect(() => {
+    if (pagina !== 'training' || !cambioRuolo || cambioRuolo.inCorso || cambioTarget !== null) return
+    setCambioCaricamento(true)
+    setCambioErrore(null)
+    cambioRuolo.onCaricaTarget()
+      .then((target) => { setCambioTarget(target); setCambioScelto(target[0] ?? '') })
+      .catch((errore) => setCambioErrore(errore instanceof Error ? errore.message : 'Ruoli raggiungibili non disponibili.'))
+      .finally(() => setCambioCaricamento(false))
+  }, [pagina, cambioRuolo, cambioTarget])
+
+  useEffect(() => {
+    if (pagina !== 'training' || !specializzazione || specializzazione.inCorso || specOpzioni !== null) return
+    setSpecCaricamento(true)
+    setSpecErrore(null)
+    specializzazione.onCaricaOpzioni()
+      .then((opzioni) => { setSpecOpzioni(opzioni); setSpecScelta(opzioni[0]?.chiave ?? '') })
+      .catch((errore) => setSpecErrore(errore instanceof Error ? errore.message : 'Specializzazioni non disponibili.'))
+      .finally(() => setSpecCaricamento(false))
+  }, [pagina, specializzazione, specOpzioni])
+
+  async function avviaCambioRuolo() {
+    if (!cambioRuolo || !cambioScelto) return
+    setCambioInCorso(true)
+    setCambioErrore(null)
+    try {
+      await cambioRuolo.onAvvia(cambioScelto)
+    } catch (errore) {
+      setCambioErrore(errore instanceof Error ? errore.message : 'Cambio ruolo non riuscito.')
+    }
+    setCambioInCorso(false)
+  }
+
+  async function annullaCambioRuolo() {
+    if (!cambioRuolo) return
+    setCambioInCorso(true)
+    setCambioErrore(null)
+    try {
+      await cambioRuolo.onAnnulla()
+      setCambioTarget(null)
+    } catch (errore) {
+      setCambioErrore(errore instanceof Error ? errore.message : 'Annullamento non riuscito.')
+    }
+    setCambioInCorso(false)
+  }
+
+  async function avviaSpecializzazione() {
+    if (!specializzazione || !specScelta) return
+    setSpecInCorso(true)
+    setSpecErrore(null)
+    try {
+      await specializzazione.onAvvia(specScelta)
+    } catch (errore) {
+      setSpecErrore(errore instanceof Error ? errore.message : 'Allenamento non riuscito.')
+    }
+    setSpecInCorso(false)
+  }
+
+  async function annullaSpecializzazione() {
+    if (!specializzazione) return
+    setSpecInCorso(true)
+    setSpecErrore(null)
+    try {
+      await specializzazione.onAnnulla()
+      setSpecOpzioni(null)
+    } catch (errore) {
+      setSpecErrore(errore instanceof Error ? errore.message : 'Annullamento non riuscito.')
+    }
+    setSpecInCorso(false)
+  }
 
   // Notifica di successo: sparisce da sola dopo un secondo. Il cleanup annulla
   // il timer se nel frattempo arriva un altro esito o si chiude la scheda,
@@ -217,82 +399,6 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
   // 0,1 M€ è il passo della scala ingaggi (design §5.1): si arrotonda lì.
   const offertaEuro = Math.round(parseFloat(offertaM.replace(',', '.')) * 10) * 100_000
   const offertaValida = Number.isFinite(offertaEuro) && offertaEuro >= 500_000
-
-  async function apriCambioRuolo() {
-    if (!cambioRuolo) return
-    setCambioAperto(true)
-    setCambioErrore(null)
-    try {
-      const target = await cambioRuolo.onCaricaTarget()
-      setCambioTarget(target)
-      setCambioScelto(target[0] ?? '')
-    } catch (errore) {
-      setCambioErrore(errore instanceof Error ? errore.message : 'Ruoli raggiungibili non disponibili.')
-    }
-  }
-
-  async function avviaCambioRuolo() {
-    if (!cambioRuolo || !cambioScelto) return
-    setCambioInCorso(true)
-    setCambioErrore(null)
-    try {
-      await cambioRuolo.onAvvia(cambioScelto)
-      setCambioAperto(false)
-    } catch (errore) {
-      setCambioErrore(errore instanceof Error ? errore.message : 'Cambio ruolo non riuscito.')
-    }
-    setCambioInCorso(false)
-  }
-
-  async function annullaCambioRuolo() {
-    if (!cambioRuolo) return
-    setCambioInCorso(true)
-    setCambioErrore(null)
-    try {
-      await cambioRuolo.onAnnulla()
-    } catch (errore) {
-      setCambioErrore(errore instanceof Error ? errore.message : 'Annullamento non riuscito.')
-    }
-    setCambioInCorso(false)
-  }
-
-  async function apriSpecializzazione() {
-    if (!specializzazione) return
-    setSpecAperto(true)
-    setSpecErrore(null)
-    try {
-      const opzioni = await specializzazione.onCaricaOpzioni()
-      setSpecOpzioni(opzioni)
-      setSpecScelta(opzioni[0]?.chiave ?? '')
-    } catch (errore) {
-      setSpecErrore(errore instanceof Error ? errore.message : 'Specializzazioni non disponibili.')
-    }
-  }
-
-  async function avviaSpecializzazione() {
-    if (!specializzazione || !specScelta) return
-    setSpecInCorso(true)
-    setSpecErrore(null)
-    try {
-      await specializzazione.onAvvia(specScelta)
-      setSpecAperto(false)
-    } catch (errore) {
-      setSpecErrore(errore instanceof Error ? errore.message : 'Allenamento non riuscito.')
-    }
-    setSpecInCorso(false)
-  }
-
-  async function annullaSpecializzazione() {
-    if (!specializzazione) return
-    setSpecInCorso(true)
-    setSpecErrore(null)
-    try {
-      await specializzazione.onAnnulla()
-    } catch (errore) {
-      setSpecErrore(errore instanceof Error ? errore.message : 'Annullamento non riuscito.')
-    }
-    setSpecInCorso(false)
-  }
 
   async function inviaOfferta() {
     if (!rinnovo || !proposta || !offertaValida) return
@@ -390,209 +496,192 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
   return <div className="player-modal-backdrop" role="presentation" onPointerDown={(evento) => { if (evento.target === evento.currentTarget) onClose() }}>
     <section className="player-modal" role="dialog" aria-modal="true" aria-labelledby="player-modal-title">
       <button className="player-modal__close" type="button" onClick={onClose} aria-label="Chiudi dettagli giocatore">×</button>
-      <div className="player-modal__hero">
-        <div className={`player-modal__photo player-modal__photo--${rep} ${fotoUrl ? 'has-photo' : ''}`}>
-          <AnonymousPlayer />
-          {fotoUrl && <img src={fotoUrl} alt={giocatore.nome} onError={(evento) => { evento.currentTarget.hidden = true; evento.currentTarget.parentElement?.classList.remove('has-photo') }} />}
-        </div>
-        <div>
-          <p className="kicker">Scheda giocatore</p>
-          <h2 id="player-modal-title">{giocatore.nome}</h2>
-          <p>{[giocatore.club, giocatore.nazionalita].filter(Boolean).join(' · ') || '—'}</p>
-        </div>
-        <strong className="player-modal__overall"><span>OVR</span>{giocatore.overall}</strong>
-      </div>
 
-      {giocatore.ritiroAnnunciato && <p className="player-modal__ritiro">Si ritira a fine stagione — non può essere ceduto.</p>}
+      {haTraining && <UnderlineTabs
+        className="player-modal__tabs"
+        tabs={[{ value: 'scheda', label: 'Scheda' }, { value: 'training', label: 'Training' }] as const}
+        value={pagina}
+        onChange={setPagina}
+      />}
 
-      <dl className="player-modal__facts">
-        <div><dt>Età</dt><dd>{giocatore.eta}</dd></div>
-        <div><dt>Ruoli</dt><dd>{giocatore.posizioni.join(' · ') || '—'}</dd></div>
-        <div><dt>Piede</dt><dd>{giocatore.piede ?? '—'}</dd></div>
-        <div><dt>Altezza</dt><dd>{giocatore.altezza ? `${giocatore.altezza} cm` : '—'}</dd></div>
-        {typeof giocatore.ingaggio === 'number' && <div className="fatto-ingaggio">
-          <dt>Ingaggio</dt>
-          <dd>
-            {(giocatore.ingaggio / 1_000_000).toFixed(1)} M€ <small>/ stagione</small>
-            {typeof giocatore.contrattoScadenza === 'number' && typeof giocatore.stagioneCorrente === 'number' && (() => {
-              const residue = giocatore.contrattoScadenza - giocatore.stagioneCorrente
-              return <small className="fatto-contratto">
-                {residue <= 0
-                  ? 'In scadenza a fine stagione'
-                  : `Contratto fino alla stagione ${giocatore.contrattoScadenza} · ancora ${stagioni(residue)} dopo questa`}
-              </small>
-            })()}
-          </dd>
-        </div>}
-      </dl>
-
-      {typeof giocatore.condizione === 'number' && <section className={`player-modal__fitness ${(giocatore.infortunatoFinoA ?? 0) > 0 ? 'is-injured' : (giocatore.squalificatoFinoA ?? 0) > 0 ? 'is-suspended' : ''}`}>
-        <div>
-          <span>Forma fisica</span>
-          {(giocatore.infortunatoFinoA ?? 0) > 0
-            ? <strong>Infortunato</strong>
-            : (giocatore.squalificatoFinoA ?? 0) > 0
-              ? <strong>Squalificato</strong>
-              : <strong>{giocatore.condizione}%</strong>}
-        </div>
-        {(giocatore.infortunatoFinoA ?? 0) > 0
-          ? <p>Rientro previsto tra {giocatore.infortunatoFinoA} {giocatore.infortunatoFinoA === 1 ? 'giornata' : 'giornate'}.</p>
-          : (giocatore.squalificatoFinoA ?? 0) > 0
-            ? <p>Salta ancora {giocatore.squalificatoFinoA} {giocatore.squalificatoFinoA === 1 ? 'giornata' : 'giornate'}.</p>
-            : <><div className="player-modal__fitness-bar"><i style={{ width: `${giocatore.condizione}%` }} /></div><p>{giocatore.condizione >= 75 ? 'Pronto per giocare.' : giocatore.condizione >= 55 ? 'Condizione da gestire.' : 'Rischio elevato di sostituzione.'}</p></>}
-      </section>}
-
-      {typeof giocatore.morale === 'number' && <section className={`player-modal__morale morale--${etichettaMorale(giocatore.morale).classe}`}>
-        <div>
-          <span>Morale</span>
-          <strong>{etichettaMorale(giocatore.morale).testo}</strong>
-        </div>
-        <div className="player-modal__morale-bar"><i style={{ width: `${giocatore.morale}%` }} /></div>
-        {giocatore.mentalita && (() => {
-          const rami = RAMI_MENTALITA.map(([chiave, nome, descrizione]) => ({ chiave, nome, descrizione, valore: giocatore.mentalita![chiave] }))
-          const dominante = rami.reduce((piuAlto, ramo) => ramo.valore > piuAlto.valore ? ramo : piuAlto)
-          return <>
-            <p className="player-modal__mentalita-nota"><b>{dominante.nome}</b> — {dominante.descrizione}</p>
-            <div className="player-modal__mentalita">
-              {rami.map((ramo) => <div className={ramo.chiave === dominante.chiave ? 'is-dominante' : ''} key={ramo.chiave}>
-                <span>{ramo.nome}</span>
-                <i><span style={{ width: `${ramo.valore}%` }} /></i>
-                <b>{ramo.valore}</b>
-              </div>)}
+      <div className="player-modal__pager" ref={pagerRef} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <div className={`player-modal__page ${haTraining && pagina !== 'scheda' ? 'is-nascosta' : ''}`}>
+          <div className="player-modal__hero">
+            <div className={`player-modal__photo player-modal__photo--${rep} ${fotoUrl ? 'has-photo' : ''}`}>
+              <AnonymousPlayer />
+              {fotoUrl && <img src={fotoUrl} alt={giocatore.nome} onError={(evento) => { evento.currentTarget.hidden = true; evento.currentTarget.parentElement?.classList.remove('has-photo') }} />}
             </div>
-          </>
-        })()}
-      </section>}
-
-      {stagione && <div className="player-modal__stats">
-        <h3>Stagione</h3>
-        {stagione.presenze === 0
-          ? <p className="season-empty">Non ha ancora giocato in questa stagione.</p>
-          : <>
-            <div className="scheda-numeri">
-              <div><b>{stagione.presenze}</b><span>Presenze</span></div>
-              <div><b>{stagione.minuti}</b><span>Minuti</span></div>
-              <div><b>{stagione.gol}</b><span>Gol</span></div>
-              <div><b>{stagione.assist}</b><span>Assist</span></div>
-              <div><b>{stagione.porteInviolate}</b><span>Porta inviolata</span></div>
-              <div><b>{stagione.minuti > 0 ? ((stagione.gol + stagione.assist) * 90 / stagione.minuti).toFixed(2) : '—'}</b><span>G+A ogni 90&#39;</span></div>
+            <div>
+              <p className="kicker">Scheda giocatore</p>
+              <h2 id="player-modal-title">{giocatore.nome}</h2>
+              <p>{[giocatore.club, giocatore.nazionalita].filter(Boolean).join(' · ') || '—'}</p>
             </div>
-            <div className="scheda-quote">
-              <div><span>Tiri in porta</span><b>{percentuale(stagione.tiriPorta, stagione.tiri)}</b><small>{stagione.tiriPorta} su {stagione.tiri}</small></div>
-              <div><span>Passaggi riusciti</span><b>{percentuale(stagione.passaggiRiusciti, stagione.passaggiTentati)}</b><small>{stagione.passaggiRiusciti} su {stagione.passaggiTentati}</small></div>
-              <div><span>Contrasti vinti</span><b>{stagione.contrastiVinti}</b><small>totali</small></div>
-              <div><span>Dribbling riusciti</span><b>{stagione.dribbling}</b><small>totali</small></div>
-            </div>
-          </>}
-      </div>}
+            <strong className="player-modal__overall"><span>OVR</span>{giocatore.overall}</strong>
+          </div>
 
-      <div className="player-modal__stats">
-        <h3>Attributi</h3>
-        <div className="player-stats-grid">
-          {ETICHETTE_ATTRIBUTI.map(([chiave, etichetta]) => {
-            const valore = giocatore.attributi[chiave]
-            return typeof valore === 'number'
-              ? <div className="player-stat" key={chiave}><span>{etichetta}</span><b>{valore}</b><i><span style={{ width: `${valore}%` }} /></i></div>
-              : null
-          })}
-        </div>
-      </div>
+          {giocatore.ritiroAnnunciato && <p className="player-modal__ritiro">Si ritira a fine stagione — non può essere ceduto.</p>}
 
-      {(azionePericolosa || rinnovo || listaMercato || cambioRuolo || specializzazione) && <div className="player-modal__danger">
-        {!confermaAperta
-          ? <div className="player-modal__azioni">
-              {azionePericolosa && <button className="button button--danger-ghost" type="button" onClick={() => setConfermaAperta(true)}>{azionePericolosa.etichetta}</button>}
-              {rinnovo && (rinnovo.bloccato
-                ? <button className="button button--secondary" type="button" disabled title={rinnovo.bloccato}>Rinnovo</button>
-                : <button className="button button--secondary" type="button" onClick={apriRinnovo}>Rinnovo</button>)}
-              {listaMercato && <button className={`button player-modal__lista ${inLista ? 'button--secondary' : 'button--primary'}`} type="button" disabled={listaInCorso} onClick={cambiaLista}>
-                {listaInCorso ? 'Attendi…' : inLista ? 'Rimuovi dal mercato' : 'Metti sul mercato'}
-              </button>}
-              {cambioRuolo && !cambioRuolo.inCorso && !cambioAperto && <button className="button button--secondary" type="button" onClick={apriCambioRuolo}>Cambia ruolo</button>}
-              {specializzazione && !specializzazione.inCorso && !specAperto && <button className="button button--secondary" type="button" onClick={apriSpecializzazione}>Allena specializzazione</button>}
-              {listaEsito && <p className="player-modal__lista-esito" role="status">{listaEsito}</p>}
-              {listaErrore && <p className="notice notice--error player-modal__lista-esito" role="alert">{listaErrore}</p>}
-            </div>
-          : azionePericolosa && <div className="player-modal__confirm">
-              <div><strong>Confermi lo svincolo?</strong><p>{azionePericolosa.descrizione}</p></div>
-              {azionePericolosa.errore && <p className="notice notice--error">{azionePericolosa.errore}</p>}
-              <div>
-                <button className="button button--danger" type="button" disabled={azionePericolosa.inCorso} onClick={azionePericolosa.onConferma}>{azionePericolosa.inCorso ? 'Svincolo…' : 'Svincola definitivamente'}</button>
-                <button className="button button--secondary" type="button" disabled={azionePericolosa.inCorso} onClick={() => setConfermaAperta(false)}>Annulla</button>
-              </div>
+          <dl className="player-modal__facts">
+            <div><dt>Età</dt><dd>{giocatore.eta}</dd></div>
+            <div><dt>Ruoli</dt><dd>{giocatore.posizioni.join(' · ') || '—'}</dd></div>
+            <div><dt>Piede</dt><dd>{giocatore.piede ?? '—'}</dd></div>
+            <div><dt>Altezza</dt><dd>{giocatore.altezza ? `${giocatore.altezza} cm` : '—'}</dd></div>
+            {typeof giocatore.ingaggio === 'number' && <div className="fatto-ingaggio">
+              <dt>Ingaggio</dt>
+              <dd>
+                {(giocatore.ingaggio / 1_000_000).toFixed(1)} M€ <small>/ stagione</small>
+                {typeof giocatore.contrattoScadenza === 'number' && typeof giocatore.stagioneCorrente === 'number' && (() => {
+                  const residue = giocatore.contrattoScadenza - giocatore.stagioneCorrente
+                  return <small className="fatto-contratto">
+                    {residue <= 0
+                      ? 'In scadenza a fine stagione'
+                      : `Contratto fino alla stagione ${giocatore.contrattoScadenza} · ancora ${stagioni(residue)} dopo questa`}
+                  </small>
+                })()}
+              </dd>
             </div>}
+          </dl>
 
-        {cambioRuolo?.inCorso && <div className="player-modal__cambio-ruolo">
-          <p>
-            Riqualificazione in corso: da <b>{cambioRuolo.inCorso.ruoloPrecedente}</b> a <b>{cambioRuolo.inCorso.ruoloTarget}</b>.
-            {' '}{cambioRuolo.prossimaGiornata != null
-              ? ` Pronto tra ${Math.max(0, cambioRuolo.inCorso.completaGiornata - cambioRuolo.prossimaGiornata)} giornate.`
-              : ` Completa alla giornata ${cambioRuolo.inCorso.completaGiornata}.`}
-          </p>
-          {cambioErrore && <p className="notice notice--error">{cambioErrore}</p>}
-          <button className="button button--danger-ghost" type="button" disabled={cambioInCorso} onClick={annullaCambioRuolo}>
-            {cambioInCorso ? 'Attendi…' : 'Annulla riqualificazione'}
-          </button>
-        </div>}
+          {typeof giocatore.condizione === 'number' && <section className={`player-modal__fitness ${(giocatore.infortunatoFinoA ?? 0) > 0 ? 'is-injured' : (giocatore.squalificatoFinoA ?? 0) > 0 ? 'is-suspended' : ''}`}>
+            <div>
+              <span>Forma fisica</span>
+              {(giocatore.infortunatoFinoA ?? 0) > 0
+                ? <strong>Infortunato</strong>
+                : (giocatore.squalificatoFinoA ?? 0) > 0
+                  ? <strong>Squalificato</strong>
+                  : <strong>{giocatore.condizione}%</strong>}
+            </div>
+            {(giocatore.infortunatoFinoA ?? 0) > 0
+              ? <p>Rientro previsto tra {giocatore.infortunatoFinoA} {giocatore.infortunatoFinoA === 1 ? 'giornata' : 'giornate'}.</p>
+              : (giocatore.squalificatoFinoA ?? 0) > 0
+                ? <p>Salta ancora {giocatore.squalificatoFinoA} {giocatore.squalificatoFinoA === 1 ? 'giornata' : 'giornate'}.</p>
+                : <><div className="player-modal__fitness-bar"><i style={{ width: `${giocatore.condizione}%` }} /></div><p>{giocatore.condizione >= 75 ? 'Pronto per giocare.' : giocatore.condizione >= 55 ? 'Condizione da gestire.' : 'Rischio elevato di sostituzione.'}</p></>}
+          </section>}
 
-        {cambioRuolo && !cambioRuolo.inCorso && cambioAperto && <div className="player-modal__cambio-ruolo">
-          {cambioErrore && <p className="notice notice--error">{cambioErrore}</p>}
-          {cambioTarget === null ? <p className="season-empty">Carico i ruoli raggiungibili…</p>
-            : cambioTarget.length === 0 ? <p className="season-empty">Nessun ruolo vicino raggiungibile (i portieri non si riqualificano).</p>
-            : <>
-                <label>
-                  <span>Nuovo ruolo</span>
-                  <select value={cambioScelto} onChange={(evento) => setCambioScelto(evento.target.value)}>
-                    {cambioTarget.map((ruolo) => <option value={ruolo} key={ruolo}>{ruolo}</option>)}
-                  </select>
-                </label>
-                <div>
-                  <button className="button button--primary" type="button" disabled={cambioInCorso} onClick={avviaCambioRuolo}>
-                    {cambioInCorso ? 'Avvio…' : 'Avvia riqualificazione'}
-                  </button>
-                  <button className="button button--secondary" type="button" disabled={cambioInCorso} onClick={() => setCambioAperto(false)}>Annulla</button>
+          {typeof giocatore.morale === 'number' && <section className={`player-modal__morale morale--${etichettaMorale(giocatore.morale).classe}`}>
+            <div>
+              <span>Morale</span>
+              <strong>{etichettaMorale(giocatore.morale).testo}</strong>
+            </div>
+            <div className="player-modal__morale-bar"><i style={{ width: `${giocatore.morale}%` }} /></div>
+            {giocatore.mentalita && (() => {
+              const rami = RAMI_MENTALITA.map(([chiave, nome, descrizione]) => ({ chiave, nome, descrizione, valore: giocatore.mentalita![chiave] }))
+              const dominante = rami.reduce((piuAlto, ramo) => ramo.valore > piuAlto.valore ? ramo : piuAlto)
+              return <>
+                <p className="player-modal__mentalita-nota"><b>{dominante.nome}</b> — {dominante.descrizione}</p>
+                <div className="player-modal__mentalita">
+                  {rami.map((ramo) => <div className={ramo.chiave === dominante.chiave ? 'is-dominante' : ''} key={ramo.chiave}>
+                    <span>{ramo.nome}</span>
+                    <i><span style={{ width: `${ramo.valore}%` }} /></i>
+                    <b>{ramo.valore}</b>
+                  </div>)}
+                </div>
+              </>
+            })()}
+          </section>}
+
+          {stagione && <div className="player-modal__stats">
+            <h3>Stagione</h3>
+            {stagione.presenze === 0
+              ? <p className="season-empty">Non ha ancora giocato in questa stagione.</p>
+              : <>
+                <div className="scheda-numeri">
+                  <div><b>{stagione.presenze}</b><span>Presenze</span></div>
+                  <div><b>{stagione.minuti}</b><span>Minuti</span></div>
+                  <div><b>{stagione.gol}</b><span>Gol</span></div>
+                  <div><b>{stagione.assist}</b><span>Assist</span></div>
+                  <div><b>{stagione.porteInviolate}</b><span>Porta inviolata</span></div>
+                  <div><b>{stagione.minuti > 0 ? ((stagione.gol + stagione.assist) * 90 / stagione.minuti).toFixed(2) : '—'}</b><span>G+A ogni 90&#39;</span></div>
+                </div>
+                <div className="scheda-quote">
+                  <div><span>Tiri in porta</span><b>{percentuale(stagione.tiriPorta, stagione.tiri)}</b><small>{stagione.tiriPorta} su {stagione.tiri}</small></div>
+                  <div><span>Passaggi riusciti</span><b>{percentuale(stagione.passaggiRiusciti, stagione.passaggiTentati)}</b><small>{stagione.passaggiRiusciti} su {stagione.passaggiTentati}</small></div>
+                  <div><span>Contrasti vinti</span><b>{stagione.contrastiVinti}</b><small>totali</small></div>
+                  <div><span>Dribbling riusciti</span><b>{stagione.dribbling}</b><small>totali</small></div>
                 </div>
               </>}
-        </div>}
+          </div>}
 
-        {specializzazione?.inCorso && <div className="player-modal__cambio-ruolo">
-          <p>
-            Allenamento in corso: {specializzazione.inCorso.specializzazionePrecedente ? <>da <b>{specializzazione.inCorso.specializzazionePrecedente}</b> a</> : 'verso'} <b>{specializzazione.inCorso.specializzazioneTarget}</b>.
-            {' '}{specializzazione.prossimaGiornata != null
-              ? ` Pronto tra ${Math.max(0, specializzazione.inCorso.completaGiornata - specializzazione.prossimaGiornata)} giornate.`
-              : ` Completa alla giornata ${specializzazione.inCorso.completaGiornata}.`}
-          </p>
-          {specErrore && <p className="notice notice--error">{specErrore}</p>}
-          <button className="button button--danger-ghost" type="button" disabled={specInCorso} onClick={annullaSpecializzazione}>
-            {specInCorso ? 'Attendi…' : 'Annulla allenamento'}
-          </button>
-        </div>}
+          <div className="player-modal__stats">
+            <h3>Attributi</h3>
+            <div className="player-stats-grid">
+              {ETICHETTE_ATTRIBUTI.map(([chiave, etichetta]) => {
+                const valore = giocatore.attributi[chiave]
+                return typeof valore === 'number'
+                  ? <div className="player-stat" key={chiave}><span>{etichetta}</span><b>{valore}</b><i><span style={{ width: `${valore}%` }} /></i></div>
+                  : null
+              })}
+            </div>
+          </div>
 
-        {specializzazione && !specializzazione.inCorso && specAperto && <div className="player-modal__cambio-ruolo">
-          {specializzazione.attiva && <p className="field-help">Specializzazione attuale: <b>{specializzazione.attiva}</b>. Riallenarsi la sostituisce.</p>}
-          {specErrore && <p className="notice notice--error">{specErrore}</p>}
-          {specOpzioni === null ? <p className="season-empty">Carico le specializzazioni…</p>
-            : specOpzioni.length === 0 ? <p className="season-empty">Il portiere non ha specializzazioni: il motore riassume le sue qualità in un unico valore.</p>
-            : <>
-                <label>
-                  <span>Specializzazione</span>
-                  <select value={specScelta} onChange={(evento) => setSpecScelta(evento.target.value)}>
-                    {specOpzioni.map((opzione) => <option value={opzione.chiave} key={opzione.chiave}>{opzione.etichetta}</option>)}
-                  </select>
-                </label>
-                {specOpzioni.find((opzione) => opzione.chiave === specScelta) && <p className="field-help">
-                  Migliora {specOpzioni.find((opzione) => opzione.chiave === specScelta)!.deltas
-                    .map(([chiave, valore]) => `${etichettaAttributo(chiave)} +${valore}`).join(', ')}.
-                </p>}
-                <div>
-                  <button className="button button--primary" type="button" disabled={specInCorso} onClick={avviaSpecializzazione}>
-                    {specInCorso ? 'Avvio…' : 'Avvia allenamento'}
-                  </button>
-                  <button className="button button--secondary" type="button" disabled={specInCorso} onClick={() => setSpecAperto(false)}>Annulla</button>
+          {(azionePericolosa || rinnovo || listaMercato) && <div className="player-modal__danger">
+            {!confermaAperta
+              ? <div className="player-modal__azioni">
+                  {azionePericolosa && <button className="button button--danger-ghost" type="button" onClick={() => setConfermaAperta(true)}>{azionePericolosa.etichetta}</button>}
+                  {rinnovo && (rinnovo.bloccato
+                    ? <button className="button button--secondary" type="button" disabled title={rinnovo.bloccato}>Rinnovo</button>
+                    : <button className="button button--secondary" type="button" onClick={apriRinnovo}>Rinnovo</button>)}
+                  {listaMercato && <button className={`button player-modal__lista ${inLista ? 'button--secondary' : 'button--primary'}`} type="button" disabled={listaInCorso} onClick={cambiaLista}>
+                    {listaInCorso ? 'Attendi…' : inLista ? 'Rimuovi dal mercato' : 'Metti sul mercato'}
+                  </button>}
+                  {listaEsito && <p className="player-modal__lista-esito" role="status">{listaEsito}</p>}
+                  {listaErrore && <p className="notice notice--error player-modal__lista-esito" role="alert">{listaErrore}</p>}
                 </div>
-              </>}
+              : azionePericolosa && <div className="player-modal__confirm">
+                  <div><strong>Confermi lo svincolo?</strong><p>{azionePericolosa.descrizione}</p></div>
+                  {azionePericolosa.errore && <p className="notice notice--error">{azionePericolosa.errore}</p>}
+                  <div>
+                    <button className="button button--danger" type="button" disabled={azionePericolosa.inCorso} onClick={azionePericolosa.onConferma}>{azionePericolosa.inCorso ? 'Svincolo…' : 'Svincola definitivamente'}</button>
+                    <button className="button button--secondary" type="button" disabled={azionePericolosa.inCorso} onClick={() => setConfermaAperta(false)}>Annulla</button>
+                  </div>
+                </div>}
+          </div>}
+        </div>
+
+        {haTraining && <div className={`player-modal__page player-modal__page--training ${pagina !== 'training' ? 'is-nascosta' : ''}`}>
+          <p className="player-training-intro">Allenamento di {giocatore.nome}: cambio di ruolo e specializzazione, dal ramo TRAINING di Gestione risorse.</p>
+
+          {cambioRuolo && <PannelloAllenamento
+            titolo="Cambio ruolo" sottotitolo="Riqualificazione"
+            attuale={null}
+            inCorso={cambioRuolo.inCorso ? {
+              etichettaPrima: cambioRuolo.inCorso.ruoloPrecedente, etichettaDopo: cambioRuolo.inCorso.ruoloTarget,
+              avviatoGiornata: cambioRuolo.inCorso.avviatoGiornata, completaGiornata: cambioRuolo.inCorso.completaGiornata,
+            } : null}
+            prossimaGiornata={cambioRuolo.prossimaGiornata}
+            opzioni={cambioTarget?.map((r) => ({ chiave: r, etichetta: r }))
+              ?? (cambioCaricamento ? null : [])}
+            opzioniCaricamento={cambioCaricamento}
+            scelta={cambioScelto}
+            onScegli={setCambioScelto}
+            onAvvia={avviaCambioRuolo}
+            onAnnulla={annullaCambioRuolo}
+            inviando={cambioInCorso}
+            errore={cambioErrore}
+          />}
+
+          {specializzazione && <PannelloAllenamento
+            titolo="Specializzazione" sottotitolo="Allenamento mirato"
+            attuale={specializzazione.attiva}
+            inCorso={specializzazione.inCorso ? {
+              etichettaPrima: specializzazione.inCorso.specializzazionePrecedente, etichettaDopo: specializzazione.inCorso.specializzazioneTarget,
+              avviatoGiornata: specializzazione.inCorso.avviatoGiornata, completaGiornata: specializzazione.inCorso.completaGiornata,
+            } : null}
+            prossimaGiornata={specializzazione.prossimaGiornata}
+            opzioni={specOpzioni?.map((o) => ({
+              chiave: o.chiave, etichetta: o.etichetta,
+              sottotesto: o.deltas.map(([chiave, valore]) => `${etichettaAttributo(chiave)} +${valore}`).join(', '),
+            })) ?? (specCaricamento ? null : [])}
+            opzioniCaricamento={specCaricamento}
+            scelta={specScelta}
+            onScegli={setSpecScelta}
+            onAvvia={avviaSpecializzazione}
+            onAnnulla={annullaSpecializzazione}
+            inviando={specInCorso}
+            errore={specErrore}
+          />}
         </div>}
-      </div>}
+      </div>
     </section>
   </div>
 }
