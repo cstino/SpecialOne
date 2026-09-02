@@ -68,21 +68,21 @@ function GraficoRami() {
 }
 
 // Infografica 2: la fascia di potenziale che si stringe salendo di livello
-// nel ramo Vivaio. Stesso prospetto in entrambe le righe: 71-86 a livello
-// 0 (esempio reale di ampiezza), valore vero 74 a livello 10 — non 78,
-// che sarebbe quasi la media dei due estremi e avrebbe suggerito il
+// nel ramo Vivaio. Stesso prospetto in entrambe le righe: 68-88 a livello
+// 0 (ampiezza reale, 20 punti), valore vero 74 a livello 10 — lontano
+// dalla media dei due estremi (78), apposta, per non suggerire il
 // contrario di quello che la fascia vuole spiegare.
 function GraficoPotenziale() {
   return (
     <div className="novita-fasce">
       <div className="novita-fascia-riga">
         <small>Vivaio Lv. 0</small>
-        <div className="novita-fascia-pista"><span className="novita-fascia-banda" style={{ left: '18%', width: '64%' }} /></div>
-        <b>71–86</b>
+        <div className="novita-fascia-pista"><span className="novita-fascia-banda" style={{ left: '14%', width: '70%' }} /></div>
+        <b>68–88</b>
       </div>
       <div className="novita-fascia-riga">
         <small>Vivaio Lv. 10</small>
-        <div className="novita-fascia-pista"><span className="novita-fascia-banda is-stretta" style={{ left: '16%', width: '8%' }} /></div>
+        <div className="novita-fascia-pista"><span className="novita-fascia-banda is-stretta" style={{ left: '26%', width: '8%' }} /></div>
         <b>74</b>
       </div>
     </div>
