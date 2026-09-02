@@ -59,8 +59,8 @@ export function Under({ membership, onNavigate }: Props) {
         supabase.rpc('fascia_potenziale_giocatori', { p_player_ids: playerIds, p_team_id: membership.id }),
       ])
       const giocatori = giocatoriResult.data
-      const fasciaPerId = new Map((fasceResult.data ?? []).map((f: { player_id: number; potenziale_min: number; potenziale_max: number }) =>
-        [f.player_id, f]))
+      const fasciaPerId = new Map<number, { player_id: number; potenziale_min: number; potenziale_max: number }>(
+        (fasceResult.data ?? []).map((f: { player_id: number; potenziale_min: number; potenziale_max: number }) => [f.player_id, f]))
       // Foto in prestito da un giocatore vero (private.genera_prospetto_vivaio):
       // stesso schema di firma usato per gli svincolati in Mercato.tsx.
       const fotoPerId = new Map(await Promise.all(

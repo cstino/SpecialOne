@@ -296,8 +296,8 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     const { data: fasce } = await supabase.rpc('fascia_potenziale_giocatori', {
       p_player_ids: righe.map((r) => r.player_id), p_team_id: teamId,
     })
-    const fasciaPerId = new Map((fasce ?? []).map((f: { player_id: number; potenziale_min: number; potenziale_max: number }) =>
-      [f.player_id, f]))
+    const fasciaPerId = new Map<number, { player_id: number; potenziale_min: number; potenziale_max: number }>(
+      (fasce ?? []).map((f: { player_id: number; potenziale_min: number; potenziale_max: number }) => [f.player_id, f]))
     setVivaioProspetti(righe.map((r) => ({
       ...r,
       potenziale_min: fasciaPerId.get(r.player_id)?.potenziale_min ?? r.giocatore.overall,
