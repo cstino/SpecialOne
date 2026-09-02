@@ -37,6 +37,7 @@ type RosterPlayer = {
   altezza: number | null
   attributi: Record<string, number | null>
   foto_url: string | null
+  fotoFirmata?: string
   ritiroAnnunciato: boolean
   specializzazioneAttiva: string | null
   morale: number
@@ -84,7 +85,8 @@ type VivaioProspetto = {
   entrata_stagione: number
   potenziale_min: number
   potenziale_max: number
-  giocatore: { nome: string; posizioni: string[]; overall: number; eta: number; nazionalita: string | null }
+  fotoFirmata?: string
+  giocatore: { nome: string; posizioni: string[]; overall: number; eta: number; nazionalita: string | null; foto_url: string | null }
 }
 
 const ROLE_ORDER: Record<string, number> = { GK: 0, DEF: 1, MID: 2, ATT: 3 }
@@ -262,7 +264,14 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           ...total,
         }
       }).sort((left, right) => ROLE_ORDER[department(left.posizioni[0])] - ROLE_ORDER[department(right.posizioni[0])] || right.overall - left.overall || left.nome.localeCompare(right.nome, 'it'))
-      setPlayers(loaded); setStatRows((statsResult.data ?? []) as MatchPlayerStat[]); setRosterLoading(false)
+      const fotoPerId = new Map(await Promise.all(
+        loaded.filter((p) => p.foto_url).map(async (p) => {
+          const { data } = await supabase.storage.from('player-photos').createSignedUrl(p.foto_url!, 3600)
+          return [p.id, data?.signedUrl] as const
+        })
+      ))
+      setPlayers(loaded.map((p) => ({ ...p, fotoFirmata: fotoPerId.get(p.id) })))
+      setStatRows((statsResult.data ?? []) as MatchPlayerStat[]); setRosterLoading(false)
   }, [league.id, teamId])
 
   useEffect(() => { void caricaRoster() }, [caricaRoster])
@@ -299,7 +308,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     setVivaioLoading(true); setVivaioErrore(null)
     const [prospettiResult, tabellaResult, risorseResult] = await Promise.all([
       supabase.from('vivaio_prospetti')
-        .select('id, ingaggio, entrata_stagione, player_id, giocatore:players(nome, posizioni, overall, eta, nazionalita)')
+        .select('id, ingaggio, entrata_stagione, player_id, giocatore:players(nome, posizioni, overall, eta, nazionalita, foto_url)')
         .eq('league_id', league.id).eq('team_id', teamId),
       supabase.rpc('tabella_risorse'),
       supabase.from('team_risorse').select('livello_vivaio').eq('team_id', teamId).maybeSingle(),
@@ -315,10 +324,17 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     })
     const fasciaPerId = new Map<number, { player_id: number; potenziale_min: number; potenziale_max: number }>(
       (fasce ?? []).map((f: { player_id: number; potenziale_min: number; potenziale_max: number }) => [f.player_id, f]))
+    const fotoPerId = new Map(await Promise.all(
+      righe.filter((r) => r.giocatore.foto_url).map(async (r) => {
+        const { data } = await supabase.storage.from('player-photos').createSignedUrl(r.giocatore.foto_url!, 3600)
+        return [r.id, data?.signedUrl] as const
+      })
+    ))
     setVivaioProspetti(righe.map((r) => ({
       ...r,
       potenziale_min: fasciaPerId.get(r.player_id)?.potenziale_min ?? r.giocatore.overall,
       potenziale_max: fasciaPerId.get(r.player_id)?.potenziale_max ?? r.giocatore.overall,
+      fotoFirmata: fotoPerId.get(r.id),
     })))
     setVivaioLoading(false)
   }, [league.id, teamId])
@@ -638,7 +654,15 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         <div className="season-card__heading"><div><p className="kicker">Rosa completa</p><h2>Dal portiere all’attacco</h2></div><span>{players.length} giocatori · min {ROSA_MINIMA} · max {ROSA_MASSIMA}</span></div>
         {rosterNotice && <p className="notice notice--success">{rosterNotice}</p>}
         {rosterError && <p className="notice notice--error">{rosterError}</p>}
-        {rosterLoading ? <p className="season-empty">Carico la rosa…</p> : <div className="team-roster-list">{players.map((player) => <button className={`team-roster-player team-roster-player--${department(player.posizioni[0])}`} type="button" key={player.id} onClick={() => openPlayer(player)} aria-label={`Scheda di ${player.nome}`}><i /><span className="team-roster-role">{player.posizioni[0] ?? '—'}</span><div><strong>{player.nome}</strong><small>{player.posizioni.join(' · ')} · {player.eta} anni · <em>{money(player.ingaggio)}/stagione</em> · <em className={contratto(player, league.stagione_corrente).urgente ? 'contratto-urgente' : 'contratto-residuo'}>{contratto(player, league.stagione_corrente).testo}</em></small></div><b>{player.overall}</b><dl><span>{player.minuti}<small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span></dl></button>)}</div>}
+        {rosterLoading ? <p className="season-empty">Carico la rosa…</p> : <div className="team-roster-list">{players.map((player) => <button className={`team-roster-player team-roster-player--${department(player.posizioni[0])}`} type="button" key={player.id} onClick={() => openPlayer(player)} aria-label={`Scheda di ${player.nome}`}>
+                  <span className="team-roster-player__portrait">
+                    {player.fotoFirmata ? <img src={player.fotoFirmata} alt="" loading="lazy" /> : <b aria-hidden="true">{player.nome.charAt(0)}</b>}
+                    <i>{player.posizioni[0] ?? '—'}</i>
+                  </span>
+                  <div><strong>{player.nome}</strong><small>{player.posizioni.join(' · ')} · {player.eta} anni · <em>{money(player.ingaggio)}/stagione</em> · <em className={contratto(player, league.stagione_corrente).urgente ? 'contratto-urgente' : 'contratto-residuo'}>{contratto(player, league.stagione_corrente).testo}</em></small></div>
+                  <b>{player.overall}</b>
+                  <dl><span>{player.minuti}<small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span></dl>
+                </button>)}</div>}
       </section>}
 
       {tab === 'vivaio' && <section className="team-roster-panel">
@@ -658,8 +682,10 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                 const inCorso = vivaioAzioneInCorso === prospetto.id
                 return (
                   <div className={`team-roster-player team-roster-player--${department(g.posizioni[0])}`} key={prospetto.id}>
-                    <i />
-                    <span className="team-roster-role">{g.posizioni[0] ?? '—'}</span>
+                    <span className="team-roster-player__portrait">
+                      {prospetto.fotoFirmata ? <img src={prospetto.fotoFirmata} alt="" loading="lazy" /> : <b aria-hidden="true">{g.nome.charAt(0)}</b>}
+                      <i>{g.posizioni[0] ?? '—'}</i>
+                    </span>
                     <div>
                       <strong>{g.nome}</strong>
                       <small>{g.posizioni.join(' · ')} · {g.eta} anni · <em>{money(prospetto.ingaggio)}/stagione</em> · potenziale {prospetto.potenziale_min === prospetto.potenziale_max ? prospetto.potenziale_min : `${prospetto.potenziale_min}-${prospetto.potenziale_max}`}</small>

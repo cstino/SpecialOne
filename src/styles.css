@@ -1957,7 +1957,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .team-roster-panel > .season-card__heading { margin-bottom: 18px; }
 .team-roster-panel > .season-card__heading > span { color: #a97acc; font-size: .72rem; font-weight: 900; }
 .team-roster-list { display: grid; gap: 6px; }
-.team-roster-player { position: relative; width: 100%; min-height: 68px; display: grid; grid-template-columns: 4px 46px minmax(0,1fr) 50px 180px; align-items: center; gap: 12px; padding: 8px 14px 8px 8px; overflow: hidden; border: 1px solid #2e2937; border-radius: 10px; color: inherit; background: #121118; font-family: inherit; text-align: left; cursor: pointer; transition: border-color .16s ease, background .16s ease; }
+.team-roster-player { position: relative; width: 100%; min-height: 68px; display: grid; grid-template-columns: 54px minmax(0,1fr) 50px 180px; align-items: center; gap: 12px; padding: 8px 14px 8px 8px; overflow: hidden; border: 1px solid #2e2937; border-radius: 10px; color: inherit; background: #121118; font-family: inherit; text-align: left; cursor: pointer; transition: border-color .16s ease, background .16s ease; }
 .team-roster-player:hover { border-color: #7a45c0; background: #191426; }
 /* Riga vivaio: e' un div (non un button, ha due bottoni dentro), stessa
    griglia della riga rosa ma niente hover/cursore da elemento cliccabile. */
@@ -1965,11 +1965,19 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .vivaio-azioni { display: flex; flex-direction: column; gap: 6px; }
 .vivaio-azioni .button { padding: 0 10px; min-height: 30px; font-size: .68rem; white-space: nowrap; }
 .team-roster-player:focus-visible { outline: 2px solid #c77dff; outline-offset: 2px; }
-.team-roster-player > i { align-self: stretch; border-radius: 4px; background: #e89935; }
-.team-roster-player--DEF > i { background: #45bde5; }
-.team-roster-player--MID > i { background: #4ed27f; }
-.team-roster-player--ATT > i { background: #ed5b73; }
-.team-roster-role { padding: 6px; border-radius: 6px; color: #fff; background: #2b2534; font-size: .66rem; font-weight: 900; text-align: center; }
+/* Ritratto stile FM: foto (o iniziale) tonda con bordo per reparto, ruolo
+   in etichetta sovrapposta in basso a destra — stesso linguaggio del bordo
+   colorato di .player-modal__photo, adattato a una riga densa. */
+.team-roster-player__portrait { position: relative; width: 54px; height: 54px; flex: none; display: grid; place-items: center; overflow: hidden; border: 2px solid #e89935; border-radius: 50%; background: radial-gradient(circle at 50% 35%, #4a3f59, #201a29 72%); }
+.team-roster-player--DEF .team-roster-player__portrait { border-color: #45bde5; }
+.team-roster-player--MID .team-roster-player__portrait { border-color: #4ed27f; }
+.team-roster-player--ATT .team-roster-player__portrait { border-color: #ed5b73; }
+.team-roster-player__portrait img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+.team-roster-player__portrait b { color: #ada2b6; font-size: 1.15rem; font-weight: 900; }
+.team-roster-player__portrait i { position: absolute; right: -4px; bottom: -3px; min-width: 24px; height: 17px; padding: 0 3px; display: grid; place-items: center; border-radius: 5px; color: #150f1c; background: #e89935; font-style: normal; font-size: .56rem; font-weight: 900; box-shadow: 0 0 0 2px #121118; }
+.team-roster-player--DEF .team-roster-player__portrait i { background: #45bde5; }
+.team-roster-player--MID .team-roster-player__portrait i { background: #4ed27f; }
+.team-roster-player--ATT .team-roster-player__portrait i { background: #ed5b73; }
 .team-roster-player > div { min-width: 0; display: grid; }
 .team-roster-player > div strong { overflow: hidden; color: #ede7f2; text-overflow: ellipsis; white-space: nowrap; }
 .team-roster-player > div small { color: #7f7789; font-size: .63rem; }
@@ -2076,8 +2084,10 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .stat-guida { gap: 13px; padding: 14px 16px; }.stat-guida__numero { font-size: 2.6rem; }.stat-fila { gap: 7px; }.stat-fila article { padding: 10px 11px; }
 
   .team-profile-panel, .team-roster-panel { padding: 16px 10px; }
-  .team-roster-player { grid-template-columns: 3px 38px minmax(0,1fr) 38px; gap: 7px; padding-right: 8px; }
-  .team-roster-player > dl { grid-column: 3 / -1; padding-top: 7px; border-top: 1px solid #29242f; }
+  .team-roster-player { grid-template-columns: 44px minmax(0,1fr) 38px; gap: 7px; padding-right: 8px; }
+  .team-roster-player__portrait { width: 44px; height: 44px; }
+  .team-roster-player__portrait b { font-size: .95rem; }
+  .team-roster-player > dl, .team-roster-player > .vivaio-azioni { grid-column: 2 / -1; padding-top: 7px; border-top: 1px solid #29242f; }
   .team-roster-player > div small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .standings-panel { overflow-x: hidden; }
   .standings-head, .standings-row { min-width: 0; grid-template-columns: 34px minmax(0, 1fr) 34px 40px 44px 26px; gap: 4px; padding-inline: 9px; }
