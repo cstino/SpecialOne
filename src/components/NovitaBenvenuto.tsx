@@ -68,21 +68,37 @@ function GraficoRami() {
 }
 
 // Infografica 2: la fascia di potenziale che si stringe salendo di livello
-// nel ramo Vivaio (numeri reali della formula: "71-86" a livello 0, valore
-// esatto a livello 10), piu' il prima/dopo del volto sulla carta.
+// nel ramo Vivaio. Stesso prospetto in entrambe le righe (valore vero 74,
+// esempio reale di ampiezza a livello 0: "71-86"): la prima riga marca sia
+// il valore vero sia dove cadrebbe la media dei due estremi, apposta
+// diversi, per far vedere che (min+max)/2 non e' una scorciatoia valida.
 function GraficoPotenziale() {
+  const min = 71, max = 86, vero = 74
+  const media = (min + max) / 2
+  const posVero = ((vero - min) / (max - min)) * 100
+  const posMedia = ((media - min) / (max - min)) * 100
+  const mediaTesto = Number.isInteger(media) ? String(media) : media.toFixed(1).replace('.', ',')
   return (
     <div className="novita-fasce">
       <div className="novita-fascia-riga">
         <small>Vivaio Lv. 0</small>
-        <div className="novita-fascia-pista"><span className="novita-fascia-banda" style={{ left: '18%', width: '64%' }} /></div>
-        <b>71–86</b>
+        <div className="novita-fascia-pista">
+          <span className="novita-fascia-banda" style={{ left: '0%', width: '100%' }} />
+          <span className="novita-fascia-segno is-media" style={{ left: `${posMedia}%` }} />
+          <span className="novita-fascia-segno is-vero" style={{ left: `${posVero}%` }} />
+        </div>
+        <b>{min}–{max}</b>
       </div>
       <div className="novita-fascia-riga">
         <small>Vivaio Lv. 10</small>
-        <div className="novita-fascia-pista"><span className="novita-fascia-banda is-stretta" style={{ left: '46%', width: '8%' }} /></div>
-        <b>78</b>
+        <div className="novita-fascia-pista"><span className="novita-fascia-banda is-stretta" style={{ left: `calc(${posVero}% - 5px)`, width: '10px' }} /></div>
+        <b>{vero}</b>
       </div>
+      <p className="novita-fascia-nota">
+        <span><i className="novita-pallino is-media" />media (min+max)/2 = {mediaTesto}</span>
+        <strong>≠</strong>
+        <span><i className="novita-pallino is-vero" />valore vero = {vero}</span>
+      </p>
     </div>
   )
 }
@@ -131,8 +147,9 @@ const SLIDE: Slide[] = [
     occhiello: 'Novità · Vivaio e mercato UNDER',
     titolo: 'Prospetti con un volto vero.',
     corpo: <p>Ogni giorno arrivano quindicenni da mettere in cantera con aste dedicate, fuori dal conteggio
-      rosa. Il potenziale è una fascia che si stringe salendo di livello nel ramo Vivaio, e ora ogni
-      prospetto ha anche una foto.</p>,
+      rosa. Il potenziale è una fascia che si stringe salendo di livello nel ramo Vivaio, ma <strong>non è
+      centrata</strong> sul valore vero: fare la media dei due estremi non lo svela. E ora ogni prospetto ha
+      anche una foto.</p>,
     grafico: <GraficoPotenziale />,
   },
   {

@@ -2516,9 +2516,20 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .novita-fascia-riga { display: grid; grid-template-columns: 76px 1fr 44px; align-items: center; gap: 10px; }
 .novita-fascia-riga small { color: #9b90a7; font-size: .66rem; font-weight: 700; text-align: left; }
 .novita-fascia-riga b { color: #fff; font-size: .76rem; text-align: right; }
-.novita-fascia-pista { position: relative; height: 8px; border-radius: 99px; background: #2c2440; overflow: hidden; }
+.novita-fascia-pista { position: relative; height: 8px; border-radius: 99px; background: #2c2440; overflow: visible; }
 .novita-fascia-banda { position: absolute; top: 0; bottom: 0; border-radius: 99px; background: linear-gradient(90deg, #9b4cff, #d9b8ff); }
-.novita-fascia-banda.is-stretta { background: linear-gradient(90deg, #6726c4, #9b4cff); box-shadow: 0 0 10px rgba(155,76,255,.5); }
+.novita-fascia-banda.is-stretta { background: linear-gradient(90deg, #6726c4, #9b4cff); box-shadow: 0 0 10px rgba(155,76,255,.5); border-radius: 99px; }
+/* Segnalini sulla pista: "media" (il calcolo sbagliato) e "vero" (il dato
+   reale), messi apposta a distanza per mostrare che non coincidono. */
+.novita-fascia-segno { position: absolute; top: 50%; width: 11px; height: 11px; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid #16121f; z-index: 2; }
+.novita-fascia-segno.is-media { background: #6b6478; }
+.novita-fascia-segno.is-vero { background: #ffd166; box-shadow: 0 0 8px rgba(255,209,102,.65); }
+.novita-fascia-nota { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 8px; margin: 2px 0 0; color: #b4a9c0; font-size: .68rem; }
+.novita-fascia-nota span { display: inline-flex; align-items: center; gap: 5px; }
+.novita-fascia-nota strong { color: #ff8a9b; font-size: .8rem; }
+.novita-pallino { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.novita-pallino.is-media { background: #6b6478; }
+.novita-pallino.is-vero { background: #ffd166; }
 
 /* Infografica: cambio ruolo (pill + freccia, tempi con/senza training) */
 .novita-cambio-ruolo { display: grid; gap: 14px; width: 100%; }
