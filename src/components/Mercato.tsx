@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ROSA_MASSIMA } from '../lib/league'
 import { cognome } from '../lib/nomi'
 import { MACRO_COLORE, MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
@@ -134,6 +134,15 @@ export function Mercato({ membership, onNavigate }: Props) {
   const [inCorso, setInCorso] = useState(false)
   const [offertaInCorso, setOffertaInCorso] = useState<{ id: number; tipo: 'offri' | 'modifica' | 'ritira' } | null>(null)
   const [esito, setEsito] = useState<string | null>(null)
+  const [esitoErrore, setEsitoErrore] = useState(false)
+  const esitoRef = useRef<HTMLParagraphElement>(null)
+  // L'esito compare in cima alla pagina, ma l'azione che lo genera (un
+  // "Offri" su una carta) puo' avvenire in fondo a una lista lunga: senza
+  // questo scroll l'utente non lo vede mai, specie se e' un errore che
+  // altrimenti passerebbe per un'offerta riuscita senza dirlo.
+  useEffect(() => {
+    if (esito) esitoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [esito])
   const [paginaRumor, setPaginaRumor] = useState(0)
 
   const mostraListaLegacySvincolati = false
@@ -368,7 +377,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   async function offri(asta: Asta) {
     const grezzo = bozzaOfferta[asta.id] ?? ''
     const valore = Math.round(Number(grezzo.replace(',', '.')) * 1_000_000)
-    if (!grezzo || Number.isNaN(valore)) { setEsito('Ingaggio non valido.'); return }
+    if (!grezzo || Number.isNaN(valore)) { setEsito('Ingaggio non valido.'); setEsitoErrore(true); return }
     setOffertaInCorso({ id: asta.id, tipo: mieOfferte.has(asta.id) ? 'modifica' : 'offri' })
     try {
       const riuscita = await chiama(
@@ -401,7 +410,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   async function offriArchivio(asta: Asta) {
     const grezzo = bozzaOfferta[asta.id] ?? ''
     const valore = Math.round(Number(grezzo.replace(',', '.')) * 1_000_000)
-    if (!grezzo || Number.isNaN(valore)) { setEsito('Ingaggio non valido.'); return }
+    if (!grezzo || Number.isNaN(valore)) { setEsito('Ingaggio non valido.'); setEsitoErrore(true); return }
     setOffertaInCorso({ id: asta.id, tipo: 'offri' })
     try {
       const riuscita = await chiama(
@@ -425,9 +434,11 @@ export function Mercato({ membership, onNavigate }: Props) {
     const partenza = performance.now()
     setInCorso(true)
     setEsito(null)
+    setEsitoErrore(false)
     try {
       const { error } = await azione()
       setEsito(error ? error.message : successo)
+      setEsitoErrore(Boolean(error))
       // Dopo un'offerta, uno scambio o un ritiro aggiorniamo solo i dati: il
       // loader dell'intera pagina farebbe sembrare un refresh e spezzerebbe il
       // contesto dell'azione appena compiuta.
@@ -546,7 +557,7 @@ export function Mercato({ membership, onNavigate }: Props) {
         offerto) e tornano disponibili se le perdi o le ritiri. Posti liberi in rosa: <strong>{conti?.slot_liberi ?? '—'}</strong>.
       </p>}
 
-      {esito && <p className="notice">{esito}</p>}
+      {esito && <p ref={esitoRef} className={`notice ${esitoErrore ? 'notice--error' : 'notice--success'}`}>{esito}</p>}
 
       {/* ---- Mercato svincolati: nuovi + archivio filtrabile ---- */}
       <section className="mercato-blocco mercato-svincolati">
