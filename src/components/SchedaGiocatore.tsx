@@ -165,10 +165,32 @@ function progressoAllenamento(a: { avviatoGiornata: number; completaGiornata: nu
   return { percent: Math.round((fatte / durata) * 100), mancano: Math.max(0, a.completaGiornata - prossimaGiornata) }
 }
 
+// Confronto prima/dopo per le stat toccate da una specializzazione, stile
+// scheda FIFA/Football Manager: pista con la stat attuale piena e il
+// guadagno evidenziato in coda, valori numerici a fianco.
+function ConfrontoAttributi({ deltas, attributi }: { deltas: Array<[string, number]>; attributi: Record<string, number | null> }) {
+  return <div className="player-training-confronto">
+    {deltas.map(([chiave, delta]) => {
+      const prima = Math.max(0, Math.min(99, Math.round(attributi[chiave] ?? 0)))
+      const dopo = Math.min(99, prima + delta)
+      return <div className="player-training-confronto__riga" key={chiave}>
+        <span className="player-training-confronto__etichetta">{etichettaAttributo(chiave)}</span>
+        <div className="player-training-confronto__pista">
+          <i className="player-training-confronto__base" style={{ width: `${prima}%` }} />
+          <i className="player-training-confronto__guadagno" style={{ left: `${prima}%`, width: `${dopo - prima}%` }} />
+        </div>
+        <span className="player-training-confronto__valori">
+          <b>{prima}</b><em aria-hidden="true">→</em><b className="is-dopo">{dopo}</b>
+        </span>
+      </div>
+    })}
+  </div>
+}
+
 // Riquadro comune a cambio ruolo e specializzazione: stato in corso con
 // barra di avanzamento, o picker a schede quando non c'e' nulla in corso.
 function PannelloAllenamento({
-  titolo, attuale, inCorso, prossimaGiornata, opzioni, opzioniCaricamento, scelta, onScegli, onAvvia, onAnnulla, inviando, errore, descrizioneScelta, bloccatoDa,
+  titolo, attuale, inCorso, prossimaGiornata, opzioni, opzioniCaricamento, scelta, onScegli, onAvvia, onAnnulla, inviando, errore, descrizioneScelta, confrontoScelta, bloccatoDa,
 }: {
   titolo: string
   attuale: string | null
@@ -183,6 +205,8 @@ function PannelloAllenamento({
   inviando: boolean
   errore: string | null
   descrizioneScelta?: string
+  /** Confronto grafico prima/dopo per l'opzione selezionata (solo specializzazione: il cambio ruolo non tocca stat). */
+  confrontoScelta?: React.ReactNode
   /** Nome dell'altro allenamento gia' in corso: sono mutuamente esclusivi, un giocatore ne fa uno alla volta. */
   bloccatoDa?: string | null
 }) {
@@ -234,6 +258,7 @@ function PannelloAllenamento({
               ))}
             </div>
             {descrizioneScelta && <p className="field-help">{descrizioneScelta}</p>}
+            {confrontoScelta}
             <button className="button button--primary" type="button" disabled={inviando || !scelta} onClick={onAvvia}>
               {inviando ? 'Avvio…' : 'Avvia allenamento'}
             </button>
@@ -678,7 +703,7 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
             prossimaGiornata={specializzazione.prossimaGiornata}
             opzioni={specOpzioni?.map((o) => ({
               chiave: o.chiave, etichetta: o.etichetta,
-              sottotesto: o.deltas.map(([chiave, valore]) => `${etichettaAttributo(chiave)} +${valore}`).join(', '),
+              sottotesto: o.deltas.map(([chiave]) => etichettaAttributo(chiave)).join(' · '),
             })) ?? (specCaricamento ? null : [])}
             opzioniCaricamento={specCaricamento}
             scelta={specScelta}
@@ -688,6 +713,10 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
             inviando={specInCorso}
             errore={specErrore}
             bloccatoDa={cambioRuolo?.inCorso ? 'un cambio ruolo' : null}
+            confrontoScelta={(() => {
+              const opzione = specOpzioni?.find((o) => o.chiave === specScelta)
+              return opzione ? <ConfrontoAttributi deltas={opzione.deltas} attributi={giocatore.attributi} /> : null
+            })()}
           />}
         </div>}
       </div>

@@ -1103,6 +1103,19 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .player-training-opzioni__voce.is-active strong { color: #fff; }
 .player-training-opzioni__voce small { color: #958b9e; font-size: .66rem; line-height: 1.4; }
 .player-training-opzioni__voce.is-active small { color: #c9a6ff; }
+/* Confronto prima/dopo delle stat toccate dalla specializzazione
+   selezionata: pista piena fino al valore attuale, coda evidenziata per
+   il guadagno (stile scheda FIFA/Football Manager). */
+.player-training-confronto { display: grid; gap: 10px; padding: 14px; border: 1px solid #332c3e; border-radius: 12px; background: #1c1826; animation: player-modal-fade .15s ease-out; }
+.player-training-confronto__riga { display: grid; grid-template-columns: 92px 1fr 74px; align-items: center; gap: 10px; }
+.player-training-confronto__etichetta { color: #b3a8bd; font-size: .72rem; font-weight: 700; }
+.player-training-confronto__pista { position: relative; height: 7px; border-radius: 99px; background: #2c2440; overflow: hidden; }
+.player-training-confronto__base { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 99px; background: #5a4f6c; }
+.player-training-confronto__guadagno { position: absolute; top: 0; bottom: 0; border-radius: 99px; background: linear-gradient(90deg, #a354e8, #e29bff); box-shadow: 0 0 8px rgba(180,110,255,.6); }
+.player-training-confronto__valori { display: flex; align-items: center; justify-content: flex-end; gap: 5px; font-size: .78rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.player-training-confronto__valori b { color: #8e8498; }
+.player-training-confronto__valori b.is-dopo { color: #e29bff; }
+.player-training-confronto__valori em { color: #675c73; font-style: normal; font-size: .7rem; }
 /* "Metti sul mercato" sta sotto agli altri due e ne occupa l'intera larghezza:
    e' un'azione di natura diversa (annuncio pubblico, reversibile), non una
    variante di svincola/rinnovo. */
