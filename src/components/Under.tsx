@@ -9,7 +9,7 @@ import { PopupSpiegazione } from './PopupSpiegazione'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
-type Prospetto = { id: number; nome: string; posizioni: string[]; overall: number; potential: number; eta: number; foto_firmata?: string }
+type Prospetto = { id: number; nome: string; posizioni: string[]; overall: number; eta: number; foto_firmata?: string; potenziale_min?: number; potenziale_max?: number }
 type Asta = { id: number; player_id: number; giorno: string; stato: 'aperta' | 'assegnata' | 'deserta'; vincitore_team_id: number | null; ingaggio_finale: number | null }
 type Offerta = { id: number; auction_id: number; team_id: number; ingaggio_offerto: number }
 
@@ -50,8 +50,17 @@ export function Under({ membership, onNavigate }: Props) {
     setMieOfferte(new Map((offerteResult.data ?? []).map((o: Offerta) => [o.auction_id, o.ingaggio_offerto])))
     const playerIds = [...new Set(righeAste.map((a) => a.player_id))]
     if (playerIds.length) {
-      const { data: giocatori } = await supabase.from('players')
-        .select('id, nome, posizioni, overall, potential, eta, foto_url').in('id', playerIds)
+      // Il potenziale vero non viene mai richiesto al client: la fascia
+      // (non centrata sul valore vero) arriva gia' pronta dal server, in
+      // base al livello VIVAIO della TUA squadra — non sei ancora
+      // proprietario del prospetto, ma la tua scouting conta comunque.
+      const [giocatoriResult, fasceResult] = await Promise.all([
+        supabase.from('players').select('id, nome, posizioni, overall, eta, foto_url').in('id', playerIds),
+        supabase.rpc('fascia_potenziale_giocatori', { p_player_ids: playerIds, p_team_id: membership.id }),
+      ])
+      const giocatori = giocatoriResult.data
+      const fasciaPerId = new Map((fasceResult.data ?? []).map((f: { player_id: number; potenziale_min: number; potenziale_max: number }) =>
+        [f.player_id, f]))
       // Foto in prestito da un giocatore vero (private.genera_prospetto_vivaio):
       // stesso schema di firma usato per gli svincolati in Mercato.tsx.
       const fotoPerId = new Map(await Promise.all(
@@ -60,7 +69,12 @@ export function Under({ membership, onNavigate }: Props) {
           return [g.id, data?.signedUrl] as const
         })
       ))
-      setProspetti(new Map((giocatori ?? []).map((g) => [g.id, { ...g, foto_firmata: fotoPerId.get(g.id) }])))
+      setProspetti(new Map((giocatori ?? []).map((g) => [g.id, {
+        ...g,
+        foto_firmata: fotoPerId.get(g.id),
+        potenziale_min: fasciaPerId.get(g.id)?.potenziale_min,
+        potenziale_max: fasciaPerId.get(g.id)?.potenziale_max,
+      }])))
     }
     setCaricamento(false)
   }, [league.id, membership.id])
@@ -154,7 +168,8 @@ export function Under({ membership, onNavigate }: Props) {
                 <div className="free-agent-card__body">
                   <header><span className={`role-pill role-pill--${macro.toLowerCase()}`} style={{ background: MACRO_COLORE[macro] }}>{g?.posizioni?.[0] ?? '—'}</span><small>{MACRO_LABEL[macro]}</small></header>
                   <strong>{g?.nome ?? `#${a.player_id}`}</strong>
-                  <p>15 anni · potenziale in valutazione</p>
+                  <p>15 anni · potenziale {g == null || g.potenziale_min == null ? 'in valutazione'
+                    : g.potenziale_min === g.potenziale_max ? g.potenziale_min : `${g.potenziale_min}-${g.potenziale_max}`}</p>
                   <footer><em>Ingaggio minimo 0,1 M€</em></footer>
                 </div>
                 <div className={`free-agent-card__bid${!aperto ? ' is-mercato-chiuso' : ''}`}>

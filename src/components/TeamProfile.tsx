@@ -72,7 +72,9 @@ type VivaioProspetto = {
   id: number
   ingaggio: number
   entrata_stagione: number
-  giocatore: { nome: string; posizioni: string[]; overall: number; potential: number; eta: number; nazionalita: string | null }
+  potenziale_min: number
+  potenziale_max: number
+  giocatore: { nome: string; posizioni: string[]; overall: number; eta: number; nazionalita: string | null }
 }
 
 const ROLE_ORDER: Record<string, number> = { GK: 0, DEF: 1, MID: 2, ATT: 3 }
@@ -135,7 +137,6 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [vivaioProspetti, setVivaioProspetti] = useState<VivaioProspetto[]>([])
   const [vivaioLoading, setVivaioLoading] = useState(true)
   const [vivaioErrore, setVivaioErrore] = useState<string | null>(null)
-  const [vivaioAmpiezza, setVivaioAmpiezza] = useState(15)
   const [vivaioSlotMassimi, setVivaioSlotMassimi] = useState(1)
   const [vivaioAzioneInCorso, setVivaioAzioneInCorso] = useState<number | null>(null)
   const [cambiRuolo, setCambiRuolo] = useState<Map<number, CambioRuoloRiga>>(new Map())
@@ -273,23 +274,35 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
 
   // Chi e' in cantera e' visibile a tutta la lega (stessa policy delle
   // scelte, scoutare gli avversari e' voluto): l'overall e' sempre quello
-  // vero, il potenziale si mostra come una fascia che si stringe salendo
-  // di livello VIVAIO (ampiezza_range di private.effetti_ramo).
+  // vero, il potenziale nascosto NON viene mai richiesto al client — la
+  // fascia (ne' centrata sul valore vero, ne' calcolabile a ritroso) arriva
+  // gia' pronta da public.fascia_potenziale_giocatori, che si stringe
+  // salendo di livello VIVAIO della squadra proprietaria.
   const caricaVivaio = useCallback(async () => {
     setVivaioLoading(true); setVivaioErrore(null)
     const [prospettiResult, tabellaResult, risorseResult] = await Promise.all([
       supabase.from('vivaio_prospetti')
-        .select('id, ingaggio, entrata_stagione, giocatore:players(nome, posizioni, overall, potential, eta, nazionalita)')
+        .select('id, ingaggio, entrata_stagione, player_id, giocatore:players(nome, posizioni, overall, eta, nazionalita)')
         .eq('league_id', league.id).eq('team_id', teamId),
       supabase.rpc('tabella_risorse'),
       supabase.from('team_risorse').select('livello_vivaio').eq('team_id', teamId).maybeSingle(),
     ])
     if (prospettiResult.error) { setVivaioErrore(prospettiResult.error.message); setVivaioLoading(false); return }
     const livello = (risorseResult.data as { livello_vivaio: number } | null)?.livello_vivaio ?? 0
-    const scala = (tabellaResult.data as { rami?: { vivaio?: { ampiezza_range: number; slot: number }[] } } | null)?.rami?.vivaio
-    setVivaioAmpiezza(scala?.[livello]?.ampiezza_range ?? 15)
+    const scala = (tabellaResult.data as { rami?: { vivaio?: { slot: number }[] } } | null)?.rami?.vivaio
     setVivaioSlotMassimi(scala?.[livello]?.slot ?? 1)
-    setVivaioProspetti((prospettiResult.data ?? []) as unknown as VivaioProspetto[])
+    const righe = (prospettiResult.data ?? []) as unknown as (VivaioProspetto & { player_id: number })[]
+    if (righe.length === 0) { setVivaioProspetti([]); setVivaioLoading(false); return }
+    const { data: fasce } = await supabase.rpc('fascia_potenziale_giocatori', {
+      p_player_ids: righe.map((r) => r.player_id), p_team_id: teamId,
+    })
+    const fasciaPerId = new Map((fasce ?? []).map((f: { player_id: number; potenziale_min: number; potenziale_max: number }) =>
+      [f.player_id, f]))
+    setVivaioProspetti(righe.map((r) => ({
+      ...r,
+      potenziale_min: fasciaPerId.get(r.player_id)?.potenziale_min ?? r.giocatore.overall,
+      potenziale_max: fasciaPerId.get(r.player_id)?.potenziale_max ?? r.giocatore.overall,
+    })))
     setVivaioLoading(false)
   }, [league.id, teamId])
 
@@ -582,8 +595,6 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           : <div className="team-roster-list">
               {vivaioProspetti.map((prospetto) => {
                 const g = prospetto.giocatore
-                const meta = Math.max(40, g.potential - Math.round(vivaioAmpiezza / 2))
-                const alta = Math.min(99, g.potential + Math.round(vivaioAmpiezza / 2))
                 const inCorso = vivaioAzioneInCorso === prospetto.id
                 return (
                   <div className={`team-roster-player team-roster-player--${department(g.posizioni[0])}`} key={prospetto.id}>
@@ -591,7 +602,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                     <span className="team-roster-role">{g.posizioni[0] ?? '—'}</span>
                     <div>
                       <strong>{g.nome}</strong>
-                      <small>{g.posizioni.join(' · ')} · {g.eta} anni · <em>{money(prospetto.ingaggio)}/stagione</em> · potenziale {vivaioAmpiezza === 0 ? g.potential : `${meta}-${alta}`}</small>
+                      <small>{g.posizioni.join(' · ')} · {g.eta} anni · <em>{money(prospetto.ingaggio)}/stagione</em> · potenziale {prospetto.potenziale_min === prospetto.potenziale_max ? prospetto.potenziale_min : `${prospetto.potenziale_min}-${prospetto.potenziale_max}`}</small>
                     </div>
                     <b>{g.overall}</b>
                     {ownTeam && <div className="vivaio-azioni">
