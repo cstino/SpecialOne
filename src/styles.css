@@ -2525,11 +2525,12 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .novita-cambio-ruolo__pills { display: flex; align-items: center; justify-content: center; gap: 14px; }
 .novita-freccia { width: 20px; height: 20px; color: #9b90a7; }
 .novita-tempi { display: grid; gap: 8px; }
-.novita-tempo-riga { display: grid; grid-template-columns: 82px 1fr 64px; align-items: center; gap: 10px; }
+.novita-tempo-riga { display: grid; grid-template-columns: 92px 1fr 78px; align-items: center; gap: 10px; }
 .novita-tempo-riga small { color: #9b90a7; font-size: .66rem; font-weight: 700; }
-.novita-tempo-riga b { color: #fff; font-size: .74rem; text-align: right; }
+.novita-tempo-riga b { color: #fff; font-size: .72rem; text-align: right; }
 .novita-tempo-pista { height: 8px; border-radius: 99px; background: #2c2440; overflow: hidden; }
 .novita-tempo-pista span { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #4cc9f0, #9b4cff); }
+.novita-didascalia { margin: 6px 0 0; color: #9b90a7; font-size: .68rem; line-height: 1.5; text-align: center; }
 
 /* Banner codice invito nella schermata di draft: visibile finche' la lega
    non e' piena, unico posto dove condividere il codice ora che chi entra
