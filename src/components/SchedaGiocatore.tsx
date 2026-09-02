@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bar, BarChart, LabelList, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
+import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from 'recharts'
 import { Progress } from './ui/progress'
 import { UnderlineTabs } from './ui/underline-tabs'
 
@@ -239,49 +239,37 @@ function progressoAllenamento(a: { avviatoGiornata: number; completaGiornata: nu
 // Etichetta "56 → 63" alla fine della barra impilata (base + guadagno):
 // x/width arrivano gia' sommati dal segmento "guadagno", che e' l'ultimo
 // dello stack, quindi x+width e' proprio il bordo destro della barra intera.
-// Senza guadagno mostra solo il valore (nessuna freccia): la stragrande
-// maggioranza delle righe non e' toccata da questa specializzazione, e
-// "56 → 56" ripetuto per ~27 stat sarebbe solo rumore.
-function EtichettaConfronto(props: unknown) {
-  const { x, y, width, height, payload } = props as { x: number; y: number; width: number; height: number; payload?: { prima: number; dopo: number; guadagno: number } }
-  if (!payload) return null
-  if (payload.guadagno === 0) {
-    return <text x={x + width + 10} y={y + height / 2} dy={5} fontSize={13} fontWeight={800} fill="#8e8498">{payload.prima}</text>
-  }
-  return <text x={x + width + 10} y={y + height / 2} dy={5} fontSize={13} fontWeight={800}>
-    <tspan fill="#8e8498">{payload.prima}</tspan>
-    <tspan fill="#675c73"> → </tspan>
-    <tspan fill="#e29bff">{payload.dopo}</tspan>
-  </text>
+// Una riga per attributo: solo il valore se l'allenamento non lo tocca,
+// "prima → dopo" (il dopo colorato) se invece cresce. Niente barre qui:
+// su una trentina di righe per gruppo occupavano troppo spazio (segnalato
+// dall'utente) — un elenco compatto si legge comunque a colpo d'occhio.
+function RigaConfrontoAttributo({ etichetta, prima, guadagno }: { etichetta: string; prima: number; guadagno: number }) {
+  const dopo = Math.min(99, prima + guadagno)
+  return <div className="player-training-riga-attributo">
+    <span>{etichetta}</span>
+    {guadagno > 0
+      ? <b className="is-cambiato">{prima} <em aria-hidden="true">→</em> <em className="is-dopo">{dopo}</em></b>
+      : <b>{prima}</b>}
+  </div>
 }
 
 // Non solo le 2-3 stat che la specializzazione tocca: tutte le abilita'
 // del giocatore, raggruppate come nella scheda — quelle toccate spiccano
-// col guadagno evidenziato, le altre restano li' per contesto (segnalato
-// dall'utente: vedere solo tre barre isolate non bastava a farsi un'idea).
+// col valore nuovo colorato, le altre restano li' per contesto (segnalato
+// dall'utente: vedere solo tre righe isolate non bastava a farsi un'idea).
 function ConfrontoAttributi({ deltas, attributi, soloGk }: { deltas: Array<[string, number]>; attributi: Record<string, number | null>; soloGk: boolean }) {
   const mappaDeltas = new Map(deltas)
   return <div className="player-training-confronto">
     {GRUPPI_ATTRIBUTI.filter((gruppo) => !gruppo.soloGk || soloGk).map((gruppo) => {
       const voci = gruppo.voci.filter((voce) => typeof attributi[voce.chiave] === 'number')
       if (voci.length === 0) return null
-      const dati = voci.map((voce) => {
-        const prima = Math.max(0, Math.min(99, Math.round(attributi[voce.chiave] ?? 0)))
-        const guadagno = Math.max(0, Math.min(99 - prima, mappaDeltas.get(voce.chiave) ?? 0))
-        return { chiave: voce.chiave, etichetta: voce.etichetta, prima, guadagno, dopo: prima + guadagno }
-      })
       return <div className="player-training-confronto__gruppo" key={gruppo.titolo}>
         <h5>{gruppo.titolo}</h5>
-        <ResponsiveContainer width="100%" height={dati.length * 34 + 4}>
-          <BarChart data={dati} layout="vertical" margin={{ top: 2, right: 60, left: 2, bottom: 2 }} barCategoryGap={8}>
-            <XAxis type="number" domain={[0, 99]} hide />
-            <YAxis type="category" dataKey="etichetta" width={104} stroke="#524a5f" tick={{ fill: '#c6bfce', fontSize: 11 }} axisLine={false} tickLine={false} />
-            <Bar dataKey="prima" stackId="s" fill="#3a3348" radius={[5, 0, 0, 5]} isAnimationActive={false} />
-            <Bar dataKey="guadagno" stackId="s" fill="#a354e8" radius={[0, 5, 5, 0]} isAnimationActive={false}>
-              <LabelList dataKey="guadagno" content={EtichettaConfronto} />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        {voci.map((voce) => {
+          const prima = Math.max(0, Math.min(99, Math.round(attributi[voce.chiave] ?? 0)))
+          const guadagno = Math.max(0, Math.min(99 - prima, mappaDeltas.get(voce.chiave) ?? 0))
+          return <RigaConfrontoAttributo etichetta={voce.etichetta} prima={prima} guadagno={guadagno} key={voce.chiave} />
+        })}
       </div>
     })}
   </div>

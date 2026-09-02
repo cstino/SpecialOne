@@ -1106,8 +1106,15 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 /* Confronto prima/dopo delle stat toccate dalla specializzazione
    selezionata: pista piena fino al valore attuale, coda evidenziata per
    il guadagno (stile scheda FIFA/Football Manager). */
-.player-training-confronto { display: grid; gap: 16px; max-height: 340px; overflow-y: auto; padding: 12px 10px; border: 1px solid #332c3e; border-radius: 12px; background: #1c1826; animation: player-modal-fade .15s ease-out; }
-.player-training-confronto__gruppo h5 { margin: 0 0 4px; color: #9b90a7; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.player-training-confronto { display: grid; gap: 14px; max-height: 360px; overflow-y: auto; padding: 12px 14px; border: 1px solid #332c3e; border-radius: 12px; background: #1c1826; animation: player-modal-fade .15s ease-out; }
+.player-training-confronto__gruppo h5 { margin: 0 0 2px; color: #9b90a7; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.player-training-riga-attributo { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.04); font-size: .78rem; }
+.player-training-riga-attributo:last-child { border-bottom: 0; }
+.player-training-riga-attributo > span { color: #b6adbf; }
+.player-training-riga-attributo > b { flex: none; color: #fff; font-weight: 800; font-variant-numeric: tabular-nums; }
+.player-training-riga-attributo > b.is-cambiato { color: #8e8498; font-weight: 700; }
+.player-training-riga-attributo > b.is-cambiato em { color: #675c73; font-style: normal; }
+.player-training-riga-attributo > b.is-cambiato em.is-dopo { color: #e29bff; font-weight: 900; }
 /* "Metti sul mercato" sta sotto agli altri due e ne occupa l'intera larghezza:
    e' un'azione di natura diversa (annuncio pubblico, reversibile), non una
    variante di svincola/rinnovo. */
