@@ -21,7 +21,7 @@ type EventoInfortunio = { tipo: 'infortunio'; minuto: number; blocco: number; la
 type EventoCartellino = { tipo: 'cartellino'; minuto: number; blocco: number; lato: Lato; team_id: number; giocatore: number; colore: 'giallo' | 'rosso_diretto' | 'doppio_giallo' }
 type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio | EventoCartellino
 type DbPlayer = { id: number; nome: string; posizioni: string[]; attributi: Record<string, number> }
-type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number; posizioni_override: string[] | null }
+type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number; posizioni_override: string[] | null; attributi_override: Record<string, number> | null }
 type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; gk: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number }
 // moltiplicatoreInfortuni e' facoltativo: se assente l'engine usa 1 (nessun
 // effetto), esattamente come nella suite di validazione.
@@ -36,6 +36,15 @@ function requiredNumber(attributes: Record<string, number>, field: string, playe
     throw new Error(`Giocatore ${playerId}: attributo obbligatorio ${field} assente.`)
   }
   return value
+}
+
+// Una specializzazione completata (Gestione risorse, TRAINING) scrive un
+// valore assoluto per-istanza che sostituisce quello del catalogo
+// condiviso, solo per le chiavi che divergono. Vedi
+// private.completa_specializzazioni() e player_instances.attributi_override.
+function attributoEffettivo(catalogo: Record<string, number>, override: Record<string, number> | null, field: string, playerId: number) {
+  const valore = override?.[field]
+  return typeof valore === 'number' && Number.isFinite(valore) ? valore : requiredNumber(catalogo, field, playerId)
 }
 
 function adaptPlayer(instance: Instance, player: DbPlayer): EnginePlayer {
@@ -60,12 +69,12 @@ function adaptPlayer(instance: Instance, player: DbPlayer): EnginePlayer {
     posizioni: instance.posizioni_override ?? player.posizioni,
     ovr: instance.overall_corrente,
     eta: instance.eta_corrente,
-    stamina: requiredNumber(player.attributi, 'stamina', instance.id),
-    finishing: requiredNumber(player.attributi, 'finishing', instance.id),
-    short_passing: requiredNumber(player.attributi, 'short_passing', instance.id),
-    tackle: requiredNumber(player.attributi, 'standing_tackle', instance.id),
-    dribbling: requiredNumber(player.attributi, 'dribbling', instance.id),
-    gk: requiredNumber(player.attributi, 'gk', instance.id),
+    stamina: attributoEffettivo(player.attributi, instance.attributi_override, 'stamina', instance.id),
+    finishing: attributoEffettivo(player.attributi, instance.attributi_override, 'finishing', instance.id),
+    short_passing: attributoEffettivo(player.attributi, instance.attributi_override, 'short_passing', instance.id),
+    tackle: attributoEffettivo(player.attributi, instance.attributi_override, 'standing_tackle', instance.id),
+    dribbling: attributoEffettivo(player.attributi, instance.attributi_override, 'dribbling', instance.id),
+    gk: attributoEffettivo(player.attributi, instance.attributi_override, 'gk', instance.id),
     condizione: instance.condizione,
     infortunatoFinoA: instance.infortunato_fino_a,
     squalificatoFinoA: instance.squalificato_fino_a,
@@ -623,7 +632,7 @@ export default {
 
       const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult, medicoResult] = await Promise.all([
         ctx.supabaseAdmin.from('teams').select('id, nome, user_id, controllata_da_pc').eq('league_id', leagueId).in('id', teamIds),
-        ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override').eq('league_id', leagueId).in('team_id', teamIds),
+        ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, attributi_override').eq('league_id', leagueId).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
         ctx.supabaseAdmin.from('formation_xp').select('team_id, modulo, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),

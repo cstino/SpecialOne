@@ -93,6 +93,15 @@ type Props = {
     onAvvia: (ruoloTarget: string) => Promise<void>
     onAnnulla: () => Promise<void>
   }
+  specializzazione?: {
+    /** Etichetta della specializzazione gia' attiva, se nessun allenamento e' in corso. */
+    attiva: string | null
+    inCorso: { specializzazionePrecedente: string | null; specializzazioneTarget: string; completaGiornata: number } | null
+    prossimaGiornata: number | null
+    onCaricaOpzioni: () => Promise<Array<{ chiave: string; etichetta: string; deltas: Array<[string, number]> }>>
+    onAvvia: (specializzazione: string) => Promise<void>
+    onAnnulla: () => Promise<void>
+  }
   onClose: () => void
 }
 
@@ -136,7 +145,11 @@ const RAMI_MENTALITA: Array<[keyof NonNullable<DatiScheda['mentalita']>, string,
   ['vittorie', 'Vittorie', 'Prima i risultati: vuole vincere, il resto conta meno.'],
 ]
 
-export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa, rinnovo, listaMercato, cambioRuolo, onClose }: Props) {
+function etichettaAttributo(chiave: string) {
+  return ETICHETTE_ATTRIBUTI.find(([k]) => k === chiave)?.[1] ?? chiave
+}
+
+export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa, rinnovo, listaMercato, cambioRuolo, specializzazione, onClose }: Props) {
   const [confermaAperta, setConfermaAperta] = useState(false)
   const [vistaRinnovo, setVistaRinnovo] = useState(false)
   const [proposta, setProposta] = useState<PropostaRinnovo | null>(null)
@@ -155,6 +168,11 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
   const [cambioScelto, setCambioScelto] = useState('')
   const [cambioInCorso, setCambioInCorso] = useState(false)
   const [cambioErrore, setCambioErrore] = useState<string | null>(null)
+  const [specAperto, setSpecAperto] = useState(false)
+  const [specOpzioni, setSpecOpzioni] = useState<Array<{ chiave: string; etichetta: string; deltas: Array<[string, number]> }> | null>(null)
+  const [specScelta, setSpecScelta] = useState('')
+  const [specInCorso, setSpecInCorso] = useState(false)
+  const [specErrore, setSpecErrore] = useState<string | null>(null)
 
   // Notifica di successo: sparisce da sola dopo un secondo. Il cleanup annulla
   // il timer se nel frattempo arriva un altro esito o si chiude la scheda,
@@ -236,6 +254,44 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
       setCambioErrore(errore instanceof Error ? errore.message : 'Annullamento non riuscito.')
     }
     setCambioInCorso(false)
+  }
+
+  async function apriSpecializzazione() {
+    if (!specializzazione) return
+    setSpecAperto(true)
+    setSpecErrore(null)
+    try {
+      const opzioni = await specializzazione.onCaricaOpzioni()
+      setSpecOpzioni(opzioni)
+      setSpecScelta(opzioni[0]?.chiave ?? '')
+    } catch (errore) {
+      setSpecErrore(errore instanceof Error ? errore.message : 'Specializzazioni non disponibili.')
+    }
+  }
+
+  async function avviaSpecializzazione() {
+    if (!specializzazione || !specScelta) return
+    setSpecInCorso(true)
+    setSpecErrore(null)
+    try {
+      await specializzazione.onAvvia(specScelta)
+      setSpecAperto(false)
+    } catch (errore) {
+      setSpecErrore(errore instanceof Error ? errore.message : 'Allenamento non riuscito.')
+    }
+    setSpecInCorso(false)
+  }
+
+  async function annullaSpecializzazione() {
+    if (!specializzazione) return
+    setSpecInCorso(true)
+    setSpecErrore(null)
+    try {
+      await specializzazione.onAnnulla()
+    } catch (errore) {
+      setSpecErrore(errore instanceof Error ? errore.message : 'Annullamento non riuscito.')
+    }
+    setSpecInCorso(false)
   }
 
   async function inviaOfferta() {
@@ -442,7 +498,7 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
         </div>
       </div>
 
-      {(azionePericolosa || rinnovo || listaMercato || cambioRuolo) && <div className="player-modal__danger">
+      {(azionePericolosa || rinnovo || listaMercato || cambioRuolo || specializzazione) && <div className="player-modal__danger">
         {!confermaAperta
           ? <div className="player-modal__azioni">
               {azionePericolosa && <button className="button button--danger-ghost" type="button" onClick={() => setConfermaAperta(true)}>{azionePericolosa.etichetta}</button>}
@@ -453,6 +509,7 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
                 {listaInCorso ? 'Attendi…' : inLista ? 'Rimuovi dal mercato' : 'Metti sul mercato'}
               </button>}
               {cambioRuolo && !cambioRuolo.inCorso && !cambioAperto && <button className="button button--secondary" type="button" onClick={apriCambioRuolo}>Cambia ruolo</button>}
+              {specializzazione && !specializzazione.inCorso && !specAperto && <button className="button button--secondary" type="button" onClick={apriSpecializzazione}>Allena specializzazione</button>}
               {listaEsito && <p className="player-modal__lista-esito" role="status">{listaEsito}</p>}
               {listaErrore && <p className="notice notice--error player-modal__lista-esito" role="alert">{listaErrore}</p>}
             </div>
@@ -494,6 +551,44 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
                     {cambioInCorso ? 'Avvio…' : 'Avvia riqualificazione'}
                   </button>
                   <button className="button button--secondary" type="button" disabled={cambioInCorso} onClick={() => setCambioAperto(false)}>Annulla</button>
+                </div>
+              </>}
+        </div>}
+
+        {specializzazione?.inCorso && <div className="player-modal__cambio-ruolo">
+          <p>
+            Allenamento in corso: {specializzazione.inCorso.specializzazionePrecedente ? <>da <b>{specializzazione.inCorso.specializzazionePrecedente}</b> a</> : 'verso'} <b>{specializzazione.inCorso.specializzazioneTarget}</b>.
+            {' '}{specializzazione.prossimaGiornata != null
+              ? ` Pronto tra ${Math.max(0, specializzazione.inCorso.completaGiornata - specializzazione.prossimaGiornata)} giornate.`
+              : ` Completa alla giornata ${specializzazione.inCorso.completaGiornata}.`}
+          </p>
+          {specErrore && <p className="notice notice--error">{specErrore}</p>}
+          <button className="button button--danger-ghost" type="button" disabled={specInCorso} onClick={annullaSpecializzazione}>
+            {specInCorso ? 'Attendi…' : 'Annulla allenamento'}
+          </button>
+        </div>}
+
+        {specializzazione && !specializzazione.inCorso && specAperto && <div className="player-modal__cambio-ruolo">
+          {specializzazione.attiva && <p className="field-help">Specializzazione attuale: <b>{specializzazione.attiva}</b>. Riallenarsi la sostituisce.</p>}
+          {specErrore && <p className="notice notice--error">{specErrore}</p>}
+          {specOpzioni === null ? <p className="season-empty">Carico le specializzazioni…</p>
+            : specOpzioni.length === 0 ? <p className="season-empty">Il portiere non ha specializzazioni: il motore riassume le sue qualità in un unico valore.</p>
+            : <>
+                <label>
+                  <span>Specializzazione</span>
+                  <select value={specScelta} onChange={(evento) => setSpecScelta(evento.target.value)}>
+                    {specOpzioni.map((opzione) => <option value={opzione.chiave} key={opzione.chiave}>{opzione.etichetta}</option>)}
+                  </select>
+                </label>
+                {specOpzioni.find((opzione) => opzione.chiave === specScelta) && <p className="field-help">
+                  Migliora {specOpzioni.find((opzione) => opzione.chiave === specScelta)!.deltas
+                    .map(([chiave, valore]) => `${etichettaAttributo(chiave)} +${valore}`).join(', ')}.
+                </p>}
+                <div>
+                  <button className="button button--primary" type="button" disabled={specInCorso} onClick={avviaSpecializzazione}>
+                    {specInCorso ? 'Avvio…' : 'Avvia allenamento'}
+                  </button>
+                  <button className="button button--secondary" type="button" disabled={specInCorso} onClick={() => setSpecAperto(false)}>Annulla</button>
                 </div>
               </>}
         </div>}

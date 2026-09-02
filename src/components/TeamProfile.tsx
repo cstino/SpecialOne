@@ -38,6 +38,7 @@ type RosterPlayer = {
   attributi: Record<string, number | null>
   foto_url: string | null
   ritiroAnnunciato: boolean
+  specializzazioneAttiva: string | null
   morale: number
   contrattoScadenza: number
   rinnovoStagione: number | null
@@ -64,6 +65,15 @@ type CambioRuoloRiga = {
   player_instance_id: number
   ruolo_precedente: string
   ruolo_target: string
+  avviato_giornata: number
+  completa_giornata: number
+}
+
+type SpecializzazioneRiga = {
+  id: number
+  player_instance_id: number
+  specializzazione_precedente: string | null
+  specializzazione_target: string
   avviato_giornata: number
   completa_giornata: number
 }
@@ -140,6 +150,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [vivaioSlotMassimi, setVivaioSlotMassimi] = useState(1)
   const [vivaioAzioneInCorso, setVivaioAzioneInCorso] = useState<number | null>(null)
   const [cambiRuolo, setCambiRuolo] = useState<Map<number, CambioRuoloRiga>>(new Map())
+  const [specializzazioni, setSpecializzazioni] = useState<Map<number, SpecializzazioneRiga>>(new Map())
   const team = teamOverride?.id === teamId ? teamOverride : seasonData.teamById.get(teamId)
   const ownTeam = teamId === membership.id
   const fase = useFaseSquadra(league.id, teamId, seasonData.season?.id)
@@ -201,12 +212,14 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const caricaRoster = useCallback(async () => {
       setRosterLoading(true)
       setRosterError(null)
-      const [instancesResult, statsResult, cambiRuoloResult] = await Promise.all([
-        supabase.from('player_instances').select('id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, morale, contratto_scadenza, rinnovo_stagione, rinnovo_tentativi, sul_mercato, posizioni_override').eq('league_id', league.id).eq('team_id', teamId),
+      const [instancesResult, statsResult, cambiRuoloResult, specializzazioniResult] = await Promise.all([
+        supabase.from('player_instances').select('id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, morale, contratto_scadenza, rinnovo_stagione, rinnovo_tentativi, sul_mercato, posizioni_override, attributi_override, specializzazione_attiva').eq('league_id', league.id).eq('team_id', teamId),
         supabase.from('match_stats').select('match_id, player_instance_id, minuti, gol, assist, tiri, tiri_porta, passaggi_tentati, passaggi_riusciti, contrasti_vinti, dribbling').eq('league_id', league.id).eq('team_id', teamId),
         supabase.from('cambi_ruolo').select('id, player_instance_id, ruolo_precedente, ruolo_target, avviato_giornata, completa_giornata').eq('league_id', league.id).eq('team_id', teamId).is('completato_il', null),
+        supabase.from('specializzazioni_giocatore').select('id, player_instance_id, specializzazione_precedente, specializzazione_target, avviato_giornata, completa_giornata').eq('league_id', league.id).eq('team_id', teamId).is('completato_il', null),
       ])
       setCambiRuolo(new Map(((cambiRuoloResult.data ?? []) as CambioRuoloRiga[]).map((riga) => [riga.player_instance_id, riga])))
+      setSpecializzazioni(new Map(((specializzazioniResult.data ?? []) as SpecializzazioneRiga[]).map((riga) => [riga.player_instance_id, riga])))
       const firstError = instancesResult.error ?? statsResult.error
       if (firstError) { setRosterError(firstError.message); setRosterLoading(false); return }
       const instances = instancesResult.data ?? []
@@ -230,8 +243,12 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           nazionalita: info?.nazionalita ?? null, posizioni: instance.posizioni_override ?? info?.posizioni ?? [],
           overall: instance.overall_corrente, eta: instance.eta_corrente, ingaggio: instance.ingaggio,
           condizione: instance.condizione, infortunatoFinoA: instance.infortunato_fino_a, squalificatoFinoA: instance.squalificato_fino_a, piede: info?.piede ?? null, altezza: info?.altezza ?? null,
-          attributi: (info?.attributi ?? {}) as Record<string, number | null>, foto_url: info?.foto_url ?? null,
+          // attributi_override (Gestione risorse, specializzazione TRAINING) sostituisce
+          // solo le chiavi presenti: vedi private.completa_specializzazioni().
+          attributi: { ...(info?.attributi ?? {}), ...(instance.attributi_override ?? {}) } as Record<string, number | null>,
+          foto_url: info?.foto_url ?? null,
           ritiroAnnunciato: instance.ritiro_annunciato,
+          specializzazioneAttiva: instance.specializzazione_attiva,
           morale: instance.morale,
           contrattoScadenza: instance.contratto_scadenza,
           rinnovoStagione: instance.rinnovo_stagione,
@@ -352,6 +369,29 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     await caricaRoster()
   }
 
+  async function caricaOpzioniSpecializzazione(instanceId: number) {
+    const { data, error } = await supabase.rpc('specializzazioni_disponibili', { p_instance_id: instanceId })
+    if (error) throw new Error(error.message)
+    const catalogo = (data ?? {}) as Record<string, { etichetta: string; deltas: Record<string, number> }>
+    return Object.entries(catalogo).map(([chiave, valore]) => ({
+      chiave, etichetta: valore.etichetta, deltas: Object.entries(valore.deltas),
+    }))
+  }
+
+  async function avviaSpecializzazione(instanceId: number, specializzazione: string) {
+    const { error } = await supabase.rpc('avvia_specializzazione', { p_instance_id: instanceId, p_specializzazione: specializzazione })
+    if (error) throw new Error(error.message)
+    await caricaRoster()
+  }
+
+  async function annullaSpecializzazione(instanceId: number) {
+    const allenamento = specializzazioni.get(instanceId)
+    if (!allenamento) return
+    const { error } = await supabase.rpc('annulla_specializzazione', { p_id: allenamento.id })
+    if (error) throw new Error(error.message)
+    await caricaRoster()
+  }
+
   const standing = seasonData.standings.find((item) => item.team_id === teamId)
   const recentFixtures = useMemo(() => [...seasonData.fixtures].reverse().filter((fixture) => fixture.stato === 'simulata' && (fixture.home_team_id === teamId || fixture.away_team_id === teamId)).slice(0, 5), [seasonData.fixtures, teamId])
 
@@ -417,6 +457,26 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     void firmaFoto()
     return () => { active = false }
   }, [schedaAperta])
+
+  // Le righe di specializzazioni_giocatore/player_instances tengono solo la
+  // CHIAVE (es. "box_to_box"): l'etichetta leggibile ("Box-to-box") arriva
+  // dal catalogo server, la teniamo qui solo per non rifare la scelta.
+  const [specEtichette, setSpecEtichette] = useState<Map<string, string>>(new Map())
+  useEffect(() => {
+    let active = true
+    async function caricaEtichette() {
+      if (!schedaAperta) return
+      try {
+        const opzioni = await caricaOpzioniSpecializzazione(schedaAperta.id)
+        if (active) setSpecEtichette(new Map(opzioni.map((o) => [o.chiave, o.etichetta])))
+      } catch {
+        // silenzioso: sono solo etichette per il riepilogo, il pannello di
+        // scelta le ricarica comunque quando si apre.
+      }
+    }
+    void caricaEtichette()
+    return () => { active = false }
+  }, [schedaAperta?.id])
 
   async function saveProfile(event: FormEvent) {
     event.preventDefault()
@@ -702,6 +762,26 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           onCaricaTarget: () => caricaTargetCambioRuolo(schedaAperta.id),
           onAvvia: (ruoloTarget) => avviaCambioRuolo(schedaAperta.id, ruoloTarget),
           onAnnulla: () => annullaCambioRuolo(schedaAperta.id),
+        } : undefined}
+        specializzazione={ownTeam && league.stato === 'stagione' && !schedaAperta.ritiroAnnunciato ? {
+          attiva: schedaAperta.specializzazioneAttiva
+            ? specEtichette.get(schedaAperta.specializzazioneAttiva) ?? schedaAperta.specializzazioneAttiva
+            : null,
+          inCorso: (() => {
+            const allenamento = specializzazioni.get(schedaAperta.id)
+            if (!allenamento) return null
+            return {
+              specializzazionePrecedente: allenamento.specializzazione_precedente
+                ? specEtichette.get(allenamento.specializzazione_precedente) ?? allenamento.specializzazione_precedente
+                : null,
+              specializzazioneTarget: specEtichette.get(allenamento.specializzazione_target) ?? allenamento.specializzazione_target,
+              completaGiornata: allenamento.completa_giornata,
+            }
+          })(),
+          prossimaGiornata,
+          onCaricaOpzioni: () => caricaOpzioniSpecializzazione(schedaAperta.id),
+          onAvvia: (specializzazione) => avviaSpecializzazione(schedaAperta.id, specializzazione),
+          onAnnulla: () => annullaSpecializzazione(schedaAperta.id),
         } : undefined}
         onClose={() => setSchedaAperta(null)}
       />}
