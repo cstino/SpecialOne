@@ -943,7 +943,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .energia--media { color: #241800; background: #ffc24b; }
 .energia--scarica { color: #fff; background: #e13e52; }
 .energia--infortunato { color: #fff; background: #8b1220; font-size: .62rem; }
-.energia--squalificato { color: #241800; background: #f2c94c; font-size: .62rem; }
+.energia--squalificato { color: #fff; background: #d6394a; font-size: .62rem; }
 
 .position-warning { position: absolute; z-index: 6; top: -5px; right: -5px; width: 19px; height: 19px; display: grid; place-items: center; border: 2px solid #111217; border-radius: 50%; color: #17130a; font-size: .72rem; font-style: normal; font-weight: 1000; line-height: 1; box-shadow: 0 3px 9px rgba(0,0,0,.55); }
 .position-warning--adapted { background: #f3c84b; }.position-warning--out { color: #fff; background: #e13e52; }
@@ -1022,8 +1022,8 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .player-modal__fitness-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #f0c44d, #39d381); }
 .player-modal__fitness.is-injured { border-color: #753041; background: linear-gradient(135deg, rgba(151,29,55,.24), rgba(24,20,31,.94)); }
 .player-modal__fitness.is-injured strong { color: #ff7188; }
-.player-modal__fitness.is-suspended { border-color: #8a6d1f; background: linear-gradient(135deg, rgba(154,120,20,.24), rgba(24,20,31,.94)); }
-.player-modal__fitness.is-suspended strong { color: #f2c94c; }
+.player-modal__fitness.is-suspended { border-color: #86384d; background: linear-gradient(135deg, rgba(214,57,74,.24), rgba(24,20,31,.94)); }
+.player-modal__fitness.is-suspended strong { color: #ff7188; }
 /* Morale: stessa sagoma della card forma fisica (le si legge in sequenza),
    ma colore che cambia con lo stato d'animo invece che fisso. */
 .player-modal__morale { display: grid; gap: 9px; margin: 0 0 18px; padding: 14px 16px; border: 1px solid #4a3568; border-radius: 12px; background: linear-gradient(135deg, rgba(93,45,138,.2), rgba(24,20,31,.92)); }
