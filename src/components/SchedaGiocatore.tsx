@@ -239,9 +239,15 @@ function progressoAllenamento(a: { avviatoGiornata: number; completaGiornata: nu
 // Etichetta "56 → 63" alla fine della barra impilata (base + guadagno):
 // x/width arrivano gia' sommati dal segmento "guadagno", che e' l'ultimo
 // dello stack, quindi x+width e' proprio il bordo destro della barra intera.
+// Senza guadagno mostra solo il valore (nessuna freccia): la stragrande
+// maggioranza delle righe non e' toccata da questa specializzazione, e
+// "56 → 56" ripetuto per ~27 stat sarebbe solo rumore.
 function EtichettaConfronto(props: unknown) {
-  const { x, y, width, height, payload } = props as { x: number; y: number; width: number; height: number; payload?: { prima: number; dopo: number } }
+  const { x, y, width, height, payload } = props as { x: number; y: number; width: number; height: number; payload?: { prima: number; dopo: number; guadagno: number } }
   if (!payload) return null
+  if (payload.guadagno === 0) {
+    return <text x={x + width + 10} y={y + height / 2} dy={5} fontSize={13} fontWeight={800} fill="#8e8498">{payload.prima}</text>
+  }
   return <text x={x + width + 10} y={y + height / 2} dy={5} fontSize={13} fontWeight={800}>
     <tspan fill="#8e8498">{payload.prima}</tspan>
     <tspan fill="#675c73"> → </tspan>
@@ -249,23 +255,35 @@ function EtichettaConfronto(props: unknown) {
   </text>
 }
 
-function ConfrontoAttributi({ deltas, attributi }: { deltas: Array<[string, number]>; attributi: Record<string, number | null> }) {
-  const dati = deltas.map(([chiave, delta]) => {
-    const prima = Math.max(0, Math.min(99, Math.round(attributi[chiave] ?? 0)))
-    const guadagno = Math.max(0, Math.min(99 - prima, delta))
-    return { chiave, etichetta: etichettaAttributo(chiave), prima, guadagno, dopo: prima + guadagno }
-  })
+// Non solo le 2-3 stat che la specializzazione tocca: tutte le abilita'
+// del giocatore, raggruppate come nella scheda — quelle toccate spiccano
+// col guadagno evidenziato, le altre restano li' per contesto (segnalato
+// dall'utente: vedere solo tre barre isolate non bastava a farsi un'idea).
+function ConfrontoAttributi({ deltas, attributi, soloGk }: { deltas: Array<[string, number]>; attributi: Record<string, number | null>; soloGk: boolean }) {
+  const mappaDeltas = new Map(deltas)
   return <div className="player-training-confronto">
-    <ResponsiveContainer width="100%" height={dati.length * 40 + 8}>
-      <BarChart data={dati} layout="vertical" margin={{ top: 4, right: 66, left: 4, bottom: 4 }} barCategoryGap={14}>
-        <XAxis type="number" domain={[0, 99]} hide />
-        <YAxis type="category" dataKey="etichetta" width={104} stroke="#524a5f" tick={{ fill: '#c6bfce', fontSize: 12 }} axisLine={false} tickLine={false} />
-        <Bar dataKey="prima" stackId="s" fill="#3a3348" radius={[5, 0, 0, 5]} isAnimationActive={false} />
-        <Bar dataKey="guadagno" stackId="s" fill="#a354e8" radius={[0, 5, 5, 0]} isAnimationActive={false}>
-          <LabelList dataKey="guadagno" content={EtichettaConfronto} />
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+    {GRUPPI_ATTRIBUTI.filter((gruppo) => !gruppo.soloGk || soloGk).map((gruppo) => {
+      const voci = gruppo.voci.filter((voce) => typeof attributi[voce.chiave] === 'number')
+      if (voci.length === 0) return null
+      const dati = voci.map((voce) => {
+        const prima = Math.max(0, Math.min(99, Math.round(attributi[voce.chiave] ?? 0)))
+        const guadagno = Math.max(0, Math.min(99 - prima, mappaDeltas.get(voce.chiave) ?? 0))
+        return { chiave: voce.chiave, etichetta: voce.etichetta, prima, guadagno, dopo: prima + guadagno }
+      })
+      return <div className="player-training-confronto__gruppo" key={gruppo.titolo}>
+        <h5>{gruppo.titolo}</h5>
+        <ResponsiveContainer width="100%" height={dati.length * 34 + 4}>
+          <BarChart data={dati} layout="vertical" margin={{ top: 2, right: 60, left: 2, bottom: 2 }} barCategoryGap={8}>
+            <XAxis type="number" domain={[0, 99]} hide />
+            <YAxis type="category" dataKey="etichetta" width={104} stroke="#524a5f" tick={{ fill: '#c6bfce', fontSize: 11 }} axisLine={false} tickLine={false} />
+            <Bar dataKey="prima" stackId="s" fill="#3a3348" radius={[5, 0, 0, 5]} isAnimationActive={false} />
+            <Bar dataKey="guadagno" stackId="s" fill="#a354e8" radius={[0, 5, 5, 0]} isAnimationActive={false}>
+              <LabelList dataKey="guadagno" content={EtichettaConfronto} />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    })}
   </div>
 }
 
@@ -827,7 +845,7 @@ export function SchedaGiocatore({ giocatore, fotoUrl, stagione, azionePericolosa
             bloccatoDa={cambioRuolo?.inCorso ? 'un cambio ruolo' : null}
             confrontoScelta={(() => {
               const opzione = specOpzioni?.find((o) => o.chiave === specScelta)
-              return opzione ? <ConfrontoAttributi deltas={opzione.deltas} attributi={giocatore.attributi} /> : null
+              return opzione ? <ConfrontoAttributi deltas={opzione.deltas} attributi={giocatore.attributi} soloGk={rep === 'GK'} /> : null
             })()}
           />}
         </div>}

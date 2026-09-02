@@ -1106,7 +1106,8 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 /* Confronto prima/dopo delle stat toccate dalla specializzazione
    selezionata: pista piena fino al valore attuale, coda evidenziata per
    il guadagno (stile scheda FIFA/Football Manager). */
-.player-training-confronto { padding: 10px 4px 4px; border: 1px solid #332c3e; border-radius: 12px; background: #1c1826; animation: player-modal-fade .15s ease-out; }
+.player-training-confronto { display: grid; gap: 16px; max-height: 340px; overflow-y: auto; padding: 12px 10px; border: 1px solid #332c3e; border-radius: 12px; background: #1c1826; animation: player-modal-fade .15s ease-out; }
+.player-training-confronto__gruppo h5 { margin: 0 0 4px; color: #9b90a7; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
 /* "Metti sul mercato" sta sotto agli altri due e ne occupa l'intera larghezza:
    e' un'azione di natura diversa (annuncio pubblico, reversibile), non una
    variante di svincola/rinnovo. */
