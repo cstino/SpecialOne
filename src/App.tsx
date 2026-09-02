@@ -33,6 +33,7 @@ import type { GameView } from './components/GameNav'
 import { Lobby } from './components/Lobby'
 import { LoadingLogo } from './components/LoadingLogo'
 import { MenuIniziale } from './components/MenuIniziale'
+import { NomeAllenatoreObbligatorio, useNomeAllenatoreObbligatorio } from './components/NomeAllenatoreObbligatorio'
 import { NovitaBenvenuto, useNovitaBenvenuto } from './components/NovitaBenvenuto'
 import { Onboarding } from './components/Onboarding'
 import { ContestoHome, ContestoNotifiche } from './lib/navigazione'
@@ -75,6 +76,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const centroNotifiche = useNotifiche(session?.user.id)
   const novita = useNovitaBenvenuto(session?.user.id)
+  const nomeAllenatore = useNomeAllenatoreObbligatorio(session?.user.id)
 
   const apriMenu = useCallback(() => setNelMenu(true), [])
 
@@ -289,6 +291,13 @@ export default function App() {
   if (!session) return <AuthScreen />
   if (dataLoading && memberships.length === 0) return <main className="loading-screen"><LoadingLogo /><p>Preparo la distinta…</p></main>
   if (error) return <main className="fatal-state"><h1>Qualcosa non torna</h1><p>{error}</p><button className="button button--primary" type="button" onClick={() => loadMemberships()}>Riprova</button></main>
+
+  // Prima di tutto il resto, onboarding compreso: e' l'identita' di base
+  // dell'utente in ogni lega, non una preferenza legata a una squadra.
+  if (nomeAllenatore.pronto && nomeAllenatore.manca) {
+    return <NomeAllenatoreObbligatorio onImpostato={nomeAllenatore.impostato} />
+  }
+
   if (showOnboarding || memberships.length === 0) {
     return <Onboarding
       user={session.user}
