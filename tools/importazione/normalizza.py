@@ -45,6 +45,18 @@ COLONNE_OBBLIGATORIE = {
     "goalkeeping_handling", "goalkeeping_kicking", "goalkeeping_positioning",
     "goalkeeping_reflexes", "pace", "shooting", "passing", "dribbling",
     "defending", "physic", "player_face_url",
+    # Sotto-attributi di dettaglio (design, 2 settembre 2026): il motore non
+    # ne legge nessuno oggi (le 5 chiave sopra restano le sole vere), ma
+    # arricchiscono la scheda giocatore e sono la base per un futuro
+    # ricalcolo "vero" dell'overall dalle stat, invece di uno fisso importato.
+    "attacking_crossing", "attacking_heading_accuracy", "attacking_volleys",
+    "skill_curve", "skill_fk_accuracy", "skill_long_passing", "skill_ball_control",
+    "movement_acceleration", "movement_sprint_speed", "movement_agility",
+    "movement_reactions", "movement_balance",
+    "power_shot_power", "power_jumping", "power_strength", "power_long_shots",
+    "mentality_aggression", "mentality_interceptions", "mentality_positioning",
+    "mentality_vision", "mentality_penalties", "mentality_composure",
+    "defending_marking_awareness", "defending_sliding_tackle", "goalkeeping_speed",
 }
 
 CAMPI_ATTRIBUTI = {
@@ -54,6 +66,9 @@ CAMPI_ATTRIBUTI = {
     "dribbling_generale": "dribbling",
     "defending": "defending",
     "physic": "physic",
+    # Le 5 chiave sotto (piu' "gk", calcolato dopo) sono le uniche che il
+    # motore legge davvero (supabase/functions/simula-giornata/index.ts):
+    # il loro NOME non va toccato, romperebbe l'adattatore.
     "stamina": "power_stamina",
     "finishing": "attacking_finishing",
     "short_passing": "attacking_short_passing",
@@ -64,6 +79,34 @@ CAMPI_ATTRIBUTI = {
     "gk_kicking": "goalkeeping_kicking",
     "gk_positioning": "goalkeeping_positioning",
     "gk_reflexes": "goalkeeping_reflexes",
+    # Sotto-attributi di dettaglio, solo per la scheda giocatore e futuri usi
+    # (nessuno letto dal motore oggi): stessi nomi delle colonne sorgente,
+    # per restare inequivocabili senza bisogno di una legenda.
+    "attacking_crossing": "attacking_crossing",
+    "attacking_heading_accuracy": "attacking_heading_accuracy",
+    "attacking_volleys": "attacking_volleys",
+    "skill_curve": "skill_curve",
+    "skill_fk_accuracy": "skill_fk_accuracy",
+    "skill_long_passing": "skill_long_passing",
+    "skill_ball_control": "skill_ball_control",
+    "movement_acceleration": "movement_acceleration",
+    "movement_sprint_speed": "movement_sprint_speed",
+    "movement_agility": "movement_agility",
+    "movement_reactions": "movement_reactions",
+    "movement_balance": "movement_balance",
+    "power_shot_power": "power_shot_power",
+    "power_jumping": "power_jumping",
+    "power_strength": "power_strength",
+    "power_long_shots": "power_long_shots",
+    "mentality_aggression": "mentality_aggression",
+    "mentality_interceptions": "mentality_interceptions",
+    "mentality_positioning": "mentality_positioning",
+    "mentality_vision": "mentality_vision",
+    "mentality_penalties": "mentality_penalties",
+    "mentality_composure": "mentality_composure",
+    "defending_marking_awareness": "defending_marking_awareness",
+    "defending_sliding_tackle": "defending_sliding_tackle",
+    "goalkeeping_speed": "goalkeeping_speed",
 }
 
 
