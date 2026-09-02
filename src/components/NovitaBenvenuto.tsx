@@ -35,100 +35,121 @@ export function useNovitaBenvenuto(userId: string | undefined) {
   return { pronto, daMostrare, segnaVista }
 }
 
-// Icone disegnate nello stesso stile di GameNav (stroke, viewBox 24x24):
-// tenute qui, non condivise, perche' questo componente vive per una sola
-// ondata di novita' e sparisce con la prossima.
-const ICONE: Record<string, ReactNode> = {
-  pallone: <><circle cx="12" cy="12" r="9" /><path d="m12 7 4.3 3.1-1.6 5h-5.4l-1.6-5z" /></>,
-  campana: <><path d="M18 9a6 6 0 1 0-12 0c0 4.5-1.5 5.6-2 6.5h16c-.5-.9-2-2-2-6.5" /><path d="M10 19a2.2 2.2 0 0 0 4 0" /><circle cx="18" cy="6" r="3.4" fill="currentColor" stroke="none" /></>,
-  domanda: <><circle cx="12" cy="12" r="9" /><path d="M9.3 9.3a2.7 2.7 0 1 1 3.6 2.5c-.8.4-1.4 1-1.4 2v.4" /><path d="M12 16.8v.1" /></>,
-  risorse: <><path d="M12 3.5 5 9.5 12 20.5 19 9.5z" /><path d="M5 9.5h14M9 9.5l3-6 3 6" /></>,
-  vivaio: <><path d="M12 3.5 5 6.5v5c0 4.5 3 7.2 7 9 4-1.8 7-4.5 7-9v-5z" /><path d="m9.2 12 1.9 1.9 3.7-3.9" /></>,
-  ruolo: <><path d="M7 7h7.5A3.5 3.5 0 0 1 18 10.5V12" /><path d="m15 8-1-3 3 1" /><path d="M17 17H9.5A3.5 3.5 0 0 1 6 13.5V12" /><path d="m9 16 1 3-3-1" /></>,
-  bandiera: <><path d="M6 3v18" /><path d="M6 4h12l-3 4 3 4H6" /></>,
+function FrecciaDestra() {
+  return <svg className="novita-freccia" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 12h15M13 6l6 6-6 6" />
+  </svg>
 }
 
-function Icona({ nome }: { nome: string }) {
+// Infografica 1: i tre rami di Gestione risorse come colonne a 10 tacche,
+// con un esempio di ripartizione a mostrare che i punti non bastano per
+// riempirli tutti — e' il punto centrale della meccanica, va visto subito.
+function GraficoRami() {
+  const rami: { nome: string; livello: number; colore: string }[] = [
+    { nome: 'Vivaio', livello: 7, colore: '#9b4cff' },
+    { nome: 'Training', livello: 4, colore: '#4cc9f0' },
+    { nome: 'Reparto medico', livello: 2, colore: '#ff5972' },
+  ]
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-      {ICONE[nome]}
-    </svg>
+    <div className="novita-barre">
+      {rami.map((r) => (
+        <div className="novita-barra" key={r.nome}>
+          <div className="novita-barra__pista">
+            {Array.from({ length: 10 }, (_, i) => (
+              <span key={i} className={i < r.livello ? 'is-pieno' : ''} style={i < r.livello ? { background: r.colore } : undefined} />
+            ))}
+          </div>
+          <b style={{ color: r.colore }}>Lv. {r.livello}</b>
+          <small>{r.nome}</small>
+        </div>
+      ))}
+    </div>
   )
 }
 
-type Slide = { icona: string; occhiello: string; titolo: string; corpo: ReactNode }
+// Infografica 2: la fascia di potenziale che si stringe salendo di livello
+// nel ramo Vivaio (numeri reali della formula: "71-86" a livello 0, valore
+// esatto a livello 10), piu' il prima/dopo del volto sulla carta.
+function GraficoPotenziale() {
+  return (
+    <div className="novita-fasce">
+      <div className="novita-fascia-riga">
+        <small>Vivaio Lv. 0</small>
+        <div className="novita-fascia-pista"><span className="novita-fascia-banda" style={{ left: '18%', width: '64%' }} /></div>
+        <b>71–86</b>
+      </div>
+      <div className="novita-fascia-riga">
+        <small>Vivaio Lv. 10</small>
+        <div className="novita-fascia-pista"><span className="novita-fascia-banda is-stretta" style={{ left: '46%', width: '8%' }} /></div>
+        <b>78</b>
+      </div>
+    </div>
+  )
+}
+
+// Infografica 3: quanto si accorcia una riqualificazione con il Training
+// (numeri reali della formula: base 14 giornate per uno specialista puro,
+// fino a -40% con Training al massimo).
+function GraficoCambioRuolo() {
+  return (
+    <div className="novita-cambio-ruolo">
+      <div className="novita-cambio-ruolo__pills">
+        <span className="role-pill role-pill--att">ATT</span>
+        <FrecciaDestra />
+        <span className="role-pill role-pill--mid">CC</span>
+      </div>
+      <div className="novita-tempi">
+        <div className="novita-tempo-riga">
+          <small>Training Lv. 0</small>
+          <div className="novita-tempo-pista"><span style={{ width: '100%' }} /></div>
+          <b>14 giornate</b>
+        </div>
+        <div className="novita-tempo-riga">
+          <small>Training Lv. 10</small>
+          <div className="novita-tempo-pista"><span style={{ width: '57%' }} /></div>
+          <b>8 giornate</b>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+type Slide = { foto: string; fotoMarchio?: boolean; occhiello: string; titolo: string; corpo: ReactNode; grafico?: ReactNode }
 
 const SLIDE: Slide[] = [
   {
-    icona: 'pallone',
-    occhiello: 'Novità',
-    titolo: 'Un bel po’ di cose nuove.',
-    corpo: <p>Nelle ultime giornate sono arrivati parecchi aggiornamenti — dalla cronaca live a una nuova
-      area della gestione squadra. Ecco un giro veloce di cosa è cambiato.</p>,
+    foto: '/risorse/vivaio.jpg',
+    occhiello: 'Novità · Gestione risorse',
+    titolo: 'Punti abilità da investire.',
+    corpo: <p>Ogni quarto di stagione la squadra riceve punti da distribuire su tre rami — <strong>Vivaio</strong>,
+      {' '}<strong>Training</strong> e <strong>Reparto medico</strong> — fino al livello 10 ciascuno. Non bastano
+      per riempirli tutti: bisogna scegliere una direzione.</p>,
+    grafico: <GraficoRami />,
   },
   {
-    icona: 'pallone',
-    occhiello: 'Cronaca live',
-    titolo: 'Il gol adesso si vive.',
-    corpo: <>
-      <p>Quando segna una squadra, la partita si ferma per un attimo: una card al centro mostra il
-        marcatore, il minuto e lo stemma, con tanto di boato del pubblico e sottofondo da stadio per tutta
-        la diretta.</p>
-      <p>Gli eventi minori (i tiri) non affollano più la cronaca, e i minuti restano sempre coerenti dal
-        primo all'ultimo — niente più eventi fuori posto.</p>
-    </>,
+    foto: '/risorse/vivaio.jpg',
+    occhiello: 'Novità · Vivaio e mercato UNDER',
+    titolo: 'Prospetti con un volto vero.',
+    corpo: <p>Ogni giorno arrivano quindicenni da mettere in cantera con aste dedicate, fuori dal conteggio
+      rosa. Il potenziale è una fascia che si stringe salendo di livello nel ramo Vivaio, e ora ogni
+      prospetto ha anche una foto.</p>,
+    grafico: <GraficoPotenziale />,
   },
   {
-    icona: 'campana',
-    occhiello: 'Notifiche',
-    titolo: 'Il menu ora ti avvisa.',
-    corpo: <p>Non solo la campanella degli Avvisi: da oggi il pallino rosso compare anche sulla singola voce
-      di menu interessata — Risorse quando hai punti da spendere, e così via. Un colpo d'occhio, non serve
-      più aprire tutto per scoprire cosa è successo.</p>,
+    foto: '/risorse/training.jpg',
+    occhiello: 'Novità · Cambio ruolo',
+    titolo: 'Riqualifica un giocatore.',
+    corpo: <p>Dalla scheda di un giocatore in rosa puoi avviare il passaggio a un ruolo compatibile: il
+      Training riduce i tempi fino al 40%, e chi conosce già più ruoli impara più in fretta.</p>,
+    grafico: <GraficoCambioRuolo />,
   },
   {
-    icona: 'domanda',
-    occhiello: 'Aiuto in pagina',
-    titolo: 'Ogni pagina si spiega da sola.',
-    corpo: <p>La prima volta che apri una pagina di gioco, un popup ti spiega in due righe come funziona
-      quella meccanica. Se la conosci già, spunta "non mostrare più" e non lo rivedrai — puoi sempre
-      ripassare tutto dalla sezione Aiuto.</p>,
-  },
-  {
-    icona: 'risorse',
-    occhiello: 'Novità di squadra',
-    titolo: 'Gestione risorse.',
-    corpo: <>
-      <p>Ogni quarto di stagione la squadra riceve punti abilità da investire su tre rami: <strong>Vivaio</strong>,
-        {' '}<strong>Training</strong> e <strong>Reparto medico</strong>. Ognuno arriva fino al livello 10, ma i
-        punti totali non bastano per riempirli tutti — bisogna scegliere una direzione.</p>
-      <p>Più Reparto medico significa recuperi più rapidi e meno infortuni. Più Training accelera la
-        crescita dei giovani e le riqualificazioni. Più Vivaio allarga la cantera e mostra il potenziale dei
-        prospetti con più precisione.</p>
-    </>,
-  },
-  {
-    icona: 'vivaio',
-    occhiello: 'Settore giovanile',
-    titolo: 'Vivaio e mercato UNDER.',
-    corpo: <p>Ogni giorno arrivano nuovi quindicenni da mettere in cantera tramite aste dedicate, fuori dal
-      conteggio rosa. Il potenziale si vede come una fascia che si stringe salendo di livello nel ramo
-      Vivaio — e ora ogni prospetto ha anche un volto.</p>,
-  },
-  {
-    icona: 'ruolo',
-    occhiello: 'Rosa',
-    titolo: 'Cambio ruolo.',
-    corpo: <p>Dalla scheda di un giocatore in rosa puoi avviare una riqualificazione verso un altro ruolo
-      compatibile: dopo un certo numero di giornate (più corto salendo di livello in Training) il giocatore
-      è pronto nel nuovo ruolo.</p>,
-  },
-  {
-    icona: 'bandiera',
+    foto: '/specialone-icon-512.png',
+    fotoMarchio: true,
     occhiello: 'Pronti via',
     titolo: 'Buon proseguimento.',
-    corpo: <p>Questo era il giro di novità. Trovi sempre tutti i dettagli nella sezione Aiuto, e i popup di
-      ogni pagina restano lì pronti a ripassare le regole quando serve.</p>,
+    corpo: <p>Questo era il giro di novità. Trovi sempre tutti i dettagli nella sezione Aiuto, o nei popup di
+      ogni pagina alla prima apertura.</p>,
   },
 ]
 
@@ -141,11 +162,14 @@ export function NovitaBenvenuto({ onChiudi }: { onChiudi: () => void }) {
     <div className="novita-sfondo" role="dialog" aria-modal="true" aria-label="Novità dell'app">
       <div className="novita-cassetta">
         <button className="novita-salta" type="button" onClick={onChiudi}>Salta</button>
+        <div className={`novita-foto ${slide.fotoMarchio ? 'is-marchio' : ''}`}>
+          <img src={slide.foto} alt="" />
+        </div>
         <div className="novita-corpo">
-          <div className="novita-icona"><Icona nome={slide.icona} /></div>
           <p className="kicker">{slide.occhiello}</p>
           <h2>{slide.titolo}</h2>
           <div className="novita-testo">{slide.corpo}</div>
+          {slide.grafico && <div className="novita-grafico">{slide.grafico}</div>}
         </div>
         <footer className="novita-piede">
           <div className="novita-puntini">
