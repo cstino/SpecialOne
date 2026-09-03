@@ -9,6 +9,13 @@ import type { GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { UnderlineTabs } from './ui/underline-tabs'
+import { FtsgGauge } from './FtsgGauge'
+
+// Mirror di engine/config.js CFG.FAM_PARTITE_PIENA: qui serve solo a
+// mostrare la stessa percentuale che il motore usa per il malus di
+// familiarita' (engine.js, familiarita()), non a ricalcolarla — nessuna
+// formula del motore viene duplicata, solo questa soglia.
+const FAM_PARTITE_PIENA = 15
 
 // Tetti fissi di rosa in campo (design.md §6): 11 titolari sempre, panchina
 // fino a 9. La tribuna non ha un tetto suo — e' semplicemente "il resto
@@ -212,6 +219,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [giornata, setGiornata] = useState(1)
+  const [esperienzaModulo, setEsperienzaModulo] = useState<Record<string, number>>({})
+  const [esperienzaStile, setEsperienzaStile] = useState<Record<string, number>>({})
 
   // La scheda giocatore gestisce da se' Escape e blocco dello scorrimento:
   // qui resta solo la mini-card delle azioni.
@@ -246,6 +255,16 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         return [player.id, data?.signedUrl] as const
       }))
       if (active) setImageUrls(Object.fromEntries(signed.filter((item): item is [number, string] => Boolean(item[1]))))
+      const [{ data: formationXp, error: formationXpError }, { data: stileXp, error: stileXpError }] = await Promise.all([
+        supabase.from('formation_xp').select('modulo, partite_giocate').eq('league_id', league.id).eq('team_id', membership.id),
+        supabase.from('stile_xp').select('stile, partite_giocate').eq('league_id', league.id).eq('team_id', membership.id),
+      ])
+      if (formationXpError) { setError(formationXpError.message); setLoading(false); return }
+      if (stileXpError) { setError(stileXpError.message); setLoading(false); return }
+      if (active) {
+        setEsperienzaModulo(Object.fromEntries((formationXp ?? []).map((riga) => [riga.modulo, riga.partite_giocate])))
+        setEsperienzaStile(Object.fromEntries((stileXp ?? []).map((riga) => [riga.stile, riga.partite_giocate])))
+      }
       const { data: nextFixture, error: fixtureError } = await supabase.from('fixtures').select('giornata')
         .eq('league_id', league.id).in('stato', ['programmata', 'in_corso']).order('giornata').limit(1).maybeSingle()
       if (fixtureError) { setError(fixtureError.message); setLoading(false); return }
@@ -363,6 +382,13 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const overallTitolari = titolariConSlot.length
     ? Math.round(titolariConSlot.reduce((somma, item) => somma + overallEfficacePosizione(item.player, item.slot), 0) / titolariConSlot.length)
     : null
+
+  // Indice FTSG: stessa combinazione (media modulo+stile) che il motore usa
+  // per il malus di familiarita' sul modulo/stile selezionati ORA, anche
+  // prima di salvare — cosi' si vede subito l'effetto di un cambio prima
+  // di confermarlo.
+  const ftsgModuloPct = Math.min(100, ((esperienzaModulo[modulo] ?? 0) / FAM_PARTITE_PIENA) * 100)
+  const ftsgStilePct = Math.min(100, ((esperienzaStile[stile] ?? 0) / FAM_PARTITE_PIENA) * 100)
 
   const locations: Record<PlayerZone, PlayerLocation[]> = {
     starter: titolari.map((id, index) => ({ zone: 'starter', index, id })),
@@ -571,9 +597,12 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         <p>Scegli uno dei moduli disponibili e assegna un giocatore a ogni slot: titolari, panchina e il
           resto in tribuna. Un giocatore fuori dal suo ruolo naturale gioca comunque, ma con un
           <strong> malus di rendimento</strong> — più marcato quanto più il ruolo è lontano dal suo.</p>
-        <p>Più usi lo stesso modulo, più la squadra ci prende confidenza e rende meglio in quello schema
-          (familiarità del modulo). Se non schieri entro le <strong>23:00</strong>, il sistema genera una
-          formazione automatica di riserva per non farti saltare la giornata.</p>
+        <p>Più usi lo stesso modulo <strong>e</strong> lo stesso stile di gioco, più la squadra ci prende
+          confidenza e rende meglio: è l'indice <strong>FTSG</strong> (familiarità tattiche e stile di
+          gioco), il cerchio accanto a OVR titolari. Ogni partita giocata vale +10% di familiarità con quel
+          modulo e quello stile; cambiarne anche solo uno per una giornata fa scendere l'indice. Se non
+          schieri entro le <strong>23:00</strong>, il sistema genera una formazione automatica di riserva
+          per non farti saltare la giornata.</p>
         <p>La percentuale sulla foto di ogni giocatore è la sua <strong>energia</strong>: più è bassa, meno
           rende in campo (il suo overall effettivo scende, fino a −18% sotto il 40%) e più rischia di
           infortunarsi. Recupera da sola fra una partita e l'altra, più in fretta se investi nel Reparto
@@ -596,6 +625,10 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
               <strong>{overallTitolari}</strong>
               <span>OVR titolari</span>
             </div>}
+            <div className="formation-ftsg" title={`Indice FTSG: familiarità tattiche e stile di gioco. Modulo ${Math.round(ftsgModuloPct)}% · Stile ${Math.round(ftsgStilePct)}%. Sale del 10% a partita giocata con lo stesso modulo/stile, riparte da zero se li cambi.`}>
+              <FtsgGauge moduloPct={ftsgModuloPct} stilePct={ftsgStilePct} />
+              <span>FTSG</span>
+            </div>
             <div className="formation-tattica">
               <div className="formation-tattica__voce formation-module-selector">
                 <button className="formation-tattica__trigger" type="button" aria-haspopup="listbox" aria-expanded={moduleMenuOpen} onClick={() => { setModuleMenuOpen((open) => !open); setStileMenuOpen(false) }}>

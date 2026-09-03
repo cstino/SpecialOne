@@ -113,10 +113,19 @@ export function counter(modA, modB) {
   return { attA: a.ATT, midA: a.MID, defA: a.DEF, scartoAttDif: a.ATT - b.DEF, scartoMid: a.MID - b.MID };
 }
 
-// malus in PUNTI di overall: -3.5 alla prima partita, 0 dopo 15
-export function familiarita(rosa, modulo) {
-  const n = rosa.esperienzaModulo[modulo] || 0;
-  return -CFG.FAM_MALUS_MAX * (1 - Math.min(1, n / CFG.FAM_PARTITE_PIENA));
+// malus in PUNTI di overall: -3.5 alla prima partita, 0 dopo 15.
+// Se e' passato anche lo stile, il malus e' calcolato sulla media tra
+// familiarita' col modulo e familiarita' con lo stile (stesso tetto -3.5,
+// non due malus separati che si sommano). Senza stile (validazione motore,
+// che non lo passa mai) resta identico alla formula originale, solo-modulo.
+export function familiarita(rosa, modulo, stile) {
+  const nModulo = rosa.esperienzaModulo[modulo] || 0;
+  const fModulo = Math.min(1, nModulo / CFG.FAM_PARTITE_PIENA);
+  if (!stile) return -CFG.FAM_MALUS_MAX * (1 - fModulo);
+  const nStile = (rosa.esperienzaStile && rosa.esperienzaStile[stile]) || 0;
+  const fStile = Math.min(1, nStile / CFG.FAM_PARTITE_PIENA);
+  const indice = (fModulo + fStile) / 2;
+  return -CFG.FAM_MALUS_MAX * (1 - indice);
 }
 
 // ---------- Stile di gioco ----------
@@ -297,8 +306,8 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   const lc = opt.lineupCasa || schiera(rosaCasa, modCasa);
   const lo = opt.lineupOspite || schiera(rosaOspite, modOspite);
 
-  const famC = familiarita(rosaCasa, modCasa);
-  const famO = familiarita(rosaOspite, modOspite);
+  const famC = familiarita(rosaCasa, modCasa, opt.stileCasa);
+  const famO = familiarita(rosaOspite, modOspite, opt.stileOspite);
   const stC = stileTattico(opt.stileCasa);
   const stO = stileTattico(opt.stileOspite);
   // Separato dal RNG dei gol: l'introduzione degli infortuni in partita non
@@ -543,6 +552,14 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
 
   rosaCasa.esperienzaModulo[modCasa] = (rosaCasa.esperienzaModulo[modCasa] || 0) + 1;
   rosaOspite.esperienzaModulo[modOspite] = (rosaOspite.esperienzaModulo[modOspite] || 0) + 1;
+  if (opt.stileCasa) {
+    if (!rosaCasa.esperienzaStile) rosaCasa.esperienzaStile = {};
+    rosaCasa.esperienzaStile[opt.stileCasa] = (rosaCasa.esperienzaStile[opt.stileCasa] || 0) + 1;
+  }
+  if (opt.stileOspite) {
+    if (!rosaOspite.esperienzaStile) rosaOspite.esperienzaStile = {};
+    rosaOspite.esperienzaStile[opt.stileOspite] = (rosaOspite.esperienzaStile[opt.stileOspite] || 0) + 1;
+  }
   for (const rosa of [rosaCasa, rosaOspite]) for (const g of rosa.giocatori) delete g._condizioneInizioPartita;
 
   return {

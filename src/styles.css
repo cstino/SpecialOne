@@ -832,7 +832,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    allineato a sinistra come il modulo. flex-wrap come rete di sicurezza
    sui telefoni piu' stretti, dove "4-2-3-1" al font enorme del modulo puo'
    non lasciare spazio al bottone sulla stessa riga. */
-.formation-toolbar { position: relative; display: grid; grid-template-columns: max-content minmax(0, 1fr); grid-template-areas: "overall save" "tattica tattica"; align-items: center; gap: 18px; margin-bottom: 22px; }
+.formation-toolbar { position: relative; display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content; grid-template-areas: "overall save ftsg" "tattica tattica tattica"; align-items: center; gap: 18px; margin-bottom: 22px; }
 
 .formation-save-row { grid-area: save; display: flex; justify-content: flex-end; align-items: center; gap: 14px; }
 .formation-save-button { min-height: 40px; padding: .6rem 1.3rem; }
@@ -847,6 +847,27 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .formation-overall { grid-area: overall; width: max-content; display: grid; justify-items: center; gap: 7px; }
 .formation-overall strong { width: 84px; height: 84px; display: grid; place-items: center; border-radius: 50%; border: 2px solid #7a4fc4; background: radial-gradient(circle at 32% 26%, rgba(196,140,255,.3), transparent 65%), #1c1726; color: #fff; font-size: 1.85rem; font-weight: 950; letter-spacing: -.03em; box-shadow: 0 10px 26px rgba(122,48,215,.28), inset 0 0 0 1px rgba(193,112,255,.14); }
 .formation-overall span { color: #9990aa; font-size: .62rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+
+/* Indice FTSG: stesso ingombro e stessa impostazione grafica del cerchio
+   overall, dal lato opposto della toolbar — cosi' le due cifre si leggono
+   come una coppia. Dentro pero' non e' un riempimento singolo ma due
+   semicirconferenze indipendenti (sopra il modulo, sotto lo stile): la
+   percentuale unica al centro nasconderebbe da sola QUALE dei due sta
+   frenando la squadra. */
+.formation-ftsg { grid-area: ftsg; width: max-content; display: grid; justify-items: center; gap: 7px; }
+.formation-ftsg span { color: #9990aa; font-size: .62rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.ftsg-gauge__ring { position: relative; width: 84px; height: 84px; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 32% 26%, rgba(140,196,255,.16), transparent 65%), #1c1726; box-shadow: 0 10px 26px rgba(20,20,40,.28), inset 0 0 0 1px rgba(160,170,255,.1); animation: ftsg-comparsa .5s ease both; }
+.ftsg-gauge__ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(0deg); }
+.ftsg-gauge__ring strong { position: relative; color: #fff; font-size: 1.4rem; font-weight: 950; letter-spacing: -.03em; }
+.ftsg-gauge__traccia { fill: none; stroke: rgba(255,255,255,.08); stroke-width: 8; }
+.ftsg-gauge__arco { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s cubic-bezier(.16,1,.3,1); }
+.ftsg-gauge__arco--modulo { stroke: #7a4fc4; filter: drop-shadow(0 0 5px rgba(122,79,196,.55)); }
+.ftsg-gauge__arco--stile { stroke: #3fc7d6; filter: drop-shadow(0 0 5px rgba(63,199,214,.55)); }
+@keyframes ftsg-comparsa { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .ftsg-gauge__ring { animation: none; }
+  .ftsg-gauge__arco { transition: none; }
+}
 
 /* Modulo tattico e stile di gioco: due card rettangolari identiche, una
    sopra l'altra — prima erano due linguaggi grafici diversi (il modulo un
@@ -1218,6 +1239,8 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .modale-rosa__nome strong { font-size: .86rem; }
   .modale-rosa__ovr { font-size: 1.15rem; }
   .modale-rosa__ingaggio { font-size: .74rem; }
+  .formation-toolbar { grid-template-columns: 1fr 1fr; grid-template-areas: "overall ftsg" "save save" "tattica tattica"; }
+  .formation-save-row { justify-content: center; }
   .formation-module-menu { width: min(360px, calc(100vw - 64px)); grid-template-columns: 1fr 1fr; }
   .formation-stile-menu { width: min(280px, calc(100vw - 64px)); }
   .formation-view-card { width: 100%; aspect-ratio: .66; }.pitch-grid { inset: 6% 2.5%; }.pitch-row { gap: 1px; }.pitch-slot .lineup-player { width: min(100%, 82px); }.pitch-slot--scostato-giu { transform: translateY(10px); }.pitch-slot--scostato-su { transform: translateY(-10px); }.lineup-player__portrait { width: clamp(39px, 11vw, 52px); }.lineup-player__plate { gap: 2px; padding: 4px 3px 4px; }.lineup-player__plate strong { font-size: clamp(.48rem, 1.75vw, .59rem); }.lineup-player__position { font-size: .48rem; min-width: 19px; height: 16px; padding: 0 2px; }.lineup-player__plate b { font-size: .68rem; }.lineup-player__meta { gap: 4px; }.bench-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
