@@ -35,7 +35,7 @@ export const CFG = {
   COUNTER_BASE_DIF: 4, // difensori del modulo di riferimento
   FAM_MALUS_MAX: 3.5,       // punti di overall persi al primo utilizzo del modulo
   DAMPING_MARCATORE: 0.45,  // peso residuo di chi ha gia segnato in questa partita
-  FAM_PARTITE_PIENA: 15,
+  FAM_PARTITE_PIENA: 5,     // partite con lo stesso modulo/stile per azzerare il malus (deciso con l'utente, 3 settembre 2026: prima 15)
 
   // --- Statistiche ---
   CONVERSIONE_MEDIA: 0.105,

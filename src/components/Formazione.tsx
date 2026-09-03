@@ -15,7 +15,7 @@ import { FtsgGauge } from './FtsgGauge'
 // mostrare la stessa percentuale che il motore usa per il malus di
 // familiarita' (engine.js, familiarita()), non a ricalcolarla — nessuna
 // formula del motore viene duplicata, solo questa soglia.
-const FAM_PARTITE_PIENA = 15
+const FAM_PARTITE_PIENA = 5
 
 // Tetti fissi di rosa in campo (design.md §6): 11 titolari sempre, panchina
 // fino a 9. La tribuna non ha un tetto suo — e' semplicemente "il resto
@@ -607,7 +607,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           <strong> malus di rendimento</strong> — più marcato quanto più il ruolo è lontano dal suo.</p>
         <p>Più usi lo stesso modulo <strong>e</strong> lo stesso stile di gioco, più la squadra ci prende
           confidenza e rende meglio: è l'indice <strong>FTSG</strong> (familiarità tattiche e stile di
-          gioco), il cerchio accanto a OVR titolari. Ogni partita giocata vale +10% di familiarità con quel
+          gioco), il cerchio accanto a OVR titolari. Ogni partita giocata vale +20% di familiarità con quel
           modulo e quello stile; cambiarne anche solo uno per una giornata fa scendere l'indice. Se non
           schieri entro le <strong>23:00</strong>, il sistema genera una formazione automatica di riserva
           per non farti saltare la giornata.</p>
@@ -737,7 +737,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
             <p><strong>Familiarità tattiche e stile di gioco.</strong> La percentuale al centro è la media
               tra quanto la squadra conosce il modulo scelto ora (metà viola) e quanto conosce lo stile di
               gioco scelto ora (metà turchese).</p>
-            <p>Ogni partita giocata vale <strong>+10%</strong> di familiarità con quel modulo e quello
+            <p>Ogni partita giocata vale <strong>+20%</strong> di familiarità con quel modulo e quello
               stile. Cambiarne anche solo uno per una giornata fa scendere l'indice: un modulo nuovo insieme
               a uno stile nuovo equivalgono a 0%.</p>
             <p>Modulo <strong>{Math.round(ftsgModuloPct)}%</strong> · Stile di gioco <strong>{Math.round(ftsgStilePct)}%</strong></p>
