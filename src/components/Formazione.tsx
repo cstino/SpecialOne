@@ -221,6 +221,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [giornata, setGiornata] = useState(1)
   const [esperienzaModulo, setEsperienzaModulo] = useState<Record<string, number>>({})
   const [esperienzaStile, setEsperienzaStile] = useState<Record<string, number>>({})
+  const [ftsgInfoOpen, setFtsgInfoOpen] = useState(false)
 
   // La scheda giocatore gestisce da se' Escape e blocco dello scorrimento:
   // qui resta solo la mini-card delle azioni.
@@ -230,6 +231,13 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     document.addEventListener('keydown', chiudiConEsc)
     return () => { document.removeEventListener('keydown', chiudiConEsc) }
   }, [playerAction])
+
+  useEffect(() => {
+    if (!ftsgInfoOpen) return
+    const chiudiConEsc = (event: KeyboardEvent) => { if (event.key === 'Escape') setFtsgInfoOpen(false) }
+    document.addEventListener('keydown', chiudiConEsc)
+    return () => { document.removeEventListener('keydown', chiudiConEsc) }
+  }, [ftsgInfoOpen])
 
   useEffect(() => {
     let active = true
@@ -625,8 +633,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
               <strong>{overallTitolari}</strong>
               <span>OVR titolari</span>
             </div>}
-            <div className="formation-ftsg" title={`Indice FTSG: familiarità tattiche e stile di gioco. Modulo ${Math.round(ftsgModuloPct)}% · Stile ${Math.round(ftsgStilePct)}%. Sale del 10% a partita giocata con lo stesso modulo/stile, riparte da zero se li cambi.`}>
-              <FtsgGauge moduloPct={ftsgModuloPct} stilePct={ftsgStilePct} />
+            <div className="formation-ftsg">
+              <FtsgGauge moduloPct={ftsgModuloPct} stilePct={ftsgStilePct} onClick={() => setFtsgInfoOpen(true)} />
               <span>FTSG</span>
             </div>
             <div className="formation-tattica">
@@ -722,6 +730,21 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         fotoUrl={imageUrls[detailPlayer.id]}
         onClose={() => setDetailPlayer(null)}
       />}
+      {ftsgInfoOpen && <div className="popup-spiegazione-sfondo" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setFtsgInfoOpen(false) }}>
+        <div className="popup-spiegazione" role="dialog" aria-modal="true" aria-label="Indice FTSG">
+          <h2>Indice FTSG</h2>
+          <div className="popup-spiegazione__corpo">
+            <p><strong>Familiarità tattiche e stile di gioco.</strong> La percentuale al centro è la media
+              tra quanto la squadra conosce il modulo scelto ora (metà viola) e quanto conosce lo stile di
+              gioco scelto ora (metà turchese).</p>
+            <p>Ogni partita giocata vale <strong>+10%</strong> di familiarità con quel modulo e quello
+              stile. Cambiarne anche solo uno per una giornata fa scendere l'indice: un modulo nuovo insieme
+              a uno stile nuovo equivalgono a 0%.</p>
+            <p>Modulo <strong>{Math.round(ftsgModuloPct)}%</strong> · Stile di gioco <strong>{Math.round(ftsgStilePct)}%</strong></p>
+          </div>
+          <button className="button button--primary" type="button" onClick={() => setFtsgInfoOpen(false)}>Ho capito</button>
+        </div>
+      </div>}
     </main>
   )
 }
