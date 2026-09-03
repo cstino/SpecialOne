@@ -923,6 +923,15 @@ export default {
       })
       if (puntiError) throw puntiError
 
+      // Quarto meccanismo sullo stesso quarto di stagione: la crescita dei
+      // prospetti ancora in cantera (vivaio_prospetti non e' toccata dalla
+      // progressione overall qui sopra, che lavora solo su player_instances).
+      const { error: vivaioCrescitaError } = await ctx.supabaseAdmin.rpc('cresci_vivaio_checkpoint', {
+        p_league_id: leagueId,
+        p_giornata: giornata,
+      })
+      if (vivaioCrescitaError) throw vivaioCrescitaError
+
       // Lo stipendio e' una rata per giornata, non un addebito anticipato.
       // L'RPC e' idempotente: se il cron ritenta dopo un errore, ogni quota
       // gia' scritta nella tabella privata resta una sola volta.
