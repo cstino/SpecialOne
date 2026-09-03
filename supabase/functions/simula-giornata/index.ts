@@ -404,12 +404,29 @@ function costruisciEventiPartita(
   for (const lato of lati) {
     // I cambi sono letti direttamente dall'undici realmente presente in due
     // blocchi consecutivi. Il motore effettua cambi solo dopo 45', 60' e 75'.
+    //
+    // Il confronto e' per INSIEMI, non per posizione nell'array: il motore
+    // costruisce le presenze saltando gli slot vuoti (`if (!g) continue`),
+    // quindi dopo un'espulsione senza sostituto l'undici diventa un array di
+    // 10 e tutti gli indici slittano di uno. Confrontando prima[i] con dopo[i]
+    // una sola espulsione inventava sei "sostituzioni" fra giocatori che erano
+    // in campo da sempre — ed era una delle cause dei tiri attribuiti a chi
+    // "doveva ancora entrare".
     for (let blocco = 1; blocco < lato.presenzePerBlocco.length; blocco++) {
       const prima = lato.presenzePerBlocco[blocco - 1] ?? []
       const dopo = lato.presenzePerBlocco[blocco] ?? []
-      for (let slot = 0; slot < Math.max(prima.length, dopo.length); slot++) {
-        const esce = prima[slot]
-        const entra = dopo[slot]
+      // Un espulso lascia il campo senza che entri nessuno al suo posto: va
+      // tolto dagli "usciti" prima di accoppiare, altrimenti in una giornata
+      // con espulsione E cambio nello stesso momento il subentrato verrebbe
+      // abbinato all'espulso invece che al giocatore davvero sostituito.
+      const espulsi = new Set(cartellini
+        .filter((evento) => evento.lato === lato.lato && evento.tipo !== 'giallo' && evento.blocco <= blocco)
+        .map((evento) => evento.giocatore))
+      const usciti = prima.filter((id) => !dopo.includes(id) && !espulsi.has(id))
+      const entrati = dopo.filter((id) => !prima.includes(id))
+      for (let indice = 0; indice < Math.min(usciti.length, entrati.length); indice++) {
+        const esce = usciti[indice]
+        const entra = entrati[indice]
         if (!esce || !entra || esce === entra) continue
         // Lo stesso cambio e' gia' raccontato come infortunio: non duplicarlo
         // con la generica sostituzione derivata dalle presenze per blocco.
@@ -433,7 +450,12 @@ function costruisciEventiPartita(
       for (const tipo of ['tiro_parato', 'tiro_fuori'] as const) {
         const quanti = tipo === 'tiro_parato' ? parati : fuori
         for (let numero = 0; numero < quanti; numero++) {
-          const blocco = blocchi[Math.floor(rnd() * blocchi.length)]
+          // `?? blocchi[0]` non e' difesa teorica: un blocco indefinito qui
+          // produce un minuto NaN, e normalizzaCronaca ridistribuisce gli
+          // eventi senza minuto valido in base alla loro POSIZIONE nell'array
+          // — cioe' ignorando del tutto chi fosse in campo. E' cosi' che i
+          // tiri finivano prima dell'ingresso di chi li aveva calciati.
+          const blocco = blocchi[Math.floor(rnd() * blocchi.length)] ?? blocchi[0]
           eventi.push({
             tipo,
             minuto: (blocco - 1) * MINUTI_PER_BLOCCO + 1 + Math.floor(rnd() * MINUTI_PER_BLOCCO),
@@ -473,6 +495,41 @@ function costruisciEventiPartita(
       colore: cartellino.tipo,
     })
   }
+  // Rete di sicurezza finale: nessun tiro e nessun gol puo' cadere fuori dai
+  // blocchi in cui il giocatore era davvero in campo. I singoli passaggi qui
+  // sopra gia' ci provano, ma bastava un blocco indefinito perche' l'evento
+  // scivolasse nella ricostruzione per posizione di normalizzaCronaca e
+  // ricomparisse a inizio partita. Qui l'invariante e' verificata una volta
+  // sola, alla fine, su TUTTI gli eventi: se un evento e' fuori posto viene
+  // spostato nel blocco valido piu' vicino, senza toccare ne' il totale dei
+  // gol ne' quello dei tiri (cambia solo QUANDO vengono mostrati).
+  const presenzePerLato = new Map<Lato, Map<number, number[]>>()
+  for (const lato of lati) {
+    const mappa = new Map<number, number[]>()
+    for (let indice = 0; indice < lato.presenzePerBlocco.length; indice++) {
+      for (const giocatore of lato.presenzePerBlocco[indice] ?? []) {
+        mappa.set(giocatore, [...(mappa.get(giocatore) ?? []), indice + 1])
+      }
+    }
+    presenzePerLato.set(lato.lato, mappa)
+  }
+  for (const evento of eventi) {
+    const protagonista = evento.tipo === 'gol'
+      ? evento.marcatore
+      : evento.tipo === 'tiro_parato' || evento.tipo === 'tiro_fuori'
+        ? evento.giocatore
+        : null
+    if (protagonista === null) continue
+    const blocchi = presenzePerLato.get(evento.lato)?.get(protagonista)
+    if (!blocchi?.length || blocchi.includes(evento.blocco)) continue
+    let bloccoValido = blocchi[0]
+    for (const blocco of blocchi) {
+      if (Math.abs(blocco - evento.blocco) < Math.abs(bloccoValido - evento.blocco)) bloccoValido = blocco
+    }
+    evento.blocco = bloccoValido
+    evento.minuto = (bloccoValido - 1) * MINUTI_PER_BLOCCO + 1 + Math.floor(rnd() * MINUTI_PER_BLOCCO)
+  }
+
   return eventi.sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.team_id - destra.team_id)
 }
 
