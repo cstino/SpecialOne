@@ -1997,6 +1997,10 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    Riprodotto e verificato con un rendering headless prima di questo fix. */
 .team-roster-player > div.vivaio-azioni { display: flex; gap: 8px; }
 .vivaio-azioni .button { flex: 1; padding: 0 10px; min-height: 34px; font-size: .68rem; white-space: nowrap; }
+/* La conferma (titolo + descrizione + due bottoni) non ci sta nella
+   colonna da 180px di vivaio-azioni: riga intera propria, a ogni
+   larghezza, non solo sotto i 640px come dl/vivaio-azioni. */
+.team-roster-player > .player-modal__confirm { grid-column: 1 / -1; margin-top: 8px; }
 .team-roster-player:focus-visible { outline: 2px solid #c77dff; outline-offset: 2px; }
 /* Ritratto stile FM: foto (o iniziale) tonda con bordo per reparto, ruolo
    in etichetta SOTTO il cerchio (non sovrapposta: dentro il cerchio si

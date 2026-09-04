@@ -151,6 +151,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [vivaioErrore, setVivaioErrore] = useState<string | null>(null)
   const [vivaioSlotMassimi, setVivaioSlotMassimi] = useState(1)
   const [vivaioAzioneInCorso, setVivaioAzioneInCorso] = useState<number | null>(null)
+  const [vivaioConferma, setVivaioConferma] = useState<{ id: number; tipo: 'promuovi' | 'rilascia' } | null>(null)
   const [cambiRuolo, setCambiRuolo] = useState<Map<number, CambioRuoloRiga>>(new Map())
   const [specializzazioni, setSpecializzazioni] = useState<Map<number, SpecializzazioneRiga>>(new Map())
   const team = teamOverride?.id === teamId ? teamOverride : seasonData.teamById.get(teamId)
@@ -345,6 +346,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     setVivaioAzioneInCorso(id); setVivaioErrore(null)
     const { error } = await supabase.rpc('promuovi_vivaio', { p_vivaio_id: id })
     setVivaioAzioneInCorso(null)
+    setVivaioConferma(null)
     if (error) { setVivaioErrore(error.message); return }
     await caricaVivaio()
     await onTeamUpdated()
@@ -354,6 +356,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     setVivaioAzioneInCorso(id); setVivaioErrore(null)
     const { error } = await supabase.rpc('rilascia_vivaio', { p_vivaio_id: id })
     setVivaioAzioneInCorso(null)
+    setVivaioConferma(null)
     if (error) { setVivaioErrore(error.message); return }
     await caricaVivaio()
   }
@@ -695,14 +698,34 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       <small>{g.posizioni.join(' · ')} · {g.eta} anni · <em>{money(prospetto.ingaggio)}/stagione</em> · potenziale {prospetto.potenziale_min === prospetto.potenziale_max ? prospetto.potenziale_min : `${prospetto.potenziale_min}-${prospetto.potenziale_max}`}</small>
                     </div>
                     <b>{g.overall}</b>
-                    {ownTeam && <div className="vivaio-azioni">
-                      <button className="button button--primary" type="button" disabled={inCorso} onClick={() => void promuovi(prospetto.id)}>
-                        {inCorso ? '…' : 'Promuovi'}
-                      </button>
-                      <button className="button button--danger-ghost" type="button" disabled={inCorso} onClick={() => void rilascia(prospetto.id)}>
-                        Rilascia
-                      </button>
-                    </div>}
+                    {ownTeam && (vivaioConferma?.id === prospetto.id
+                      ? <div className="player-modal__confirm">
+                          <div>
+                            <strong>{vivaioConferma.tipo === 'promuovi' ? 'Confermi la promozione?' : 'Confermi il rilascio?'}</strong>
+                            <p>{vivaioConferma.tipo === 'promuovi'
+                              ? `${g.nome} entra in prima squadra e occupa uno slot rosa.`
+                              : `${g.nome} torna sul mercato UNDER: l'operazione non si può annullare.`}</p>
+                          </div>
+                          <div>
+                            <button
+                              className={`button ${vivaioConferma.tipo === 'promuovi' ? 'button--primary' : 'button--danger'}`}
+                              type="button"
+                              disabled={inCorso}
+                              onClick={() => void (vivaioConferma.tipo === 'promuovi' ? promuovi(prospetto.id) : rilascia(prospetto.id))}
+                            >
+                              {inCorso ? 'Attendi…' : vivaioConferma.tipo === 'promuovi' ? 'Promuovi definitivamente' : 'Rilascia definitivamente'}
+                            </button>
+                            <button className="button button--secondary" type="button" disabled={inCorso} onClick={() => setVivaioConferma(null)}>Annulla</button>
+                          </div>
+                        </div>
+                      : <div className="vivaio-azioni">
+                          <button className="button button--primary" type="button" disabled={inCorso} onClick={() => setVivaioConferma({ id: prospetto.id, tipo: 'promuovi' })}>
+                            Promuovi
+                          </button>
+                          <button className="button button--danger-ghost" type="button" disabled={inCorso} onClick={() => setVivaioConferma({ id: prospetto.id, tipo: 'rilascia' })}>
+                            Rilascia
+                          </button>
+                        </div>)}
                   </div>
                 )
               })}
