@@ -1990,7 +1990,12 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 /* Riga vivaio: e' un div (non un button, ha due bottoni dentro), stessa
    griglia della riga rosa ma niente hover/cursore da elemento cliccabile. */
 .team-roster-player:has(.vivaio-azioni) { cursor: default; }
-.vivaio-azioni { display: flex; gap: 8px; }
+/* Specificita' alzata apposta: .team-roster-player > div (poco sopra)
+   vale (0,1,1) e batteva il semplice .vivaio-azioni (0,1,0), rimettendolo
+   a display:grid a riga singola nonostante flex fosse scritto qui sotto —
+   i due bottoni finivano impilati anche col codice "giusto" in pagina.
+   Riprodotto e verificato con un rendering headless prima di questo fix. */
+.team-roster-player > div.vivaio-azioni { display: flex; gap: 8px; }
 .vivaio-azioni .button { flex: 1; padding: 0 10px; min-height: 34px; font-size: .68rem; white-space: nowrap; }
 .team-roster-player:focus-visible { outline: 2px solid #c77dff; outline-offset: 2px; }
 /* Ritratto stile FM: foto (o iniziale) tonda con bordo per reparto, ruolo
