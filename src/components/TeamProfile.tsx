@@ -79,11 +79,29 @@ type SpecializzazioneRiga = {
   completa_giornata: number
 }
 
+/** Richiesta d'ingaggio del prospetto per firmare il primo contratto (stessa meccanica del rinnovo, senza durata/rinnovo-di-stagione: qui non c'e' nulla da estendere). */
+type PropostaPromozione = {
+  ingaggio_attuale: number
+  richiesta: number
+  tentativi_usati: number
+  tentativi_totali: number
+  trattativa_chiusa: boolean
+}
+
+/** Risposta del prospetto a un'offerta di promozione: mai la cifra esatta, solo quanto si è lontani. */
+type EsitoPromozione = {
+  esito: 'accettato' | 'rifiutato' | 'chiusa'
+  messaggio: string
+  tentativi_usati: number
+  ingaggio?: number
+}
+
 type VivaioProspetto = {
   id: number
   ingaggio: number
   entrata_stagione: number
   giornate_rimanenti: number
+  promozione_tentativi: number
   potenziale_min: number
   potenziale_max: number
   fotoFirmata?: string
@@ -152,7 +170,15 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [vivaioErrore, setVivaioErrore] = useState<string | null>(null)
   const [vivaioSlotMassimi, setVivaioSlotMassimi] = useState(1)
   const [vivaioAzioneInCorso, setVivaioAzioneInCorso] = useState<number | null>(null)
-  const [vivaioConferma, setVivaioConferma] = useState<{ id: number; tipo: 'promuovi' | 'rilascia' } | null>(null)
+  const [vivaioConferma, setVivaioConferma] = useState<number | null>(null)
+  const [vivaioTrattativa, setVivaioTrattativa] = useState<{
+    id: number
+    proposta: PropostaPromozione | null
+    esito: EsitoPromozione | null
+    errore: string | null
+    inCorso: boolean
+    offertaM: string
+  } | null>(null)
   const [cambiRuolo, setCambiRuolo] = useState<Map<number, CambioRuoloRiga>>(new Map())
   const [specializzazioni, setSpecializzazioni] = useState<Map<number, SpecializzazioneRiga>>(new Map())
   const team = teamOverride?.id === teamId ? teamOverride : seasonData.teamById.get(teamId)
@@ -310,7 +336,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     setVivaioLoading(true); setVivaioErrore(null)
     const [prospettiResult, tabellaResult, risorseResult] = await Promise.all([
       supabase.from('vivaio_prospetti')
-        .select('id, ingaggio, entrata_stagione, giornate_rimanenti, player_id, giocatore:players(nome, posizioni, overall, eta, nazionalita, foto_url)')
+        .select('id, ingaggio, entrata_stagione, giornate_rimanenti, promozione_tentativi, player_id, giocatore:players(nome, posizioni, overall, eta, nazionalita, foto_url)')
         .eq('league_id', league.id).eq('team_id', teamId),
       supabase.rpc('tabella_risorse'),
       supabase.from('team_risorse').select('livello_vivaio').eq('team_id', teamId).maybeSingle(),
@@ -343,16 +369,6 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
 
   useEffect(() => { void caricaVivaio() }, [caricaVivaio])
 
-  async function promuovi(id: number) {
-    setVivaioAzioneInCorso(id); setVivaioErrore(null)
-    const { error } = await supabase.rpc('promuovi_vivaio', { p_vivaio_id: id })
-    setVivaioAzioneInCorso(null)
-    setVivaioConferma(null)
-    if (error) { setVivaioErrore(error.message); return }
-    await caricaVivaio()
-    await onTeamUpdated()
-  }
-
   async function rilascia(id: number) {
     setVivaioAzioneInCorso(id); setVivaioErrore(null)
     const { error } = await supabase.rpc('rilascia_vivaio', { p_vivaio_id: id })
@@ -360,6 +376,35 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     setVivaioConferma(null)
     if (error) { setVivaioErrore(error.message); return }
     await caricaVivaio()
+  }
+
+  // La promozione non assegna piu' l'ingaggio in automatico: si tratta come
+  // un vero primo contratto, stessa meccanica del rinnovo dei giocatori gia'
+  // in rosa (richiesta -> controfferta -> accettato/rifiutato, 3 tentativi).
+  // A differenza del rinnovo pero' non si riapre mai: esauriti i tentativi
+  // resta chiusa per sempre (deciso con l'utente), il prospetto aspetta solo
+  // che scada il countdown in giornate.
+  async function apriTrattativaPromozione(id: number) {
+    setVivaioTrattativa({ id, proposta: null, esito: null, errore: null, inCorso: true, offertaM: '' })
+    const { data, error } = await supabase.rpc('proposta_promozione', { p_vivaio_id: id })
+    if (error) { setVivaioTrattativa((corrente) => corrente && corrente.id === id ? { ...corrente, inCorso: false, errore: error.message } : corrente); return }
+    setVivaioTrattativa((corrente) => corrente && corrente.id === id ? { ...corrente, inCorso: false, proposta: data as PropostaPromozione } : corrente)
+  }
+
+  async function inviaOffertaPromozione() {
+    const trattativa = vivaioTrattativa
+    if (!trattativa || !trattativa.proposta) return
+    const offertaEuro = Math.round(parseFloat(trattativa.offertaM.replace(',', '.')) * 10) * 100_000
+    if (!Number.isFinite(offertaEuro) || offertaEuro < 500_000) return
+    setVivaioTrattativa({ ...trattativa, inCorso: true, errore: null })
+    const { data, error } = await supabase.rpc('offri_promozione', { p_vivaio_id: trattativa.id, p_ingaggio: offertaEuro })
+    if (error) { setVivaioTrattativa({ ...trattativa, inCorso: false, errore: error.message }); return }
+    const esito = data as EsitoPromozione
+    setVivaioTrattativa({ ...trattativa, inCorso: false, esito })
+    if (esito.esito === 'accettato') {
+      await caricaVivaio()
+      await onTeamUpdated()
+    }
   }
 
   // Prima giornata ancora da giocare: stima locale per il conto alla
@@ -707,31 +752,69 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                         {prospetto.giornate_rimanenti}g
                       </em>
                     </div>
-                    {ownTeam && (vivaioConferma?.id === prospetto.id
+                    {ownTeam && vivaioTrattativa?.id === prospetto.id && (() => {
+                      const trattativa = vivaioTrattativa
+                      const offertaEuro = Math.round(parseFloat(trattativa.offertaM.replace(',', '.')) * 10) * 100_000
+                      const offertaValida = Number.isFinite(offertaEuro) && offertaEuro >= 500_000
+                      return <div className="player-modal__confirm vivaio-trattativa">
+                        {trattativa.errore && <p className="notice notice--error" role="alert">{trattativa.errore}</p>}
+                        {!trattativa.proposta && !trattativa.errore && <p className="season-empty">Sto ascoltando la sua richiesta…</p>}
+                        {trattativa.proposta && trattativa.esito?.esito !== 'accettato' && <>
+                          <div>
+                            <strong>Trattativa per il primo contratto</strong>
+                            <p>{g.nome} chiede <b>{money(trattativa.proposta.richiesta)}</b>/stagione per firmare.</p>
+                          </div>
+                          {trattativa.esito && <p className={`rinnovo-risposta rinnovo-risposta--${trattativa.esito.esito}`}>«{trattativa.esito.messaggio}»</p>}
+                          {trattativa.proposta.trattativa_chiusa ? <>
+                            <p className="rinnovo-nota">La trattativa è chiusa: resterà in cantera finché non scade il countdown in giornate.</p>
+                            <div><button className="button button--secondary" type="button" onClick={() => setVivaioTrattativa(null)}>Chiudi</button></div>
+                          </> : <>
+                            <div className="rinnovo-offerta">
+                              <label>
+                                <span>La tua offerta (M€ a stagione)</span>
+                                <input type="text" inputMode="decimal" value={trattativa.offertaM} onChange={(evento) => setVivaioTrattativa({ ...trattativa, offertaM: evento.target.value })} aria-label="Ingaggio offerto in milioni" />
+                              </label>
+                            </div>
+                            <p className="rinnovo-tentativi">
+                              Tentativi rimasti: <b>{trattativa.proposta.tentativi_totali - trattativa.proposta.tentativi_usati}</b> su {trattativa.proposta.tentativi_totali}.
+                              {' '}Esauriti, la trattativa si chiude per sempre.
+                            </p>
+                            <div>
+                              <button className="button button--primary" type="button" disabled={trattativa.inCorso || !offertaValida} onClick={() => void inviaOffertaPromozione()}>{trattativa.inCorso ? 'Attendo…' : 'Proponi'}</button>
+                              <button className="button button--secondary" type="button" disabled={trattativa.inCorso} onClick={() => setVivaioTrattativa(null)}>Ci penso</button>
+                            </div>
+                          </>}
+                        </>}
+                        {trattativa.esito?.esito === 'accettato' && <>
+                          <p className="rinnovo-nota">«{trattativa.esito.messaggio}» {g.nome} firma il primo contratto: {money(trattativa.esito.ingaggio ?? 0)}/stagione.</p>
+                          <div><button className="button button--primary" type="button" onClick={() => setVivaioTrattativa(null)}>Chiudi</button></div>
+                        </>}
+                      </div>
+                    })()}
+                    {ownTeam && vivaioTrattativa?.id !== prospetto.id && (vivaioConferma === prospetto.id
                       ? <div className="player-modal__confirm">
                           <div>
-                            <strong>{vivaioConferma.tipo === 'promuovi' ? 'Confermi la promozione?' : 'Confermi il rilascio?'}</strong>
-                            <p>{vivaioConferma.tipo === 'promuovi'
-                              ? `${g.nome} entra in prima squadra e occupa uno slot rosa.`
-                              : `${g.nome} torna sul mercato UNDER: l'operazione non si può annullare.`}</p>
+                            <strong>Confermi il rilascio?</strong>
+                            <p>{g.nome} torna sul mercato UNDER: l'operazione non si può annullare.</p>
                           </div>
                           <div>
-                            <button
-                              className={`button ${vivaioConferma.tipo === 'promuovi' ? 'button--primary' : 'button--danger'}`}
-                              type="button"
-                              disabled={inCorso}
-                              onClick={() => void (vivaioConferma.tipo === 'promuovi' ? promuovi(prospetto.id) : rilascia(prospetto.id))}
-                            >
-                              {inCorso ? 'Attendi…' : vivaioConferma.tipo === 'promuovi' ? 'Promuovi definitivamente' : 'Rilascia definitivamente'}
+                            <button className="button button--danger" type="button" disabled={inCorso} onClick={() => void rilascia(prospetto.id)}>
+                              {inCorso ? 'Attendi…' : 'Rilascia definitivamente'}
                             </button>
                             <button className="button button--secondary" type="button" disabled={inCorso} onClick={() => setVivaioConferma(null)}>Annulla</button>
                           </div>
                         </div>
                       : <div className="vivaio-azioni">
-                          <button className="button button--primary" type="button" disabled={inCorso} onClick={() => setVivaioConferma({ id: prospetto.id, tipo: 'promuovi' })}>
-                            Promuovi
+                          <button
+                            className="button button--primary"
+                            type="button"
+                            disabled={inCorso || prospetto.promozione_tentativi >= 3}
+                            title={prospetto.promozione_tentativi >= 3 ? 'Trattativa chiusa: aspetta che scada il countdown.' : undefined}
+                            onClick={() => void apriTrattativaPromozione(prospetto.id)}
+                          >
+                            {prospetto.promozione_tentativi >= 3 ? 'Trattativa chiusa' : 'Promuovi'}
                           </button>
-                          <button className="button button--danger-ghost" type="button" disabled={inCorso} onClick={() => setVivaioConferma({ id: prospetto.id, tipo: 'rilascia' })}>
+                          <button className="button button--danger-ghost" type="button" disabled={inCorso} onClick={() => setVivaioConferma(prospetto.id)}>
                             Rilascia
                           </button>
                         </div>)}
