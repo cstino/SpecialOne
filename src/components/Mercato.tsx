@@ -155,36 +155,45 @@ export function Mercato({ membership, onNavigate }: Props) {
   const carica = useCallback(async (silenzioso = false) => {
     if (!silenzioso) setCaricamento(true)
     setErrore(null)
-    const [istanzeRes, asteRes, offerteRes, contiRes, progressioneRes] = await Promise.all([
-      // Niente filtro su team_id: servono anche le istanze "orfane"
-      // (team_id nullo), cioe' gli svincolati che una squadra l'hanno gia'
-      // avuta. Sono loro a portare l'overall aggiornato per la vetrina —
-      // le rose vere si filtrano in memoria poco piu' sotto.
+    const [istanzeRes, asteRes, offerteRes, contiRes] = await Promise.all([
       supabase.from('player_instances')
         .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato')
-        .eq('league_id', league.id),
+        .eq('league_id', league.id).not('team_id', 'is', null),
       supabase.from('free_agent_auctions')
         .select('id, giorno, tornata, player_id, ingaggio_teorico, stato, origine, vincitore_team_id, ingaggio_finale')
         .eq('league_id', league.id).order('giorno', { ascending: false }).order('id').limit(500),
       supabase.from('free_agent_bids').select('auction_id, ingaggio_offerto'),
       supabase.rpc('capienza_squadra', { p_league_id: league.id }),
-      // Gli svincolati invecchiano/crescono per lega (free_agent_progression),
-      // proprio come i giocatori in rosa: senza questo la vetrina mostra
-      // l'overall base del catalogo invece di quello vero — chi vince
-      // l'asta si ritrova poi un valore diverso da quello visto per offrire.
-      supabase.from('free_agent_progression').select('player_id, overall_corrente, eta_corrente').eq('league_id', league.id),
     ])
     const primoErrore = istanzeRes.error ?? asteRes.error ?? offerteRes.error
     if (primoErrore) { setErrore(primoErrore.message); setCaricamento(false); return }
 
-    const istanzeTutte = istanzeRes.data ?? []
-    // Le rose sono solo le istanze con una squadra: le orfane servono
-    // unicamente a conoscere l'overall vero di chi e' all'asta.
-    const istanze = istanzeTutte.filter((i) => i.team_id !== null)
-    const istanzeSvincolate = new Map(istanzeTutte
-      .filter((i) => i.team_id === null)
-      .map((i) => [i.player_id, i as { overall_corrente: number; eta_corrente: number }]))
+    const istanze = istanzeRes.data ?? []
     const asteRighe = (asteRes.data ?? []) as Asta[]
+
+    // L'overall vero di uno svincolato sta in una di due tabelle a seconda
+    // di che tipo di svincolato e': player_instances con team_id nullo se
+    // una squadra l'ha gia' avuta, free_agent_progression se non e' mai
+    // stato scelto. Si interrogano SOLO per i giocatori realmente all'asta:
+    // free_agent_progression ha migliaia di righe per lega (5.167 su
+    // LegaBot) e l'API ne restituisce al massimo 1.000, quindi chiederla
+    // intera faceva sparire dalla mappa proprio i giocatori oltre quella
+    // soglia — che ricadevano sull'overall del catalogo. Filtrando per
+    // player_id il risultato e' limitato dal numero di aste (<= 500) e non
+    // puo' piu' essere troncato.
+    const idsAsta = [...new Set(asteRighe.map((a) => a.player_id))]
+    const [progressioneRes, orfaneRes] = idsAsta.length
+      ? await Promise.all([
+          supabase.from('free_agent_progression')
+            .select('player_id, overall_corrente, eta_corrente')
+            .eq('league_id', league.id).in('player_id', idsAsta),
+          supabase.from('player_instances')
+            .select('player_id, overall_corrente, eta_corrente')
+            .eq('league_id', league.id).is('team_id', null).in('player_id', idsAsta),
+        ])
+      : [{ data: [], error: null }, { data: [], error: null }]
+    const istanzeSvincolate = new Map((orfaneRes.data ?? [])
+      .map((i) => [i.player_id, i as { overall_corrente: number; eta_corrente: number }]))
     // Una sola interrogazione per l'anagrafica: i giocatori delle rose e
     // quelli all'asta vengono dalla stessa tabella.
     const daCercare = [...new Set([
