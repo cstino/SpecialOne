@@ -28,7 +28,6 @@ const ETICHETTE_STATO: Record<string, string> = {
 export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, onEntraConCodice, onRefresh, onApriNotifica }: Props) {
   const [vista, setVista] = useState<'leghe' | 'profilo' | 'aiuto'>('leghe')
   const [menuAperto, setMenuAperto] = useState(false)
-  const [classifiche, setClassifiche] = useState<Map<number, Standing>>(new Map())
   const [righeClassifica, setRigheClassifica] = useState<Standing[]>([])
   const [stagioni, setStagioni] = useState<Map<number, Season>>(new Map())
   const [stemmi, setStemmi] = useState<Record<number, string>>({})
@@ -65,13 +64,10 @@ export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, 
       if (idSquadre.length === 0) return
 
       // Una sola interrogazione per tutte le squadre dell'utente: la posizione
-      // serve alla card della lega e alle statistiche di carriera.
+      // serve alle statistiche di carriera.
       const { data } = await supabase.from('standings').select('*').in('team_id', idSquadre)
       if (attivo && data) {
         const righe = data as Standing[]
-        const mappa = new Map<number, Standing>()
-        for (const riga of righe) mappa.set(riga.team_id, riga)
-        setClassifiche(mappa)
         setRigheClassifica(righe)
 
         // I titoli si contano solo sulle stagioni concluse.
@@ -235,8 +231,6 @@ export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, 
           : <div className="menu-leghe">
             {memberships.map((squadra) => {
               const lega = squadra.league!
-              const classifica = classifiche.get(squadra.id)
-              const inStagione = lega.stato === 'stagione' || lega.stato === 'conclusa'
               return <button className="menu-lega" type="button" key={squadra.id} onClick={() => onEntraNellaLega(lega.id)}>
                 <Crest value={squadra.stemma_url} imageUrl={stemmi[squadra.id]} size="small" />
                 <span className="menu-lega__testo">
@@ -247,7 +241,6 @@ export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, 
                   <span className={`pillola-stato ${lega.stato === 'stagione' ? 'pillola-stato--attesa' : lega.stato === 'conclusa' ? 'pillola-stato--fatta' : ''}`}>
                     {ETICHETTE_STATO[lega.stato] ?? lega.stato}
                   </span>
-                  {inStagione && classifica && <em>{classifica.posizione ?? '—'}ª · {classifica.punti} pt</em>}
                 </span>
               </button>
             })}
