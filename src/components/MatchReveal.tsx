@@ -185,6 +185,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const [altezzaVisibile, setAltezzaVisibile] = useState(0)
   const [stretto, setStretto] = useState(false)
   const suonoGolRef = useRef<HTMLAudioElement>(null)
+  const sottofondoRef = useRef<HTMLAudioElement>(null)
   // Il gol appena segnato resta in scena da solo (simulazione ferma) prima di
   // "sistemarsi" nella cronaca: popupGol e' quello in scena ora, codaGolRef
   // quelli in attesa (due gol nello stesso minuto sono rari ma possibili).
@@ -282,6 +283,19 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     return () => window.clearTimeout(timer)
   }, [minutoCorrente, popupGol, eventi])
 
+  // Sottofondo dello stadio: si accende mentre la partita scorre (o mentre
+  // un gol e' in scena) e si spegne a fine cronaca. L'elemento resta sempre
+  // montato — vedi il commento accanto al tag <audio> — cosi' il primo
+  // play() parte a ridosso del click che ha aperto la cronaca e non viene
+  // rifiutato dalle regole di autoplay.
+  const sottofondoAcceso = eventi.length > 0 && (inCorso || popupGol !== null)
+  useEffect(() => {
+    const audio = sottofondoRef.current
+    if (!audio) return
+    if (sottofondoAcceso) void audio.play().catch(() => {})
+    else audio.pause()
+  }, [sottofondoAcceso])
+
   // Ogni gol resta in scena da solo per DURATA_POPUP_GOL_MS (sincronizzato col
   // boato dell'esultanza), poi passa al prossimo in coda o si riprende la
   // simulazione. Solo a quel punto il gol entra in inTimeline e compare nella
@@ -377,7 +391,14 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
 
   return <div className="match-reveal-backdrop" role="dialog" aria-modal="true" aria-label="Cronaca della partita">
     <audio ref={suonoGolRef} src="/suoni-effetti/esultanza-gol.m4a" preload="auto" />
-    {eventi.length > 0 && (inCorso || popupGol) && <audio src="/suoni-effetti/stadio-sottofondo.m4a" loop autoPlay />}
+    {/* Sempre nel DOM, mai montato a meta' partita: prima era renderizzato
+        solo con (inCorso || popupGol), ma minutoCorrente parte da -1 quindi
+        l'elemento nasceva DOPO il click che apre la cronaca. Un <audio
+        autoPlay> inserito fuori dal gesto dell'utente viene bloccato dalle
+        regole di autoplay del browser (iOS in particolare): il boato del
+        gol si sentiva, il pubblico no. Ora la riproduzione la governa
+        l'effetto qui sopra, col primo play() a ridosso del click. */}
+    <audio ref={sottofondoRef} src="/suoni-effetti/stadio-sottofondo.m4a" loop preload="auto" />
     <section className="match-reveal">
       <div className="match-reveal__sfondo" style={{ backgroundImage: `url(${SFONDO_FASE_VERTICALE[fase]})` }} />
       <button className="match-reveal__close" type="button" onClick={onClose} aria-label="Chiudi cronaca">×</button>

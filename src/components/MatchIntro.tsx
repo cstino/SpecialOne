@@ -103,6 +103,18 @@ type Lineup = { modulo: string; titolari: number[] }
 type Giocatore = { nome: string; foto?: string }
 type InfoBracket = { tipo: FaseSquadra; bracketId: number; turno: number; turniTotali: number; etichettaTurno: string }
 
+// I turni successivi nascono solo quando il precedente si risolve, quindi
+// max(turno) fra gli accoppiamenti esistenti sottostima sempre il totale:
+// giocando i quarti esistono solo i turni 1 e 2, e il turno 1 finiva
+// etichettato "Semifinale". Il totale si ricava invece dalla dimensione del
+// primo turno, che e' completo fin dall'inizio (4 accoppiamenti -> 8
+// squadre -> 3 turni). Stessa formula di turniTotaliDa in Tabellone.tsx,
+// dove la correzione era gia' stata fatta.
+function turniTotaliDa(ties: BracketTie[]): number {
+  const primoTurno = ties.filter((tie) => tie.turno === 1).length
+  return primoTurno > 0 ? Math.ceil(Math.log2(primoTurno * 2)) : 0
+}
+
 // Stessa logica di nomeTurno in Tabellone.tsx: il nome del turno si legge da
 // quanti ne restano, non da quanti ne sono passati.
 function etichettaTurno(turno: number, turniTotali: number) {
@@ -144,7 +156,7 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
       ])
       if (!vivo) return
       const tipoBracket = (bracketRow?.tipo as FaseSquadra | undefined) ?? 'regular'
-      const turniTotali = (tutte ?? []).reduce((massimo, riga) => Math.max(massimo, riga.turno), 0)
+      const turniTotali = turniTotaliDa((tutte ?? []) as BracketTie[])
       setFase(tipoBracket)
       setBracket({ tipo: tipoBracket, bracketId: tie.bracket_id, turno: tie.turno, turniTotali, etichettaTurno: etichettaTurno(tie.turno, turniTotali) })
       // Solo il turno di questa partita: il tabellone completo su piu' round
@@ -233,6 +245,18 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
     [data.fixtures, data.matchByFixture, data.teams, fixture.giornata]
   )
 
+  // Finche' non si sa se e' regular o playoff si mostra solo il fondale
+  // neutro: `fase` parte da 'regular', quindi renderizzare subito faceva
+  // lampeggiare per un istante sfondo, musica e logo della stagione
+  // regolare prima di correggersi con quelli dei playoff.
+  if (!pronto) {
+    return (
+      <div className="match-intro" role="dialog" aria-modal="true" aria-label="Presentazione della partita">
+        <button className="match-intro__chiudi" type="button" onClick={onClose} aria-label="Chiudi">×</button>
+      </div>
+    )
+  }
+
   return (
     <div className="match-intro" role="dialog" aria-modal="true" aria-label="Presentazione della partita">
       <audio src={MUSICA_FASE[fase]} autoPlay loop />
@@ -281,6 +305,9 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
 
       {beat.tipo === 'tabellone' && bracket && (
         <div className="match-intro__tabellone">
+          {/* Stesso marchio della locandina: era l'unica battuta dei playoff
+              senza, e si perdeva il riferimento alla competizione. */}
+          <img className="match-intro__logo-fase" src={LOGO_FASE[fase]} alt="" />
           <p className="match-intro__classifica-titolo">{bracket.tipo === 'title' ? 'Title Playoff' : 'Draft Playoff'} · {bracket.etichettaTurno}</p>
           <div className="match-intro__tie-lista">
             {tiesDelTurno.map((tie) => {
