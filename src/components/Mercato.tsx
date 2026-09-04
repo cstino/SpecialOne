@@ -156,9 +156,13 @@ export function Mercato({ membership, onNavigate }: Props) {
     if (!silenzioso) setCaricamento(true)
     setErrore(null)
     const [istanzeRes, asteRes, offerteRes, contiRes, progressioneRes] = await Promise.all([
+      // Niente filtro su team_id: servono anche le istanze "orfane"
+      // (team_id nullo), cioe' gli svincolati che una squadra l'hanno gia'
+      // avuta. Sono loro a portare l'overall aggiornato per la vetrina —
+      // le rose vere si filtrano in memoria poco piu' sotto.
       supabase.from('player_instances')
         .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato')
-        .eq('league_id', league.id).not('team_id', 'is', null),
+        .eq('league_id', league.id),
       supabase.from('free_agent_auctions')
         .select('id, giorno, tornata, player_id, ingaggio_teorico, stato, origine, vincitore_team_id, ingaggio_finale')
         .eq('league_id', league.id).order('giorno', { ascending: false }).order('id').limit(500),
@@ -173,7 +177,13 @@ export function Mercato({ membership, onNavigate }: Props) {
     const primoErrore = istanzeRes.error ?? asteRes.error ?? offerteRes.error
     if (primoErrore) { setErrore(primoErrore.message); setCaricamento(false); return }
 
-    const istanze = istanzeRes.data ?? []
+    const istanzeTutte = istanzeRes.data ?? []
+    // Le rose sono solo le istanze con una squadra: le orfane servono
+    // unicamente a conoscere l'overall vero di chi e' all'asta.
+    const istanze = istanzeTutte.filter((i) => i.team_id !== null)
+    const istanzeSvincolate = new Map(istanzeTutte
+      .filter((i) => i.team_id === null)
+      .map((i) => [i.player_id, i as { overall_corrente: number; eta_corrente: number }]))
     const asteRighe = (asteRes.data ?? []) as Asta[]
     // Una sola interrogazione per l'anagrafica: i giocatori delle rose e
     // quelli all'asta vengono dalla stessa tabella.
@@ -209,8 +219,16 @@ export function Mercato({ membership, onNavigate }: Props) {
       ruolo: perId.get(a.player_id)?.posizioni?.[0] ?? '—',
       club: perId.get(a.player_id)?.club ?? '—',
       posizioni: perId.get(a.player_id)?.posizioni ?? [],
-      overall: progressionePerId.get(a.player_id)?.overall_corrente ?? perId.get(a.player_id)?.overall ?? 0,
-      eta: progressionePerId.get(a.player_id)?.eta_corrente ?? perId.get(a.player_id)?.eta ?? 0,
+      // Stessa precedenza a tre livelli del server (private.estrai_svincolati_lega
+      // e risolvi_aste_giorno): istanza orfana → pool mai scelto → catalogo.
+      // Uno svincolato "vero" (gia' stato in rosa) ha l'overall maturato
+      // sull'istanza, non in free_agent_progression, che per lui non esiste.
+      overall: istanzeSvincolate.get(a.player_id)?.overall_corrente
+        ?? progressionePerId.get(a.player_id)?.overall_corrente
+        ?? perId.get(a.player_id)?.overall ?? 0,
+      eta: istanzeSvincolate.get(a.player_id)?.eta_corrente
+        ?? progressionePerId.get(a.player_id)?.eta_corrente
+        ?? perId.get(a.player_id)?.eta ?? 0,
       foto_url: perId.get(a.player_id)?.foto_url ?? null,
       foto_firmata: fotoPerId.get(a.player_id),
     }])))
