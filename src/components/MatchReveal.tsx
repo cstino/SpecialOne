@@ -283,11 +283,21 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     return () => window.clearTimeout(timer)
   }, [minutoCorrente, popupGol, eventi])
 
+  // Sblocco dell'audio all'apertura della cronaca: un play() immediatamente
+  // seguito da pause() mentre il tocco dell'utente e' ancora "valido"
+  // autorizza l'elemento, cosi' i play() successivi (il boato del gol e il
+  // sottofondo, che partono da un timer) non vengono piu' rifiutati. Senza
+  // questo, chi guardava l'intro fino in fondo restava senza alcun suono.
+  useEffect(() => {
+    for (const ref of [suonoGolRef, sottofondoRef]) {
+      const audio = ref.current
+      if (!audio) continue
+      void audio.play().then(() => { audio.pause(); audio.currentTime = 0 }).catch(() => {})
+    }
+  }, [])
+
   // Sottofondo dello stadio: si accende mentre la partita scorre (o mentre
-  // un gol e' in scena) e si spegne a fine cronaca. L'elemento resta sempre
-  // montato — vedi il commento accanto al tag <audio> — cosi' il primo
-  // play() parte a ridosso del click che ha aperto la cronaca e non viene
-  // rifiutato dalle regole di autoplay.
+  // un gol e' in scena) e si spegne a fine cronaca.
   const sottofondoAcceso = eventi.length > 0 && (inCorso || popupGol !== null)
   useEffect(() => {
     const audio = sottofondoRef.current
@@ -367,11 +377,26 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const casa = data.teamById.get(fixture.home_team_id)
   const ospite = data.teamById.get(fixture.away_team_id)
 
+  // I due elementi audio stanno FUORI dal ramo dell'intro, cosi' esistono
+  // gia' al primo render — cioe' subito dopo il tocco che ha aperto la
+  // partita — e restano gli stessi quando l'intro lascia il posto alla
+  // cronaca. Prima nascevano solo dopo l'intro: chi la saltava col
+  // pulsante li creava dentro al proprio tocco (e i suoni partivano), chi
+  // la guardava fino in fondo li creava da un timer, fuori da qualsiasi
+  // gesto, e il browser ne bloccava la riproduzione. Da qui la differenza
+  // fra stagione regolare (intro corta, spesso saltata) e playoff.
+  const elementiAudio = <>
+    <audio ref={suonoGolRef} src="/suoni-effetti/esultanza-gol.m4a" preload="auto" />
+    <audio ref={sottofondoRef} src="/suoni-effetti/stadio-sottofondo.m4a" loop preload="auto" />
+  </>
+
   // L'intro (musica di fase, locandina, formazioni) precede il calcio
   // d'inizio solo quando c'e' davvero una cronaca da vivere: per le partite
   // simulate prima della cronaca estesa non avrebbe nulla da presentare.
   if (minutoCorrente < 0 && eventi.length > 0) {
-    return <MatchIntro
+    return <>
+    {elementiAudio}
+    <MatchIntro
       membership={membership}
       fixture={fixture}
       data={data}
@@ -383,6 +408,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
       onFinish={() => setMinutoCorrente(0)}
       onClose={onClose}
     />
+    </>
   }
 
   const squadraGol = popupGol && (popupGol.lato === 'casa' ? casa : ospite)
@@ -390,15 +416,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const marcatore = popupGol && nomi.get(popupGol.marcatore)
 
   return <div className="match-reveal-backdrop" role="dialog" aria-modal="true" aria-label="Cronaca della partita">
-    <audio ref={suonoGolRef} src="/suoni-effetti/esultanza-gol.m4a" preload="auto" />
-    {/* Sempre nel DOM, mai montato a meta' partita: prima era renderizzato
-        solo con (inCorso || popupGol), ma minutoCorrente parte da -1 quindi
-        l'elemento nasceva DOPO il click che apre la cronaca. Un <audio
-        autoPlay> inserito fuori dal gesto dell'utente viene bloccato dalle
-        regole di autoplay del browser (iOS in particolare): il boato del
-        gol si sentiva, il pubblico no. Ora la riproduzione la governa
-        l'effetto qui sopra, col primo play() a ridosso del click. */}
-    <audio ref={sottofondoRef} src="/suoni-effetti/stadio-sottofondo.m4a" loop preload="auto" />
+    {elementiAudio}
     <section className="match-reveal">
       <div className="match-reveal__sfondo" style={{ backgroundImage: `url(${SFONDO_FASE_VERTICALE[fase]})` }} />
       <button className="match-reveal__close" type="button" onClick={onClose} aria-label="Chiudi cronaca">×</button>
