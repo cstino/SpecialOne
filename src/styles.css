@@ -1793,7 +1793,10 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .alerts-list__open strong { overflow:hidden; color:#eaf4f8; font-size:.86rem; font-weight:850; text-overflow:ellipsis; white-space:nowrap; }
 .alerts-list__open small { color:#98a2ad; font-size:.71rem; line-height:1.45; }
 .alerts-list__open time { padding-top:3px; color:#74808b; font-size:.63rem; white-space:nowrap; }
-.alerts-list__delete { position:absolute; top:50%; right:16px; width:28px; height:28px; display:grid; place-items:center; padding:0; border:0; border-radius:50%; color:#7a8792; background:transparent; font-size:1.1rem; line-height:1; cursor:pointer; transform:translateY(-50%); transition:color .16s ease,background .16s ease; }
+/* L'area cliccabile copre tutta la striscia destra riservata dal padding
+   di .alerts-list__open (56px), non solo il cerchietto visivo: mancare
+   di poco il centro apriva l'avviso invece di chiuderlo. */
+.alerts-list__delete { position:absolute; inset:0 0 0 auto; width:56px; display:grid; place-items:center; padding:0; border:0; border-radius:0; color:#7a8792; background:transparent; font-size:1.1rem; line-height:1; cursor:pointer; transition:color .16s ease,background .16s ease; }
 .alerts-list__delete:hover { color:#fff; background:#4a2132; }
 .alerts-list__delete:focus-visible { outline:2px solid #f06b88; outline-offset:1px; }
 .alerts-list__open i[data-tipo="giornata_simulata"] { color:#7fe0a4; background:#16301f; }
@@ -2063,7 +2066,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .alerts-list__open time { grid-column:2; padding:0; font-size:.59rem; }
   .alerts-list__open strong { font-size:.8rem; }
   .alerts-list__open small { font-size:.66rem; }
-  .alerts-list__delete { right:9px; }
+  .alerts-list__delete { width:46px; }
   .honors-heading { grid-template-columns:1fr; align-items:start; gap:18px; padding-bottom:24px; }
   .honors-heading h1 { font-size:clamp(3.15rem,15vw,4.8rem); }
   .honors-cup { width:100%; height:68px; aspect-ratio:auto; grid-template-columns:auto auto auto; align-items:center; gap:8px; border-radius:13px; }
