@@ -155,7 +155,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   const carica = useCallback(async (silenzioso = false) => {
     if (!silenzioso) setCaricamento(true)
     setErrore(null)
-    const [istanzeRes, asteRes, offerteRes, contiRes] = await Promise.all([
+    const [istanzeRes, asteRes, offerteRes, contiRes, progressioneRes] = await Promise.all([
       supabase.from('player_instances')
         .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato')
         .eq('league_id', league.id).not('team_id', 'is', null),
@@ -164,6 +164,11 @@ export function Mercato({ membership, onNavigate }: Props) {
         .eq('league_id', league.id).order('giorno', { ascending: false }).order('id').limit(500),
       supabase.from('free_agent_bids').select('auction_id, ingaggio_offerto'),
       supabase.rpc('capienza_squadra', { p_league_id: league.id }),
+      // Gli svincolati invecchiano/crescono per lega (free_agent_progression),
+      // proprio come i giocatori in rosa: senza questo la vetrina mostra
+      // l'overall base del catalogo invece di quello vero — chi vince
+      // l'asta si ritrova poi un valore diverso da quello visto per offrire.
+      supabase.from('free_agent_progression').select('player_id, overall_corrente, eta_corrente').eq('league_id', league.id),
     ])
     const primoErrore = istanzeRes.error ?? asteRes.error ?? offerteRes.error
     if (primoErrore) { setErrore(primoErrore.message); setCaricamento(false); return }
@@ -198,13 +203,14 @@ export function Mercato({ membership, onNavigate }: Props) {
     setMieOfferte(new Map((offerteRes.data ?? []).map((o) => [o.auction_id, o.ingaggio_offerto])))
     // Un errore qui non deve impedire di usare il mercato: e' un indicatore.
     setConti(contiRes.error ? null : contiRes.data as { capienza: number; slot_liberi: number })
+    const progressionePerId = new Map((progressioneRes.data ?? []).map((r) => [r.player_id, r as { overall_corrente: number; eta_corrente: number }]))
     setSvincolati(new Map(asteRighe.map((a) => [a.player_id, {
       nome: cognome(perId.get(a.player_id)?.nome ?? '—'),
       ruolo: perId.get(a.player_id)?.posizioni?.[0] ?? '—',
       club: perId.get(a.player_id)?.club ?? '—',
       posizioni: perId.get(a.player_id)?.posizioni ?? [],
-      overall: perId.get(a.player_id)?.overall ?? 0,
-      eta: perId.get(a.player_id)?.eta ?? 0,
+      overall: progressionePerId.get(a.player_id)?.overall_corrente ?? perId.get(a.player_id)?.overall ?? 0,
+      eta: progressionePerId.get(a.player_id)?.eta_corrente ?? perId.get(a.player_id)?.eta ?? 0,
       foto_url: perId.get(a.player_id)?.foto_url ?? null,
       foto_firmata: fotoPerId.get(a.player_id),
     }])))
