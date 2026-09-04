@@ -83,6 +83,7 @@ type VivaioProspetto = {
   id: number
   ingaggio: number
   entrata_stagione: number
+  giornate_rimanenti: number
   potenziale_min: number
   potenziale_max: number
   fotoFirmata?: string
@@ -309,7 +310,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     setVivaioLoading(true); setVivaioErrore(null)
     const [prospettiResult, tabellaResult, risorseResult] = await Promise.all([
       supabase.from('vivaio_prospetti')
-        .select('id, ingaggio, entrata_stagione, player_id, giocatore:players(nome, posizioni, overall, eta, nazionalita, foto_url)')
+        .select('id, ingaggio, entrata_stagione, giornate_rimanenti, player_id, giocatore:players(nome, posizioni, overall, eta, nazionalita, foto_url)')
         .eq('league_id', league.id).eq('team_id', teamId),
       supabase.rpc('tabella_risorse'),
       supabase.from('team_risorse').select('livello_vivaio').eq('team_id', teamId).maybeSingle(),
@@ -676,7 +677,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           <span>{vivaioProspetti.length} / {vivaioSlotMassimi} slot</span>
         </div>
         <p className="field-help">
-          Fuori dal conteggio rosa. {ownTeam ? 'Entro la fine dell’off-season devi promuoverli in prima squadra o torneranno sul mercato UNDER.' : 'Il potenziale mostrato è una fascia: si stringe salendo di livello VIVAIO.'}
+          Fuori dal conteggio rosa. {ownTeam ? 'Ogni prospetto ha un numero di giornate per essere promosso in prima squadra (tante quante la stagione regolare): scaduto il conto alla rovescia, torna sul mercato UNDER.' : 'Il potenziale mostrato è una fascia: si stringe salendo di livello VIVAIO.'}
         </p>
         {vivaioErrore && <p className="notice notice--error">{vivaioErrore}</p>}
         {vivaioLoading ? <p className="season-empty">Carico il vivaio…</p>
@@ -697,7 +698,15 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       <strong>{g.nome}</strong>
                       <small>{g.posizioni.join(' · ')} · {g.eta} anni · <em>{money(prospetto.ingaggio)}/stagione</em> · potenziale {prospetto.potenziale_min === prospetto.potenziale_max ? prospetto.potenziale_min : `${prospetto.potenziale_min}-${prospetto.potenziale_max}`}</small>
                     </div>
-                    <b>{g.overall}</b>
+                    <div className="vivaio-overall">
+                      <b>{g.overall}</b>
+                      <em
+                        className={`vivaio-countdown ${prospetto.giornate_rimanenti <= 3 ? 'vivaio-countdown--urgente' : prospetto.giornate_rimanenti <= 8 ? 'vivaio-countdown--attenzione' : ''}`}
+                        title={`${prospetto.giornate_rimanenti} ${prospetto.giornate_rimanenti === 1 ? 'giornata' : 'giornate'} prima del rilascio automatico sul mercato UNDER`}
+                      >
+                        {prospetto.giornate_rimanenti}g
+                      </em>
+                    </div>
                     {ownTeam && (vivaioConferma?.id === prospetto.id
                       ? <div className="player-modal__confirm">
                           <div>

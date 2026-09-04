@@ -2022,6 +2022,14 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .team-roster-player > div small { color: #7f7789; font-size: .63rem; }
 .team-roster-player > div small em { color: #c9a6ff; font-style: normal; font-weight: 750; }
 .team-roster-player > b { color: #fff; font-size: 1.1rem; text-align: center; }
+/* Solo nel vivaio: overall + countdown in giornate impilati nella stessa
+   colonna da 50px, invece del solo overall (.team-roster-player > b sopra
+   resta per la rosa titolare, che non ha nessun conto alla rovescia). */
+.vivaio-overall { display: grid; justify-items: center; gap: 3px; }
+.vivaio-overall b { color: #fff; font-size: 1.1rem; text-align: center; }
+.vivaio-countdown { padding: 1px 6px; border-radius: 999px; color: #9990aa; background: #201c2c; font-style: normal; font-size: .58rem; font-weight: 800; white-space: nowrap; }
+.vivaio-countdown--attenzione { color: #f2c94c; background: rgba(242,201,74,.16); }
+.vivaio-countdown--urgente { color: #ff7188; background: rgba(255,113,136,.16); }
 .team-roster-player > dl { display: grid; grid-template-columns: repeat(3,1fr); margin: 0; }
 .team-roster-player > dl span { display: grid; justify-items: center; color: #c7becf; font-size: .72rem; font-weight: 850; }
 .team-roster-player > dl small { color: #665f6e; font-size: .45rem; }

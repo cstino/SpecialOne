@@ -993,6 +993,15 @@ export default {
       })
       if (vivaioCrescitaError) throw vivaioCrescitaError
 
+      // A differenza dei quattro meccanismi sopra (un quarto di stagione),
+      // questo gira a OGNI giornata: il countdown di un prospetto vivaio
+      // scade in giornate dal momento dell'acquisto, non a fine stagione.
+      const { error: vivaioCountdownError } = await ctx.supabaseAdmin.rpc('decrementa_vivaio_giornate', {
+        p_league_id: leagueId,
+        p_giornata: giornata,
+      })
+      if (vivaioCountdownError) throw vivaioCountdownError
+
       // Lo stipendio e' una rata per giornata, non un addebito anticipato.
       // L'RPC e' idempotente: se il cron ritenta dopo un errore, ogni quota
       // gia' scritta nella tabella privata resta una sola volta.
