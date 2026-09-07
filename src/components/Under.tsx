@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MACRO_COLORE, MACRO_LABEL, macroRuolo, type MacroRuolo } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
 import { useSeasonData } from '../lib/useSeasonData'
-import { formatCountdown, useOraCorrente } from '../lib/countdown'
+import { formatCountdown, oraServerAdesso, useOraCorrente } from '../lib/countdown'
 import type { Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { PopupSpiegazione } from './PopupSpiegazione'
@@ -15,10 +15,13 @@ type Offerta = { id: number; auction_id: number; team_id: number; ingaggio_offer
 
 function milioni(euro: number) { return `${(euro / 1_000_000).toFixed(1).replace('.', ',')} M€` }
 
+// Sull'ora del server, non su quella del telefono: un dispositivo
+// sfasato mostrava il modulo di offerta fuori orario (per poi vedersela
+// rifiutare dalla RPC) o lo nascondeva quando il mercato era aperto.
 function minutiDalMezzanotteRoma() {
   const [ore, minuti] = new Intl.DateTimeFormat('it-IT', {
     timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit', hour12: false,
-  }).format(new Date()).split(':').map(Number)
+  }).format(new Date(oraServerAdesso())).split(':').map(Number)
   return ore * 60 + minuti
 }
 function mercatoAperto() {

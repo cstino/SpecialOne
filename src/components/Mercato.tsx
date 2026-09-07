@@ -4,7 +4,7 @@ import { cognome } from '../lib/nomi'
 import { MACRO_COLORE, MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
 import { useSeasonData } from '../lib/useSeasonData'
-import { formatCountdown, useOraCorrente } from '../lib/countdown'
+import { formatCountdown, oraServerAdesso, useOraCorrente } from '../lib/countdown'
 import type { League, Membership } from '../types'
 import { Crest } from './Crest'
 import { GameNav, type GameView } from './GameNav'
@@ -67,7 +67,7 @@ type Anagrafica = {
 function minutiDalMezzanotteRoma() {
   const [ore, minuti] = new Intl.DateTimeFormat('it-IT', {
     timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit', hour12: false,
-  }).format(new Date()).split(':').map(Number)
+  }).format(new Date(oraServerAdesso())).split(':').map(Number)
   return ore * 60 + minuti
 }
 
