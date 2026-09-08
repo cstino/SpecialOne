@@ -1,0 +1,95 @@
+# Validazione in condizioni di produzione — 9 settembre 2026
+#
+# Output di: node tools/validazione/simulate-reale.js
+#
+# NON sostituisce docs/risultati-fase0.txt, che resta il riferimento
+# storico della Fase 0 (motore in configurazione neutra, tuttora valido:
+# rilanciato lo stesso giorno, stessi numeri).
+#
+# Serve come metro PRIMA di ritarare gli STILI: senza, una modifica al
+# motore non sarebbe verificabile come impone CLAUDE.md sezione 4.
+
+CONFIG:  SENSIBILITA_FORZA=0.09   XG_BASE_BLOCCO=0.252   AMPLIFICA_CONTROLLO=1.4
+
+Validazione nelle condizioni in cui il gioco gira davvero.
+I target restano quelli della Fase 0: mostrano di quanto la realta' li sfonda.
+
+==============================================================================
+TEST A — CONFIGURAZIONE DI PRODUZIONE (moduli e stili con le quote reali)
+==============================================================================
+
+  solo moduli reali (stile neutro)
+  Gol per partita                        2.56   target 2.50–2.90    OK 
+  Tiri per squadra                      12.40   target 11.00–14.00    OK 
+  Pareggi %                              25.5   target 23.0–27.0    OK 
+  Vittorie casa %                        45.4   target 43.0–47.0    OK 
+
+  solo stili reali (4-3-3)
+  Gol per partita                        2.84   target 2.50–2.90    OK 
+  Tiri per squadra                      13.84   target 11.00–14.00    OK 
+  Pareggi %                              24.5   target 23.0–27.0    OK 
+  Vittorie casa %                        46.5   target 43.0–47.0    OK 
+
+  moduli + stili reali
+  Gol per partita                        2.98   target 2.50–2.90   FUORI
+  Tiri per squadra                      14.39   target 11.00–14.00   FUORI
+  Pareggi %                              23.7   target 23.0–27.0    OK 
+  Vittorie casa %                        46.8   target 43.0–47.0    OK 
+
+  moduli + stili + fuori ruolo reali   (fuori ruolo effettivi: 16.2%, reali 9.4%)
+  Gol per partita                        2.93   target 2.50–2.90   FUORI
+  Tiri per squadra                      14.16   target 11.00–14.00   FUORI
+  Pareggi %                              23.8   target 23.0–27.0    OK 
+  Vittorie casa %                        46.4   target 43.0–47.0    OK 
+
+  Riferimento misurato in produzione (Serie F, 80 partite):
+    gol 4.33   tiri/squadra 19.6   pareggi 15.0%   vittorie casa 58.8%
+
+==============================================================================
+TEST B — GOL TOTALI PER ACCOPPIAMENTO DI STILI  (squadre pari, 4-3-3)
+==============================================================================
+  Un motore equilibrato dovrebbe tenere tutte le caselle vicine al target
+  2.50-2.90. Lo scarto fra la casella piu' alta e la piu' bassa e' la
+  misura di quanto lo stile pesa sui gol invece che solo sull'enfasi.
+
+  casa \ ospite      equilibr contropi possesso    fasce recupero  diretto blocco_b
+  equilibrato            2.46     2.09     2.49     2.92     3.07     2.76     1.81
+  contropiede            2.08     1.87     2.18     2.58     2.71     2.46     1.68
+  possesso_palla         2.40     2.05     2.46     2.93     2.95     2.72     1.81
+  fasce                  3.02     2.55     3.02     3.49     3.71     3.35     2.26
+  recupero_veloce        2.95     2.53     3.07     3.57     3.71     3.31     2.26
+  diretto                2.81     2.46     2.88     3.37     3.41     3.20     2.09
+  blocco_basso           1.90     1.66     1.97     2.29     2.31     2.15     1.43
+
+  piu' alta: 3.71 (fasce vs recupero_veloce)
+  piu' bassa: 1.43 (blocco_basso vs blocco_basso)
+  ESCURSIONE: 2.28 gol   <-- gli stili pesano piu' del divario di forza
+
+==============================================================================
+TEST C — TITOLARI FUORI RUOLO (a parita' di rosa e di forza media)
+==============================================================================
+  Il differenziale ATT-DEF e' cio' che finisce nell'esponente dell'xG:
+  conta la sua DISPERSIONE, non solo la media, perche' exp() e' convessa.
+
+  fuori ruolo   dev.std ATT-DEF   gol/partita   tiri/sq
+         0.0%              2.4          2.42      11.9
+         9.4%              4.0          2.42      11.8  <-- livello reale (Serie F)
+        18.0%              3.8          2.39      11.7
+        27.0%              4.0          2.38      11.8
+
+  dispersione misurata in produzione: 6.2
+
+==============================================================================
+TEST D — SCOMPOSIZIONE DELLO SCARTO
+==============================================================================
+
+  partenza (moduli reali, stile neutro, tutti in ruolo)  2.57 gol
+  + stili reali                                         2.96 gol   (1.15x)
+  + fuori ruolo reali (9.4%)                            2.53 gol   (0.98x)
+  + entrambi                                            2.93 gol   (1.14x)
+
+  prodotto dei due fattori presi da soli: 1.13x
+  effetto congiunto misurato:             1.14x
+  (se il secondo e' maggiore, i due fattori si rinforzano a vicenda)
+
+  scarto ancora non riprodotto rispetto a Serie F (4.33 gol): 1.48x
