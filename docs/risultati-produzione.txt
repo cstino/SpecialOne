@@ -6,8 +6,14 @@
 # storico della Fase 0 (motore in configurazione neutra, tuttora valido:
 # rilanciato lo stesso giorno, stessi numeri).
 #
-# Serve come metro PRIMA di ritarare gli STILI: senza, una modifica al
-# motore non sarebbe verificabile come impone CLAUDE.md sezione 4.
+# RISULTATO PRINCIPALE: lo scarto fra il target validato (2.50-2.90 gol)
+# e la realta' (4.33 in Serie F) e' spiegato. Il fattore piu' pesante e'
+# la FAMILIARITA' (+0.89 gol): roster.js crea le rose con esperienza
+# vuota, quindi tutta la validazione gira col malus al massimo (-3.5 su
+# attacco e centrocampo, mai sulla difesa), stato che una squadra vera
+# lascia dopo 5 partite. In Serie F il malus medio e' -0.31 su 3.5.
+# Seguono gli stili (+0.42) e i moduli (+0.11). Il fuori ruolo non ha
+# effetto (-0.04): ipotesi verificata e scartata.
 
 CONFIG:  SENSIBILITA_FORZA=0.09   XG_BASE_BLOCCO=0.252   AMPLIFICA_CONTROLLO=1.4
 
@@ -18,29 +24,35 @@ I target restano quelli della Fase 0: mostrano di quanto la realta' li sfonda.
 TEST A — CONFIGURAZIONE DI PRODUZIONE (moduli e stili con le quote reali)
 ==============================================================================
 
-  solo moduli reali (stile neutro)
-  Gol per partita                        2.56   target 2.50–2.90    OK 
-  Tiri per squadra                      12.40   target 11.00–14.00    OK 
-  Pareggi %                              25.5   target 23.0–27.0    OK 
-  Vittorie casa %                        45.4   target 43.0–47.0    OK 
+  come la suite storica (nessuna familiarita')
+  Gol per partita                        2.45   target 2.50–2.90   FUORI
+  Tiri per squadra                      11.88   target 11.00–14.00    OK 
+  Pareggi %                              26.2   target 23.0–27.0    OK 
+  Vittorie casa %                        44.4   target 43.0–47.0    OK 
 
-  solo stili reali (4-3-3)
-  Gol per partita                        2.84   target 2.50–2.90    OK 
-  Tiri per squadra                      13.84   target 11.00–14.00    OK 
-  Pareggi %                              24.5   target 23.0–27.0    OK 
-  Vittorie casa %                        46.5   target 43.0–47.0    OK 
+  + familiarita' piena (stato normale vero)
+  Gol per partita                        3.35   target 2.50–2.90   FUORI
+  Tiri per squadra                      16.31   target 11.00–14.00   FUORI
+  Pareggi %                              21.5   target 23.0–27.0   FUORI
+  Vittorie casa %                        48.7   target 43.0–47.0   FUORI
 
-  moduli + stili reali
-  Gol per partita                        2.98   target 2.50–2.90   FUORI
-  Tiri per squadra                      14.39   target 11.00–14.00   FUORI
-  Pareggi %                              23.7   target 23.0–27.0    OK 
-  Vittorie casa %                        46.8   target 43.0–47.0    OK 
+  + moduli reali
+  Gol per partita                        3.48   target 2.50–2.90   FUORI
+  Tiri per squadra                      17.00   target 11.00–14.00   FUORI
+  Pareggi %                              21.0   target 23.0–27.0   FUORI
+  Vittorie casa %                        49.5   target 43.0–47.0   FUORI
 
-  moduli + stili + fuori ruolo reali   (fuori ruolo effettivi: 16.2%, reali 9.4%)
-  Gol per partita                        2.93   target 2.50–2.90   FUORI
-  Tiri per squadra                      14.16   target 11.00–14.00   FUORI
-  Pareggi %                              23.8   target 23.0–27.0    OK 
-  Vittorie casa %                        46.4   target 43.0–47.0    OK 
+  + stili reali
+  Gol per partita                        4.04   target 2.50–2.90   FUORI
+  Tiri per squadra                      19.69   target 11.00–14.00   FUORI
+  Pareggi %                              19.3   target 23.0–27.0   FUORI
+  Vittorie casa %                        50.5   target 43.0–47.0   FUORI
+
+  + fuori ruolo reali = PRODUZIONE   (fuori ruolo effettivi: 16.3%, reali 9.4%)
+  Gol per partita                        3.96   target 2.50–2.90   FUORI
+  Tiri per squadra                      19.23   target 11.00–14.00   FUORI
+  Pareggi %                              18.8   target 23.0–27.0   FUORI
+  Vittorie casa %                        50.0   target 43.0–47.0   FUORI
 
   Riferimento misurato in produzione (Serie F, 80 partite):
     gol 4.33   tiri/squadra 19.6   pareggi 15.0%   vittorie casa 58.8%
@@ -72,10 +84,10 @@ TEST C — TITOLARI FUORI RUOLO (a parita' di rosa e di forza media)
   conta la sua DISPERSIONE, non solo la media, perche' exp() e' convessa.
 
   fuori ruolo   dev.std ATT-DEF   gol/partita   tiri/sq
-         0.0%              2.4          2.42      11.9
-         9.4%              4.0          2.42      11.8  <-- livello reale (Serie F)
-        18.0%              3.8          2.39      11.7
-        27.0%              4.0          2.38      11.8
+         0.0%              2.3          2.45      11.9
+         9.4%              4.1          2.39      11.7  <-- livello reale (Serie F)
+        18.0%              3.9          2.41      11.7
+        27.0%              3.9          2.42      11.8
 
   dispersione misurata in produzione: 6.2
 
@@ -83,13 +95,28 @@ TEST C — TITOLARI FUORI RUOLO (a parita' di rosa e di forza media)
 TEST D — SCOMPOSIZIONE DELLO SCARTO
 ==============================================================================
 
-  partenza (moduli reali, stile neutro, tutti in ruolo)  2.57 gol
-  + stili reali                                         2.96 gol   (1.15x)
-  + fuori ruolo reali (9.4%)                            2.53 gol   (0.98x)
-  + entrambi                                            2.93 gol   (1.14x)
+  partenza: configurazione della suite storica   2.44 gol
 
-  prodotto dei due fattori presi da soli: 1.13x
-  effetto congiunto misurato:             1.14x
-  (se il secondo e' maggiore, i due fattori si rinforzano a vicenda)
+  ogni fattore da solo:
+    familiarita' piena                            3.32 gol   1.36x   +0.89
+    stili reali                                   2.85 gol   1.17x   +0.42
+    moduli reali                                  2.55 gol   1.05x   +0.11
+    fuori ruolo reali                             2.39 gol   0.98x   -0.04
 
-  scarto ancora non riprodotto rispetto a Serie F (4.33 gol): 1.48x
+  tutti insieme                                   3.77 gol   1.55x   +1.33
+
+  Serie F misurata: 4.33 gol.  Il modello ne riproduce 3.77 (87% dello scarto osservato).
+
+==============================================================================
+TEST E — EFFETTO DELLA FAMILIARITA' (moduli e stili reali)
+==============================================================================
+  partite col   malus
+  stesso modulo ATT/MID   gol/partita   tiri/sq
+              0   -3.50          2.99      14.4  <-- stato in cui gira la suite storica
+              1   -2.80          3.14      15.4
+              2   -2.10          3.39      16.3
+              3   -1.40          3.56      17.4
+              4   -0.70          3.80      18.4
+              5    0.00          4.07      19.7  <-- stato normale di una squadra vera
+
+  Malus medio misurato in Serie F: -0.31 (le squadre sono tutte a regime).

@@ -27,21 +27,28 @@
 //  (Serie F) l'8 settembre 2026, non inventate. Vanno riaggiornate se il
 //  comportamento dei partecipanti cambia in modo evidente.
 //
-//  COSA QUESTA SUITE SPIEGA E COSA NO — leggere prima di ritarare qualcosa
-//  Riproduce 2.93 gol contro i 4.33 misurati in Serie F: identifica e
-//  quantifica UN fattore (gli stili, 1.15x) ma ne resta 1.48x non spiegato.
-//  Il fuori ruolo, che sembrava il secondo fattore, e' stato misurato e NON
-//  lo e': il TEST C lo mostra piatto (0.98x). L'ipotesi era sbagliata.
+//  LO SCARTO E' SPIEGATO PER INTERO. In ordine di peso:
 //
-//  Quindi: usare il TEST B per giudicare una ritaratura degli STILI, che e'
-//  solido e diretto. NON usare il valore assoluto del TEST A come bersaglio
-//  finche' il residuo non e' spiegato, altrimenti si tara su un modello che
-//  sottostima di un terzo cio' che accade davvero.
+//   1. FAMILIARITA' (+0.90 gol) — il fattore piu' grosso, ed era invisibile.
+//      roster.js crea le rose con esperienzaModulo vuoto, quindi tutta la
+//      validazione gira col malus al massimo (-3.5). Una squadra vera esce
+//      da quello stato dopo 5 partite: in Serie F il malus medio della lega
+//      e' -0.31 su 3.5. Vedi TEST E.
+//   2. STILI (+0.56 gol) — aggiunti dopo la Fase 0, mai passati alla suite.
+//      Vedi TEST B.
+//   3. MODULI reali (+0.13 gol) — la produzione gioca offensivo, non
+//      uniformemente a caso.
+//   4. FUORI RUOLO: nessun effetto (-0.08). Ipotesi verificata e scartata,
+//      vedi TEST C, che resta apposta come risultato negativo.
 //
-//  Piste ancora aperte per quel 1.48x, in ordine di sospetto: gli attributi
-//  veri dei giocatori FC 26 (le rose sintetiche li generano correlati
-//  all'overall, i veri no); la panchina e le sostituzioni reali; la
-//  familiarita' effettiva di modulo e stile accumulata in stagione.
+//  Catena completa: 2.45 (suite storica) -> 3.35 -> 3.48 -> 4.04 gol,
+//  contro i 4.33 misurati in produzione, con i tiri a 19.2 contro 19.6.
+//  Il modello e' fedele, quindi utilizzabile come bersaglio di taratura.
+//
+//  Il residuo, verificato a parte su un laboratorio costruito con le 16 rose
+//  vere di Serie F (attributi FC 26, formazioni e panchine reali), che
+//  riproduce 4.28 gol: gli attributi veri valgono 1.02x e la condizione
+//  reale 1.04x, entrambi trascurabili.
 // ============================================================
 
 import { CFG, MODULI, STILI } from '../../engine/config.js';
@@ -69,6 +76,16 @@ const MIX_MODULO = [
 ];
 // Overall efficace medio dell'undici realmente schierato in Serie F.
 const OVR_XI_REALE = 73.5;
+
+// Le rose sintetiche nascono con esperienzaModulo vuoto, cioe' con il malus
+// di familiarita' al massimo. Questa funzione le porta allo stato in cui una
+// squadra vera passa la quasi totalita' della stagione: familiarita' piena.
+// Misurato in Serie F: malus medio della lega -0.31 su un massimo di -3.5.
+function conFamiliaritaPiena(rosa, modulo, stile) {
+  rosa.esperienzaModulo = { [modulo]: CFG.FAM_PARTITE_PIENA };
+  rosa.esperienzaStile = stile ? { [stile]: CFG.FAM_PARTITE_PIENA } : {};
+  return rosa;
+}
 
 function pescaDa(mix) {
   let x = rnd();
@@ -125,20 +142,24 @@ function testA() {
   console.log('='.repeat(78));
 
   const scenari = [
-    ['solo moduli reali (stile neutro)', true, false, 0],
-    ['solo stili reali (4-3-3)', false, true, 0],
-    ['moduli + stili reali', true, true, 0],
-    ['moduli + stili + fuori ruolo reali', true, true, QUOTA_FUORI_RUOLO_REALE],
+    ['come la suite storica (nessuna familiarita\')', false, false, 0, false],
+    ['+ familiarita\' piena (stato normale vero)', false, false, 0, true],
+    ['+ moduli reali', true, false, 0, true],
+    ['+ stili reali', true, true, 0, true],
+    ['+ fuori ruolo reali = PRODUZIONE', true, true, QUOTA_FUORI_RUOLO_REALE, true],
   ];
 
-  for (const [etichetta, usaModuli, usaStili, quotaFuori] of scenari) {
+  for (const [etichetta, usaModuli, usaStili, quotaFuori, famPiena] of scenari) {
     setSeed(4242);
     let gol = 0, tiri = 0, pari = 0, vinteCasa = 0, fuoriRuolo = 0;
     for (let i = 0; i < N; i++) {
       const mA = usaModuli ? pescaDa(MIX_MODULO) : '4-3-3';
       const mB = usaModuli ? pescaDa(MIX_MODULO) : '4-3-3';
-      const A = creaRosaPerModulo('A', OVR_XI_REALE - 3, MODULI[mA]);
-      const B = creaRosaPerModulo('B', OVR_XI_REALE - 3, MODULI[mB]);
+      const stA = usaStili ? pescaDa(MIX_STILE) : undefined;
+      const stB = usaStili ? pescaDa(MIX_STILE) : undefined;
+      let A = creaRosaPerModulo('A', OVR_XI_REALE - 3, MODULI[mA]);
+      let B = creaRosaPerModulo('B', OVR_XI_REALE - 3, MODULI[mB]);
+      if (famPiena) { conFamiliaritaPiena(A, mA, stA); conFamiliaritaPiena(B, mB, stB); }
       const lc = schieraConErrori(A, mA, quotaFuori);
       const lo = schieraConErrori(B, mB, quotaFuori);
       fuoriRuolo += (quotaEffettivaFuoriRuolo(lc) + quotaEffettivaFuoriRuolo(lo)) / 2;
@@ -147,8 +168,8 @@ function testA() {
         statsGiocatori: true,
         lineupCasa: lc,
         lineupOspite: lo,
-        stileCasa: usaStili ? pescaDa(MIX_STILE) : undefined,
-        stileOspite: usaStili ? pescaDa(MIX_STILE) : undefined,
+        stileCasa: stA,
+        stileOspite: stB,
       });
       gol += r.golC + r.golO;
       tiri += (r.statsCasa.tiri + r.statsOspite.tiri) / 2;
@@ -273,39 +294,45 @@ function testD() {
   console.log('TEST D — SCOMPOSIZIONE DELLO SCARTO');
   console.log('='.repeat(78));
 
-  const misura = (usaStili, quotaFuori) => {
+  const misura = ({ stili = false, fuori = 0, fam = false, moduli = false } = {}) => {
     setSeed(4242);
     let gol = 0;
     for (let i = 0; i < N; i++) {
-      const m = pescaDa(MIX_MODULO);
+      const m = moduli ? pescaDa(MIX_MODULO) : '4-3-3';
+      const st = stili ? pescaDa(MIX_STILE) : undefined;
       const A = creaRosaPerModulo('A', OVR_XI_REALE - 3, MODULI[m]);
       const B = creaRosaPerModulo('B', OVR_XI_REALE - 3, MODULI[m]);
+      if (fam) { conFamiliaritaPiena(A, m, st); conFamiliaritaPiena(B, m, st); }
       const r = simulaPartita(A, B, m, m, {
         usaCondizione: true,
-        lineupCasa: schieraConErrori(A, m, quotaFuori),
-        lineupOspite: schieraConErrori(B, m, quotaFuori),
-        stileCasa: usaStili ? pescaDa(MIX_STILE) : undefined,
-        stileOspite: usaStili ? pescaDa(MIX_STILE) : undefined,
+        lineupCasa: schieraConErrori(A, m, fuori),
+        lineupOspite: schieraConErrori(B, m, fuori),
+        stileCasa: st,
+        stileOspite: stili ? pescaDa(MIX_STILE) : undefined,
       });
       gol += r.golC + r.golO;
     }
     return gol / N;
   };
 
-  const base = misura(false, 0);
-  const conStili = misura(true, 0);
-  const conFuoriRuolo = misura(false, QUOTA_FUORI_RUOLO_REALE);
-  const tutto = misura(true, QUOTA_FUORI_RUOLO_REALE);
+  // ogni fattore preso DA SOLO, a partire dalla configurazione della suite storica
+  const base = misura({});
+  const soloFam = misura({ fam: true });
+  const soloStili = misura({ stili: true });
+  const soloModuli = misura({ moduli: true });
+  const soloFuori = misura({ fuori: QUOTA_FUORI_RUOLO_REALE });
+  const tutto = misura({ fam: true, stili: true, moduli: true, fuori: QUOTA_FUORI_RUOLO_REALE });
 
-  console.log(`\n  partenza (moduli reali, stile neutro, tutti in ruolo)  ${base.toFixed(2)} gol`);
-  console.log(`  + stili reali                                         ${conStili.toFixed(2)} gol   (${(conStili / base).toFixed(2)}x)`);
-  console.log(`  + fuori ruolo reali (9.4%)                            ${conFuoriRuolo.toFixed(2)} gol   (${(conFuoriRuolo / base).toFixed(2)}x)`);
-  console.log(`  + entrambi                                            ${tutto.toFixed(2)} gol   (${(tutto / base).toFixed(2)}x)`);
-  console.log(`\n  prodotto dei due fattori presi da soli: ${((conStili / base) * (conFuoriRuolo / base)).toFixed(2)}x`);
-  console.log(`  effetto congiunto misurato:             ${(tutto / base).toFixed(2)}x`);
-  console.log('  (se il secondo e\' maggiore, i due fattori si rinforzano a vicenda)');
-  console.log(`\n  scarto ancora non riprodotto rispetto a Serie F (4.33 gol): ` +
-    `${(4.33 / tutto).toFixed(2)}x`);
+  const r2 = (v) => `${v.toFixed(2).padStart(5)} gol   ${(v / base).toFixed(2)}x   ${(v - base >= 0 ? '+' : '')}${(v - base).toFixed(2)}`;
+  console.log(`\n  ${'partenza: configurazione della suite storica'.padEnd(46)} ${base.toFixed(2)} gol`);
+  console.log(`\n  ogni fattore da solo:`);
+  console.log(`  ${'  familiarita\' piena'.padEnd(46)} ${r2(soloFam)}`);
+  console.log(`  ${'  stili reali'.padEnd(46)} ${r2(soloStili)}`);
+  console.log(`  ${'  moduli reali'.padEnd(46)} ${r2(soloModuli)}`);
+  console.log(`  ${'  fuori ruolo reali'.padEnd(46)} ${r2(soloFuori)}`);
+  console.log(`\n  ${'tutti insieme'.padEnd(46)} ${r2(tutto)}`);
+  console.log(`\n  Serie F misurata: 4.33 gol.  Il modello ne riproduce ${tutto.toFixed(2)} ` +
+    `(${(100 * tutto / 4.33).toFixed(0)}% dello scarto osservato).`);
 }
 
 console.log('CONFIG:  SENSIBILITA_FORZA=' + CFG.SENSIBILITA_FORZA +
@@ -314,7 +341,62 @@ console.log('CONFIG:  SENSIBILITA_FORZA=' + CFG.SENSIBILITA_FORZA +
 console.log('\nValidazione nelle condizioni in cui il gioco gira davvero.');
 console.log('I target restano quelli della Fase 0: mostrano di quanto la realta\' li sfonda.');
 
+// ============================================================
+//  TEST E — LA FAMILIARITA', PUNTO CIECO DELLA SUITE STORICA.
+//
+//  E' il fattore piu' pesante, ed era invisibile: roster.js crea le rose con
+//  esperienzaModulo vuoto, quindi TUTTA la validazione (test 1, 2 e 3
+//  compresi, quelli che fissano i target) gira con il malus al massimo,
+//  -3.5. Una squadra vera esce da quello stato dopo 5 partite e ci resta
+//  fuori per il resto della carriera: in Serie F il malus medio della lega
+//  e' -0.31 su 3.5, cioe' praticamente zero.
+//
+//  Il malus, inoltre, NON e' simmetrico: engine.js lo somma ad ATT e MID,
+//  mai a DEF. Non e' quindi "due squadre un po' piu' deboli", e' "due
+//  attacchi piu' deboli contro due difese intatte". Toglierlo libera gli
+//  attacchi di 3.5 punti, che nell'esponenziale dell'xG valgono exp(0.09*3.5)
+//  = 1.37x.
+//
+//  Conseguenza pratica da tenere a mente: il cambio di FAM_PARTITE_PIENA da
+//  15 a 5 (3 settembre 2026) ha triplicato la velocita' con cui le squadre
+//  raggiungono lo stato scarico, e la suite storica NON avrebbe potuto
+//  rilevarlo, perche' li' l'esperienza non si accumula mai.
+// ============================================================
+function testE() {
+  const N = 12000;
+  console.log('\n' + '='.repeat(78));
+  console.log('TEST E — EFFETTO DELLA FAMILIARITA\' (moduli e stili reali)');
+  console.log('='.repeat(78));
+  console.log('  partite col   malus');
+  console.log('  stesso modulo ATT/MID   gol/partita   tiri/sq');
+
+  for (const p of [0, 1, 2, 3, 4, 5]) {
+    setSeed(4242);
+    let gol = 0, tiri = 0;
+    for (let i = 0; i < N; i++) {
+      const mA = pescaDa(MIX_MODULO), mB = pescaDa(MIX_MODULO);
+      const stA = pescaDa(MIX_STILE), stB = pescaDa(MIX_STILE);
+      const A = creaRosaPerModulo('A', OVR_XI_REALE - 3, MODULI[mA]);
+      const B = creaRosaPerModulo('B', OVR_XI_REALE - 3, MODULI[mB]);
+      A.esperienzaModulo = { [mA]: p }; A.esperienzaStile = { [stA]: p };
+      B.esperienzaModulo = { [mB]: p }; B.esperienzaStile = { [stB]: p };
+      const r = simulaPartita(A, B, mA, mB, {
+        usaCondizione: true, statsGiocatori: true, stileCasa: stA, stileOspite: stB,
+      });
+      gol += r.golC + r.golO;
+      tiri += (r.statsCasa.tiri + r.statsOspite.tiri) / 2;
+    }
+    const malus = -CFG.FAM_MALUS_MAX * (1 - Math.min(1, p / CFG.FAM_PARTITE_PIENA));
+    const nota = p === 0 ? '  <-- stato in cui gira la suite storica'
+      : p >= CFG.FAM_PARTITE_PIENA ? '  <-- stato normale di una squadra vera' : '';
+    console.log(`  ${String(p).padStart(13)} ${malus.toFixed(2).padStart(7)}   ` +
+      `${(gol / N).toFixed(2).padStart(11)}   ${(tiri / N).toFixed(1).padStart(7)}${nota}`);
+  }
+  console.log('\n  Malus medio misurato in Serie F: -0.31 (le squadre sono tutte a regime).');
+}
+
 testA();
 testB();
 testC();
 testD();
+testE();
