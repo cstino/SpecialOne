@@ -2025,6 +2025,19 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .team-roster-player > div small { color: #7f7789; font-size: .63rem; }
 .team-roster-player > div small em { color: #c9a6ff; font-style: normal; font-weight: 750; }
 .team-roster-player > b { color: #fff; font-size: 1.1rem; text-align: center; }
+/* Crescita da inizio stagione, in alto a destra dell'overall. Ancorato al
+   NUMERO (inline-block) e non alla colonna della griglia: su mobile quella
+   colonna scende a 38px e la card ha overflow:hidden, quindi un badge
+   agganciato al bordo della colonna verrebbe tagliato. */
+.ovr-con-delta { position: relative; display: inline-block; }
+.ovr-delta {
+  position: absolute; top: -7px; right: -13px;
+  padding: 1px 3px; border-radius: 4px;
+  font-style: normal; font-size: .52rem; font-weight: 900; line-height: 1.25;
+  letter-spacing: .01em;
+}
+.ovr-delta--su { color: #06240f; background: #4ed27f; }
+.ovr-delta--giu { color: #2d0910; background: #ed5b73; }
 /* Solo nel vivaio: overall + countdown in giornate impilati nella stessa
    colonna da 50px, invece del solo overall (.team-roster-player > b sopra
    resta per la rosa titolare, che non ha nessun conto alla rovescia). */

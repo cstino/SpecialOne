@@ -28,6 +28,8 @@ type RosterPlayer = {
   nazionalita: string | null
   posizioni: string[]
   overall: number
+  /** Scarto rispetto all'overall di inizio stagione: positivo, negativo o zero. */
+  deltaOverall: number
   eta: number
   ingaggio: number
   condizione: number
@@ -243,7 +245,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       setRosterLoading(true)
       setRosterError(null)
       const [instancesResult, statsResult, cambiRuoloResult, specializzazioniResult] = await Promise.all([
-        supabase.from('player_instances').select('id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, morale, contratto_scadenza, rinnovo_stagione, rinnovo_tentativi, sul_mercato, posizioni_override, attributi_override, specializzazione_attiva').eq('league_id', league.id).eq('team_id', teamId),
+        supabase.from('player_instances').select('id, player_id, overall_corrente, overall_inizio_stagione, eta_corrente, ingaggio, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, morale, contratto_scadenza, rinnovo_stagione, rinnovo_tentativi, sul_mercato, posizioni_override, attributi_override, specializzazione_attiva').eq('league_id', league.id).eq('team_id', teamId),
         supabase.from('match_stats').select('match_id, player_instance_id, minuti, gol, assist, tiri, tiri_porta, passaggi_tentati, passaggi_riusciti, contrasti_vinti, dribbling').eq('league_id', league.id).eq('team_id', teamId),
         supabase.from('cambi_ruolo').select('id, player_instance_id, ruolo_precedente, ruolo_target, avviato_giornata, completa_giornata').eq('league_id', league.id).eq('team_id', teamId).is('completato_il', null),
         supabase.from('specializzazioni_giocatore').select('id, player_instance_id, specializzazione_precedente, specializzazione_target, avviato_giornata, completa_giornata').eq('league_id', league.id).eq('team_id', teamId).is('completato_il', null),
@@ -272,6 +274,10 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           id: instance.id, nome: info?.nome ?? `Giocatore ${instance.id}`, club: info?.club ?? '—',
           nazionalita: info?.nazionalita ?? null, posizioni: instance.posizioni_override ?? info?.posizioni ?? [],
           overall: instance.overall_corrente, eta: instance.eta_corrente, ingaggio: instance.ingaggio,
+          // Quanto e' cresciuto o calato da inizio stagione. Il riferimento e'
+          // riportato a overall_corrente alla nascita di ogni stagione, quindi
+          // il conto riparte da zero a ogni annata.
+          deltaOverall: instance.overall_corrente - instance.overall_inizio_stagione,
           condizione: instance.condizione, infortunatoFinoA: instance.infortunato_fino_a, squalificatoFinoA: instance.squalificato_fino_a, piede: info?.piede ?? null, altezza: info?.altezza ?? null,
           // attributi_override (Gestione risorse, specializzazione TRAINING) sostituisce
           // solo le chiavi presenti: vedi private.completa_specializzazioni().
@@ -711,7 +717,15 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                     <i className="team-roster-player__ruolo">{player.posizioni[0] ?? '—'}</i>
                   </span>
                   <div><strong>{player.nome}</strong><small>{player.posizioni.join(' · ')} · {player.eta} anni · <em>{money(player.ingaggio)}/stagione</em> · <em className={contratto(player, league.stagione_corrente).urgente ? 'contratto-urgente' : 'contratto-residuo'}>{contratto(player, league.stagione_corrente).testo}</em></small></div>
-                  <b>{player.overall}</b>
+                  <b>
+                    <span className="ovr-con-delta">
+                      {player.overall}
+                      {player.deltaOverall !== 0 && <i
+                        className={`ovr-delta ovr-delta--${player.deltaOverall > 0 ? 'su' : 'giu'}`}
+                        title={`${player.deltaOverall > 0 ? 'Migliorato' : 'Peggiorato'} di ${Math.abs(player.deltaOverall)} da inizio stagione`}
+                      >{player.deltaOverall > 0 ? '+' : '−'}{Math.abs(player.deltaOverall)}</i>}
+                    </span>
+                  </b>
                   <dl><span>{player.minuti}<small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span></dl>
                 </button>)}</div>}
       </section>}
