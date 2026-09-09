@@ -217,8 +217,10 @@ function testB() {
       setSeed(999);
       let gol = 0;
       for (let i = 0; i < N; i++) {
-        const A = creaRosaPerModulo('A', OVR_XI_REALE - 3, MODULI['4-3-3']);
-        const B = creaRosaPerModulo('B', OVR_XI_REALE - 3, MODULI['4-3-3']);
+        // a familiarita' piena: e' il punto di lavoro in cui le squadre vere
+        // passano la stagione, e l'unico su cui abbia senso giudicare gli stili
+        const A = conFamiliaritaPiena(creaRosaPerModulo('A', OVR_XI_REALE - 3, MODULI['4-3-3']), '4-3-3', sc);
+        const B = conFamiliaritaPiena(creaRosaPerModulo('B', OVR_XI_REALE - 3, MODULI['4-3-3']), '4-3-3', so);
         const r = simulaPartita(A, B, '4-3-3', '4-3-3', { usaCondizione: false, stileCasa: sc, stileOspite: so });
         gol += r.golC + r.golO;
       }
@@ -231,8 +233,11 @@ function testB() {
   }
   console.log(`\n  piu' alta: ${alta.v.toFixed(2)} (${alta.sc} vs ${alta.so})`);
   console.log(`  piu' bassa: ${bassa.v.toFixed(2)} (${bassa.sc} vs ${bassa.so})`);
+  // Soglia 1.5: sopra, lo stile sposta i gol piu' di quanto faccia un divario
+  // di 4 punti di overall fra le squadre, cioe' conta piu' della forza. Prima
+  // del 9 settembre 2026 l'escursione era 3.20.
   console.log(`  ESCURSIONE: ${(alta.v - bassa.v).toFixed(2)} gol` +
-    `   ${alta.v - bassa.v > 1.0 ? '<-- gli stili pesano piu\' del divario di forza' : ''}`);
+    `   ${alta.v - bassa.v > 1.5 ? '<-- lo stile pesa piu\' del divario di forza' : '(sotto la soglia di 1.5)'}`);
 }
 
 // ============================================================

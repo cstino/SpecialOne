@@ -1,3 +1,28 @@
+############################################################################
+#  ATTENZIONE — 9 settembre 2026
+#
+#  QUESTO FILE NON E' PIU' IL CRITERIO DI ACCETTAZIONE DEL MOTORE.
+#  Il criterio e' docs/risultati-produzione.txt.
+#
+#  Resta il riferimento storico della Fase 0, e i numeri qui sotto sono
+#  ancora quelli veri per la configurazione che descrivono. Il problema e'
+#  che quella configurazione il gioco non la vive mai: le rose di
+#  tools/validazione nascono con esperienzaModulo vuoto e non lo accumulano
+#  mai, quindi ogni numero qui sotto e' misurato col malus di familiarita'
+#  al massimo (-3.5 su ATT e MID, mai su DEF) permanentemente attivo.
+#  Una squadra vera esce da quello stato dopo 5 partite e non ci rientra:
+#  in Serie F il malus medio della lega era -0.31 su 3.5.
+#
+#  Conseguenza pratica: con la taratura del 9 settembre 2026 (XG_BASE_BLOCCO
+#  0.252 -> 0.1865, STILI dimezzati) rilanciare simulate.js da numeri SOTTO
+#  il target (circa 1.8 gol invece di 2.5-2.9). Non e' una regressione: e'
+#  la prova che la suite storica misura fuori dal punto di lavoro. Al punto
+#  di lavoro vero il motore fa 2.71 gol e la curva di competitivita' del
+#  TEST 2 qui sotto e' rispettata quasi punto per punto.
+#
+#  I numeri storici sono conservati intatti sotto questa riga.
+############################################################################
+
 
 CONFIG:  SENSIBILITA_FORZA=0.09   XG_BASE_BLOCCO=0.252   AMPLIFICA_CONTROLLO=1.4
 

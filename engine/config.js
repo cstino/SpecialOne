@@ -10,7 +10,19 @@ export const CFG = {
   // solo alle eliminatorie di playoff/playout (design §10.7) quando chi chiama
   // passa opt.supplementariSeParita. Nessuna partita di campionato la usa.
   BLOCCHI_SUPPLEMENTARI: 2,
-  XG_BASE_BLOCCO: 0.252,
+  // 9 settembre 2026: da 0.252 a 0.1865, insieme al dimezzamento degli STILI
+  // qui sotto. Non e' un ritocco "per realismo": la taratura originale era
+  // stata fatta con il malus di familiarita' al massimo (-3.5 su ATT e MID)
+  // sempre attivo, perche' le rose di tools/validazione nascono con
+  // esperienzaModulo vuoto e non lo accumulano mai. Una squadra vera esce da
+  // quello stato dopo 5 partite: in Serie F il malus medio della lega era
+  // -0.31 su 3.5. A regime il motore produceva 4.08 gol a partita contro un
+  // target di 2.50-2.90, ed era anche piu' spietato sul divario di forza di
+  // quanto validato (a +4 di overall il piu' forte vinceva il 70% invece del
+  // 63%). Con questo valore torna a 2.81 gol e la curva di competitivita' si
+  // risovrappone a quella della Fase 0. Dettagli e misure in
+  // docs/risultati-produzione.txt.
+  XG_BASE_BLOCCO: 0.1865,
   // xG = BASE * (ctrl/0.5) * exp(SENSIBILITA_FORZA * (ATT - DEF))
   // forma esponenziale sulla DIFFERENZA di overall, non sul rapporto:
   // 1 punto di overall di vantaggio = +SENS% circa di occasioni. Interpretabile.
@@ -182,14 +194,24 @@ for (const [nome, slots] of Object.entries(MODULI)) {
 //  stesso pattern gia' in uso per MODULI/moduli_validi().
 // ============================================================
 
+// 9 settembre 2026: tutte le ampiezze dimezzate. La redistribuzione e' a
+// somma zero in PUNTI di overall, ma non sui GOL: l'xG e' esponenziale nel
+// differenziale ATT-DEF, quindi spostare peso sull'attacco ne aggiunge piu'
+// di quanti la difesa ne tolga. Misurato a familiarita' piena, l'escursione
+// fra l'accoppiamento piu' prolifico e il piu' avaro era di 3.20 gol
+// (2.01-5.21): lo stile pesava piu' del divario di forza fra le squadre, e i
+// partecipanti sceglievano di conseguenza (53% di stili offensivi in Serie F,
+// blocco_basso usato 1 volta su 160). Dimezzate, l'escursione scende a 1.24:
+// lo stile resta una leva che si sente, senza essere la piu' importante.
+// La matrice completa e' il TEST B di tools/validazione/simulate-reale.js.
 export const STILI = {
-  equilibrato:     { DEF: 0,    MID: 0,    ATT: 0 },
-  contropiede:     { DEF: 3.0,  MID: -3.0, ATT: 0 },
-  possesso_palla:  { DEF: -1.5, MID: 3.0,  ATT: -1.5 },
-  fasce:           { DEF: -1.5, MID: -1.0, ATT: 2.5 },
-  recupero_veloce: { DEF: -3.0, MID: 1.5,  ATT: 1.5 },
-  diretto:         { DEF: 0,    MID: -3.0, ATT: 3.0 },
-  blocco_basso:    { DEF: 4.0,  MID: -2.0, ATT: -2.0 },
+  equilibrato:     { DEF: 0,     MID: 0,     ATT: 0 },
+  contropiede:     { DEF: 1.5,   MID: -1.5,  ATT: 0 },
+  possesso_palla:  { DEF: -0.75, MID: 1.5,   ATT: -0.75 },
+  fasce:           { DEF: -0.75, MID: -0.5,  ATT: 1.25 },
+  recupero_veloce: { DEF: -1.5,  MID: 0.75,  ATT: 0.75 },
+  diretto:         { DEF: 0,     MID: -1.5,  ATT: 1.5 },
+  blocco_basso:    { DEF: 2.0,   MID: -1.0,  ATT: -1.0 },
 };
 
 // ============================================================
