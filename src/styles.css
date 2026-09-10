@@ -2292,7 +2292,11 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .free-agent-card.is-closed { opacity:.74; }
 .free-agent-card__portrait { position:relative; align-self:start; width:92px; height:112px; display:grid; place-items:end center; overflow:hidden; }
 .free-agent-card__portrait img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:top center; filter:drop-shadow(0 12px 12px rgba(0,0,0,.38)); }
-.free-agent-card__portrait span { align-self:center; color:#76717d; font-size:2.4rem; font-weight:950; }
+/* Figlio DIRETTO: e' il segnaposto "?" di chi non ha foto. Senza il ">"
+   questa regola prendeva anche lo span dentro la pastiglia dell'overall
+   (aggiunto l'11 settembre 2026 per il badge di crescita), che si ritrovava
+   a 2.4rem e grigio: numero gigante e sbordato fuori dalla pastiglia. */
+.free-agent-card__portrait > span { align-self:center; color:#76717d; font-size:2.4rem; font-weight:950; }
 .free-agent-card__portrait b { position:absolute; left:7px; bottom:7px; min-width:34px; height:28px; display:grid; place-items:center; border-radius:9px; color:#150f1c; background:#c58cff; font-size:.8rem; font-weight:950; }
 .free-agent-card__body { position:relative; min-width:0; display:grid; align-content:start; gap:7px; }
 .free-agent-card__body header { display:flex; align-items:center; gap:7px; }
