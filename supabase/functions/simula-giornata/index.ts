@@ -21,8 +21,8 @@ type EventoInfortunio = { tipo: 'infortunio'; minuto: number; blocco: number; la
 type EventoCartellino = { tipo: 'cartellino'; minuto: number; blocco: number; lato: Lato; team_id: number; giocatore: number; colore: 'giallo' | 'rosso_diretto' | 'doppio_giallo' }
 type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio | EventoCartellino
 type DbPlayer = { id: number; nome: string; posizioni: string[]; attributi: Record<string, number> }
-type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number; posizioni_override: string[] | null; attributi_override: Record<string, number> | null }
-type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; gk: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number }
+type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number; posizioni_override: string[] | null; attributi_override: Record<string, number> | null; specializzazione_attiva: string | null }
+type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; gk: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; specializzazione: string | null }
 // moltiplicatoreInfortuni e' facoltativo: se assente l'engine usa 1 (nessun
 // effetto), esattamente come nella suite di validazione.
 type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number>; esperienzaStile: Record<string, number>; moltiplicatoreInfortuni?: number }
@@ -78,6 +78,10 @@ function adaptPlayer(instance: Instance, player: DbPlayer): EnginePlayer {
     condizione: instance.condizione,
     infortunatoFinoA: instance.infortunato_fino_a,
     squalificatoFinoA: instance.squalificato_fino_a,
+    // Serve al motore solo per i rigori: la specializzazione "para_rigori"
+    // di un portiere vale punti di overall aggiuntivi dal dischetto.
+    // Vedi engine/rigori.js, portiereDaLineup().
+    specializzazione: instance.specializzazione_attiva ?? null,
   }
 }
 
@@ -689,7 +693,7 @@ export default {
 
       const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult, stileXpResult, medicoResult] = await Promise.all([
         ctx.supabaseAdmin.from('teams').select('id, nome, user_id, controllata_da_pc').eq('league_id', leagueId).in('id', teamIds),
-        ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, attributi_override').eq('league_id', leagueId).in('team_id', teamIds),
+        ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, attributi_override, specializzazione_attiva').eq('league_id', leagueId).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
         ctx.supabaseAdmin.from('formation_xp').select('team_id, modulo, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),

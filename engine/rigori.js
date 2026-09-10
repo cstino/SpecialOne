@@ -26,16 +26,25 @@ export const CFG_RIGORI = {
   // non chiudere mai. Oltre questa soglia decide il sorteggio, come l'antica
   // monetina. Non e' mai stato raggiunto nei test (max osservato: 15 serie).
   MAX_SERIE: 50,
+  // Specializzazione "Para rigori" (TRAINING, 10 settembre 2026): vale come
+  // 10 punti di overall in piu' SOLO dal dischetto. Con K_SCARTO = 0.004
+  // sono 4 punti percentuali di conversione tolti a chi tira: su una serie
+  // da cinque, circa 0,2 rigori parati in piu'. Si sente in un tie-break
+  // senza deciderlo da solo — che e' esattamente il compromesso voluto,
+  // visto che questa specializzazione rinuncia a meta' del bonus di overall
+  // rispetto a "Fuori dai pali" (+1 invece di +2) e quindi vale meno in
+  // tutte le altre 30 giornate.
+  BONUS_PARA_RIGORI: 10,
 };
 
-export function probabilitaRigore(ovrTiratore, ovrPortiere) {
+export function probabilitaRigore(ovrTiratore, ovrPortiere, bonusPortiere = 0) {
   // Senza questo controllo un overall mancante produce NaN, e `rnd() < NaN` e'
   // sempre falso: la sequenza diventa uno 0-0 infinito invece di segnalare il
   // problema. Meglio rompere subito e forte.
   if (!Number.isFinite(ovrTiratore) || !Number.isFinite(ovrPortiere)) {
     throw new TypeError(`Overall non valido ai rigori: tiratore=${ovrTiratore}, portiere=${ovrPortiere}`);
   }
-  const p = CFG_RIGORI.BASE + CFG_RIGORI.K_SCARTO * (ovrTiratore - ovrPortiere);
+  const p = CFG_RIGORI.BASE + CFG_RIGORI.K_SCARTO * (ovrTiratore - ovrPortiere - (bonusPortiere || 0));
   return Math.min(CFG_RIGORI.MAX, Math.max(CFG_RIGORI.MIN, p));
 }
 
@@ -55,7 +64,12 @@ export function tiratoriDaLineup(lineup) {
 export function portiereDaLineup(lineup) {
   const i = lineup.slots.indexOf('GK');
   const g = i >= 0 ? lineup.titolari[i] : null;
-  return g ? { id: g.id, nome: g.nome, ovr: g.ovr } : { id: null, nome: '—', ovr: 70 };
+  if (!g) return { id: null, nome: '—', ovr: 70, bonusRigori: 0 };
+  // Il bonus vale solo per chi e' effettivamente in porta alla fine della
+  // partita: se lo specialista e' uscito (infortunio, sostituzione) il suo
+  // vantaggio esce con lui, perche' questa lineup e' gia' quella finale.
+  const bonusRigori = g.specializzazione === 'para_rigori' ? CFG_RIGORI.BONUS_PARA_RIGORI : 0;
+  return { id: g.id, nome: g.nome, ovr: g.ovr, bonusRigori };
 }
 
 // Decisione matematica: una squadra ha gia' vinto se il suo punteggio supera il
@@ -86,7 +100,7 @@ export function calciaRigori(squadraA, squadraB, opt = {}) {
     // Esaurita la lista si riparte dal primo: nel calcio vero, a oltranza,
     // ricomincia il giro degli undici rimasti in campo.
     const tiratore = lista.length ? lista[indice % lista.length] : { id: null, nome: '—', ovr: 70 };
-    const p = probabilitaRigore(tiratore.ovr, avversaria.portiere.ovr);
+    const p = probabilitaRigore(tiratore.ovr, avversaria.portiere.ovr, avversaria.portiere.bonusRigori);
     const segnato = rnd() < p;
     serie.push({
       numero,
