@@ -21,8 +21,8 @@ const ETICHETTA_STATO: Record<SceltaDraft['stato'], string> = {
   vuota: 'Andata a vuoto',
 }
 
-type GiocatorePool = { id: number; nome: string; posizioni: string[]; overall: number; eta: number; foto_url: string | null; ingaggio_teorico: number }
-type GiocatoreAssegnato = { nome: string; posizioni: string[]; overall: number; foto: string | null }
+type GiocatorePool = { id: number; nome: string; posizioni: string[]; overall: number; eta: number; foto_url: string | null; ingaggio_teorico: number; deltaOverall: number }
+type GiocatoreAssegnato = { nome: string; posizioni: string[]; overall: number; deltaOverall: number; foto: string | null }
 type FinestraScelte = {
   league_id: number; stagione: number; finestra: SceltaDraft['finestra']
   svelata_il: string; estrazione_il: string | null; risolta_il: string | null
@@ -108,7 +108,11 @@ export function Scelte({ membership, onNavigate }: Props) {
     async function carica() {
       const idIstanze = [...new Set(scelteUltimaSessione.map((s) => s.player_instance_id).filter((id): id is number => id != null))]
       if (idIstanze.length === 0) { setGiocatoriAssegnati(new Map()); return }
-      const { data: istanze } = await supabase.from('player_instances').select('id, player_id').in('id', idIstanze)
+      // overall_corrente e non players.overall: questi giocatori sono ormai
+      // in rosa e il loro valore progredisce. Il dato giusto e' gia' nella
+      // riga che si stava caricando, bastava chiederlo.
+      const { data: istanze } = await supabase.from('player_instances')
+        .select('id, player_id, overall_corrente, overall_inizio_stagione').in('id', idIstanze)
       if (!vivo) return
       const idGiocatori = [...new Set((istanze ?? []).map((i) => i.player_id))]
       const { data: anagrafica } = idGiocatori.length
@@ -123,7 +127,13 @@ export function Scelte({ membership, onNavigate }: Props) {
       const mappa = new Map<number, GiocatoreAssegnato>()
       for (const i of istanze ?? []) {
         const p = anagraficaPerId.get(i.player_id)
-        if (p) mappa.set(i.id, { nome: p.nome, posizioni: p.posizioni, overall: p.overall, foto: fotoPerGiocatore.get(p.id) ?? null })
+        if (p) mappa.set(i.id, {
+          nome: p.nome, posizioni: p.posizioni,
+          overall: i.overall_corrente ?? p.overall,
+          deltaOverall: i.overall_corrente != null && i.overall_inizio_stagione != null
+            ? i.overall_corrente - i.overall_inizio_stagione : 0,
+          foto: fotoPerGiocatore.get(p.id) ?? null,
+        })
       }
       setGiocatoriAssegnati(mappa)
     }
@@ -144,12 +154,47 @@ export function Scelte({ membership, onNavigate }: Props) {
           .select('ingaggio_teorico, players(id, nome, posizioni, overall, eta, foto_url)')
           .eq('league_id', league.id).eq('stagione', f.stagione).eq('finestra', f.finestra)
         if (error) { if (vivo) setErrore(error.message); return }
-        mappa.set(chiave, (data ?? [])
+        const righe = (data ?? [])
           .map((r) => {
-            const p = r.players as unknown as Omit<GiocatorePool, 'ingaggio_teorico'> | null
+            const p = r.players as unknown as Omit<GiocatorePool, 'ingaggio_teorico' | 'deltaOverall'> | null
             return p ? { ...p, ingaggio_teorico: r.ingaggio_teorico as number } : null
           })
-          .filter((g): g is GiocatorePool => g != null)
+          .filter((g): g is Omit<GiocatorePool, 'deltaOverall'> => g != null)
+
+        // players.overall e' il CATALOGO: per chi non e' in nessuna rosa il
+        // valore vero vive altrove, e va letto con la stessa precedenza del
+        // server (private.estrai_svincolati_lega, risolvi_aste_giorno):
+        // istanza orfana -> progressione del pool -> catalogo. Senza questo,
+        // la pagina mostrava overall vecchi — stesso difetto gia' corretto
+        // nel mercato il 4 settembre.
+        // Le due query filtrano sugli id del pool e non sull'intera lega:
+        // l'API tronca a 1000 righe, e free_agent_progression ne ha oltre
+        // 5000 per lega (e' il modo in cui quel bug era sopravvissuto a due
+        // tentativi di correzione).
+        const ids = righe.map((g) => g.id)
+        const [progressione, orfane] = ids.length
+          ? await Promise.all([
+              supabase.from('free_agent_progression')
+                .select('player_id, overall_corrente, overall_inizio_stagione')
+                .eq('league_id', league.id).in('player_id', ids),
+              supabase.from('player_instances')
+                .select('player_id, overall_corrente, overall_inizio_stagione')
+                .eq('league_id', league.id).is('team_id', null).in('player_id', ids),
+            ])
+          : [{ data: [] }, { data: [] }]
+        const perId = new Map<number, { overall_corrente: number; overall_inizio_stagione: number }>()
+        for (const r of progressione.data ?? []) perId.set(r.player_id, r)
+        for (const r of orfane.data ?? []) perId.set(r.player_id, r)  // l'istanza orfana ha la precedenza
+
+        mappa.set(chiave, righe
+          .map((g) => {
+            const vero = perId.get(g.id)
+            return {
+              ...g,
+              overall: vero?.overall_corrente ?? g.overall,
+              deltaOverall: vero ? vero.overall_corrente - vero.overall_inizio_stagione : 0,
+            }
+          })
           .sort((a, b) => b.overall - a.overall))
       }))
       if (vivo) setPool(mappa)
@@ -301,7 +346,15 @@ export function Scelte({ membership, onNavigate }: Props) {
                             </div>
                             {g
                               ? <>
-                                  <b>{g.overall}</b>
+                                  <b>
+                                    <span className="ovr-con-delta">
+                                      {g.overall}
+                                      {g.deltaOverall !== 0 && <i
+                                        className={`ovr-delta ovr-delta--${g.deltaOverall > 0 ? 'su' : 'giu'}`}
+                                        title={`${g.deltaOverall > 0 ? 'Migliorato' : 'Peggiorato'} di ${Math.abs(g.deltaOverall)} da inizio stagione`}
+                                      >{g.deltaOverall > 0 ? '+' : '−'}{Math.abs(g.deltaOverall)}</i>}
+                                    </span>
+                                  </b>
                                   <div className="scelte-preferenze__dettagli">
                                     <strong>{cognome(g.nome)}</strong>
                                     <div className="scelte-preferenze__ruoli">
@@ -333,7 +386,15 @@ export function Scelte({ membership, onNavigate }: Props) {
                               ? <img className="h-full w-full object-contain object-bottom" src={foto.get(g.id)} alt="" loading="lazy" />
                               : <div className="grid h-full w-full place-items-center rounded-lg bg-white/[0.05] text-lg font-extrabold text-white/25" aria-hidden="true">{g.nome.charAt(0)}</div>}
                           </div>
-                          <span className="w-9 flex-none text-center text-xl font-extrabold text-purple-300">{g.overall}</span>
+                          <span className="w-9 flex-none text-center text-xl font-extrabold text-purple-300">
+                            <span className="ovr-con-delta">
+                              {g.overall}
+                              {g.deltaOverall !== 0 && <i
+                                className={`ovr-delta ovr-delta--${g.deltaOverall > 0 ? 'su' : 'giu'}`}
+                                title={`${g.deltaOverall > 0 ? 'Migliorato' : 'Peggiorato'} di ${Math.abs(g.deltaOverall)} da inizio stagione`}
+                              >{g.deltaOverall > 0 ? '+' : '−'}{Math.abs(g.deltaOverall)}</i>}
+                            </span>
+                          </span>
                           <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
                             <strong className="truncate text-[.92rem] font-extrabold text-white">{cognome(g.nome)}</strong>
                             <div className="flex flex-wrap items-center gap-1.5">
@@ -415,7 +476,15 @@ export function Scelte({ membership, onNavigate }: Props) {
                       <strong>{cognome(g.nome)}</strong>
                       <span className={`role-pill role-pill--${macroRuolo(g.posizioni ?? []).toLowerCase()}`}>{primario ?? '—'}</span>
                     </div>
-                    <b>{g.overall}</b>
+                    <b>
+                      <span className="ovr-con-delta">
+                        {g.overall}
+                        {g.deltaOverall !== 0 && <i
+                          className={`ovr-delta ovr-delta--${g.deltaOverall > 0 ? 'su' : 'giu'}`}
+                          title={`${g.deltaOverall > 0 ? 'Migliorato' : 'Peggiorato'} di ${Math.abs(g.deltaOverall)} da inizio stagione`}
+                        >{g.deltaOverall > 0 ? '+' : '−'}{Math.abs(g.deltaOverall)}</i>}
+                      </span>
+                    </b>
                   </div>
                 : <span className="riepilogo-scelte__vuota">Andata a vuoto</span>}
             </li>
