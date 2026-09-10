@@ -104,6 +104,7 @@ type VivaioProspetto = {
   entrata_stagione: number
   giornate_rimanenti: number
   promozione_tentativi: number
+  overall_inizio_stagione: number
   potenziale_min: number
   potenziale_max: number
   fotoFirmata?: string
@@ -342,7 +343,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     setVivaioLoading(true); setVivaioErrore(null)
     const [prospettiResult, tabellaResult, risorseResult] = await Promise.all([
       supabase.from('vivaio_prospetti')
-        .select('id, ingaggio, entrata_stagione, giornate_rimanenti, promozione_tentativi, player_id, giocatore:players(nome, posizioni, overall, eta, nazionalita, foto_url)')
+        .select('id, ingaggio, entrata_stagione, giornate_rimanenti, promozione_tentativi, overall_inizio_stagione, player_id, giocatore:players(nome, posizioni, overall, eta, nazionalita, foto_url)')
         .eq('league_id', league.id).eq('team_id', teamId),
       supabase.rpc('tabella_risorse'),
       supabase.from('team_risorse').select('livello_vivaio').eq('team_id', teamId).maybeSingle(),
@@ -758,7 +759,15 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       <small>{g.posizioni.join(' · ')} · {g.eta} anni · <em>{money(prospetto.ingaggio)}/stagione</em> · potenziale {prospetto.potenziale_min === prospetto.potenziale_max ? prospetto.potenziale_min : `${prospetto.potenziale_min}-${prospetto.potenziale_max}`}</small>
                     </div>
                     <div className="vivaio-overall">
-                      <b>{g.overall}</b>
+                      <b>
+                        <span className="ovr-con-delta">
+                          {g.overall}
+                          {g.overall !== prospetto.overall_inizio_stagione && <i
+                            className={`ovr-delta ovr-delta--${g.overall > prospetto.overall_inizio_stagione ? 'su' : 'giu'}`}
+                            title={`${g.overall > prospetto.overall_inizio_stagione ? 'Migliorato' : 'Peggiorato'} di ${Math.abs(g.overall - prospetto.overall_inizio_stagione)} da inizio stagione`}
+                          >{g.overall > prospetto.overall_inizio_stagione ? '+' : '−'}{Math.abs(g.overall - prospetto.overall_inizio_stagione)}</i>}
+                        </span>
+                      </b>
                       <em
                         className={`vivaio-countdown ${prospetto.giornate_rimanenti <= 3 ? 'vivaio-countdown--urgente' : prospetto.giornate_rimanenti <= 8 ? 'vivaio-countdown--attenzione' : ''}`}
                         title={`${prospetto.giornate_rimanenti} ${prospetto.giornate_rimanenti === 1 ? 'giornata' : 'giornate'} prima del rilascio automatico sul mercato UNDER`}
