@@ -1101,7 +1101,14 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .player-modal__tabs { margin: 4px 0 14px; }
 .player-modal__pager { display: grid; }
 .player-modal__page { grid-area: 1 / 1; min-width: 0; }
-.player-modal__page.is-nascosta { visibility: hidden; pointer-events: none; }
+/* display:none e non visibility:hidden. Le due pagine sono impilate nella
+   stessa cella di griglia (grid-area 1/1): con visibility la pagina nascosta
+   continua a occupare spazio, quindi la cella resta alta quanto la PIU' alta
+   delle due. Sulla pagina Training, molto piu' corta della scheda completa
+   (radar + tutti i gruppi di attributi), restava sotto un vuoto scorrevole
+   alto centinaia di pixel — segnalato dall'utente il 10 settembre 2026.
+   Nessuna transizione dipende da questa proprieta': verificato. */
+.player-modal__page.is-nascosta { display: none; }
 .player-training-intro { margin: 0 0 4px; color: #9f95ab; font-size: .74rem; line-height: 1.5; }
 /* Stessa impalcatura di .player-modal__danger: un filo superiore separa i
    gruppi, niente riquadro annidato dentro il modale. */
