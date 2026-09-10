@@ -62,3 +62,50 @@ from lunga
 where reparto in ('DEF', 'MID', 'ATT') and v is not null
 group by reparto, attributo
 order by reparto, abs(coalesce(corr(v, overall), 0));
+
+-- ============================================================
+--  CORREZIONE IMPORTANTE, 11 settembre 2026.
+--
+--  La query qui sopra misura ogni attributo DA SOLO, e da quella lettura
+--  sembrava che la tecnica non potesse reggere una tattica: short_passing ha
+--  correlazione 0.68 con l'overall e appena 11 punti di ampiezza fra i
+--  centrocampisti di pari livello.
+--
+--  Era la misura sbagliata, come ha fatto notare l'utente con un esempio
+--  concreto (Modric contro Anguissa: overall simili, profili opposti). Cio'
+--  che distingue un regista da un mediano non e' quanto passa in ASSOLUTO —
+--  a un certo livello passano tutti — ma lo SBILANCIAMENTO fra tecnica e
+--  lotta. E quello e' tutt'altro numero:
+--
+--    tecnica da sola          correlazione con overall  0.70   (travestito)
+--    lotta da sola            correlazione con overall  0.14
+--    tecnica MENO lotta       correlazione con overall  0.09   ampiezza 32
+--
+--  Esempi reali, tutti fra 77 e 79 di overall:
+--    Suso          pass 78  fisico 50  contrasti 23   tilt +45
+--    P. Ciss       pass 75  fisico 88  contrasti 76   tilt -10
+--
+--  Regola per il disegno: una tattica non deve chiedere "un attributo alto"
+--  ma "un certo PROFILO". Chiedere l'attributo alto significa chiedere
+--  giocatori piu' forti; chiedere il profilo e' una scelta vera, perche' il
+--  profilo non si compra con l'overall.
+-- ============================================================
+
+with mid as (
+  select p.overall,
+    ((p.attributi->>'short_passing')::numeric + (p.attributi->>'skill_long_passing')::numeric
+     + (p.attributi->>'mentality_vision')::numeric + (p.attributi->>'skill_ball_control')::numeric) / 4 as tecnica,
+    ((p.attributi->>'power_strength')::numeric + (p.attributi->>'standing_tackle')::numeric
+     + (p.attributi->>'mentality_interceptions')::numeric + (p.attributi->>'mentality_aggression')::numeric) / 4 as lotta
+  from public.players p
+  where p.disponibile_estrazione and not p.origine_vivaio
+    and private.macro_ruolo(p.posizioni) = 'MID'
+    and p.overall between 72 and 82 and p.attributi ? 'mentality_vision'
+)
+select count(*) as n,
+  round(percentile_cont(0.10) within group (order by tecnica - lotta)::numeric, 0) as tilt_p10,
+  round(percentile_cont(0.90) within group (order by tecnica - lotta)::numeric, 0) as tilt_p90,
+  round(corr(tecnica - lotta, overall)::numeric, 2) as tilt_corr_overall,
+  round(corr(tecnica, overall)::numeric, 2)         as tecnica_corr_overall,
+  round(corr(lotta, overall)::numeric, 2)           as lotta_corr_overall
+from mid;
