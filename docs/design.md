@@ -790,10 +790,28 @@ Vittoria 3 punti, pareggio 1.
 
 ### 10.2 Progressione giocatori
 
-L'overall viene aggiornato alla conclusione di ogni quarto della stagione
-(25%, 50%, 75% e 100% delle giornate reali). Le formule annuali sotto sono
-distribuite in quattro quote: non sono quattro progressioni complete. Età e
-contratti si aggiornano invece nella successiva off-season.
+> **Da quattro quote a giornata per giornata, 10 settembre 2026, richiesta
+> dell'utente.** Fino a questa data l'overall si aggiornava una volta a
+> quarto di stagione, a scatti. Da qui in poi si aggiorna una volta per
+> ogni giornata reale simulata: la stessa formula annuale, distribuita in
+> `giornate_totali` quote invece che in 4, così il badge di crescita nella
+> rosa (§10bis) si muove sera dopo sera invece che a balzi ogni 7-8
+> giornate. Conseguenza aritmetica da sapere, non un difetto: sommare più
+> estrazioni casuali indipendenti produce un risultato finale meno disperso
+> (la varianza scala circa come 1/N) — la crescita a fine stagione è quindi
+> leggermente più prevedibile di prima, a fronte di un progresso visibile
+> ogni giorno invece che a sorpresa ogni trimestre. La crescita dei
+> prospetti in vivaio (meccanica introdotta dopo questo documento, non
+> descritta qui: vedi le migrazioni `vivaio_*` in `supabase/migrations/`)
+> segue la stessa cadenza. Morale e punti abilità restano a cadenza trimestrale:
+> nessuno ha chiesto di cambiarli, e sono meccanismi volutamente
+> indipendenti l'uno dall'altro.
+
+L'overall viene aggiornato **a ogni giornata reale della stagione** (non
+più a quarti). Le formule annuali sotto sono distribuite in altrettante
+quote quante sono le giornate della stagione: non sono progressioni
+complete in un solo colpo. Età e contratti si aggiornano invece nella
+successiva off-season.
 
 | Età | Variazione overall |
 |---|---|
