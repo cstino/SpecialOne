@@ -54,6 +54,8 @@ type Anagrafica = {
   ruolo: string
   posizioni: string[]
   overall: number
+  /** Scarto rispetto all'overall di inizio stagione: positivo, negativo o zero. */
+  deltaOverall: number
   eta: number
   foto_url: string | null
   foto_firmata?: string
@@ -185,15 +187,15 @@ export function Mercato({ membership, onNavigate }: Props) {
     const [progressioneRes, orfaneRes] = idsAsta.length
       ? await Promise.all([
           supabase.from('free_agent_progression')
-            .select('player_id, overall_corrente, eta_corrente')
+            .select('player_id, overall_corrente, eta_corrente, overall_inizio_stagione')
             .eq('league_id', league.id).in('player_id', idsAsta),
           supabase.from('player_instances')
-            .select('player_id, overall_corrente, eta_corrente')
+            .select('player_id, overall_corrente, eta_corrente, overall_inizio_stagione')
             .eq('league_id', league.id).is('team_id', null).in('player_id', idsAsta),
         ])
       : [{ data: [], error: null }, { data: [], error: null }]
     const istanzeSvincolate = new Map((orfaneRes.data ?? [])
-      .map((i) => [i.player_id, i as { overall_corrente: number; eta_corrente: number }]))
+      .map((i) => [i.player_id, i as { overall_corrente: number; eta_corrente: number; overall_inizio_stagione: number }]))
     // Una sola interrogazione per l'anagrafica: i giocatori delle rose e
     // quelli all'asta vengono dalla stessa tabella.
     const daCercare = [...new Set([
@@ -222,7 +224,7 @@ export function Mercato({ membership, onNavigate }: Props) {
     setMieOfferte(new Map((offerteRes.data ?? []).map((o) => [o.auction_id, o.ingaggio_offerto])))
     // Un errore qui non deve impedire di usare il mercato: e' un indicatore.
     setConti(contiRes.error ? null : contiRes.data as { capienza: number; slot_liberi: number })
-    const progressionePerId = new Map((progressioneRes.data ?? []).map((r) => [r.player_id, r as { overall_corrente: number; eta_corrente: number }]))
+    const progressionePerId = new Map((progressioneRes.data ?? []).map((r) => [r.player_id, r as { overall_corrente: number; eta_corrente: number; overall_inizio_stagione: number }]))
     setSvincolati(new Map(asteRighe.map((a) => [a.player_id, {
       nome: cognome(perId.get(a.player_id)?.nome ?? '—'),
       ruolo: perId.get(a.player_id)?.posizioni?.[0] ?? '—',
@@ -238,6 +240,13 @@ export function Mercato({ membership, onNavigate }: Props) {
       eta: istanzeSvincolate.get(a.player_id)?.eta_corrente
         ?? progressionePerId.get(a.player_id)?.eta_corrente
         ?? perId.get(a.player_id)?.eta ?? 0,
+      // Stessa precedenza dell'overall qui sopra, sulla stessa fonte: il
+      // riferimento di inizio stagione va letto DA DOVE arriva il valore
+      // corrente, altrimenti si sottrarrebbero numeri di due tabelle diverse.
+      deltaOverall: (() => {
+        const fonte = istanzeSvincolate.get(a.player_id) ?? progressionePerId.get(a.player_id)
+        return fonte ? fonte.overall_corrente - fonte.overall_inizio_stagione : 0
+      })(),
       foto_url: perId.get(a.player_id)?.foto_url ?? null,
       foto_firmata: fotoPerId.get(a.player_id),
     }])))
@@ -492,7 +501,15 @@ export function Mercato({ membership, onNavigate }: Props) {
     return <article key={a.id} className={`free-agent-card ${compatta ? 'is-compact' : ''} ${a.stato !== 'aperta' ? 'is-closed' : ''}`}>
       <div className="free-agent-card__portrait">
         {g?.foto_firmata ? <img src={g.foto_firmata} alt="" loading="lazy" /> : <span aria-hidden="true">?</span>}
-        <b>{g?.overall ?? '—'}</b>
+        <b>
+          <span className="ovr-con-delta">
+            {g?.overall ?? '—'}
+            {g && g.deltaOverall !== 0 && <i
+              className={`ovr-delta ovr-delta--${g.deltaOverall > 0 ? 'su' : 'giu'}`}
+              title={`${g.deltaOverall > 0 ? 'Migliorato' : 'Peggiorato'} di ${Math.abs(g.deltaOverall)} da inizio stagione`}
+            >{g.deltaOverall > 0 ? '+' : '−'}{Math.abs(g.deltaOverall)}</i>}
+          </span>
+        </b>
       </div>
       <div className="free-agent-card__body">
         <header>
