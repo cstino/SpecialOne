@@ -60,7 +60,13 @@ export const SCALE = {
 //  Entrambi sono differenze, non valori assoluti: e' questo che li rende
 //  indipendenti dall'overall.
 // ------------------------------------------------------------
-const DISPERSIONE = { tecnico: 16, rapido: 20 }; // dev.std che riproduce l'ampiezza misurata
+// Dev.std tarata sulle ROSE VERE, non sul catalogo (misura dell'11 settembre
+// 2026 su Serie F e Real Fampionato, 29 rose umane di stagione 1): dentro una
+// singola rosa l'ampiezza p10-p90 del profilo e' 33-37 punti in tutti e tre i
+// reparti, che per una gaussiana vuol dire dev.std ~13.5. I valori precedenti
+// (16 e 20) venivano dal catalogo intero e sovrastimavano la leva, soprattutto
+// per il profilo rapido: +46%.
+const DISPERSIONE = { tecnico: 13.5, rapido: 13.5 };
 
 export const PROFILI = {
   // positivo = regista, negativo = mediano/incontrista
