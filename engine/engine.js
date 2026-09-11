@@ -4,6 +4,7 @@
 
 import { CFG, MODULI, CONTEGGI, PESI_SLOT, REPARTO, STILI, penalitaRuolo, pesoStat } from './config.js';
 import { rnd, gauss, poisson, scegliPesato } from './random.js';
+import { deltaTattico } from './tattiche.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -17,18 +18,30 @@ export function fattoreCondizione(c) {
   return 0.820;
 }
 
-export function ovrEfficace(g, slot) {
+// deltaTattico e' lo scarto in punti di overall prodotto dal sistema tattico
+// (engine/tattiche.js). Vale 0 quando non c'e' un piano, e in quel caso questa
+// funzione e' identica alla versione validata nella Fase 0.
+export function ovrEfficace(g, slot, deltaTattico = 0) {
   const repSlot = REPARTO[slot];
   const repNat = REPARTO[g.posizioni[0]];
+  // Lo scarto entra sull'overall, cioe' prima dell'adattamento al ruolo e
+  // della condizione: un giocatore fuori ruolo o scarico interpreta il piano
+  // peggio di uno fresco e al suo posto.
+  const ovr = deltaTattico ? g.ovr + deltaTattico : g.ovr;
   let base;
 
-  if (repSlot === 'GK' && repNat !== 'GK') base = Math.min(45, g.ovr * 0.45);
-  else if (repSlot !== 'GK' && repNat === 'GK') base = Math.min(48, g.ovr * 0.50);
-  else if (repSlot === 'GK' && repNat === 'GK') base = g.ovr;
-  else base = g.ovr * penalitaRuolo(g.posizioni, slot);
+  if (repSlot === 'GK' && repNat !== 'GK') base = Math.min(45, ovr * 0.45);
+  else if (repSlot !== 'GK' && repNat === 'GK') base = Math.min(48, ovr * 0.50);
+  else if (repSlot === 'GK' && repNat === 'GK') base = ovr;
+  else base = ovr * penalitaRuolo(g.posizioni, slot);
 
   return base * fattoreCondizione(g.condizione);
 }
+
+// Lo scarto tattico di questo lineup per un giocatore in un certo slot.
+// lineup.tattica e' assente in Fase 1 e in tutte le leghe senza tattiche:
+// in quel caso vale sempre 0 e il motore e' quello validato.
+const dt = (lineup, g, slot) => (lineup.tattica ? lineup.tattica(g, slot) : 0);
 
 // ---------- Assegnazione giocatori -> slot (greedy) ----------
 
@@ -65,7 +78,7 @@ export function forzeLinee(lineup) {
   for (let i = 0; i < lineup.slots.length; i++) {
     const slot = lineup.slots[i], g = lineup.titolari[i];
     if (!g) continue;
-    const eff = ovrEfficace(g, slot);
+    const eff = ovrEfficace(g, slot, dt(lineup, g, slot));
     if (slot === 'GK') { gk = eff; continue; }
     const w = PESI_SLOT[slot];
     for (const L of ['DEF', 'MID', 'ATT']) { acc[L][0] += eff * w[L]; acc[L][1] += w[L]; }
@@ -148,9 +161,10 @@ function sostituzioni(lineup) {
     // come tutti e veniva cambiato all'intervallo.
     if (slot === 'GK') continue;
     if (!tit || tit.condizione >= CFG.SOGLIA_CAMBIO_COND) continue;
-    let bestIdx = -1, bestVal = ovrEfficace(tit, slot);
+    let bestIdx = -1, bestVal = ovrEfficace(tit, slot, dt(lineup, tit, slot));
     for (let j = 0; j < lineup.panchina.length; j++) {
-      const v = ovrEfficace(lineup.panchina[j], slot);
+      const r = lineup.panchina[j];
+      const v = ovrEfficace(r, slot, dt(lineup, r, slot));
       if (v > bestVal) { bestVal = v; bestIdx = j; }
     }
     if (bestIdx >= 0) {
@@ -171,7 +185,8 @@ function sostituisciInfortunato(lineup, slot) {
   if (lineup.cambiFatti >= CFG.MAX_CAMBI || !lineup.titolari[slot]) return null;
   let bestIdx = -1, bestVal = -Infinity;
   for (let j = 0; j < lineup.panchina.length; j++) {
-    const valore = ovrEfficace(lineup.panchina[j], lineup.slots[slot]);
+    const r = lineup.panchina[j];
+    const valore = ovrEfficace(r, lineup.slots[slot], dt(lineup, r, lineup.slots[slot]));
     if (valore > bestVal) { bestVal = valore; bestIdx = j; }
   }
   if (bestIdx < 0) return null;
@@ -305,6 +320,16 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   const usaCondizione = opt.usaCondizione !== false;
   const lc = opt.lineupCasa || schiera(rosaCasa, modCasa);
   const lo = opt.lineupOspite || schiera(rosaOspite, modOspite);
+
+  // Sistema tattico (engine/tattiche.js). Se opt.tattiche non c'e' — Fase 1 e
+  // ogni lega senza tattiche attive — lineup.tattica resta undefined e tutte
+  // le chiamate a ovrEfficace() ricevono scarto 0: il motore e' quello
+  // validato nella Fase 0, bit per bit.
+  if (opt.tattiche) {
+    const { casa = {}, ospite = {} } = opt.tattiche;
+    lc.tattica = deltaTattico(casa.piano, ospite.piano, casa.identita);
+    lo.tattica = deltaTattico(ospite.piano, casa.piano, ospite.identita);
+  }
 
   const famC = familiarita(rosaCasa, modCasa, opt.stileCasa);
   const famO = familiarita(rosaOspite, modOspite, opt.stileOspite);

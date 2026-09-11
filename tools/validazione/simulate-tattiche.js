@@ -1,8 +1,10 @@
 // ============================================================
 //  MISURA DEL SISTEMA TATTICO — node tools/validazione/simulate-tattiche.js
 //
-//  Non tocca il gioco: gira in locale, usa il motore validato attraverso il
-//  prototipo, non scrive da nessuna parte.
+//  Non tocca il gioco: gira in locale e non scrive da nessuna parte. Dall'11
+//  settembre 2026 misura il MOTORE VERO — engine/tattiche.js attraverso
+//  l'opzione opt.tattiche di simulaPartita() — e non piu' una copia del
+//  modello tenuta negli strumenti di prova.
 //
 //  Tutto e' espresso in PUNTI DI OVERALL EQUIVALENTI, l'unica scala che il
 //  progetto conosce gia' (Fase 0: +4 = 63% di vittorie, +8 = 84%). La scala
@@ -10,12 +12,10 @@
 // ============================================================
 
 import { MODULI } from '../../engine/config.js';
-import { simulaPartita, schiera } from '../../engine/engine.js';
+import { simulaPartita } from '../../engine/engine.js';
 import { creaRosaPerModulo, setSeed } from './roster.js';
-import {
-  ASSI, SCALE, arricchisci, rosaConTattiche, rosaPerProfilo,
-  tuttiGliAssetti, etichetta,
-} from './tattiche-prototipo.js';
+import { ASSI, SCALE, tuttiGliAssetti, etichetta } from '../../engine/tattiche.js';
+import { arricchisci, rosaPerProfilo } from './tattiche-prototipo.js';
 
 const OVR = 70.5;
 const MODULO = '4-3-3';
@@ -35,11 +35,15 @@ function serie(pianoA, pianoB, opt = {}) {
     if (modificaA) A = modificaA(A);
     if (modificaB) B = modificaB(B);
     A.esperienzaModulo = { [MODULO]: 5 }; B.esperienzaModulo = { [MODULO]: 5 };
-    const At = rosaConTattiche(A, schiera(A, MODULO), pianoA, pianoB, identitaA);
-    const Bt = rosaConTattiche(B, schiera(B, MODULO), pianoB, pianoA, identitaB);
-    const r = simulaPartita(At, Bt, MODULO, MODULO, {
+    // I piani passano al motore, che applica lo scarto dentro ovrEfficace().
+    // Prima li si applicava alle rose PRIMA di chiamare simulaPartita: era il
+    // trucco che teneva il motore intatto finche' il modello era in prova.
+    const r = simulaPartita(A, B, MODULO, MODULO, {
       usaCondizione: true, campoNeutro: true,
-      lineupCasa: schiera(At, MODULO), lineupOspite: schiera(Bt, MODULO),
+      tattiche: {
+        casa:   { piano: pianoA, identita: identitaA },
+        ospite: { piano: pianoB, identita: identitaB },
+      },
     });
     if (r.golC > r.golO) vinteA++;
   }
@@ -177,5 +181,6 @@ for (const [nome, piano] of opzioni) {
 }
 
 console.log('\n' + '='.repeat(74));
-console.log('Le scale si cambiano in cima a tattiche-prototipo.js.');
-console.log('Nessun file del gioco e\' stato toccato.');
+console.log('Le scale si cambiano in cima a engine/tattiche.js.');
+console.log('A tattiche spente il motore resta quello validato: simulate.js e');
+console.log('simulate-reale.js danno un output identico byte per byte.');
