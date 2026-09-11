@@ -1,182 +1,203 @@
 // ============================================================
 //  PROTOTIPO DEL SISTEMA TATTICO — SOLO MISURA, NON E' IL GIOCO
 //
-//  Serve a rispondere con dei numeri a tre domande poste prima di
-//  progettare il prossimo update, discusso con l'utente l'11 settembre 2026:
+//  Seconda stesura, 11 settembre 2026. La prima chiedeva alle tattiche un
+//  ATTRIBUTO alto; l'utente l'ha smontata con un esempio (Modric contro
+//  Anguissa: overall simili, profili opposti) e i dati gli hanno dato
+//  ragione. Ora le tattiche chiedono un PROFILO, che e' tutt'altra cosa:
 //
-//    1. quanto vale la tattica giusta, in punti di overall equivalenti?
-//    2. il triangolo dei contrasti regge, o collassa su un assetto migliore
-//       di tutti?
-//    3. quanto pesano gli attributi individuali rispetto all'overall?
+//    tecnica da sola          correlazione con overall  0.70  -> travestito
+//    tecnica MENO lotta       correlazione 0.09, ampiezza 32  -> leva vera
+//    rapidita MENO fisicita   correlazione ~0.00, ampiezza 40 -> leva vera
+//                             (misurata in tutti e tre i reparti)
 //
-//  COME FUNZIONA, e perche' non tocca engine/
-//  Il motore validato riduce ogni giocatore a un numero solo
-//  (ovrEfficace = overall x adattamento al ruolo x condizione) e non guarda
-//  MAI gli attributi individuali per decidere quanti gol si fanno. Il
-//  sistema tattico vero dovra' cambiarlo — ed e' la modifica piu' grossa dal
-//  Fase 0 — ma per misurarne l'effetto non serve ancora.
+//  La differenza non e' accademica. Chiedere "passaggi alti" significa
+//  chiedere giocatori piu' forti, perche' a parita' di ruolo chi passa
+//  meglio ha anche l'overall piu' alto: non e' una decisione. Chiedere un
+//  profilo e' una scelta vera, perche' il profilo NON si compra con
+//  l'overall — va cercato.
 //
-//  Qui le tattiche producono uno scarto in PUNTI DI OVERALL per ogni
-//  giocatore in campo, che dipende dai suoi attributi e dalla tattica
-//  avversaria. Lo scarto viene applicato alle rose PRIMA di passarle a
-//  simulaPartita(). Il motore poi lavora come sempre: stesso xG, stessi
-//  blocchi, stesse sostituzioni. La misura e' quindi reale, non un modello
-//  parallelo che assomiglia al gioco.
+//  COSA MISURA, e perche' non tocca engine/
+//  Il motore validato riduce ogni giocatore a un numero (overall x
+//  adattamento al ruolo x condizione) e non guarda mai gli attributi. Il
+//  sistema definitivo dovra' cambiarlo, ma per misurarne le grandezze no:
+//  qui le tattiche producono uno scarto in punti di overall applicato alle
+//  rose PRIMA di chiamare simulaPartita(), cosi' xG, blocchi e sostituzioni
+//  restano quelli validati.
 //
-//  Cio' che questo prototipo NON dimostra: che quella sia la forma giusta
-//  per il sistema definitivo. Dimostra solo se le grandezze in gioco stanno
-//  dove vogliamo. E' esattamente lo scopo per cui e' stato scritto.
+//  I TRE INGREDIENTI dello scarto:
+//    1. INTERPRETI  quanto i miei uomini hanno il profilo che chiedo
+//    2. CONTRASTO   quanto il mio piano regge contro il suo
+//    3. SNATURAMENTO quanto mi costa allontanarmi dalla mia identita'
+//
+//  Il terzo e' la novita' di questa stesura, e nasce dalla richiesta
+//  dell'utente: una squadra ha una sua identita' (l'Inter gioca col 3-5-2
+//  in un certo modo) e la prepara partita per partita senza stravolgerla.
+//  Senza un costo, "conosco il contrasto giusto, lo applico" sarebbe
+//  automatico e l'identita' finta.
 // ============================================================
 
 import { REPARTO } from '../../engine/config.js';
-import { gauss, rnd } from '../../engine/random.js';
+import { gauss } from '../../engine/random.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 // ------------------------------------------------------------
-//  SCALE — sono i numeri da tarare, tenuti qui in cima apposta.
-//  Il criterio deciso con l'utente: il vantaggio massimo ottenibile con la
-//  tattica perfetta contro quella sbagliata deve valere MENO di 8 punti di
-//  overall, perche' a +8 il piu' forte vince gia' l'84% (TEST 2 della Fase
-//  0) e a quel punto la tattica conterebbe piu' della rosa.
+//  SCALE — i numeri da tarare, tenuti in cima apposta.
+//  Vincolo deciso con l'utente: la tattica perfetta contro quella sbagliata
+//  deve valere MENO di 8 punti di overall, perche' a +8 il piu' forte vince
+//  gia' l'84% (TEST 2 della Fase 0) e oltre quella soglia la tattica
+//  conterebbe piu' della qualita' della rosa.
 // ------------------------------------------------------------
 export const SCALE = {
-  // quanto pesa avere gli interpreti giusti per la propria tattica
-  INTERPRETI: 4.0,
-  // quanto pesa indovinare la tattica contro quella avversaria
-  COUNTER: 3.0,
+  INTERPRETI: 3.5,   // avere il profilo giusto per il proprio piano
+  CONTRASTO: 3.0,    // indovinare il piano contro quello avversario
+  SNATURAMENTO: 2.0, // costo per ogni asse in cui ci si allontana dall'identita'
 };
 
 // ------------------------------------------------------------
-//  I DUE ASSI, con le opzioni discusse con l'utente.
-//  'attributo' e' cio' che il motore dovrebbe imparare a leggere: e' il
-//  cuore del punto 1 (bravura nello scegliere gli interpreti).
-//  'reparti' dice a chi si applica l'idoneita'.
+//  I DUE PROFILI, misurati sul catalogo vero (vedi leve-tattiche.sql).
+//  Entrambi sono differenze, non valori assoluti: e' questo che li rende
+//  indipendenti dall'overall.
+// ------------------------------------------------------------
+const DISPERSIONE = { tecnico: 16, rapido: 20 }; // dev.std che riproduce l'ampiezza misurata
+
+export const PROFILI = {
+  // positivo = regista, negativo = mediano/incontrista
+  tecnico: (g) => g.tilt_tecnico,
+  // positivo = rapido e leggero, negativo = lento e possente
+  rapido: (g) => g.tilt_rapido,
+};
+
+// ------------------------------------------------------------
+//  I DUE ASSI. Ogni opzione chiede UN profilo a UN reparto: e' cio' che
+//  rende leggibile la scelta ("mi serve una difesa veloce") e misurabile
+//  l'effetto. Le opzioni neutre non chiedono niente — e per questo, come
+//  confermato dall'utente, sono volutamente le piu' deboli: avere un piano
+//  batte non averlo.
 // ------------------------------------------------------------
 export const ASSI = {
   linea: {
-    alta:  { etichetta: 'Difesa alta',        attributo: 'velocita',        reparti: ['DEF'] },
-    media: { etichetta: 'Linea media',        attributo: null,              reparti: [] },
-    bassa: { etichetta: 'Blocco basso',       attributo: 'posizionamento',  reparti: ['DEF'] },
+    alta:  { etichetta: 'Difesa alta',   profilo: 'rapido',  verso: +1, reparto: 'DEF' },
+    media: { etichetta: 'Linea media',   profilo: null },
+    bassa: { etichetta: 'Blocco basso',  profilo: 'rapido',  verso: -1, reparto: 'DEF' },
   },
   costruzione: {
-    corta:     { etichetta: 'Fitti passaggi', attributo: 'passaggi_corti',  reparti: ['MID'] },
-    mista:     { etichetta: 'Mista',          attributo: null,              reparti: [] },
-    verticale: { etichetta: 'Verticalizza',   attributo: 'passaggi_lunghi', reparti: ['MID', 'ATT'] },
+    corta:     { etichetta: 'Fitti passaggi', profilo: 'tecnico', verso: +1, reparto: 'MID' },
+    mista:     { etichetta: 'Mista',          profilo: null },
+    verticale: { etichetta: 'Verticalizza',   profilo: 'rapido',  verso: -1, reparto: 'ATT' },
   },
 };
 
 // ------------------------------------------------------------
-//  IL TRIANGOLO. Non e' inventato: e' come si contrastano davvero questi
-//  assetti nel calcio, ed e' il motivo per cui l'utente voleva assetti che
-//  si battono a vicenda invece di una scelta giusta.
+//  IL TRIANGOLO — come questi assetti si contrastano nel calcio vero.
+//  Valore = vantaggio di CHI ATTACCA in quel confronto.
 //
-//    difesa alta      batte  fitti passaggi   (comprimi, recuperi alto)
-//    verticalizza     batte  difesa alta      (palla dietro la linea)
-//    blocco basso     batte  verticalizza     (nessuno spazio alle spalle)
-//    fitti passaggi   battono blocco basso    (pazienza contro chi si chiude)
-//
-//  Il valore e' il vantaggio di CHI ATTACCA in quel confronto: positivo
-//  significa che la costruzione ha la meglio sulla linea difensiva.
+//  Regola imparata dalla prima stesura: ogni riga e ogni colonna devono
+//  contenere almeno un valore sfavorevole. Nella versione precedente la
+//  colonna "bassa" era tutta negativa, il blocco basso non veniva punito da
+//  nessuno, e la morra cinese era solo apparente.
 // ------------------------------------------------------------
+//  Seconda regola, emersa dalla misura dell'11 settembre: non basta che
+//  ogni riga e ogni colonna contengano un valore sfavorevole, devono anche
+//  SOMMARE A ZERO. Con corta a -0.3 e verticale a +0.2, verticalizzare
+//  rendeva in media contro un campo uniforme: conveniva sempre, a
+//  prescindere dall'avversario, e l'assetto migliore in assoluto catturava
+//  quasi tutto il valore del leggere la partita (rapporto 1.4x).
+//  Matrice antisimmetrica: quello che una riga guadagna contro un assetto,
+//  lo perde contro l'altro.
 const CONTRASTI = {
-  //            linea alta   media   bassa
-  corta:      { alta: -1.0,  media: 0,  bassa: +0.7 },
-  mista:      { alta:  0,    media: 0,  bassa:  0   },
-  verticale:  { alta: +1.0,  media: 0,  bassa: -0.8 },
+  //            linea alta   media    bassa
+  corta:     { alta: -1.0, media: 0, bassa: +1.0 },
+  mista:     { alta:  0,   media: 0, bassa:  0   },
+  verticale: { alta: +1.0, media: 0, bassa: -1.0 },
 };
-// La casella corta/bassa era -0.6 nella prima stesura, sul ragionamento che
-// la pazienza non crea occasioni ma toglie solo vantaggio a chi si chiude.
-// La misura ha bocciato quel ragionamento: con quel valore la colonna
-// "bassa" era interamente negativa, cioe' il blocco basso non veniva punito
-// da NESSUN assetto, e le sue tre varianti finivano tutte nelle prime cinque
-// (scarto di 13.6 punti percentuali fra il migliore e il peggiore assetto).
-// Ogni riga e ogni colonna devono contenere almeno un valore sfavorevole,
-// altrimenti la morra cinese e' apparente: esiste il contrasto diretto ma
-// esiste anche un assetto che conviene sempre.
 
 // ------------------------------------------------------------
-//  Attributi che oggi non esistono nelle rose sintetiche di roster.js.
-//  Si derivano da quello che c'e', con correlazioni plausibili per ruolo:
-//  serve solo che abbiano una dispersione realistica, perche' la domanda e'
-//  "quanto pesa la differenza fra un interprete giusto e uno sbagliato",
-//  non "quanto vale Cucurella".
-//  roster.js NON viene toccato: e' il generatore della suite storica.
+//  Profili sulle rose sintetiche. roster.js NON viene toccato: e' il
+//  generatore della suite storica. I due tilt sono generati con la
+//  dispersione misurata sul catalogo reale e SENZA correlazione con
+//  l'overall — che e' esattamente la proprieta' che li rende leve.
 // ------------------------------------------------------------
 export function arricchisci(rosa) {
   for (const g of rosa.giocatori) {
-    if (g.velocita !== undefined) continue;
-    const rep = REPARTO[g.posizioni[0]] ?? 'MID';
-    const near = (media, sigma) => clamp(Math.round(gauss(media, sigma)), 20, 99);
-    // la velocita' non e' correlata all'overall come le altre: esistono
-    // difensori forti e lenti, ed e' esattamente il caso interessante
-    g.velocita        = near(rep === 'ATT' ? 74 : rep === 'DEF' ? 66 : 70, 12);
-    g.posizionamento  = near(g.ovr + (rep === 'DEF' ? 3 : -6), 7);
-    g.passaggi_lunghi = near(g.ovr + (rep === 'MID' ? 2 : rep === 'DEF' ? -2 : -10), 8);
-    g.passaggi_corti  = g.short_passing;
+    if (g.tilt_rapido !== undefined) continue;
+    g.tilt_tecnico = clamp(Math.round(gauss(6, DISPERSIONE.tecnico)), -40, 45);
+    g.tilt_rapido = clamp(Math.round(gauss(-4, DISPERSIONE.rapido)), -45, 40);
   }
   return rosa;
 }
 
-// idoneita' di un giocatore a una richiesta tattica, da 0 (inadatto) a 1
-// (perfetto). 60 e' il centro: sotto penalizza, sopra premia.
-function idoneita(g, attributo) {
-  if (!attributo) return 0.5;
-  const v = g[attributo];
-  if (typeof v !== 'number') return 0.5;
-  return clamp((v - 40) / 50, 0, 1);
+// Quanto un giocatore e' adatto a cio' che il piano chiede, da -1
+// (esattamente il profilo sbagliato) a +1 (esattamente quello giusto).
+function idoneita(g, richiesta) {
+  if (!richiesta.profilo) return 0;
+  const tilt = PROFILI[richiesta.profilo](g);
+  if (typeof tilt !== 'number') return 0;
+  return clamp((tilt * richiesta.verso) / 25, -1, 1);
 }
 
 /**
- * Scarto in punti di overall per ogni giocatore in campo, dato il proprio
- * assetto e quello avversario. Non muta nulla: restituisce una mappa
- * id -> delta, cosi' chi chiama decide cosa farne.
+ * Scarto in punti di overall per ogni titolare, dato il piano scelto per
+ * questa partita, quello avversario e la propria identita' di squadra.
+ * Non muta nulla: restituisce una mappa id -> delta.
  */
-export function deltaTattici(lineup, assettoMio, assettoAvv) {
+export function deltaTattici(lineup, piano, pianoAvv, identita) {
   const delta = new Map();
-  const linea = ASSI.linea[assettoMio.linea];
-  const costruzione = ASSI.costruzione[assettoMio.costruzione];
+  const aggiungi = (g, punti) => delta.set(g.id, (delta.get(g.id) ?? 0) + punti);
 
-  // 1. INTERPRETI: quanto i miei uomini sanno fare quello che chiedo
-  for (const richiesta of [linea, costruzione]) {
-    if (!richiesta.attributo) continue;
+  const mieOpzioni = [ASSI.linea[piano.linea], ASSI.costruzione[piano.costruzione]];
+
+  // 1. INTERPRETI — solo i reparti a cui il piano chiede qualcosa
+  for (const richiesta of mieOpzioni) {
+    if (!richiesta.profilo) continue;
     for (let i = 0; i < lineup.titolari.length; i++) {
       const g = lineup.titolari[i];
       const slot = lineup.slots[i];
       if (!g || slot === 'GK') continue;
-      if (!richiesta.reparti.includes(REPARTO[slot])) continue;
-      const punti = SCALE.INTERPRETI * (idoneita(g, richiesta.attributo) - 0.5) * 2;
-      delta.set(g.id, (delta.get(g.id) ?? 0) + punti);
+      if (REPARTO[slot] !== richiesta.reparto) continue;
+      aggiungi(g, SCALE.INTERPRETI * idoneita(g, richiesta));
     }
   }
 
-  // 2. CONTRASTO: quanto il mio assetto regge contro il suo.
-  // La mia costruzione contro la sua linea difensiva mi aiuta in attacco;
-  // la sua costruzione contro la mia linea mi penalizza in difesa.
-  const vantaggioMioAttacco = CONTRASTI[assettoMio.costruzione][assettoAvv.linea];
-  const vantaggioSuoAttacco = CONTRASTI[assettoAvv.costruzione][assettoMio.linea];
+  // 2. CONTRASTO — il mio attacco contro la sua linea, e viceversa
+  const mioVantaggio = CONTRASTI[piano.costruzione][pianoAvv.linea];
+  const suoVantaggio = CONTRASTI[pianoAvv.costruzione][piano.linea];
   for (let i = 0; i < lineup.titolari.length; i++) {
     const g = lineup.titolari[i];
     const slot = lineup.slots[i];
     if (!g || slot === 'GK') continue;
     const rep = REPARTO[slot];
-    let punti = 0;
-    if (rep === 'ATT') punti += SCALE.COUNTER * vantaggioMioAttacco;
-    if (rep === 'DEF') punti -= SCALE.COUNTER * vantaggioSuoAttacco;
-    if (punti) delta.set(g.id, (delta.get(g.id) ?? 0) + punti);
+    if (rep === 'ATT') aggiungi(g, SCALE.CONTRASTO * mioVantaggio);
+    if (rep === 'DEF') aggiungi(g, -SCALE.CONTRASTO * suoVantaggio);
+  }
+
+  // 3. SNATURAMENTO — un asse fuori dall'identita' costa a tutta la squadra.
+  // E' cio' che rende la domanda interessante: conviene tradirmi per il
+  // contrasto giusto, o restare me stesso e vincere sui miei punti di forza?
+  if (identita) {
+    let assiFuori = 0;
+    if (piano.linea !== identita.linea) assiFuori++;
+    if (piano.costruzione !== identita.costruzione) assiFuori++;
+    if (assiFuori) {
+      for (let i = 0; i < lineup.titolari.length; i++) {
+        const g = lineup.titolari[i];
+        if (!g || lineup.slots[i] === 'GK') continue;
+        aggiungi(g, -SCALE.SNATURAMENTO * assiFuori);
+      }
+    }
   }
 
   return delta;
 }
 
 /**
- * Copia della rosa con gli overall gia' spostati dalle tattiche. Copia e non
- * mutazione: la stessa rosa viene riusata in confronti diversi, e mutarla
- * significherebbe accumulare gli effetti di una prova sulla successiva —
- * un errore che falserebbe tutte le misure a valle senza dare segnale.
+ * Copia della rosa con gli overall gia' spostati. Copia e non mutazione: la
+ * stessa rosa viene riusata in confronti diversi, e mutarla accumulerebbe
+ * gli effetti di una prova sulla successiva falsando tutto a valle.
  */
-export function rosaConTattiche(rosa, lineup, assettoMio, assettoAvv) {
-  const delta = deltaTattici(lineup, assettoMio, assettoAvv);
+export function rosaConTattiche(rosa, lineup, piano, pianoAvv, identita) {
+  const delta = deltaTattici(lineup, piano, pianoAvv, identita);
   return {
     ...rosa,
     giocatori: rosa.giocatori.map((g) => {
@@ -186,29 +207,27 @@ export function rosaConTattiche(rosa, lineup, assettoMio, assettoAvv) {
   };
 }
 
-/** Tutti gli assetti possibili: 3 linee x 3 costruzioni. */
+/** Rosa costruita APPOSTA (o apposta male) per un profilo. */
+export function rosaPerProfilo(rosa, richiesta, verso) {
+  if (!richiesta.profilo) return rosa;
+  const campo = richiesta.profilo === 'tecnico' ? 'tilt_tecnico' : 'tilt_rapido';
+  return {
+    ...rosa,
+    giocatori: rosa.giocatori.map((g) => ({
+      ...g,
+      [campo]: clamp(g[campo] + verso * richiesta.verso * 22, -45, 45),
+    })),
+  };
+}
+
 export function tuttiGliAssetti() {
   const out = [];
   for (const linea of Object.keys(ASSI.linea)) {
-    for (const costruzione of Object.keys(ASSI.costruzione)) {
-      out.push({ linea, costruzione });
-    }
+    for (const costruzione of Object.keys(ASSI.costruzione)) out.push({ linea, costruzione });
   }
   return out;
 }
 
 export function etichetta(a) {
   return `${ASSI.linea[a.linea].etichetta} + ${ASSI.costruzione[a.costruzione].etichetta}`;
-}
-
-/** Rosa con interpreti scelti apposta (o apposta sbagliati) per un assetto. */
-export function sbilanciaInterpreti(rosa, attributo, verso) {
-  if (!attributo) return rosa;
-  return {
-    ...rosa,
-    giocatori: rosa.giocatori.map((g) => ({
-      ...g,
-      [attributo]: clamp(Math.round(g[attributo] + verso * (18 + rnd() * 8)), 20, 99),
-    })),
-  };
 }
