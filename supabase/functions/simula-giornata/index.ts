@@ -1,6 +1,7 @@
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { withSupabase } from '@supabase/server'
 import { ovrEfficace, schiera, simulaPartita } from '../../../engine/engine.js'
+import { tiltTecnico, tiltRapido } from '../../../engine/tattiche.js'
 import { MODULI } from '../../../engine/config.js'
 import { setSeed } from '../../../engine/random.js'
 import { calciaRigori, portiereDaLineup, tiratoriDaLineup } from '../../../engine/rigori.js'
@@ -22,7 +23,7 @@ type EventoCartellino = { tipo: 'cartellino'; minuto: number; blocco: number; la
 type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio | EventoCartellino
 type DbPlayer = { id: number; nome: string; posizioni: string[]; attributi: Record<string, number> }
 type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number; posizioni_override: string[] | null; attributi_override: Record<string, number> | null; specializzazione_attiva: string | null }
-type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; gk: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; specializzazione: string | null }
+type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; gk: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; tiltTecnico: number | null; tiltRapido: number | null; specializzazione: string | null }
 // moltiplicatoreInfortuni e' facoltativo: se assente l'engine usa 1 (nessun
 // effetto), esattamente come nella suite di validazione.
 type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number>; esperienzaStile: Record<string, number>; moltiplicatoreInfortuni?: number }
@@ -45,6 +46,13 @@ function requiredNumber(attributes: Record<string, number>, field: string, playe
 function attributoEffettivo(catalogo: Record<string, number>, override: Record<string, number> | null, field: string, playerId: number) {
   const valore = override?.[field]
   return typeof valore === 'number' && Number.isFinite(valore) ? valore : requiredNumber(catalogo, field, playerId)
+}
+
+// Stessa sovrascrittura, ma su tutti gli attributi in una volta e senza
+// pretendere che ci siano: serve ai profili tattici, che devono poter
+// rispondere "non lo so" invece di far saltare la giornata.
+function attributiEffettivi(catalogo: Record<string, number>, override: Record<string, number> | null) {
+  return override ? { ...catalogo, ...override } : catalogo
 }
 
 function adaptPlayer(instance: Instance, player: DbPlayer): EnginePlayer {
@@ -78,6 +86,16 @@ function adaptPlayer(instance: Instance, player: DbPlayer): EnginePlayer {
     condizione: instance.condizione,
     infortunatoFinoA: instance.infortunato_fino_a,
     squalificatoFinoA: instance.squalificato_fino_a,
+    // I due profili del sistema tattico (engine/tattiche.js). Sono DIFFERENZE
+    // fra attributi, non attributi: e' cio' che li rende indipendenti
+    // dall'overall e quindi leve tattiche vere invece di overall travestito.
+    //
+    // Valgono null quando gli attributi non bastano — i giocatori del vivaio
+    // non ne hanno 8 su 10, i portieri hanno pace e physic a null — e in quel
+    // caso il motore non applica nessun effetto tattico a quel giocatore.
+    // Mai un errore: una giornata non deve saltare per un attributo assente.
+    tiltTecnico: tiltTecnico(attributiEffettivi(player.attributi, instance.attributi_override)),
+    tiltRapido: tiltRapido(attributiEffettivi(player.attributi, instance.attributi_override)),
     // Serve al motore solo per i rigori: la specializzazione "para_rigori"
     // di un portiere vale punti di overall aggiuntivi dal dischetto.
     // Vedi engine/rigori.js, portiereDaLineup().

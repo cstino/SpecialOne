@@ -62,20 +62,43 @@ const TILT_PIENO = 25;
 //  Entrambi sono DIFFERENZE, non valori assoluti: e' questo che li rende
 //  indipendenti dall'overall.
 // ------------------------------------------------------------
-const n = (a, k) => Number(a?.[k] ?? 0);
-
-/** positivo = regista tecnico, negativo = mediano di lotta */
-export function tiltTecnico(attributi) {
-  const tecnica = (n(attributi, 'short_passing') + n(attributi, 'skill_long_passing')
-    + n(attributi, 'mentality_vision') + n(attributi, 'skill_ball_control')) / 4;
-  const lotta = (n(attributi, 'power_strength') + n(attributi, 'standing_tackle')
-    + n(attributi, 'mentality_interceptions') + n(attributi, 'mentality_aggression')) / 4;
-  return tecnica - lotta;
+// Media degli attributi richiesti, oppure null se ne manca anche uno solo.
+//
+// Il null non e' pigrizia difensiva, e' la scelta giusta: un attributo assente
+// trattato come 0 produrrebbe un profilo FALSO (un giocatore senza dati
+// sembrerebbe il mediano di lotta piu' estremo del campionato) e gli
+// assegnerebbe un bonus o un malus tattico inventato. Null invece significa
+// "profilo non disponibile", e idoneita() lo traduce in nessun effetto.
+//
+// Serve davvero, non in teoria. Misurato sul database il 12 settembre 2026:
+//   - i 210 giocatori del vivaio non hanno 8 di questi 10 attributi;
+//   - i portieri normali hanno pace e physic presenti ma a null.
+// Con una validazione stretta la simulazione notturna sarebbe andata in errore
+// su ogni formazione, perche' ognuna schiera un portiere.
+function mediaRichiesta(attributi, chiavi) {
+  let somma = 0;
+  for (const k of chiavi) {
+    const v = attributi?.[k];
+    if (typeof v !== 'number' || !Number.isFinite(v)) return null;
+    somma += v;
+  }
+  return somma / chiavi.length;
 }
 
-/** positivo = rapido e leggero, negativo = lento e possente */
+/** positivo = regista tecnico, negativo = mediano di lotta. null se i dati non bastano. */
+export function tiltTecnico(attributi) {
+  const tecnica = mediaRichiesta(attributi,
+    ['short_passing', 'skill_long_passing', 'mentality_vision', 'skill_ball_control']);
+  const lotta = mediaRichiesta(attributi,
+    ['power_strength', 'standing_tackle', 'mentality_interceptions', 'mentality_aggression']);
+  return tecnica === null || lotta === null ? null : tecnica - lotta;
+}
+
+/** positivo = rapido e leggero, negativo = lento e possente. null se i dati non bastano. */
 export function tiltRapido(attributi) {
-  return n(attributi, 'pace') - n(attributi, 'physic');
+  const rapidita = mediaRichiesta(attributi, ['pace']);
+  const fisicita = mediaRichiesta(attributi, ['physic']);
+  return rapidita === null || fisicita === null ? null : rapidita - fisicita;
 }
 
 export const PROFILI = {
