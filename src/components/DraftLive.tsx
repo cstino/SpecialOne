@@ -22,6 +22,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { oraServerAdesso, useOraCorrente } from '../lib/countdown'
 import { firmaFoto } from './RosaElenco'
+import { macroRuolo } from '../lib/ruoli'
 import { Crest } from './Crest'
 import type { Team } from '../types'
 
@@ -49,6 +50,7 @@ type Chiamata = {
   stato: 'usata' | 'vuota'
   nome: string | null
   ruolo: string | null
+  macro: string
   overall: number | null
   foto: string | null
 }
@@ -119,6 +121,7 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId }: P
         stato: s.stato === 'usata' ? 'usata' : 'vuota',
         nome: p?.nome ?? null,
         ruolo: p?.posizioni?.[0] ?? null,
+        macro: macroRuolo(p?.posizioni ?? []).toLowerCase(),
         overall: istanza?.overall_corrente ?? p?.overall ?? null,
         foto: p ? fotoPerGiocatore.get(p.id) ?? null : null,
       }
@@ -197,7 +200,7 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId }: P
                   <div className="min-w-0">
                     <p className="font-display truncate text-xl font-extrabold leading-tight text-white">{ultima.nome ?? 'Giocatore'}</p>
                     <p className="mt-1 flex items-center gap-2 text-[.7rem] font-bold uppercase tracking-wide text-white/50">
-                      {ultima.ruolo && <span className="rounded bg-white/10 px-1.5 py-0.5 text-white/70">{ultima.ruolo}</span>}
+                      {ultima.ruolo && <span className={`role-pill role-pill--${ultima.macro}`}>{ultima.ruolo}</span>}
                       {ultima.overall != null && <span className="tabular-nums">OVR {ultima.overall}</span>}
                     </p>
                   </div>
@@ -222,7 +225,14 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId }: P
       )}
 
       {precedenti.length > 0 && (
-        <div className="flex flex-col divide-y divide-white/10">
+        <div className="flex flex-col">
+          {/* Senza questa intestazione le chiamate precedenti sembravano la
+              lista di preferenze della squadra appena chiamata: e' successo
+              davvero, alla prima prova del 13 settembre 2026. */}
+          <p className="mb-1 text-[.62rem] font-extrabold uppercase tracking-[.14em] text-white/35">
+            Già chiamati
+          </p>
+          <div className="flex flex-col divide-y divide-white/10">
           {precedenti.map((c) => (
             <div key={c.sceltaId} className={`flex items-center gap-3 py-2.5 ${c.teamId === mioTeamId ? 'text-orange-200' : ''}`}>
               <b className="font-display w-6 shrink-0 text-center text-[.82rem] font-extrabold text-white/40 tabular-nums">{c.posizione}</b>
@@ -233,10 +243,11 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId }: P
                 <p className="truncate text-[.82rem] font-bold text-white">{c.nome ?? 'Scelta non esercitata'}</p>
                 <p className="truncate text-[.66rem] text-white/45">{teamById.get(c.teamId)?.nome ?? '—'}</p>
               </div>
-              {c.ruolo && <span className="shrink-0 rounded bg-white/8 px-1.5 py-0.5 text-[.6rem] font-bold uppercase text-white/55">{c.ruolo}</span>}
+              {c.ruolo && <span className={`role-pill role-pill--${c.macro} shrink-0`}>{c.ruolo}</span>}
               {c.overall != null && <strong className="font-display shrink-0 text-[.9rem] font-extrabold tabular-nums text-white/80">{c.overall}</strong>}
             </div>
           ))}
+          </div>
         </div>
       )}
     </article>
