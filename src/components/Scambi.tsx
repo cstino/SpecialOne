@@ -13,6 +13,16 @@ import { PopupSpiegazione } from './PopupSpiegazione'
 import { SchedaGiocatore } from './SchedaGiocatore'
 import { UnderlineTabs } from './ui/underline-tabs'
 
+// Ordine di CALENDARIO, non alfabetico. Dentro una stagione l'ON-Season cade a
+// meta' campionato e l'OFF-Season alla fine, quindi viene prima la ON:
+//   ON-1, OFF-1, ON-2, OFF-2, ...
+// Prima si ordinava per finestra con localeCompare, e siccome 'off' precede
+// 'on' in ordine alfabetico l'elenco mostrava OFF-2 sopra ON-2. Stessa tabella
+// gia' usata in Scelte.tsx.
+const ORDINE_FINESTRA: Record<'on' | 'off', number> = { on: 0, off: 1 }
+const perCalendario = (a: { stagione: number; finestra: 'on' | 'off' }, b: { stagione: number; finestra: 'on' | 'off' }) =>
+  a.stagione - b.stagione || ORDINE_FINESTRA[a.finestra] - ORDINE_FINESTRA[b.finestra]
+
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
 type StatoProposta = 'in_attesa' | 'accettata' | 'rifiutata' | 'ritirata' | 'scaduta'
@@ -121,6 +131,11 @@ export function Scambi({ membership, onNavigate }: Props) {
   const [contropropostaOrigine, setContropropostaOrigine] = useState<Proposta | null>(null)
   const [inCorso, setInCorso] = useState(false)
   const [esito, setEsito] = useState<string | null>(null)
+  // Gli errori di un'azione (scambio bloccato dalle regole, mercato chiuso,
+  // rosa piena) finivano in una riga di testo in cima alla pagina. Chi compone
+  // una proposta sta pero' in fondo, e vedeva solo un pulsante che non faceva
+  // niente. Vanno in un popup, che si mette davanti.
+  const [erroreAzione, setErroreAzione] = useState<string | null>(null)
   const [schedaApertaId, setSchedaApertaId] = useState<number | null>(null)
   const [tabComposer, setTabComposer] = useState<'giocatori' | 'scelte'>('giocatori')
   const compositoreRef = useRef<HTMLElement>(null)
@@ -135,7 +150,7 @@ export function Scambi({ membership, onNavigate }: Props) {
       supabase.from('scelte_draft')
         .select('id, team_origine_id, team_proprietario_id, stagione, finestra, posizione, stato')
         .eq('league_id', league.id).in('stato', ['futura', 'determinata'])
-        .order('stagione').order('finestra'),
+        .order('stagione'),
       supabase.from('trade_proposals').select('*').eq('league_id', league.id).order('creata_il', { ascending: false }),
       supabase.rpc('trattative_pubbliche', { p_league_id: league.id }),
       supabase.rpc('capienza_squadra', { p_league_id: league.id }),
@@ -224,9 +239,9 @@ export function Scambi({ membership, onNavigate }: Props) {
   const miaRosa = useMemo(() => rose.filter((g) => g.team_id === membership.id).sort((a, b) => b.overall - a.overall), [rose, membership.id])
   const rosaAvversaria = useMemo(() => rose.filter((g) => g.team_id === avversaria).sort((a, b) => b.overall - a.overall), [rose, avversaria])
   const mieScelte = useMemo(() => scelte.filter((s) => s.team_proprietario_id === membership.id)
-    .sort((a, b) => a.stagione - b.stagione || a.finestra.localeCompare(b.finestra)), [scelte, membership.id])
+    .sort(perCalendario), [scelte, membership.id])
   const scelteAvversaria = useMemo(() => scelte.filter((s) => s.team_proprietario_id === avversaria)
-    .sort((a, b) => a.stagione - b.stagione || a.finestra.localeCompare(b.finestra)), [scelte, avversaria])
+    .sort(perCalendario), [scelte, avversaria])
 
   const ricevute = proposte.filter((p) => p.a_team_id === membership.id && p.stato === 'in_attesa')
   const inviate = proposte.filter((p) => p.da_team_id === membership.id && p.stato === 'in_attesa')
@@ -242,9 +257,11 @@ export function Scambi({ membership, onNavigate }: Props) {
     const partenza = performance.now()
     setInCorso(true)
     setEsito(null)
+    setErroreAzione(null)
     try {
       const { error } = await azione()
-      setEsito(error ? error.message : successo)
+      if (error) setErroreAzione(error.message)
+      else setEsito(successo)
       if (!error) await carica(true)
       const attesa = Math.max(0, durataMinima - (performance.now() - partenza))
       if (attesa) await new Promise((r) => window.setTimeout(r, attesa))
@@ -608,6 +625,14 @@ export function Scambi({ membership, onNavigate }: Props) {
               </li>)}
             </ul>}
       </section>
+
+      {erroreAzione && <div className="popup-spiegazione-sfondo" role="alertdialog" aria-modal="true" aria-label="Operazione non riuscita">
+        <div className="popup-spiegazione">
+          <h2>Non si può fare</h2>
+          <div className="popup-spiegazione__corpo"><p>{erroreAzione}</p></div>
+          <button className="button button--primary" type="button" onClick={() => setErroreAzione(null)}>Ho capito</button>
+        </div>
+      </div>}
 
       {schedaAperta && <SchedaGiocatore
         giocatore={{
