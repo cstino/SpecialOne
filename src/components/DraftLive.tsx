@@ -31,6 +31,12 @@ import type { Team } from '../types'
 // di cinque secondi di ritardo e la query resta leggera.
 const RINFRESCO_MS = 5000
 
+// Quante chiamate gia' avvenute stanno in una pagina dello storico. Le pagine
+// si contano dalla PRIMA scelta in avanti, non dall'ultima all'indietro: cosi'
+// la pagina 1 contiene sempre le chiamate 1-2-3 e non cambia contenuto mano a
+// mano che il draft prosegue.
+const PER_PAGINA = 3
+
 // Per quanto la card resta in home dopo l'ultima chiamata, cosi' chi apre
 // l'app a draft finito vede comunque com'e' andata.
 const CODA_DOPO_FINE_MS = 6 * 60 * 60 * 1000
@@ -142,7 +148,25 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId }: P
   }, [inCorso, carica])
 
   const ultima = chiamate.length ? chiamate[chiamate.length - 1] : null
-  const precedenti = chiamate.slice(0, -1).reverse()
+  // In ordine di chiamata, dalla prima: l'ultima sta gia' in evidenza sopra.
+  const precedenti = chiamate.slice(0, -1)
+  const pagine = Math.max(1, Math.ceil(precedenti.length / PER_PAGINA))
+
+  // "segui" tiene lo storico agganciato all'ultima pagina mentre il draft
+  // corre. Appena si sfoglia indietro si stacca, altrimenti il rinfresco ogni
+  // cinque secondi riporterebbe in fondo mentre si sta guardando l'inizio.
+  // Tornando sull'ultima pagina si riaggancia da solo.
+  const [pagina, setPagina] = useState(0)
+  const [segui, setSegui] = useState(true)
+  useEffect(() => { if (segui) setPagina(pagine - 1) }, [segui, pagine])
+
+  const paginaValida = Math.min(pagina, pagine - 1)
+  const vaiA = (p: number) => {
+    const n = Math.min(Math.max(0, p), pagine - 1)
+    setPagina(n)
+    setSegui(n === pagine - 1)
+  }
+  const visibili = precedenti.slice(paginaValida * PER_PAGINA, paginaValida * PER_PAGINA + PER_PAGINA)
 
   const prossimaFra = useMemo(() => {
     if (!finestra?.avviata_il || finestra.risolta_il) return null
@@ -229,11 +253,34 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId }: P
           {/* Senza questa intestazione le chiamate precedenti sembravano la
               lista di preferenze della squadra appena chiamata: e' successo
               davvero, alla prima prova del 13 settembre 2026. */}
-          <p className="mb-1 text-[.62rem] font-extrabold uppercase tracking-[.14em] text-white/35">
-            Già chiamati
-          </p>
+          <div className="mb-1 flex items-center justify-between gap-3">
+            <p className="text-[.62rem] font-extrabold uppercase tracking-[.14em] text-white/35">
+              Già chiamati
+            </p>
+            {pagine > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => vaiA(paginaValida - 1)}
+                  disabled={paginaValida === 0}
+                  aria-label="Chiamate precedenti"
+                  className="grid h-7 w-7 place-items-center rounded-lg bg-white/8 text-white/70 transition enabled:hover:bg-white/15 enabled:hover:text-white disabled:opacity-25"
+                >‹</button>
+                <span className="min-w-[3.2rem] text-center text-[.62rem] font-extrabold uppercase tracking-[.1em] text-white/35 tabular-nums">
+                  {paginaValida + 1} / {pagine}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => vaiA(paginaValida + 1)}
+                  disabled={paginaValida >= pagine - 1}
+                  aria-label="Chiamate successive"
+                  className="grid h-7 w-7 place-items-center rounded-lg bg-white/8 text-white/70 transition enabled:hover:bg-white/15 enabled:hover:text-white disabled:opacity-25"
+                >›</button>
+              </div>
+            )}
+          </div>
           <div className="flex flex-col divide-y divide-white/10">
-          {precedenti.map((c) => (
+          {visibili.map((c) => (
             <div key={c.sceltaId} className={`flex items-center gap-3 py-2.5 ${c.teamId === mioTeamId ? 'text-orange-200' : ''}`}>
               <b className="font-display w-6 shrink-0 text-center text-[.82rem] font-extrabold text-white/40 tabular-nums">{c.posizione}</b>
               {c.foto
