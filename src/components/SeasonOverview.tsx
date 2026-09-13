@@ -99,6 +99,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
           teamById={data.teamById}
           crestUrlByTeamId={data.crestUrlByTeamId}
           mioTeamId={membership.id}
+          onNavigate={onNavigate}
         />
 
         {data.lastFixture && ultimaPartita && (

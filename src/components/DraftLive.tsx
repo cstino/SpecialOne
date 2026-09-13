@@ -20,7 +20,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { oraServerAdesso, useOraCorrente } from '../lib/countdown'
+import { formatCountdown, useOraCorrente } from '../lib/countdown'
 import { firmaFoto } from './RosaElenco'
 import { macroRuolo } from '../lib/ruoli'
 import { Crest } from './Crest'
@@ -44,6 +44,20 @@ const PER_PAGINA = 3
 // L'ora e' quella di Roma e non del telefono — e' la regola di tutto il
 // progetto. Un partecipante all'estero deve vedere la card sparire nello
 // stesso momento in cui sparisce per gli altri, non con tre ore di scarto.
+// "oggi alle 13:00", "domani alle 13:00", oppure la data per intero. Sempre
+// ora di Roma, mai quella del telefono.
+function dataOra(iso: string) {
+  const q = new Date(iso)
+  const giorno = new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', day: 'numeric', month: 'long' }).format(q)
+  const ora = new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit' }).format(q)
+  const romano = (t: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome' }).format(t)
+  const oggi = romano(new Date())
+  const domani = romano(new Date(Date.now() + 24 * 60 * 60 * 1000))
+  if (romano(q) === oggi) return `Oggi alle ${ora}`
+  if (romano(q) === domani) return `Domani alle ${ora}`
+  return `${giorno}, ore ${ora}`
+}
+
 function alle21Roma(dopo: number) {
   const formato = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Europe/Rome', hour12: false,
@@ -90,13 +104,18 @@ type Props = {
   teamById: Map<number, Team>
   crestUrlByTeamId: Map<number, string>
   mioTeamId: number
+  onNavigate: (view: 'scelte') => void
 }
 
-export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId }: Props) {
+export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId, onNavigate }: Props) {
   const [finestra, setFinestra] = useState<Finestra | null>(null)
   const [chiamate, setChiamate] = useState<Chiamata[]>([])
   const [totale, setTotale] = useState(0)
   const [pronto, setPronto] = useState(false)
+  // La mia scelta in questa finestra: posizione e quante preferenze ho gia'
+  // salvato. Serve solo al volto "in attesa" della card — a draft partito la
+  // lista e' congelata da un'ora e non c'e' piu' niente da fare.
+  const [miaScelta, setMiaScelta] = useState<{ posizione: number; preferenze: number } | null>(null)
   const adesso = useOraCorrente()
 
   const carica = useCallback(async () => {
@@ -156,20 +175,34 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId }: P
         foto: p ? fotoPerGiocatore.get(p.id) ?? null : null,
       }
     }))
+    // La mia scelta e quante preferenze ho messo. scelte_preferenze e'
+    // leggibile solo dal proprietario, quindi questa query non puo' rivelare
+    // nulla delle altre squadre nemmeno volendo.
+    const mia = righe.find((r) => r.team_proprietario_id === mioTeamId && r.stato === 'determinata')
+    if (mia) {
+      const { count } = await supabase.from('scelte_preferenze')
+        .select('player_id', { count: 'exact', head: true }).eq('scelta_id', mia.id)
+      setMiaScelta({ posizione: mia.posizione ?? 0, preferenze: count ?? 0 })
+    } else setMiaScelta(null)
+
     setPronto(true)
-  }, [leagueId])
+  }, [leagueId, mioTeamId])
 
   useEffect(() => { void carica() }, [carica])
 
   // In corso = partito e non ancora concluso. Solo allora vale la pena
   // interrogare il database ogni cinque secondi.
   const inCorso = Boolean(finestra?.avviata_il && !finestra.risolta_il)
+  // Anche nell'ultimo minuto prima dell'avvio: cosi' la card passa da sola dal
+  // conto alla rovescia alla prima chiamata, senza che nessuno ricarichi.
+  const alleBattute = Boolean(finestra?.estrazione_il && !finestra.avviata_il && !finestra.risolta_il
+    && new Date(finestra.estrazione_il).getTime() - adesso < 2 * 60 * 1000)
 
   useEffect(() => {
-    if (!inCorso) return
+    if (!inCorso && !alleBattute) return
     const t = setInterval(() => { void carica() }, RINFRESCO_MS)
     return () => clearInterval(t)
-  }, [inCorso, carica])
+  }, [inCorso, alleBattute, carica])
 
   const ultima = chiamate.length ? chiamate[chiamate.length - 1] : null
   // In ordine di chiamata, dalla prima: l'ultima sta gia' in evidenza sopra.
@@ -201,9 +234,55 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId }: P
 
   if (!pronto || !finestra) return null
 
-  // Non ancora partito: la card non serve, il conto alla rovescia della
-  // finestra vive gia' nella pagina Scelte.
-  if (!finestra.avviata_il) return null
+  // ----- Non ancora partito: conto alla rovescia -----
+  if (!finestra.avviata_il) {
+    if (finestra.risolta_il || !finestra.estrazione_il) return null
+    const mancano = Math.max(0, new Date(finestra.estrazione_il).getTime() - adesso)
+    // Le liste si congelano un'ora prima: e' il momento in cui la card smette
+    // di essere un invito e diventa un annuncio.
+    const congelate = mancano <= 60 * 60 * 1000
+    const inRitardo = miaScelta != null && miaScelta.preferenze < miaScelta.posizione
+
+    return (
+      <article className="flex flex-col gap-5 border-b border-white/10 pb-10">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[.62rem] font-extrabold uppercase tracking-[.14em] text-orange-300/85">
+              On-Season Draft
+            </p>
+            <h2 className="font-display mt-1 text-2xl font-extrabold text-white">
+              {congelate ? 'Sta per cominciare' : 'In arrivo'}
+            </h2>
+            <p className="mt-1 text-[.78rem] text-white/55">
+              {totale} chiamate, una al minuto. {dataOra(finestra.estrazione_il)}
+            </p>
+          </div>
+          <span className="shrink-0 rounded-full border border-orange-400/25 bg-orange-500/10 px-3 py-1.5 text-[.62rem] font-extrabold uppercase tracking-[.12em] text-orange-200">
+            {congelate ? 'Liste chiuse' : 'Liste aperte'}
+          </span>
+        </div>
+
+        <p className="font-display text-center text-4xl font-extrabold tabular-nums text-white">
+          {formatCountdown(mancano)}
+        </p>
+
+        {miaScelta && (
+          <p className="text-center text-[.8rem] text-white/60">
+            Hai la <b className="text-white">{miaScelta.posizione}ª scelta</b> ·{' '}
+            <b className={inRitardo ? 'text-orange-300' : 'text-white'}>
+              {miaScelta.preferenze} preferenze su {miaScelta.posizione}
+            </b>
+          </p>
+        )}
+
+        <div className="flex justify-center">
+          <button type="button" className="overview-cta-button button button--primary" onClick={() => onNavigate('scelte')}>
+            {congelate ? 'Vedi la tua lista' : 'Prepara le preferenze'}
+          </button>
+        </div>
+      </article>
+    )
+  }
   if (finestra.risolta_il && adesso >= alle21Roma(new Date(finestra.risolta_il).getTime())) return null
 
   const concluso = Boolean(finestra.risolta_il)
