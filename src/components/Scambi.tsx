@@ -247,11 +247,26 @@ export function Scambi({ membership, onNavigate }: Props) {
   const inviate = proposte.filter((p) => p.da_team_id === membership.id && p.stato === 'in_attesa')
   const concluse = proposte.filter((p) => p.stato === 'accettata')
 
-  function giornoRoma(v: Date | string) {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(v))
+  // Data breve di uno scambio, ora di Roma. Serve da quando l'elenco copre
+  // l'intera stagione invece del solo giorno corrente: con piu' giorni insieme,
+  // "quando" diventa un'informazione necessaria per leggere la riga.
+  function dataBreve(v: string) {
+    return new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', day: 'numeric', month: 'short' }).format(new Date(v))
   }
-  const oggiRoma = giornoRoma(new Date())
-  const concluseOggi = concluse.filter((p) => p.risolta_il && giornoRoma(p.risolta_il) === oggiRoma)
+
+  // Tutti gli scambi conclusi DELLA STAGIONE, dal piu' recente. Prima erano
+  // solo quelli del giorno: un affare di ieri spariva, e la sezione
+  // "Trasparenza" perdeva il suo scopo proprio quando serviva, cioe' quando
+  // qualcuno voleva capire com'era cambiata una rosa.
+  //
+  // Il confine e' data_inizio della stagione corrente. Se manca — stagione non
+  // ancora caricata — si mostrano tutti gli accettati invece di nasconderli:
+  // meglio qualche riga di troppo che una sezione vuota senza motivo.
+  const inizioStagione = dati.season?.data_inizio ? new Date(dati.season.data_inizio).getTime() : null
+  const concluseStagione = useMemo(() => concluse
+    .filter((p) => p.risolta_il && (inizioStagione == null || new Date(p.risolta_il).getTime() >= inizioStagione))
+    .sort((a, b) => new Date(b.risolta_il!).getTime() - new Date(a.risolta_il!).getTime()),
+    [concluse, inizioStagione])
 
   async function chiama(azione: () => PromiseLike<{ error: { message: string } | null }>, successo: string, durataMinima = 0) {
     const partenza = performance.now()
@@ -607,11 +622,12 @@ export function Scambi({ membership, onNavigate }: Props) {
 
       {/* ---- Trasparenza ---- */}
       <section className="scambi-blocco">
-        <div className="sezione-testa"><div><p className="kicker">Trasparenza</p><h2>Scambi conclusi oggi</h2></div></div>
-        {concluseOggi.length === 0
-          ? <p className="season-empty">Nessuno scambio concluso oggi.</p>
+        <div className="sezione-testa"><div><p className="kicker">Trasparenza</p>
+          <h2>Scambi della stagione{concluseStagione.length > 0 && <span className="scambi-conteggio"> {concluseStagione.length}</span>}</h2></div></div>
+        {concluseStagione.length === 0
+          ? <p className="season-empty">Nessuno scambio concluso in questa stagione.</p>
           : <ul className="scambi-trasparenza">
-              {concluseOggi.map((p) => <li className="scambi-operazione" key={p.id}>
+              {concluseStagione.map((p) => <li className="scambi-operazione" key={p.id}>
                 <div className="scambi-operazione__lato">
                   {stemma(p.da_team_id)}
                   <div className="scambi-operazione__chips">{p.giocatori_offerti.map((id) => pacchettoChip(id, 'g'))}{p.scelte_offerte.map((id) => pacchettoChip(id, 's'))}</div>
@@ -621,7 +637,7 @@ export function Scambi({ membership, onNavigate }: Props) {
                   <div className="scambi-operazione__chips">{p.giocatori_richiesti.map((id) => pacchettoChip(id, 'g'))}{p.scelte_richieste.map((id) => pacchettoChip(id, 's'))}</div>
                   {stemma(p.a_team_id)}
                 </div>
-                <em>{ETICHETTE_STATO[p.stato]}</em>
+                <em>{ETICHETTE_STATO[p.stato]} · {p.risolta_il ? dataBreve(p.risolta_il) : ''}</em>
               </li>)}
             </ul>}
       </section>
