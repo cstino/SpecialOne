@@ -37,9 +37,33 @@ const RINFRESCO_MS = 5000
 // mano che il draft prosegue.
 const PER_PAGINA = 3
 
-// Per quanto la card resta in home dopo l'ultima chiamata, cosi' chi apre
-// l'app a draft finito vede comunque com'e' andata.
-const CODA_DOPO_FINE_MS = 6 * 60 * 60 * 1000
+// A draft concluso la card resta in home fino alle 21:00 DI ROMA, poi sparisce:
+// chi apre l'app in giornata vede comunque com'e' andata, e il giorno dopo la
+// home e' pulita.
+//
+// L'ora e' quella di Roma e non del telefono — e' la regola di tutto il
+// progetto. Un partecipante all'estero deve vedere la card sparire nello
+// stesso momento in cui sparisce per gli altri, non con tre ore di scarto.
+function alle21Roma(dopo: number) {
+  const formato = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Rome', hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  })
+  const p = Object.fromEntries(formato.formatToParts(new Date(dopo))
+    .filter((x) => x.type !== 'literal')
+    .map((x) => [x.type, Number(x.value)])) as Record<string, number>
+
+  // Scarto fra l'ora di Roma e UTC in quell'istante: e' cio' che permette di
+  // costruire un istante assoluto partendo da un orario "da calendario"
+  // romano. Il cambio dell'ora legale avviene alle 03:00, quindi fra la fine
+  // di un draft e le 21:00 dello stesso giorno lo scarto non cambia mai.
+  const scarto = Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute, p.second) - dopo
+  let quando = Date.UTC(p.year, p.month - 1, p.day, 21, 0, 0) - scarto
+  // Draft finito dopo le 21: la card vive fino alle 21 del giorno seguente.
+  if (quando <= dopo) quando += 24 * 60 * 60 * 1000
+  return quando
+}
 
 type Finestra = {
   stagione: number
@@ -180,7 +204,7 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId }: P
   // Non ancora partito: la card non serve, il conto alla rovescia della
   // finestra vive gia' nella pagina Scelte.
   if (!finestra.avviata_il) return null
-  if (finestra.risolta_il && adesso - new Date(finestra.risolta_il).getTime() > CODA_DOPO_FINE_MS) return null
+  if (finestra.risolta_il && adesso >= alle21Roma(new Date(finestra.risolta_il).getTime())) return null
 
   const concluso = Boolean(finestra.risolta_il)
 
