@@ -7,6 +7,7 @@ import { GameNav, type GameView } from './GameNav'
 import { Crest } from './Crest'
 import { FixtureScore, Forma, formaPerSquadra, formatMatchDate, SeasonState, TeamLabel, TitoloAdattivo } from './SeasonUI'
 import { LeagueNews } from './LeagueNews'
+import { DraftLive } from './DraftLive'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; revealedMatchIds: Set<number>; onOpenMatch: (matchId: number) => void; onRevealMatch: (matchId: number) => void; onOpenTeam: (teamId: number) => void }
 
@@ -90,6 +91,17 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
       </section>
 
       <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-10 px-5 py-10 md:px-8 md:py-14">
+        {/* Primo in colonna mentre e' in corso: un draft in diretta dura una
+            ventina di minuti e non deve stare sotto la classifica. Il
+            componente si nasconde da solo quando non c'e' niente da vedere. */}
+        <DraftLive
+          leagueId={league.id}
+          teamById={data.teamById}
+          crestUrlByTeamId={data.crestUrlByTeamId}
+          mioTeamId={membership.id}
+          onNavigate={onNavigate}
+        />
+
         {data.lastFixture && ultimaPartita && (
           <button
             type="button"

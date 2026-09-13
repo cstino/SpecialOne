@@ -511,7 +511,11 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   // ---------- statistiche ----------
   const ctrlMedio = ctrlStorico.reduce((a, b) => a + b, 0) / ctrlStorico.length;
   const mk = (lineup, gol, ctrl, forze, xgTot) => {
-    const conv = clamp(gauss(CFG.CONVERSIONE_MEDIA, CFG.CONVERSIONE_SIGMA), 0.07, 0.17);
+    // La conversione per tiro cresce col dominio offensivo: chi produce molto xG
+    // lo produce con occasioni migliori, non solo piu' numerose. Vedi il commento
+    // su XG_RIFERIMENTO_TIRI in config.js.
+    const qualita = Math.pow(Math.max(xgTot, 0.15) / CFG.XG_RIFERIMENTO_TIRI, CFG.ESPONENTE_QUALITA_TIRO);
+    const conv = clamp(gauss(CFG.CONVERSIONE_MEDIA, CFG.CONVERSIONE_SIGMA) * qualita, 0.06, 0.32);
     const tiri = Math.max(gol, Math.round(xgTot / conv));
     const inPorta = Math.max(gol, Math.round(tiri * clamp(gauss(CFG.TIRI_PORTA_MEDIA, CFG.TIRI_PORTA_SIGMA), 0.15, 0.65)));
     const pTent = Math.round(CFG.PASSAGGI_BASE * ctrl * 2);

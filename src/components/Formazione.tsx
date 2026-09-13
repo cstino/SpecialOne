@@ -295,19 +295,25 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         // acquisto (o restare l'id di un ceduto): la riallineiamo alla rosa
         // corrente senza toccare titolari e panchina gia' scelti.
         const idsRosa = new Set(loaded.map((player) => player.id))
-        const titolariSalvati = current.titolari.filter((id) => idsRosa.has(id))
+        // I titolari si rimpiazzano SUL POSTO, non si filtrano via. Ogni indice
+        // di questo array e' uno slot del modulo: filtrare accorciava l'array e
+        // faceva scalare a sinistra tutti quelli dopo il ceduto, cioe' li
+        // spostava in slot che non erano i loro. Chi usciva dalla rosa a
+        // centrocampo si portava dietro mezza squadra, e il posto vuoto
+        // compariva in fondo invece che dove mancava davvero il giocatore.
+        // Con 0 (sentinella "vuoto") lo slot resta esattamente dov'era.
+        // Segnalato il 13 settembre 2026 dopo uno scambio in Serie F.
+        const titolariSalvati = current.titolari.map((id) => (idsRosa.has(id) ? id : 0))
         const panchinaSalvata = current.panchina.filter((id) => idsRosa.has(id))
         const tribunaSalvata = current.tribuna.filter((id) => idsRosa.has(id))
         const giaInDistinta = new Set([...titolariSalvati, ...panchinaSalvata, ...tribunaSalvata])
         const nuoviArrivi = loaded.filter((player) => !giaInDistinta.has(player.id)).map((player) => player.id)
-        // Se molti titolari salvati sono usciti dalla rosa (rinnovi mancati,
-        // ricambio a fine stagione), il filtro sopra puo' accorciare
-        // l'array ben sotto agli 11 slot del modulo. Un array piu' corto
-        // e' un problema vero, non solo estetico: gli aggiornamenti per
-        // indice (`.map((v,i)=>i===index?id:v)`) su un array che non ha
-        // ancora quell'indice non lo creano, quindi lo slot resterebbe
-        // permanentemente non assegnabile. Si riempie il resto con 0
-        // (sentinella "vuoto": nessun player_instance ha mai id 0).
+        // Resta il riempimento in coda, ma ora copre solo il caso di una
+        // distinta salvata con meno slot di quelli del modulo corrente. Un
+        // array piu' corto e' un problema vero, non solo estetico: gli
+        // aggiornamenti per indice (`.map((v,i)=>i===index?id:v)`) su un array
+        // che non ha ancora quell'indice non lo creano, quindi lo slot
+        // resterebbe permanentemente non assegnabile.
         const slotTitolari = MODULI[current.modulo]?.length ?? 11
         const titolariCompleti = titolariSalvati.length >= slotTitolari
           ? titolariSalvati

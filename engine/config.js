@@ -51,7 +51,16 @@ export const CFG = {
 
   // --- Statistiche ---
   CONVERSIONE_MEDIA: 0.105,
-  CONVERSIONE_SIGMA: 0.015,
+  CONVERSIONE_SIGMA: 0.011,  // 11 settembre 2026: era 0.015, vedi XG_RIFERIMENTO_TIRI
+  // La qualita' media del tiro non e' costante: una squadra che domina crea
+  // occasioni migliori, non solo piu' numerose, quindi converte di piu' per
+  // ogni tiro. Prima di questa correzione i tiri erano proporzionali all'xG, e
+  // nelle partite sbilanciate la squadra forte arrivava a 40-60 tiri: un numero
+  // che nel calcio vero non esiste (il record e' intorno a 35). I due valori
+  // qui sotto rendono la relazione tiri/xG concava. Non toccano i gol: le
+  // statistiche sono calcolate a fine partita, quando il risultato e' gia' fatto.
+  XG_RIFERIMENTO_TIRI: 1.35,      // xG per squadra a cui la conversione vale CONVERSIONE_MEDIA
+  ESPONENTE_QUALITA_TIRO: 0.55,   // quanto la conversione sale col dominio (0 = vecchio comportamento lineare)
   TIRI_PORTA_MEDIA: 0.36,
   TIRI_PORTA_SIGMA: 0.07,
   PASSAGGI_BASE: 480,

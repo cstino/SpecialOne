@@ -13,6 +13,16 @@ import { PopupSpiegazione } from './PopupSpiegazione'
 import { SchedaGiocatore } from './SchedaGiocatore'
 import { UnderlineTabs } from './ui/underline-tabs'
 
+// Ordine di CALENDARIO, non alfabetico. Dentro una stagione l'ON-Season cade a
+// meta' campionato e l'OFF-Season alla fine, quindi viene prima la ON:
+//   ON-1, OFF-1, ON-2, OFF-2, ...
+// Prima si ordinava per finestra con localeCompare, e siccome 'off' precede
+// 'on' in ordine alfabetico l'elenco mostrava OFF-2 sopra ON-2. Stessa tabella
+// gia' usata in Scelte.tsx.
+const ORDINE_FINESTRA: Record<'on' | 'off', number> = { on: 0, off: 1 }
+const perCalendario = (a: { stagione: number; finestra: 'on' | 'off' }, b: { stagione: number; finestra: 'on' | 'off' }) =>
+  a.stagione - b.stagione || ORDINE_FINESTRA[a.finestra] - ORDINE_FINESTRA[b.finestra]
+
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
 type StatoProposta = 'in_attesa' | 'accettata' | 'rifiutata' | 'ritirata' | 'scaduta'
@@ -52,6 +62,7 @@ type Giocatore = {
   condizione?: number
   infortunatoFinoA?: number
   ritiroAnnunciato?: boolean
+  sulMercato?: boolean
 }
 
 type StatoScelta = 'futura' | 'determinata' | 'usata' | 'vuota'
@@ -120,6 +131,11 @@ export function Scambi({ membership, onNavigate }: Props) {
   const [contropropostaOrigine, setContropropostaOrigine] = useState<Proposta | null>(null)
   const [inCorso, setInCorso] = useState(false)
   const [esito, setEsito] = useState<string | null>(null)
+  // Gli errori di un'azione (scambio bloccato dalle regole, mercato chiuso,
+  // rosa piena) finivano in una riga di testo in cima alla pagina. Chi compone
+  // una proposta sta pero' in fondo, e vedeva solo un pulsante che non faceva
+  // niente. Vanno in un popup, che si mette davanti.
+  const [erroreAzione, setErroreAzione] = useState<string | null>(null)
   const [schedaApertaId, setSchedaApertaId] = useState<number | null>(null)
   const [tabComposer, setTabComposer] = useState<'giocatori' | 'scelte'>('giocatori')
   const compositoreRef = useRef<HTMLElement>(null)
@@ -129,12 +145,12 @@ export function Scambi({ membership, onNavigate }: Props) {
     setErrore(null)
     const [istanzeRes, scelteRes, proposteRes, trattativeRes, capienzaRes] = await Promise.all([
       supabase.from('player_instances')
-        .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato')
+        .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato, sul_mercato')
         .eq('league_id', league.id).not('team_id', 'is', null),
       supabase.from('scelte_draft')
         .select('id, team_origine_id, team_proprietario_id, stagione, finestra, posizione, stato')
         .eq('league_id', league.id).in('stato', ['futura', 'determinata'])
-        .order('stagione').order('finestra'),
+        .order('stagione'),
       supabase.from('trade_proposals').select('*').eq('league_id', league.id).order('creata_il', { ascending: false }),
       supabase.rpc('trattative_pubbliche', { p_league_id: league.id }),
       supabase.rpc('capienza_squadra', { p_league_id: league.id }),
@@ -182,6 +198,7 @@ export function Scambi({ membership, onNavigate }: Props) {
       condizione: i.condizione,
       infortunatoFinoA: i.infortunato_fino_a,
       ritiroAnnunciato: i.ritiro_annunciato,
+      sulMercato: i.sul_mercato,
     })))
     setCaricamento(false)
   }, [league.id])
@@ -222,27 +239,44 @@ export function Scambi({ membership, onNavigate }: Props) {
   const miaRosa = useMemo(() => rose.filter((g) => g.team_id === membership.id).sort((a, b) => b.overall - a.overall), [rose, membership.id])
   const rosaAvversaria = useMemo(() => rose.filter((g) => g.team_id === avversaria).sort((a, b) => b.overall - a.overall), [rose, avversaria])
   const mieScelte = useMemo(() => scelte.filter((s) => s.team_proprietario_id === membership.id)
-    .sort((a, b) => a.stagione - b.stagione || a.finestra.localeCompare(b.finestra)), [scelte, membership.id])
+    .sort(perCalendario), [scelte, membership.id])
   const scelteAvversaria = useMemo(() => scelte.filter((s) => s.team_proprietario_id === avversaria)
-    .sort((a, b) => a.stagione - b.stagione || a.finestra.localeCompare(b.finestra)), [scelte, avversaria])
+    .sort(perCalendario), [scelte, avversaria])
 
   const ricevute = proposte.filter((p) => p.a_team_id === membership.id && p.stato === 'in_attesa')
   const inviate = proposte.filter((p) => p.da_team_id === membership.id && p.stato === 'in_attesa')
   const concluse = proposte.filter((p) => p.stato === 'accettata')
 
-  function giornoRoma(v: Date | string) {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(v))
+  // Data breve di uno scambio, ora di Roma. Serve da quando l'elenco copre
+  // l'intera stagione invece del solo giorno corrente: con piu' giorni insieme,
+  // "quando" diventa un'informazione necessaria per leggere la riga.
+  function dataBreve(v: string) {
+    return new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', day: 'numeric', month: 'short' }).format(new Date(v))
   }
-  const oggiRoma = giornoRoma(new Date())
-  const concluseOggi = concluse.filter((p) => p.risolta_il && giornoRoma(p.risolta_il) === oggiRoma)
+
+  // Tutti gli scambi conclusi DELLA STAGIONE, dal piu' recente. Prima erano
+  // solo quelli del giorno: un affare di ieri spariva, e la sezione
+  // "Trasparenza" perdeva il suo scopo proprio quando serviva, cioe' quando
+  // qualcuno voleva capire com'era cambiata una rosa.
+  //
+  // Il confine e' data_inizio della stagione corrente. Se manca — stagione non
+  // ancora caricata — si mostrano tutti gli accettati invece di nasconderli:
+  // meglio qualche riga di troppo che una sezione vuota senza motivo.
+  const inizioStagione = dati.season?.data_inizio ? new Date(dati.season.data_inizio).getTime() : null
+  const concluseStagione = useMemo(() => concluse
+    .filter((p) => p.risolta_il && (inizioStagione == null || new Date(p.risolta_il).getTime() >= inizioStagione))
+    .sort((a, b) => new Date(b.risolta_il!).getTime() - new Date(a.risolta_il!).getTime()),
+    [concluse, inizioStagione])
 
   async function chiama(azione: () => PromiseLike<{ error: { message: string } | null }>, successo: string, durataMinima = 0) {
     const partenza = performance.now()
     setInCorso(true)
     setEsito(null)
+    setErroreAzione(null)
     try {
       const { error } = await azione()
-      setEsito(error ? error.message : successo)
+      if (error) setErroreAzione(error.message)
+      else setEsito(successo)
       if (!error) await carica(true)
       const attesa = Math.max(0, durataMinima - (performance.now() - partenza))
       if (attesa) await new Promise((r) => window.setTimeout(r, attesa))
@@ -353,6 +387,24 @@ export function Scambi({ membership, onNavigate }: Props) {
     </div>
     {p.messaggio && <p className="scambi-messaggio">«{p.messaggio}»</p>}
   </>
+
+  // VETRINA — chi le altre squadre hanno messo in lista.
+  //
+  // Il flag sul_mercato esiste dal 5 agosto 2026 insieme alla sua RPC e al suo
+  // indice, ma questa sezione non era mai stata costruita: ventuno giocatori
+  // erano in lista e nessuno poteva vederli, mentre la pagina di aiuto
+  // descriveva una vetrina che nel gioco non esisteva.
+  //
+  // Non serve nessuna query nuova: la pagina caricava gia' tutte le istanze
+  // della lega con anagrafica e foto, mancava solo di chiedere il campo.
+  //
+  // I propri giocatori restano fuori: chi li ha messi in lista lo sa, e
+  // vederseli qui in mezzo confonderebbe una vetrina che serve a guardare
+  // cosa offrono gli ALTRI.
+  const inVendita = useMemo(
+    () => rose.filter((g) => g.sulMercato && g.team_id !== membership.id)
+      .sort((a, b) => b.overall - a.overall),
+    [rose, membership.id])
 
   const schedaAperta = schedaApertaId != null ? giocatore(schedaApertaId) : undefined
   const capienzaPct = capienza ? Math.min(100, Math.max(0, (capienza.monte / Math.max(capienza.tetto, 1)) * 100)) : 0
@@ -518,6 +570,34 @@ export function Scambi({ membership, onNavigate }: Props) {
             </article>)}</div>}
       </section>
 
+      {/* ---- Vetrina della lega ---- */}
+      <section className="scambi-blocco">
+        <div className="sezione-testa"><div>
+          <p className="kicker">Vetrina della lega</p>
+          <h2>In vendita{inVendita.length > 0 && <span className="scambi-conteggio"> {inVendita.length}</span>}</h2>
+        </div></div>
+        {inVendita.length === 0
+          ? <p className="season-empty">Nessuna squadra ha messo giocatori in lista. Puoi metterci i tuoi dalla loro scheda, nella pagina Squadra.</p>
+          : <>
+              <p className="scambi-vetrina-nota">
+                Segnalano «questo lo cederei». Non e' un canale a parte: se ti interessa, componi una normale proposta qui sopra.
+              </p>
+              <ul className="scambi-asset-grid">
+                {inVendita.map((g) => <li key={g.id}>
+                  <button type="button" className="scambi-asset-card scambi-asset-card--player"
+                    onClick={() => setSchedaApertaId(g.id)}>
+                    <span className={`scambi-asset-card__ovr role-pill--${macroRuolo(g.posizioni ?? [g.ruolo]).toLowerCase()}`}>{g.overall}</span>
+                    <span className="scambi-asset-card__info">
+                      <strong>{g.nome}</strong>
+                      <small>{g.ruolo} · {g.eta} anni · {milioni(g.ingaggio)}</small>
+                      <small className="scambi-asset-card__squadra">{nomeSquadra(g.team_id)}</small>
+                    </span>
+                  </button>
+                </li>)}
+              </ul>
+            </>}
+      </section>
+
       {/* ---- Rumors ---- */}
       <section className="scambi-blocco">
         <div className="sezione-testa"><div><p className="kicker">Voci di mercato</p><h2>Trattative in corso</h2></div></div>
@@ -542,11 +622,12 @@ export function Scambi({ membership, onNavigate }: Props) {
 
       {/* ---- Trasparenza ---- */}
       <section className="scambi-blocco">
-        <div className="sezione-testa"><div><p className="kicker">Trasparenza</p><h2>Scambi conclusi oggi</h2></div></div>
-        {concluseOggi.length === 0
-          ? <p className="season-empty">Nessuno scambio concluso oggi.</p>
+        <div className="sezione-testa"><div><p className="kicker">Trasparenza</p>
+          <h2>Scambi della stagione{concluseStagione.length > 0 && <span className="scambi-conteggio"> {concluseStagione.length}</span>}</h2></div></div>
+        {concluseStagione.length === 0
+          ? <p className="season-empty">Nessuno scambio concluso in questa stagione.</p>
           : <ul className="scambi-trasparenza">
-              {concluseOggi.map((p) => <li className="scambi-operazione" key={p.id}>
+              {concluseStagione.map((p) => <li className="scambi-operazione" key={p.id}>
                 <div className="scambi-operazione__lato">
                   {stemma(p.da_team_id)}
                   <div className="scambi-operazione__chips">{p.giocatori_offerti.map((id) => pacchettoChip(id, 'g'))}{p.scelte_offerte.map((id) => pacchettoChip(id, 's'))}</div>
@@ -556,10 +637,18 @@ export function Scambi({ membership, onNavigate }: Props) {
                   <div className="scambi-operazione__chips">{p.giocatori_richiesti.map((id) => pacchettoChip(id, 'g'))}{p.scelte_richieste.map((id) => pacchettoChip(id, 's'))}</div>
                   {stemma(p.a_team_id)}
                 </div>
-                <em>{ETICHETTE_STATO[p.stato]}</em>
+                <em>{ETICHETTE_STATO[p.stato]} · {p.risolta_il ? dataBreve(p.risolta_il) : ''}</em>
               </li>)}
             </ul>}
       </section>
+
+      {erroreAzione && <div className="popup-spiegazione-sfondo" role="alertdialog" aria-modal="true" aria-label="Operazione non riuscita">
+        <div className="popup-spiegazione">
+          <h2>Non si può fare</h2>
+          <div className="popup-spiegazione__corpo"><p>{erroreAzione}</p></div>
+          <button className="button button--primary" type="button" onClick={() => setErroreAzione(null)}>Ho capito</button>
+        </div>
+      </div>}
 
       {schedaAperta && <SchedaGiocatore
         giocatore={{
