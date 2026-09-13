@@ -52,6 +52,7 @@ type Giocatore = {
   condizione?: number
   infortunatoFinoA?: number
   ritiroAnnunciato?: boolean
+  sulMercato?: boolean
 }
 
 type StatoScelta = 'futura' | 'determinata' | 'usata' | 'vuota'
@@ -129,7 +130,7 @@ export function Scambi({ membership, onNavigate }: Props) {
     setErrore(null)
     const [istanzeRes, scelteRes, proposteRes, trattativeRes, capienzaRes] = await Promise.all([
       supabase.from('player_instances')
-        .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato')
+        .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato, sul_mercato')
         .eq('league_id', league.id).not('team_id', 'is', null),
       supabase.from('scelte_draft')
         .select('id, team_origine_id, team_proprietario_id, stagione, finestra, posizione, stato')
@@ -182,6 +183,7 @@ export function Scambi({ membership, onNavigate }: Props) {
       condizione: i.condizione,
       infortunatoFinoA: i.infortunato_fino_a,
       ritiroAnnunciato: i.ritiro_annunciato,
+      sulMercato: i.sul_mercato,
     })))
     setCaricamento(false)
   }, [league.id])
@@ -354,6 +356,24 @@ export function Scambi({ membership, onNavigate }: Props) {
     {p.messaggio && <p className="scambi-messaggio">«{p.messaggio}»</p>}
   </>
 
+  // VETRINA — chi le altre squadre hanno messo in lista.
+  //
+  // Il flag sul_mercato esiste dal 5 agosto 2026 insieme alla sua RPC e al suo
+  // indice, ma questa sezione non era mai stata costruita: ventuno giocatori
+  // erano in lista e nessuno poteva vederli, mentre la pagina di aiuto
+  // descriveva una vetrina che nel gioco non esisteva.
+  //
+  // Non serve nessuna query nuova: la pagina caricava gia' tutte le istanze
+  // della lega con anagrafica e foto, mancava solo di chiedere il campo.
+  //
+  // I propri giocatori restano fuori: chi li ha messi in lista lo sa, e
+  // vederseli qui in mezzo confonderebbe una vetrina che serve a guardare
+  // cosa offrono gli ALTRI.
+  const inVendita = useMemo(
+    () => rose.filter((g) => g.sulMercato && g.team_id !== membership.id)
+      .sort((a, b) => b.overall - a.overall),
+    [rose, membership.id])
+
   const schedaAperta = schedaApertaId != null ? giocatore(schedaApertaId) : undefined
   const capienzaPct = capienza ? Math.min(100, Math.max(0, (capienza.monte / Math.max(capienza.tetto, 1)) * 100)) : 0
   const capienzaCritica = capienza ? capienza.capienza < 0 : false
@@ -516,6 +536,34 @@ export function Scambi({ membership, onNavigate }: Props) {
                 </button>
               </footer>
             </article>)}</div>}
+      </section>
+
+      {/* ---- Vetrina della lega ---- */}
+      <section className="scambi-blocco">
+        <div className="sezione-testa"><div>
+          <p className="kicker">Vetrina della lega</p>
+          <h2>In vendita{inVendita.length > 0 && <span className="scambi-conteggio"> {inVendita.length}</span>}</h2>
+        </div></div>
+        {inVendita.length === 0
+          ? <p className="season-empty">Nessuna squadra ha messo giocatori in lista. Puoi metterci i tuoi dalla loro scheda, nella pagina Squadra.</p>
+          : <>
+              <p className="scambi-vetrina-nota">
+                Segnalano «questo lo cederei». Non e' un canale a parte: se ti interessa, componi una normale proposta qui sopra.
+              </p>
+              <ul className="scambi-asset-grid">
+                {inVendita.map((g) => <li key={g.id}>
+                  <button type="button" className="scambi-asset-card scambi-asset-card--player"
+                    onClick={() => setSchedaApertaId(g.id)}>
+                    <span className={`scambi-asset-card__ovr role-pill--${macroRuolo(g.posizioni ?? [g.ruolo]).toLowerCase()}`}>{g.overall}</span>
+                    <span className="scambi-asset-card__info">
+                      <strong>{g.nome}</strong>
+                      <small>{g.ruolo} · {g.eta} anni · {milioni(g.ingaggio)}</small>
+                      <small className="scambi-asset-card__squadra">{nomeSquadra(g.team_id)}</small>
+                    </span>
+                  </button>
+                </li>)}
+              </ul>
+            </>}
       </section>
 
       {/* ---- Rumors ---- */}

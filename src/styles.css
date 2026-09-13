@@ -3159,6 +3159,12 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .scambi-asset-card__info { min-width: 0; display: grid; gap: 1px; }
 .scambi-asset-card__info strong { overflow: hidden; font-size: .8rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; color: #eafaf5; }
 .scambi-asset-card__info small { overflow: hidden; color: #7f958f; font-size: .64rem; text-overflow: ellipsis; white-space: nowrap; }
+/* Vetrina della lega: la riga in piu' dice di CHI e' il giocatore, che nelle
+   altre liste della pagina e' implicito (sono sempre i propri o quelli della
+   squadra con cui si sta trattando) e qui invece e' l'informazione principale. */
+.scambi-asset-card__squadra { color: #5f7a73; font-size: .6rem; font-weight: 700; letter-spacing: .02em; }
+.scambi-conteggio { display: inline-grid; place-items: center; min-width: 22px; height: 22px; margin-left: 6px; padding: 0 6px; border-radius: 999px; background: #1e3a32; color: #6fe0b4; font-size: .68rem; font-weight: 800; vertical-align: middle; }
+.scambi-vetrina-nota { margin: 0 0 10px; color: #7f958f; font-size: .72rem; line-height: 1.5; }
 .scambi-asset-card__check { color: #9b4cff; font-weight: 950; }
 .scambi-asset-card--pick .scambi-asset-card__pickbadge { display: grid; place-items: center; height: 28px; border-radius: 7px; font-size: .62rem; font-weight: 950; color: #101016; }
 .scambi-asset-card--pick-on .scambi-asset-card__pickbadge { background: #5be0c9; }
