@@ -347,7 +347,16 @@ function PannelloAllenamento({
         return <>
           <div className="player-training-barra"><i style={{ '--percent': percent / 100 } as React.CSSProperties} /></div>
           <p className="field-help">
-            {prossimaGiornata != null ? `Pronto tra ${mancano} ${mancano === 1 ? 'giornata' : 'giornate'}.` : `Completa alla giornata ${inCorso.completaGiornata}.`}
+            {prossimaGiornata == null
+              ? `Completa alla giornata ${inCorso.completaGiornata}.`
+              : mancano === 0
+                // Zero giornate mancanti vuol dire che l'allenamento e' gia'
+                // dovuto e sta per essere chiuso dal job che gira al minuto.
+                // Scrivere "pronto tra 0 giornate" mentre la riga risulta
+                // ancora in corso e' una frase che si contraddice, e il
+                // giocatore sembra bloccato senza motivo.
+                ? 'Completato: entra in vigore a momenti.'
+                : `Pronto tra ${mancano} ${mancano === 1 ? 'giornata' : 'giornate'}.`}
           </p>
         </>
       })()}
