@@ -12,6 +12,11 @@ tools
 supabase
 engine
 
+# Gli originali degli asset servono a rigenerare i thumb, non al sito: non
+# finiscono in dist/ perche' stanno fuori da public/, ma senza questa riga
+# salirebbero comunque come sorgenti e Vercel li conserverebbe per ogni deploy.
+assets-originali
+
 data
 *.log
 __pycache__
