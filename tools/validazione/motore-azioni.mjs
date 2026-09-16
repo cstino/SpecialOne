@@ -40,6 +40,7 @@
 // ============================================================
 
 import { rnd, gauss } from '../../engine/random.js';
+import { tiltTecnico, tiltRapido } from '../../engine/tattiche.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -57,7 +58,7 @@ export const CFG = {
   // vicina a quella validata senza perdere le metriche d'insieme.
   SCALA_DUELLO: 15,
   P_TIRO_IN_AREA: 0.051,    // probabilita' base di concludere invece di continuare, in zona d'attacco
-  VANTAGGIO_CASA: 1.4,      // tarato: a 2.2 le vittorie interne salivano al 50%
+  VANTAGGIO_CASA: 1.65,      // tarato: a 2.2 le vittorie interne salivano al 50%
   SOGLIA_AVANZA: 0.36,      // quanto spesso un passaggio riuscito guadagna una zona
   // Passare e' piu' facile che intercettare: a parita' di valutazione il
   // portatore la spunta quasi sempre. Senza questo margine la percentuale di
@@ -67,6 +68,77 @@ export const CFG = {
   VANTAGGIO_PORTIERE: 0,       // tarato: col duello cosi' com'e', gia' pari e' il giusto
   QUOTA_SPECCHIO: 0.40,        // frazione di tiri che finisce nello specchio
 };
+
+// ------------------------------------------------------------
+//  GLI ASSETTI, QUI, NON SONO UN BONUS SULL'OVERALL
+//
+//  Nel sistema integrato in engine/tattiche.js una scelta tattica produce uno
+//  scarto in punti di overall. E' stato l'unico modo di misurarla senza
+//  toccare il motore validato, e funziona. Ma resta una simulazione
+//  dell'effetto di una scelta, non della scelta.
+//
+//  Qui invece ogni assetto cambia una MECCANICA:
+//
+//    linea alta     si recupera il pallone piu' avanti, quindi si riparte piu'
+//                   vicini alla porta. In cambio l'avversario salta la linea
+//                   piu' spesso, e chi la salta segna da solo davanti al
+//                   portiere. Regge se i difensori sono rapidi.
+//    blocco basso   si recupera indietro: al sicuro ma lontano.
+//    costruzione    corta significa passaggi piu' facili ma che guadagnano
+//                   campo di rado; verticale il contrario.
+//
+//  L'IDONEITA' NON E' UN BONUS, E' UNA RESA. Un assetto rende in proporzione a
+//  quanto i suoi interpreti hanno il profilo giusto: la difesa alta di una
+//  squadra lenta guadagna meno campo E si fa saltare di piu'. Cosi' "scegliere
+//  gli uomini" non e' un punto in piu', e' se la tattica funziona o no.
+// ------------------------------------------------------------
+export const ASSETTI = {
+  linea: {
+    alta:  { recupero: +1, saltaLinea: 0.26, profilo: 'rapido', reparto: 'DEF', verso: +1 },
+    media: { recupero:  0, saltaLinea: 0.030 },
+    bassa: { recupero: -1, saltaLinea: 0.010, profilo: 'rapido', reparto: 'DEF', verso: -1 },
+  },
+  costruzione: {
+    corta:     { avanza: -0.09, rischio: -5, profilo: 'tecnico', reparto: 'MID', verso: +1 },
+    mista:     { avanza:  0.00, rischio:  0 },
+    verticale: { avanza: +0.11, rischio: +6, profilo: 'rapido', reparto: 'ATT', verso: -1 },
+  },
+};
+
+const TILT_PIENO = 25;
+
+// Quanto i titolari di un reparto hanno il profilo che l'assetto chiede,
+// da -1 (esattamente sbagliati) a +1 (esattamente giusti).
+function idoneita(squadra, opzione) {
+  if (!opzione.profilo) return 0;
+  const quali = squadra.inCampo.filter((g) => g.rep === opzione.reparto);
+  if (!quali.length) return 0;
+  let somma = 0;
+  for (const g of quali) {
+    const t = opzione.profilo === 'tecnico' ? tiltTecnico(g.a) : tiltRapido(g.a);
+    if (typeof t === 'number' && Number.isFinite(t)) somma += clamp((t * opzione.verso) / TILT_PIENO, -1, 1);
+  }
+  return somma / quali.length;
+}
+
+// La resa di un assetto: 1 con gli interpreti perfetti, 0.45 con quelli
+// sbagliati. Non azzera mai — una tattica male interpretata resta una tattica.
+const resa = (id) => 0.45 + 0.55 * ((id + 1) / 2);
+
+export function preparaTattica(squadra, piano) {
+  const L = ASSETTI.linea[piano?.linea ?? 'media'];
+  const C = ASSETTI.costruzione[piano?.costruzione ?? 'mista'];
+  const resaL = resa(idoneita(squadra, L));
+  const resaC = resa(idoneita(squadra, C));
+  return {
+    recupero: L.recupero * resaL,
+    // Una linea alta mal interpretata si fa saltare DI PIU', non di meno:
+    // e' il rischio che non dipende da quanto sei bravo a tenerla.
+    saltaLinea: L.saltaLinea * (L.recupero > 0 ? 2 - resaL : 1),
+    avanza: C.avanza * resaC,
+    rischio: C.rischio * (C.avanza > 0 ? 2 - resaC : resaC),
+  };
+}
 
 // I pesi dicono quanto ciascun attributo conta in quel gesto. Sommano a 1:
 // cosi' il risultato resta sulla scala 1-99 degli attributi e si legge.
@@ -127,6 +199,9 @@ function pressioneAvversaria(avversaria, zona) {
 // ------------------------------------------------------------
 export function simulaAzioni(casa, ospite, opt = {}) {
   const squadre = [casa, ospite];
+  // Una tattica per squadra. Senza piano vale l'assetto neutro, e il motore
+  // si comporta esattamente come prima di conoscerle.
+  const tatt = [preparaTattica(casa, opt.pianoCasa), preparaTattica(ospite, opt.pianoOspite)];
   const stato = squadre.map(() => ({
     gol: 0, tiri: 0, inPorta: 0, passaggiT: 0, passaggiR: 0, tocchi: 0, marcatori: new Map(),
   }));
@@ -145,6 +220,15 @@ export function simulaAzioni(casa, ospite, opt = {}) {
     t += CFG.SEC_PER_AZIONE * (0.6 + rnd() * 0.8);
 
     const press = pressioneAvversaria(dif, zona);
+
+    // La linea saltata. Una difesa alta lascia lo spazio dietro: ogni tanto
+    // qualcuno ci arriva e si presenta solo davanti al portiere. E' il prezzo
+    // del recupero avanzato, e lo paga chi tiene la linea, non chi attacca.
+    if (zona < 2 && rnd() < tatt[1 - possesso].saltaLinea) {
+      zona = 2;
+      s.passaggiT++; s.passaggiR++;
+      continue;
+    }
 
     // ---- conclusione ----
     if (zona === 2 && portatore.rep !== 'GK') {
@@ -171,11 +255,14 @@ export function simulaAzioni(casa, ospite, opt = {}) {
 
     // ---- passaggio ----
     s.passaggiT++;
-    const avanza = rnd() < CFG.SOGLIA_AVANZA && zona < 2;
+    // La costruzione non aggiunge punti: cambia quanto spesso si tenta di
+    // guadagnare campo. Corta = di rado ma al sicuro, verticale = spesso ma
+    // esponendosi.
+    const avanza = rnd() < (CFG.SOGLIA_AVANZA + tatt[possesso].avanza) && zona < 2;
     // Un passaggio che guadagna campo e' piu' difficile: lo si tenta in avanti,
     // dove l'avversario e' schierato. E' il motivo per cui il possesso sterile
     // esiste anche nel calcio vero.
-    const malusAvanzamento = avanza ? 9 : 0;
+    const malusAvanzamento = avanza ? 9 + tatt[possesso].rischio : 0;
     const riesce = rnd() < duello(voto(portatore, 'passaggio') + CFG.BONUS_PASSAGGIO + casaBonus - malusAvanzamento, press);
 
     if (riesce) {
@@ -183,8 +270,10 @@ export function simulaAzioni(casa, ospite, opt = {}) {
       if (avanza) zona++;
     } else {
       possesso = 1 - possesso;
-      // Chi recupera riparte piu' indietro: la zona si specchia.
-      zona = clamp(2 - zona, 0, 2);
+      // Chi recupera riparte piu' indietro: la zona si specchia. E' qui che
+      // l'altezza della linea conta davvero — una difesa alta recupera piu'
+      // vicino alla porta avversaria, un blocco basso piu' lontano.
+      zona = clamp(Math.round(2 - zona + tatt[possesso].recupero), 0, 2);
       t += 3;
     }
   }

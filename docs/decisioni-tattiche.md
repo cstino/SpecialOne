@@ -168,6 +168,42 @@ di accettazione, portati sul prototipo, e confrontando con 2,1 pp di scarto,
 7,5x sul leggere l'avversario e 4,3 punti nel confronto più squilibrato. Se i
 numeri non migliorano, vince il sistema semplice che funziona già.
 
+## 11. Le tattiche nel motore azione per azione rendono MENO — misurato
+
+Portati i due assi dentro il prototipo come parametri veri delle meccaniche —
+la linea alta recupera il pallone piu' avanti ma si fa scavalcare, la
+costruzione corta guadagna campo di rado ma al sicuro — e rifatti gli stessi
+test di accettazione del sistema integrato.
+
+| | motore azioni | sistema integrato |
+|---|---|---|
+| metriche d'insieme | 0 fuori su 7 | n.d. |
+| scarto fra gli assetti | 3,3 pp | **2,1 pp** |
+| leggere l'avversario | 2,0x | **7,5x** |
+| confronto piu' squilibrato | 1,7 punti | **4,3 punti** |
+
+**Il motore azione per azione e' piu' realistico ma tatticamente piu' piatto.**
+Leggere l'avversario vale un terzo, e la scelta tattica pesa meno della meta'.
+
+**Perche', ed e' la cosa da ricordare.** In un motore a blocchi lo scarto
+tattico entra nelle forze di reparto e sopravvive fino al risultato. In un
+motore azione per azione lo stesso scarto viene diluito su novecento duelli: la
+legge dei grandi numeri lo appiattisce. Piu' azioni simuli, meno conta ogni
+singola scelta a monte.
+
+**E l'equilibrio non e' gratis.** Nel sistema integrato la morra cinese e'
+garantita per costruzione: la matrice dei contrasti e' antisimmetrica, somma a
+zero, non puo' esistere un assetto dominante. Nel motore azione per azione
+l'equilibrio va trovato a mano tarando il prezzo di ogni meccanica, ed e' un
+punto stretto: col prezzo della linea alta a 0,075 lo scarto era 12,5 pp con un
+assetto dominante; a 0,26 scende a 3,3; a 0,34 risale a 7,4 col dominio
+ribaltato sul blocco basso. Un ottimo fragile fra due dominii.
+
+**Conseguenza per la decisione**: il motore azione per azione vale per cio' che
+porta davvero — tabellini credibili, i singoli attributi che contano, i gol che
+emergono dalle azioni. NON e' la strada per avere tattiche piu' profonde: su
+quel fronte il sistema che gia' gira fa meglio, e di molto.
+
 ---
 
 # Punti aperti
