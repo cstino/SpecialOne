@@ -86,7 +86,18 @@ export function tiratoriDaLineup(lineup) {
     if (!g || lineup.slots[i] === 'GK') continue;
     fuori.push({ id: g.id, nome: g.nome, ovr: overallDalDischetto(g) });
   }
-  return fuori.sort((a, b) => b.ovr - a.ovr || a.id - b.id);
+  fuori.sort((a, b) => b.ovr - a.ovr || a.id - b.id);
+
+  // Il rigorista designato dall'allenatore apre la serie, se e' ancora in
+  // campo. Gli altri lo seguono nell'ordine di merito: dal secondo in poi
+  // decide comunque il dischetto, perche' una designazione sola non basta a
+  // coprire cinque tiri.
+  const designato = lineup.incaricati?.rigorista;
+  if (designato != null) {
+    const i = fuori.findIndex((t) => t.id === designato);
+    if (i > 0) fuori.unshift(fuori.splice(i, 1)[0]);
+  }
+  return fuori;
 }
 
 export function portiereDaLineup(lineup) {

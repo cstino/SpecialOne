@@ -83,8 +83,20 @@ function migliori(lineup, campo, quanti) {
   return presi.reduce((a, b) => a + b, 0) / presi.length;
 }
 
-/** Chi batte: il migliore in campo su quel gesto. */
+/**
+ * Chi batte. Se l'allenatore ha designato qualcuno e quel giocatore e' ancora
+ * in campo, batte lui: e' una sua scelta e va rispettata anche quando non e'
+ * la migliore sulla carta. Altrimenti — nessuna designazione, oppure il
+ * designato e' uscito per infortunio o sostituzione — si torna al migliore
+ * rimasto, che e' cio' che farebbe una squadra vera.
+ */
 export function incaricato(lineup, campo) {
+  const CHIAVE = { battuta: 'angoli', punizione: 'punizioni' };
+  const designato = lineup.incaricati?.[CHIAVE[campo]];
+  if (designato != null) {
+    const g = lineup.titolari.find((t) => t && t.id === designato);
+    if (g) return g;
+  }
   let best = null;
   for (let i = 0; i < lineup.titolari.length; i++) {
     const g = lineup.titolari[i];

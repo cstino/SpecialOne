@@ -28,8 +28,8 @@ type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number
 // moltiplicatoreInfortuni e' facoltativo: se assente l'engine usa 1 (nessun
 // effetto), esattamente come nella suite di validazione.
 type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number>; esperienzaStile: Record<string, number>; moltiplicatoreInfortuni?: number }
-type DbLineup = { team_id: number; giornata?: number; modulo: string; titolari: number[]; panchina: number[]; tribuna: number[]; stile_gioco: string; automatica: boolean }
-type EngineLineup = { modulo: string; slots: string[]; titolari: EnginePlayer[]; panchina: EnginePlayer[]; cambiFatti: number }
+type DbLineup = { team_id: number; giornata?: number; modulo: string; titolari: number[]; panchina: number[]; tribuna: number[]; stile_gioco: string; automatica: boolean; rigorista?: number | null; angoli?: number | null; punizioni?: number | null }
+type EngineLineup = { modulo: string; slots: string[]; titolari: EnginePlayer[]; panchina: EnginePlayer[]; cambiFatti: number; incaricati: { rigorista: number | null; angoli: number | null; punizioni: number | null } }
 type Fixture = { id: number; season_id: number; league_id: number; giornata: number; home_team_id: number; away_team_id: number; stato: string; campo_neutro: boolean; bracket_tie_id: number | null; mano: number | null }
 
 function requiredNumber(attributes: Record<string, number>, field: string, playerId: number) {
@@ -258,7 +258,16 @@ function buildLineup(lineup: DbLineup, roster: EngineRoster): EngineLineup {
   const miglioriDisponibili = [...roster.giocatori].sort((a, b) => b.ovr - a.ovr)
   miglioriDisponibili.forEach(aggiungiInPanchina)
 
-  return { modulo: lineup.modulo, slots: [...slots], titolari: formazione, panchina, cambiFatti: 0 }
+  // Chi batte piazzati e rigori, scelto dall'allenatore o assegnato in
+  // automatico al salvataggio (private.sistema_incaricati). Il motore lo
+  // rispetta finche' quel giocatore e' in campo, poi torna al migliore
+  // rimasto — vedi engine/piazzati.js e engine/rigori.js.
+  const incaricati = {
+    rigorista: lineup.rigorista ?? null,
+    angoli: lineup.angoli ?? null,
+    punizioni: lineup.punizioni ?? null,
+  }
+  return { modulo: lineup.modulo, slots: [...slots], titolari: formazione, panchina, cambiFatti: 0, incaricati }
 }
 
 function seedFor(fixture: Fixture) {
@@ -806,8 +815,8 @@ export default {
       const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult, stileXpResult, medicoResult, pendenzeResult] = await Promise.all([
         ctx.supabaseAdmin.from('teams').select('id, nome, user_id, controllata_da_pc').eq('league_id', leagueId).in('id', teamIds),
         ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, attributi_override, specializzazione_attiva').eq('league_id', leagueId).in('team_id', teamIds),
-        ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
-        ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
+        ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, angoli, punizioni').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
+        ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, angoli, punizioni').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
         ctx.supabaseAdmin.from('formation_xp').select('team_id, modulo, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),
         ctx.supabaseAdmin.from('stile_xp').select('team_id, stile, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),
         // Reparto medico: moltiplicatore di resistenza agli infortuni per
