@@ -20,7 +20,7 @@
 //  invece di un menu. Le formule sono le stesse di private.avanza_familiarita
 //  in SQL e di quoteFamiliarita nell'Edge Function — tre posti, una formula.
 // ============================================================
-import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { COMPITI, FAM_PARTITE_PIENA, MODULI, RUOLI_SLOT, SPOSTAMENTI_SLOT } from '../lib/tattica'
 import { ANCORE, schieramentoInCampo, type Ancora } from '../lib/schieramento'
 
@@ -151,29 +151,30 @@ export default function SchemaTattico({
   const ripristina = () => { onChange(null, null, null); setAperto(null) }
 
   // --- trascinamento ---
-  const puntoNelCampo = (e: ReactPointerEvent) => {
+  //
+  // Gli ascoltatori di movimento e rilascio stanno sulla FINESTRA, non sulla
+  // card. Sulla card sembrava naturale e invece si inchiodava: ogni movimento
+  // ridisegna il campo, e se React ricicla il nodo la cattura del puntatore se
+  // ne va con quello vecchio — il rilascio arriva a un elemento che non esiste
+  // piu' e la card resta appesa a meta' trascinamento. Sulla finestra il
+  // problema non puo' presentarsi.
+  const puntoNelCampo = (clientX: number, clientY: number) => {
     const r = campoRef.current?.getBoundingClientRect()
-    if (!r) return null
-    return { x: ((e.clientX - r.left) / r.width) * 100, y: 100 - ((e.clientY - r.top) / r.height) * 100 }
+    if (!r || !r.width || !r.height) return null
+    return { x: ((clientX - r.left) / r.width) * 100, y: 100 - ((clientY - r.top) / r.height) * 100 }
   }
 
   const iniziaTrascinamento = (e: ReactPointerEvent, index: number, slot: string) => {
     if (slot === 'GK') return // il portiere non si sposta
-    const p = puntoNelCampo(e)
+    const p = puntoNelCampo(e.clientX, e.clientY)
     if (!p) return
-    e.currentTarget.setPointerCapture(e.pointerId)
     setTrascino({ index, x: p.x, y: p.y, mosso: false })
   }
 
-  const muovi = (e: ReactPointerEvent) => {
-    if (!trascino) return
-    const p = puntoNelCampo(e)
-    if (!p) return
-    const partenza = posti.find((q) => q.index === trascino.index)
-    const mosso = trascino.mosso || !partenza
-      || Math.hypot(p.x - partenza.x, p.y - partenza.y) > SOGLIA_TRASCINAMENTO
-    setTrascino({ ...trascino, x: p.x, y: p.y, mosso })
-  }
+  // I valori vivi per gli ascoltatori globali, che vengono agganciati una volta
+  // sola per trascinamento e non devono richiudersi su uno stato vecchio.
+  const vivo = useRef({ trascino, posti, bersaglio: null as Ancora | null, scrivi, aperto })
+  vivo.current = { trascino, posti, bersaglio: null, scrivi, aperto }
 
   const bersaglio = useMemo(() => {
     if (!trascino?.mosso) return null
@@ -186,13 +187,44 @@ export default function SchemaTattico({
     return vicina
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trascino, posti, schema])
+  vivo.current.bersaglio = bersaglio
 
-  const finisci = () => {
-    if (!trascino) return
-    if (!trascino.mosso) setAperto(aperto === trascino.index ? null : trascino.index)
-    else if (bersaglio) scrivi(trascino.index, 'slot', bersaglio.slot)
-    setTrascino(null)
-  }
+  useEffect(() => {
+    if (trascino === null) return
+    const muovi = (e: PointerEvent) => {
+      e.preventDefault()
+      const t = vivo.current.trascino
+      if (!t) return
+      const p = puntoNelCampo(e.clientX, e.clientY)
+      if (!p) return
+      const partenza = vivo.current.posti.find((q) => q.index === t.index)
+      const mosso = t.mosso || !partenza
+        || Math.hypot(p.x - partenza.x, p.y - partenza.y) > SOGLIA_TRASCINAMENTO
+      setTrascino({ index: t.index, x: p.x, y: p.y, mosso })
+    }
+    const molla = () => {
+      const t = vivo.current.trascino
+      setTrascino(null)
+      if (!t) return
+      // Un tocco senza movimento apre ruolo e compito. Va deciso QUI e non in
+      // un onClick sulla card: il click scatta dopo il rilascio, quindi
+      // apriva il foglio e lo richiudeva subito dopo.
+      if (!t.mosso) setAperto((a) => (a === t.index ? null : t.index))
+      else if (vivo.current.bersaglio) vivo.current.scrivi(t.index, 'slot', vivo.current.bersaglio.slot)
+    }
+    const annulla = () => setTrascino(null)
+    window.addEventListener('pointermove', muovi, { passive: false })
+    window.addEventListener('pointerup', molla)
+    window.addEventListener('pointercancel', annulla)
+    return () => {
+      window.removeEventListener('pointermove', muovi)
+      window.removeEventListener('pointerup', molla)
+      window.removeEventListener('pointercancel', annulla)
+    }
+  // Si aggancia una volta per trascinamento: dipende da QUALE card e' in mano,
+  // non da dove si trova in questo istante.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trascino?.index])
 
   const postoAperto = aperto === null ? null : posti.find((p) => p.index === aperto) ?? null
   const slotAperto = postoAperto ? schema[postoAperto.index] : null
@@ -250,10 +282,6 @@ export default function SchemaTattico({
               className={`schema__posto schema__posto--${REPARTO_DI(slot)}${spostata ? ' is-spostata' : ''}${aperto === posto.index ? ' is-aperta' : ''}${inMano ? ' is-in-mano' : ''}`}
               style={{ left: `${x}%`, top: `${100 - y}%` }}
               onPointerDown={(e) => iniziaTrascinamento(e, posto.index, slot)}
-              onPointerMove={muovi}
-              onPointerUp={finisci}
-              onPointerCancel={() => setTrascino(null)}
-              onClick={() => { if (!trascino) setAperto(aperto === posto.index ? null : posto.index) }}
             >
               <span className="schema__slot">{slot}</span>
               {(ruolo || (compito && compito !== 'equilibrio')) && (
