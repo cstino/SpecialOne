@@ -112,3 +112,48 @@ export function schieramentoInCampo(slots: string[]): PostoInCampo[] {
   }
   return out.sort((a, b) => a.index - b.index)
 }
+
+// ============================================================
+//  COME SI CHIAMA QUESTO SCHIERAMENTO
+//
+//  Spostando le posizioni si arriva a una forma che col modulo di partenza non
+//  c'entra piu' niente, e continuare a chiamarla "4-4-2" e' una bugia —
+//  segnalato dall'utente con uno schieramento che era di fatto un 4-2-1-3.
+//
+//  Il nome si ricava quindi dalla forma, in due passi:
+//    1. se lo schieramento e' identico a quello standard di un modulo noto, si
+//       usa il nome di quel modulo. Cosi' i moduli veri tengono il loro nome
+//       proprio, "4-2-3-1" e non "4-2-1-3" — la notazione del calcio non e'
+//       deducibile dalle sole posizioni, e inventarla darebbe nomi giusti in
+//       aritmetica e sbagliati per chi legge;
+//    2. altrimenti si contano le FASCE occupate dal basso verso l'alto.
+//
+//  Il modulo di partenza resta comunque quello scelto dall'utente: e' la chiave
+//  della familiarita' e non cambia. Qui si descrive solo cosa c'e' in campo.
+// ============================================================
+
+/** In quale fascia orizzontale cade una postazione. */
+const fasciaDi = (y: number): number =>
+  y < 10 ? 0 : y < 30 ? 1 : y < 48 ? 2 : y < 65 ? 3 : y < 80 ? 4 : 5
+
+/** La forma, letta dalle fasce: "4-2-1-3". Il portiere non si conta, come da uso. */
+export function formaDiSchieramento(slots: string[]): string {
+  const per = new Map<number, number>()
+  for (const p of schieramentoInCampo(slots)) {
+    const f = fasciaDi(p.y)
+    if (f === 0) continue // il portiere
+    per.set(f, (per.get(f) ?? 0) + 1)
+  }
+  return [...per.entries()].sort((a, b) => a[0] - b[0]).map(([, n]) => n).join('-')
+}
+
+/**
+ * Il nome da mostrare. `moduli` e' la tavola dei moduli noti: se lo
+ * schieramento e' esattamente quello di uno di loro, vince il suo nome proprio.
+ */
+export function nomeSchieramento(slots: string[], moduli: Record<string, string[]>): string {
+  for (const [nome, std] of Object.entries(moduli)) {
+    if (std.length === slots.length && std.every((s, i) => s === slots[i])) return nome
+  }
+  return formaDiSchieramento(slots)
+}

@@ -22,7 +22,7 @@
 // ============================================================
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { COMPITI, COMPITI_REPARTO, FAM_PARTITE_PIENA, MODULI, REPARTO, RUOLI_SLOT, SPOSTAMENTI_SLOT } from '../lib/tattica'
-import { ANCORE, schieramentoInCampo, type Ancora } from '../lib/schieramento'
+import { ANCORE, nomeSchieramento, schieramentoInCampo, type Ancora } from '../lib/schieramento'
 
 const ruoliPerSlot = (slot: string): string[] => RUOLI_SLOT[slot] ?? []
 
@@ -137,6 +137,7 @@ export default function SchemaTattico({
       * resaFamiliarita(conIndicazioni / 23) * FAM_PARTITE_PIENA) / FAM_PARTITE_PIENA)
 
   const cambiati = 11 - uguali(standard, schema)
+  const nome = useMemo(() => nomeSchieramento(schema, MODULI), [schema])
 
   // --- dove si puo' andare ---
   // Le postazioni legali per una card: quelle che la sua posizione di partenza
@@ -256,8 +257,13 @@ export default function SchemaTattico({
       <header className="schema__testa">
         <button className="schema__chiudi" type="button" onClick={onClose} aria-label="Torna alla formazione">‹</button>
         <div className="schema__titolo">
-          <small>Schema tattico</small>
-          <strong>{modulo}{cambiati > 0 && <em> · personalizzato</em>}</strong>
+          {/* Il nome grande e' quello che c'e' DAVVERO in campo: spostando le
+              posizioni si arriva a una forma che col modulo di partenza non
+              c'entra piu', e continuare a chiamarla col suo nome e' una bugia.
+              Il modulo scelto resta sotto, perche' e' la chiave della
+              familiarita' e non cambia. */}
+          <small>{nome === modulo ? 'Schema tattico' : `Schema tattico · da ${modulo}`}</small>
+          <strong>{nome}{cambiati > 0 && nome === modulo && <em> · personalizzato</em>}</strong>
         </div>
         {(cambiati > 0 || conIndicazioni > 0) && (
           <button className="schema__reset" type="button" onClick={ripristina}>Ripristina</button>
