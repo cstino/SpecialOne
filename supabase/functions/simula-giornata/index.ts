@@ -22,14 +22,14 @@ type EventoSostituzione = { tipo: 'sostituzione'; minuto: number; blocco: number
 type EventoInfortunio = { tipo: 'infortunio'; minuto: number; blocco: number; lato: Lato; team_id: number; esce: number; entra: number }
 type EventoCartellino = { tipo: 'cartellino'; minuto: number; blocco: number; lato: Lato; team_id: number; giocatore: number; colore: 'giallo' | 'rosso_diretto' | 'doppio_giallo' }
 type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio | EventoCartellino
-type DbPlayer = { id: number; nome: string; posizioni: string[]; overall: number; attributi: Record<string, number> }
+type DbPlayer = { id: number; nome: string; posizioni: string[]; overall: number; piede: string | null; attributi: Record<string, number> }
 type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number; posizioni_override: string[] | null; attributi_override: Record<string, number> | null; specializzazione_attiva: string | null }
-type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; tiltTecnico: number | null; tiltRapido: number | null; specialita: { rigori: number }; piazzati: { battuta: number; testa: number; marcatura: number; punizione: number; presa: number }; specializzazione: string | null }
+type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; tiltTecnico: number | null; tiltRapido: number | null; specialita: { rigori: number }; piede: string | null; piazzati: { battuta: number; testa: number; marcatura: number; punizione: number; presa: number }; specializzazione: string | null }
 // moltiplicatoreInfortuni e' facoltativo: se assente l'engine usa 1 (nessun
 // effetto), esattamente come nella suite di validazione.
 type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number>; esperienzaStile: Record<string, number>; moltiplicatoreInfortuni?: number }
-type DbLineup = { team_id: number; giornata?: number; modulo: string; titolari: number[]; panchina: number[]; tribuna: number[]; stile_gioco: string; automatica: boolean; rigorista?: number | null; angoli?: number | null; punizioni?: number | null }
-type EngineLineup = { modulo: string; slots: string[]; titolari: EnginePlayer[]; panchina: EnginePlayer[]; cambiFatti: number; incaricati: { rigorista: number | null; angoli: number | null; punizioni: number | null } }
+type DbLineup = { team_id: number; giornata?: number; modulo: string; titolari: number[]; panchina: number[]; tribuna: number[]; stile_gioco: string; automatica: boolean; rigorista?: number | null; punizione_corta?: number | null; punizione_lunga?: number | null; angolo_dx?: number | null; angolo_sx?: number | null }
+type EngineLineup = { modulo: string; slots: string[]; titolari: EnginePlayer[]; panchina: EnginePlayer[]; cambiFatti: number; incaricati: { rigorista: number | null; punizione_corta: number | null; punizione_lunga: number | null; angolo_dx: number | null; angolo_sx: number | null } }
 type Fixture = { id: number; season_id: number; league_id: number; giornata: number; home_team_id: number; away_team_id: number; stato: string; campo_neutro: boolean; bracket_tie_id: number | null; mano: number | null }
 
 function requiredNumber(attributes: Record<string, number>, field: string, playerId: number) {
@@ -178,6 +178,9 @@ function adaptPlayer(instance: Instance, player: DbPlayer, crescita: Crescita): 
     // Le valutazioni sui calci piazzati (engine/piazzati.js). Attributi
     // completamente diversi da quelli della manovra: e' il punto della cosa.
     // Una squadra modesta palla a terra puo' essere temibile sui corner.
+    // Il piede decide se un angolo rientra o esce, e vale il 34% di gol da
+    // corner in piu' quando la combinazione e' giusta. Vedi engine/piazzati.js.
+    piede: player.piede,
     piazzati: {
       // chi batte: cross e traiettoria
       battuta: media(quadroCompleto, ['attacking_crossing', 'skill_curve']),
@@ -264,8 +267,10 @@ function buildLineup(lineup: DbLineup, roster: EngineRoster): EngineLineup {
   // rimasto — vedi engine/piazzati.js e engine/rigori.js.
   const incaricati = {
     rigorista: lineup.rigorista ?? null,
-    angoli: lineup.angoli ?? null,
-    punizioni: lineup.punizioni ?? null,
+    punizione_corta: lineup.punizione_corta ?? null,
+    punizione_lunga: lineup.punizione_lunga ?? null,
+    angolo_dx: lineup.angolo_dx ?? null,
+    angolo_sx: lineup.angolo_sx ?? null,
   }
   return { modulo: lineup.modulo, slots: [...slots], titolari: formazione, panchina, cambiFatti: 0, incaricati }
 }
@@ -815,8 +820,8 @@ export default {
       const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult, stileXpResult, medicoResult, pendenzeResult] = await Promise.all([
         ctx.supabaseAdmin.from('teams').select('id, nome, user_id, controllata_da_pc').eq('league_id', leagueId).in('id', teamIds),
         ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, attributi_override, specializzazione_attiva').eq('league_id', leagueId).in('team_id', teamIds),
-        ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, angoli, punizioni').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
-        ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, angoli, punizioni').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
+        ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
+        ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
         ctx.supabaseAdmin.from('formation_xp').select('team_id, modulo, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),
         ctx.supabaseAdmin.from('stile_xp').select('team_id, stile, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),
         // Reparto medico: moltiplicatore di resistenza agli infortuni per
@@ -836,7 +841,7 @@ export default {
       const instances = (instancesResult.data ?? []) as Instance[]
       const playerIds = [...new Set(instances.map((instance) => instance.player_id))]
       const { data: playersData, error: playersError } = await ctx.supabaseAdmin.from('players')
-        .select('id, nome, posizioni, overall, attributi').in('id', playerIds)
+        .select('id, nome, posizioni, overall, piede, attributi').in('id', playerIds)
       if (playersError) throw playersError
       const catalog = new Map((playersData ?? []).map((player) => [player.id, player as DbPlayer]))
       const teamNames = new Map((teamsResult.data ?? []).map((team) => [team.id, team.nome]))
