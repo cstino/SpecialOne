@@ -63,7 +63,10 @@ function costruisciCrescita(pendenze: Array<{ reparto: string; attributo: string
   for (const p of pendenze) mappa.set(`${p.reparto}|${p.attributo}`, Number(p.pendenza))
   return (posizioni, attributo, delta) => {
     if (!delta) return 0
-    const reparto = REPARTO[posizioni[0]] ?? 'MID'
+    // REPARTO e' un oggetto con chiavi note; qui l'indice arriva dai dati e
+    // puo' essere qualsiasi stringa, da cui il cast. Il ?? 'MID' copre un
+    // ruolo sconosciuto, che varrebbe comunque zero crescita.
+    const reparto = (REPARTO as Record<string, string>)[posizioni[0]] ?? 'MID'
     return Math.round((mappa.get(`${reparto}|${attributo}`) ?? 0) * delta)
   }
 }
