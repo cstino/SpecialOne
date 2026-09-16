@@ -204,6 +204,63 @@ porta davvero — tabellini credibili, i singoli attributi che contano, i gol ch
 emergono dalle azioni. NON e' la strada per avere tattiche piu' profonde: su
 quel fronte il sistema che gia' gira fa meglio, e di molto.
 
+## 12. Correzione del punto 11: il metro era sbagliato — 16 settembre 2026
+
+Il committente ha obiettato che in Football Manager le tattiche contano
+parecchio, e aveva ragione: la conclusione del punto 11 era misurata contro il
+metro sbagliato, cioe' il nostro stesso sistema, invece che contro la realta'.
+
+**I dati veri.** FM-Arena prova le tattiche in un campionato dove tutte le
+squadre hanno pari qualita', normalizzando su 38 partite:
+
+| | punti/stagione | punti/partita |
+|---|---|---|
+| tattica migliore | 84,5 su 114 | 2,22 |
+| tattica peggiore in classifica | 77,1 | 2,03 |
+
+Sono circa **6,4 punti percentuali** di scarto in termini di vittorie. Il nostro
+sistema integrato ne fa 2,1 e il prototipo azione per azione 3,3. **In FM le
+tattiche pesano due o tre volte piu' che da noi.**
+
+Quindi il prototipo non appiattisce niente: e' piu' vicino a FM di quanto lo sia
+il sistema che gia' gira. Il punto 11 resta valido nei numeri ma sbagliato nella
+conclusione.
+
+**Le qualificazioni, dalle parole dei tester di FM stessi:**
+
+- *"the better/worse your players compared with your opponent players, the less
+  your tactic matters"* — e' esattamente il vincolo che ci siamo dati al punto 6;
+- uno scarto di 7 punti *"shrinks to 3 points or disappears entirely"* quando le
+  squadre diventano forti;
+- una tattica da 49 punti nei test **vince comunque il campionato** con giocatori
+  di livello;
+- e c'e' un rumore di **±25 punti** su una stagione di 38 partite, cioe' molto
+  piu' grande dello scarto fra le tattiche.
+
+Anche in FM, quindi, la qualita' della rosa domina e la tattica e' un margine.
+
+**DA DOVE VIENE DAVVERO LA PROFONDITA' DI FM**, ed e' la risposta alla
+sensazione del committente: non da una leva potente, ma da **tante leve che si
+combinano**. Mentalita', forma della squadra, un ruolo e un compito
+(difendere/sostenere/attaccare) per ciascuno degli undici, e istruzioni divise
+in tre fasi — in possesso, in transizione, fuori possesso. Nella sola
+transizione: Counter, Hold Shape, Counter-Press, Regroup.
+
+Una tattica di FM e' una combinazione di trenta e piu' decisioni, ognuna
+piccola. **Noi ne abbiamo due, per nove combinazioni totali.** E' li' la
+differenza, non nella forza del singolo asse.
+
+**Conseguenza operativa**: la strada per far contare le tattiche non e' rendere
+un asse piu' potente — e' aggiungere assi, e soprattutto scendere al livello del
+singolo giocatore con ruoli e compiti. Cioe' esattamente le "istruzioni per
+slot" del punto aperto A, che a questo punto smettono di essere un di piu' e
+diventano il cuore della cosa.
+
+**Una cosa in cui restiamo pero' migliori, e va tenuta.** FM ha un problema di
+tattica meta: FM-Arena esiste perche' la gente cerca la tattica che vince sempre.
+Noi al punto 5 abbiamo deciso il contrario, e il test A lo verifica. Aggiungere
+leve non deve significare rinunciare a quello.
+
 ---
 
 # Punti aperti
