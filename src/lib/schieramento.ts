@@ -1,104 +1,114 @@
 // ============================================================
-//  DOVE VANNO GLI UNDICI SUL CAMPO
+//  LE POSTAZIONI DEL CAMPO
 //
-//  Prima questo calcolo era una catena di casi speciali per nome di modulo
-//  dentro Formazione.tsx, con due bug gia' corretti nei commenti (il 4-2-4 che
-//  scambiava le ali, il CAM del 4-3-3 offensivo che finiva di lato invece che
-//  fra i due CM). Con gli schemi personalizzati quel modo smette di funzionare
-//  del tutto: il nome del modulo non dice piu' dove stanno gli undici, perche'
-//  due squadre col 4-4-2 possono schierarsi in modo diverso.
+//  Il campo ha un insieme FISSO di postazioni. Ognuna sta sempre nello stesso
+//  punto, ha un nome di posizione e ospita un giocatore solo. Uno schieramento
+//  non e' altro che l'elenco di quali postazioni sono occupate.
 //
-//  Qui la posizione si DERIVA dallo slot, quindi vale per qualunque
-//  schieramento, standard o inventato.
+//  PERCHE' FISSE. Servono per trascinare: una card si sposta a calamita sulla
+//  postazione libera piu' vicina, come nelle tattiche personalizzate di FC. Con
+//  coordinate ricalcolate dallo schieramento corrente le postazioni si
+//  sposterebbero MENTRE trascini, e il divieto "questa e' gia' occupata" non
+//  avrebbe nemmeno un posto a cui riferirsi.
 //
-//    - la riga viene da quanto la posizione e' avanzata;
-//    - la colonna viene dai PESI_CORSIA del motore, che gia' sanno che un LB
-//      sta a sinistra e un CB al centro: una verita' sola, non due.
+//  Due tentativi precedenti, entrambi sbagliati, vale la pena ricordarli:
+//    - una catena di casi speciali per nome di modulo, dentro Formazione.tsx,
+//      con due bug corretti a mano (il 4-2-4 che scambiava le ali, il CAM del
+//      4-3-3 offensivo che finiva di lato). Cade con gli schemi personalizzati:
+//      il nome del modulo non dice piu' dove stanno gli undici.
+//    - un calcolo derivato che spartiva ogni riga in parti uguali. Mandava due
+//      CDM sulle fasce come se fossero due esterni, perche' una spartizione non
+//      sa niente di corsie.
+//  Le postazioni fisse chiudono entrambi: le coordinate sono scritte una volta
+//  e si guardano.
 //
-//  I doppioni (due CB, due CM) si distribuiscono nella loro riga tenendo
-//  l'ordine in cui compaiono, che e' il motivo per cui il vecchio codice non
-//  riusciva a separarli: indexOf() su due slot identici restituisce lo stesso
-//  indice.
+//  x: 0 = fascia sinistra, 100 = fascia destra.
+//  y: 0 = porta propria, 100 = porta avversaria.
 // ============================================================
-import { CORSIA_X } from './tattica'
 
-// Quanto una posizione e' avanzata. Valori non interi di proposito: un LWB sta
-// fra i difensori e i centrocampisti, e sul campo si deve vedere.
-const LINEA: Record<string, number> = {
-  GK: 0,
-  CB: 1, LB: 1, RB: 1,
-  LWB: 1.55, RWB: 1.55,
-  CDM: 2.1,
-  CM: 2.7, LM: 2.7, RM: 2.7,
-  CAM: 3.25,
-  LW: 3.7, RW: 3.7,
-  ST: 4.2, CF: 3.9,
-}
+export type Ancora = { id: string; slot: string; x: number; y: number }
 
-export type PostoInCampo = { index: number; slot: string; x: number; y: number }
+// Le postazioni, riga per riga. Chi ne ha piu' d'una con lo stesso nome (tre
+// CB, tre CM) le occupa dal centro verso fuori: vedi scegliAncore().
+export const ANCORE: Ancora[] = [
+  { id: 'gk', slot: 'GK', x: 50, y: 5 },
 
-// -1 tutta a sinistra, +1 tutta a destra. Deriva dai PESI_CORSIA del motore.
-const corsiaX = (slot: string): number => CORSIA_X[slot] ?? 0
+  { id: 'lb', slot: 'LB', x: 13, y: 22 },
+  { id: 'cb1', slot: 'CB', x: 34, y: 20 },
+  { id: 'cb2', slot: 'CB', x: 50, y: 19 },
+  { id: 'cb3', slot: 'CB', x: 66, y: 20 },
+  { id: 'rb', slot: 'RB', x: 87, y: 22 },
+
+  { id: 'lwb', slot: 'LWB', x: 10, y: 38 },
+  { id: 'rwb', slot: 'RWB', x: 90, y: 38 },
+
+  { id: 'cdm1', slot: 'CDM', x: 34, y: 39 },
+  { id: 'cdm2', slot: 'CDM', x: 50, y: 37 },
+  { id: 'cdm3', slot: 'CDM', x: 66, y: 39 },
+
+  { id: 'lm', slot: 'LM', x: 12, y: 57 },
+  { id: 'cm1', slot: 'CM', x: 32, y: 56 },
+  { id: 'cm2', slot: 'CM', x: 50, y: 55 },
+  { id: 'cm3', slot: 'CM', x: 68, y: 56 },
+  { id: 'rm', slot: 'RM', x: 88, y: 57 },
+
+  { id: 'cam1', slot: 'CAM', x: 32, y: 72 },
+  { id: 'cam2', slot: 'CAM', x: 50, y: 71 },
+  { id: 'cam3', slot: 'CAM', x: 68, y: 72 },
+
+  { id: 'lw', slot: 'LW', x: 13, y: 86 },
+  { id: 'st1', slot: 'ST', x: 36, y: 90 },
+  { id: 'st2', slot: 'ST', x: 50, y: 92 },
+  { id: 'st3', slot: 'ST', x: 64, y: 90 },
+  { id: 'rw', slot: 'RW', x: 87, y: 86 },
+]
+
+export const ancorePerSlot = (slot: string): Ancora[] => ANCORE.filter((a) => a.slot === slot)
+export const ancoraPerId = (id: string): Ancora | undefined => ANCORE.find((a) => a.id === id)
 
 /**
- * Le coordinate degli undici, in percentuale del campo.
- * y: 0 = linea di porta propria, 100 = porta avversaria.
- * x: 0 = fascia sinistra, 100 = fascia destra.
+ * Quali postazioni occupa chi ne ha n con lo stesso nome.
+ *
+ * La scelta e' SIMMETRICA rispetto al centro del campo, non "le n piu' vicine
+ * al centro": due difensori centrali su tre postazioni vanno alla prima e alla
+ * terza, non alla prima e alla seconda — altrimenti la difesa si accartoccia a
+ * sinistra e lascia un buco a destra.
  */
-export function schieramentoInCampo(slots: string[]): PostoInCampo[] {
-  const posti = slots.map((slot, index) => ({ index, slot, linea: LINEA[slot] ?? 2.5, cx: corsiaX(slot) }))
-
-  // Le righe si formano da sole: posizioni con la stessa altezza stanno
-  // insieme. Non c'e' un elenco di righe per modulo da tenere aggiornato.
-  const righe = new Map<number, typeof posti>()
-  for (const p of posti) {
-    const chiave = p.linea
-    if (!righe.has(chiave)) righe.set(chiave, [])
-    righe.get(chiave)!.push(p)
-  }
-
-  const altezze = [...righe.keys()].sort((a, b) => a - b)
-  const minLinea = altezze[0] ?? 0
-  const maxLinea = altezze[altezze.length - 1] ?? 4.2
-  const span = Math.max(0.001, maxLinea - minLinea)
-
-  const out: PostoInCampo[] = []
-  for (const [linea, gruppo] of righe) {
-    const y = 6 + (84 * (linea - minLinea)) / span
-    // La colonna viene dalla CORSIA della posizione, non da una spartizione in
-    // parti uguali della riga. Distribuire e' sbagliato: due CDM stanno
-    // entrambi al centro, e spalmandoli sulla riga finivano sulle fasce come
-    // se fossero due esterni.
-    const ordinati = [...gruppo].sort((a, b) => (a.cx - b.cx) || (a.index - b.index))
-    // I doppioni (due CB, tre CM) condividono la stessa corsia: si sfalsano
-    // attorno a essa, tenendo l'ordine in cui compaiono.
-    const perCorsia = new Map<number, typeof ordinati>()
-    for (const p of ordinati) {
-      const k = Math.round(p.cx * 20)
-      if (!perCorsia.has(k)) perCorsia.set(k, [])
-      perCorsia.get(k)!.push(p)
-    }
-    for (const stessaCorsia of perCorsia.values()) {
-      const n = stessaCorsia.length
-      stessaCorsia.forEach((p, i) => {
-        const base = 50 + p.cx * 34
-        const scarto = n === 1 ? 0 : (i - (n - 1) / 2) * (n === 2 ? 17 : 18)
-        out.push({ index: p.index, slot: p.slot, x: Math.max(10, Math.min(90, base + scarto)), y })
-      })
-    }
-  }
-  return out.sort((a, b) => a.index - b.index)
+function scegliAncore(disponibili: Ancora[], n: number): Ancora[] {
+  const m = disponibili.length
+  if (n >= m) return disponibili
+  if (n <= 0) return []
+  if (n === 1) return [disponibili[Math.round((m - 1) / 2)]]
+  const passo = (m - 1) / (n - 1)
+  const scelti = new Set<number>()
+  for (let i = 0; i < n; i++) scelti.add(Math.round(i * passo))
+  return disponibili.filter((_, i) => scelti.has(i))
 }
 
-/** Le righe, dalla piu' avanzata alla piu' arretrata: per chi disegna a liste. */
-export function righeDiCampo(slots: string[]): PostoInCampo[][] {
-  const posti = schieramentoInCampo(slots)
-  const per = new Map<number, PostoInCampo[]>()
-  for (const p of posti) {
-    if (!per.has(p.y)) per.set(p.y, [])
-    per.get(p.y)!.push(p)
+export type PostoInCampo = { index: number; slot: string; ancora: string; x: number; y: number }
+
+/**
+ * Su quali postazioni finiscono gli undici di uno schieramento.
+ * L'array torna nell'ordine degli slot, cioe' nell'ordine dei titolari.
+ */
+export function schieramentoInCampo(slots: string[]): PostoInCampo[] {
+  const perNome = new Map<string, number[]>()
+  slots.forEach((slot, index) => {
+    if (!perNome.has(slot)) perNome.set(slot, [])
+    perNome.get(slot)!.push(index)
+  })
+
+  const out: PostoInCampo[] = []
+  for (const [slot, indici] of perNome) {
+    const scelte = scegliAncore(ancorePerSlot(slot), indici.length)
+    indici.forEach((index, i) => {
+      const a = scelte[i]
+      // Uno slot senza postazione finisce al centro invece di sparire: un buco
+      // silenzioso sarebbe peggio di una card fuori posto.
+      out.push(a
+        ? { index, slot, ancora: a.id, x: a.x, y: a.y }
+        : { index, slot, ancora: `${slot}-${i}`, x: 50, y: 50 })
+    })
   }
-  return [...per.entries()]
-    .sort((a, b) => b[0] - a[0])
-    .map(([, riga]) => riga.sort((l, r) => l.x - r.x))
+  return out.sort((a, b) => a.index - b.index)
 }

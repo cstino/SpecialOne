@@ -602,8 +602,6 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         disposizione={disposizione}
         ruoli={ruoli}
         compiti={compiti}
-        titolari={titolari}
-        players={players}
         xpDisposizione={xpDisposizione}
         xpIndicazioni={xpIndicazioni}
         onChange={(d, r, c) => { setDisposizione(d); setRuoli(r); setCompiti(c); setSaved(false) }}
