@@ -22,7 +22,7 @@ type EventoCartellino = { tipo: 'cartellino'; minuto: number; blocco: number; la
 type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio | EventoCartellino
 type DbPlayer = { id: number; nome: string; posizioni: string[]; attributi: Record<string, number> }
 type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number; posizioni_override: string[] | null; attributi_override: Record<string, number> | null; specializzazione_attiva: string | null }
-type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; gk: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; specializzazione: string | null }
+type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; specializzazione: string | null }
 // moltiplicatoreInfortuni e' facoltativo: se assente l'engine usa 1 (nessun
 // effetto), esattamente come nella suite di validazione.
 type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number>; esperienzaStile: Record<string, number>; moltiplicatoreInfortuni?: number }
@@ -74,7 +74,13 @@ function adaptPlayer(instance: Instance, player: DbPlayer): EnginePlayer {
     short_passing: attributoEffettivo(player.attributi, instance.attributi_override, 'short_passing', instance.id),
     tackle: attributoEffettivo(player.attributi, instance.attributi_override, 'standing_tackle', instance.id),
     dribbling: attributoEffettivo(player.attributi, instance.attributi_override, 'dribbling', instance.id),
-    gk: attributoEffettivo(player.attributi, instance.attributi_override, 'gk', instance.id),
+    // Qui c'era anche 'gk', caricato come obbligatorio e mai letto da nessuno:
+    // non dal motore, non dal frontend, non dal database. La forza del portiere
+    // il motore la ricava da ovrEfficace come per tutti gli altri, cioe' dal
+    // suo overall — un attributo separato sarebbe stato un doppio conteggio.
+    // Toglierlo elimina anche un modo di far fallire la giornata di un'intera
+    // lega: attributoEffettivo solleva se il campo manca, e un giocatore senza
+    // 'gk' avrebbe interrotto la simulazione per un valore che nessuno usa.
     condizione: instance.condizione,
     infortunatoFinoA: instance.infortunato_fino_a,
     squalificatoFinoA: instance.squalificato_fino_a,
