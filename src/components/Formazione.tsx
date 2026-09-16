@@ -1,5 +1,7 @@
-import { useEffect, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react'
+import { useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { supabase } from '../lib/supabase'
+import { schieramentoInCampo } from '../lib/schieramento'
+import SchemaTattico, { type XpDisposizione } from './SchemaTattico'
 import { cognome } from '../lib/nomi'
 import { ROSA_MASSIMA } from '../lib/league'
 import type { League, Membership } from '../types'
@@ -74,7 +76,7 @@ const STILE_DESCRIZIONI: Record<string, string> = {
 
 type PlayerStats = Record<string, number | null>
 type Player = { id: number; fc_id: number; nome: string; club: string; nazionalita: string | null; overall_corrente: number; eta_corrente: number; posizioni: string[]; piede: string | null; altezza: number | null; condizione: number; infortunato_fino_a: number; squalificato_fino_a: number; ritiro_annunciato: boolean; attributi: PlayerStats; foto_url: string | null }
-type SavedLineup = { modulo: string; stile_gioco: string; titolari: number[]; panchina: number[]; tribuna: number[]; salvata_il: string }
+type SavedLineup = { modulo: string; stile_gioco: string; titolari: number[]; panchina: number[]; tribuna: number[]; salvata_il: string; disposizione: string[] | null; ruoli: (string | null)[] | null; compiti: (string | null)[] | null }
 
 const formatSalvataIl = (iso: string) => new Intl.DateTimeFormat('it-IT', {
   timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
@@ -210,6 +212,14 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [titolari, setTitolari] = useState<number[]>([])
   const [panchina, setPanchina] = useState<number[]>([])
   const [tribuna, setTribuna] = useState<number[]>([])
+  // Schema personalizzato (engine/ruoli.js, migrazione 20260917020000). NULL su
+  // tutti e tre = lo schieramento standard del modulo, cioe' il gioco di prima.
+  const [disposizione, setDisposizione] = useState<string[] | null>(null)
+  const [ruoli, setRuoli] = useState<(string | null)[] | null>(null)
+  const [compiti, setCompiti] = useState<(string | null)[] | null>(null)
+  const [schemaAperto, setSchemaAperto] = useState(false)
+  const [xpDisposizione, setXpDisposizione] = useState<XpDisposizione[]>([])
+  const [xpIndicazioni, setXpIndicazioni] = useState(0)
   const [selected, setSelected] = useState<PlayerLocation | null>(null)
   const [openZone, setOpenZone] = useState<PlayerZone>('starter')
   const [detailPlayer, setDetailPlayer] = useState<Player | null>(null)
@@ -263,15 +273,20 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         return [player.id, data?.signedUrl] as const
       }))
       if (active) setImageUrls(Object.fromEntries(signed.filter((item): item is [number, string] => Boolean(item[1]))))
-      const [{ data: formationXp, error: formationXpError }, { data: stileXp, error: stileXpError }] = await Promise.all([
-        supabase.from('formation_xp').select('modulo, partite_giocate').eq('league_id', league.id).eq('team_id', membership.id),
+      const [{ data: formationXp, error: formationXpError }, { data: stileXp, error: stileXpError }, { data: indicazioniXp }] = await Promise.all([
+        supabase.from('formation_xp').select('modulo, disposizione, partite_giocate').eq('league_id', league.id).eq('team_id', membership.id),
         supabase.from('stile_xp').select('stile, partite_giocate').eq('league_id', league.id).eq('team_id', membership.id),
+        supabase.from('indicazioni_xp').select('partite_giocate').eq('team_id', membership.id).maybeSingle(),
       ])
       if (formationXpError) { setError(formationXpError.message); setLoading(false); return }
       if (stileXpError) { setError(stileXpError.message); setLoading(false); return }
       if (active) {
         setEsperienzaModulo(Object.fromEntries((formationXp ?? []).map((riga) => [riga.modulo, riga.partite_giocate])))
         setEsperienzaStile(Object.fromEntries((stileXp ?? []).map((riga) => [riga.stile, riga.partite_giocate])))
+        setXpDisposizione((formationXp ?? [])
+          .filter((riga) => Array.isArray(riga.disposizione) && riga.disposizione.length === 11)
+          .map((riga) => ({ disposizione: riga.disposizione as string[], partite: riga.partite_giocate })))
+        setXpIndicazioni(indicazioniXp?.partite_giocate ?? 0)
       }
       const { data: nextFixture, error: fixtureError } = await supabase.from('fixtures').select('giornata')
         .eq('league_id', league.id).in('stato', ['programmata', 'in_corso']).order('giornata').limit(1).maybeSingle()
@@ -279,7 +294,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       const targetGiornata = nextFixture?.giornata ?? league.giornate_totali
       if (active) setGiornata(targetGiornata)
       const { data: lineup, error: lineupError } = await supabase.from('lineups')
-        .select('modulo, stile_gioco, titolari, panchina, tribuna, salvata_il')
+        .select('modulo, stile_gioco, titolari, panchina, tribuna, salvata_il, disposizione, ruoli, compiti')
         .eq('league_id', league.id)
         .eq('team_id', membership.id)
         .lte('giornata', targetGiornata)
@@ -319,6 +334,9 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           ? titolariSalvati
           : [...titolariSalvati, ...Array(slotTitolari - titolariSalvati.length).fill(0)]
         setModulo(current.modulo)
+        setDisposizione(current.disposizione ?? null)
+        setRuoli(current.ruoli ?? null)
+        setCompiti(current.compiti ?? null)
         setStile(current.stile_gioco)
         setSalvataIl(current.salvata_il)
         setTitolari(titolariCompleti)
@@ -336,56 +354,20 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     return () => { active = false }
   }, [league.id, membership.id])
 
-  const slots = MODULI[modulo]
-  const rowGroups = modulo === '4-2-3-1'
-    ? [['GK'], ['LB', 'CB', 'RB'], ['CDM'], ['LW', 'CAM', 'RW'], ['ST']]
-    : modulo === '4-3-3'
-      ? [['GK'], ['LB', 'CB', 'RB'], ['CM'], ['LW', 'ST', 'RW']]
-      : modulo === '4-4-2'
-        ? [['GK'], ['LB', 'CB', 'RB'], ['LM', 'CM', 'RM'], ['ST']]
-        : modulo === '3-4-3'
-          ? [['GK'], ['CB'], ['LM', 'CM', 'RM'], ['LW', 'ST', 'RW']]
-          : modulo === '3-5-2'
-            ? [['GK'], ['CB'], ['LWB', 'CM', 'RWB'], ['ST']]
-            : modulo === '5-3-2'
-              ? [['GK'], ['LB', 'CB', 'RB'], ['CM'], ['ST']]
-              : modulo === '4-2-4'
-                // Senza questo caso il modulo cadeva nel gruppo generico
-                // ['LW','RW','ST','CF'], che ordina RW prima di entrambi gli
-                // ST: sul campo comparivano scambiati, con l'ala destra
-                // stretta al centro invece che larga sulla fascia.
-                ? [['GK'], ['LB', 'CB', 'RB'], ['CM'], ['LW', 'ST', 'RW']]
-                : modulo === '4-3-3 offensivo' || modulo === '4-3-3 difensivo'
-                  ? [['GK'], ['LB', 'CB', 'RB'], ['CM', 'CAM', 'CDM'], ['LW', 'ST', 'RW']]
-                  : [['GK'], ['LB', 'CB', 'RB', 'LWB', 'RWB'], ['CDM', 'CM', 'CAM', 'LM', 'RM'], ['LW', 'RW', 'ST', 'CF']]
-  const rows = rowGroups.map((group) => slots
-    .map((slot, index) => ({ slot, index }))
-    .filter((item) => group.includes(item.slot))
-    .sort((left, right) => group.indexOf(left.slot) - group.indexOf(right.slot)))
-    .reverse()
-  // Il CAM/CDM delle varianti del 4-3-3 deve stare fra i due CM, non a un
-  // lato: l'ordinamento per ruolo qui sopra non puo' separare due 'CM'
-  // identici (indexOf collassa i duplicati), quindi si corregge a mano
-  // l'unica riga coinvolta dopo il calcolo generico. Lo stesso indice viene
-  // anche scostato leggermente in verticale (CSS, sotto) per leggerlo come
-  // mediano/trequartista e non come un terzo centrale identico agli altri
-  // due — ma SOLO per queste due varianti: il CDM/CAM del 4-2-3-1 sta gia'
-  // su una riga propria e non va toccato.
-  let scostamentoIndex: number | undefined
-  let scostamentoDirezione: 'su' | 'giu' | undefined
-  if (modulo === '4-3-3 offensivo' || modulo === '4-3-3 difensivo') {
-    const specialSlot = modulo === '4-3-3 offensivo' ? 'CAM' : 'CDM'
-    const midRow = rows.find((row) => row.some((item) => item.slot === specialSlot))
-    if (midRow) {
-      const cm = midRow.filter((item) => item.slot === 'CM')
-      const special = midRow.find((item) => item.slot === specialSlot)
-      if (cm.length === 2 && special) {
-        midRow.splice(0, midRow.length, cm[0], special, cm[1])
-        scostamentoIndex = special.index
-        scostamentoDirezione = specialSlot === 'CAM' ? 'su' : 'giu'
-      }
-    }
-  }
+  // Lo schieramento davvero in campo: quello personalizzato se c'e', altrimenti
+  // lo standard del modulo.
+  const slots = disposizione ?? MODULI[modulo]
+  // Le righe si DERIVANO dalle posizioni (src/lib/schieramento.ts). Prima qui
+  // c'era una catena di casi per nome di modulo, con due bug gia' corretti a
+  // mano dentro — il 4-2-4 che scambiava le ali e il CAM del 4-3-3 offensivo
+  // che finiva di lato. Con gli schemi personalizzati quel modo non regge piu':
+  // due squadre col 4-4-2 possono schierarsi in modo diverso, quindi il nome
+  // del modulo non dice piu' dove stanno gli undici.
+  // Posizionamento assoluto, non righe a griglia: una griglia ridistribuisce
+  // in parti uguali, quindi due CDM — che stanno entrambi al centro — finivano
+  // sulle fasce come se fossero due esterni.
+  const posti = schieramentoInCampo(slots)
+
   // Overall medio dei titolari, nello slot in cui sono davvero schierati:
   // un giocatore fuori ruolo pesa meno, esattamente come nel motore —
   // altrimenti il cerchio direbbe "forte" anche con tre titolari fuori
@@ -579,6 +561,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     }
     const { error: saveError } = await supabase.rpc('salva_formazione', {
       p_league_id: league.id, p_giornata: giornata, p_modulo: modulo,
+      p_disposizione: disposizione, p_ruoli: ruoli, p_compiti: compiti,
       p_titolari: titolari, p_panchina: cleanBench, p_tribuna: tribuna,
       p_stile_gioco: stile,
     })
@@ -589,6 +572,13 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
 
   function chooseModule(nextModule: string) {
     setModulo(nextModule)
+    // Lo schema personalizzato appartiene al modulo da cui nasce: le posizioni
+    // spostate sono spostamenti DI QUELLE posizioni, e portarsele su un modulo
+    // diverso non vuol dire niente. Ruoli e compiti seguono, perche' anche loro
+    // sono agganciati agli slot.
+    setDisposizione(null)
+    setRuoli(null)
+    setCompiti(null)
     setSaved(false)
     setSelected(null)
     setPlayerAction(null)
@@ -607,6 +597,18 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     <main className="app-shell formation-shell">
       <GameNav league={league} active="squad" onNavigate={onNavigate} />
       <header className="topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span className="kicker">Giornata {giornata}</span></header>
+      {schemaAperto && <SchemaTattico
+        modulo={modulo}
+        disposizione={disposizione}
+        ruoli={ruoli}
+        compiti={compiti}
+        titolari={titolari}
+        players={players}
+        xpDisposizione={xpDisposizione}
+        xpIndicazioni={xpIndicazioni}
+        onChange={(d, r, c) => { setDisposizione(d); setRuoli(r); setCompiti(c); setSaved(false) }}
+        onClose={() => setSchemaAperto(false)}
+      />}
       <PopupSpiegazione userId={membership.user_id} hintKey="formazione" titolo="Come funziona la Formazione">
         <p>Scegli uno dei moduli disponibili e assegna un giocatore a ogni slot: titolari, panchina e il
           resto in tribuna. Un giocatore fuori dal suo ruolo naturale gioca comunque, ma con un
@@ -658,6 +660,15 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
                 </button>
                 {stileMenuOpen && <><button className="formation-stile-scrim" type="button" aria-label="Chiudi selezione stile di gioco" onClick={() => setStileMenuOpen(false)} /><div className="formation-stile-menu" role="listbox" aria-label="Scegli lo stile di gioco">{STILI.map((key) => <button className={key === stile ? 'is-active' : ''} type="button" role="option" aria-selected={key === stile} key={key} onClick={() => chooseStile(key)}><strong>{STILE_LABEL[key]}</strong><small>{STILE_DESCRIZIONI[key]}</small><span>{key === stile ? '✓' : '›'}</span></button>)}</div></>}
               </div>
+              <div className="formation-tattica__voce">
+                <button className="formation-tattica__trigger" type="button" onClick={() => { setSchemaAperto(true); setModuleMenuOpen(false); setStileMenuOpen(false) }}>
+                  <span className="formation-tattica__testo">
+                    <small>Schema</small>
+                    <strong>{disposizione || ruoli || compiti ? 'Personalizzato' : 'Standard'}</strong>
+                  </span>
+                  <i aria-hidden="true">›</i>
+                </button>
+              </div>
             </div>
           </div>
           <UnderlineTabs
@@ -678,8 +689,12 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
                 <div className="pitch-field__line pitch-field__line--half" />
                 <div className="pitch-field__circle" />
                 <div className="pitch-field__box pitch-field__box--top" /><div className="pitch-field__box pitch-field__box--bottom" />
-                <div className="pitch-grid">
-                  {rows.map((row, rowIndex) => <div className={`pitch-row pitch-row--${rowIndex}`} style={{ '--row-count': row.length } as CSSProperties} key={rowIndex}>{row.map(({ slot, index }) => { const player = players.find((item) => item.id === titolari[index]); const location = { zone: 'starter', index, id: titolari[index] ?? 0 } as PlayerLocation; return <div className={`pitch-slot pitch-slot--${reparto(slot)}${index === scostamentoIndex ? ` pitch-slot--scostato-${scostamentoDirezione}` : ''}`} key={`${slot}-${index}`}><PlayerPortrait player={player} empty={!player} imageUrl={imageUrls[player?.id ?? 0]} position={slot} selected={selected?.zone === 'starter' && selected.index === index} onClick={player ? (event) => handlePlayerClick(event, location, player) : () => selectEmptyStarter(index)} /></div> })}</div>)}
+                <div className="pitch-grid pitch-grid--assoluta">
+                  {posti.map(({ slot, index, x, y }) => {
+                    const player = players.find((item) => item.id === titolari[index])
+                    const location = { zone: 'starter', index, id: titolari[index] ?? 0 } as PlayerLocation
+                    return <div className={`pitch-posto pitch-slot pitch-slot--${reparto(slot)}`} style={{ left: `${x}%`, top: `${100 - y}%` }} key={`${slot}-${index}`}><PlayerPortrait player={player} empty={!player} imageUrl={imageUrls[player?.id ?? 0]} position={slot} selected={selected?.zone === 'starter' && selected.index === index} onClick={player ? (event) => handlePlayerClick(event, location, player) : () => selectEmptyStarter(index)} /></div>
+                  })}
                 </div>
               </div>
             ) : (
