@@ -502,6 +502,74 @@ nasce NULL e niente lo assegna in automatico, quindi l'attenuazione vale 1 e il 
 calcola esattamente quello che calcolava prima. L'assegnazione automatica e l'interfaccia
 arrivano col resto del lavoro tattico.
 
+## 20. Due barre di familiarità, come in FM
+
+Deciso col committente, che ha scelto questa strada fra tre.
+
+**Il problema, misurato.** In Serie F, prima della modifica: familiarità media di lega
+**66,1%**, 19 combinazioni squadra-modulo su 36 sotto soglia, e **23 squadre su 40 hanno
+usato un solo modulo per tutta la stagione**. L'ultima riga non descrive una scelta
+tattica: descrive la risposta razionale a una tassa da 3,5 punti di overall su tutti e
+undici per cinque giornate. La familiarità non faceva contare le tattiche, faceva evitare
+le tattiche — e con gli schemi personalizzati in arrivo sarebbe stata fatale: ogni ritocco
+azzera la squadra, e nessuno userebbe la funzione due volte.
+
+**Cosa fa FM.** La familiarità lì è per componente: disposizione, mentalità, ritmo,
+ampiezza e libertà creativa hanno ognuna la sua barra, e cambiare un'istruzione muove solo
+quelle collegate. Inoltre non sparisce quando cambi tattica, decade.
+
+**Cosa abbiamo fatto.** Due barre, media 50/50 — lo stesso peso che avevano modulo e stile,
+quindi nessuno spostamento di equilibrio.
+
+| barra | cosa misura | memoria |
+|---|---|---|
+| **disposizione** | dove stanno gli undici | sì: indicizzata sullo schieramento, tornare al vecchio 4-4-2 ritrova il contatore |
+| **indicazioni** | stile, ruoli, compiti | no: arretra in proporzione a quanto è cambiato |
+
+La differenza è voluta. Uno schieramento è una cosa discreta a cui si torna; le indicazioni
+sono un continuo in cui ci si sposta, e tenerne la memoria vorrebbe dire indicizzare ogni
+combinazione di 23 elementi — una tabella che cresce senza che nessuna riga venga riusata.
+
+**Eredità e arretramento** usano la stessa formula: `resa = max(0, 1 − 1,6 × distanza)`.
+
+Schieramento (misurato su una squadra vera a barra piena):
+
+| slot cambiati su 11 | barra di partenza |
+|---|---|
+| 1 | 80% |
+| 2 — *due CM che diventano CDM* | 80% |
+| 3 | 60% |
+| 5 | 20% |
+| 8 | 0% |
+
+Indicazioni (23 elementi: lo stile, 11 ruoli, 11 compiti):
+
+| indicazioni cambiate | barra dopo |
+|---|---|
+| 1 | 100% |
+| 3 | 80% |
+| 6 | 60% |
+| 11 | 20% |
+
+È il *«non fare troppe modifiche in una volta»* di Football Manager, reso numerico.
+
+**Una trappola trovata e chiusa.** La prima versione scalava il *conteggio grezzo*: una
+squadra con 21 partite col suo 4-4-2 faceva `21 × 0,71 = 15`, ancora sopra la soglia di 5,
+quindi la variante nasceva già piena. L'eredità non mordeva mai proprio per chi gioca da
+tempo lo stesso modulo, cioè esattamente chi dovrebbe sentirla. Ora si scala la **quota**,
+già tagliata a 1.
+
+**Una seconda, che avrebbe rotto la produzione.** `indicazioni_xp` nasceva vuota, quindi
+quella barra sarebbe valsa 0 per tutti e la media avrebbe dimezzato la familiarità di ogni
+squadra alla prima giornata dopo il deploy. La barra indicazioni assorbe quello che prima
+era lo stile, quindi eredita il suo contatore. Verificato squadra per squadra: **0 squadre
+su 40 cambiano, scarto massimo 0,000.**
+
+**Stato**: schema e meccaniche applicate in produzione e inerti — `lineups.disposizione`,
+`ruoli` e `compiti` nascono NULL, e con NULL si ricade sullo schieramento standard del
+modulo. `engine/engine.js` usa le due barre solo se gli vengono passate. Manca
+l'interfaccia.
+
 ## B. Le squadre del PC si sfaldano fra le stagioni
 
 Scoperto misurando LegaBot: le squadre controllate dal PC non rinnovano i contratti e in

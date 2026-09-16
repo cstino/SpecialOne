@@ -138,6 +138,29 @@ export function counter(modA, modB) {
 // non due malus separati che si sommano). Senza stile (validazione motore,
 // che non lo passa mai) resta identico alla formula originale, solo-modulo.
 export function familiarita(rosa, modulo, stile) {
+  // DUE BARRE, COME IN FOOTBALL MANAGER.
+  //
+  // In FM la familiarita' non e' un numero solo: disposizione, mentalita',
+  // ritmo, ampiezza e liberta' creativa hanno ognuna la sua barra, e cambiare
+  // un'istruzione muove solo quelle collegate. Da noi era una barra sola e
+  // tutto-o-niente, con la conseguenza misurata in Serie F: 23 squadre su 40
+  // usano un modulo solo per tutta la stagione. Non e' una scelta tattica, e'
+  // la risposta razionale a una tassa da 3,5 punti di overall.
+  //
+  //   rosa.familiarita = { disposizione: 0..1, indicazioni: 0..1 }
+  //
+  // Quando c'e', il motore usa quella e non guarda i contatori: chi la
+  // calcola (l'Edge Function, che ha la storia della squadra) sa anche quanto
+  // una variante eredita dal modulo da cui nasce. Quando NON c'e' — la suite
+  // di validazione, la Fase 1, qualunque lega senza schemi personalizzati —
+  // si ricade esattamente sulla formula precedente, riga per riga.
+  const due = rosa.familiarita;
+  if (due && typeof due.disposizione === 'number') {
+    const d = Math.min(1, Math.max(0, due.disposizione));
+    if (typeof due.indicazioni !== 'number') return -CFG.FAM_MALUS_MAX * (1 - d);
+    const i = Math.min(1, Math.max(0, due.indicazioni));
+    return -CFG.FAM_MALUS_MAX * (1 - (d + i) / 2);
+  }
   const nModulo = rosa.esperienzaModulo[modulo] || 0;
   const fModulo = Math.min(1, nModulo / CFG.FAM_PARTITE_PIENA);
   if (!stile) return -CFG.FAM_MALUS_MAX * (1 - fModulo);

@@ -2,12 +2,12 @@ import '@supabase/functions-js/edge-runtime.d.ts'
 import { withSupabase } from '@supabase/server'
 import { ovrEfficace, schiera, simulaPartita } from '../../../engine/engine.js'
 import { tiltTecnico, tiltRapido } from '../../../engine/tattiche.js'
-import { REPARTO } from '../../../engine/config.js'
+import { CFG, REPARTO } from '../../../engine/config.js'
 import { MODULI } from '../../../engine/config.js'
 import { setSeed } from '../../../engine/random.js'
 import { calciaRigori, portiereDaLineup, tiratoriDaLineup } from '../../../engine/rigori.js'
 import { capitanoAutomatico, deltaMorale } from '../../../engine/morale.js'
-import { sommaDelta } from '../../../engine/ruoli.js'
+import { deltaRuoli, sommaDelta } from '../../../engine/ruoli.js'
 
 // La chiave segreta del progetto, esposta con un nome non riservato: la
 // piattaforma non inietta SUPABASE_SECRET_KEY e vieta di crearla a mano.
@@ -29,9 +29,9 @@ type Instance = { id: number; team_id: number; player_id: number; overall_corren
 type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; tiltTecnico: number | null; tiltRapido: number | null; specialita: { rigori: number }; piede: string | null; piazzati: { battuta: number; testa: number; marcatura: number; punizione: number; presa: number }; specializzazione: string | null; morale: number; composure: number }
 // moltiplicatoreInfortuni e' facoltativo: se assente l'engine usa 1 (nessun
 // effetto), esattamente come nella suite di validazione.
-type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number>; esperienzaStile: Record<string, number>; moltiplicatoreInfortuni?: number }
-type DbLineup = { team_id: number; giornata?: number; modulo: string; titolari: number[]; panchina: number[]; tribuna: number[]; stile_gioco: string; automatica: boolean; rigorista?: number | null; punizione_corta?: number | null; punizione_lunga?: number | null; angolo_dx?: number | null; angolo_sx?: number | null }
-type EngineLineup = { modulo: string; slots: string[]; titolari: EnginePlayer[]; panchina: EnginePlayer[]; cambiFatti: number; incaricati: { rigorista: number | null; punizione_corta: number | null; punizione_lunga: number | null; angolo_dx: number | null; angolo_sx: number | null }; capitano: EnginePlayer | null; tattica?: (g: EnginePlayer, slot: string) => number }
+type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number>; esperienzaStile: Record<string, number>; moltiplicatoreInfortuni?: number; xpDisposizione?: Array<{ disposizione: string[]; partite: number }>; xpIndicazioni?: number; familiarita?: { disposizione: number; indicazioni: number } }
+type DbLineup = { team_id: number; giornata?: number; modulo: string; disposizione?: string[] | null; ruoli?: (string | null)[] | null; compiti?: (string | null)[] | null; titolari: number[]; panchina: number[]; tribuna: number[]; stile_gioco: string; automatica: boolean; rigorista?: number | null; punizione_corta?: number | null; punizione_lunga?: number | null; angolo_dx?: number | null; angolo_sx?: number | null }
+type EngineLineup = { modulo: string; slots: string[]; titolari: EnginePlayer[]; panchina: EnginePlayer[]; cambiFatti: number; incaricati: { rigorista: number | null; punizione_corta: number | null; punizione_lunga: number | null; angolo_dx: number | null; angolo_sx: number | null }; capitano: EnginePlayer | null; ruoli: (string | null)[] | null; compiti: (string | null)[] | null; tattica?: (g: EnginePlayer, slot: string) => number }
 type Fixture = { id: number; season_id: number; league_id: number; giornata: number; home_team_id: number; away_team_id: number; stato: string; campo_neutro: boolean; bracket_tie_id: number | null; mano: number | null }
 
 function requiredNumber(attributes: Record<string, number>, field: string, playerId: number) {
@@ -210,6 +210,47 @@ function adaptPlayer(instance: Instance, player: DbPlayer, crescita: Crescita): 
   }
 }
 
+// ------------------------------------------------------------
+//  LE DUE BARRE DI FAMILIARITA'
+//
+//  Specchio di private.avanza_familiarita in SQL: qui si LEGGE la barra con cui
+//  la squadra scende in campo oggi, la' si fa AVANZARE dopo il fischio finale.
+//  Le due formule devono restare uguali, altrimenti una squadra gioca con una
+//  barra e se ne vede scrividere un'altra.
+// ------------------------------------------------------------
+function disposizioneDi(lineup: DbLineup): string[] {
+  const d = lineup.disposizione
+  if (d && d.length === 11) return d
+  return [...((MODULI as Record<string, string[]>)[lineup.modulo] ?? [])]
+}
+
+const resaFamiliarita = (distanza: number) => Math.max(0, Math.min(1, 1 - 1.6 * Math.max(0, Math.min(1, distanza))))
+
+function quoteFamiliarita(roster: EngineRoster, lineup: DbLineup): { disposizione: number; indicazioni: number } {
+  const piena = CFG.FAM_PARTITE_PIENA
+  const disp = disposizioneDi(lineup)
+  const righe = roster.xpDisposizione ?? []
+  // Lo schieramento esatto, se gia' giocato.
+  const esatta = righe.find((r) => r.disposizione?.length === 11 && r.disposizione.every((s, i) => s === disp[i]))
+  let quotaDisp: number
+  if (esatta) {
+    quotaDisp = Math.min(1, esatta.partite / piena)
+  } else {
+    // Mai giocato: eredita dal piu' simile, come fa la semina in SQL.
+    quotaDisp = 0
+    for (const r of righe) {
+      if (!r.disposizione || r.disposizione.length !== 11) continue
+      const uguali = r.disposizione.reduce((n, sl, i) => n + (sl === disp[i] ? 1 : 0), 0)
+      const q = Math.min(1, r.partite / piena) * resaFamiliarita(1 - uguali / 11)
+      if (q > quotaDisp) quotaDisp = q
+    }
+    // La semina in SQL arrotonda a partite intere: qui si fa lo stesso, se no
+    // la partita si gioca con una barra e il database ne registra un'altra.
+    quotaDisp = Math.min(1, Math.round(quotaDisp * piena) / piena)
+  }
+  return { disposizione: quotaDisp, indicazioni: Math.min(1, (roster.xpIndicazioni ?? 0) / piena) }
+}
+
 function buildLineup(lineup: DbLineup, roster: EngineRoster, capitanoId: number | null = null): EngineLineup {
   const byId = new Map(roster.giocatori.map((player) => [player.id, player]))
   const slots = MODULI[lineup.modulo]
@@ -288,7 +329,12 @@ function buildLineup(lineup: DbLineup, roster: EngineRoster, capitanoId: number 
   // tribuna.
   const capitanoScelto = capitanoId ? formazione.find((g: EnginePlayer) => g.id === capitanoId) ?? null : null
   const capitano = capitanoScelto ?? capitanoAutomatico(formazione)
-  return { modulo: lineup.modulo, slots: [...slots], titolari: formazione, panchina, cambiFatti: 0, incaricati, capitano }
+  // Ruoli e compiti per slot (engine/ruoli.js, engine/config.js). NULL finche'
+  // l'interfaccia degli schemi personalizzati non li scrive: il motore in quel
+  // caso non applica nessuno scarto.
+  const ruoli = lineup.ruoli && lineup.ruoli.length === 11 ? [...lineup.ruoli] : null
+  const compiti = lineup.compiti && lineup.compiti.length === 11 ? [...lineup.compiti] : null
+  return { modulo: lineup.modulo, slots: [...slots], titolari: formazione, panchina, cambiFatti: 0, incaricati, capitano, ruoli, compiti }
 }
 
 function seedFor(fixture: Fixture) {
@@ -833,13 +879,14 @@ export default {
         }
       }
 
-      const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult, stileXpResult, medicoResult, pendenzeResult] = await Promise.all([
+      const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult, stileXpResult, indicazioniXpResult, medicoResult, pendenzeResult] = await Promise.all([
         ctx.supabaseAdmin.from('teams').select('id, nome, user_id, controllata_da_pc, capitano').eq('league_id', leagueId).in('id', teamIds),
         ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, attributi_override, specializzazione_attiva, morale').eq('league_id', leagueId).in('team_id', teamIds),
-        ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
-        ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
-        ctx.supabaseAdmin.from('formation_xp').select('team_id, modulo, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),
+        ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx, disposizione, ruoli, compiti').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
+        ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx, disposizione, ruoli, compiti').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
+        ctx.supabaseAdmin.from('formation_xp').select('team_id, modulo, disposizione, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),
         ctx.supabaseAdmin.from('stile_xp').select('team_id, stile, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),
+        ctx.supabaseAdmin.from('indicazioni_xp').select('team_id, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),
         // Reparto medico: moltiplicatore di resistenza agli infortuni per
         // squadra (1 = nessun effetto). Curva in private.effetti_ramo, letta
         // tramite l'unico varco pubblico (PostgREST non espone lo schema
@@ -849,7 +896,7 @@ export default {
         // Stesso varco di sopra: PostgREST non espone lo schema private.
         ctx.supabaseAdmin.rpc('pendenze_attributi'),
       ])
-      const loadError = teamsResult.error ?? instancesResult.error ?? lineupsResult.error ?? previousLineupsResult.error ?? xpResult.error ?? stileXpResult.error ?? medicoResult.error ?? pendenzeResult.error
+      const loadError = teamsResult.error ?? instancesResult.error ?? lineupsResult.error ?? previousLineupsResult.error ?? xpResult.error ?? stileXpResult.error ?? indicazioniXpResult.error ?? medicoResult.error ?? pendenzeResult.error
       if (loadError) throw loadError
       const moltiplicatoriInfortuni = new Map<number, number>((medicoResult.data ?? []).map((riga: { team_id: number; moltiplicatore: number }) => [riga.team_id, riga.moltiplicatore]))
       const crescitaAttributi = costruisciCrescita(pendenzeResult.data ?? [])
@@ -875,11 +922,21 @@ export default {
         for (const xp of xpResult.data ?? []) if (xp.team_id === teamId) esperienzaModulo[xp.modulo] = xp.partite_giocate
         const esperienzaStile: Record<string, number> = {}
         for (const xp of stileXpResult.data ?? []) if (xp.team_id === teamId) esperienzaStile[xp.stile] = xp.partite_giocate
+        // Le DUE BARRE (vedi la migrazione 20260917010000). Si portano dietro i
+        // dati grezzi: la quota vera dipende dallo schieramento che questa
+        // squadra mette in campo oggi, e quello si sa solo con la formazione.
+        const xpDisposizione = (xpResult.data ?? [])
+          .filter((xp: { team_id: number }) => xp.team_id === teamId)
+          .map((xp: { disposizione: string[]; partite_giocate: number }) => ({ disposizione: xp.disposizione, partite: xp.partite_giocate }))
+        const xpIndicazioni = (indicazioniXpResult.data ?? [])
+          .find((xp: { team_id: number }) => xp.team_id === teamId)?.partite_giocate ?? 0
         rosters.set(teamId, {
           nome: teamNames.get(teamId) ?? `Squadra ${teamId}`,
           giocatori: instances.filter((instance) => instance.team_id === teamId).map((instance) => adaptPlayer(instance, catalog.get(instance.player_id)!, crescitaAttributi)),
           esperienzaModulo,
           esperienzaStile,
+          xpDisposizione,
+          xpIndicazioni,
           moltiplicatoreInfortuni: moltiplicatoriInfortuni.get(teamId),
         })
       }
@@ -939,8 +996,12 @@ export default {
         // Gli scarti tattici si sommano su un canale solo (lineup.tattica).
         // Oggi c'e' il morale; ruoli e corsie si agganciano qui quando la
         // tattica arrivera' in produzione.
-        homeLineup.tattica = sommaDelta(deltaMorale(homeLineup))
-        awayLineup.tattica = sommaDelta(deltaMorale(awayLineup))
+        homeLineup.tattica = sommaDelta(deltaMorale(homeLineup), deltaRuoli(homeLineup))
+        awayLineup.tattica = sommaDelta(deltaMorale(awayLineup), deltaRuoli(awayLineup))
+        // Le due barre con cui si scende in campo oggi. Senza schemi
+        // personalizzati coincidono con la vecchia familiarita' per modulo.
+        homeRoster.familiarita = quoteFamiliarita(homeRoster, homeDbLineup)
+        awayRoster.familiarita = quoteFamiliarita(awayRoster, awayDbLineup)
         // Fotografia dell'undici di partenza PRIMA del fischio d'inizio: le
         // sostituzioni dentro simulaPartita() mutano lineup.titolari in
         // posto (il subentrato prende il posto dell'uscito nello stesso
