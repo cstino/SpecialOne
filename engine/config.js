@@ -227,6 +227,43 @@ export function pesiConCompito(w, compito, giocatore) {
   };
 }
 
+// ============================================================
+//  CORSIE — la seconda dimensione del campo
+//
+//  Fino a qui il motore conosceva solo le linee: DEF, MID, ATT. Una squadra
+//  era tre numeri in verticale e niente in orizzontale, e questo rendeva
+//  impossibile qualunque scontro di posizione: "rientrare dentro" o
+//  "allargarsi" non avevano un posto dove andare.
+//
+//  Con le corsie una fascia forte contro una fascia debole diventa un
+//  vantaggio reale, e soprattutto diventa un vantaggio CHE DIPENDE
+//  DALL'AVVERSARIO — che e' esattamente cio' che mancava ai compiti (punto 13
+//  del registro: leggere l'avversario valeva +0,0).
+//
+//  Il mio attacco a sinistra incontra la loro difesa a destra: e' cosi' che si
+//  guarda una partita vera, ed e' il piu' piccolo pezzo di geometria che serve
+//  perche' i ruoli abbiano senso.
+// ============================================================
+export const CORSIE = ['SX', 'CEN', 'DX'];
+
+export const PESI_CORSIA = {
+  GK:  { SX: 0.15, CEN: 0.70, DX: 0.15 },
+  CB:  { SX: 0.20, CEN: 0.60, DX: 0.20 },
+  LB:  { SX: 0.85, CEN: 0.15, DX: 0.00 },
+  RB:  { SX: 0.00, CEN: 0.15, DX: 0.85 },
+  LWB: { SX: 0.90, CEN: 0.10, DX: 0.00 },
+  RWB: { SX: 0.00, CEN: 0.10, DX: 0.90 },
+  CDM: { SX: 0.15, CEN: 0.70, DX: 0.15 },
+  CM:  { SX: 0.20, CEN: 0.60, DX: 0.20 },
+  CAM: { SX: 0.20, CEN: 0.60, DX: 0.20 },
+  LM:  { SX: 0.80, CEN: 0.20, DX: 0.00 },
+  RM:  { SX: 0.00, CEN: 0.20, DX: 0.80 },
+  LW:  { SX: 0.80, CEN: 0.20, DX: 0.00 },
+  RW:  { SX: 0.00, CEN: 0.20, DX: 0.80 },
+  ST:  { SX: 0.15, CEN: 0.70, DX: 0.15 },
+  CF:  { SX: 0.15, CEN: 0.70, DX: 0.15 },
+};
+
 export const PESI_SLOT = {
   CB:  { DEF: 1.00, MID: 0.10, ATT: 0.00 },
   LB:  { DEF: 0.75, MID: 0.25, ATT: 0.10 },
