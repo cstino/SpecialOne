@@ -2,7 +2,7 @@
 //  MOTORE DI SIMULAZIONE — MODELLO A BLOCCHI
 // ============================================================
 
-import { CFG, MODULI, CONTEGGI, PESI_SLOT, REPARTO, STILI, penalitaRuolo, pesoStat } from './config.js';
+import { CFG, MODULI, CONTEGGI, PESI_SLOT, REPARTO, STILI, penalitaRuolo, pesoStat, pesiConCompito } from './config.js';
 import { rnd, gauss, poisson, scegliPesato } from './random.js';
 import { deltaTattico } from './tattiche.js';
 import { calcolaPiazzati } from './piazzati.js';
@@ -81,7 +81,11 @@ export function forzeLinee(lineup) {
     if (!g) continue;
     const eff = ovrEfficace(g, slot, dt(lineup, g, slot));
     if (slot === 'GK') { gk = eff; continue; }
-    const w = PESI_SLOT[slot];
+    // Il compito sposta il peso di questo giocatore da una linea all'altra:
+    // un terzino che si sovrappone pesa meno in difesa e di piu' davanti. Il
+    // costo e' automatico, perche' questi sono gli stessi pesi con cui si
+    // calcolano DEF, MID e ATT. Vedi COMPITI in config.js.
+    const w = pesiConCompito(PESI_SLOT[slot], lineup.compiti?.[i], g);
     for (const L of ['DEF', 'MID', 'ATT']) { acc[L][0] += eff * w[L]; acc[L][1] += w[L]; }
   }
   return {

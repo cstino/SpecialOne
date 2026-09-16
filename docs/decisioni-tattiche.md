@@ -261,6 +261,61 @@ tattica meta: FM-Arena esiste perche' la gente cerca la tattica che vince sempre
 Noi al punto 5 abbiamo deciso il contrario, e il test A lo verifica. Aggiungere
 leve non deve significare rinunciare a quello.
 
+## 13. I compiti per giocatore: meccanica sana, ma non sono una decisione tattica
+
+Primo pezzo del punto aperto A, sul modello delle duties di FM. Ogni titolare
+ha un compito — difendere, equilibrio, attaccare — che SPOSTA il suo peso da
+una linea all'altra in PESI_SLOT. Un terzino che si sovrappone pesa meno in
+difesa e di piu' davanti, e quel peso alla difesa manca davvero: il costo e'
+automatico perche' sono gli stessi pesi con cui forzeLinee calcola DEF/MID/ATT.
+
+Lo spostamento e' di UNA linea, non un salto, quindi funziona per ogni ruolo
+senza casi speciali: un centrale che spinge entra a centrocampo, una punta in
+attacco non guadagna nulla perche' non c'e' dove avanzare.
+
+**Prima trappola, risolta.** Senza vincoli, "tutti all'attacco" conveniva
+sempre: 37,7% contro il 34,2% del molto difensivo, ordine perfettamente
+monotono. Si guadagnava davanti quanto si perdeva dietro, e con i gol che
+contano piu' dei gol subiti il saldo era positivo per chiunque.
+
+Corretto con un'asimmetria: **il peso che se ne va, se ne va sempre; quello che
+arriva dipende da quanto il giocatore e' adatto**. Un terzino lento che si
+sovrappone abbandona comunque la sua zona ma davanti non porta niente. Con
+questo l'ordine si rovescia in una campana:
+
+| assetto | vittorie |
+|---|---|
+| molto difensivo | 33,7% |
+| prudente | 37,6% |
+| **equilibrato** | **39,0%** |
+| propositivo | 36,0% |
+| molto offensivo | 36,2% |
+
+**Seconda trappola, NON risolta, ed e' quella che conta.** Leggere l'avversario
+vale **+0,0 punti percentuali**: equilibrato e' la risposta migliore a ognuno
+dei cinque assetti, nessuno escluso. I compiti sono una manopola di rischio con
+un ottimo piatto, non una decisione contro qualcuno.
+
+Il motivo e' lo stesso del punto 11: **l'interazione non emerge, va costruita**.
+Gli assi tattici hanno il 7,5x perche' hanno una matrice di contrasti esplicita
+e antisimmetrica. I compiti cambiano le TUE linee in assoluto, e non esiste
+nessun termine che leghi la tua scelta a quella dell'avversario.
+
+**Conseguenza per il disegno.** Cosi' come sono, i compiti aggiungono una
+trappola per i distratti e niente per chi ragiona: un giocatore razionale mette
+sempre equilibrato. Tre strade:
+
+  1. lasciarli come manopola di rischio, riconoscendo che valgono poco;
+  2. dargli un'interazione esplicita — un terzino sbilanciato in avanti punito
+     di piu' contro chi ha ali veloci — cioe' rifare quello che la matrice dei
+     contrasti fa gia' per gli assi;
+  3. accettare che in FM le duties non sono rock-paper-scissors nemmeno loro, e
+     che la profondita' li' nasce dalla COMBINATORIA di ruoli, compiti e
+     istruzioni divise per fase. In quel caso il pezzo che manca non e'
+     l'interazione: sono i RUOLI, che ancora non abbiamo.
+
+La 3 e' la lettura piu' fedele a FM ed e' quella che seguirei, ma va decisa.
+
 ---
 
 # Punti aperti

@@ -156,6 +156,77 @@ export function penalitaRuolo(posizioni, slot) {
 //  PESI SLOT -> LINEE (DEF / MID / ATT)
 // ============================================================
 
+// ============================================================
+//  COMPITI — quello che in Football Manager sono le duties
+//
+//  Ogni titolare ha un compito: difendere, tenere l'equilibrio, o attaccare.
+//  Non e' un bonus: SPOSTA il peso di quel giocatore da una linea all'altra.
+//  Un terzino che si sovrappone toglie peso alla difesa e lo porta a
+//  centrocampo e in attacco — e quel peso alla difesa manca davvero.
+//
+//  IL COSTO E' AUTOMATICO, ed e' la ragione per cui il modello e' questo e non
+//  un elenco di bonus. Mettere tutti in attacco non da' una squadra fortissima
+//  davanti: da' una squadra fortissima davanti e scoperta dietro, perche' i
+//  pesi sono gli stessi che forzeLinee usa per calcolare DEF, MID e ATT. La
+//  distribuzione dei compiti E' la forma della squadra, come in FM.
+//
+//  LO SPOSTAMENTO E' DI UNA LINEA, non un salto. Un compito d'attacco porta
+//  una quota di peso da DEF a MID e da MID ad ATT. Cosi' funziona per ogni
+//  ruolo senza casi speciali: un centrale che spinge entra a centrocampo, un
+//  terzino arriva sulla trequarti, e una punta — che davanti non ha piu' nulla
+//  — non guadagna quasi niente, perche' non c'e' dove avanzare.
+// ============================================================
+export const COMPITI = ['difesa', 'equilibrio', 'attacco'];
+
+// Quanta parte del peso si sposta. A 0.22 un terzino che si sovrappone perde
+// 0.165 di peso difensivo e ne guadagna 0.11 a centrocampo e 0.055 in attacco:
+// si sente nella forma della squadra senza stravolgerla.
+export const SPOSTAMENTO_COMPITO = 0.22;
+
+// Quanto un giocatore e' adatto al compito che gli si chiede, da -1 a +1.
+//
+// Non serve un attributo nuovo: bastano quelli che il motore ha gia'. Uno che
+// finalizza e salta l'uomo molto piu' di quanto contrasti e' un giocatore
+// offensivo, chiunque sia il suo ruolo; il contrario vale per chi difende.
+// Lo scarto e' fra le SUE qualita', quindi non premia semplicemente chi e'
+// piu' forte.
+export function idoneitaCompito(g, compito) {
+  if (!g || compito === 'equilibrio' || !compito) return 0;
+  const off = ((g.finishing ?? 50) + (g.dribbling ?? 50)) / 2;
+  const dif = g.tackle ?? 50;
+  const tilt = Math.max(-1, Math.min(1, (off - dif) / 25));
+  return compito === 'attacco' ? tilt : -tilt;
+}
+
+// IL PESO CHE SE NE VA, SE NE VA SEMPRE. Quello che ARRIVA dipende da quanto
+// il giocatore e' adatto.
+//
+// E' la regola che rende i compiti una decisione invece di un regalo. Un
+// terzino lento che si sovrappone abbandona comunque la sua zona — la squadra
+// resta scoperta di la' — ma davanti non porta niente, perche' li' non sa
+// starci. Chi invece ha il profilo giusto porta tutto.
+//
+// Senza questa asimmetria mettere tutti all'attacco conveniva sempre: si
+// guadagnava davanti quanto si perdeva dietro, e in un modello dove i gol
+// contano piu' dei gol subiti il saldo era positivo per chiunque.
+export function pesiConCompito(w, compito, giocatore) {
+  if (!w || compito === 'equilibrio' || !compito) return w;
+  const k = SPOSTAMENTO_COMPITO;
+  const resa = 0.15 + 0.85 * ((idoneitaCompito(giocatore, compito) + 1) / 2);
+  if (compito === 'attacco') {
+    return {
+      DEF: w.DEF * (1 - k),
+      MID: w.MID * (1 - k) + w.DEF * k * resa,
+      ATT: w.ATT + w.MID * k * resa,
+    };
+  }
+  return {
+    DEF: w.DEF + w.MID * k * resa,
+    MID: w.MID * (1 - k) + w.ATT * k * resa,
+    ATT: w.ATT * (1 - k),
+  };
+}
+
 export const PESI_SLOT = {
   CB:  { DEF: 1.00, MID: 0.10, ATT: 0.00 },
   LB:  { DEF: 0.75, MID: 0.25, ATT: 0.10 },
