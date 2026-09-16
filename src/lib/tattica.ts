@@ -204,45 +204,35 @@ export const RUOLI_SLOT: Record<string, string[]> = {
 }
 
 /** I compiti, che significano cose diverse a seconda del reparto. */
-export const COMPITI_REPARTO: Record<string, Record<string, { nome: string; energia: number; spostamento: number; versoDifesa?: number; idoneita?: string }>> =
+export const COMPITI_REPARTO: Record<string, Record<string, { nome: string; energia: number }>> =
   {
   "DEF": {
     "difesa": {
       "nome": "Bloccato",
-      "spostamento": -0.24,
-      "energia": 0.92,
-      "versoDifesa": 0.15
+      "energia": 0.92
     },
     "attacco": {
       "nome": "Si sgancia",
-      "spostamento": 0.26,
       "energia": 1.18
     }
   },
   "MID": {
     "difesa": {
       "nome": "In copertura",
-      "spostamento": -0.22,
-      "energia": 1.05,
-      "versoDifesa": 0.3
+      "energia": 1.05
     },
     "attacco": {
       "nome": "Si inserisce",
-      "spostamento": 0.24,
       "energia": 1.2
     }
   },
   "ATT": {
     "difesa": {
-      "nome": "Pressa e rientra",
-      "spostamento": -0.13,
-      "energia": 1.35,
-      "versoDifesa": 0.6,
-      "idoneita": "fiato"
+      "nome": "Pressing alto",
+      "energia": 1.12
     },
     "attacco": {
       "nome": "Sul filo",
-      "spostamento": 0.18,
       "energia": 0.9
     }
   }

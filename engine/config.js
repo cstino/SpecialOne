@@ -216,26 +216,112 @@ export const COMPITI = ['difesa', 'equilibrio', 'attacco'];
 // ============================================================
 export const COMPITI_REPARTO = {
   DEF: {
-    difesa:  { nome: 'Bloccato',         spostamento: -0.24, energia: 0.92, versoDifesa: 0.15 },
-    attacco: { nome: 'Si sgancia',       spostamento:  0.26, energia: 1.18 },
+    difesa:  { nome: 'Bloccato',         spostamento: -0.24, energia: 0.92, versoDifesa: 0.15,
+               punti: { DEF: 0.22, MID: -0.05, ATT: -0.14 } },
+    attacco: { nome: 'Si sgancia',       spostamento:  0.26, energia: 1.18, daFiato: true,
+               punti: { DEF: -0.26, MID: 0.16, ATT: 0.26 } },
   },
   MID: {
-    difesa:  { nome: 'In copertura',     spostamento: -0.22, energia: 1.05, versoDifesa: 0.30 },
-    attacco: { nome: 'Si inserisce',     spostamento:  0.24, energia: 1.20 },
+    difesa:  { nome: 'In copertura',     spostamento: -0.22, energia: 1.05, versoDifesa: 0.30,
+               punti: { DEF: 0.45, MID: 0.12, ATT: -0.18 } },
+    attacco: { nome: 'Si inserisce',     spostamento:  0.24, energia: 1.20, daFiato: true,
+               punti: { DEF: -0.16, MID: -0.06, ATT: 0.30 } },
   },
   ATT: {
-    difesa:  { nome: 'Pressa e rientra', spostamento: -0.13, energia: 1.35, versoDifesa: 0.60, idoneita: 'fiato' },
-    attacco: { nome: 'Sul filo',         spostamento:  0.18, energia: 0.90 },
+    difesa:  { nome: 'Pressing alto',    spostamento: 0, energia: 1.12, versoDifesa: 0.62, idoneita: 'fiato', daFiato: true,
+               punti: { DEF: 0.22, MID: 1.4, ATT: -0.35 } },
+    attacco: { nome: 'Sul filo',         spostamento:  0.18, energia: 0.90,
+               punti: { DEF: -0.30, MID: -0.22, ATT: 0.26 } },
   },
 };
 
+// ------------------------------------------------------------
+//  QUELLO CHE UN COMPITO COMPRA, IN PUNTI DI LINEA
+//
+//  Lo spostamento di peso da solo non bastava, ed e' un limite strutturale che
+//  vale la pena avere scritto: forzeLinee() calcola una MEDIA pesata. Dare peso
+//  difensivo a una punta non aggiunge un difensore in piu', diluisce la media
+//  con qualcuno che li' vale meno — quindi il pressing alto, per quanto lo si
+//  tarasse, non poteva aiutare. Misurato in ogni scenario: sempre in perdita.
+//
+//  Ma pressare non vuol dire "mettere un corpo in area": vuol dire togliere il
+//  pallone all'avversario. Quel canale nel motore c'e' gia' ed e' il CONTROLLO,
+//  che dipende dallo scarto fra i due centrocampi e moltiplica gli xG di
+//  entrambe le squadre. Un compito puo' quindi aggiungere punti alle linee,
+//  nella stessa forma additiva della familiarita' e dello stile di gioco.
+//
+//  Il pressing compra soprattutto CONTROLLO (+1,4 a giocatore): con due punte
+//  fresche sono +2,8 punti di centrocampo, cioe' la palla la tieni tu. Quando
+//  il fiato finisce il beneficio svanisce e resta solo il costo.
+//
+//  TARATO SU UNA STAGIONE, NON SU UNA PARTITA, ed e' la cosa piu' importante
+//  imparata qui. Dentro i novanta minuti la condizione scende di otto punti: il
+//  "si spegne col fiato" e' quasi inerte. Il conto del pressing si paga FRA una
+//  partita e l'altra, perche' la condizione si porta dietro e il recupero non
+//  tiene il passo. Misurare una partita sola non poteva vedere niente.
+//
+//  Su trenta giornate, punti normalizzati su 38:
+//
+//      punte neutre                40,2
+//      pressing, stamina media     40,3
+//      pressing, stamina 90        42,1
+//      pressing, stamina 55        37,9
+//
+//  Il pressing conviene se hai le gambe, e' indifferente con punte normali e ti
+//  punisce se le gambe non ci sono. E' una scelta viva in tutti e due i versi,
+//  che e' il requisito: un'opzione che non conviene mai non e' una scelta.
+//  E' anche come funziona in Football Manager, dove aggredire alto e' fra gli
+//  approcci piu' forti e chiede rosa profonda e rotazione.
+// ------------------------------------------------------------
+export function puntiCompiti(lineup) {
+  const out = { DEF: 0, MID: 0, ATT: 0 };
+  const compiti = lineup?.compiti;
+  if (!compiti) return out;
+  for (let i = 0; i < compiti.length; i++) {
+    const c = compiti[i];
+    if (!c || c === 'equilibrio') continue;
+    const slot = lineup.slots?.[i];
+    const r = repartoDi(slot);
+    const def = COMPITI_REPARTO[r]?.[c];
+    if (!def?.punti) continue;
+    const g = lineup.titolari?.[i];
+    // I compiti di corsa rendono in proporzione al fiato residuo, come lo
+    // spostamento di peso: forzeLinee() gira a ogni blocco, quindi il pressing
+    // si spegne da solo nel finale.
+    const q = def.daFiato ? resaFiato(g?.condizione) : 1;
+    // Chi non ha il profilo per quel compito ne ricava meno, mai di piu'.
+    const resa = 0.35 + 0.65 * ((idoneitaCompito(g, c, slot) + 1) / 2);
+    out.DEF += def.punti.DEF * q * resa;
+    out.MID += def.punti.MID * q * resa;
+    out.ATT += def.punti.ATT * q * resa;
+  }
+  return out;
+}
+
+// Quanto un compito "di corsa" rende, data la condizione di chi lo esegue.
+// A pieno fiato tutto, sotto il 35% niente: e' una corsa a vuoto.
+const resaFiato = (cond) => Math.max(0, Math.min(1, ((cond ?? 100) - 35) / 55));
+
 const repartoDi = (slot) => (REPARTO[slot] === 'GK' ? null : REPARTO[slot] ?? 'MID');
 
-/** Quanto peso sposta un compito, dato il reparto di chi lo riceve. */
-export function spostamentoCompito(slot, compito) {
+/**
+ * Quanto peso sposta un compito, dato il reparto di chi lo riceve.
+ *
+ * I compiti "di corsa" (daFiato) rendono in proporzione al fiato RESIDUO.
+ * forzeLinee() gira a ogni blocco, quindi il pressing si spegne da solo nel
+ * corso della partita senza bisogno di altro codice — ed e' cosi' che funziona
+ * in Football Manager: aggredire alto e' forte finche' ci sono le gambe, e
+ * diventa una passeggiata quando finiscono. Senza questo il pressing era un
+ * costo fisso con un beneficio fisso, cioe' un'opzione che non conveniva mai:
+ * misurata, faceva perdere punti in ogni scenario. Un'opzione che nessuno
+ * sceglierebbe non e' una scelta.
+ */
+export function spostamentoCompito(slot, compito, giocatore = null) {
   const r = repartoDi(slot);
   if (!r || !compito || compito === 'equilibrio') return 0;
-  return COMPITI_REPARTO[r]?.[compito]?.spostamento ?? 0;
+  const c = COMPITI_REPARTO[r]?.[compito];
+  if (!c) return 0;
+  return c.daFiato ? c.spostamento * resaFiato(giocatore?.condizione) : c.spostamento;
 }
 
 /** Quanto consuma in piu' (o in meno) chi ha quel compito. 1 = normale. */
@@ -266,7 +352,7 @@ export function pesiConCompito(w, compito, giocatore, extra = 0, slot = null) {
   // extra e' lo spostamento che aggiunge il RUOLO (engine/ruoli.js): un
   // incursore avanza anche a compito equilibrio, uno schermo arretra. Ruolo e
   // compito sono due assi indipendenti che si sommano su questo stesso canale.
-  const netto = spostamentoCompito(slot, compito) + extra;
+  const netto = spostamentoCompito(slot, compito, giocatore) + extra;
   if (!w || Math.abs(netto) < 0.001) return w;
   const compitoEff = netto > 0 ? 'attacco' : 'difesa';
   const k = Math.min(0.5, Math.abs(netto));

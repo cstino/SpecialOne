@@ -627,6 +627,58 @@ spegne, perché il consumo per blocco è già modulato dalla stamina.
 Il costo in fiato è mostrato nell'interfaccia accanto al nome del compito: si vede prima
 di sceglierlo.
 
+## 23. Un'opzione che non conviene mai non è una scelta
+
+Il committente, guardando la scheda del pressing: *«il trade-off deve essere onesto, non può
+essere che aiuta poco ma spende tantissimo altrimenti nessuno lo userà. Vedi sempre FM»*.
+Aveva ragione due volte — la descrizione era pessima **perché i numeri lo erano**, e li avevo
+misurati io stesso: 43,8% contro 42,4%, cioè una perdita secca in ogni scenario. In Football
+Manager aggredire alto è fra gli approcci più forti, non una penitenza.
+
+**Primo limite, strutturale.** `forzeLinee` calcola una *media pesata*. Dare peso difensivo a
+una punta non aggiunge un difensore: diluisce la media con qualcuno che lì vale meno. Con quel
+canale il pressing non poteva aiutare, per quanto lo si tarasse. Ma pressare non è mettere un
+corpo in area, è **togliere il pallone**: e quel canale esiste già ed è il controllo, che
+dipende dallo scarto fra i centrocampi e moltiplica gli xG di entrambe le squadre. I compiti
+hanno ora un secondo canale, in punti di linea, nella stessa forma additiva della familiarità
+e dello stile.
+
+**Secondo, e più importante: stavo misurando la cosa sbagliata.** Dentro i novanta minuti la
+condizione scende di otto punti, quindi il «si spegne col fiato» è quasi inerte. Il conto del
+pressing si paga **fra una partita e l'altra**, perché la condizione si porta dietro e il
+recupero non tiene il passo. Una prova su partita singola non poteva vedere niente, e infatti
+mi ha fatto oscillare per quattro tarature.
+
+Su trenta giornate, punti normalizzati su 38:
+
+| punte | punti/38 | gol fatti | subiti | condizione a fine stagione |
+|---|---|---|---|---|
+| neutro | 40,2 | 0,98 | 1,45 | 87,3 |
+| pressing, stamina media | 40,3 | 0,93 | 1,38 | 83,2 |
+| **pressing, stamina 90** | **42,1** | 0,98 | 1,35 | 86,2 |
+| pressing, stamina 55 | 37,9 | 0,89 | 1,42 | 79,2 |
+
+Conviene se hai le gambe, è indifferente con punte normali, ti punisce se le gambe non ci
+sono. Chiede rosa profonda e rotazione, esattamente come in FM.
+
+Tutti e sei i compiti sono ora vivi almeno in uno scenario:
+
+| compito | effetto misurato |
+|---|---|
+| Bloccato (dif.) | +1,1 punti percentuali, subiti 1,02 → 0,98 |
+| Si sgancia (dif.) | sostanzialmente neutro: segna di più, subisce di più |
+| In copertura (cen.) | +1,2, subiti 1,02 → 0,95 |
+| Si inserisce (cen.) | +0,3, gol fatti 1,35 → 1,47 |
+| Pressing alto (att.) | +1,9 con stamina alta, −2,3 con stamina bassa |
+| Sul filo (att.) | +1,3, segna di più ed è esposto dietro |
+
+`tools/validazione/prova-compiti-stagione.mjs` conserva la prova su stagione: è quella che
+conta, e la lezione è che per un costo che si accumula la partita singola è il metro sbagliato.
+
+**Le descrizioni ora dicono prima cosa si guadagna.** Erano scritte per assecondare numeri
+sbagliati — *«aiuta poco dietro, ma costa molto fiato»* è una scheda che nessuno sceglierebbe,
+ed è giusto così: era la descrizione onesta di un'opzione morta.
+
 ## B. Le squadre del PC si sfaldano fra le stagioni
 
 Scoperto misurando LegaBot: le squadre controllate dal PC non rinnovano i contratti e in

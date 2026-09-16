@@ -2,7 +2,7 @@
 //  MOTORE DI SIMULAZIONE — MODELLO A BLOCCHI
 // ============================================================
 
-import { CFG, MODULI, CONTEGGI, PESI_SLOT, REPARTO, STILI, penalitaRuolo, pesoStat, pesiConCompito, costoEnergiaCompito } from './config.js';
+import { CFG, MODULI, CONTEGGI, PESI_SLOT, REPARTO, STILI, penalitaRuolo, pesoStat, pesiConCompito, costoEnergiaCompito, puntiCompiti } from './config.js';
 import { rnd, gauss, poisson, scegliPesato } from './random.js';
 import { deltaTattico } from './tattiche.js';
 import { avanzamentoRuolo } from './ruoli.js';
@@ -418,12 +418,17 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     // per ogni chiamata che non lo passa esplicitamente.
     const bonusCasaAtt = opt.campoNeutro ? 0 : CFG.BONUS_CASA_ATT;
     const bonusCasaMid = opt.campoNeutro ? 0 : CFG.BONUS_CASA_MID;
-    const ATT_C = fc.ATT + sc.ATT + famC + bonusCasaAtt + stC.ATT;
-    const MID_C = fc.MID + sc.MID + famC + bonusCasaMid + stC.MID;
-    const DEF_C = fc.DEF + sc.DEF + stC.DEF;
-    const ATT_O = fo.ATT + so.ATT + famO + stO.ATT;
-    const MID_O = fo.MID + so.MID + famO + stO.MID;
-    const DEF_O = fo.DEF + so.DEF + stO.DEF;
+    // Quello che i compiti comprano, in punti di linea: stessa forma additiva
+    // della familiarita' e dello stile. Sta DENTRO il ciclo dei blocchi perche'
+    // i compiti di corsa rendono in proporzione al fiato residuo, e il fiato
+    // scende durante la partita. Senza compiti e' {0,0,0}.
+    const pcC = puntiCompiti(lc), pcO = puntiCompiti(lo);
+    const ATT_C = fc.ATT + sc.ATT + famC + bonusCasaAtt + stC.ATT + pcC.ATT;
+    const MID_C = fc.MID + sc.MID + famC + bonusCasaMid + stC.MID + pcC.MID;
+    const DEF_C = fc.DEF + sc.DEF + stC.DEF + pcC.DEF;
+    const ATT_O = fo.ATT + so.ATT + famO + stO.ATT + pcO.ATT;
+    const MID_O = fo.MID + so.MID + famO + stO.MID + pcO.MID;
+    const DEF_O = fo.DEF + so.DEF + stO.DEF + pcO.DEF;
 
     const ctrlC = clamp(0.5 + CFG.AMPLIFICA_CONTROLLO * (MID_C - MID_O) / 100, CFG.CTRL_MIN, CFG.CTRL_MAX);
     const ctrlO = 1 - ctrlC;

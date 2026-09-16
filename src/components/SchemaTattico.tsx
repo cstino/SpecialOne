@@ -71,16 +71,16 @@ const RUOLO_LABEL: Record<string, { nome: string; detto: string }> = {
 // (COMPITI_REPARTO), qui c'e' solo come si spiegano.
 const COMPITO_DETTO: Record<string, Record<string, string>> = {
   DEF: {
-    difesa: 'Non accompagna mai, resta a protezione. Corre meno.',
-    attacco: 'Accompagna e si propone. Scopre la fascia e costa fiato.',
+    difesa: 'Non si stacca mai dalla linea: reparto compatto, e arriva in fondo alla partita fresco. Non aiuta a costruire.',
+    attacco: 'Accompagna l’azione e crea superiorità sulla fascia. Lascia spazio dietro di sé, e costa fiato.',
   },
   MID: {
-    difesa: 'Scala a protezione della difesa.',
-    attacco: 'Attacca l’area senza palla. Costa fiato.',
+    difesa: 'Scala davanti alla difesa e chiude le linee di passaggio. Si vede molto meno in avanti.',
+    attacco: 'Attacca l’area senza palla: gol in più da dietro. Il centrocampo resta più scoperto.',
   },
   ATT: {
-    difesa: 'Va addosso al portatore e rientra. Aiuta poco dietro, ma costa molto fiato.',
-    attacco: 'Resta alto e non rientra mai. Si risparmia.',
+    difesa: 'Aggredisce chi imposta: la palla la tenete voi e loro tirano meno. Segna meno e consuma — conviene se ha il fiato per reggerlo tutta la stagione.',
+    attacco: 'Resta sull’ultima linea, pronto a partire, e si risparmia. In fase difensiva siete in nove.',
   },
 }
 
