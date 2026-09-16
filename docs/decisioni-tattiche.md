@@ -339,6 +339,78 @@ prima di disegnare lo schema.
 **Conseguenza sullo schema**: la tabella dei piani non deve chiudere la porta a questo.
 Due assi di squadra oggi, ma una forma che possa ospitare anche indicazioni per slot.
 
+## 15. I ruoli dicono *dove*, i compiti dicono *quanto*
+
+Un compito sposta un giocatore in avanti o indietro. Un ruolo lo sposta dentro o fuori.
+Sono due assi indipendenti, e il secondo ha potuto esistere solo dopo le corsie (punto 14).
+
+`engine/ruoli.js` definisce 18 ruoli su cinque famiglie di slot. Ognuno è **due numeri**,
+non un blocco di codice: `dentro` (−1 si allarga, +1 rientra) e `avanti` (come un compito).
+Aggiungere un ruolo nuovo costa due numeri e una riga di commento.
+
+**Il ruolo naturale è esattamente neutro**, non un ruolo fra gli altri: a ruoli spenti la
+suite dà gli stessi identici numeri della versione senza ruoli, cifra per cifra.
+
+## 16. L'idoneità doveva toccare la resa, non lo smistamento
+
+Primo tentativo sbagliato, vale la pena ricordarlo. L'idoneità al ruolo governava solo
+quanto peso *arrivava* nella nuova corsia. Misurato: un regista interpretato da un
+passatore puro e dallo stesso ruolo dato a un finalizzatore rendevano **uguale** (scarto
+−0,2 punti, cioè rumore). Il motivo è che lo smistamento del peso è una cosa che
+l'avversario LEGGE, non il rendimento di chi gioca.
+
+La correzione usa il canale che già esisteva, lo scarto di overall efficace
+(`lineup.tattica`): `VALORE_IDONEITA = 2,6` punti a idoneità piena. Ora, a parità di
+overall:
+
+| CM al centrocampo | da regista | da incursore |
+|---|---|---|
+| profilo passatore | **43,5%** | 39,7% |
+| profilo finalizzatore | 39,6% | **42,8%** |
+| (ruolo naturale, entrambi) | 41,0% | 41,0% |
+
+Il giusto interprete guadagna +2,5 punti sul naturale, quello sbagliato ne perde 1,4.
+È così che funziona in Football Manager: la resa dipende da quanto il ruolo somiglia al
+giocatore, non dal ruolo in sé.
+
+## 17. Un ruolo si può leggere
+
+Con B che tiene il terzino sinistro dentro — centro rinforzato, fascia scoperta:
+
+| A attacca | vittorie A |
+|---|---|
+| non concentra | 39,8% |
+| a sinistra | 39,8% |
+| al centro (il forte) | 37,4% |
+| **a destra (il buco)** | **46,0%** |
+
+Scarto 8,6 punti, dentro la forbice di Football Manager (~6,4 fra migliore e peggiore
+tattica a pari qualità, punto 12). Il primo valore tarato dava 19,3 punti: era una
+roulette, e `SCALA_DENTRO` è stata portata da 0,30 a 0,13.
+
+## E. Il bersaglio della Fase 0 non descrive più la lega vera
+
+Emerso chiudendo i ruoli, ed è **anteriore a tutto il lavoro tattico**. Tre fatti:
+
+- la suite di Fase 0 gira a **familiarità zero** (rose nuove a ogni partita) e dà 1,9 gol;
+- le stesse rose a familiarità piena danno **2,77 gol**, dentro il bersaglio 2,50–2,90;
+- le leghe **in produzione** (motore di `main`, senza piazzati) fanno **3,68–3,78 gol**.
+
+Quindi il bersaglio 2,50–2,90 non è disatteso dal branch: è disatteso dal vivo, e da
+prima. La suite misura una condizione — squadra senza alcuna familiarità col proprio
+modulo — che in una lega avviata quasi non esiste.
+
+Va deciso **con il committente**, perché è una domanda su come deve essere il gioco, non
+su come deve essere il codice: se la condizione di riferimento della validazione debba
+restare la familiarità zero o passare a una familiarità realistica. Finché non è deciso,
+la suite resta rossa e non va usata come semaforo per il lavoro tattico — per quello vale
+il confronto HEAD-contro-HEAD a banco identico, che è quello che si è usato qui.
+
+**Nota sul banco**: `tools/validazione/roster.js` ora pesca il blocco dei calci piazzati
+(battuta, stacco, marcatura, punizione, presa) e il piede da un giocatore VERO dello
+stesso ruolo e overall vicino, invece di lasciarli vuoti. Senza, le rose sintetiche erano
+giocatori che i piazzati non li sapevano fare. È un file di test: non tocca il motore.
+
 ## B. Le squadre del PC si sfaldano fra le stagioni
 
 Scoperto misurando LegaBot: le squadre controllate dal PC non rinnovano i contratti e in

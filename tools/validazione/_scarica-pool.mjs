@@ -10,7 +10,7 @@ const out = [];
 for (const r of RUOLI) {
   for (let off = 0; off < 600; off += 200) {
     const b = await sel('players',
-      `select=id,nome,posizioni,overall,attributi&overall=gte.58&overall=lte.86` +
+      `select=id,nome,posizioni,overall,piede,attributi&overall=gte.58&overall=lte.86` +
       `&origine_vivaio=is.false&posizioni=cs.{${r}}&order=id&offset=${off}&limit=200`);
     if (!b.length) break;
     for (const p of b) if (p.posizioni?.[0] === r && p.attributi?.pace != null || (r === 'GK' && p.posizioni?.[0] === 'GK')) out.push(p);

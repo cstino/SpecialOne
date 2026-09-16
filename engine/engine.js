@@ -5,6 +5,7 @@
 import { CFG, MODULI, CONTEGGI, PESI_SLOT, REPARTO, STILI, penalitaRuolo, pesoStat, pesiConCompito } from './config.js';
 import { rnd, gauss, poisson, scegliPesato } from './random.js';
 import { deltaTattico } from './tattiche.js';
+import { avanzamentoRuolo } from './ruoli.js';
 import { calcolaPiazzati } from './piazzati.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -85,7 +86,7 @@ export function forzeLinee(lineup) {
     // un terzino che si sovrappone pesa meno in difesa e di piu' davanti. Il
     // costo e' automatico, perche' questi sono gli stessi pesi con cui si
     // calcolano DEF, MID e ATT. Vedi COMPITI in config.js.
-    const w = pesiConCompito(PESI_SLOT[slot], lineup.compiti?.[i], g);
+    const w = pesiConCompito(PESI_SLOT[slot], lineup.compiti?.[i], g, avanzamentoRuolo(lineup.ruoli?.[i]));
     for (const L of ['DEF', 'MID', 'ATT']) { acc[L][0] += eff * w[L]; acc[L][1] += w[L]; }
   }
   return {

@@ -209,11 +209,17 @@ export function idoneitaCompito(g, compito) {
 // Senza questa asimmetria mettere tutti all'attacco conveniva sempre: si
 // guadagnava davanti quanto si perdeva dietro, e in un modello dove i gol
 // contano piu' dei gol subiti il saldo era positivo per chiunque.
-export function pesiConCompito(w, compito, giocatore) {
-  if (!w || compito === 'equilibrio' || !compito) return w;
-  const k = SPOSTAMENTO_COMPITO;
-  const resa = 0.15 + 0.85 * ((idoneitaCompito(giocatore, compito) + 1) / 2);
-  if (compito === 'attacco') {
+export function pesiConCompito(w, compito, giocatore, extra = 0) {
+  // extra e' lo spostamento che aggiunge il RUOLO (engine/ruoli.js): un
+  // incursore avanza anche a compito equilibrio, uno schermo arretra. Ruolo e
+  // compito sono due assi indipendenti che si sommano su questo stesso canale.
+  const base = (compito === 'attacco' ? 1 : compito === 'difesa' ? -1 : 0) * SPOSTAMENTO_COMPITO;
+  const netto = base + extra;
+  if (!w || Math.abs(netto) < 0.001) return w;
+  const compitoEff = netto > 0 ? 'attacco' : 'difesa';
+  const k = Math.min(0.5, Math.abs(netto));
+  const resa = 0.15 + 0.85 * ((idoneitaCompito(giocatore, compitoEff) + 1) / 2);
+  if (compitoEff === 'attacco') {
     return {
       DEF: w.DEF * (1 - k),
       MID: w.MID * (1 - k) + w.DEF * k * resa,

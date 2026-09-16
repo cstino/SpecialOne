@@ -1,14 +1,16 @@
 // La forza di attacco e di difesa per corsia, e lo scontro speculare.
 import { ovrEfficace } from './engine.js';
 import { PESI_SLOT, PESI_CORSIA, pesiConCompito } from './config.js';
+import { corsiaConRuolo, avanzamentoRuolo } from './ruoli.js';
 export function forzeCorsia(lineup) {
   const att = { SX:[0,0], CEN:[0,0], DX:[0,0] }, dif = { SX:[0,0], CEN:[0,0], DX:[0,0] };
   for (let i=0;i<lineup.slots.length;i++) {
     const slot = lineup.slots[i], g = lineup.titolari[i];
     if (!g || slot === 'GK') continue;
     const eff = ovrEfficace(g, slot);
-    const wl = pesiConCompito(PESI_SLOT[slot], lineup.compiti?.[i], g);
-    const wc = PESI_CORSIA[slot];
+    const ruolo = lineup.ruoli?.[i];
+    const wl = pesiConCompito(PESI_SLOT[slot], lineup.compiti?.[i], g, avanzamentoRuolo(ruolo));
+    const wc = corsiaConRuolo(PESI_CORSIA[slot], ruolo, g);
     for (const c of ['SX','CEN','DX']) {
       att[c][0] += eff * wl.ATT * wc[c]; att[c][1] += wl.ATT * wc[c];
       dif[c][0] += eff * wl.DEF * wc[c]; dif[c][1] += wl.DEF * wc[c];
@@ -58,7 +60,12 @@ export function deltaCorsie(mio, suo, focus) {
   //  - e soprattutto cosi' si misura esattamente cio' che l'avversario ha
   //    SCELTO di lasciare, che e' l'unica cosa che un allenatore puo' leggere.
   //    La sua forma di partenza non e' una sua colpa.
-  const neutro = forzeCorsia({ ...suo, compiti: null });
+  // Il paragone e' l'avversario con se' stesso a compiti e ruoli neutri: cosi'
+  // si isola quello che ha SCELTO di lasciare scoperto, invece di premiare la
+  // corsia che in ogni modulo e' naturalmente piu' sguarnita. Anche i ruoli
+  // vanno azzerati, non solo i compiti: schierare un terzino che rientra e'
+  // una scelta tanto quanto spingerlo in avanti, e deve potersi leggere.
+  const neutro = forzeCorsia({ ...suo, compiti: null, ruoli: null });
   const vulnerabilita = {};
   for (const c of ['SX', 'CEN', 'DX']) {
     const q = SPECCHIO[c];
