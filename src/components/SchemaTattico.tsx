@@ -21,7 +21,7 @@
 //  in SQL e di quoteFamiliarita nell'Edge Function — tre posti, una formula.
 // ============================================================
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { COMPITI, FAM_PARTITE_PIENA, MODULI, RUOLI_SLOT, SPOSTAMENTI_SLOT } from '../lib/tattica'
+import { COMPITI, COMPITI_REPARTO, FAM_PARTITE_PIENA, MODULI, REPARTO, RUOLI_SLOT, SPOSTAMENTI_SLOT } from '../lib/tattica'
 import { ANCORE, schieramentoInCampo, type Ancora } from '../lib/schieramento'
 
 const ruoliPerSlot = (slot: string): string[] => RUOLI_SLOT[slot] ?? []
@@ -64,10 +64,31 @@ const RUOLO_LABEL: Record<string, { nome: string; detto: string }> = {
   punta_di_manovra: { nome: 'Punta di manovra', detto: 'Scende a legare il gioco.' },
 }
 
-const COMPITO_LABEL: Record<string, { nome: string; detto: string }> = {
-  difesa: { nome: 'Difensivo', detto: 'Resta dietro la linea della palla.' },
-  equilibrio: { nome: 'Equilibrato', detto: 'Nessuna indicazione particolare.' },
-  attacco: { nome: 'Offensivo', detto: 'Si spinge in avanti appena può.' },
+// Un compito non vuol dire la stessa cosa per un centrale e per una punta.
+// Dire a un attaccante di "restare dietro la linea della palla" non significa
+// niente: per lui il compito difensivo e' andare addosso al portatore e
+// rientrare, e si paga in fiato. I nomi vengono dal motore
+// (COMPITI_REPARTO), qui c'e' solo come si spiegano.
+const COMPITO_DETTO: Record<string, Record<string, string>> = {
+  DEF: {
+    difesa: 'Non accompagna mai, resta a protezione. Corre meno.',
+    attacco: 'Accompagna e si propone. Scopre la fascia e costa fiato.',
+  },
+  MID: {
+    difesa: 'Scala a protezione della difesa.',
+    attacco: 'Attacca l’area senza palla. Costa fiato.',
+  },
+  ATT: {
+    difesa: 'Va addosso al portatore e rientra. Aiuta poco dietro, ma costa molto fiato.',
+    attacco: 'Resta alto e non rientra mai. Si risparmia.',
+  },
+}
+
+const compitoLabel = (slot: string, compito: string): { nome: string; detto: string; energia: number } => {
+  if (compito === 'equilibrio') return { nome: 'Equilibrato', detto: 'Nessuna indicazione particolare.', energia: 1 }
+  const r = REPARTO[slot] ?? 'MID'
+  const c = COMPITI_REPARTO[r]?.[compito]
+  return { nome: c?.nome ?? compito, detto: COMPITO_DETTO[r]?.[compito] ?? '', energia: c?.energia ?? 1 }
 }
 
 const REPARTO_DI = (slot: string): 'gk' | 'dif' | 'mid' | 'att' =>
@@ -286,7 +307,7 @@ export default function SchemaTattico({
               <span className="schema__slot">{slot}</span>
               {(ruolo || (compito && compito !== 'equilibrio')) && (
                 <span className={`schema__badge schema__badge--${compito ?? 'equilibrio'}`}>
-                  {ruolo ? RUOLO_LABEL[ruolo]?.nome ?? ruolo : COMPITO_LABEL[compito ?? 'equilibrio'].nome}
+                  {ruolo ? RUOLO_LABEL[ruolo]?.nome ?? ruolo : compitoLabel(slot, compito ?? 'equilibrio').nome}
                 </span>
               )}
             </button>
@@ -337,13 +358,21 @@ export default function SchemaTattico({
 
                 <h3>Compito</h3>
                 <div className="schema__scelte">
-                  {COMPITI.map((c) => (
-                    <button key={c} type="button"
-                      className={(compiti?.[postoAperto.index] ?? 'equilibrio') === c ? 'is-attiva' : ''}
-                      onClick={() => scrivi(postoAperto.index, 'compito', c === 'equilibrio' ? null : c)}>
-                      <strong>{COMPITO_LABEL[c].nome}</strong><small>{COMPITO_LABEL[c].detto}</small>
-                    </button>
-                  ))}
+                  {COMPITI.map((c) => {
+                    const et = compitoLabel(slotAperto, c)
+                    return (
+                      <button key={c} type="button"
+                        className={(compiti?.[postoAperto.index] ?? 'equilibrio') === c ? 'is-attiva' : ''}
+                        onClick={() => scrivi(postoAperto.index, 'compito', c === 'equilibrio' ? null : c)}>
+                        <strong>{et.nome}{et.energia !== 1 && (
+                          <em className={`schema__fiato schema__fiato--${et.energia > 1 ? 'costa' : 'risparmia'}`}>
+                            {et.energia > 1 ? `+${Math.round((et.energia - 1) * 100)}% fiato` : `−${Math.round((1 - et.energia) * 100)}% fiato`}
+                          </em>
+                        )}</strong>
+                        <small>{et.detto}</small>
+                      </button>
+                    )
+                  })}
                 </div>
               </>}
           </section>

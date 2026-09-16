@@ -3341,3 +3341,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .pitch-posto { position: absolute; transform: translate(-50%, -50%); width: 22%; max-width: 118px; }
 .pitch-posto .lineup-player { width: 100%; }
 @media (max-width: 420px) { .pitch-posto { width: 25%; } }
+
+/* Il prezzo in fiato di un compito, accanto al nome: una punta che pressa costa
+   il 35% in piu' di condizione, e vederlo prima di sceglierlo e' il punto. */
+.schema__fiato { margin-left: 8px; font-style: normal; font-size: 10.5px; font-weight: 600; letter-spacing: .02em; padding: 2px 7px; border-radius: 999px; }
+.schema__fiato--costa { color: #f3b3a2; background: rgba(224,122,96,.18); }
+.schema__fiato--risparmia { color: #9fd9b4; background: rgba(96,190,130,.16); }

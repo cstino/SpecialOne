@@ -9,7 +9,7 @@ export function forzeCorsia(lineup) {
     if (!g || slot === 'GK') continue;
     const eff = ovrEfficace(g, slot);
     const ruolo = lineup.ruoli?.[i];
-    const wl = pesiConCompito(PESI_SLOT[slot], lineup.compiti?.[i], g, avanzamentoRuolo(ruolo));
+    const wl = pesiConCompito(PESI_SLOT[slot], lineup.compiti?.[i], g, avanzamentoRuolo(ruolo), slot);
     const wc = corsiaConRuolo(PESI_CORSIA[slot], ruolo, g);
     for (const c of ['SX','CEN','DX']) {
       att[c][0] += eff * wl.ATT * wc[c]; att[c][1] += wl.ATT * wc[c];

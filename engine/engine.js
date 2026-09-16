@@ -2,7 +2,7 @@
 //  MOTORE DI SIMULAZIONE — MODELLO A BLOCCHI
 // ============================================================
 
-import { CFG, MODULI, CONTEGGI, PESI_SLOT, REPARTO, STILI, penalitaRuolo, pesoStat, pesiConCompito } from './config.js';
+import { CFG, MODULI, CONTEGGI, PESI_SLOT, REPARTO, STILI, penalitaRuolo, pesoStat, pesiConCompito, costoEnergiaCompito } from './config.js';
 import { rnd, gauss, poisson, scegliPesato } from './random.js';
 import { deltaTattico } from './tattiche.js';
 import { avanzamentoRuolo } from './ruoli.js';
@@ -86,7 +86,7 @@ export function forzeLinee(lineup) {
     // un terzino che si sovrappone pesa meno in difesa e di piu' davanti. Il
     // costo e' automatico, perche' questi sono gli stessi pesi con cui si
     // calcolano DEF, MID e ATT. Vedi COMPITI in config.js.
-    const w = pesiConCompito(PESI_SLOT[slot], lineup.compiti?.[i], g, avanzamentoRuolo(lineup.ruoli?.[i]));
+    const w = pesiConCompito(PESI_SLOT[slot], lineup.compiti?.[i], g, avanzamentoRuolo(lineup.ruoli?.[i]), slot);
     for (const L of ['DEF', 'MID', 'ATT']) { acc[L][0] += eff * w[L]; acc[L][1] += w[L]; }
   }
   return {
@@ -462,7 +462,12 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
         slotStorico.set(g.id, L.slots[i]);
         idsBlocco.push(g.id);
         if (usaCondizione && L.slots[i] !== 'GK') {
-          g.condizione = Math.max(0, g.condizione - (CFG.CONSUMO_BASE - CFG.CONSUMO_MOD_STAMINA * (g.stamina / 100)));
+          // Il compito ha un prezzo in fiato: una punta che pressa e rientra
+          // consuma il 35% in piu', un difensore bloccato l'8% in meno. Senza
+          // compiti il moltiplicatore e' 1 e la formula e' quella validata.
+          const costo = costoEnergiaCompito(L.slots[i], L.compiti?.[i]);
+          g.condizione = Math.max(0, g.condizione
+            - (CFG.CONSUMO_BASE - CFG.CONSUMO_MOD_STAMINA * (g.stamina / 100)) * costo);
         }
       }
       presenzeBlocco.push(idsBlocco);

@@ -178,47 +178,101 @@ export function penalitaRuolo(posizioni, slot) {
 // ============================================================
 export const COMPITI = ['difesa', 'equilibrio', 'attacco'];
 
-// Quanta parte del peso si sposta. A 0.22 un terzino che si sovrappone perde
-// 0.165 di peso difensivo e ne guadagna 0.11 a centrocampo e 0.055 in attacco:
-// si sente nella forma della squadra senza stravolgerla.
-export const SPOSTAMENTO_COMPITO = 0.22;
-
-// Quanto un giocatore e' adatto al compito che gli si chiede, da -1 a +1.
+// ============================================================
+//  I COMPITI DIPENDONO DAL REPARTO
 //
-// Non serve un attributo nuovo: bastano quelli che il motore ha gia'. Uno che
-// finalizza e salta l'uomo molto piu' di quanto contrasti e' un giocatore
-// offensivo, chiunque sia il suo ruolo; il contrario vale per chi difende.
-// Lo scarto e' fra le SUE qualita', quindi non premia semplicemente chi e'
-// piu' forte.
-export function idoneitaCompito(g, compito) {
+//  "Difensivo" non vuol dire la stessa cosa per un centrale e per una punta, e
+//  trattarli uguale produceva un'assurdita' che l'utente ha segnalato: a un
+//  attaccante veniva detto "resta dietro la linea della palla", che nel calcio
+//  non significa niente. Per una punta il compito difensivo e' un'altra cosa —
+//  rientrare e dare una mano nel pressing — e soprattutto ha un altro PREZZO.
+//
+//  Ogni compito ha quindi due numeri suoi:
+//
+//    spostamento  quanto peso si sposta fra le linee. Negativo = indietro.
+//    energia      moltiplicatore del consumo di condizione (1 = normale).
+//
+//  Il caso che ha fatto nascere la tavola: una punta che pressa aiuta POCO la
+//  difesa (-0,10, meno della meta' di un centrocampista che scala) ma consuma
+//  MOLTO (1,35, il valore piu' alto). E' una scelta che si paga nel finale di
+//  partita, non un interruttore gratuito. Il contrario vale per il difensore
+//  bloccato: aiuta parecchio e consuma meno, perche' corre di meno.
+//
+//  Chi ha stamina alta paga meno il conto: il consumo per blocco e' gia'
+//  modulato dalla stamina (CONSUMO_MOD_STAMINA), quindi una punta che pressa e
+//  ha fiato regge, una che non ce l'ha si spegne. Non serve altro codice.
+//
+//  versoDifesa  quanta parte del peso che lascia l'attacco arriva DIRETTAMENTE
+//               in difesa, invece di fermarsi a centrocampo.
+//
+//  Serve perche' senza non funzionava, ed e' istruttivo. La formula sposta il
+//  peso di una linea alla volta, ma una punta ha DEF 0 e MID 0,05: tutto quello
+//  che lasciava l'attacco si fermava a centrocampo e alla difesa non arrivava
+//  niente. Misurato: la punta che pressa faceva subire DI PIU' (1,06 gol contro
+//  1,02) pagando otto punti di condizione — uno svantaggio puro.
+//  Il pressing pero' non e' un arretramento, e' lavoro difensivo fatto in
+//  avanti: e' giusto che arrivi in difesa senza passare dal centrocampo. Per un
+//  difensore che si blocca vale il contrario, e infatti la quota e' bassa.
+// ============================================================
+export const COMPITI_REPARTO = {
+  DEF: {
+    difesa:  { nome: 'Bloccato',         spostamento: -0.24, energia: 0.92, versoDifesa: 0.15 },
+    attacco: { nome: 'Si sgancia',       spostamento:  0.26, energia: 1.18 },
+  },
+  MID: {
+    difesa:  { nome: 'In copertura',     spostamento: -0.22, energia: 1.05, versoDifesa: 0.30 },
+    attacco: { nome: 'Si inserisce',     spostamento:  0.24, energia: 1.20 },
+  },
+  ATT: {
+    difesa:  { nome: 'Pressa e rientra', spostamento: -0.13, energia: 1.35, versoDifesa: 0.60, idoneita: 'fiato' },
+    attacco: { nome: 'Sul filo',         spostamento:  0.18, energia: 0.90 },
+  },
+};
+
+const repartoDi = (slot) => (REPARTO[slot] === 'GK' ? null : REPARTO[slot] ?? 'MID');
+
+/** Quanto peso sposta un compito, dato il reparto di chi lo riceve. */
+export function spostamentoCompito(slot, compito) {
+  const r = repartoDi(slot);
+  if (!r || !compito || compito === 'equilibrio') return 0;
+  return COMPITI_REPARTO[r]?.[compito]?.spostamento ?? 0;
+}
+
+/** Quanto consuma in piu' (o in meno) chi ha quel compito. 1 = normale. */
+export function costoEnergiaCompito(slot, compito) {
+  const r = repartoDi(slot);
+  if (!r || !compito || compito === 'equilibrio') return 1;
+  return COMPITI_REPARTO[r]?.[compito]?.energia ?? 1;
+}
+
+export function idoneitaCompito(g, compito, slot = null) {
   if (!g || compito === 'equilibrio' || !compito) return 0;
+  const r = repartoDi(slot);
+  // Alcuni compiti non si giudicano sul profilo offensivo/difensivo.
+  // "Pressa e rientra" e' il caso che ha fatto nascere la deroga: una punta
+  // che pressa non lo fa perche' sa contrastare — su quel metro qualunque
+  // attaccante e' negato, e il compito rendeva zero a chiunque lo si desse.
+  // Lo fa perche' ha il fiato per farlo, e la misura giusta e' la stamina.
+  if (COMPITI_REPARTO[r]?.[compito]?.idoneita === 'fiato') {
+    return Math.max(-1, Math.min(1, ((g.stamina ?? 70) - 68) / 22));
+  }
   const off = ((g.finishing ?? 50) + (g.dribbling ?? 50)) / 2;
   const dif = g.tackle ?? 50;
   const tilt = Math.max(-1, Math.min(1, (off - dif) / 25));
   return compito === 'attacco' ? tilt : -tilt;
 }
 
-// IL PESO CHE SE NE VA, SE NE VA SEMPRE. Quello che ARRIVA dipende da quanto
-// il giocatore e' adatto.
-//
-// E' la regola che rende i compiti una decisione invece di un regalo. Un
-// terzino lento che si sovrappone abbandona comunque la sua zona — la squadra
-// resta scoperta di la' — ma davanti non porta niente, perche' li' non sa
-// starci. Chi invece ha il profilo giusto porta tutto.
-//
-// Senza questa asimmetria mettere tutti all'attacco conveniva sempre: si
-// guadagnava davanti quanto si perdeva dietro, e in un modello dove i gol
-// contano piu' dei gol subiti il saldo era positivo per chiunque.
-export function pesiConCompito(w, compito, giocatore, extra = 0) {
+export function pesiConCompito(w, compito, giocatore, extra = 0, slot = null) {
   // extra e' lo spostamento che aggiunge il RUOLO (engine/ruoli.js): un
   // incursore avanza anche a compito equilibrio, uno schermo arretra. Ruolo e
   // compito sono due assi indipendenti che si sommano su questo stesso canale.
-  const base = (compito === 'attacco' ? 1 : compito === 'difesa' ? -1 : 0) * SPOSTAMENTO_COMPITO;
-  const netto = base + extra;
+  const netto = spostamentoCompito(slot, compito) + extra;
   if (!w || Math.abs(netto) < 0.001) return w;
   const compitoEff = netto > 0 ? 'attacco' : 'difesa';
   const k = Math.min(0.5, Math.abs(netto));
-  const resa = 0.15 + 0.85 * ((idoneitaCompito(giocatore, compitoEff) + 1) / 2);
+  const r = repartoDi(slot);
+  const resa = 0.15 + 0.85 * ((idoneitaCompito(giocatore, compitoEff, slot) + 1) / 2);
+  const q = compitoEff === 'difesa' ? (COMPITI_REPARTO[r]?.difesa?.versoDifesa ?? 0) : 0;
   if (compitoEff === 'attacco') {
     return {
       DEF: w.DEF * (1 - k),
@@ -227,29 +281,12 @@ export function pesiConCompito(w, compito, giocatore, extra = 0) {
     };
   }
   return {
-    DEF: w.DEF + w.MID * k * resa,
-    MID: w.MID * (1 - k) + w.ATT * k * resa,
+    DEF: w.DEF + w.MID * k * resa + w.ATT * k * resa * q,
+    MID: w.MID * (1 - k) + w.ATT * k * resa * (1 - q),
     ATT: w.ATT * (1 - k),
   };
 }
 
-// ============================================================
-//  CORSIE — la seconda dimensione del campo
-//
-//  Fino a qui il motore conosceva solo le linee: DEF, MID, ATT. Una squadra
-//  era tre numeri in verticale e niente in orizzontale, e questo rendeva
-//  impossibile qualunque scontro di posizione: "rientrare dentro" o
-//  "allargarsi" non avevano un posto dove andare.
-//
-//  Con le corsie una fascia forte contro una fascia debole diventa un
-//  vantaggio reale, e soprattutto diventa un vantaggio CHE DIPENDE
-//  DALL'AVVERSARIO — che e' esattamente cio' che mancava ai compiti (punto 13
-//  del registro: leggere l'avversario valeva +0,0).
-//
-//  Il mio attacco a sinistra incontra la loro difesa a destra: e' cosi' che si
-//  guarda una partita vera, ed e' il piu' piccolo pezzo di geometria che serve
-//  perche' i ruoli abbiano senso.
-// ============================================================
 export const CORSIE = ['SX', 'CEN', 'DX'];
 
 export const PESI_CORSIA = {
@@ -273,10 +310,21 @@ export const PESI_CORSIA = {
 // ============================================================
 //  SPOSTAMENTI CONSENTITI DI UNA POSIZIONE
 //
-//  Gli schemi personalizzati: scelto un modulo, ogni posizione puo' SALIRE O
-//  SCENDERE DI UNA LINEA restando sulla propria corsia. E' la stessa idea delle
-//  tattiche personalizzate di FC, ed e' una regola che si spiega in una riga —
-//  cosa che conta, perche' finisce davanti all'utente.
+//  Gli schemi personalizzati: scelto un modulo, una posizione puo' cambiare
+//  DENTRO LA PROPRIA LINEA — stringersi al centro, allargarsi, alzarsi o
+//  abbassarsi — ma non cambiare linea.
+//
+//  PERCHE' NON PUO' CAMBIARE LINEA. Perche' cambierebbe il modulo, e il modulo
+//  l'utente l'ha gia' scelto. In un 4-4-2 i due CM possono diventare CDM: i
+//  centrocampisti restano quattro. Se invece una punta scendesse a CAM non
+//  sarebbe piu' un 4-4-2 ma un 4-4-1-1, cioe' un modulo diverso con una
+//  familiarita' diversa e un nome che non corrisponde piu' a niente.
+//  (Segnalato dall'utente: la prima versione consentiva ST -> CAM ed era un
+//  errore mio.)
+//
+//  Dentro la linea vale anche la corsia: si passa a una corsia adiacente, mai
+//  da sinistra a destra. Le linee sono quelle di REPARTO, qui sopra, cosi'
+//  "stessa linea" vuol dire la stessa cosa nel motore e nell'interfaccia.
 //
 //  Il portiere non si sposta. Il CF non compare: nessun modulo lo schiera, e
 //  offrirlo come bersaglio e' un errore gia' corretto una volta (migrazione
@@ -286,20 +334,24 @@ export const PESI_CORSIA = {
 //  in cui viene mostrato parte sempre da "lascia com'e'".
 // ============================================================
 export const SPOSTAMENTI_SLOT = {
+  // difesa
+  CB:  ['CB', 'LB', 'RB'],
+  LB:  ['LB', 'LWB', 'CB'],
+  RB:  ['RB', 'RWB', 'CB'],
+  LWB: ['LWB', 'LB'],
+  RWB: ['RWB', 'RB'],
+  // centrocampo
+  CDM: ['CDM', 'CM'],
+  CM:  ['CM', 'CDM', 'CAM', 'LM', 'RM'],
+  CAM: ['CAM', 'CM'],
+  LM:  ['LM', 'CM'],
+  RM:  ['RM', 'CM'],
+  // attacco
+  LW:  ['LW', 'ST'],
+  RW:  ['RW', 'ST'],
+  ST:  ['ST', 'LW', 'RW'],
+  // il portiere non si sposta
   GK:  ['GK'],
-  CB:  ['CB', 'CDM'],
-  LB:  ['LB', 'LWB'],
-  RB:  ['RB', 'RWB'],
-  LWB: ['LWB', 'LB', 'LM'],
-  RWB: ['RWB', 'RB', 'RM'],
-  CDM: ['CDM', 'CB', 'CM'],
-  CM:  ['CM', 'CDM', 'CAM'],
-  CAM: ['CAM', 'CM', 'ST'],
-  LM:  ['LM', 'LWB', 'LW'],
-  RM:  ['RM', 'RWB', 'RW'],
-  LW:  ['LW', 'LM'],
-  RW:  ['RW', 'RM'],
-  ST:  ['ST', 'CAM'],
 };
 
 export const PESI_SLOT = {

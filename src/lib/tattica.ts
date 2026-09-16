@@ -10,70 +10,89 @@
 //  private.ruoli_slot), generate dalla stessa fonte.
 // ============================================================
 
-/** Dove una posizione puo' andare: sale o scende di una linea, stessa corsia. */
+/** Dentro la propria linea: una posizione non cambia reparto, o cambierebbe il modulo. */
 export const SPOSTAMENTI_SLOT: Record<string, string[]> = {
-  "GK": [
-    "GK"
-  ],
   "CB": [
     "CB",
-    "CDM"
+    "LB",
+    "RB"
   ],
   "LB": [
     "LB",
-    "LWB"
+    "LWB",
+    "CB"
   ],
   "RB": [
     "RB",
-    "RWB"
+    "RWB",
+    "CB"
   ],
   "LWB": [
     "LWB",
-    "LB",
-    "LM"
+    "LB"
   ],
   "RWB": [
     "RWB",
-    "RB",
-    "RM"
+    "RB"
   ],
   "CDM": [
     "CDM",
-    "CB",
     "CM"
   ],
   "CM": [
     "CM",
     "CDM",
-    "CAM"
+    "CAM",
+    "LM",
+    "RM"
   ],
   "CAM": [
     "CAM",
-    "CM",
-    "ST"
+    "CM"
   ],
   "LM": [
     "LM",
-    "LWB",
-    "LW"
+    "CM"
   ],
   "RM": [
     "RM",
-    "RWB",
-    "RW"
+    "CM"
   ],
   "LW": [
     "LW",
-    "LM"
+    "ST"
   ],
   "RW": [
     "RW",
-    "RM"
+    "ST"
   ],
   "ST": [
     "ST",
-    "CAM"
+    "LW",
+    "RW"
+  ],
+  "GK": [
+    "GK"
   ]
+}
+
+/** In quale linea sta ogni posizione. */
+export const REPARTO: Record<string, string> = {
+  "GK": "GK",
+  "CB": "DEF",
+  "LB": "DEF",
+  "RB": "DEF",
+  "LWB": "DEF",
+  "RWB": "DEF",
+  "CDM": "MID",
+  "CM": "MID",
+  "CAM": "MID",
+  "LM": "MID",
+  "RM": "MID",
+  "LW": "ATT",
+  "RW": "ATT",
+  "ST": "ATT",
+  "CF": "ATT"
 }
 
 /** Quanto una posizione sta a destra (+1) o a sinistra (-1). Da PESI_CORSIA. */
@@ -182,6 +201,51 @@ export const RUOLI_SLOT: Record<string, string[]> = {
     "finalizzatore",
     "punta_di_manovra"
   ]
+}
+
+/** I compiti, che significano cose diverse a seconda del reparto. */
+export const COMPITI_REPARTO: Record<string, Record<string, { nome: string; energia: number; spostamento: number; versoDifesa?: number; idoneita?: string }>> =
+  {
+  "DEF": {
+    "difesa": {
+      "nome": "Bloccato",
+      "spostamento": -0.24,
+      "energia": 0.92,
+      "versoDifesa": 0.15
+    },
+    "attacco": {
+      "nome": "Si sgancia",
+      "spostamento": 0.26,
+      "energia": 1.18
+    }
+  },
+  "MID": {
+    "difesa": {
+      "nome": "In copertura",
+      "spostamento": -0.22,
+      "energia": 1.05,
+      "versoDifesa": 0.3
+    },
+    "attacco": {
+      "nome": "Si inserisce",
+      "spostamento": 0.24,
+      "energia": 1.2
+    }
+  },
+  "ATT": {
+    "difesa": {
+      "nome": "Pressa e rientra",
+      "spostamento": -0.13,
+      "energia": 1.35,
+      "versoDifesa": 0.6,
+      "idoneita": "fiato"
+    },
+    "attacco": {
+      "nome": "Sul filo",
+      "spostamento": 0.18,
+      "energia": 0.9
+    }
+  }
 }
 
 export const COMPITI: string[] = ["difesa","equilibrio","attacco"]

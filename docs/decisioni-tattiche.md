@@ -570,6 +570,63 @@ su 40 cambiano, scarto massimo 0,000.**
 modulo. `engine/engine.js` usa le due barre solo se gli vengono passate. Manca
 l'interfaccia.
 
+## 21. Una posizione cambia dentro la sua linea, non fra linee
+
+Correzione a una regola che avevo scritto sbagliata. Dicevo *«sale o scende di una linea
+restando sulla propria corsia»*, e consentiva a una punta di scendere a CAM.
+
+Segnalato dal committente con l'esempio giusto: **un 4-4-2 in cui una punta scende a CAM
+non è più un 4-4-2, è un 4-4-1-1.** Un modulo diverso, con una familiarità diversa e un
+nome che non corrisponde più a niente. Il modulo lo sceglie l'utente; lo schema
+personalizzato lo *dettaglia*, non lo sostituisce.
+
+La regola giusta: una posizione può stringersi al centro, allargarsi, alzarsi o abbassarsi
+**dentro la propria linea**. In un 4-4-2 i due CM possono diventare CDM perché i
+centrocampisti restano quattro. Le linee sono quelle di `REPARTO` in `engine/config.js`,
+così «stessa linea» vuol dire la stessa cosa nel motore, in SQL e nell'interfaccia.
+
+## 22. I compiti significano cose diverse a seconda del reparto
+
+Stessa segnalazione, e va più a fondo. A un attaccante il compito difensivo diceva
+*«resta dietro la linea della palla»*, che per una punta non vuol dire niente. Per lei il
+compito difensivo è **andare addosso al portatore e rientrare** — e soprattutto ha un
+altro prezzo.
+
+Ogni compito ha ora due numeri suoi, per reparto:
+
+| reparto | compito difensivo | peso | fiato | compito offensivo | peso | fiato |
+|---|---|---|---|---|---|---|
+| difensori | Bloccato | −0,24 | ×0,92 | Si sgancia | +0,26 | ×1,18 |
+| centrocampisti | In copertura | −0,22 | ×1,05 | Si inserisce | +0,24 | ×1,20 |
+| attaccanti | **Pressa e rientra** | **−0,13** | **×1,35** | Sul filo | +0,18 | ×0,90 |
+
+Il caso che ha fatto nascere la tavola è l'ultima riga: aiuto piccolo, costo grande.
+Misurato, due punte che pressano:
+
+| compito alle punte | gol subiti | gol fatti | condizione punte |
+|---|---|---|---|
+| nessuno | 1,02 | 1,35 | 93,0 |
+| **Pressa e rientra** | **0,97** | 1,25 | **85,3** |
+| Sul filo | 1,03 | 1,41 | 96,3 |
+
+**Due correzioni sono servite per arrivarci, entrambe istruttive.**
+
+*Prima*: non aiutava per niente — anzi faceva subire di più (1,06 contro 1,02). La formula
+sposta il peso di una linea alla volta, ma una punta ha `DEF 0` e `MID 0,05`: tutto quello
+che lasciava l'attacco si fermava a centrocampo e alla difesa non arrivava nulla. Il
+pressing però non è un arretramento, è lavoro difensivo fatto in avanti: una quota
+(`versoDifesa`) arriva ora in difesa senza passare dal centrocampo.
+
+*Seconda*: continuava a non aiutare, perché l'idoneità al compito si misura su *tackle
+contro finishing* — e su quel metro qualunque attaccante è negato, quindi il compito
+rendeva zero a chiunque lo si desse. Ma una punta non pressa perché sa contrastare: pressa
+perché ha il fiato. L'idoneità di quel compito si misura ora sulla **stamina**, il che ha
+anche un effetto gradito e gratuito: chi ha fiato regge il pressing, chi non ce l'ha si
+spegne, perché il consumo per blocco è già modulato dalla stamina.
+
+Il costo in fiato è mostrato nell'interfaccia accanto al nome del compito: si vede prima
+di sceglierlo.
+
 ## B. Le squadre del PC si sfaldano fra le stagioni
 
 Scoperto misurando LegaBot: le squadre controllate dal PC non rinnovano i contratti e in
