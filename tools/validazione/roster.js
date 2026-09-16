@@ -7,6 +7,7 @@
 export { rnd, gauss, poisson, scegliPesato, setSeed } from '../../engine/random.js';
 import { rnd, gauss, poisson, scegliPesato } from '../../engine/random.js';
 
+
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 // ------------------------------------------------------------

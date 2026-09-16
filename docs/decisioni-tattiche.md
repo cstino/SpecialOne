@@ -388,28 +388,65 @@ Scarto 8,6 punti, dentro la forbice di Football Manager (~6,4 fra migliore e peg
 tattica a pari qualità, punto 12). Il primo valore tarato dava 19,3 punti: era una
 roulette, e `SCALA_DENTRO` è stata portata da 0,30 a 0,13.
 
-## E. Il bersaglio della Fase 0 non descrive più la lega vera
+## E. La suite storica era già stata superata — e non me n'ero accorto
 
-Emerso chiudendo i ruoli, ed è **anteriore a tutto il lavoro tattico**. Tre fatti:
+Chiuso, ma vale la pena tenerlo scritto perché l'errore è istruttivo.
 
-- la suite di Fase 0 gira a **familiarità zero** (rose nuove a ogni partita) e dà 1,9 gol;
-- le stesse rose a familiarità piena danno **2,77 gol**, dentro il bersaglio 2,50–2,90;
-- le leghe **in produzione** (motore di `main`, senza piazzati) fanno **3,68–3,78 gol**.
+Rilanciando `tools/validazione/simulate.js` l'ho trovata rossa (1,9 gol contro 2,50–2,90)
+e l'ho segnalata come una domanda aperta da decidere. **Era già stata decisa il 9 settembre
+2026**, e sta scritta in testa a `docs/risultati-fase0.txt`: quel file non è più il criterio
+di accettazione, lo è `docs/risultati-produzione.txt`, prodotto da `simulate-reale.js`. La
+ragione registrata è esattamente quella che ho ricostruito da capo: le rose di
+`tools/validazione` nascono con `esperienzaModulo` vuoto, quindi ogni numero della suite
+storica è misurato col malus di familiarità al massimo, uno stato che una squadra vera vive
+per cinque partite e poi mai più (in Serie F il malus medio di lega è −0,31 su 3,5).
 
-Quindi il bersaglio 2,50–2,90 non è disatteso dal branch: è disatteso dal vivo, e da
-prima. La suite misura una condizione — squadra senza alcuna familiarità col proprio
-modulo — che in una lega avviata quasi non esiste.
+**Lezione**: prima di dichiarare rosso un guardrail, leggere l'intestazione del file che lo
+definisce. Il tempo speso a ricostruire la diagnosi era già tutto sul disco.
 
-Va deciso **con il committente**, perché è una domanda su come deve essere il gioco, non
-su come deve essere il codice: se la condizione di riferimento della validazione debba
-restare la familiarità zero o passare a una familiarità realistica. Finché non è deciso,
-la suite resta rossa e non va usata come semaforo per il lavoro tattico — per quello vale
-il confronto HEAD-contro-HEAD a banco identico, che è quello che si è usato qui.
+Ho anche provato a far nascere le rose familiari in `roster.js`, e l'ho annullato:
+`simulate-reale.js` ha un braccio di controllo *a familiarità zero* che quella modifica
+distruggeva. Le due suite hanno bisogno di condizioni diverse ed è giusto così.
+
+**Il criterio vero, misurato su questo branch** (`simulate-reale.js`, punto di produzione:
+familiarità piena, moduli, stili e fuori ruolo reali):
+
+| | branch | criterio 9 set | target |
+|---|---|---|---|
+| gol/partita | **2,87** | 2,71 | 2,50–2,90 |
+| tiri/squadra | **13,41** | 13,2 | 11–14 |
+| pareggi | **23,7%** | 24,5% | 23–27 |
+| vittorie casa | **46,9%** | 45,8% | 43–47 |
+
+Verde su tutti e quattro, coi calci piazzati dentro. `docs/risultati-produzione.txt` va
+rigenerato quando il branch entra in main, non prima.
 
 **Nota sul banco**: `tools/validazione/roster.js` ora pesca il blocco dei calci piazzati
 (battuta, stacco, marcatura, punizione, presa) e il piede da un giocatore VERO dello
 stesso ruolo e overall vicino, invece di lasciarli vuoti. Senza, le rose sintetiche erano
-giocatori che i piazzati non li sapevano fare. È un file di test: non tocca il motore.
+giocatori che i piazzati non li sapevano fare, e i calci piazzati rendevano 0,31 gol a
+partita invece di 0,63. È un file di test: non tocca il motore. Questo resta.
+
+## F. La familiarità è la leva più grande del gioco
+
+Emerso di rimbalzo, ed è una domanda di design aperta, non un bug.
+
+`FAM_MALUS_MAX` vale 3,5 punti di overall su tutti e undici. Misurato: da familiarità zero
+a piena sono **+16,7 punti su 38 partite**. Per confronto, sullo stesso metro:
+
+| leva | punti su 38 |
+|---|---|
+| familiarità col modulo | **+16,7** |
+| condizione fisica (FM-Arena) | +15,6 |
+| tattiche nostre, lettura dell'avversario | +6 / +8 |
+| coesione di squadra (FM-Arena) | +6 |
+| morale (FM-Arena, e il nostro) | +3,8 |
+
+Non è assurdo — è nell'ordine della condizione fisica, che in FM è la leva più grande. Ma
+va notato che da noi *conoscere il proprio modulo* pesa quanto *essere in forma*, e più
+del doppio di qualunque scelta tattica. Se un giorno si vuole che le tattiche contino di
+più, questa è la costante da guardare per prima. **Non toccata**: è una costante validata,
+e cambiarla sposta il gioco vivo.
 
 ## 18. Il morale pesa poco, e il dato lo dice chiaro
 
