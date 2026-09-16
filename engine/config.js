@@ -22,7 +22,7 @@ export const CFG = {
   // 63%). Con questo valore torna a 2.81 gol e la curva di competitivita' si
   // risovrappone a quella della Fase 0. Dettagli e misure in
   // docs/risultati-produzione.txt.
-  XG_BASE_BLOCCO: 0.1865,
+  XG_BASE_BLOCCO: 0.1299,
   // xG = BASE * (ctrl/0.5) * exp(SENSIBILITA_FORZA * (ATT - DEF))
   // forma esponenziale sulla DIFFERENZA di overall, non sul rapporto:
   // 1 punto di overall di vantaggio = +SENS% circa di occasioni. Interpretabile.
@@ -59,7 +59,14 @@ export const CFG = {
   // che nel calcio vero non esiste (il record e' intorno a 35). I due valori
   // qui sotto rendono la relazione tiri/xG concava. Non toccano i gol: le
   // statistiche sono calcolate a fine partita, quando il risultato e' gia' fatto.
-  XG_RIFERIMENTO_TIRI: 1.35,      // xG per squadra a cui la conversione vale CONVERSIONE_MEDIA
+  // xG per squadra a cui la conversione vale CONVERSIONE_MEDIA. DEVE seguire
+  // l'xG medio reale: quando i piazzati hanno preso la loro quota e la manovra
+  // e' scesa, lasciarlo a 1.35 faceva finire ogni squadra sotto il riferimento,
+  // e la formula concava le assegnava piu' tiri del dovuto (15.0 invece di 13).
+  XG_RIFERIMENTO_TIRI: 1.06,
+  // xG di manovra a cui corrisponde una pressione "media", cioe' il numero
+  // base di angoli e punizioni. Vedi engine/piazzati.js.
+  XG_RIFERIMENTO_PIAZZATI: 0.696,
   ESPONENTE_QUALITA_TIRO: 0.55,   // quanto la conversione sale col dominio (0 = vecchio comportamento lineare)
   TIRI_PORTA_MEDIA: 0.36,
   TIRI_PORTA_SIGMA: 0.07,

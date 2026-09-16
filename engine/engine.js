@@ -5,6 +5,7 @@
 import { CFG, MODULI, CONTEGGI, PESI_SLOT, REPARTO, STILI, penalitaRuolo, pesoStat } from './config.js';
 import { rnd, gauss, poisson, scegliPesato } from './random.js';
 import { deltaTattico } from './tattiche.js';
+import { calcolaPiazzati } from './piazzati.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -508,6 +509,20 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     }
   }
 
+  // ---------- calci piazzati ----------
+  // Angoli e punizioni si calcolano a fine partita sulla formazione che e'
+  // rimasta in campo, e la loro frequenza segue quanto una squadra ha
+  // attaccato: xgTot diviso il valore medio di riferimento. Chi ha dominato
+  // batte piu' corner, com'e' giusto.
+  //
+  // Non sono gol IN PIU': XG_BASE_BLOCCO e' stato ridotto della stessa quota,
+  // quindi il totale resta nella forbice validata e cambia solo da dove
+  // arrivano i gol. Vedi engine/piazzati.js.
+  const piazzC = opt.piazzati === false ? null : calcolaPiazzati(lc, lo, xgTotC / CFG.XG_RIFERIMENTO_PIAZZATI);
+  const piazzO = opt.piazzati === false ? null : calcolaPiazzati(lo, lc, xgTotO / CFG.XG_RIFERIMENTO_PIAZZATI);
+  if (piazzC) golC += piazzC.gol;
+  if (piazzO) golO += piazzO.gol;
+
   // ---------- statistiche ----------
   const ctrlMedio = ctrlStorico.reduce((a, b) => a + b, 0) / ctrlStorico.length;
   const mk = (lineup, gol, ctrl, forze, xgTot) => {
@@ -531,6 +546,11 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
 
   const sC = mk(lc, golC, ctrlMedio, forzeLinee(lc), xgTotC);
   const sO = mk(lo, golO, 1 - ctrlMedio, forzeLinee(lo), xgTotO);
+  // Le conclusioni da palla inattiva entrano nel conteggio: un colpo di testa
+  // su angolo e' un tiro come gli altri, e senza questo le statistiche
+  // raccontavano meno conclusioni di quante ne erano avvenute.
+  if (piazzC) { sC.tiri += piazzC.tiri; sC.inPorta += piazzC.inPorta; }
+  if (piazzO) { sO.tiri += piazzO.tiri; sO.inPorta += piazzO.inPorta; }
 
   const perGiocatore = opt.statsGiocatori ? (() => {
     const marcatoriCasa = marcatori(rosaCasa, slotStoricoCasa, golC);

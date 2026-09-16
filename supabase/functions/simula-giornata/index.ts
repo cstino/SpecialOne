@@ -24,7 +24,7 @@ type EventoCartellino = { tipo: 'cartellino'; minuto: number; blocco: number; la
 type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio | EventoCartellino
 type DbPlayer = { id: number; nome: string; posizioni: string[]; overall: number; attributi: Record<string, number> }
 type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number; posizioni_override: string[] | null; attributi_override: Record<string, number> | null; specializzazione_attiva: string | null }
-type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; tiltTecnico: number | null; tiltRapido: number | null; specialita: { rigori: number }; specializzazione: string | null }
+type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; tiltTecnico: number | null; tiltRapido: number | null; specialita: { rigori: number }; piazzati: { battuta: number; testa: number; marcatura: number; punizione: number; presa: number }; specializzazione: string | null }
 // moltiplicatoreInfortuni e' facoltativo: se assente l'engine usa 1 (nessun
 // effetto), esattamente come nella suite di validazione.
 type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number>; esperienzaStile: Record<string, number>; moltiplicatoreInfortuni?: number }
@@ -93,6 +93,15 @@ function attributiEffettivi(
     fuori[k] = Math.max(1, Math.min(99, v + crescita(posizioni, k, deltaOverall)))
   }
   return override ? { ...fuori, ...override } : fuori
+}
+
+// Media di piu' attributi, saltando quelli che mancano. Se non ce n'e' nemmeno
+// uno torna 45: un valore basso ma non nullo, cosi' un dato incompleto non
+// rende qualcuno imbattibile ne' inutile sui piazzati.
+function media(attributi: Record<string, number>, campi: string[]): number {
+  const presenti = campi.map((c) => attributi[c]).filter((v) => typeof v === 'number' && Number.isFinite(v))
+  if (!presenti.length) return 45
+  return Math.round(presenti.reduce((a, b) => a + b, 0) / presenti.length)
 }
 
 function adaptPlayer(instance: Instance, player: DbPlayer, crescita: Crescita): EnginePlayer {
@@ -166,6 +175,21 @@ function adaptPlayer(instance: Instance, player: DbPlayer, crescita: Crescita): 
     // playoff). Punizioni e angoli arriveranno insieme alla meccanica che li
     // usa: assegnarli adesso sarebbe solo un'etichetta senza effetto.
     specialita: { rigori: quadroCompleto['mentality_penalties'] ?? instance.overall_corrente },
+    // Le valutazioni sui calci piazzati (engine/piazzati.js). Attributi
+    // completamente diversi da quelli della manovra: e' il punto della cosa.
+    // Una squadra modesta palla a terra puo' essere temibile sui corner.
+    piazzati: {
+      // chi batte: cross e traiettoria
+      battuta: media(quadroCompleto, ['attacking_crossing', 'skill_curve']),
+      // chi attacca il pallone: stacco, elevazione, fisico per liberarsi
+      testa: media(quadroCompleto, ['attacking_heading_accuracy', 'power_jumping', 'power_strength']),
+      // chi lo difende: marcatura e stacco
+      marcatura: media(quadroCompleto, ['defending_marking_awareness', 'power_jumping']),
+      // chi calcia le punizioni
+      punizione: media(quadroCompleto, ['skill_fk_accuracy', 'power_long_shots']),
+      // il portiere che esce sui cross
+      presa: media(quadroCompleto, ['gk_positioning', 'gk_handling']),
+    },
     // Serve al motore solo per i rigori: la specializzazione "para_rigori"
     // di un portiere vale punti di overall aggiuntivi dal dischetto.
     // Vedi engine/rigori.js, portiereDaLineup().
