@@ -121,6 +121,55 @@ Non è un'affermazione di principio: `simulate.js` e `simulate-reale.js` danno o
 
 ---
 
+## 10. Un motore azione per azione è fattibile — misurato il 16 settembre 2026
+
+Domanda posta dal committente dopo essersi informato su come lavora Football
+Manager: **in FM non esiste un overall nel motore**. Per ogni azione si
+richiamano gli attributi rilevanti, pesati per ruolo; la *current ability* è un
+riassunto derivato, non un input. Il nostro motore a blocchi sta nella stessa
+famiglia del motore **semplificato** che FM usa per le migliaia di partite di
+contorno — il che è coerente con 8 partite a notte, ma non è la stessa cosa.
+
+Prototipo in `tools/validazione/motore-azioni.mjs`, separato da `engine/`.
+Sedici attributi invece di cinque, rose di giocatori veri, i gol emergono dalle
+azioni invece di essere estratti da una Poisson sull'xG.
+
+**Risultato: tutte e sette le metriche d'insieme dentro il bersaglio** su 3.000
+partite. E la curva di competitività combacia con la Fase 0 entro 2,5 punti a
+ogni gradino:
+
+| divario | prototipo | Fase 0 |
+|---|---|---|
+| +0 | 38,6% | 36% |
+| +4 | 62,8% | 62% |
+| +8 | 85,8% | 84% |
+
+**La scoperta che conta.** Alla prima taratura la curva schizzava al **93% a
++8**: in un motore azione per azione un vantaggio piccolo si moltiplica per
+centinaia di duelli, e la squadra migliore vince praticamente sempre. La
+costante che governa la ripidità del singolo duello decide se stai costruendo
+un simulatore o un gioco. Appiattirla riporta la curva dove deve stare.
+
+**Quello che il prototipo NON ha**, e che il motore attuale ha e ha validato:
+sostituzioni, infortuni, cartellini, calo di condizione, effetto dei moduli,
+effetto degli stili, familiarità. Portarlo in produzione significa rifarle una
+per una e rivalidare — è la Fase 0 un'altra volta, non una serata.
+
+**Perché comunque interessa.** In un motore così le tattiche smettono di essere
+un modificatore sull'overall e diventano parametri veri: l'altezza della difesa
+sposta dove si recupera il pallone, la costruzione corta cambia la lunghezza
+media del passaggio. È la differenza fra simulare l'effetto di una scelta e
+simulare la scelta.
+
+**Da decidere, e non è ancora deciso**: se il motore azione per azione produca
+davvero *più* profondità tattica del modificatore che abbiamo già misurato
+(§punti 1-9), o solo più complessità. Si risponde con gli stessi quattro test
+di accettazione, portati sul prototipo, e confrontando con 2,1 pp di scarto,
+7,5x sul leggere l'avversario e 4,3 punti nel confronto più squilibrato. Se i
+numeri non migliorano, vince il sistema semplice che funziona già.
+
+---
+
 # Punti aperti
 
 ## A. Istruzioni ai singoli giocatori — da decidere
