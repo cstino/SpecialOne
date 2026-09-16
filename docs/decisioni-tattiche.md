@@ -679,6 +679,60 @@ conta, e la lezione è che per un costo che si accumula la partita singola è il
 sbagliati — *«aiuta poco dietro, ma costa molto fiato»* è una scheda che nessuno sceglierebbe,
 ed è giusto così: era la descrizione onesta di un'opzione morta.
 
+## 24. L'energia andava rivista, e il problema era un gradino
+
+Domanda del committente dopo il lavoro sui compiti: *«avendo fatto tutte queste modifiche,
+conviene rivedere anche l'utilizzo dell'energia?»*. Sì, e quello che è venuto fuori era più
+grosso della taratura.
+
+**L'economia dell'energia è tesa.** Un titolare consuma ~45,7 di condizione a partita
+(6 blocchi) e ne recupera 36: saldo **−9,7**, cioè regge circa **tre partite di fila** prima
+di scendere sotto la soglia di sostituzione. Ci avevo aggiunto sopra moltiplicatori fino a
+×1,20, che quasi raddoppiano il drenaggio: il compito costava due volte quello che comprava.
+
+**Ma la causa vera era un'altra.** `fattoreCondizione` era una **scala a gradini**: 85 valeva
+1,000 e 84,9 valeva 0,975. Un decimo di punto di fiato costava il 2,5% di overall a tutti e
+undici — cioè ~1,9 punti su ogni linea. Finché niente nel gioco spostava la condizione di
+poco il gradino non si notava; coi compiti che moltiplicano il consumo è diventato dominante.
+
+Misurato: `Si inserisce` dava **+1,09 punti di attacco** e segnava **0,99 gol contro gli 0,99**
+di chi non lo usava. Il vantaggio c'era ed era cancellato per intero dal salto del gradino.
+
+`fattoreCondizione` è ora **continua** e passa esattamente per gli stessi punti della versione
+validata (85, 70, 55, 40, 25): interpola invece di saltare. Il criterio del motore non si
+muove (2,87 gol, 13,46 tiri, 23,3% pareggi, 46,1% vittorie casa).
+
+**Un secondo errore, nel banco di prova.** Rigeneravo l'avversario fresco a ogni giornata,
+quindi la squadra in esame era sistematicamente quella stanca: segnava 0,99 e subiva 1,43.
+Con quel metro difendere valeva troppo e attaccare troppo poco, e stavo per tarare su un
+artefatto. Ora vivono la stagione entrambe.
+
+**Risultato, su trenta giornate** (punti normalizzati su 38, entrambe le squadre persistenti):
+
+| compito | punti | gol fatti | subiti | |
+|---|---|---|---|---|
+| nessuno | 60,6 | 1,41 | 1,07 | |
+| Bloccato | 61,8 | 1,37 | 0,98 | +1,2 |
+| Si sgancia | 61,1 | 1,43 | 1,09 | +0,6 |
+| In copertura | 60,9 | 1,40 | 1,03 | +0,3 |
+| Si inserisce | 60,4 | 1,46 | 1,11 | −0,2 |
+| Pressing alto | 63,2 | 1,42 | 0,98 | +2,7 |
+| Sul filo | 61,1 | 1,51 | 1,12 | +0,6 |
+
+Nessuno è dominato, e il pressing resta legato al fiato: con punte da stamina 90 vale +2,6
+punti, con punte da stamina 55 ne vale −0,8.
+
+**La conseguenza leggibile**, che prima non esisteva — quante partite di fila regge un titolare:
+
+| compito | partite |
+|---|---|
+| Bloccato, Sul filo | 4 |
+| nessuno, In copertura, Pressing alto | 3 |
+| Si sgancia, Si inserisce | 2 |
+| Pressing con stamina 92 / 52 | 4 / 2 |
+
+È la gestione della rosa che in FM fa parte del gioco: aggredire chiede profondità.
+
 ## B. Le squadre del PC si sfaldano fra le stagioni
 
 Scoperto misurando LegaBot: le squadre controllate dal PC non rinnovano i contratti e in

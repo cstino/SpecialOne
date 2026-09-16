@@ -209,31 +209,31 @@ export const COMPITI_REPARTO: Record<string, Record<string, { nome: string; ener
   "DEF": {
     "difesa": {
       "nome": "Bloccato",
-      "energia": 0.92
+      "energia": 0.96
     },
     "attacco": {
       "nome": "Si sgancia",
-      "energia": 1.18
+      "energia": 1.07
     }
   },
   "MID": {
     "difesa": {
       "nome": "In copertura",
-      "energia": 1.05
+      "energia": 1.02
     },
     "attacco": {
       "nome": "Si inserisce",
-      "energia": 1.2
+      "energia": 1.08
     }
   },
   "ATT": {
     "difesa": {
       "nome": "Pressing alto",
-      "energia": 1.12
+      "energia": 1.06
     },
     "attacco": {
       "nome": "Sul filo",
-      "energia": 0.9
+      "energia": 0.95
     }
   }
 }

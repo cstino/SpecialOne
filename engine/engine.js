@@ -12,11 +12,28 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 // ---------- Overall efficace ----------
 
+// La condizione era una SCALA A GRADINI: 85 valeva 1.000 e 84,9 valeva 0,975,
+// cioe' un decimo di punto di fiato costava il 2,5% di overall a tutti e
+// undici. Finche' niente nel gioco spostava la condizione di poco andava bene,
+// ma coi compiti che moltiplicano il consumo il gradino e' diventato dominante:
+// un compito offensivo faceva scendere la squadra da 86,7 a 84,7, e il salto
+// del gradino cancellava per intero il vantaggio che quel compito comprava.
+// Misurato: "Si inserisce" dava +1,09 punti di attacco e segnava esattamente
+// come chi non lo usava.
+//
+// Ora e' CONTINUA, e passa per gli stessi punti di prima: a 85, 70, 55, 40 e 25
+// restituisce esattamente i valori della versione validata, e interpola in
+// mezzo invece di fare un salto. Nessun valore si sposta piu' dello scarto fra
+// due gradini, e nessuna soglia produce piu' un salto.
+const ANCORE_CONDIZIONE = [[25, 0.820], [40, 0.890], [55, 0.940], [70, 0.975], [85, 1.000]];
+
 export function fattoreCondizione(c) {
   if (c >= 85) return 1.000;
-  if (c >= 70) return 0.975;
-  if (c >= 55) return 0.940;
-  if (c >= 40) return 0.890;
+  if (c <= 25) return 0.820;
+  for (let i = ANCORE_CONDIZIONE.length - 1; i > 0; i--) {
+    const [x1, y1] = ANCORE_CONDIZIONE[i - 1], [x2, y2] = ANCORE_CONDIZIONE[i];
+    if (c >= x1) return y1 + (y2 - y1) * ((c - x1) / (x2 - x1));
+  }
   return 0.820;
 }
 
