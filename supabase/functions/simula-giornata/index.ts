@@ -24,7 +24,7 @@ type EventoCartellino = { tipo: 'cartellino'; minuto: number; blocco: number; la
 type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio | EventoCartellino
 type DbPlayer = { id: number; nome: string; posizioni: string[]; overall: number; attributi: Record<string, number> }
 type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number; posizioni_override: string[] | null; attributi_override: Record<string, number> | null; specializzazione_attiva: string | null }
-type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; tiltTecnico: number | null; tiltRapido: number | null; specializzazione: string | null }
+type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; tiltTecnico: number | null; tiltRapido: number | null; specialita: { rigori: number }; specializzazione: string | null }
 // moltiplicatoreInfortuni e' facoltativo: se assente l'engine usa 1 (nessun
 // effetto), esattamente come nella suite di validazione.
 type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number>; esperienzaStile: Record<string, number>; moltiplicatoreInfortuni?: number }
@@ -161,6 +161,11 @@ function adaptPlayer(instance: Instance, player: DbPlayer, crescita: Crescita): 
     // e basta, quindi descrivevano il ragazzo appena importato.
     tiltTecnico: tiltTecnico(quadroCompleto),
     tiltRapido: tiltRapido(quadroCompleto),
+    // Gli attributi da specialista. Per ora solo i rigori, perche' e' l'unico
+    // gesto che il motore sa gia' simulare (engine/rigori.js, tie-break dei
+    // playoff). Punizioni e angoli arriveranno insieme alla meccanica che li
+    // usa: assegnarli adesso sarebbe solo un'etichetta senza effetto.
+    specialita: { rigori: quadroCompleto['mentality_penalties'] ?? instance.overall_corrente },
     // Serve al motore solo per i rigori: la specializzazione "para_rigori"
     // di un portiere vale punti di overall aggiuntivi dal dischetto.
     // Vedi engine/rigori.js, portiereDaLineup().

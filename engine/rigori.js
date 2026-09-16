@@ -35,7 +35,30 @@ export const CFG_RIGORI = {
   // rispetto a "Fuori dai pali" (+1 invece di +2) e quindi vale meno in
   // tutte le altre 30 giornate.
   BONUS_PARA_RIGORI: 10,
+
+  // Quanto conta essere SPECIALISTA rispetto all'essere bravo in generale.
+  //
+  // La taratura di questo file e' ancorata all'overall: BASE 0.76 vale fra due
+  // giocatori di pari overall. Sostituire l'overall con l'attributo "rigori"
+  // sposterebbe quel punto di equilibrio, perche' i due numeri vivono su medie
+  // diverse. Si usa quindi lo SCARTO fra i due: chi ha rigori pari al proprio
+  // overall tira come prima, chi e' specialista guadagna, chi non lo e' perde.
+  //
+  // A 0.5, un attaccante da 74 con 88 di rigori tira come un 81; lo stesso con
+  // 45 tira come un 59. Sono circa 9 punti percentuali di conversione fra i
+  // due, che su una serie da cinque fa quasi mezzo rigore: si sente, non
+  // decide da solo.
+  PESO_SPECIALISTA: 0.5,
 };
+
+// L'overall "dal dischetto": quanto vale davvero un giocatore ai rigori.
+// Senza l'attributo (dato incompleto) resta il suo overall, che e' il
+// comportamento di prima.
+export function overallDalDischetto(g) {
+  const spec = g?.specialita?.rigori;
+  if (typeof spec !== 'number' || !Number.isFinite(spec)) return g?.ovr ?? 70;
+  return g.ovr + (spec - g.ovr) * CFG_RIGORI.PESO_SPECIALISTA;
+}
 
 export function probabilitaRigore(ovrTiratore, ovrPortiere, bonusPortiere = 0) {
   // Senza questo controllo un overall mancante produce NaN, e `rnd() < NaN` e'
@@ -49,14 +72,19 @@ export function probabilitaRigore(ovrTiratore, ovrPortiere, bonusPortiere = 0) {
 }
 
 // Chi tira: i giocatori di MOVIMENTO ancora in campo alla fine della partita,
-// dal miglior overall al peggiore. Il portiere e' escluso dalla lista tiratori
-// (para, non tira) e chi e' uscito per infortunio o sostituzione non c'e' piu'.
+// dal migliore dal dischetto al peggiore. Il portiere e' escluso (para, non
+// tira) e chi e' uscito per infortunio o sostituzione non c'e' piu'.
+//
+// L'ordine seguiva l'overall, e questo rendeva inutile l'attributo "rigori":
+// la scheda del giocatore lo mostrava, ma a tirare andava sempre il piu' forte
+// in assoluto. Un attaccante da 80 con 45 di rigori passava davanti a un
+// centrocampista da 74 con 88. Ora la lista segue overallDalDischetto.
 export function tiratoriDaLineup(lineup) {
   const fuori = [];
   for (let i = 0; i < lineup.titolari.length; i++) {
     const g = lineup.titolari[i];
     if (!g || lineup.slots[i] === 'GK') continue;
-    fuori.push({ id: g.id, nome: g.nome, ovr: g.ovr });
+    fuori.push({ id: g.id, nome: g.nome, ovr: overallDalDischetto(g) });
   }
   return fuori.sort((a, b) => b.ovr - a.ovr || a.id - b.id);
 }
