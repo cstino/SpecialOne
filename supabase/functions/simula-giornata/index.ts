@@ -6,6 +6,8 @@ import { REPARTO } from '../../../engine/config.js'
 import { MODULI } from '../../../engine/config.js'
 import { setSeed } from '../../../engine/random.js'
 import { calciaRigori, portiereDaLineup, tiratoriDaLineup } from '../../../engine/rigori.js'
+import { capitanoAutomatico, deltaMorale } from '../../../engine/morale.js'
+import { sommaDelta } from '../../../engine/ruoli.js'
 
 // La chiave segreta del progetto, esposta con un nome non riservato: la
 // piattaforma non inietta SUPABASE_SECRET_KEY e vieta di crearla a mano.
@@ -23,13 +25,13 @@ type EventoInfortunio = { tipo: 'infortunio'; minuto: number; blocco: number; la
 type EventoCartellino = { tipo: 'cartellino'; minuto: number; blocco: number; lato: Lato; team_id: number; giocatore: number; colore: 'giallo' | 'rosso_diretto' | 'doppio_giallo' }
 type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio | EventoCartellino
 type DbPlayer = { id: number; nome: string; posizioni: string[]; overall: number; piede: string | null; attributi: Record<string, number> }
-type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number; posizioni_override: string[] | null; attributi_override: Record<string, number> | null; specializzazione_attiva: string | null }
-type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; tiltTecnico: number | null; tiltRapido: number | null; specialita: { rigori: number }; piede: string | null; piazzati: { battuta: number; testa: number; marcatura: number; punizione: number; presa: number }; specializzazione: string | null }
+type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number; posizioni_override: string[] | null; attributi_override: Record<string, number> | null; specializzazione_attiva: string | null; morale: number | null }
+type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; tiltTecnico: number | null; tiltRapido: number | null; specialita: { rigori: number }; piede: string | null; piazzati: { battuta: number; testa: number; marcatura: number; punizione: number; presa: number }; specializzazione: string | null; morale: number; composure: number }
 // moltiplicatoreInfortuni e' facoltativo: se assente l'engine usa 1 (nessun
 // effetto), esattamente come nella suite di validazione.
 type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number>; esperienzaStile: Record<string, number>; moltiplicatoreInfortuni?: number }
 type DbLineup = { team_id: number; giornata?: number; modulo: string; titolari: number[]; panchina: number[]; tribuna: number[]; stile_gioco: string; automatica: boolean; rigorista?: number | null; punizione_corta?: number | null; punizione_lunga?: number | null; angolo_dx?: number | null; angolo_sx?: number | null }
-type EngineLineup = { modulo: string; slots: string[]; titolari: EnginePlayer[]; panchina: EnginePlayer[]; cambiFatti: number; incaricati: { rigorista: number | null; punizione_corta: number | null; punizione_lunga: number | null; angolo_dx: number | null; angolo_sx: number | null } }
+type EngineLineup = { modulo: string; slots: string[]; titolari: EnginePlayer[]; panchina: EnginePlayer[]; cambiFatti: number; incaricati: { rigorista: number | null; punizione_corta: number | null; punizione_lunga: number | null; angolo_dx: number | null; angolo_sx: number | null }; capitano: EnginePlayer | null; tattica?: (g: EnginePlayer, slot: string) => number }
 type Fixture = { id: number; season_id: number; league_id: number; giornata: number; home_team_id: number; away_team_id: number; stato: string; campo_neutro: boolean; bracket_tie_id: number | null; mano: number | null }
 
 function requiredNumber(attributes: Record<string, number>, field: string, playerId: number) {
@@ -174,6 +176,14 @@ function adaptPlayer(instance: Instance, player: DbPlayer, crescita: Crescita): 
     // gesto che il motore sa gia' simulare (engine/rigori.js, tie-break dei
     // playoff). Punizioni e angoli arriveranno insieme alla meccanica che li
     // usa: assegnarli adesso sarebbe solo un'etichetta senza effetto.
+    // Il morale entra in partita da settembre 2026 (engine/morale.js). Vale
+    // poco di proposito: FM-Arena misura +3,8 punti su 38 fra morale scarso e
+    // molto buono, un quarto di quanto vale la condizione fisica.
+    morale: instance.morale ?? 70,
+    // La freddezza serve solo a scegliere e pesare il capitano: nei dati FC 26
+    // non esiste un attributo di leadership, e questa e' l'approssimazione
+    // piu' onesta che il catalogo offra.
+    composure: quadroCompleto['mentality_composure'] ?? 60,
     specialita: { rigori: quadroCompleto['mentality_penalties'] ?? instance.overall_corrente },
     // Le valutazioni sui calci piazzati (engine/piazzati.js). Attributi
     // completamente diversi da quelli della manovra: e' il punto della cosa.
@@ -200,7 +210,7 @@ function adaptPlayer(instance: Instance, player: DbPlayer, crescita: Crescita): 
   }
 }
 
-function buildLineup(lineup: DbLineup, roster: EngineRoster): EngineLineup {
+function buildLineup(lineup: DbLineup, roster: EngineRoster, capitanoId: number | null = null): EngineLineup {
   const byId = new Map(roster.giocatori.map((player) => [player.id, player]))
   const slots = MODULI[lineup.modulo]
   if (!slots || slots.length !== 11 || lineup.titolari.length !== 11) throw new Error(`Formazione non valida per la squadra ${lineup.team_id}.`)
@@ -272,7 +282,13 @@ function buildLineup(lineup: DbLineup, roster: EngineRoster): EngineLineup {
     angolo_dx: lineup.angolo_dx ?? null,
     angolo_sx: lineup.angolo_sx ?? null,
   }
-  return { modulo: lineup.modulo, slots: [...slots], titolari: formazione, panchina, cambiFatti: 0, incaricati }
+  // La fascia. Se il capitano designato non e' in campo passa al migliore fra
+  // chi gioca, esattamente come in Football Manager e come gia' succede per i
+  // calci piazzati: un incarico non deve sparire perche' chi lo aveva e' in
+  // tribuna.
+  const capitanoScelto = capitanoId ? formazione.find((g: EnginePlayer) => g.id === capitanoId) ?? null : null
+  const capitano = capitanoScelto ?? capitanoAutomatico(formazione)
+  return { modulo: lineup.modulo, slots: [...slots], titolari: formazione, panchina, cambiFatti: 0, incaricati, capitano }
 }
 
 function seedFor(fixture: Fixture) {
@@ -818,8 +834,8 @@ export default {
       }
 
       const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult, stileXpResult, medicoResult, pendenzeResult] = await Promise.all([
-        ctx.supabaseAdmin.from('teams').select('id, nome, user_id, controllata_da_pc').eq('league_id', leagueId).in('id', teamIds),
-        ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, attributi_override, specializzazione_attiva').eq('league_id', leagueId).in('team_id', teamIds),
+        ctx.supabaseAdmin.from('teams').select('id, nome, user_id, controllata_da_pc, capitano').eq('league_id', leagueId).in('id', teamIds),
+        ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, attributi_override, specializzazione_attiva, morale').eq('league_id', leagueId).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
         ctx.supabaseAdmin.from('formation_xp').select('team_id, modulo, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),
@@ -849,6 +865,9 @@ export default {
       // Serve a sapere chi notificare: le notifiche sono per-persona, non
       // per-squadra, perche' la campanella e' una sola per tutte le leghe.
       const teamUsers = new Map((teamsResult.data ?? []).map((team) => [team.id, team.user_id as string]))
+      // Chi porta la fascia, per squadra. Puo' essere null: finche' nessuno
+      // sceglie un capitano il morale resta quello individuale e basta.
+      const teamCapitani = new Map<number, number | null>((teamsResult.data ?? []).map((team: { id: number; capitano: number | null }) => [team.id, team.capitano ?? null]))
       const rosters = new Map<number, EngineRoster>()
 
       for (const teamId of teamIds) {
@@ -915,8 +934,13 @@ export default {
         const awayRoster = rosters.get(fixture.away_team_id)!
         const homeDbLineup = lineups.get(fixture.home_team_id)!
         const awayDbLineup = lineups.get(fixture.away_team_id)!
-        const homeLineup = buildLineup(homeDbLineup, homeRoster)
-        const awayLineup = buildLineup(awayDbLineup, awayRoster)
+        const homeLineup = buildLineup(homeDbLineup, homeRoster, teamCapitani.get(fixture.home_team_id) ?? null)
+        const awayLineup = buildLineup(awayDbLineup, awayRoster, teamCapitani.get(fixture.away_team_id) ?? null)
+        // Gli scarti tattici si sommano su un canale solo (lineup.tattica).
+        // Oggi c'e' il morale; ruoli e corsie si agganciano qui quando la
+        // tattica arrivera' in produzione.
+        homeLineup.tattica = sommaDelta(deltaMorale(homeLineup))
+        awayLineup.tattica = sommaDelta(deltaMorale(awayLineup))
         // Fotografia dell'undici di partenza PRIMA del fischio d'inizio: le
         // sostituzioni dentro simulaPartita() mutano lineup.titolari in
         // posto (il subentrato prende il posto dell'uscito nello stesso

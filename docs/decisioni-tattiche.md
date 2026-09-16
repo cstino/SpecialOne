@@ -411,6 +411,60 @@ il confronto HEAD-contro-HEAD a banco identico, che è quello che si è usato qu
 stesso ruolo e overall vicino, invece di lasciarli vuoti. Senza, le rose sintetiche erano
 giocatori che i piazzati non li sapevano fare. È un file di test: non tocca il motore.
 
+## 18. Il morale pesa poco, e il dato lo dice chiaro
+
+Domanda d'istinto: un giocatore demoralizzato rende molto meno? In Football Manager,
+**no**. FM-Arena lo ha misurato su 2.880 partite, normalizzate su una stagione da 38:
+
+| morale | punti su 38 | GF | GS |
+|---|---|---|---|
+| Quite Poor (5) | 47,1 | 69 | 75 |
+| Okay (10) | 47,3 | 70 | 75 |
+| Very Good (15) | 50,9 | 72 | 73 |
+
+Da scarso a molto buono: **+3,8 punti**. Nello stesso banco la condizione fisica da "Fair"
+a "Excellent" ne vale **+15,6**, e la coesione di squadra **+6**. Il morale e' la piu'
+piccola delle tre leve, circa un quarto della condizione, e meta' di quanto valgono le
+nostre tattiche.
+
+Tarato a sensazione avrebbe schiacciato tutto il lavoro tattico. `engine/morale.js` e'
+tarato su quel numero: misurati **3,6 punti su 38** fra morale 45 e morale 95, con
+`SCALA_MORALE = 0,27` punti di overall efficace. Prima taratura a 0,85: dava 9,6 punti,
+quasi il triplo del vero.
+
+**La coesione non si duplica.** In FM morale individuale e coesione di squadra sono due
+cose diverse, e la seconda pesa di piu'. Da noi la coesione esiste gia' ed e' la
+familiarita' col modulo (`formation_xp`), che vale quasi un gol a partita. Qui si e'
+aggiunto solo il pezzo individuale.
+
+## 19. Il capitano non sta nel motore
+
+Provato prima dentro la partita, dove attenua il malcontento dei compagni. Misurato in
+modo esatto invece che a simulazione: **+0,68 punti su 38**, cioe' sotto il rumore di un
+banco da 20.000 partite. Non era una taratura sbagliata, era il posto sbagliato.
+
+In Football Manager la fascia agisce sullo **spogliatoio nel tempo** — atmosfera, recupero
+del morale — non sui novanta minuti. Da noi il morale si ricalcola a ogni quarto di
+stagione (`applica_morale_checkpoint`), ed e' li' che il capitano e' stato messo: attenua
+fino al 30% del malcontento dei compagni, e **lo peggiora se e' lui il primo scontento**,
+perche' la qualita' va sotto zero.
+
+Si moltiplica con l'attenuazione da mentalita' "bandiera" invece di sommarsi: sono due
+modi diversi di reggere lo stesso colpo, e sommandoli un bandiera capitano sarebbe
+diventato immune.
+
+**Chi e' un buon capitano**: il suo morale e la sua freddezza (`mentality_composure`), meta'
+e meta'. Non serve un attributo di leadership, che nei dati FC 26 non esiste — era la
+ragione per cui la fascia era stata rimandata.
+
+Il piccolo effetto in partita e' rimasto, perche' e' corretto e non costa niente. Ma il
+peso vero e' al checkpoint, dove si accumula.
+
+**Stato**: la migrazione e' applicata in produzione ed e' **inerte**. `teams.capitano`
+nasce NULL e niente lo assegna in automatico, quindi l'attenuazione vale 1 e il checkpoint
+calcola esattamente quello che calcolava prima. L'assegnazione automatica e l'interfaccia
+arrivano col resto del lavoro tattico.
+
 ## B. Le squadre del PC si sfaldano fra le stagioni
 
 Scoperto misurando LegaBot: le squadre controllate dal PC non rinnovano i contratti e in
