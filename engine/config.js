@@ -270,6 +270,38 @@ export const PESI_CORSIA = {
   CF:  { SX: 0.15, CEN: 0.70, DX: 0.15 },
 };
 
+// ============================================================
+//  SPOSTAMENTI CONSENTITI DI UNA POSIZIONE
+//
+//  Gli schemi personalizzati: scelto un modulo, ogni posizione puo' SALIRE O
+//  SCENDERE DI UNA LINEA restando sulla propria corsia. E' la stessa idea delle
+//  tattiche personalizzate di FC, ed e' una regola che si spiega in una riga —
+//  cosa che conta, perche' finisce davanti all'utente.
+//
+//  Il portiere non si sposta. Il CF non compare: nessun modulo lo schiera, e
+//  offrirlo come bersaglio e' un errore gia' corretto una volta (migrazione
+//  20260914100000).
+//
+//  Prima voce di ogni lista = la posizione stessa, cosi' l'elenco nell'ordine
+//  in cui viene mostrato parte sempre da "lascia com'e'".
+// ============================================================
+export const SPOSTAMENTI_SLOT = {
+  GK:  ['GK'],
+  CB:  ['CB', 'CDM'],
+  LB:  ['LB', 'LWB'],
+  RB:  ['RB', 'RWB'],
+  LWB: ['LWB', 'LB', 'LM'],
+  RWB: ['RWB', 'RB', 'RM'],
+  CDM: ['CDM', 'CB', 'CM'],
+  CM:  ['CM', 'CDM', 'CAM'],
+  CAM: ['CAM', 'CM', 'ST'],
+  LM:  ['LM', 'LWB', 'LW'],
+  RM:  ['RM', 'RWB', 'RW'],
+  LW:  ['LW', 'LM'],
+  RW:  ['RW', 'RM'],
+  ST:  ['ST', 'CAM'],
+};
+
 export const PESI_SLOT = {
   CB:  { DEF: 1.00, MID: 0.10, ATT: 0.00 },
   LB:  { DEF: 0.75, MID: 0.25, ATT: 0.10 },
