@@ -251,7 +251,7 @@ function quoteFamiliarita(roster: EngineRoster, lineup: DbLineup): { disposizion
   return { disposizione: quotaDisp, indicazioni: Math.min(1, (roster.xpIndicazioni ?? 0) / piena) }
 }
 
-function buildLineup(lineup: DbLineup, roster: EngineRoster, capitanoId: number | null = null): EngineLineup {
+function buildLineup(lineup: DbLineup, roster: EngineRoster, capitanoId: number | null = null, tattiche = false): EngineLineup {
   const byId = new Map(roster.giocatori.map((player) => [player.id, player]))
   const slots = MODULI[lineup.modulo]
   if (!slots || slots.length !== 11 || lineup.titolari.length !== 11) throw new Error(`Formazione non valida per la squadra ${lineup.team_id}.`)
@@ -327,13 +327,13 @@ function buildLineup(lineup: DbLineup, roster: EngineRoster, capitanoId: number 
   // chi gioca, esattamente come in Football Manager e come gia' succede per i
   // calci piazzati: un incarico non deve sparire perche' chi lo aveva e' in
   // tribuna.
-  const capitanoScelto = capitanoId ? formazione.find((g: EnginePlayer) => g.id === capitanoId) ?? null : null
-  const capitano = capitanoScelto ?? capitanoAutomatico(formazione)
+  const capitanoScelto = tattiche && capitanoId ? formazione.find((g: EnginePlayer) => g.id === capitanoId) ?? null : null
+  const capitano = tattiche ? (capitanoScelto ?? capitanoAutomatico(formazione)) : null
   // Ruoli e compiti per slot (engine/ruoli.js, engine/config.js). NULL finche'
   // l'interfaccia degli schemi personalizzati non li scrive: il motore in quel
   // caso non applica nessuno scarto.
-  const ruoli = lineup.ruoli && lineup.ruoli.length === 11 ? [...lineup.ruoli] : null
-  const compiti = lineup.compiti && lineup.compiti.length === 11 ? [...lineup.compiti] : null
+  const ruoli = tattiche && lineup.ruoli && lineup.ruoli.length === 11 ? [...lineup.ruoli] : null
+  const compiti = tattiche && lineup.compiti && lineup.compiti.length === 11 ? [...lineup.compiti] : null
   return { modulo: lineup.modulo, slots: [...slots], titolari: formazione, panchina, cambiFatti: 0, incaricati, capitano, ruoli, compiti }
 }
 
@@ -827,12 +827,17 @@ export default {
       // che PostgREST non riconosce. Il controllo sull'admin resta esplicito.
       const chiamataDiSistema = ctx.authMode === 'secret'
       const { data: league, error: leagueError } = await ctx.supabaseAdmin.from('leagues')
-        .select('id, nome, admin_id, stato, giornate_totali').eq('id', leagueId).single()
+        .select('id, nome, admin_id, stato, giornate_totali, tattiche_attive').eq('id', leagueId).single()
       if (leagueError || !league) return Response.json({ error: 'Lega non trovata.' }, { status: 404 })
       if (!chiamataDiSistema && league.admin_id !== ctx.userClaims?.id) {
         return Response.json({ error: 'Solo l’amministratore può simulare una giornata.' }, { status: 403 })
       }
       if (league.stato !== 'stagione') return Response.json({ error: 'La stagione non è in corso.' }, { status: 409 })
+
+      // L'interruttore del sistema tattico, per lega (20260917100000). Spento
+      // di default: morale in campo, ruoli, compiti, schemi personalizzati e
+      // capitano restano tutti fermi finche' l'amministratore non lo accende.
+      const tatticheAttive = Boolean((league as { tattiche_attive?: boolean }).tattiche_attive)
 
       const { data: firstFixture, error: firstError } = await ctx.supabaseAdmin.from('fixtures')
         .select('giornata').eq('league_id', leagueId).eq('stato', 'programmata').order('giornata').limit(1).maybeSingle()
@@ -991,13 +996,20 @@ export default {
         const awayRoster = rosters.get(fixture.away_team_id)!
         const homeDbLineup = lineups.get(fixture.home_team_id)!
         const awayDbLineup = lineups.get(fixture.away_team_id)!
-        const homeLineup = buildLineup(homeDbLineup, homeRoster, teamCapitani.get(fixture.home_team_id) ?? null)
-        const awayLineup = buildLineup(awayDbLineup, awayRoster, teamCapitani.get(fixture.away_team_id) ?? null)
+        const homeLineup = buildLineup(homeDbLineup, homeRoster, teamCapitani.get(fixture.home_team_id) ?? null, tatticheAttive)
+        const awayLineup = buildLineup(awayDbLineup, awayRoster, teamCapitani.get(fixture.away_team_id) ?? null, tatticheAttive)
         // Gli scarti tattici si sommano su un canale solo (lineup.tattica).
         // Oggi c'e' il morale; ruoli e corsie si agganciano qui quando la
         // tattica arrivera' in produzione.
-        homeLineup.tattica = sommaDelta(deltaMorale(homeLineup), deltaRuoli(homeLineup))
-        awayLineup.tattica = sommaDelta(deltaMorale(awayLineup), deltaRuoli(awayLineup))
+        // Il sistema tattico e' dietro un interruttore per lega, spento di
+        // default (migrazione 20260917100000). Il morale in particolare si
+        // applica a chiunque — ogni giocatore ne ha uno — quindi senza
+        // interruttore un deploy lo accenderebbe ovunque, e non e' una
+        // decisione da prendere con un deploy.
+        if (tatticheAttive) {
+          homeLineup.tattica = sommaDelta(deltaMorale(homeLineup), deltaRuoli(homeLineup))
+          awayLineup.tattica = sommaDelta(deltaMorale(awayLineup), deltaRuoli(awayLineup))
+        }
         // Le due barre con cui si scende in campo oggi. Senza schemi
         // personalizzati coincidono con la vecchia familiarita' per modulo.
         homeRoster.familiarita = quoteFamiliarita(homeRoster, homeDbLineup)

@@ -752,10 +752,24 @@ generare anche quegli attributi.
 
 1. ~~`forzeLinee` legge i profili~~ — fatto
 2. ~~L'Edge Function passa i profili al motore~~ — fatto
-3. Schema: piano per giornata + identità di squadra, migrazione e RLS.
-   **Il piano avversario non deve essere leggibile prima della simulazione**, esattamente
-   come le formazioni (CLAUDE.md §6).
-4. UI, dietro un flag per abilitarlo su una lega sola.
+3. ~~**Il piano avversario non deve essere leggibile prima della simulazione**~~ — verificato,
+   non serviva scrivere niente. Schema, ruoli e compiti stanno su `lineups`, che ha già la
+   politica giusta (`private.lineup_visibile`): vedi una formazione solo se è tua o se quella
+   giornata è già simulata. Provato impersonando un utente vero: la propria formazione della
+   19 si vede con lo schema, quella dell'avversario dà **0 righe**, quella della 18 già
+   simulata si vede. Le altre superfici nuove (`indicazioni_xp`, `formation_xp.disposizione`)
+   contengono solo storia di partite già giocate, e `teams.capitano` è pubblico come nel calcio.
+4. ~~Flag per abilitarlo su una lega sola~~ — fatto: `leagues.tattiche_attive`, spento di
+   default, si accende con `public.imposta_tattiche_attive` e **solo l'amministratore**.
+   Non è un flag da sviluppatore da togliere poi: una lega avviata può legittimamente non
+   volere le tattiche a metà stagione.
+
+   L'interruttore vale in tre punti, non solo nel motore — le altre due erano fughe vere:
+   - `salva_formazione` a interruttore spento **ignora** schema, ruoli e compiti. Non è
+     pignoleria: la familiarità è indicizzata sullo schieramento, quindi salvare una variante
+     che il motore ignora creerebbe un contatore per una forma mai giocata davvero;
+   - il **capitano** agiva su `applica_morale_checkpoint`, che gira sempre e non passa dal
+     motore. Era la più insidiosa, perché quel checkpoint tocca i rinnovi.
 5. Familiarità col piano? Oggi esiste `formation_xp` per modulo e stile. Se un piano
    tattico nuovo costasse anche in familiarità, cambiare assetto ogni giornata sarebbe
    più caro — da valutare, interagisce col costo di snaturamento.
