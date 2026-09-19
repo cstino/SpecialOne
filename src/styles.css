@@ -3269,3 +3269,13 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .risorse-punti { min-width: 0; width: 100%; }
   .risorse-rami { grid-template-columns: 1fr; }
 }
+
+/* Scheda di uno svincolato e segnalino di infortunio.
+   La preflight di Tailwind e' disattivata: il <button> azzera a mano bordo,
+   sfondo, allineamento e font, altrimenti si porta dietro la cromatura nativa. */
+.free-agent-card__apri { display:grid; gap:3px; width:100%; padding:0; font:inherit; color:inherit; text-align:left; background:transparent; border:0; cursor:pointer; }
+.free-agent-card__apri > strong, .free-agent-card__apri > p { margin:0; }
+.free-agent-card__apri:hover > strong { text-decoration:underline; text-underline-offset:3px; }
+.free-agent-card__apri:focus-visible { outline:2px solid #c58cff; outline-offset:3px; border-radius:6px; }
+.free-agent-card__infortunio { justify-self:start; display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:.68rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#ffb4a2; background:rgba(224,92,72,.16); border:1px solid rgba(224,92,72,.34); }
+.free-agent-card__infortunio::before { content:'✚'; font-size:.78rem; line-height:1; }

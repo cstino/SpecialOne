@@ -3,6 +3,7 @@ import { ROSA_MASSIMA } from '../lib/league'
 import { cognome } from '../lib/nomi'
 import { MACRO_COLORE, MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
+import { SchedaGiocatore } from './SchedaGiocatore'
 import { useSeasonData } from '../lib/useSeasonData'
 import { formatCountdown, oraServerAdesso, useOraCorrente } from '../lib/countdown'
 import type { League, Membership } from '../types'
@@ -50,6 +51,7 @@ type Asta = {
 
 type Anagrafica = {
   nome: string
+  nomeCompleto: string
   club: string
   ruolo: string
   posizioni: string[]
@@ -59,6 +61,12 @@ type Anagrafica = {
   eta: number
   foto_url: string | null
   foto_firmata?: string
+  /** Giornate di stop residue. Uno svincolato infortunato resta infortunato. */
+  infortunatoFinoA: number
+  nazionalita?: string | null
+  piede?: string | null
+  altezza?: number | null
+  attributi?: Record<string, number | null>
 }
 
 // Il mercato apre alle 23:30 e chiude alle 21:00 (design §9.1, apertura
@@ -121,6 +129,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   const [svincolati, setSvincolati] = useState<Map<number, Anagrafica>>(new Map())
   // Solo le proprie: la RLS non consegna quelle altrui, ed e' il punto.
   const [mieOfferte, setMieOfferte] = useState<Map<number, number>>(new Map())
+  const [schedaApertaId, setSchedaApertaId] = useState<number | null>(null)
   const [bozzaOfferta, setBozzaOfferta] = useState<Record<number, string>>({})
   const [paginaAstaRuolo, setPaginaAstaRuolo] = useState<MacroRuolo>('GK')
   // Offrire impegna il denaro: quello che conta non e' il budget ma cio' che
@@ -189,13 +198,15 @@ export function Mercato({ membership, onNavigate }: Props) {
           supabase.from('free_agent_progression')
             .select('player_id, overall_corrente, eta_corrente, overall_inizio_stagione')
             .eq('league_id', league.id).in('player_id', idsAsta),
+          // L'infortunio viaggia con l'istanza: uno svincolato rotto resta
+          // rotto, e chi offre deve poterlo vedere prima di offrire.
           supabase.from('player_instances')
-            .select('player_id, overall_corrente, eta_corrente, overall_inizio_stagione')
+            .select('player_id, overall_corrente, eta_corrente, overall_inizio_stagione, infortunato_fino_a')
             .eq('league_id', league.id).is('team_id', null).in('player_id', idsAsta),
         ])
       : [{ data: [], error: null }, { data: [], error: null }]
     const istanzeSvincolate = new Map((orfaneRes.data ?? [])
-      .map((i) => [i.player_id, i as { overall_corrente: number; eta_corrente: number; overall_inizio_stagione: number }]))
+      .map((i) => [i.player_id, i as { overall_corrente: number; eta_corrente: number; overall_inizio_stagione: number; infortunato_fino_a: number }]))
     // Una sola interrogazione per l'anagrafica: i giocatori delle rose e
     // quelli all'asta vengono dalla stessa tabella.
     const daCercare = [...new Set([
@@ -249,6 +260,14 @@ export function Mercato({ membership, onNavigate }: Props) {
       })(),
       foto_url: perId.get(a.player_id)?.foto_url ?? null,
       foto_firmata: fotoPerId.get(a.player_id),
+      // Solo un'istanza orfana puo' essere infortunata: chi non e' mai stato in
+      // rosa (free_agent_progression) non ha mai giocato e non si e' mai rotto.
+      infortunatoFinoA: istanzeSvincolate.get(a.player_id)?.infortunato_fino_a ?? 0,
+      nomeCompleto: perId.get(a.player_id)?.nome ?? '—',
+      nazionalita: perId.get(a.player_id)?.nazionalita ?? null,
+      piede: perId.get(a.player_id)?.piede ?? null,
+      altezza: perId.get(a.player_id)?.altezza ?? null,
+      attributi: perId.get(a.player_id)?.attributi ?? {},
     }])))
     setRose(istanze.map((i) => ({
       id: i.id,
@@ -493,6 +512,11 @@ export function Mercato({ membership, onNavigate }: Props) {
     }
   }
 
+  // La scheda di uno svincolato: stesso pannello della rosa e degli scambi,
+  // senza nessuna azione — da qui si guarda e basta. Serve soprattutto a
+  // vedere per quante giornate e' fermo prima di offrire.
+  const scheda = schedaApertaId === null ? null : svincolati.get(schedaApertaId) ?? null
+
   const cardSvincolato = (a: Asta, compatta = false) => {
     const g = svincolati.get(a.player_id)
     const mia = a.stato === 'aperta' ? mieOfferte.get(a.id) : undefined
@@ -516,8 +540,20 @@ export function Mercato({ membership, onNavigate }: Props) {
           <span className={`role-pill role-pill--${macro.toLowerCase()}`}>{g?.ruolo ?? '—'}</span>
           <small>{MACRO_LABEL[macro]}</small>
         </header>
-        <strong>{g?.nome ?? `#${a.player_id}`}</strong>
-        <p>{g?.club ?? '—'} · {g?.eta ?? '—'} anni · {g?.posizioni?.join(' / ') ?? '—'}</p>
+        <button className="free-agent-card__apri" type="button"
+          onClick={() => setSchedaApertaId(a.player_id)}
+          aria-label={`Scheda di ${g?.nome ?? 'giocatore'}`}>
+          <strong>{g?.nome ?? `#${a.player_id}`}</strong>
+          <p>{g?.club ?? '—'} · {g?.eta ?? '—'} anni · {g?.posizioni?.join(' / ') ?? '—'}</p>
+        </button>
+        {/* L'infortunio viaggia con l'istanza: chi viene svincolato rotto resta
+            rotto, e chi offre deve saperlo PRIMA di offrire. Prima non si
+            vedeva da nessuna parte, e si deduceva — male — che fosse guarito. */}
+        {g && g.infortunatoFinoA > 0 && (
+          <span className="free-agent-card__infortunio">
+            Infortunato · {g.infortunatoFinoA} {g.infortunatoFinoA === 1 ? 'giornata' : 'giornate'}
+          </span>
+        )}
         <footer>
           <em>Ingaggio minimo {milioni(a.ingaggio_teorico)}</em>
           {a.origine === 'spin_offseason' && <i>Spin</i>}
@@ -794,6 +830,17 @@ export function Mercato({ membership, onNavigate }: Props) {
             </ul>}
       </section>
     </div>}
+    {scheda && <SchedaGiocatore
+      giocatore={{
+        nome: scheda.nomeCompleto, club: scheda.club, nazionalita: scheda.nazionalita,
+        posizioni: scheda.posizioni, overall: scheda.overall, eta: scheda.eta,
+        piede: scheda.piede, altezza: scheda.altezza,
+        infortunatoFinoA: scheda.infortunatoFinoA,
+        attributi: scheda.attributi ?? {},
+      }}
+      fotoUrl={scheda.foto_firmata}
+      onClose={() => setSchedaApertaId(null)}
+    />}
   </main>
 }
 
