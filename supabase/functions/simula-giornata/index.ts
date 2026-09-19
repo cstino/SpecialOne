@@ -1060,11 +1060,23 @@ export default {
       //   morale                 ogni quarto di stagione
       //   punti abilita'         ogni quarto di stagione
       //   countdown vivaio       ogni giornata
+      //   guarigione svincolati  ogni giornata
       const { error: vivaioCountdownError } = await ctx.supabaseAdmin.rpc('decrementa_vivaio_giornate', {
         p_league_id: leagueId,
         p_giornata: giornata,
       })
       if (vivaioCountdownError) throw vivaioCountdownError
+
+      // L'infortunio di chi e' sul mercato scala come per chi e' in rosa. Il
+      // recupero normale passa da aggiorna_condizione_rosa, che riceve solo i
+      // giocatori DELLE SQUADRE CHE GIOCANO: uno svincolato non ci entra mai e
+      // restava rotto per sempre. Registro e funzione separati dagli altri,
+      // idempotente per (lega, giornata) come il countdown qui sopra.
+      const { error: guarigioniError } = await ctx.supabaseAdmin.rpc('guarisci_svincolati', {
+        p_league_id: leagueId,
+        p_giornata: giornata,
+      })
+      if (guarigioniError) throw guarigioniError
 
       // Lo stipendio e' una rata per giornata, non un addebito anticipato.
       // L'RPC e' idempotente: se il cron ritenta dopo un errore, ogni quota
