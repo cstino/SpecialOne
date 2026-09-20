@@ -76,7 +76,7 @@ const STILE_DESCRIZIONI: Record<string, string> = {
 
 type PlayerStats = Record<string, number | null>
 type Player = { id: number; fc_id: number; nome: string; club: string; nazionalita: string | null; overall_corrente: number; eta_corrente: number; posizioni: string[]; piede: string | null; altezza: number | null; condizione: number; infortunato_fino_a: number; squalificato_fino_a: number; ritiro_annunciato: boolean; attributi: PlayerStats; foto_url: string | null }
-type SavedLineup = { modulo: string; stile_gioco: string; titolari: number[]; panchina: number[]; tribuna: number[]; salvata_il: string; disposizione: string[] | null; ruoli: (string | null)[] | null; compiti: (string | null)[] | null }
+type SavedLineup = { modulo: string; stile_gioco: string; titolari: number[]; panchina: number[]; tribuna: number[]; salvata_il: string; disposizione: string[] | null; ruoli: (string | null)[] | null; compiti: (string | null)[] | null; focus_corsia: string | null }
 
 const formatSalvataIl = (iso: string) => new Intl.DateTimeFormat('it-IT', {
   timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
@@ -217,6 +217,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [disposizione, setDisposizione] = useState<string[] | null>(null)
   const [ruoli, setRuoli] = useState<(string | null)[] | null>(null)
   const [compiti, setCompiti] = useState<(string | null)[] | null>(null)
+  const [focusCorsia, setFocusCorsia] = useState<string | null>(null)
   const [schemaAperto, setSchemaAperto] = useState(false)
   const [xpDisposizione, setXpDisposizione] = useState<XpDisposizione[]>([])
   const [xpIndicazioni, setXpIndicazioni] = useState(0)
@@ -294,7 +295,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       const targetGiornata = nextFixture?.giornata ?? league.giornate_totali
       if (active) setGiornata(targetGiornata)
       const { data: lineup, error: lineupError } = await supabase.from('lineups')
-        .select('modulo, stile_gioco, titolari, panchina, tribuna, salvata_il, disposizione, ruoli, compiti')
+        .select('modulo, stile_gioco, titolari, panchina, tribuna, salvata_il, disposizione, ruoli, compiti, focus_corsia')
         .eq('league_id', league.id)
         .eq('team_id', membership.id)
         .lte('giornata', targetGiornata)
@@ -337,6 +338,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         setDisposizione(current.disposizione ?? null)
         setRuoli(current.ruoli ?? null)
         setCompiti(current.compiti ?? null)
+        setFocusCorsia(current.focus_corsia ?? null)
         setStile(current.stile_gioco)
         setSalvataIl(current.salvata_il)
         setTitolari(titolariCompleti)
@@ -561,7 +563,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     }
     const { error: saveError } = await supabase.rpc('salva_formazione', {
       p_league_id: league.id, p_giornata: giornata, p_modulo: modulo,
-      p_disposizione: disposizione, p_ruoli: ruoli, p_compiti: compiti,
+      p_disposizione: disposizione, p_ruoli: ruoli, p_compiti: compiti, p_focus_corsia: focusCorsia,
       p_titolari: titolari, p_panchina: cleanBench, p_tribuna: tribuna,
       p_stile_gioco: stile,
     })
@@ -579,6 +581,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     setDisposizione(null)
     setRuoli(null)
     setCompiti(null)
+    setFocusCorsia(null)
     setSaved(false)
     setSelected(null)
     setPlayerAction(null)
@@ -602,9 +605,11 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         disposizione={disposizione}
         ruoli={ruoli}
         compiti={compiti}
+        focus={focusCorsia}
         xpDisposizione={xpDisposizione}
         xpIndicazioni={xpIndicazioni}
         onChange={(d, r, c) => { setDisposizione(d); setRuoli(r); setCompiti(c); setSaved(false) }}
+        onFocus={(f) => { setFocusCorsia(f); setSaved(false) }}
         onClose={() => setSchemaAperto(false)}
       />}
       <PopupSpiegazione userId={membership.user_id} hintKey="formazione" titolo="Come funziona la Formazione">
@@ -662,7 +667,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
                 <button className="formation-tattica__trigger" type="button" onClick={() => { setSchemaAperto(true); setModuleMenuOpen(false); setStileMenuOpen(false) }}>
                   <span className="formation-tattica__testo">
                     <small>Schema</small>
-                    <strong>{disposizione || ruoli || compiti ? 'Personalizzato' : 'Standard'}</strong>
+                    <strong>{disposizione || ruoli || compiti || focusCorsia ? 'Personalizzato' : 'Standard'}</strong>
                   </span>
                   <i aria-hidden="true">›</i>
                 </button>

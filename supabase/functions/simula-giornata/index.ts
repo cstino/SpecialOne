@@ -8,6 +8,7 @@ import { setSeed } from '../../../engine/random.js'
 import { calciaRigori, portiereDaLineup, tiratoriDaLineup } from '../../../engine/rigori.js'
 import { capitanoAutomatico, deltaMorale } from '../../../engine/morale.js'
 import { deltaRuoli, sommaDelta } from '../../../engine/ruoli.js'
+import { deltaCorsie } from '../../../engine/corsie.js'
 
 // La chiave segreta del progetto, esposta con un nome non riservato: la
 // piattaforma non inietta SUPABASE_SECRET_KEY e vieta di crearla a mano.
@@ -30,7 +31,7 @@ type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number
 // moltiplicatoreInfortuni e' facoltativo: se assente l'engine usa 1 (nessun
 // effetto), esattamente come nella suite di validazione.
 type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number>; esperienzaStile: Record<string, number>; moltiplicatoreInfortuni?: number; xpDisposizione?: Array<{ disposizione: string[]; partite: number }>; xpIndicazioni?: number; familiarita?: { disposizione: number; indicazioni: number } }
-type DbLineup = { team_id: number; giornata?: number; modulo: string; disposizione?: string[] | null; ruoli?: (string | null)[] | null; compiti?: (string | null)[] | null; titolari: number[]; panchina: number[]; tribuna: number[]; stile_gioco: string; automatica: boolean; rigorista?: number | null; punizione_corta?: number | null; punizione_lunga?: number | null; angolo_dx?: number | null; angolo_sx?: number | null }
+type DbLineup = { team_id: number; giornata?: number; modulo: string; disposizione?: string[] | null; ruoli?: (string | null)[] | null; compiti?: (string | null)[] | null; focus_corsia?: string | null; titolari: number[]; panchina: number[]; tribuna: number[]; stile_gioco: string; automatica: boolean; rigorista?: number | null; punizione_corta?: number | null; punizione_lunga?: number | null; angolo_dx?: number | null; angolo_sx?: number | null }
 type EngineLineup = { modulo: string; slots: string[]; titolari: EnginePlayer[]; panchina: EnginePlayer[]; cambiFatti: number; incaricati: { rigorista: number | null; punizione_corta: number | null; punizione_lunga: number | null; angolo_dx: number | null; angolo_sx: number | null }; capitano: EnginePlayer | null; ruoli: (string | null)[] | null; compiti: (string | null)[] | null; tattica?: (g: EnginePlayer, slot: string) => number }
 type Fixture = { id: number; season_id: number; league_id: number; giornata: number; home_team_id: number; away_team_id: number; stato: string; campo_neutro: boolean; bracket_tie_id: number | null; mano: number | null }
 
@@ -887,8 +888,8 @@ export default {
       const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult, stileXpResult, indicazioniXpResult, medicoResult, pendenzeResult] = await Promise.all([
         ctx.supabaseAdmin.from('teams').select('id, nome, user_id, controllata_da_pc, capitano').eq('league_id', leagueId).in('id', teamIds),
         ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, attributi_override, specializzazione_attiva, morale').eq('league_id', leagueId).in('team_id', teamIds),
-        ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx, disposizione, ruoli, compiti').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
-        ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx, disposizione, ruoli, compiti').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
+        ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx, disposizione, ruoli, compiti, focus_corsia').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
+        ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx, disposizione, ruoli, compiti, focus_corsia').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
         ctx.supabaseAdmin.from('formation_xp').select('team_id, modulo, disposizione, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),
         ctx.supabaseAdmin.from('stile_xp').select('team_id, stile, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),
         ctx.supabaseAdmin.from('indicazioni_xp').select('team_id, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),
@@ -1007,8 +1008,18 @@ export default {
         // interruttore un deploy lo accenderebbe ovunque, e non e' una
         // decisione da prendere con un deploy.
         if (tatticheAttive) {
-          homeLineup.tattica = sommaDelta(deltaMorale(homeLineup), deltaRuoli(homeLineup))
-          awayLineup.tattica = sommaDelta(deltaMorale(awayLineup), deltaRuoli(awayLineup))
+          // Dove si attacca (engine/corsie.js). Va calcolato DOPO che entrambi
+          // gli schieramenti esistono, perche' legge quanto l'avversario ha
+          // lasciato scoperto su ogni corsia rispetto a se' stesso a compiti e
+          // ruoli neutri: e' una lettura dell'altro, non una posa propria.
+          const focusCasa = homeDbLineup.focus_corsia ?? null
+          const focusOspite = awayDbLineup.focus_corsia ?? null
+          homeLineup.tattica = sommaDelta(
+            deltaMorale(homeLineup), deltaRuoli(homeLineup),
+            deltaCorsie(homeLineup, awayLineup, focusCasa))
+          awayLineup.tattica = sommaDelta(
+            deltaMorale(awayLineup), deltaRuoli(awayLineup),
+            deltaCorsie(awayLineup, homeLineup, focusOspite))
         }
         // Le due barre con cui si scende in campo oggi. Senza schemi
         // personalizzati coincidono con la vecchia familiarita' per modulo.

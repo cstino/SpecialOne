@@ -33,9 +33,11 @@ type Props = {
   disposizione: string[] | null
   ruoli: (string | null)[] | null
   compiti: (string | null)[] | null
+  focus: string | null
   xpDisposizione: XpDisposizione[]
   xpIndicazioni: number
   onChange: (d: string[] | null, r: (string | null)[] | null, c: (string | null)[] | null) => void
+  onFocus: (f: string | null) => void
   onClose: () => void
 }
 
@@ -108,7 +110,7 @@ const RAGGIO_CALAMITA = 13
 const SOGLIA_TRASCINAMENTO = 3
 
 export default function SchemaTattico({
-  modulo, disposizione, ruoli, compiti, xpDisposizione, xpIndicazioni, onChange, onClose,
+  modulo, disposizione, ruoli, compiti, focus, xpDisposizione, xpIndicazioni, onChange, onFocus, onClose,
 }: Props) {
   const standard = MODULI[modulo] ?? []
   const schema = disposizione ?? standard
@@ -131,10 +133,14 @@ export default function SchemaTattico({
     return Math.min(1, Math.round(migliore * FAM_PARTITE_PIENA) / FAM_PARTITE_PIENA)
   }, [xpDisposizione, schema])
 
-  const conIndicazioni = (ruoli?.filter(Boolean).length ?? 0) + (compiti?.filter((c) => c && c !== 'equilibrio').length ?? 0)
+  // Ventiquattro elementi come in SQL (private.avanza_familiarita): lo stile,
+  // gli undici ruoli, gli undici compiti e dove si attacca.
+  const conIndicazioni = (ruoli?.filter(Boolean).length ?? 0)
+    + (compiti?.filter((c) => c && c !== 'equilibrio').length ?? 0)
+    + (focus ? 1 : 0)
   const quotaIndicazioni = Math.min(1,
     Math.round(Math.min(1, xpIndicazioni / FAM_PARTITE_PIENA)
-      * resaFamiliarita(conIndicazioni / 23) * FAM_PARTITE_PIENA) / FAM_PARTITE_PIENA)
+      * resaFamiliarita(conIndicazioni / 24) * FAM_PARTITE_PIENA) / FAM_PARTITE_PIENA)
 
   const cambiati = 11 - uguali(standard, schema)
   const nome = useMemo(() => nomeSchieramento(schema, MODULI), [schema])
@@ -170,7 +176,7 @@ export default function SchemaTattico({
     )
   }
 
-  const ripristina = () => { onChange(null, null, null); setAperto(null) }
+  const ripristina = () => { onChange(null, null, null); onFocus(null); setAperto(null) }
 
   // --- trascinamento ---
   //
@@ -276,6 +282,23 @@ export default function SchemaTattico({
         <Barra nome="Indicazioni" quota={quotaIndicazioni}
           nota={conIndicazioni === 0 ? 'Nessuna indicazione data.' : `${conIndicazioni} ${conIndicazioni === 1 ? 'indicazione attiva' : 'indicazioni attive'}.`} />
       </div>
+      {/* Dove si attacca: una scelta di squadra, non di posizione. Paga se
+          l'avversario e' scoperto li' e costa se e' il suo lato forte — otto
+          punti e sei di scarto fra leggere bene e leggere male. Non
+          concentrare e' una scelta legittima, non una mancanza. */}
+      <div className="schema__focus">
+        <span className="schema__focus-titolo">Dove attacchiamo</span>
+        <div className="schema__focus-scelte">
+          {([[null, 'Ovunque'], ['SX', 'A sinistra'], ['CEN', 'Al centro'], ['DX', 'A destra']] as const).map(([v, et]) => (
+            <button key={et} type="button" className={focus === v ? 'is-attiva' : ''}
+              onClick={() => onFocus(v)}>{et}</button>
+          ))}
+        </div>
+        <small>{focus
+          ? 'Concentrare paga se l’avversario è scoperto lì, e costa se è il suo lato forte.'
+          : 'Nessuna concentrazione: si attacca dove capita, senza rischi né vantaggi.'}</small>
+      </div>
+
       <p className="schema__spiega">
         Trascina una posizione per spostarla, toccala per darle ruolo e compito. La squadra rende meglio
         quanto più conosce lo schieramento e le indicazioni: spostare o cambiare molto insieme fa scendere
