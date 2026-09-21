@@ -4,6 +4,7 @@ import { cognome } from '../lib/nomi'
 import { MACRO_COLORE, MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
 import { SchedaGiocatore } from './SchedaGiocatore'
+import { attributiDi, type Attributi } from '../lib/attributiGiocatore'
 import { useSeasonData } from '../lib/useSeasonData'
 import { formatCountdown, oraServerAdesso, useOraCorrente } from '../lib/countdown'
 import type { League, Membership } from '../types'
@@ -66,7 +67,6 @@ type Anagrafica = {
   nazionalita?: string | null
   piede?: string | null
   altezza?: number | null
-  attributi?: Record<string, number | null>
 }
 
 // Il mercato apre alle 23:30 e chiude alle 21:00 (design §9.1, apertura
@@ -130,6 +130,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   // Solo le proprie: la RLS non consegna quelle altrui, ed e' il punto.
   const [mieOfferte, setMieOfferte] = useState<Map<number, number>>(new Map())
   const [schedaApertaId, setSchedaApertaId] = useState<number | null>(null)
+  const [attributiScheda, setAttributiScheda] = useState<Attributi>({})
   const [bozzaOfferta, setBozzaOfferta] = useState<Record<number, string>>({})
   const [paginaAstaRuolo, setPaginaAstaRuolo] = useState<MacroRuolo>('GK')
   // Offrire impegna il denaro: quello che conta non e' il budget ma cio' che
@@ -214,7 +215,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       ...asteRighe.map((a) => a.player_id),
     ])]
     const { data: anagrafica, error: erroreAnagrafica } = daCercare.length
-      ? await supabase.from('players').select('id, nome, club, nazionalita, posizioni, piede, altezza, attributi, overall, eta, foto_url').in('id', daCercare)
+      ? await supabase.from('players').select('id, nome, club, nazionalita, posizioni, piede, altezza, overall, eta, foto_url').in('id', daCercare)
       : { data: [], error: null }
     if (erroreAnagrafica) { setErrore(erroreAnagrafica.message); setCaricamento(false); return }
 
@@ -228,7 +229,7 @@ export function Mercato({ membership, onNavigate }: Props) {
     const fotoPerId = new Map(fotoFirmate.filter((entry): entry is readonly [number, string] => Boolean(entry[1])))
     const perId = new Map((anagrafica ?? []).map((p) => [p.id, p as {
       id: number; nome: string; club: string; nazionalita: string | null; posizioni: string[]
-      piede: string | null; altezza: number | null; attributi: Record<string, number | null>
+      piede: string | null; altezza: number | null
       overall: number; eta: number; foto_url: string | null
     }]))
     setAste(asteRighe)
@@ -267,7 +268,6 @@ export function Mercato({ membership, onNavigate }: Props) {
       nazionalita: perId.get(a.player_id)?.nazionalita ?? null,
       piede: perId.get(a.player_id)?.piede ?? null,
       altezza: perId.get(a.player_id)?.altezza ?? null,
-      attributi: perId.get(a.player_id)?.attributi ?? {},
     }])))
     setRose(istanze.map((i) => ({
       id: i.id,
@@ -283,7 +283,6 @@ export function Mercato({ membership, onNavigate }: Props) {
       posizioni: perId.get(i.player_id)?.posizioni,
       piede: perId.get(i.player_id)?.piede,
       altezza: perId.get(i.player_id)?.altezza,
-      attributi: perId.get(i.player_id)?.attributi,
       foto_firmata: fotoPerId.get(i.player_id),
       condizione: i.condizione,
       infortunatoFinoA: i.infortunato_fino_a,
@@ -517,6 +516,13 @@ export function Mercato({ membership, onNavigate }: Props) {
   // vedere per quante giornate e' fermo prima di offrire.
   const scheda = schedaApertaId === null ? null : svincolati.get(schedaApertaId) ?? null
 
+  // Gli attributi arrivano solo ora, per questo giocatore: chiederli per tutti
+  // in lista costava 860 KB a ogni apertura della pagina.
+  async function apriScheda(playerId: number) {
+    setAttributiScheda(await attributiDi(playerId))
+    setSchedaApertaId(playerId)
+  }
+
   const cardSvincolato = (a: Asta, compatta = false) => {
     const g = svincolati.get(a.player_id)
     const mia = a.stato === 'aperta' ? mieOfferte.get(a.id) : undefined
@@ -541,7 +547,7 @@ export function Mercato({ membership, onNavigate }: Props) {
           <small>{MACRO_LABEL[macro]}</small>
         </header>
         <button className="free-agent-card__apri" type="button"
-          onClick={() => setSchedaApertaId(a.player_id)}
+          onClick={() => void apriScheda(a.player_id)}
           aria-label={`Scheda di ${g?.nome ?? 'giocatore'}`}>
           <strong>{g?.nome ?? `#${a.player_id}`}</strong>
           <p>{g?.club ?? '—'} · {g?.eta ?? '—'} anni · {g?.posizioni?.join(' / ') ?? '—'}</p>
@@ -836,7 +842,7 @@ export function Mercato({ membership, onNavigate }: Props) {
         posizioni: scheda.posizioni, overall: scheda.overall, eta: scheda.eta,
         piede: scheda.piede, altezza: scheda.altezza,
         infortunatoFinoA: scheda.infortunatoFinoA,
-        attributi: scheda.attributi ?? {},
+        attributi: attributiScheda,
       }}
       fotoUrl={scheda.foto_firmata}
       onClose={() => setSchedaApertaId(null)}
