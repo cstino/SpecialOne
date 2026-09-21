@@ -203,7 +203,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       ...asteRighe.map((a) => a.player_id),
     ])]
     const { data: anagrafica, error: erroreAnagrafica } = daCercare.length
-      ? await supabase.from('players').select('id, nome, club, nazionalita, posizioni, piede, altezza, overall, eta, foto_url').in('id', daCercare)
+      ? await supabase.from('players').select('id, nome, club, nazionalita, posizioni, piede, altezza, attributi, overall, eta, foto_url').in('id', daCercare)
       : { data: [], error: null }
     if (erroreAnagrafica) { setErrore(erroreAnagrafica.message); setCaricamento(false); return }
 
@@ -217,7 +217,7 @@ export function Mercato({ membership, onNavigate }: Props) {
     const fotoPerId = new Map(fotoFirmate.filter((entry): entry is readonly [number, string] => Boolean(entry[1])))
     const perId = new Map((anagrafica ?? []).map((p) => [p.id, p as {
       id: number; nome: string; club: string; nazionalita: string | null; posizioni: string[]
-      piede: string | null; altezza: number | null
+      piede: string | null; altezza: number | null; attributi: Record<string, number | null>
       overall: number; eta: number; foto_url: string | null
     }]))
     setAste(asteRighe)
@@ -264,6 +264,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       posizioni: perId.get(i.player_id)?.posizioni,
       piede: perId.get(i.player_id)?.piede,
       altezza: perId.get(i.player_id)?.altezza,
+      attributi: perId.get(i.player_id)?.attributi,
       foto_firmata: fotoPerId.get(i.player_id),
       condizione: i.condizione,
       infortunatoFinoA: i.infortunato_fino_a,
