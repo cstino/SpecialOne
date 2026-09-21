@@ -1199,50 +1199,74 @@ export default {
       })
       if (cartelliniError) throw cartelliniError
 
-      // Ogni quarto della stagione aggiorna gli overall di tutte le rose. La
-      // RPC è idempotente e recupera anche un checkpoint rimasto in sospeso
-      // dopo un eventuale ritentativo del cron.
+      // Aggiorna gli overall di tutte le rose. Gira a OGNI GIORNATA dal 10
+      // settembre 2026 (migrazione 20260910120000): il campo "checkpoint" non
+      // contiene piu' il numero del quarto ma quello della giornata, e la
+      // formula annuale e' divisa per giornate_totali invece che per 4.
+      // Questo commento diceva "ogni quarto" e ha ingannato chi e' venuto
+      // dopo: i quattro meccanismi qui sotto NON hanno piu' tutti lo stesso
+      // ritmo. La RPC e' idempotente e recupera un checkpoint rimasto in
+      // sospeso dopo un eventuale ritentativo del cron.
       const { data: progressione, error: progressioneError } = await ctx.supabaseAdmin.rpc('applica_progressione_trimestrale', {
         p_league_id: leagueId,
         p_giornata: giornata,
       })
       if (progressioneError) throw progressioneError
 
-      // Stesso ritmo (un quarto di stagione) ma registro e funzione separati
-      // dalla progressione overall: sono due meccaniche distinte e tenerle
-      // separate permette di correggerne una senza toccare l'altra.
+      // Il morale e' rimasto A QUARTI DI STAGIONE, a differenza della
+      // progressione qui sopra: registro e funzione separati proprio per
+      // questo, si e' potuto cambiare ritmo a una senza toccare l'altra.
       const { data: morale, error: moraleError } = await ctx.supabaseAdmin.rpc('applica_morale_checkpoint', {
         p_league_id: leagueId,
         p_giornata: giornata,
       })
       if (moraleError) throw moraleError
 
-      // Terzo meccanismo sullo stesso quarto di stagione: i punti abilita' da
-      // spendere sui rami vivaio/training/medico. Registro e funzione separati
-      // dagli altri due, per la stessa ragione di sempre.
+      // Anche i punti abilita' da spendere sui rami vivaio/training/medico
+      // restano a quarti di stagione. Registro e funzione separati dagli altri,
+      // per la stessa ragione di sempre.
       const { error: puntiError } = await ctx.supabaseAdmin.rpc('assegna_punti_abilita', {
         p_league_id: leagueId,
         p_giornata: giornata,
       })
       if (puntiError) throw puntiError
 
-      // Quarto meccanismo sullo stesso quarto di stagione: la crescita dei
-      // prospetti ancora in cantera (vivaio_prospetti non e' toccata dalla
-      // progressione overall qui sopra, che lavora solo su player_instances).
+      // La crescita dei prospetti ancora in cantera: A OGNI GIORNATA come la
+      // progressione, ed e' giusto che i due ritmi coincidano — sono la stessa
+      // meccanica applicata a due tabelle diverse (vivaio_prospetti non e'
+      // toccata dalla progressione qui sopra, che lavora su player_instances).
       const { error: vivaioCrescitaError } = await ctx.supabaseAdmin.rpc('cresci_vivaio_checkpoint', {
         p_league_id: leagueId,
         p_giornata: giornata,
       })
       if (vivaioCrescitaError) throw vivaioCrescitaError
 
-      // A differenza dei quattro meccanismi sopra (un quarto di stagione),
-      // questo gira a OGNI giornata: il countdown di un prospetto vivaio
-      // scade in giornate dal momento dell'acquisto, non a fine stagione.
+      // Il countdown di un prospetto vivaio: a ogni giornata, perche' scade in
+      // giornate dal momento dell'acquisto e non a fine stagione.
+      //
+      // RIEPILOGO DEI RITMI, visto che non sono piu' uniformi:
+      //   progressione overall   ogni giornata
+      //   crescita vivaio        ogni giornata
+      //   morale                 ogni quarto di stagione
+      //   punti abilita'         ogni quarto di stagione
+      //   countdown vivaio       ogni giornata
+      //   guarigione svincolati  ogni giornata
       const { error: vivaioCountdownError } = await ctx.supabaseAdmin.rpc('decrementa_vivaio_giornate', {
         p_league_id: leagueId,
         p_giornata: giornata,
       })
       if (vivaioCountdownError) throw vivaioCountdownError
+
+      // L'infortunio di chi e' sul mercato scala come per chi e' in rosa. Il
+      // recupero normale passa da aggiorna_condizione_rosa, che riceve solo i
+      // giocatori DELLE SQUADRE CHE GIOCANO: uno svincolato non ci entra mai e
+      // restava rotto per sempre. Registro e funzione separati dagli altri,
+      // idempotente per (lega, giornata) come il countdown qui sopra.
+      const { error: guarigioniError } = await ctx.supabaseAdmin.rpc('guarisci_svincolati', {
+        p_league_id: leagueId,
+        p_giornata: giornata,
+      })
+      if (guarigioniError) throw guarigioniError
 
       // Lo stipendio e' una rata per giornata, non un addebito anticipato.
       // L'RPC e' idempotente: se il cron ritenta dopo un errore, ogni quota
