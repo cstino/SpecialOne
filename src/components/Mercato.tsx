@@ -3,6 +3,7 @@ import { ROSA_MASSIMA } from '../lib/league'
 import { cognome } from '../lib/nomi'
 import { MACRO_COLORE, MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
+import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { SchedaGiocatore } from './SchedaGiocatore'
 import { attributiDi, type Attributi } from '../lib/attributiGiocatore'
 import { useSeasonData } from '../lib/useSeasonData'
@@ -223,8 +224,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       .filter((p) => p.foto_url)
       .map(async (p) => {
         if (p.foto_url?.startsWith('http')) return [p.id, p.foto_url] as const
-        const { data } = await supabase.storage.from('player-photos').createSignedUrl(p.foto_url!, 3600)
-        return [p.id, data?.signedUrl] as const
+        return [p.id, urlFotoGiocatore(p.foto_url)] as const
       }))
     const fotoPerId = new Map(fotoFirmate.filter((entry): entry is readonly [number, string] => Boolean(entry[1])))
     const perId = new Map((anagrafica ?? []).map((p) => [p.id, p as {

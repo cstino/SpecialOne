@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { formatoStemma, generaUuidV4, preparaStemma } from '../lib/crest'
 import { ROSA_MASSIMA, ROSA_MINIMA } from '../lib/league'
 import { supabase } from '../lib/supabase'
+import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { STEMMA_SQUADRA_DEFAULT, stemmaPresetDaValore } from '../lib/teamCrests'
 import { useSeasonData } from '../lib/useSeasonData'
 import { useFaseSquadra } from '../lib/faseSquadra'
@@ -301,8 +302,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       }).sort((left, right) => ROLE_ORDER[department(left.posizioni[0])] - ROLE_ORDER[department(right.posizioni[0])] || right.overall - left.overall || left.nome.localeCompare(right.nome, 'it'))
       const fotoPerId = new Map(await Promise.all(
         loaded.filter((p) => p.foto_url).map(async (p) => {
-          const { data } = await supabase.storage.from('player-photos').createSignedUrl(p.foto_url!, 3600)
-          return [p.id, data?.signedUrl] as const
+          return [p.id, urlFotoGiocatore(p.foto_url)] as const
         })
       ))
       setPlayers(loaded.map((p) => ({ ...p, fotoFirmata: fotoPerId.get(p.id) })))
@@ -361,8 +361,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       (fasce ?? []).map((f: { player_id: number; potenziale_min: number; potenziale_max: number }) => [f.player_id, f]))
     const fotoPerId = new Map(await Promise.all(
       righe.filter((r) => r.giocatore.foto_url).map(async (r) => {
-        const { data } = await supabase.storage.from('player-photos').createSignedUrl(r.giocatore.foto_url!, 3600)
-        return [r.id, data?.signedUrl] as const
+        return [r.id, urlFotoGiocatore(r.giocatore.foto_url)] as const
       })
     ))
     setVivaioProspetti(righe.map((r) => ({
@@ -519,15 +518,10 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     return mappa
   }, [statRows, subitiPerPartita])
 
+  // Indirizzo pubblico e stabile: niente chiamata di rete, quindi niente
+  // effetto asincrono da annullare.
   useEffect(() => {
-    let active = true
-    async function firmaFoto() {
-      if (!schedaAperta?.foto_url) { setFotoScheda(undefined); return }
-      const { data } = await supabase.storage.from('player-photos').createSignedUrl(schedaAperta.foto_url, 3600)
-      if (active) setFotoScheda(data?.signedUrl ?? undefined)
-    }
-    void firmaFoto()
-    return () => { active = false }
+    setFotoScheda(urlFotoGiocatore(schedaAperta?.foto_url))
   }, [schedaAperta])
 
   // Le righe di specializzazioni_giocatore/player_instances tengono solo la

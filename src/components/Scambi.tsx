@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { cognome } from '../lib/nomi'
 import { macroRuolo } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
+import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { useSeasonData } from '../lib/useSeasonData'
 import { formatCountdown, oraServerAdesso, useOraCorrente } from '../lib/countdown'
 import type { League, Membership } from '../types'
@@ -178,8 +179,7 @@ export function Scambi({ membership, onNavigate }: Props) {
       .filter((p) => p.foto_url)
       .map(async (p) => {
         if (p.foto_url?.startsWith('http')) return [p.id, p.foto_url] as const
-        const { data } = await supabase.storage.from('player-photos').createSignedUrl(p.foto_url!, 3600)
-        return [p.id, data?.signedUrl] as const
+        return [p.id, urlFotoGiocatore(p.foto_url)] as const
       }))
     const fotoPerId = new Map(fotoFirmate.filter((e): e is readonly [number, string] => Boolean(e[1])))
     const perId = new Map((anagrafica ?? []).map((p) => [p.id, p as {

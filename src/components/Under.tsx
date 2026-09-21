@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MACRO_COLORE, MACRO_LABEL, macroRuolo, type MacroRuolo } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
+import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { useSeasonData } from '../lib/useSeasonData'
 import { formatCountdown, oraServerAdesso, useOraCorrente } from '../lib/countdown'
 import type { Membership } from '../types'
@@ -68,8 +69,7 @@ export function Under({ membership, onNavigate }: Props) {
       // stesso schema di firma usato per gli svincolati in Mercato.tsx.
       const fotoPerId = new Map(await Promise.all(
         (giocatori ?? []).filter((g) => g.foto_url).map(async (g) => {
-          const { data } = await supabase.storage.from('player-photos').createSignedUrl(g.foto_url!, 3600)
-          return [g.id, data?.signedUrl] as const
+          return [g.id, urlFotoGiocatore(g.foto_url)] as const
         })
       ))
       setProspetti(new Map((giocatori ?? []).map((g) => [g.id, {

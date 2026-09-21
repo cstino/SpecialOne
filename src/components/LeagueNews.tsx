@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { cognome } from '../lib/nomi'
 import { isEventoGol } from '../types'
 import type { Fixture, Match, Standing, Team } from '../types'
@@ -64,11 +65,11 @@ function milioni(value: number | null) {
   return `${(value / 1_000_000).toLocaleString('it-IT', { maximumFractionDigits: 1 })} M€/stagione`
 }
 
+// Il bucket e' pubblico: l'indirizzo e' stabile e non serve firmarlo. Resta
+// async perche' la chiamano decine di punti con await, e cambiarli tutti non
+// darebbe niente in cambio.
 async function firmaFoto(path: string | null | undefined) {
-  if (!path) return undefined
-  if (path.startsWith('http')) return path
-  const { data } = await supabase.storage.from('player-photos').createSignedUrl(path, 3600)
-  return data?.signedUrl
+  return urlFotoGiocatore(path)
 }
 
 // Scelta deterministica: la stessa partita mostra sempre la stessa variante

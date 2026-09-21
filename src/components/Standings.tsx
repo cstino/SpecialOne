@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { cognome } from '../lib/nomi'
 import { useSeasonData } from '../lib/useSeasonData'
 import type { League, Membership } from '../types'
@@ -64,8 +65,7 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
         .map(async (riga) => {
           const path = anagrafica.get(riga.id)!.foto_url!
           if (path.startsWith('http')) return [riga.id, path] as const
-          const { data: signed } = await supabase.storage.from('player-photos').createSignedUrl(path, 3600)
-          return [riga.id, signed?.signedUrl] as const
+          return [riga.id, urlFotoGiocatore(path)] as const
         }))
       if (!attivo) return
       const fotoPerId = new Map(fotoFirmate.filter((entry): entry is readonly [number, string] => Boolean(entry[1])))
