@@ -103,14 +103,14 @@ export function corsiaConRuolo(wc, ruolo, giocatore) {
   };
 }
 
-// Quanto vale sapere interpretare il ruolo, in punti di overall efficace a
-// idoneita' piena. E' il pezzo che mancava: prima l'idoneita' governava solo
+// Quanto COSTA non saper interpretare il ruolo, in punti di overall efficace a
+// inadeguatezza piena. Solo costo, mai premio: vedi deltaRuoli(). E' il pezzo che mancava: prima l'idoneita' governava solo
 // come il peso si smistava fra le corsie, cioe' una cosa che LEGGE L'AVVERSARIO
 // e non il rendimento di chi gioca. Il risultato era un ruolo che rendeva
 // uguale a chiunque lo si desse, che e' esattamente il contrario di come
 // funziona in Football Manager: li' la resa di un giocatore dipende da quanto
 // il ruolo gli somiglia.
-export const VALORE_IDONEITA = 0.9;
+export const VALORE_IDONEITA = 2.0;
 
 /**
  * Lo scarto di overall efficace dovuto ai ruoli, nella forma che il motore si
@@ -134,7 +134,17 @@ export function deltaRuoli(lineup) {
   return (g) => {
     const r = perGiocatore.get(g);
     if (!r) return 0;
-    return idoneitaRuolo(g, r) * VALORE_IDONEITA;
+    // SOLO PENALITA', mai bonus. In FC un giocatore in un ruolo che non gli
+    // appartiene paga il 10% sulle statistiche difensive; non esiste un premio
+    // per il ruolo azzeccato. La ragione e' di disegno, non di realismo: se il
+    // ruolo giusto desse un bonus, chi non entra nella schermata partirebbe in
+    // svantaggio — e le tattiche devono restare una cosa che si puo' ignorare
+    // senza essere puniti.
+    //
+    // Il valore tattico di un ruolo non sta qui: sta in DOVE mette il
+    // giocatore (corsiaConRuolo, avanzamentoRuolo), che e' una scelta a due
+    // facce. Questo canale dice solo se sa eseguirlo.
+    return Math.min(0, idoneitaRuolo(g, r)) * VALORE_IDONEITA;
   };
 }
 

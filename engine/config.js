@@ -213,6 +213,18 @@ export const COMPITI = ['difesa', 'equilibrio', 'attacco'];
 //  modulato dalla stamina (CONSUMO_MOD_STAMINA), quindi una punta che pressa e
 //  ha fiato regge, una che non ce l'ha si spegne. Non serve altro codice.
 //
+//  A SOMMA ZERO. Ogni vettore di punti somma a zero fra le tre linee: un
+//  compito SPOSTA l'enfasi, non crea forza. E' la stessa regola che lo stile di
+//  gioco segue gia' nel motore ("redistribuzione a somma zero in PUNTI di
+//  overall tra DEF/MID/ATT").
+//
+//  Non e' pignoleria contabile: prima il pressing alto sommava +1,27 netti, e
+//  quasi tutti gli altri erano positivi. Il risultato misurato era che TOCCARE
+//  QUALUNQUE COSA conveniva — chi smanettava a caso batteva di 1,7 punti chi
+//  lasciava il predefinito. Le tattiche devono poter essere ignorate senza
+//  essere puniti: il guadagno deve venire dall'azzeccare la situazione, non
+//  dall'aver aperto la schermata.
+//
 //  versoDifesa  quanta parte del peso che lascia l'attacco arriva DIRETTAMENTE
 //               in difesa, invece di fermarsi a centrocampo.
 //
@@ -227,16 +239,16 @@ export const COMPITI = ['difesa', 'equilibrio', 'attacco'];
 // ============================================================
 export const COMPITI_REPARTO = {
   DEF: {
-    difesa:  { nome: 'Bloccato',      energia: 0.96, punti: { DEF: 0.24, MID: -0.05, ATT: -0.16 } },
-    attacco: { nome: 'Si sgancia',    energia: 1.07, daFiato: true, punti: { DEF: -0.30, MID: 0.22, ATT: 0.60 } },
+    difesa:  { nome: 'Bloccato',      energia: 0.96, punti: { DEF: 0.30, MID: -0.10, ATT: -0.20 } },
+    attacco: { nome: 'Si sgancia',    energia: 1.07, daFiato: true, punti: { DEF: -0.55, MID: 0.15, ATT: 0.40 } },
   },
   MID: {
-    difesa:  { nome: 'In copertura',  energia: 1.02, punti: { DEF: 0.45, MID: 0.12, ATT: -0.18 } },
-    attacco: { nome: 'Si inserisce',  energia: 1.08, daFiato: true, punti: { DEF: -0.30, MID: -0.06, ATT: 0.80 } },
+    difesa:  { nome: 'In copertura',  energia: 1.02, punti: { DEF: 0.45, MID: 0.05, ATT: -0.50 } },
+    attacco: { nome: 'Si inserisce',  energia: 1.08, daFiato: true, punti: { DEF: -0.50, MID: -0.15, ATT: 0.65 } },
   },
   ATT: {
-    difesa:  { nome: 'Pressing alto', energia: 1.06, idoneita: 'fiato', daFiato: true, punti: { DEF: 0.22, MID: 1.4, ATT: -0.35 } },
-    attacco: { nome: 'Sul filo',      energia: 0.95, punti: { DEF: -0.30, MID: -0.22, ATT: 0.26 } },
+    difesa:  { nome: 'Pressing alto', energia: 1.06, idoneita: 'fiato', daFiato: true, punti: { DEF: 0.25, MID: 1.10, ATT: -1.35 } },
+    attacco: { nome: 'Sul filo',      energia: 0.95, punti: { DEF: -0.30, MID: -0.25, ATT: 0.55 } },
   },
 };
 

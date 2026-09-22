@@ -372,6 +372,60 @@ lezione vale oltre questo caso: **tarare i pezzi uno alla volta non dice come si
 comporta il sistema**, e in un gioco dove le leve si scelgono tutte insieme è il
 totale che l'utente sente.
 
+## 26. Chi non tocca niente non deve perdere
+
+Decisione del committente dopo aver parlato con gli altri partecipanti: non
+tutti vogliono investire energie. *«Le tattiche devono essere come in EA FC:
+si possono tranquillamente scegliere quelle predefinite, oppure chi vuole può
+dare tutte le indicazioni che ritiene. Chi le lascia predefinite non è
+svantaggiato, ma chi ci lavora può ottenere risultati migliori — e anche
+peggiori.»*
+
+**Il dato diceva che aveva ragione.** Misurato prima della modifica: chi non
+apriva la schermata era **8,4 punti su 38 dietro** a chi ci lavorava. Le
+tattiche erano di fatto obbligatorie.
+
+**Cosa fa EA FC.** I *Tactical Preset* esistono dichiaratamente per «chi non
+vuole spendere tempo a personalizzare». E soprattutto: un giocatore in un ruolo
+che non gli è familiare prende una **penalità del 10%** sul posizionamento
+difensivo. Non c'è un premio per il ruolo azzeccato — c'è un **costo per quello
+sbagliato**. È l'asimmetria che rende il default competitivo.
+
+**Due correzioni, e la seconda era un difetto vero.**
+
+*Prima*: l'idoneità al ruolo diventa **solo penalità**. Chi non assegna ruoli non
+paga niente; chi mette un giocatore in un ruolo che non sa fare, sì. Il valore
+tattico di un ruolo resta dov'era — in DOVE mette il giocatore (corsia e linea),
+che è una scelta a due facce — non nel premio per averlo azzeccato.
+
+*Seconda*: i compiti **aggiungevano forza** invece di spostarla. Il pressing alto
+sommava `+0,22 +1,40 −0,35 = +1,27` netti, e quasi tutti gli altri erano
+positivi. Misurato: **chi smanettava a caso batteva di 1,7 punti chi lasciava il
+predefinito**. Ora ogni vettore somma a zero fra le tre linee — la stessa regola
+che lo stile di gioco seguiva già nel motore.
+
+**Il risultato:**
+
+| A | punti/38 | rispetto al default |
+|---|---|---|
+| **lascia tutto predefinito** | **61,6** | — |
+| tocca tutto a caso | 59,3 | **−1,8** |
+| solo ruoli sensati | 61,6 | +0,0 |
+| solo corsia giusta | 64,8 | +3,2 |
+| lavora bene su tutto | 66,8 | **+5,2** |
+| sbaglia tutto deliberatamente | 49,0 | −12,6 |
+
+Chi non tocca niente sta al riferimento. Chi prova senza studiare perde poco.
+Chi legge l'avversario guadagna. Chi mette ogni giocatore nel ruolo che sa fare
+peggio, paga — ma è una configurazione che non si raggiunge per distrazione.
+
+I criteri dei pezzi reggono: il ruolo naturale resta esattamente neutro,
+l'interprete sbagliato costa **−2,7**, leggere la corsia scoperta vale **4,6
+punti**. `simulate-reale` invariato.
+
+`tools/validazione/prova-default-non-svantaggiato.mjs` conserva la misura che
+conta: **chi smanetta a caso non deve battere chi non tocca niente**.
+
 ## A. Istruzioni ai singoli giocatori — da decidere
 
 Richiesta del committente (11 settembre 2026), **non ancora progettata**. L'esempio:
