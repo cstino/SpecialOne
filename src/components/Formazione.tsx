@@ -2,6 +2,7 @@ import { useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { supabase } from '../lib/supabase'
 import { schieramentoInCampo } from '../lib/schieramento'
 import SchemaTattico, { type XpDisposizione } from './SchemaTattico'
+import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { cognome } from '../lib/nomi'
 import { ROSA_MASSIMA } from '../lib/league'
 import type { League, Membership } from '../types'
@@ -270,8 +271,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       setPlayers(loaded)
       const signed = await Promise.all(loaded.filter((player) => player.foto_url).map(async (player) => {
         if (player.foto_url?.startsWith('http')) return [player.id, player.foto_url] as const
-        const { data } = await supabase.storage.from('player-photos').createSignedUrl(player.foto_url!, 3600)
-        return [player.id, data?.signedUrl] as const
+        return [player.id, urlFotoGiocatore(player.foto_url)] as const
       }))
       if (active) setImageUrls(Object.fromEntries(signed.filter((item): item is [number, string] => Boolean(item[1]))))
       const [{ data: formationXp, error: formationXpError }, { data: stileXp, error: stileXpError }, { data: indicazioniXp }] = await Promise.all([

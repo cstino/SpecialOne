@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { cognome } from '../lib/nomi'
 import { macroRuolo } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
+import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { useSeasonData } from '../lib/useSeasonData'
 import { formatCountdown, oraServerAdesso, useOraCorrente } from '../lib/countdown'
 import type { League, Membership } from '../types'
@@ -11,6 +12,7 @@ import { GameNav, type GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { SchedaGiocatore } from './SchedaGiocatore'
+import { attributiDi, type Attributi } from '../lib/attributiGiocatore'
 import { UnderlineTabs } from './ui/underline-tabs'
 
 // Ordine di CALENDARIO, non alfabetico. Dentro una stagione l'ON-Season cade a
@@ -137,6 +139,14 @@ export function Scambi({ membership, onNavigate }: Props) {
   // niente. Vanno in un popup, che si mette davanti.
   const [erroreAzione, setErroreAzione] = useState<string | null>(null)
   const [schedaApertaId, setSchedaApertaId] = useState<number | null>(null)
+  const [attributiScheda, setAttributiScheda] = useState<Attributi>({})
+
+  // Gli attributi si caricano per il giocatore che si apre davvero: chiederli
+  // per tutta la lega in lista costava centinaia di kilobyte a ogni apertura.
+  async function apriScheda(id: number) {
+    setAttributiScheda(await attributiDi(id))
+    setSchedaApertaId(id)
+  }
   const [tabComposer, setTabComposer] = useState<'giocatori' | 'scelte'>('giocatori')
   const compositoreRef = useRef<HTMLElement>(null)
 
@@ -161,7 +171,7 @@ export function Scambi({ membership, onNavigate }: Props) {
     const istanze = istanzeRes.data ?? []
     const daCercare = [...new Set(istanze.map((i) => i.player_id))]
     const { data: anagrafica, error: erroreAnagrafica } = daCercare.length
-      ? await supabase.from('players').select('id, nome, club, nazionalita, posizioni, piede, altezza, attributi, overall, eta, foto_url').in('id', daCercare)
+      ? await supabase.from('players').select('id, nome, club, nazionalita, posizioni, piede, altezza, overall, eta, foto_url').in('id', daCercare)
       : { data: [], error: null }
     if (erroreAnagrafica) { setErrore(erroreAnagrafica.message); setCaricamento(false); return }
 
@@ -169,13 +179,12 @@ export function Scambi({ membership, onNavigate }: Props) {
       .filter((p) => p.foto_url)
       .map(async (p) => {
         if (p.foto_url?.startsWith('http')) return [p.id, p.foto_url] as const
-        const { data } = await supabase.storage.from('player-photos').createSignedUrl(p.foto_url!, 3600)
-        return [p.id, data?.signedUrl] as const
+        return [p.id, urlFotoGiocatore(p.foto_url)] as const
       }))
     const fotoPerId = new Map(fotoFirmate.filter((e): e is readonly [number, string] => Boolean(e[1])))
     const perId = new Map((anagrafica ?? []).map((p) => [p.id, p as {
       id: number; nome: string; club: string; nazionalita: string | null; posizioni: string[]
-      piede: string | null; altezza: number | null; attributi: Record<string, number | null>
+      piede: string | null; altezza: number | null
       overall: number; eta: number; foto_url: string | null
     }]))
 
@@ -193,7 +202,6 @@ export function Scambi({ membership, onNavigate }: Props) {
       posizioni: perId.get(i.player_id)?.posizioni,
       piede: perId.get(i.player_id)?.piede,
       altezza: perId.get(i.player_id)?.altezza,
-      attributi: perId.get(i.player_id)?.attributi,
       foto_firmata: fotoPerId.get(i.player_id),
       condizione: i.condizione,
       infortunatoFinoA: i.infortunato_fino_a,
@@ -358,7 +366,7 @@ export function Scambi({ membership, onNavigate }: Props) {
         </ul>
 
   const pacchettoChip = (id: number, tipo: 'g' | 's') => tipo === 'g'
-    ? <button key={`g${id}`} type="button" className="scambi-chip scambi-chip--player" onClick={() => setSchedaApertaId(id)}>
+    ? <button key={`g${id}`} type="button" className="scambi-chip scambi-chip--player" onClick={() => void apriScheda(id)}>
         {giocatore(id)?.nome ?? `#${id}`}
       </button>
     : <span key={`s${id}`} className={`scambi-chip scambi-chip--pick scambi-chip--pick-${sceltaDati(id)?.finestra ?? 'on'}`}>
@@ -585,7 +593,7 @@ export function Scambi({ membership, onNavigate }: Props) {
               <ul className="scambi-asset-grid">
                 {inVendita.map((g) => <li key={g.id}>
                   <button type="button" className="scambi-asset-card scambi-asset-card--player"
-                    onClick={() => setSchedaApertaId(g.id)}>
+                    onClick={() => void apriScheda(g.id)}>
                     <span className={`scambi-asset-card__ovr role-pill--${macroRuolo(g.posizioni ?? [g.ruolo]).toLowerCase()}`}>{g.overall}</span>
                     <span className="scambi-asset-card__info">
                       <strong>{g.nome}</strong>
@@ -656,7 +664,7 @@ export function Scambi({ membership, onNavigate }: Props) {
           posizioni: schedaAperta.posizioni ?? [schedaAperta.ruolo], overall: schedaAperta.overall, eta: schedaAperta.eta,
           piede: schedaAperta.piede, altezza: schedaAperta.altezza, ingaggio: schedaAperta.ingaggio,
           condizione: schedaAperta.condizione, infortunatoFinoA: schedaAperta.infortunatoFinoA,
-          ritiroAnnunciato: schedaAperta.ritiroAnnunciato, attributi: schedaAperta.attributi ?? {},
+          ritiroAnnunciato: schedaAperta.ritiroAnnunciato, attributi: attributiScheda,
         }}
         fotoUrl={schedaAperta.foto_firmata}
         onClose={() => setSchedaApertaId(null)}

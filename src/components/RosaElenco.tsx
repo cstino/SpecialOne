@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo } from '../lib/ruoli'
 
 export type RosterPlayer = {
@@ -12,10 +13,10 @@ export type RosterPlayer = {
   ingaggio: number
 }
 
+// Il bucket e' pubblico: indirizzo stabile, nessuna firma, nessuna chiamata di
+// rete. Resta async perche' i chiamanti la usano con await.
 export async function firmaFoto(path: string | null | undefined): Promise<string | undefined> {
-  if (!path) return undefined
-  const { data } = await supabase.storage.from('player-photos').createSignedUrl(path, 3600)
-  return data?.signedUrl
+  return urlFotoGiocatore(path)
 }
 
 type RosaElencoProps = {

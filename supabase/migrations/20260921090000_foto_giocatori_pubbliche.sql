@@ -1,0 +1,33 @@
+-- ============================================================
+--  LE FOTO DEI GIOCATORI DIVENTANO PUBBLICHE
+--
+--  Supabase ha segnalato lo sforamento della quota di banda del piano gratuito
+--  (5,5 GB). Misurato: il bucket player-photos ha 10.951 file per 60 MB, e la
+--  pagina Mercato ne mostra circa novecento a ogni apertura — cinque megabyte
+--  di immagini, cinque volte il peso del JSON.
+--
+--  IL PROBLEMA NON E' LA DIMENSIONE, E' LA CACHE. Con un bucket privato ogni
+--  indirizzo e' firmato e DIVERSO A OGNI CHIAMATA, anche per lo stesso file:
+--  il browser non puo' riconoscere un'immagine che ha gia' scaricato, quindi
+--  la riscarica ogni volta, per sempre. Una foto da 5,7 KB vista cento volte
+--  costa 570 KB invece di 5,7.
+--
+--  Con il bucket pubblico l'indirizzo e' stabile e la cache del browser (e la
+--  CDN davanti allo storage) fanno il loro lavoro: la seconda visita costa
+--  zero. In piu' sparisce una chiamata createSignedUrl PER OGNI FOTO — con
+--  novecento foto in pagina erano novecento round-trip.
+--
+--  SOLO PLAYER-PHOTOS, e il perche' conta. team-crests resta privato: sono
+--  quattro file per 1,2 MB, cioe' niente per la banda, e sono immagini
+--  CARICATE DAGLI UTENTI. Renderle pubbliche non porterebbe nessun beneficio
+--  misurabile e allargherebbe l'accesso a roba che non e' nostra. Le foto dei
+--  calciatori sono un'altra cosa: vengono dal dataset FC 26 e sono gia'
+--  leggibili da chiunque abbia un account (politica player_photos_download).
+--  Il passaggio reale e' da "chiunque sia autenticato" a "chiunque abbia
+--  l'indirizzo" — su immagini di calciatori professionisti.
+--
+--  La politica di lettura resta al suo posto: serve ancora all'API
+--  autenticata, e toglierla non aggiungerebbe niente.
+-- ============================================================
+
+update storage.buckets set public = true where id = 'player-photos';
