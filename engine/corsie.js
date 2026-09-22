@@ -46,7 +46,7 @@ const SPECCHIO = { SX: 'DX', CEN: 'CEN', DX: 'SX' };
 // ne costa 2. Sopra, diventava una roulette: a 110 si passava dal 27% al 57%
 // secondo dove si attaccava, e la partita la decideva la lettura invece della
 // squadra.
-export const SCALA_CORSIA = 40;
+export const SCALA_CORSIA = 20;
 export const CONCENTRAZIONE = 0.35;
 
 export function deltaCorsie(mio, suo, focus) {

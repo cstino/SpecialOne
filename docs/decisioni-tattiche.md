@@ -320,6 +320,58 @@ La 3 e' la lettura piu' fedele a FM ed e' quella che seguirei, ma va decisa.
 
 # Punti aperti
 
+## 25. I pezzi erano tarati, il sistema no
+
+Ogni canale era stato misurato da solo e stava nella forbice giusta. Messi
+insieme, no — e si vede solo provandoli insieme.
+
+Prima taratura, A contro un avversario che lascia scoperta una fascia:
+
+| A | punti/38 |
+|---|---|
+| neutro | 60,5 |
+| solo ruoli sensati | **72,0** |
+| tutto giusto | 77,2 |
+| tutto sbagliato | 54,9 |
+
+**22,3 punti di scarto**, tre volte e mezzo il metro di Football Manager. E il
+colpevole erano i **ruoli**: da soli valevano +11,5.
+
+**La causa.** Avevo tarato `VALORE_IDONEITA` per GIOCATORE — un interprete
+giusto valeva +2,5 punti percentuali — ma l'effetto è per SQUADRA. Undici ruoli
+sensati si sommano, e undici volte «poco» fa «molto». È lo stesso errore di
+prospettiva del morale, dove per fortuna avevo misurato subito l'effetto di
+squadra; qui no.
+
+**La correzione**: `VALORE_IDONEITA` da 2,6 a **0,9**, `SCALA_CORSIA` da 40 a
+**20**. Il morale non si tocca: era già ancorato al dato FM-Arena.
+
+Dopo:
+
+| leva da sola | guadagno |
+|---|---|
+| morale alto | +1,5 |
+| corsia giusta | +3,0 |
+| ruoli sensati | +3,8 |
+| **tutto insieme** | **+8,4** |
+| tutto sbagliato | −2,3 |
+
+**10,7 punti di scarto totale.** Il metro di FM sommato è 6,4 (spread fra la
+migliore e la peggiore tattica) + 3,8 (morale) = **10,2**. E nessuna leva
+domina: 1,5 / 3,0 / 3,8.
+
+I criteri dei singoli pezzi reggono ancora, il che era il rischio della
+ritaratura:
+
+- il ruolo naturale resta **esattamente neutro** (44,9% contro 44,9%);
+- l'interprete giusto vale **+2,5** sul ruolo sbagliato, quello sbagliato −1,6;
+- leggere la corsia scoperta vale **5,8 punti** contro leggerla male.
+
+`tools/validazione/prova-sistema-tattico.mjs` conserva la prova d'insieme. La
+lezione vale oltre questo caso: **tarare i pezzi uno alla volta non dice come si
+comporta il sistema**, e in un gioco dove le leve si scelgono tutte insieme è il
+totale che l'utente sente.
+
 ## A. Istruzioni ai singoli giocatori — da decidere
 
 Richiesta del committente (11 settembre 2026), **non ancora progettata**. L'esempio:

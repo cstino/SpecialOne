@@ -110,7 +110,7 @@ export function corsiaConRuolo(wc, ruolo, giocatore) {
 // uguale a chiunque lo si desse, che e' esattamente il contrario di come
 // funziona in Football Manager: li' la resa di un giocatore dipende da quanto
 // il ruolo gli somiglia.
-export const VALORE_IDONEITA = 2.6;
+export const VALORE_IDONEITA = 0.9;
 
 /**
  * Lo scarto di overall efficace dovuto ai ruoli, nella forma che il motore si
