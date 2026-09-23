@@ -213,6 +213,26 @@ export function Scambi({ membership, onNavigate }: Props) {
 
   useEffect(() => { void carica() }, [carica])
 
+  // La pagina si caricava UNA VOLTA SOLA e non si aggiornava piu'. Chi la
+  // teneva aperta vedeva la fotografia di quando l'aveva aperta: e' cosi' che
+  // un partecipante ha visto tutti i giocatori messi in vendita tranne
+  // l'ultimo, segnalandolo come un bug dei permessi che non era.
+  //
+  // Si ricarica quando si TORNA sulla pagina, non a intervalli. Un polling
+  // costerebbe banda a ogni utente per tutto il tempo in cui la tiene aperta,
+  // e il piano gratuito Supabase la banda ce l'ha gia' contata; tornare sulla
+  // scheda e' invece il momento esatto in cui uno si aspetta dati freschi.
+  useEffect(() => {
+    const suRitorno = () => { if (document.visibilityState === 'visible') void carica(true) }
+    document.addEventListener('visibilitychange', suRitorno)
+    window.addEventListener('focus', suRitorno)
+    return () => {
+      document.removeEventListener('visibilitychange', suRitorno)
+      window.removeEventListener('focus', suRitorno)
+    }
+  }, [carica])
+
+
   const nomeSquadra = useCallback((id: number) => dati.teamById.get(id)?.nome ?? 'Squadra', [dati.teamById])
   const stemma = useCallback((id: number) => <Crest
     value={dati.teamById.get(id)?.stemma_url ?? null}

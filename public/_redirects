@@ -1,0 +1,12 @@
+# Cloudflare Pages — equivalente di "rewrites" in vercel.json
+#
+# SpecialOne e' una single-page app: qualunque indirizzo deve servire
+# index.html e lasciare che sia il router del browser a decidere cosa
+# mostrare. Senza questa riga, aprire un link diretto (o ricaricare una
+# pagina interna) darebbe 404.
+#
+# Il 200 e' importante: e' una RISCRITTURA, non un redirect. L'indirizzo
+# nella barra resta quello che l'utente ha aperto.
+#
+# Questo file non disturba Vercel, che usa vercel.json e ignora _redirects.
+/*    /index.html   200

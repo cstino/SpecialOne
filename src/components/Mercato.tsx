@@ -293,6 +293,20 @@ export function Mercato({ membership, onNavigate }: Props) {
 
   useEffect(() => { void carica() }, [carica])
 
+  // Stessa ragione di Scambi: la pagina si caricava una volta sola, e un'asta
+  // aperta o un giocatore messo in vendita dopo non comparivano piu'. Si
+  // ricarica tornando sulla pagina, non a intervalli — un polling costerebbe
+  // banda per tutto il tempo in cui la si tiene aperta.
+  useEffect(() => {
+    const suRitorno = () => { if (document.visibilityState === 'visible') void carica(true) }
+    document.addEventListener('visibilitychange', suRitorno)
+    window.addEventListener('focus', suRitorno)
+    return () => {
+      document.removeEventListener('visibilitychange', suRitorno)
+      window.removeEventListener('focus', suRitorno)
+    }
+  }, [carica])
+
   const nomeSquadra = useCallback(
     (id: number) => dati.teamById.get(id)?.nome ?? 'Squadra',
     [dati.teamById],
