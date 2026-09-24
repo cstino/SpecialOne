@@ -86,9 +86,29 @@ campione assoluto della lega sceglie per ultimo.
 | 13ª | Finalista Title Playoff |
 | 14ª | Campione Title Playoff (ultima scelta) |
 
-**Parità fra squadre eliminate nello stesso turno** (i due eliminati al 1° turno del Draft
-Playoff; i quattro eliminati ai quarti del Title Playoff): si spezza con la classifica della
-stagione regolare appena conclusa — la peggio piazzata delle due (o quattro) sceglie prima.
+**Parità fra squadre eliminate nello stesso turno — rivisto il 24 settembre 2026.** Non si
+spezza più con la classifica di stagione regolare: conta **il percorso di chi ti ha battuto**.
+Ogni eliminato si mette subito dietro alla squadra che l'ha eliminato, nell'ordine in cui
+quelle squadre sono già classificate. Con un Draft Playoff a 8:
+
+| Scelta | Chi |
+|---|---|
+| 1ª | campione |
+| 2ª | finalista |
+| 3ª | semifinalista battuto dal campione |
+| 4ª | semifinalista battuto dal finalista |
+| 5ª | eliminato ai quarti dal campione |
+| 6ª | eliminato ai quarti dal finalista |
+| 7ª | eliminato ai quarti dalla 3ª |
+| 8ª | eliminato ai quarti dalla 4ª |
+
+Il **Title Playoff** è lo specchio esatto: campione ultima scelta, finalista penultima,
+semifinalista battuto dal campione terzultima, e così via.
+
+Deciso dal committente col tabellone disegnato. Chiude anche una contraddizione: il codice
+usava la classifica perfino sulle scelte 3ª/4ª, mentre la tabella qui sopra diceva già «lato
+del campione» prima di «lato del finalista». Verificato sul tabellone reale di LegaBot:
+16 posizioni su 16 come previsto dalla regola.
 
 **Il campione del Draft Playoff della stagione N ottiene la 1ª scelta di *entrambi* i
 mercati (ON-Season e OFF-Season) della stagione N+1** — non solo di uno dei due.
