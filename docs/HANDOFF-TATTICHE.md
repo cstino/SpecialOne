@@ -63,17 +63,22 @@ casa. **Non** `simulate.js`, che è la suite storica superata (registro, punto E
 
 ## Cosa resta da fare
 
-1. **Preset di tattiche**, stile FC: la metà della regola "stile EA FC" ancora
-   non costruita. Proposta sul tavolo, non confermata: i preset coincidono con
-   gli stili di gioco esistenti (equilibrato, contropiede, possesso, fasce,
-   recupero veloce, diretto, blocco basso), riempiti con ruoli, compiti e corsie
-   coerenti — un solo menu, non due concetti sovrapposti.
-2. **Accendere su LegaBot**: distribuire l'Edge Function del branch e guardare
-   qualche giornata. Primo passo che tocca il vivo: chiedere prima.
-3. Domande di design aperte: il **piano di squadra** (registro, punto A) serve
-   ancora sopra ruoli e compiti?; **`FAM_MALUS_MAX`** (punto F): la familiarità
-   pesa più di qualunque scelta tattica.
-4. Anteprima navigabile per il telefono: artifact "Schema Tattico"
+**Aggiornato il 25 settembre 2026: vedi registro, punto 27.** La tattica è
+l'identità della squadra, non la mossa della giornata; il ruolo azzeccato ora dà
+un bonus. Ordine concordato, un task alla volta:
+
+1. **Indicazioni individuali**: profili dei ruoli su 2-4 attributi, bonus e
+   penalità, indicatore di idoneità stile FC (+ / ++). ← **task corrente**
+2. **Indicazioni di squadra** (seconda pagina): stile, dove attacchiamo legato
+   alla propria rosa, linea difensiva e ampiezza nuove.
+3. **Voti in pagella** stile SofaScore, da azioni riuscite/sbagliate, RNG separato.
+4. **Ritaratura del sistema intero** con la prova del predefinito;
+   **`FAM_MALUS_MAX`** (punto F) va rivisto qui.
+5. **Preset**: combinazioni pronte delle due pagine.
+
+Fuori da questa sequenza: **accendere su LegaBot** (distribuire l'Edge Function
+del branch) tocca il vivo, chiedere prima.
+Anteprima navigabile per il telefono: artifact "Schema Tattico"
    (claude.ai/code/artifact/2e790aba-e445-4299-a5a8-51c742a944a1), non ancora
    aggiornato con "dove attacchiamo" e con le tarature degli ultimi giorni.
 

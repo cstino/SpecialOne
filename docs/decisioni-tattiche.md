@@ -847,7 +847,10 @@ giocatori sotto 55. Finché sono solo avversarie di prova non è grave, ma se un
 avrà squadre abbandonate rimpiazzate dal PC diventeranno vittime sacrificali e falseranno
 la classifica. **Task a sé, non del sistema tattico.**
 
-## C. Il vivaio non ha gli attributi per i profili
+## C. ~~Il vivaio non ha gli attributi per i profili~~ — risolto su `main`
+
+Risolto dalla migrazione `20260916100000_vivaio_attributi_completi.sql` (commit 248aaf4):
+i prospetti nascono con tutti gli attributi, come i giocatori del catalogo. Testo originale:
 
 I 210 giocatori del vivaio non hanno 8 dei 10 attributi richiesti, quindi sono immuni
 all'effetto "interprete". Sette sono già tesserati in Serie F. Non è un bug bloccante —
@@ -879,3 +882,56 @@ generare anche quegli attributi.
 5. Familiarità col piano? Oggi esiste `formation_xp` per modulo e stile. Se un piano
    tattico nuovo costasse anche in familiarità, cambiare assetto ogni giornata sarebbe
    più caro — da valutare, interagisce col costo di snaturamento.
+
+## 27. La tattica è l'identità della squadra, non la mossa della giornata — 25 settembre 2026
+
+Ripensamento del committente, che **supera il punto 26 dove i due sono in conflitto**:
+*«le tattiche si fanno all'inizio e sono il modo in cui la squadra impara a giocare. Sono
+modificabili nel tempo, ma non voglio che ognuno debba fare modifiche a ogni giornata. Le
+istruzioni un partecipante le dà, se vuole, per applicare il metodo di gioco che ritiene
+migliore.»*
+
+**Cosa cambia.**
+
+1. **Il valore di una scelta tattica nasce dall'accordo fra metodo e rosa**, non dalla
+   lettura dell'avversario. Una mezzala a cui si chiede di inserirsi rende se ha il profilo
+   dell'incursore, rende meno se non ce l'ha.
+2. **Il ruolo azzeccato dà un bonus, quello sbagliato una penalità.** Cade la regola "solo
+   penalità" del punto 26. Resta il vincolo misurabile, che è quello che conta davvero:
+   *chi smanetta a caso non deve battere chi non tocca niente*
+   (`prova-default-non-svantaggiato.mjs`). Il predefinito resta il riferimento neutro.
+3. **"Dove attacchiamo" diventa una scelta di identità** legata alla propria rosa (attacco
+   dove ho l'esterno forte), non più la lettura della fascia scoperta dell'avversario.
+4. **La familiarità delle indicazioni è il freno naturale**: cambiare spesso la fa
+   scendere, quindi chi ritocca ogni giornata paga senza bisogno di vietarlo. Da rivedere
+   insieme al punto F.
+
+**Due pagine nel menu "schema di gioco"** (sostituisce il punto A):
+
+| pagina | contenuto |
+|---|---|
+| **Indicazioni individuali** | tocchi una posizione, scegli ruolo e compito. Ogni ruolo chiede un **profilo di 2-4 attributi** (oggi uno solo, su quattro); accanto ai giocatori un indicatore di idoneità stile FC (+ / ++) |
+| **Indicazioni di squadra** | stile di gioco (i 7 esistenti), dove attacchiamo (spostato qui), **linea difensiva** (bassa / media / alta, nuova), **ampiezza** (stretta / normale / larga, nuova) |
+
+Per ogni indicazione di squadra vale lo stesso principio dei ruoli: l'opzione predefinita
+è neutra, le altre sono a due facce e rendono se la rosa è adatta (il contropiede vuole
+attaccanti veloci, la linea alta centrali veloci, l'ampiezza larga esterni che crossano).
+
+**Voti in pagella, stile SofaScore.** Ogni giocatore riceve un voto da 1 a 10 costruito
+dalle azioni riuscite e sbagliate, non estratto a caso. Tutti i ruoli pesano uguale: un
+difensore o un portiere possono essere il migliore in campo. Serve a capire se un giocatore
+è adatto al proprio metodo, quindi il voto dipende anche dall'idoneità a ruolo, compito e
+indicazioni di squadra. Vincoli:
+- oggi il motore **non** ha azioni individuali: `distribuisci()` divide i totali di squadra
+  per peso di posizione × attributo. Un voto costruito su quelle statistiche ricalcherebbe
+  l'overall. Serve uno strato "pagella" che generi azioni riuscite/sbagliate per giocatore;
+- lo strato usa un **RNG separato**, come gli infortuni: gol e risultati restano quelli del
+  motore validato;
+- il segnale vero è la **media voto** su più partite, da mostrare nella scheda.
+
+**Ordine di lavoro concordato:**
+1. indicazioni individuali: profili dei ruoli su più attributi, bonus/penalità, indicatore
+2. indicazioni di squadra: stile e dove attacchiamo spostati, linea difensiva e ampiezza nuove
+3. voti in pagella
+4. ritaratura del sistema intero, con la prova del predefinito
+5. preset: combinazioni pronte delle due pagine
