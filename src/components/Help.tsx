@@ -138,7 +138,7 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
       <p><strong>Vivaio</strong> allarga quanti prospetti puoi tenere in cantera e restringe la
         fascia di incertezza sul loro potenziale nascosto (vedi "Vivaio e mercato UNDER").
         <strong> Training</strong> accelera la crescita dei giovani e riduce i tempi di cambio
-        ruolo e di specializzazione (vedi le voci dedicate). <strong>Reparto medico</strong>
+        ruolo e di piano di sviluppo (vedi le voci dedicate). <strong>Reparto medico</strong>
         riduce il rischio di infortunio e fa recuperare più condizione a fine partita.</p>
     </>,
   },
@@ -175,30 +175,30 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         giocatore conosce già — chi è già versatile impara più in fretta un ruolo vicino — e si
         riduce ulteriormente salendo di livello nel ramo Training.</p>
       <p>Un giocatore segue <strong>un allenamento alla volta</strong>: non puoi avviare un
-        cambio di ruolo se ha già una specializzazione in corso, e viceversa. Puoi annullarlo in
+        cambio di ruolo se sta già cambiando piano di sviluppo, e viceversa. Puoi annullarlo in
         qualsiasi momento prima che si completi, senza penalità.</p>
     </>,
   },
   {
     id: 'specializzazione',
-    titolo: 'Specializzazione',
+    titolo: 'Piano di sviluppo',
     corpo: <>
-      <p>Sempre restando nel ruolo che gioca oggi, un giocatore può allenare un
-        <strong> archetipo</strong> specifico di quella posizione — un centrocampista centrale
-        può diventare regista, box-to-box, recupera palloni o mezz'ala d'inserimento, e così via
-        per ogni posizione (nessuno per il portiere, il cui rendimento in partita è un unico
-        valore aggregato). Ogni archetipo alza <strong>tre statistiche vere</strong> del
-        giocatore — quelle che il motore usa davvero in partita, non l'overall direttamente —
-        più un piccolo bonus overall che ne consegue.</p>
-      <p>Quanto rende dipende da <strong>età e margine dal potenziale</strong>: un giovane con
-        ampio spazio di crescita ottiene il pieno beneficio, un giocatore già maturo o vicino al
-        proprio potenziale ne ricava poco o nulla — lo vedi in anteprima, con i valori veri, prima
-        di avviarla.</p>
-      <p>Non sostituisce la crescita automatica di fine trimestre (vedi "Overall e
-        progressione"), che continua comunque per tutti: è un allenamento extra che si
-        <strong> somma</strong> sopra, non un'alternativa. Riallenare un giocatore verso un altro
-        archetipo sostituisce il precedente, non li accumula. Stesso vincolo di "un allenamento
-        alla volta" del cambio ruolo.</p>
+      <p>Come in EA FC, restando nel ruolo che gioca oggi un giocatore può seguire un
+        <strong> piano di sviluppo</strong>: un archetipo di quella posizione — un centrocampista
+        centrale può diventare regista, box-to-box, recupera palloni o mezz'ala d'inserimento, e
+        così via per ogni ruolo, portiere compreso. Ogni piano ha <strong>sei abilità</strong> di
+        riferimento.</p>
+      <p>Il piano <strong>non regala punti</strong>. Ogni giocatore cresce o cala a ogni giornata
+        in base a età, potenziale e minuti (vedi "Overall e progressione"); il piano decide
+        <strong> dove</strong> va quella crescita. Le due abilità principali crescono del 50% in
+        più, le altre del piano del 30% o del 20%, tutte le altre un po' meno (l'anteprima dice
+        quanto). L'overall resta quello che sarebbe stato comunque.</p>
+      <p>Per questo rende molto su un giovane che crescerà tanto e poco su chi è già arrivato al
+        suo potenziale. Su un veterano in calo fa il contrario: le abilità del piano calano meno.
+        Cambiare piano non toglie quello che il giocatore ha già maturato; il nuovo parte da lì.
+        Il piano entra in vigore alla fine del training, e vale il vincolo di "un allenamento
+        alla volta" del cambio ruolo. Per il portiere, "Para rigori" dà in più un vantaggio dal
+        dischetto.</p>
     </>,
   },
   {

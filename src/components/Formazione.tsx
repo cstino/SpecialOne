@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react'
 import { supabase } from '../lib/supabase'
+import { attributiCorrenti } from '../lib/attributiGiocatore'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { cognome } from '../lib/nomi'
 import { ROSA_MASSIMA } from '../lib/league'
@@ -245,17 +246,21 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     async function load() {
       const { data: instances, error: rosterError } = await supabase
         .from('player_instances')
-        .select('id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, player_id, posizioni_override, attributi_override')
+        .select('id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, player_id, posizioni_override')
         .eq('league_id', league.id)
         .eq('team_id', membership.id)
         .order('overall_corrente', { ascending: false })
       if (rosterError) { setError(rosterError.message); setLoading(false); return }
       const roster = instances ?? []
-      const { data: catalog, error: playerError } = await supabase
-        .from('players').select('id, fc_id, nome, club, nazionalita, posizioni, piede, altezza, attributi, foto_url').in('id', roster.map((item) => item.player_id))
+      // Gli attributi veri (crescita + piano di sviluppo) arrivano a parte:
+      // vedi lib/attributiGiocatore. Quelli del catalogo restano di riserva.
+      const [{ data: catalog, error: playerError }, attributiVeri] = await Promise.all([
+        supabase.from('players').select('id, fc_id, nome, club, nazionalita, posizioni, piede, altezza, attributi, foto_url').in('id', roster.map((item) => item.player_id)),
+        attributiCorrenti(roster.map((item) => item.id)),
+      ])
       if (playerError) { setError(playerError.message); setLoading(false); return }
       const catalogById = new Map((catalog ?? []).map((player) => [player.id, player]))
-      const loaded = roster.map((item) => ({ ...item, fc_id: catalogById.get(item.player_id)?.fc_id, nome: catalogById.get(item.player_id)?.nome ?? `Giocatore ${item.player_id}`, club: catalogById.get(item.player_id)?.club ?? '—', nazionalita: catalogById.get(item.player_id)?.nazionalita ?? null, posizioni: item.posizioni_override ?? catalogById.get(item.player_id)?.posizioni ?? [], piede: catalogById.get(item.player_id)?.piede ?? null, altezza: catalogById.get(item.player_id)?.altezza ?? null, attributi: { ...(catalogById.get(item.player_id)?.attributi ?? {}), ...(item.attributi_override ?? {}) }, foto_url: catalogById.get(item.player_id)?.foto_url ?? null })) as Player[]
+      const loaded = roster.map((item) => ({ ...item, fc_id: catalogById.get(item.player_id)?.fc_id, nome: catalogById.get(item.player_id)?.nome ?? `Giocatore ${item.player_id}`, club: catalogById.get(item.player_id)?.club ?? '—', nazionalita: catalogById.get(item.player_id)?.nazionalita ?? null, posizioni: item.posizioni_override ?? catalogById.get(item.player_id)?.posizioni ?? [], piede: catalogById.get(item.player_id)?.piede ?? null, altezza: catalogById.get(item.player_id)?.altezza ?? null, attributi: attributiVeri.get(item.id) ?? catalogById.get(item.player_id)?.attributi ?? {}, foto_url: catalogById.get(item.player_id)?.foto_url ?? null })) as Player[]
       if (!active) return
       setPlayers(loaded)
       const signed = await Promise.all(loaded.filter((player) => player.foto_url).map(async (player) => {

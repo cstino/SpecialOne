@@ -1,7 +1,6 @@
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { withSupabase } from '@supabase/server'
 import { ovrEfficace, schiera, simulaPartita } from '../../../engine/engine.js'
-import { REPARTO } from '../../../engine/config.js'
 import { MODULI } from '../../../engine/config.js'
 import { setSeed } from '../../../engine/random.js'
 import { calciaRigori, portiereDaLineup, tiratoriDaLineup } from '../../../engine/rigori.js'
@@ -21,8 +20,8 @@ type EventoSostituzione = { tipo: 'sostituzione'; minuto: number; blocco: number
 type EventoInfortunio = { tipo: 'infortunio'; minuto: number; blocco: number; lato: Lato; team_id: number; esce: number; entra: number }
 type EventoCartellino = { tipo: 'cartellino'; minuto: number; blocco: number; lato: Lato; team_id: number; giocatore: number; colore: 'giallo' | 'rosso_diretto' | 'doppio_giallo' }
 type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio | EventoCartellino
-type DbPlayer = { id: number; nome: string; posizioni: string[]; overall: number; attributi: Record<string, number> }
-type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number; posizioni_override: string[] | null; attributi_override: Record<string, number> | null; specializzazione_attiva: string | null }
+type DbPlayer = { id: number; nome: string; posizioni: string[] }
+type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number; posizioni_override: string[] | null; specializzazione_attiva: string | null }
 type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; specializzazione: string | null }
 // moltiplicatoreInfortuni e' facoltativo: se assente l'engine usa 1 (nessun
 // effetto), esattamente come nella suite di validazione.
@@ -39,39 +38,14 @@ function requiredNumber(attributes: Record<string, number>, field: string, playe
   return value
 }
 
-// Una specializzazione completata (Gestione risorse, TRAINING) scrive un
-// valore assoluto per-istanza che sostituisce quello del catalogo
-// condiviso, solo per le chiavi che divergono. Vedi
-// private.completa_specializzazioni() e player_instances.attributi_override.
-function attributoEffettivo(catalogo: Record<string, number>, override: Record<string, number> | null, field: string, playerId: number) {
-  const valore = override?.[field]
-  return typeof valore === 'number' && Number.isFinite(valore) ? valore : requiredNumber(catalogo, field, playerId)
-}
-
-// Quanto un attributo e' cresciuto insieme all'overall. Le pendenze sono
-// misurate sul catalogo (private.pendenze_attributi) e arrivano qui dall'unico
-// varco pubblico, public.pendenze_attributi().
+// Gli attributi arrivano gia' calcolati dal database, da un'unica formula:
+// catalogo + crescita insieme all'overall + piano di sviluppo (TRAINING).
+// Vedi private.attributi_istanza e la migrazione 20260927010000.
 //
-// Prima gli attributi restavano quelli dell'importazione mentre l'overall
-// saliva: un ragazzo passato da 46 a 70 tirava ancora con la finalizzazione di
-// quando ne aveva 46. Erano due numeri che raccontavano lo stesso giocatore in
-// due momenti diversi.
-type Crescita = (posizioni: string[], attributo: string, delta: number) => number
-
-function costruisciCrescita(pendenze: Array<{ reparto: string; attributo: string; pendenza: number }>): Crescita {
-  const mappa = new Map<string, number>()
-  for (const p of pendenze) mappa.set(`${p.reparto}|${p.attributo}`, Number(p.pendenza))
-  return (posizioni, attributo, delta) => {
-    if (!delta) return 0
-    // REPARTO e' un oggetto con chiavi note; qui l'indice arriva dai dati e
-    // puo' essere qualsiasi stringa, da cui il cast. Il ?? 'MID' copre un
-    // ruolo sconosciuto, che varrebbe comunque zero crescita.
-    const reparto = (REPARTO as Record<string, string>)[posizioni[0]] ?? 'MID'
-    return Math.round((mappa.get(`${reparto}|${attributo}`) ?? 0) * delta)
-  }
-}
-
-function adaptPlayer(instance: Instance, player: DbPlayer, crescita: Crescita): EnginePlayer {
+// Prima questo file rifaceva la crescita per conto suo con le pendenze, e
+// trattava attributi_override come un valore fisso da non far crescere: due
+// copie della stessa regola, che con il piano di sviluppo sarebbero state tre.
+function adaptPlayer(instance: Instance, player: DbPlayer, attributi: Record<string, number> | undefined): EnginePlayer {
   if (!player || !player.nome || !Array.isArray(player.posizioni) || player.posizioni.length === 0) {
     throw new Error(`Giocatore ${instance.id}: dati anagrafici o posizioni mancanti.`)
   }
@@ -84,19 +58,8 @@ function adaptPlayer(instance: Instance, player: DbPlayer, crescita: Crescita): 
   })) {
     if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`Giocatore ${instance.id}: campo ${field} assente.`)
   }
-  const posizioni = instance.posizioni_override ?? player.posizioni
-  const deltaOverall = instance.overall_corrente - player.overall
-  const conCrescita = (campo: string) => {
-    const valore = attributoEffettivo(player.attributi, instance.attributi_override, campo, instance.id)
-    // Un valore che viene da attributi_override e' l'esito assoluto di una
-    // specializzazione, gia' calcolato da private.completa_specializzazioni
-    // PARTENDO dagli attributi cresciuti. Farlo crescere di nuovo qui sarebbe
-    // contarlo due volte.
-    const daSpecializzazione = typeof instance.attributi_override?.[campo] === 'number'
-      && Number.isFinite(instance.attributi_override[campo])
-    if (daSpecializzazione) return valore
-    return Math.max(1, Math.min(99, valore + crescita(posizioni, campo, deltaOverall)))
-  }
+  if (!attributi) throw new Error(`Giocatore ${instance.id}: attributi correnti assenti.`)
+  const attributo = (campo: string) => requiredNumber(attributi, campo, instance.id)
 
   return {
     id: instance.id,
@@ -107,11 +70,11 @@ function adaptPlayer(instance: Instance, player: DbPlayer, crescita: Crescita): 
     posizioni: instance.posizioni_override ?? player.posizioni,
     ovr: instance.overall_corrente,
     eta: instance.eta_corrente,
-    stamina: conCrescita('stamina'),
-    finishing: conCrescita('finishing'),
-    short_passing: conCrescita('short_passing'),
-    tackle: conCrescita('standing_tackle'),
-    dribbling: conCrescita('dribbling'),
+    stamina: attributo('stamina'),
+    finishing: attributo('finishing'),
+    short_passing: attributo('short_passing'),
+    tackle: attributo('standing_tackle'),
+    dribbling: attributo('dribbling'),
     // Qui c'era anche 'gk', caricato come obbligatorio e mai letto da nessuno:
     // non dal motore, non dal frontend, non dal database. La forza del portiere
     // il motore la ricava da ovrEfficace come per tutti gli altri, cioe' dal
@@ -735,9 +698,9 @@ export default {
         }
       }
 
-      const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult, stileXpResult, medicoResult, pendenzeResult] = await Promise.all([
+      const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult, stileXpResult, medicoResult] = await Promise.all([
         ctx.supabaseAdmin.from('teams').select('id, nome, user_id, controllata_da_pc').eq('league_id', leagueId).in('id', teamIds),
-        ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, attributi_override, specializzazione_attiva').eq('league_id', leagueId).in('team_id', teamIds),
+        ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, specializzazione_attiva').eq('league_id', leagueId).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
         ctx.supabaseAdmin.from('formation_xp').select('team_id, modulo, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),
@@ -747,20 +710,21 @@ export default {
         // tramite l'unico varco pubblico (PostgREST non espone lo schema
         // private).
         ctx.supabaseAdmin.rpc('moltiplicatori_infortuni_squadre', { p_team_ids: teamIds }),
-        // Quanto ogni attributo cresce per punto di overall, per reparto.
-        // Stesso varco di sopra: PostgREST non espone lo schema private.
-        ctx.supabaseAdmin.rpc('pendenze_attributi'),
       ])
-      const loadError = teamsResult.error ?? instancesResult.error ?? lineupsResult.error ?? previousLineupsResult.error ?? xpResult.error ?? stileXpResult.error ?? medicoResult.error ?? pendenzeResult.error
+      const loadError = teamsResult.error ?? instancesResult.error ?? lineupsResult.error ?? previousLineupsResult.error ?? xpResult.error ?? stileXpResult.error ?? medicoResult.error
       if (loadError) throw loadError
       const moltiplicatoriInfortuni = new Map<number, number>((medicoResult.data ?? []).map((riga: { team_id: number; moltiplicatore: number }) => [riga.team_id, riga.moltiplicatore]))
-      const crescitaAttributi = costruisciCrescita(pendenzeResult.data ?? [])
 
       const instances = (instancesResult.data ?? []) as Instance[]
       const playerIds = [...new Set(instances.map((instance) => instance.player_id))]
       const { data: playersData, error: playersError } = await ctx.supabaseAdmin.from('players')
-        .select('id, nome, posizioni, overall, attributi').in('id', playerIds)
+        .select('id, nome, posizioni').in('id', playerIds)
       if (playersError) throw playersError
+      const { data: attributiData, error: attributiError } = await ctx.supabaseAdmin
+        .rpc('attributi_correnti', { p_instance_ids: instances.map((instance) => instance.id) })
+      if (attributiError) throw attributiError
+      const attributiCorrenti = new Map(((attributiData ?? []) as Array<{ instance_id: number; attributi: Record<string, number> }>)
+        .map((riga) => [riga.instance_id, riga.attributi]))
       const catalog = new Map((playersData ?? []).map((player) => [player.id, player as DbPlayer]))
       const teamNames = new Map((teamsResult.data ?? []).map((team) => [team.id, team.nome]))
       const teamControllateDaPc = new Map((teamsResult.data ?? []).map((team) => [team.id, Boolean(team.controllata_da_pc)]))
@@ -776,7 +740,7 @@ export default {
         for (const xp of stileXpResult.data ?? []) if (xp.team_id === teamId) esperienzaStile[xp.stile] = xp.partite_giocate
         rosters.set(teamId, {
           nome: teamNames.get(teamId) ?? `Squadra ${teamId}`,
-          giocatori: instances.filter((instance) => instance.team_id === teamId).map((instance) => adaptPlayer(instance, catalog.get(instance.player_id)!, crescitaAttributi)),
+          giocatori: instances.filter((instance) => instance.team_id === teamId).map((instance) => adaptPlayer(instance, catalog.get(instance.player_id)!, attributiCorrenti.get(instance.id))),
           esperienzaModulo,
           esperienzaStile,
           moltiplicatoreInfortuni: moltiplicatoriInfortuni.get(teamId),

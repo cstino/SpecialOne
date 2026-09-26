@@ -107,7 +107,8 @@ type Props = {
     attiva: string | null
     inCorso: { specializzazionePrecedente: string | null; specializzazioneTarget: string; avviatoGiornata: number; completaGiornata: number } | null
     prossimaGiornata: number | null
-    onCaricaOpzioni: () => Promise<Array<{ chiave: string; etichetta: string; deltas: Array<[string, number]> }>>
+    /** crescita: [attributo, % di crescita in piu'], dal piu' forte. altrePct: quanto meno crescono le altre (negativo). */
+    onCaricaOpzioni: () => Promise<Array<{ chiave: string; etichetta: string; crescita: Array<[string, number]>; altrePct: number }>>
     onAvvia: (specializzazione: string) => Promise<void>
     onAnnulla: () => Promise<void>
   }
@@ -236,46 +237,46 @@ function progressoAllenamento(a: { avviatoGiornata: number; completaGiornata: nu
   return { percent: Math.round((fatte / durata) * 100), mancano: Math.max(0, a.completaGiornata - prossimaGiornata) }
 }
 
-// Confronto prima/dopo per le stat toccate da una specializzazione, stile
-// scheda FIFA/Football Manager: pista con la stat attuale piena e il
-// guadagno evidenziato in coda, valori numerici a fianco.
-// Etichetta "56 → 63" alla fine della barra impilata (base + guadagno):
-// x/width arrivano gia' sommati dal segmento "guadagno", che e' l'ultimo
-// dello stack, quindi x+width e' proprio il bordo destro della barra intera.
-// Una riga per attributo: solo il valore se l'allenamento non lo tocca,
-// "prima → dopo" (il dopo colorato) se invece cresce. Niente barre qui:
-// su una trentina di righe per gruppo occupavano troppo spazio (segnalato
-// dall'utente) — un elenco compatto si legge comunque a colpo d'occhio.
-function RigaConfrontoAttributo({ etichetta, prima, guadagno }: { etichetta: string; prima: number; guadagno: number }) {
-  const dopo = Math.min(99, prima + guadagno)
+// Anteprima di un piano di sviluppo, stile EA FC: tutte le abilita' del
+// giocatore raggruppate come nella scheda, con il valore di oggi. Quelle del
+// piano portano accanto quanto crescono IN PIU' da qui in avanti (+50%,
+// +30%, +20%); sopra, una riga dice quanto meno crescono le altre.
+//
+// Prima questa vista mostrava "90 → 98": un bonus da incassare subito che
+// il nuovo modello non da' piu' (migrazione 20260927010000). Il piano non
+// aggiunge punti, sposta la crescita che il giocatore fa comunque.
+function RigaPianoAttributo({ etichetta, valore, pct }: { etichetta: string; valore: number; pct: number }) {
   return <div className="player-training-riga-attributo">
     <span>{etichetta}</span>
-    {guadagno > 0
-      ? <b className="is-cambiato">{prima} <em aria-hidden="true">→</em> <em className="is-dopo">{dopo}</em></b>
-      : <b>{prima}</b>}
+    {pct > 0
+      ? <b className="is-cambiato">{valore} <em className="is-dopo">+{pct}%</em></b>
+      : <b>{valore}</b>}
   </div>
 }
 
-// Non solo le 2-3 stat che la specializzazione tocca: tutte le abilita'
-// del giocatore, raggruppate come nella scheda — quelle toccate spiccano
-// col valore nuovo colorato, le altre restano li' per contesto (segnalato
-// dall'utente: vedere solo tre righe isolate non bastava a farsi un'idea).
-function ConfrontoAttributi({ deltas, attributi, soloGk }: { deltas: Array<[string, number]>; attributi: Record<string, number | null>; soloGk: boolean }) {
-  const mappaDeltas = new Map(deltas)
-  return <div className="player-training-confronto">
-    {GRUPPI_ATTRIBUTI.filter((gruppo) => !gruppo.soloGk || soloGk).map((gruppo) => {
-      const voci = gruppo.voci.filter((voce) => typeof attributi[voce.chiave] === 'number')
-      if (voci.length === 0) return null
-      return <div className="player-training-confronto__gruppo" key={gruppo.titolo}>
-        <h5>{gruppo.titolo}</h5>
-        {voci.map((voce) => {
-          const prima = Math.max(0, Math.min(99, Math.round(attributi[voce.chiave] ?? 0)))
-          const guadagno = Math.max(0, Math.min(99 - prima, mappaDeltas.get(voce.chiave) ?? 0))
-          return <RigaConfrontoAttributo etichetta={voce.etichetta} prima={prima} guadagno={guadagno} key={voce.chiave} />
-        })}
-      </div>
-    })}
-  </div>
+function AnteprimaPiano({ crescita, altrePct, attributi, soloGk }: { crescita: Array<[string, number]>; altrePct: number; attributi: Record<string, number | null>; soloGk: boolean }) {
+  const mappa = new Map(crescita)
+  return <>
+    <p className="field-help">
+      Non aggiunge punti subito: da qui in avanti, quando cresce, le abilità evidenziate crescono di più
+      {altrePct < 0 ? <> e le altre circa il {Math.abs(altrePct)}% in meno</> : null}. L'overall resta quello che
+      sarebbe stato comunque. Se il giocatore cala, le abilità del piano calano meno.
+    </p>
+    <div className="player-training-confronto">
+      {GRUPPI_ATTRIBUTI.filter((gruppo) => !gruppo.soloGk || soloGk).map((gruppo) => {
+        const voci = gruppo.voci.filter((voce) => typeof attributi[voce.chiave] === 'number')
+        if (voci.length === 0) return null
+        return <div className="player-training-confronto__gruppo" key={gruppo.titolo}>
+          <h5>{gruppo.titolo}</h5>
+          {voci.map((voce) => <RigaPianoAttributo
+            etichetta={voce.etichetta}
+            valore={Math.max(0, Math.min(99, Math.round(attributi[voce.chiave] ?? 0)))}
+            pct={mappa.get(voce.chiave) ?? 0}
+            key={voce.chiave} />)}
+        </div>
+      })}
+    </div>
+  </>
 }
 
 // Radar delle 6 macro-categorie FIFA, stile card FIFA/Football Manager.
@@ -437,7 +438,7 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
   const [cambioInCorso, setCambioInCorso] = useState(false)
   const [cambioErrore, setCambioErrore] = useState<string | null>(null)
   const [cambioCaricamento, setCambioCaricamento] = useState(false)
-  const [specOpzioni, setSpecOpzioni] = useState<Array<{ chiave: string; etichetta: string; deltas: Array<[string, number]> }> | null>(null)
+  const [specOpzioni, setSpecOpzioni] = useState<Array<{ chiave: string; etichetta: string; crescita: Array<[string, number]>; altrePct: number }> | null>(null)
   const [specScelta, setSpecScelta] = useState('')
   const [specInCorso, setSpecInCorso] = useState(false)
   const [specErrore, setSpecErrore] = useState<string | null>(null)
@@ -803,17 +804,18 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
         {haTraining && <div className={`player-modal__page player-modal__page--training ${pagina !== 'training' ? 'is-nascosta' : ''}`}>
           {userId && <PopupSpiegazione userId={userId} hintKey="training-giocatore" titolo="Come funziona il Training">
             <p><strong>Cambio ruolo</strong> sostituisce il ruolo primario con uno vicino (es. un CB può diventare
-              terzino o mediano, non ala). <strong>Specializzazione</strong> resta nel ruolo attuale ma allena un
-              archetipo (es. un CC può diventare regista, box-to-box...): alza tre stat vere — quelle che il motore
-              usa davvero in partita — più un piccolo bonus overall. Sono mutuamente esclusivi: un allenamento alla
-              volta per giocatore.</p>
-            <p>Quanto rende la specializzazione dipende da età e margine dal potenziale: un giocatore giovane con
-              ampio margine ottiene il pieno beneficio, uno già maturo o vicino al proprio potenziale ne ricava
-              poco o nulla — la vedi in anteprima prima di avviarla.</p>
-            <p>Non sostituisce la crescita automatica di fine trimestre, che continua comunque per tutti: la
-              specializzazione è un allenamento extra che si <strong>somma</strong> sopra, non un'alternativa.</p>
+              terzino o mediano, non ala). <strong>Piano di sviluppo</strong>, come in EA FC, resta nel ruolo attuale
+              e sceglie un archetipo (es. un CC può diventare regista, box-to-box...). Sono mutuamente esclusivi: un
+              allenamento alla volta per giocatore.</p>
+            <p>Il piano non regala punti. Ogni giocatore cresce (o cala) a ogni giornata in base a età, potenziale
+              e minuti; il piano decide <strong>dove</strong> va quella crescita: le sei abilità dell'archetipo
+              crescono fino al 50% in più, le altre un po' meno. L'overall resta lo stesso: il giocatore non diventa
+              più forte, diventa più forte dove vuoi tu.</p>
+            <p>Per questo rende molto su un giovane che crescerà tanto, e poco su chi è già arrivato. Su un
+              veterano che cala, protegge le abilità del piano. Cambiare piano non toglie quello che ha già
+              maturato.</p>
           </PopupSpiegazione>}
-          <p className="player-training-intro">Allenamento di {giocatore.nome}: cambio di ruolo e specializzazione, dal ramo TRAINING di Gestione risorse.</p>
+          <p className="player-training-intro">Allenamento di {giocatore.nome}: cambio di ruolo e piano di sviluppo, dal ramo TRAINING di Gestione risorse.</p>
 
           {cambioRuolo && <PannelloAllenamento
             titolo="Cambio ruolo"
@@ -832,11 +834,11 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
             onAnnulla={annullaCambioRuolo}
             inviando={cambioInCorso}
             errore={cambioErrore}
-            bloccatoDa={specializzazione?.inCorso ? 'un allenamento di specializzazione' : null}
+            bloccatoDa={specializzazione?.inCorso ? 'un cambio di piano di sviluppo' : null}
           />}
 
           {specializzazione && <PannelloAllenamento
-            titolo="Specializzazione"
+            titolo="Piano di sviluppo"
             attuale={specializzazione.attiva}
             inCorso={specializzazione.inCorso ? {
               etichettaPrima: specializzazione.inCorso.specializzazionePrecedente, etichettaDopo: specializzazione.inCorso.specializzazioneTarget,
@@ -845,7 +847,9 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
             prossimaGiornata={specializzazione.prossimaGiornata}
             opzioni={specOpzioni?.map((o) => ({
               chiave: o.chiave, etichetta: o.etichetta,
-              sottotesto: o.deltas.map(([chiave]) => etichettaAttributo(chiave)).join(' · '),
+              // Le quattro abilita' che il piano spinge di piu': sei righe su
+              // un telefono andavano a capo due volte.
+              sottotesto: o.crescita.slice(0, 4).map(([chiave]) => etichettaAttributo(chiave)).join(' · '),
             })) ?? (specCaricamento ? null : [])}
             opzioniCaricamento={specCaricamento}
             scelta={specScelta}
@@ -857,7 +861,7 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
             bloccatoDa={cambioRuolo?.inCorso ? 'un cambio ruolo' : null}
             confrontoScelta={(() => {
               const opzione = specOpzioni?.find((o) => o.chiave === specScelta)
-              return opzione ? <ConfrontoAttributi deltas={opzione.deltas} attributi={giocatore.attributi} soloGk={rep === 'GK'} /> : null
+              return opzione ? <AnteprimaPiano crescita={opzione.crescita} altrePct={opzione.altrePct} attributi={giocatore.attributi} soloGk={rep === 'GK'} /> : null
             })()}
           />}
         </div>}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { formatoStemma, generaUuidV4, preparaStemma } from '../lib/crest'
 import { ROSA_MASSIMA, ROSA_MINIMA } from '../lib/league'
 import { supabase } from '../lib/supabase'
+import { attributiCorrenti } from '../lib/attributiGiocatore'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { STEMMA_SQUADRA_DEFAULT, stemmaPresetDaValore } from '../lib/teamCrests'
 import { useSeasonData } from '../lib/useSeasonData'
@@ -247,7 +248,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       setRosterLoading(true)
       setRosterError(null)
       const [instancesResult, statsResult, cambiRuoloResult, specializzazioniResult] = await Promise.all([
-        supabase.from('player_instances').select('id, player_id, overall_corrente, overall_inizio_stagione, eta_corrente, ingaggio, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, morale, contratto_scadenza, rinnovo_stagione, rinnovo_tentativi, sul_mercato, posizioni_override, attributi_override, specializzazione_attiva').eq('league_id', league.id).eq('team_id', teamId),
+        supabase.from('player_instances').select('id, player_id, overall_corrente, overall_inizio_stagione, eta_corrente, ingaggio, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, morale, contratto_scadenza, rinnovo_stagione, rinnovo_tentativi, sul_mercato, posizioni_override, specializzazione_attiva').eq('league_id', league.id).eq('team_id', teamId),
         supabase.from('match_stats').select('match_id, player_instance_id, minuti, gol, assist, tiri, tiri_porta, passaggi_tentati, passaggi_riusciti, contrasti_vinti, dribbling').eq('league_id', league.id).eq('team_id', teamId),
         supabase.from('cambi_ruolo').select('id, player_instance_id, ruolo_precedente, ruolo_target, avviato_giornata, completa_giornata').eq('league_id', league.id).eq('team_id', teamId).is('completato_il', null),
         supabase.from('specializzazioni_giocatore').select('id, player_instance_id, specializzazione_precedente, specializzazione_target, avviato_giornata, completa_giornata').eq('league_id', league.id).eq('team_id', teamId).is('completato_il', null),
@@ -258,9 +259,12 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       if (firstError) { setRosterError(firstError.message); setRosterLoading(false); return }
       const instances = instancesResult.data ?? []
       const playerIds = instances.map((item) => item.player_id)
-      const { data: catalog, error: catalogError } = playerIds.length
-        ? await supabase.from('players').select('id, nome, club, nazionalita, posizioni, piede, altezza, attributi, foto_url, mentalita_bandiera, mentalita_economia, mentalita_vittorie').in('id', playerIds)
-        : { data: [], error: null }
+      const [{ data: catalog, error: catalogError }, attributiVeri] = await Promise.all([
+        playerIds.length
+          ? supabase.from('players').select('id, nome, club, nazionalita, posizioni, piede, altezza, attributi, foto_url, mentalita_bandiera, mentalita_economia, mentalita_vittorie').in('id', playerIds)
+          : Promise.resolve({ data: [], error: null }),
+        attributiCorrenti(instances.map((item) => item.id)),
+      ])
       if (catalogError) { setRosterError(catalogError.message); setRosterLoading(false); return }
       const catalogById = new Map((catalog ?? []).map((item) => [item.id, item]))
       const totals = new Map<number, { minuti: number; gol: number; assist: number }>()
@@ -281,9 +285,10 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           // il conto riparte da zero a ogni annata.
           deltaOverall: instance.overall_corrente - instance.overall_inizio_stagione,
           condizione: instance.condizione, infortunatoFinoA: instance.infortunato_fino_a, squalificatoFinoA: instance.squalificato_fino_a, piede: info?.piede ?? null, altezza: info?.altezza ?? null,
-          // attributi_override (Gestione risorse, specializzazione TRAINING) sostituisce
-          // solo le chiavi presenti: vedi private.completa_specializzazioni().
-          attributi: { ...(info?.attributi ?? {}), ...(instance.attributi_override ?? {}) } as Record<string, number | null>,
+          // Gli attributi veri (crescita + piano di sviluppo), quelli con cui
+          // gioca: vedi lib/attributiGiocatore. Il catalogo resta solo come
+          // riserva se la chiamata fallisce.
+          attributi: (attributiVeri.get(instance.id) ?? info?.attributi ?? {}) as Record<string, number | null>,
           foto_url: info?.foto_url ?? null,
           ritiroAnnunciato: instance.ritiro_annunciato,
           specializzazioneAttiva: instance.specializzazione_attiva,
@@ -443,9 +448,13 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   async function caricaOpzioniSpecializzazione(instanceId: number) {
     const { data, error } = await supabase.rpc('specializzazioni_disponibili', { p_instance_id: instanceId })
     if (error) throw new Error(error.message)
-    const catalogo = (data ?? {}) as Record<string, { etichetta: string; deltas: Record<string, number> }>
-    return Object.entries(catalogo).map(([chiave, valore]) => ({
-      chiave, etichetta: valore.etichetta, deltas: Object.entries(valore.deltas),
+    const catalogo = (data ?? {}) as Record<string, { etichetta: string; crescita_pct: Record<string, number>; altre_pct: number; attivo: boolean }>
+    // Il piano che il giocatore segue gia' non si offre: riavviarlo non
+    // cambierebbe nulla (e il server lo rifiuta).
+    return Object.entries(catalogo).filter(([, valore]) => !valore.attivo).map(([chiave, valore]) => ({
+      chiave, etichetta: valore.etichetta,
+      crescita: Object.entries(valore.crescita_pct).sort((a, b) => b[1] - a[1]),
+      altrePct: valore.altre_pct,
     }))
   }
 

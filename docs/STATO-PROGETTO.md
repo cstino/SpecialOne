@@ -1,5 +1,36 @@
 # Stato progetto e handoff
 
+### Allenamento: da specializzazione a piano di sviluppo (27 settembre 2026)
+
+Segnalato dall'utente: allenando un giovane la scheda prometteva "Dribbling 90 → 98" e alcuni
+arrivavano a 99 in meno di una stagione. Misurato: l'allenamento dava in media +1,8 sopra la
+crescita normale; il salto visibile nasceva dalla scheda, che mostrava catalogo + override e
+nascondeva la crescita quotidiana. In più l'override era un numero fisso che bloccava la crescita
+di quei tre attributi (17 attributi erano gia' sotto il valore che avrebbero avuto senza
+allenamento).
+
+Modello nuovo, deciso con l'utente, riferimento EA FC 26 (migrazione `20260927010000`):
+- il piano **non regala punti** e **non da' bonus overall**: sposta la crescita che il giocatore
+  fa comunque. Sei abilita' per piano (`private.piano_pesi`, pesi 1,0/0,6/0,4 → +50/+30/+20%),
+  le altre crescono meno di β calcolato a somma zero sulle pendenze (`private.piano_beta`);
+- scostamento ∝ |overall attuale − overall all'attivazione| (`piano_overall_rif`): nel declino
+  le abilita' del piano calano meno;
+- cambiare piano congela lo scostamento maturato in `piano_scostamenti`; riavviare lo stesso
+  piano e' rifiutato;
+- **formula unica** `private.attributi_istanza`, esposta come `public.attributi_correnti(ids)`:
+  la usano il motore (`simula-giornata`, che non ricalcola piu' la crescita da se'), Squadra,
+  Formazione e Scambi. `attributi_override` e' dismessa (sempre null); i giocatori gia' allenati
+  hanno tenuto il vantaggio positivo che avevano;
+- corretto anche un bug di Scambi: la scheda cercava gli attributi con l'id dell'istanza come se
+  fosse quello del catalogo, mostrando le abilita' di un altro giocatore.
+
+Aperti: i due piani del portiere non toccano nulla che il motore usi (il portiere e' solo il suo
+overall), quindi "Para rigori" col suo bonus dal dischetto domina "Fuori dai pali" ora che il
+bonus overall non c'e' piu'. Sul branch `feat/tattiche`, `qualita_capitano` e
+`incaricati_automatici` usano ancora `attributi_effettivi(..., attributi_override)`: vanno
+portati su `private.attributi_istanza` al prossimo merge di main. Mercato mostra ancora gli
+attributi di catalogo per gli svincolati.
+
 ### Rose delle squadre PC bilanciate per reparto
 
 Segnalazione dell'utente sulla lega di test Test2: il draft PC in modalita `BY ROLE`
