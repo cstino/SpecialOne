@@ -186,13 +186,14 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
       <p>Come in EA FC, restando nel ruolo che gioca oggi un giocatore può seguire un
         <strong> piano di sviluppo</strong>: un archetipo di quella posizione — un centrocampista
         centrale può diventare regista, box-to-box, recupera palloni o mezz'ala d'inserimento, e
-        così via per ogni ruolo, portiere compreso. Ogni piano ha <strong>sei abilità</strong> di
-        riferimento.</p>
+        così via per ogni ruolo, portiere compreso. Oppure il piano <strong>Bilanciato</strong>,
+        che lascia la crescita naturale.</p>
       <p>Il piano <strong>non regala punti</strong>. Ogni giocatore cresce o cala a ogni giornata
         in base a età, potenziale e minuti (vedi "Overall e progressione"); il piano decide
-        <strong> dove</strong> va quella crescita. Le due abilità principali crescono del 50% in
-        più, le altre del piano del 30% o del 20%, tutte le altre un po' meno (l'anteprima dice
-        quanto). L'overall resta quello che sarebbe stato comunque.</p>
+        <strong> dove</strong> va quella crescita. Come in FC 26 pesa tutte le abilità: le due che
+        definiscono il ruolo crescono circa il 75% in più, via via meno quelle che lo completano,
+        e quelle lontane dal ruolo circa il 17% in meno (l'anteprima dice abilità per abilità).
+        L'overall resta quello che sarebbe stato comunque.</p>
       <p>Per questo rende molto su un giovane che crescerà tanto e poco su chi è già arrivato al
         suo potenziale. Su un veterano in calo fa il contrario: le abilità del piano calano meno.
         Cambiare piano non toglie quello che il giocatore ha già maturato; il nuovo parte da lì.

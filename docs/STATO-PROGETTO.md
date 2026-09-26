@@ -11,25 +11,28 @@ allenamento).
 
 Modello nuovo, deciso con l'utente, riferimento EA FC 26 (migrazione `20260927010000`):
 - il piano **non regala punti** e **non da' bonus overall**: sposta la crescita che il giocatore
-  fa comunque. Sei abilita' per piano (`private.piano_pesi`, pesi 1,0/0,6/0,4 → +50/+30/+20%),
-  le altre crescono meno di β calcolato a somma zero sulle pendenze (`private.piano_beta`);
+  fa comunque. Come in FC 26 pesa **tutte** le abilita' su scala 4-15 (`private.piano_pesi`:
+  2×15, 2×12, 2×10, 6×7, resto 4); scostamento = 0,5 × (peso / peso medio − 1) × pendenza × |Δ|,
+  con peso medio pesato sulle pendenze (`private.piano_media`), quindi somma zero. In pratica da
+  −20% a +62% sulla crescita naturale. "Bilanciato" (tutto a 4) c'e' per ogni ruolo;
 - scostamento ∝ |overall attuale − overall all'attivazione| (`piano_overall_rif`): nel declino
   le abilita' del piano calano meno;
 - cambiare piano congela lo scostamento maturato in `piano_scostamenti`; riavviare lo stesso
   piano e' rifiutato;
 - **formula unica** `private.attributi_istanza`, esposta come `public.attributi_correnti(ids)`:
   la usano il motore (`simula-giornata`, che non ricalcola piu' la crescita da se'), Squadra,
-  Formazione e Scambi. `attributi_override` e' dismessa (sempre null); i giocatori gia' allenati
+  Formazione e Scambi; `public.attributi_giocatore_lega` per gli svincolati del Mercato
+  (overall da istanza, `free_agent_progression` o catalogo). `attributi_override` e' dismessa (sempre null); i giocatori gia' allenati
   hanno tenuto il vantaggio positivo che avevano;
 - corretto anche un bug di Scambi: la scheda cercava gli attributi con l'id dell'istanza come se
   fosse quello del catalogo, mostrando le abilita' di un altro giocatore.
 
-Aperti: i due piani del portiere non toccano nulla che il motore usi (il portiere e' solo il suo
-overall), quindi "Para rigori" col suo bonus dal dischetto domina "Fuori dai pali" ora che il
-bonus overall non c'e' piu'. Sul branch `feat/tattiche`, `qualita_capitano` e
+Aperto: il motore misura ogni giocatore col solo overall (gli attributi servono solo alle
+statistiche individuali), quindi un piano non cambia la forza in campo. Per il portiere e' evidente:
+"Fuori dai pali" non fa nulla in partita. L'utente vuole che il motore legga gli attributi:
+proposta da decidere, e' una modifica al motore validato. Sul branch `feat/tattiche`, `qualita_capitano` e
 `incaricati_automatici` usano ancora `attributi_effettivi(..., attributi_override)`: vanno
-portati su `private.attributi_istanza` al prossimo merge di main. Mercato mostra ancora gli
-attributi di catalogo per gli svincolati.
+portati su `private.attributi_istanza` al prossimo merge di main.
 
 ### Rose delle squadre PC bilanciate per reparto
 

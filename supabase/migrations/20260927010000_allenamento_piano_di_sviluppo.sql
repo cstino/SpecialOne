@@ -26,13 +26,14 @@
 --      catalogo + pendenza(reparto, attributo) × (overall attuale − overall catalogo)
 --  e resta cosi'. Il piano aggiunge uno scostamento proporzionale alla
 --  crescita avvenuta DA QUANDO il piano e' attivo:
---      attributo del piano:   + FORZA × peso × pendenza × |Δ|
---      tutti gli altri:       − β × pendenza × |Δ|
---  dove Δ = overall attuale − overall all'attivazione del piano, e β e'
---  calcolato perche' la somma pesata sulle pendenze faccia ZERO: l'overall
---  non cambia, cambia solo la forma del giocatore. Con FORZA = 0,5 e pesi
---  1,0 / 0,6 / 0,4 le abilita' del piano crescono del 50% / 30% / 20% in
---  piu', le altre circa il 7% in meno.
+--      FORZA × (peso / peso medio − 1) × pendenza × |Δ|
+--  dove Δ = overall attuale − overall all'attivazione del piano. Come in
+--  FC 26 ogni piano pesa TUTTE le abilita' (scala 4-15, vedi
+--  private.piano_pesi); il peso medio e' pesato sulle pendenze, quindi la
+--  somma degli scostamenti fa ZERO: l'overall non cambia, cambia solo la
+--  forma del giocatore. Con FORZA = 0,5 le due abilita' principali crescono
+--  circa il 75% in piu', quelle di contorno circa il 17% in meno.
+--  "Bilanciato" (tutto a 4) e' la crescita naturale.
 --
 --  Il valore assoluto |Δ| e' voluto: quando un veterano cala, le abilita'
 --  del piano calano MENO e le altre di piu'. Il piano protegge quello che
@@ -57,9 +58,16 @@ comment on column public.player_instances.piano_overall_rif is
 -- I piani, uno per chiave. Le chiavi erano gia' uniche nel significato
 -- (ala_di_fascia e' la stessa per LM e RM, falso_nueve per ST e CF...),
 -- quindi il peso dipende dal solo piano: un cambio di ruolo non lo rompe.
--- Sei abilita' per piano invece di tre, con pesi 1,0 / 0,6 / 0,4 che
--- sommano sempre a 4: nessun piano e' piu' "grosso" di un altro. La prima
--- abilita' e' la stessa che prima prendeva il +8.
+--
+-- Come in FC 26 ogni piano pesa TUTTE le abilita', su una scala da 4 a 15:
+--   15  le due abilita' che definiscono il ruolo
+--   12  le due che lo completano
+--   10  altre due importanti
+--    7  sei di supporto
+--    4  tutto il resto (valore implicito: qui non compare)
+-- Ogni piano ha la stessa struttura, quindi nessuno e' piu' "grosso" di un
+-- altro. "Bilanciato" non compare: tutte le abilita' a 4, cioe' la
+-- crescita naturale, identica a nessun piano.
 create or replace function private.piano_pesi(p_piano text)
 returns jsonb
 language sql
@@ -67,34 +75,35 @@ immutable
 set search_path = ''
 as $$
   select case p_piano
-    when 'marcatore' then '{"standing_tackle":1.0,"defending_marking_awareness":1.0,"power_strength":0.6,"stamina":0.6,"defending_sliding_tackle":0.4,"mentality_aggression":0.4}'
-    when 'libero' then '{"short_passing":1.0,"skill_long_passing":1.0,"mentality_vision":0.6,"standing_tackle":0.6,"mentality_interceptions":0.4,"skill_ball_control":0.4}'
-    when 'terzino_difensivo' then '{"standing_tackle":1.0,"defending_marking_awareness":1.0,"stamina":0.6,"defending_sliding_tackle":0.6,"mentality_interceptions":0.4,"movement_sprint_speed":0.4}'
-    when 'terzino_offensivo' then '{"dribbling":1.0,"attacking_crossing":1.0,"stamina":0.6,"movement_sprint_speed":0.6,"short_passing":0.4,"movement_acceleration":0.4}'
-    when 'regista_basso' then '{"short_passing":1.0,"skill_long_passing":1.0,"mentality_vision":0.6,"standing_tackle":0.6,"skill_ball_control":0.4,"dribbling":0.4}'
-    when 'schermo_difensivo' then '{"standing_tackle":1.0,"mentality_interceptions":1.0,"stamina":0.6,"defending_marking_awareness":0.6,"power_strength":0.4,"short_passing":0.4}'
-    when 'regista_arretrato' then '{"short_passing":1.0,"skill_long_passing":1.0,"mentality_vision":0.6,"standing_tackle":0.6,"stamina":0.4,"mentality_composure":0.4}'
-    when 'regista' then '{"short_passing":1.0,"mentality_vision":1.0,"skill_long_passing":0.6,"dribbling":0.6,"skill_ball_control":0.4,"stamina":0.4}'
-    when 'box_to_box' then '{"stamina":1.0,"standing_tackle":1.0,"short_passing":0.6,"power_strength":0.6,"mentality_interceptions":0.4,"power_long_shots":0.4}'
-    when 'recupera_palloni' then '{"standing_tackle":1.0,"mentality_interceptions":1.0,"stamina":0.6,"mentality_aggression":0.6,"defending_marking_awareness":0.4,"power_strength":0.4}'
-    when 'mezzala_inserimento' then '{"finishing":1.0,"mentality_positioning":1.0,"dribbling":0.6,"power_long_shots":0.6,"stamina":0.4,"skill_ball_control":0.4}'
-    when 'rifinitore' then '{"short_passing":1.0,"mentality_vision":1.0,"dribbling":0.6,"skill_ball_control":0.6,"skill_curve":0.4,"finishing":0.4}'
-    when 'ala_di_fascia' then '{"dribbling":1.0,"attacking_crossing":1.0,"stamina":0.6,"movement_sprint_speed":0.6,"short_passing":0.4,"movement_acceleration":0.4}'
-    when 'mezzala_di_fascia' then '{"standing_tackle":1.0,"stamina":1.0,"mentality_interceptions":0.6,"dribbling":0.6,"short_passing":0.4,"defending_marking_awareness":0.4}'
-    when 'ala_rapida' then '{"dribbling":1.0,"movement_sprint_speed":1.0,"movement_acceleration":0.6,"movement_agility":0.6,"stamina":0.4,"finishing":0.4}'
-    when 'rifinitore_esterno' then '{"short_passing":1.0,"attacking_crossing":1.0,"mentality_vision":0.6,"dribbling":0.6,"skill_curve":0.4,"finishing":0.4}'
-    when 'ala_realizzatrice' then '{"finishing":1.0,"mentality_positioning":1.0,"dribbling":0.6,"power_shot_power":0.6,"skill_curve":0.4,"short_passing":0.4}'
-    when 'rapace_area' then '{"finishing":1.0,"mentality_positioning":1.0,"movement_reactions":0.6,"dribbling":0.6,"attacking_volleys":0.4,"mentality_composure":0.4}'
-    when 'bomber_fisico' then '{"power_strength":1.0,"attacking_heading_accuracy":1.0,"stamina":0.6,"finishing":0.6,"power_jumping":0.4,"power_shot_power":0.4}'
-    when 'falso_nueve' then '{"short_passing":1.0,"mentality_vision":1.0,"dribbling":0.6,"skill_ball_control":0.6,"finishing":0.4,"movement_agility":0.4}'
-    when 'fuori_dai_pali' then '{"goalkeeping_speed":1.0,"gk_positioning":1.0,"gk_reflexes":0.6,"gk_kicking":0.6,"movement_reactions":0.4,"gk_handling":0.4}'
-    when 'para_rigori' then '{"gk_diving":1.0,"gk_reflexes":1.0,"gk_handling":0.6,"movement_reactions":0.6,"mentality_composure":0.4,"gk_positioning":0.4}'
+    when 'bilanciato' then '{}'
+    when 'marcatore' then '{"standing_tackle":15,"defending_marking_awareness":15,"power_strength":12,"stamina":12,"defending_sliding_tackle":10,"mentality_aggression":10,"power_jumping":7,"attacking_heading_accuracy":7,"mentality_interceptions":7,"movement_reactions":7,"mentality_composure":7,"movement_sprint_speed":7}'
+    when 'libero' then '{"short_passing":15,"skill_long_passing":15,"mentality_vision":12,"standing_tackle":12,"mentality_interceptions":10,"skill_ball_control":10,"defending_marking_awareness":7,"mentality_composure":7,"movement_reactions":7,"dribbling":7,"defending_sliding_tackle":7,"movement_balance":7}'
+    when 'terzino_difensivo' then '{"standing_tackle":15,"defending_marking_awareness":15,"stamina":12,"defending_sliding_tackle":12,"mentality_interceptions":10,"movement_sprint_speed":10,"power_strength":7,"movement_acceleration":7,"movement_reactions":7,"attacking_heading_accuracy":7,"mentality_aggression":7,"short_passing":7}'
+    when 'terzino_offensivo' then '{"dribbling":15,"attacking_crossing":15,"stamina":12,"movement_sprint_speed":12,"short_passing":10,"movement_acceleration":10,"skill_curve":7,"movement_agility":7,"skill_ball_control":7,"mentality_vision":7,"standing_tackle":7,"mentality_positioning":7}'
+    when 'regista_basso' then '{"short_passing":15,"skill_long_passing":15,"mentality_vision":12,"standing_tackle":12,"skill_ball_control":10,"dribbling":10,"skill_curve":7,"mentality_composure":7,"movement_reactions":7,"defending_marking_awareness":7,"mentality_interceptions":7,"stamina":7}'
+    when 'schermo_difensivo' then '{"standing_tackle":15,"mentality_interceptions":15,"stamina":12,"defending_marking_awareness":12,"power_strength":10,"short_passing":10,"mentality_aggression":7,"defending_sliding_tackle":7,"movement_reactions":7,"mentality_composure":7,"attacking_heading_accuracy":7,"skill_long_passing":7}'
+    when 'regista_arretrato' then '{"short_passing":15,"skill_long_passing":15,"mentality_vision":12,"standing_tackle":12,"stamina":10,"mentality_composure":10,"skill_curve":7,"skill_ball_control":7,"mentality_interceptions":7,"movement_reactions":7,"dribbling":7,"defending_marking_awareness":7}'
+    when 'regista' then '{"short_passing":15,"mentality_vision":15,"skill_long_passing":12,"dribbling":12,"skill_ball_control":10,"stamina":10,"skill_curve":7,"mentality_composure":7,"movement_reactions":7,"movement_agility":7,"skill_fk_accuracy":7,"power_long_shots":7}'
+    when 'box_to_box' then '{"stamina":15,"standing_tackle":15,"short_passing":12,"power_strength":12,"mentality_interceptions":10,"power_long_shots":10,"movement_reactions":7,"dribbling":7,"power_shot_power":7,"mentality_aggression":7,"mentality_positioning":7,"defending_sliding_tackle":7}'
+    when 'recupera_palloni' then '{"standing_tackle":15,"mentality_interceptions":15,"stamina":12,"mentality_aggression":12,"defending_marking_awareness":10,"power_strength":10,"defending_sliding_tackle":7,"movement_reactions":7,"power_jumping":7,"short_passing":7,"movement_balance":7,"mentality_composure":7}'
+    when 'mezzala_inserimento' then '{"finishing":15,"mentality_positioning":15,"dribbling":12,"power_long_shots":12,"stamina":10,"skill_ball_control":10,"power_shot_power":7,"movement_reactions":7,"mentality_composure":7,"movement_agility":7,"short_passing":7,"attacking_volleys":7}'
+    when 'rifinitore' then '{"short_passing":15,"mentality_vision":15,"dribbling":12,"skill_ball_control":12,"skill_curve":10,"finishing":10,"skill_long_passing":7,"movement_agility":7,"mentality_composure":7,"movement_reactions":7,"power_long_shots":7,"skill_fk_accuracy":7}'
+    when 'ala_di_fascia' then '{"dribbling":15,"attacking_crossing":15,"stamina":12,"movement_sprint_speed":12,"short_passing":10,"movement_acceleration":10,"skill_curve":7,"movement_agility":7,"skill_ball_control":7,"movement_balance":7,"mentality_vision":7,"finishing":7}'
+    when 'mezzala_di_fascia' then '{"standing_tackle":15,"stamina":15,"mentality_interceptions":12,"dribbling":12,"short_passing":10,"defending_marking_awareness":10,"defending_sliding_tackle":7,"movement_reactions":7,"power_strength":7,"attacking_crossing":7,"mentality_aggression":7,"movement_sprint_speed":7}'
+    when 'ala_rapida' then '{"dribbling":15,"movement_sprint_speed":15,"movement_acceleration":12,"movement_agility":12,"stamina":10,"finishing":10,"skill_ball_control":7,"movement_balance":7,"movement_reactions":7,"attacking_crossing":7,"mentality_positioning":7,"mentality_composure":7}'
+    when 'rifinitore_esterno' then '{"short_passing":15,"attacking_crossing":15,"mentality_vision":12,"dribbling":12,"skill_curve":10,"finishing":10,"skill_ball_control":7,"skill_long_passing":7,"movement_agility":7,"skill_fk_accuracy":7,"movement_reactions":7,"mentality_composure":7}'
+    when 'ala_realizzatrice' then '{"finishing":15,"mentality_positioning":15,"dribbling":12,"power_shot_power":12,"skill_curve":10,"short_passing":10,"power_long_shots":7,"movement_reactions":7,"mentality_composure":7,"movement_agility":7,"movement_acceleration":7,"skill_ball_control":7}'
+    when 'rapace_area' then '{"finishing":15,"mentality_positioning":15,"movement_reactions":12,"dribbling":12,"attacking_volleys":10,"mentality_composure":10,"power_shot_power":7,"attacking_heading_accuracy":7,"movement_acceleration":7,"movement_agility":7,"skill_ball_control":7,"power_jumping":7}'
+    when 'bomber_fisico' then '{"power_strength":15,"attacking_heading_accuracy":15,"stamina":12,"finishing":12,"power_jumping":10,"power_shot_power":10,"mentality_positioning":7,"mentality_aggression":7,"movement_reactions":7,"attacking_volleys":7,"mentality_composure":7,"dribbling":7}'
+    when 'falso_nueve' then '{"short_passing":15,"mentality_vision":15,"dribbling":12,"skill_ball_control":12,"finishing":10,"movement_agility":10,"skill_long_passing":7,"mentality_composure":7,"movement_reactions":7,"mentality_positioning":7,"movement_balance":7,"skill_curve":7}'
+    when 'fuori_dai_pali' then '{"goalkeeping_speed":15,"gk_positioning":15,"gk_reflexes":12,"gk_kicking":12,"movement_reactions":10,"gk_handling":10,"gk_diving":7,"mentality_composure":7,"movement_acceleration":7,"short_passing":7,"skill_long_passing":7,"movement_sprint_speed":7}'
+    when 'para_rigori' then '{"gk_diving":15,"gk_reflexes":15,"gk_handling":12,"movement_reactions":12,"mentality_composure":10,"gk_positioning":10,"gk_kicking":7,"goalkeeping_speed":7,"movement_agility":7,"power_jumping":7,"movement_balance":7,"mentality_vision":7}'
   end::jsonb
 $$;
 
 
--- Quali piani vede ogni ruolo: stesse strade di prima, stesse etichette.
--- La chiave 'deltas' non c'e' piu': c'e' 'pesi', letta da piano_pesi.
+-- Quali piani vede ogni ruolo: "Bilanciato" per tutti, poi le stesse strade
+-- di prima con le stesse etichette. La chiave 'deltas' non c'e' piu'.
 create or replace function private.specializzazioni_ruolo(p_posizione text)
 returns jsonb
 language sql
@@ -103,6 +112,7 @@ set search_path = ''
 as $$
   select coalesce(jsonb_object_agg(x.chiave, jsonb_build_object('etichetta', x.etichetta, 'pesi', private.piano_pesi(x.chiave))), '{}'::jsonb)
   from (values
+    ('*', 'bilanciato', 'Bilanciato'),
     ('CB', 'marcatore', 'Marcatore'), ('CB', 'libero', 'Libero'),
     ('LB', 'terzino_difensivo', 'Terzino difensivo'), ('LB', 'terzino_offensivo', 'Terzino offensivo'), ('LB', 'regista_basso', 'Regista basso'),
     ('RB', 'terzino_difensivo', 'Terzino difensivo'), ('RB', 'terzino_offensivo', 'Terzino offensivo'), ('RB', 'regista_basso', 'Regista basso'),
@@ -115,46 +125,50 @@ as $$
     ('RW', 'ala_rapida', 'Ala rapida'), ('RW', 'rifinitore_esterno', 'Rifinitore esterno'), ('RW', 'ala_realizzatrice', 'Ala realizzatrice'),
     ('ST', 'rapace_area', 'Rapace d''area'), ('ST', 'bomber_fisico', 'Bomber fisico'), ('ST', 'falso_nueve', 'Falso nueve'),
     ('CF', 'falso_nueve', 'Falso nueve'), ('CF', 'rapace_area', 'Rapace d''area'),
-    -- Portiere: il motore usa di lui solo l'overall, che il piano non
-    -- tocca. "Para rigori" conserva il suo bonus dal dischetto
+    -- Portiere: "Para rigori" conserva il suo bonus dal dischetto
     -- (engine/rigori.js, invariato).
     ('GK', 'fuori_dai_pali', 'Fuori dai pali'), ('GK', 'para_rigori', 'Para rigori')
   ) as x(ruolo, chiave, etichetta)
-  where x.ruolo = p_posizione
+  where x.ruolo = p_posizione or (x.ruolo = '*' and p_posizione is not null)
 $$;
 
 
--- La forza del piano e la quota tolta alle altre abilita' per un reparto.
--- "Altre" = gli attributi di dettaglio (non i sei voti macro della card),
--- e per chi non e' portiere senza quelli da portiere, che non contano.
-create or replace function private.piano_beta(p_piano text, p_reparto text)
+-- Le abilita' su cui si ragiona per un reparto: gli attributi di dettaglio
+-- (non i sei voti macro della card, che seguono), e per chi non e' portiere
+-- senza quelli da portiere, che non contano.
+create or replace function private.attributi_piano(p_reparto text)
+returns table (attributo text, pendenza numeric)
+language sql
+stable
+set search_path = ''
+as $$
+  select pe.attributo, greatest(pe.pendenza, 0)
+  from private.pendenze_attributi pe
+  where pe.reparto = p_reparto
+    and pe.attributo not in ('pace', 'shooting', 'passing', 'dribbling_generale', 'defending', 'physic', 'gk')
+    and (p_reparto = 'GK' or (pe.attributo not like 'gk\_%' and pe.attributo <> 'goalkeeping_speed'))
+$$;
+
+-- Il peso medio del piano, pesato sulle pendenze del reparto. Un'abilita'
+-- con peso uguale alla media cresce come senza piano; sopra cresce di piu',
+-- sotto di meno. Per costruzione la somma degli scostamenti (pesati sulle
+-- pendenze) fa zero: l'overall non cambia.
+create or replace function private.piano_media(p_piano text, p_reparto text)
 returns numeric
 language sql
 stable
 set search_path = ''
 as $$
-  with pesi as (
-    select k as attributo, (private.piano_pesi(p_piano)->>k)::numeric as peso
-    from jsonb_object_keys(coalesce(private.piano_pesi(p_piano), '{}'::jsonb)) k
-  ), pend as (
-    select pe.attributo, greatest(pe.pendenza, 0) as pendenza
-    from private.pendenze_attributi pe
-    where pe.reparto = p_reparto
-      and pe.attributo not in ('pace', 'shooting', 'passing', 'dribbling_generale', 'defending', 'physic', 'gk')
-      and (p_reparto = 'GK' or (pe.attributo not like 'gk\_%' and pe.attributo <> 'goalkeeping_speed'))
-  )
-  select case when coalesce(sum(pend.pendenza) filter (where pesi.attributo is null), 0) = 0 then 0
-    else 0.5 * coalesce(sum(pesi.peso * pend.pendenza) filter (where pesi.attributo is not null), 0)
-             / sum(pend.pendenza) filter (where pesi.attributo is null)
+  select case when coalesce(sum(a.pendenza), 0) = 0 then 4
+    else sum(coalesce((private.piano_pesi(p_piano)->>a.attributo)::numeric, 4) * a.pendenza) / sum(a.pendenza)
   end
-  from pend left join pesi on pesi.attributo = pend.attributo
+  from private.attributi_piano(p_reparto) a
 $$;
 
-
--- Lo scostamento di un piano per |Δ| punti di overall. Valori non
--- arrotondati: l'arrotondamento si fa una volta sola, sul totale.
--- I sei voti macro (quelli del radar) seguono la media dei loro attributi
--- di dettaglio, cosi' la card resta coerente con l'elenco.
+-- Quanto cresce in piu' (o in meno) un'abilita' col piano, come frazione
+-- della crescita naturale: FORZA × (peso / media − 1), con FORZA = 0,5.
+-- Con la scala 4-15 le due abilita' principali crescono circa il 75% in
+-- piu', quelle "a 4" circa il 17% in meno.
 create or replace function private.scostamenti_piano(p_piano text, p_reparto text, p_delta numeric)
 returns jsonb
 language plpgsql
@@ -163,28 +177,24 @@ set search_path = ''
 as $$
 declare
   v_pesi jsonb := private.piano_pesi(p_piano);
-  v_beta numeric;
+  v_media numeric;
   v_dettaglio jsonb;
   v_macro jsonb;
 begin
-  if v_pesi is null or coalesce(p_delta, 0) = 0 then
+  if v_pesi is null or v_pesi = '{}'::jsonb or coalesce(p_delta, 0) = 0 then
     return '{}'::jsonb;
   end if;
-  v_beta := private.piano_beta(p_piano, p_reparto);
+  v_media := private.piano_media(p_piano, p_reparto);
 
-  select coalesce(jsonb_object_agg(pe.attributo,
-    case when v_pesi ? pe.attributo
-      then 0.5 * (v_pesi->>pe.attributo)::numeric * greatest(pe.pendenza, 0) * abs(p_delta)
-      else -v_beta * greatest(pe.pendenza, 0) * abs(p_delta)
-    end), '{}'::jsonb)
+  select coalesce(jsonb_object_agg(a.attributo,
+    0.5 * (coalesce((v_pesi->>a.attributo)::numeric, 4) / v_media - 1) * a.pendenza * abs(p_delta)), '{}'::jsonb)
   into v_dettaglio
-  from private.pendenze_attributi pe
-  where pe.reparto = p_reparto
-    and pe.attributo not in ('pace', 'shooting', 'passing', 'dribbling_generale', 'defending', 'physic', 'gk')
-    and (p_reparto = 'GK' or v_pesi ? pe.attributo or (pe.attributo not like 'gk\_%' and pe.attributo <> 'goalkeeping_speed'));
+  from private.attributi_piano(p_reparto) a;
 
+  -- I sei voti macro (quelli del radar) seguono la media dei loro attributi
+  -- di dettaglio, cosi' la card resta coerente con l'elenco.
   select coalesce(jsonb_object_agg(g.macro,
-    (select avg(coalesce((v_dettaglio->>a)::numeric, 0)) from unnest(g.attributi) a)), '{}'::jsonb)
+    (select avg(coalesce((v_dettaglio->>x)::numeric, 0)) from unnest(g.attributi) x)), '{}'::jsonb)
   into v_macro
   from (values
     ('pace', array['movement_acceleration', 'movement_sprint_speed']),
@@ -256,8 +266,43 @@ revoke all on function public.attributi_correnti(bigint[]) from public, anon;
 grant execute on function public.attributi_correnti(bigint[]) to authenticated, service_role;
 
 
+-- Gli attributi di un giocatore VISTO DA UNA LEGA, anche se non e' in rosa.
+-- Serve al Mercato: la scheda di uno svincolato mostrava gli attributi del
+-- catalogo mentre l'overall accanto era gia' cresciuto o calato
+-- (segnalato dall'utente il 27 settembre 2026). L'overall vero sta in uno
+-- di tre posti, con la stessa precedenza che usa la pagina:
+--   1. l'istanza nella lega (in rosa o svincolato che una rosa l'ha avuta),
+--      con il suo piano di sviluppo;
+--   2. free_agent_progression (mai stato in rosa, ma invecchia lo stesso);
+--   3. il catalogo (nessuna crescita).
+create or replace function public.attributi_giocatore_lega(p_league_id bigint, p_player_id bigint)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(
+    (select private.attributi_istanza(
+       p.attributi, coalesce(pi.posizioni_override, p.posizioni), pi.overall_corrente, p.overall,
+       pi.piano_scostamenti, pi.specializzazione_attiva, pi.piano_overall_rif)
+     from public.player_instances pi join public.players p on p.id = pi.player_id
+     where pi.league_id = p_league_id and pi.player_id = p_player_id),
+    (select private.attributi_istanza(
+       p.attributi, p.posizioni, coalesce(fap.overall_corrente, p.overall), p.overall, '{}'::jsonb, null, null)
+     from public.players p
+     left join public.free_agent_progression fap on fap.league_id = p_league_id and fap.player_id = p.id
+     where p.id = p_player_id),
+    '{}'::jsonb)
+$$;
+
+revoke all on function public.attributi_giocatore_lega(bigint, bigint) from public, anon;
+grant execute on function public.attributi_giocatore_lega(bigint, bigint) to authenticated, service_role;
+
+
 -- L'anteprima dell'allenamento: non piu' "90 → 98", ma quanto cresce in
--- piu' (o in meno) ogni abilita' da qui in avanti.
+-- piu' o in meno OGNI abilita' da qui in avanti (percentuale sulla crescita
+-- naturale).
 create or replace function public.specializzazioni_disponibili(p_instance_id bigint)
 returns jsonb
 language plpgsql
@@ -272,6 +317,7 @@ declare
   v_reparto text;
   v_chiave text;
   v_pesi jsonb;
+  v_media numeric;
   v_crescita jsonb;
   v_risultato jsonb := '{}'::jsonb;
 begin
@@ -289,13 +335,14 @@ begin
 
   for v_chiave in select jsonb_object_keys(v_catalogo) loop
     v_pesi := v_catalogo -> v_chiave -> 'pesi';
-    select jsonb_object_agg(k, round(50 * (v_pesi->>k)::numeric)::int) into v_crescita
-    from jsonb_object_keys(v_pesi) k;
+    v_media := private.piano_media(v_chiave, v_reparto);
+    select jsonb_object_agg(a.attributo,
+      round(50 * (coalesce((v_pesi->>a.attributo)::numeric, 4) / v_media - 1))::int) into v_crescita
+    from private.attributi_piano(v_reparto) a;
     v_risultato := v_risultato || jsonb_build_object(v_chiave, jsonb_build_object(
       'etichetta', v_catalogo -> v_chiave ->> 'etichetta',
       'crescita_pct', v_crescita,
-      'altre_pct', -round(100 * private.piano_beta(v_chiave, v_reparto))::int,
-      'attivo', v_chiave is not distinct from v_attiva
+      'attivo', v_chiave = coalesce(v_attiva, 'bilanciato')
     ));
   end loop;
 
@@ -348,7 +395,7 @@ begin
 
   perform 1 from public.player_instances where id = p_instance_id for update;
 
-  if v_istanza.specializzazione_attiva is not distinct from p_specializzazione then
+  if coalesce(v_istanza.specializzazione_attiva, 'bilanciato') = p_specializzazione then
     raise exception using errcode = '55000', message = 'Questo giocatore segue già questo piano di sviluppo.';
   end if;
 

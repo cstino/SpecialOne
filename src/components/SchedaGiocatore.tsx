@@ -107,8 +107,8 @@ type Props = {
     attiva: string | null
     inCorso: { specializzazionePrecedente: string | null; specializzazioneTarget: string; avviatoGiornata: number; completaGiornata: number } | null
     prossimaGiornata: number | null
-    /** crescita: [attributo, % di crescita in piu'], dal piu' forte. altrePct: quanto meno crescono le altre (negativo). */
-    onCaricaOpzioni: () => Promise<Array<{ chiave: string; etichetta: string; crescita: Array<[string, number]>; altrePct: number }>>
+    /** crescita: [attributo, % di crescita in piu' o in meno], dal piu' spinto. Tutte le abilita'. */
+    onCaricaOpzioni: () => Promise<Array<{ chiave: string; etichetta: string; crescita: Array<[string, number]> }>>
     onAvvia: (specializzazione: string) => Promise<void>
     onAnnulla: () => Promise<void>
   }
@@ -237,10 +237,10 @@ function progressoAllenamento(a: { avviatoGiornata: number; completaGiornata: nu
   return { percent: Math.round((fatte / durata) * 100), mancano: Math.max(0, a.completaGiornata - prossimaGiornata) }
 }
 
-// Anteprima di un piano di sviluppo, stile EA FC: tutte le abilita' del
-// giocatore raggruppate come nella scheda, con il valore di oggi. Quelle del
-// piano portano accanto quanto crescono IN PIU' da qui in avanti (+50%,
-// +30%, +20%); sopra, una riga dice quanto meno crescono le altre.
+// Anteprima di un piano di sviluppo, stile FC 26: tutte le abilita' del
+// giocatore raggruppate come nella scheda, ognuna col valore di oggi e con
+// quanto crescera' in piu' (+75%) o in meno (−17%) rispetto alla crescita
+// naturale. Il piano pesa tutte le abilita', non un elenco chiuso.
 //
 // Prima questa vista mostrava "90 → 98": un bonus da incassare subito che
 // il nuovo modello non da' piu' (migrazione 20260927010000). Il piano non
@@ -248,19 +248,22 @@ function progressoAllenamento(a: { avviatoGiornata: number; completaGiornata: nu
 function RigaPianoAttributo({ etichetta, valore, pct }: { etichetta: string; valore: number; pct: number }) {
   return <div className="player-training-riga-attributo">
     <span>{etichetta}</span>
-    {pct > 0
-      ? <b className="is-cambiato">{valore} <em className="is-dopo">+{pct}%</em></b>
-      : <b>{valore}</b>}
+    <b className={pct > 0 ? 'is-cambiato' : undefined}>
+      {valore}{pct !== 0 && <> <em className={pct > 0 ? 'is-dopo' : 'is-meno'}>{pct > 0 ? '+' : '−'}{Math.abs(pct)}%</em></>}
+    </b>
   </div>
 }
 
-function AnteprimaPiano({ crescita, altrePct, attributi, soloGk }: { crescita: Array<[string, number]>; altrePct: number; attributi: Record<string, number | null>; soloGk: boolean }) {
+function AnteprimaPiano({ crescita, attributi, soloGk }: { crescita: Array<[string, number]>; attributi: Record<string, number | null>; soloGk: boolean }) {
   const mappa = new Map(crescita)
+  const neutro = crescita.every(([, pct]) => pct === 0)
   return <>
     <p className="field-help">
-      Non aggiunge punti subito: da qui in avanti, quando cresce, le abilità evidenziate crescono di più
-      {altrePct < 0 ? <> e le altre circa il {Math.abs(altrePct)}% in meno</> : null}. L'overall resta quello che
-      sarebbe stato comunque. Se il giocatore cala, le abilità del piano calano meno.
+      {neutro
+        ? <>Crescita naturale: ogni abilità cresce (o cala) insieme all'overall, senza spingerne nessuna.</>
+        : <>Non aggiunge punti subito. Da qui in avanti, quando il giocatore cresce, ogni abilità cresce della
+          percentuale indicata in più o in meno rispetto al normale. L'overall resta quello che sarebbe stato
+          comunque. Se il giocatore cala, le abilità del piano calano meno.</>}
     </p>
     <div className="player-training-confronto">
       {GRUPPI_ATTRIBUTI.filter((gruppo) => !gruppo.soloGk || soloGk).map((gruppo) => {
@@ -438,7 +441,7 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
   const [cambioInCorso, setCambioInCorso] = useState(false)
   const [cambioErrore, setCambioErrore] = useState<string | null>(null)
   const [cambioCaricamento, setCambioCaricamento] = useState(false)
-  const [specOpzioni, setSpecOpzioni] = useState<Array<{ chiave: string; etichetta: string; crescita: Array<[string, number]>; altrePct: number }> | null>(null)
+  const [specOpzioni, setSpecOpzioni] = useState<Array<{ chiave: string; etichetta: string; crescita: Array<[string, number]> }> | null>(null)
   const [specScelta, setSpecScelta] = useState('')
   const [specInCorso, setSpecInCorso] = useState(false)
   const [specErrore, setSpecErrore] = useState<string | null>(null)
@@ -805,11 +808,11 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
           {userId && <PopupSpiegazione userId={userId} hintKey="training-giocatore" titolo="Come funziona il Training">
             <p><strong>Cambio ruolo</strong> sostituisce il ruolo primario con uno vicino (es. un CB può diventare
               terzino o mediano, non ala). <strong>Piano di sviluppo</strong>, come in EA FC, resta nel ruolo attuale
-              e sceglie un archetipo (es. un CC può diventare regista, box-to-box...). Sono mutuamente esclusivi: un
+              e sceglie un archetipo (es. un CC può diventare regista, box-to-box...) oppure la crescita bilanciata. Sono mutuamente esclusivi: un
               allenamento alla volta per giocatore.</p>
             <p>Il piano non regala punti. Ogni giocatore cresce (o cala) a ogni giornata in base a età, potenziale
-              e minuti; il piano decide <strong>dove</strong> va quella crescita: le sei abilità dell'archetipo
-              crescono fino al 50% in più, le altre un po' meno. L'overall resta lo stesso: il giocatore non diventa
+              e minuti; il piano decide <strong>dove</strong> va quella crescita. Pesa tutte le abilità: quelle
+              chiave dell'archetipo crescono fino al 75% in più, quelle lontane dal ruolo un po' meno. L'overall resta lo stesso: il giocatore non diventa
               più forte, diventa più forte dove vuoi tu.</p>
             <p>Per questo rende molto su un giovane che crescerà tanto, e poco su chi è già arrivato. Su un
               veterano che cala, protegge le abilità del piano. Cambiare piano non toglie quello che ha già
@@ -847,9 +850,11 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
             prossimaGiornata={specializzazione.prossimaGiornata}
             opzioni={specOpzioni?.map((o) => ({
               chiave: o.chiave, etichetta: o.etichetta,
-              // Le quattro abilita' che il piano spinge di piu': sei righe su
-              // un telefono andavano a capo due volte.
-              sottotesto: o.crescita.slice(0, 4).map(([chiave]) => etichettaAttributo(chiave)).join(' · '),
+              // Le quattro abilita' che il piano spinge di piu': l'elenco
+              // completo sta nell'anteprima qui sotto.
+              sottotesto: o.crescita.every(([, pct]) => pct === 0)
+                ? 'Crescita naturale, nessuna abilità spinta'
+                : o.crescita.slice(0, 4).map(([chiave]) => etichettaAttributo(chiave)).join(' · '),
             })) ?? (specCaricamento ? null : [])}
             opzioniCaricamento={specCaricamento}
             scelta={specScelta}
@@ -861,7 +866,7 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
             bloccatoDa={cambioRuolo?.inCorso ? 'un cambio ruolo' : null}
             confrontoScelta={(() => {
               const opzione = specOpzioni?.find((o) => o.chiave === specScelta)
-              return opzione ? <AnteprimaPiano crescita={opzione.crescita} altrePct={opzione.altrePct} attributi={giocatore.attributi} soloGk={rep === 'GK'} /> : null
+              return opzione ? <AnteprimaPiano crescita={opzione.crescita} attributi={giocatore.attributi} soloGk={rep === 'GK'} /> : null
             })()}
           />}
         </div>}

@@ -5,7 +5,7 @@ import { MACRO_COLORE, MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRu
 import { supabase } from '../lib/supabase'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { SchedaGiocatore } from './SchedaGiocatore'
-import { attributiDi, type Attributi } from '../lib/attributiGiocatore'
+import { attributiInLega, type Attributi } from '../lib/attributiGiocatore'
 import { useSeasonData } from '../lib/useSeasonData'
 import { formatCountdown, oraServerAdesso, useOraCorrente } from '../lib/countdown'
 import type { League, Membership } from '../types'
@@ -531,9 +531,10 @@ export function Mercato({ membership, onNavigate }: Props) {
   const scheda = schedaApertaId === null ? null : svincolati.get(schedaApertaId) ?? null
 
   // Gli attributi arrivano solo ora, per questo giocatore: chiederli per tutti
-  // in lista costava 860 KB a ogni apertura della pagina.
+  // in lista costava 860 KB a ogni apertura della pagina. Sono quelli veri in
+  // questa lega (crescita dall'overall attuale), non quelli del catalogo.
   async function apriScheda(playerId: number) {
-    setAttributiScheda(await attributiDi(playerId))
+    setAttributiScheda(await attributiInLega(league.id, playerId))
     setSchedaApertaId(playerId)
   }
 

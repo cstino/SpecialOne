@@ -64,3 +64,14 @@ export async function attributiCorrenti(instanceIds: readonly number[]): Promise
 export async function attributiIstanza(instanceId: number): Promise<Attributi> {
   return (await attributiCorrenti([instanceId])).get(instanceId) ?? {}
 }
+
+/**
+ * Attributi di un giocatore come li vede una lega, anche se non e' in rosa
+ * (svincolati del Mercato): crescita e piano compresi, dall'overall vero.
+ * Ripiega sul catalogo se la chiamata fallisce.
+ */
+export async function attributiInLega(leagueId: number, playerId: number): Promise<Attributi> {
+  const { data, error } = await supabase.rpc('attributi_giocatore_lega', { p_league_id: leagueId, p_player_id: playerId })
+  if (error || !data || Object.keys(data as object).length === 0) return attributiDi(playerId)
+  return data as Attributi
+}

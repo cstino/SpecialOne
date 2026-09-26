@@ -1144,9 +1144,11 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .player-training-riga-attributo:last-child { border-bottom: 0; }
 .player-training-riga-attributo > span { color: #b6adbf; }
 .player-training-riga-attributo > b { flex: none; color: #fff; font-weight: 800; font-variant-numeric: tabular-nums; }
-.player-training-riga-attributo > b.is-cambiato { color: #8e8498; font-weight: 700; }
-.player-training-riga-attributo > b.is-cambiato em { color: #675c73; font-style: normal; }
-.player-training-riga-attributo > b.is-cambiato em.is-dopo { color: #e29bff; font-weight: 900; }
+/* Piano di sviluppo: il valore resta quello di oggi, accanto la percentuale
+   di crescita in piu' (viola) o in meno (grigio) rispetto al normale. */
+.player-training-riga-attributo > b em { display: inline-block; min-width: 3.4em; text-align: right; font-style: normal; font-size: .72rem; }
+.player-training-riga-attributo > b em.is-dopo { color: #e29bff; font-weight: 900; }
+.player-training-riga-attributo > b em.is-meno { color: #7d7389; font-weight: 700; }
 /* "Metti sul mercato" sta sotto agli altri due e ne occupa l'intera larghezza:
    e' un'azione di natura diversa (annuncio pubblico, reversibile), non una
    variante di svincola/rinnovo. */

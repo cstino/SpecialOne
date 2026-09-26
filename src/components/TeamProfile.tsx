@@ -448,14 +448,15 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   async function caricaOpzioniSpecializzazione(instanceId: number) {
     const { data, error } = await supabase.rpc('specializzazioni_disponibili', { p_instance_id: instanceId })
     if (error) throw new Error(error.message)
-    const catalogo = (data ?? {}) as Record<string, { etichetta: string; crescita_pct: Record<string, number>; altre_pct: number; attivo: boolean }>
+    const catalogo = (data ?? {}) as Record<string, { etichetta: string; crescita_pct: Record<string, number>; attivo: boolean }>
     // Il piano che il giocatore segue gia' non si offre: riavviarlo non
     // cambierebbe nulla (e il server lo rifiuta).
     return Object.entries(catalogo).filter(([, valore]) => !valore.attivo).map(([chiave, valore]) => ({
       chiave, etichetta: valore.etichetta,
-      crescita: Object.entries(valore.crescita_pct).sort((a, b) => b[1] - a[1]),
-      altrePct: valore.altre_pct,
+      crescita: Object.entries(valore.crescita_pct ?? {}).sort((a, b) => b[1] - a[1]),
     }))
+      // "Bilanciato" in testa, poi gli archetipi nell'ordine del server.
+      .sort((a, b) => Number(b.chiave === 'bilanciato') - Number(a.chiave === 'bilanciato'))
   }
 
   async function avviaSpecializzazione(instanceId: number, specializzazione: string) {
