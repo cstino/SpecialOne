@@ -124,6 +124,9 @@ export default function SchemaTattico({
   const [aperto, setAperto] = useState<number | null>(null)
   const [trascino, setTrascino] = useState<{ index: number; x: number; y: number; mosso: boolean } | null>(null)
   const campoRef = useRef<HTMLDivElement | null>(null)
+  // Indice della card appena trascinata: il click che il browser genera dopo il
+  // rilascio non deve aprirne il foglio.
+  const appenaTrascinata = useRef<number | null>(null)
 
   const posti = useMemo(() => schieramentoInCampo(schema), [schema])
 
@@ -241,11 +244,13 @@ export default function SchemaTattico({
       const t = vivo.current.trascino
       setTrascino(null)
       if (!t) return
-      // Un tocco senza movimento apre ruolo e compito. Va deciso QUI e non in
-      // un onClick sulla card: il click scatta dopo il rilascio, quindi
-      // apriva il foglio e lo richiudeva subito dopo.
-      if (!t.mosso) setAperto((a) => (a === t.index ? null : t.index))
-      else if (vivo.current.bersaglio) vivo.current.scrivi(t.index, 'slot', vivo.current.bersaglio.slot)
+      // Il tocco semplice lo gestisce l'onClick della card. Aprire il foglio
+      // qui, al rilascio, lo faceva comparire SOTTO il dito: il click generato
+      // subito dopo cadeva sull'opzione apparsa in quel punto e sceglieva un
+      // ruolo da solo (misurato sul telefono: un tocco su un CM dava "Mezzala").
+      if (!t.mosso) return
+      appenaTrascinata.current = t.index
+      if (vivo.current.bersaglio) vivo.current.scrivi(t.index, 'slot', vivo.current.bersaglio.slot)
     }
     const annulla = () => setTrascino(null)
     window.addEventListener('pointermove', muovi, { passive: false })
@@ -289,28 +294,6 @@ export default function SchemaTattico({
         <Barra nome="Indicazioni" quota={quotaIndicazioni}
           nota={conIndicazioni === 0 ? 'Nessuna indicazione data.' : `${conIndicazioni} ${conIndicazioni === 1 ? 'indicazione attiva' : 'indicazioni attive'}.`} />
       </div>
-      {/* Dove si attacca: una scelta di squadra, non di posizione. Paga se
-          l'avversario e' scoperto li' e costa se e' il suo lato forte — otto
-          punti e sei di scarto fra leggere bene e leggere male. Non
-          concentrare e' una scelta legittima, non una mancanza. */}
-      <div className="schema__focus">
-        <span className="schema__focus-titolo">Dove attacchiamo</span>
-        <div className="schema__focus-scelte">
-          {([[null, 'Ovunque'], ['SX', 'A sinistra'], ['CEN', 'Al centro'], ['DX', 'A destra']] as const).map(([v, et]) => (
-            <button key={et} type="button" className={focus === v ? 'is-attiva' : ''}
-              onClick={() => onFocus(v)}>{et}</button>
-          ))}
-        </div>
-        <small>{focus
-          ? 'Concentrare paga se l’avversario è scoperto lì, e costa se è il suo lato forte.'
-          : 'Nessuna concentrazione: si attacca dove capita, senza rischi né vantaggi.'}</small>
-      </div>
-
-      <p className="schema__spiega">
-        Trascina una posizione per spostarla, toccala per darle ruolo e compito. La squadra rende meglio
-        quanto più conosce lo schieramento e le indicazioni: spostare o cambiare molto insieme fa scendere
-        le barre, che tornano su giocando.
-      </p>
 
       <div className="schema__campo pitch-field" ref={campoRef} aria-label={`Schema ${modulo}`}>
         <div className="pitch-field__circle" />
@@ -339,6 +322,10 @@ export default function SchemaTattico({
               className={`schema__posto schema__posto--${REPARTO_DI(slot)}${spostata ? ' is-spostata' : ''}${aperto === posto.index ? ' is-aperta' : ''}${inMano ? ' is-in-mano' : ''}`}
               style={{ left: `${x}%`, top: `${100 - y}%` }}
               onPointerDown={(e) => iniziaTrascinamento(e, posto.index, slot)}
+              onClick={() => {
+                if (appenaTrascinata.current === posto.index) { appenaTrascinata.current = null; return }
+                setAperto((a) => (a === posto.index ? null : posto.index))
+              }}
             >
               <span className="schema__slot">{slot}</span>
               {(ruolo || (compito && compito !== 'equilibrio')) && (
@@ -351,11 +338,34 @@ export default function SchemaTattico({
         })}
       </div>
 
+      {/* Dove si attacca: una scelta di squadra, non di posizione. Paga se
+          l'avversario e' scoperto li' e costa se e' il suo lato forte — otto
+          punti e sei di scarto fra leggere bene e leggere male. Non
+          concentrare e' una scelta legittima, non una mancanza. */}
+      <div className="schema__focus">
+        <span className="schema__focus-titolo">Dove attacchiamo</span>
+        <div className="schema__focus-scelte">
+          {([[null, 'Ovunque'], ['SX', 'A sinistra'], ['CEN', 'Al centro'], ['DX', 'A destra']] as const).map(([v, et]) => (
+            <button key={et} type="button" className={focus === v ? 'is-attiva' : ''}
+              onClick={() => onFocus(v)}>{et}</button>
+          ))}
+        </div>
+        <small>{focus
+          ? 'Concentrare paga se l’avversario è scoperto lì, e costa se è il suo lato forte.'
+          : 'Nessuna concentrazione: si attacca dove capita, senza rischi né vantaggi.'}</small>
+      </div>
+
+      <p className="schema__spiega">
+        Tocca una posizione per darle ruolo e compito, trascinala per spostarla. Cambiare molto insieme fa
+        scendere le barre, che tornano su giocando.
+      </p>
+
       {postoAperto && slotAperto && (
         <>
           <button className="schema__scrim" type="button" aria-label="Chiudi" onClick={() => setAperto(null)} />
           <section className="schema__foglio">
             <header>
+              <button className="schema__fatto" type="button" onClick={() => setAperto(null)}>Fatto</button>
               <strong>{slotAperto}</strong>
               <small>{slotAperto === standard[postoAperto.index] ? 'Posizione di partenza' : `Era ${standard[postoAperto.index]}`}</small>
               {interpreti[postoAperto.index] && <small>Oggi qui: {interpreti[postoAperto.index]!.nome}</small>}
