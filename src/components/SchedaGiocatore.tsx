@@ -866,7 +866,18 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
             bloccatoDa={cambioRuolo?.inCorso ? 'un cambio ruolo' : null}
             confrontoScelta={(() => {
               const opzione = specOpzioni?.find((o) => o.chiave === specScelta)
-              return opzione ? <AnteprimaPiano crescita={opzione.crescita} attributi={giocatore.attributi} soloGk={rep === 'GK'} /> : null
+              if (!opzione) return null
+              return <>
+                {/* Il motore misura il portiere col solo overall, che il piano
+                    non cambia: oggi "Fuori dai pali" sposta solo le abilita'
+                    in scheda. Contera' col ruolo portiere-libero dello schema
+                    tattico (deciso con l'utente il 28 settembre 2026). */}
+                {opzione.chiave === 'fuori_dai_pali' && <p className="field-help">
+                  <strong>Attenzione:</strong> per ora cambia solo le abilità del portiere, non il rendimento in partita: conterà quando saranno
+                  attive le tattiche, con il ruolo di portiere-libero e la difesa alta.
+                </p>}
+                <AnteprimaPiano crescita={opzione.crescita} attributi={giocatore.attributi} soloGk={rep === 'GK'} />
+              </>
             })()}
           />}
         </div>}
