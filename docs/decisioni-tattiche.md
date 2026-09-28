@@ -988,5 +988,8 @@ strategie vicine servono decine di migliaia di partite.
 
 **Frontend.** `src/lib/tattica.ts` ha la stessa formula, **generata** dallo script di taratura
 (`--scrivi`), che poi verifica che frontend e motore diano lo stesso numero su tutti i
-giocatori (65.797 confronti). Nel foglio di una posizione compare chi ci gioca oggi e, per
-ogni ruolo, "++" / "+" / "−" / "−−". Le card restano senza nomi.
+giocatori (65.797 confronti). I segnalini "++" / "+" / "−" / "−−" stanno **solo sulle
+magliette della formazione**, accanto all'overall, e solo se la posizione ha un ruolo.
+Decisione del committente: lo Schema Tattico è lo schema della squadra, fatto di posizioni,
+ruoli e compiti, non di giocatori; i segnalini appartengono ai giocatori. Nello stesso
+giro il costo dei compiti si legge in "stanchezza" invece che in "fiato".

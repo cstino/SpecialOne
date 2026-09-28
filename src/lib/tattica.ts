@@ -365,7 +365,7 @@ export const MODULI: Record<string, string[]> = {
 
 // Come FC: "++" e "+" per chi rende di piu', "−" per chi rende di meno. Le
 // soglie tagliano il 18% circa dei colleghi per fascia agli estremi
-// (tools/validazione/taratura-ruoli.mjs). Serve a Formazione e a SchemaTattico.
+// (tools/validazione/taratura-ruoli.mjs). Li mostra la formazione, sulle magliette.
 export function segnoIdoneita(v: number): { segno: string; tono: 'piu' | 'meno' } | null {
   if (v >= 0.6) return { segno: '++', tono: 'piu' }
   if (v >= 0.25) return { segno: '+', tono: 'piu' }

@@ -3361,9 +3361,6 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .schema__fiato { margin-left: 8px; font-style: normal; font-size: 10.5px; font-weight: 600; letter-spacing: .02em; padding: 2px 7px; border-radius: 999px; }
 .schema__fiato--costa { color: #f3b3a2; background: rgba(224,122,96,.18); }
 .schema__fiato--risparmia { color: #9fd9b4; background: rgba(96,190,130,.16); }
-.schema__idoneo { margin-left: 8px; font-style: normal; font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 2px 7px; border-radius: 999px; }
-.schema__idoneo--piu { color: #9fd9b4; background: rgba(96,190,130,.16); }
-.schema__idoneo--meno { color: #f3b3a2; background: rgba(224,122,96,.18); }
 
 /* Dove attacchiamo: una scelta di squadra, sopra il campo. */
 .schema__focus { display: grid; gap: 8px; padding: 0 16px 12px; }

@@ -21,17 +21,12 @@
 //  in SQL e di quoteFamiliarita nell'Edge Function — tre posti, una formula.
 // ============================================================
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { COMPITI, COMPITI_REPARTO, FAM_PARTITE_PIENA, MODULI, REPARTO, RUOLI_SLOT, SPOSTAMENTI_SLOT, idoneitaRuolo, segnoIdoneita } from '../lib/tattica'
+import { COMPITI, COMPITI_REPARTO, FAM_PARTITE_PIENA, MODULI, REPARTO, RUOLI_SLOT, SPOSTAMENTI_SLOT } from '../lib/tattica'
 import { ANCORE, nomeSchieramento, schieramentoInCampo, type Ancora } from '../lib/schieramento'
 
 const ruoliPerSlot = (slot: string): string[] => RUOLI_SLOT[slot] ?? []
 
 export type XpDisposizione = { disposizione: string[]; partite: number }
-
-// Chi occupa oggi ogni posizione, nello stesso ordine degli undici. Serve solo
-// dentro il foglio di una posizione, per dire quanto quel giocatore e' adatto a
-// ciascun ruolo: le card restano senza nomi (vedi sopra).
-export type Interprete = { nome: string; overall: number; attributi: Record<string, number | null> } | null
 
 
 type Props = {
@@ -42,7 +37,6 @@ type Props = {
   focus: string | null
   xpDisposizione: XpDisposizione[]
   xpIndicazioni: number
-  interpreti: Interprete[]
   onChange: (d: string[] | null, r: (string | null)[] | null, c: (string | null)[] | null) => void
   onFocus: (f: string | null) => void
   onClose: () => void
@@ -81,14 +75,14 @@ const RUOLO_LABEL: Record<string, { nome: string; detto: string }> = {
 const COMPITO_DETTO: Record<string, Record<string, string>> = {
   DEF: {
     difesa: 'Non si stacca mai dalla linea: reparto compatto, e arriva in fondo alla partita fresco. Non aiuta a costruire.',
-    attacco: 'Accompagna l’azione e crea superiorità sulla fascia. Lascia spazio dietro di sé, e costa fiato.',
+    attacco: 'Accompagna l’azione e crea superiorità sulla fascia. Lascia spazio dietro di sé, e stanca di più.',
   },
   MID: {
     difesa: 'Scala davanti alla difesa e chiude le linee di passaggio. Si vede molto meno in avanti.',
     attacco: 'Attacca l’area senza palla: gol in più da dietro. Il centrocampo resta più scoperto.',
   },
   ATT: {
-    difesa: 'Aggredisce chi imposta: la palla la tenete voi e loro tirano meno. Segna meno e consuma — conviene se ha il fiato per reggerlo tutta la stagione.',
+    difesa: 'Aggredisce chi imposta: la palla la tenete voi e loro tirano meno. Segna meno e consuma — conviene se ha la resistenza per reggerlo tutta la stagione.',
     attacco: 'Resta sull’ultima linea, pronto a partire, e si risparmia. In fase difensiva siete in nove.',
   },
 }
@@ -117,7 +111,7 @@ const RAGGIO_CALAMITA = 13
 const SOGLIA_TRASCINAMENTO = 3
 
 export default function SchemaTattico({
-  modulo, disposizione, ruoli, compiti, focus, xpDisposizione, xpIndicazioni, interpreti, onChange, onFocus, onClose,
+  modulo, disposizione, ruoli, compiti, focus, xpDisposizione, xpIndicazioni, onChange, onFocus, onClose,
 }: Props) {
   const standard = MODULI[modulo] ?? []
   const schema = disposizione ?? standard
@@ -368,7 +362,6 @@ export default function SchemaTattico({
               <button className="schema__fatto" type="button" onClick={() => setAperto(null)}>Fatto</button>
               <strong>{slotAperto}</strong>
               <small>{slotAperto === standard[postoAperto.index] ? 'Posizione di partenza' : `Era ${standard[postoAperto.index]}`}</small>
-              {interpreti[postoAperto.index] && <small>Oggi qui: {interpreti[postoAperto.index]!.nome}</small>}
             </header>
 
             {slotAperto === 'GK'
@@ -395,22 +388,14 @@ export default function SchemaTattico({
                     onClick={() => scrivi(postoAperto.index, 'ruolo', null)}>
                     <strong>Nessuno</strong><small>Gioca la posizione senza indicazioni.</small>
                   </button>
-                  {ruoliPerSlot(slotAperto).map((r) => {
-                    const chi = interpreti[postoAperto.index]
-                    const idoneo = chi ? segnoIdoneita(idoneitaRuolo(chi.attributi, chi.overall, r)) : null
-                    return (
-                      <button key={r} type="button" className={ruoli?.[postoAperto.index] === r ? 'is-attiva' : ''}
-                        onClick={() => scrivi(postoAperto.index, 'ruolo', r)}>
-                        <strong>{RUOLO_LABEL[r]?.nome ?? r}{idoneo && (
-                          <em className={`schema__idoneo schema__idoneo--${idoneo.tono}`}
-                            title={idoneo.tono === 'piu' ? `${chi!.nome} rende di più in questo ruolo` : `${chi!.nome} rende di meno in questo ruolo`}>
-                            {idoneo.segno}
-                          </em>
-                        )}</strong>
-                        <small>{RUOLO_LABEL[r]?.detto}</small>
-                      </button>
-                    )
-                  })}
+                  {/* Niente idoneita' qui: lo schema e' della squadra, i segnalini
+                      "++"/"−" stanno sulle magliette della formazione. */}
+                  {ruoliPerSlot(slotAperto).map((r) => (
+                    <button key={r} type="button" className={ruoli?.[postoAperto.index] === r ? 'is-attiva' : ''}
+                      onClick={() => scrivi(postoAperto.index, 'ruolo', r)}>
+                      <strong>{RUOLO_LABEL[r]?.nome ?? r}</strong><small>{RUOLO_LABEL[r]?.detto}</small>
+                    </button>
+                  ))}
                 </div>
 
                 <h3>Compito</h3>
@@ -423,7 +408,7 @@ export default function SchemaTattico({
                         onClick={() => scrivi(postoAperto.index, 'compito', c === 'equilibrio' ? null : c)}>
                         <strong>{et.nome}{et.energia !== 1 && (
                           <em className={`schema__fiato schema__fiato--${et.energia > 1 ? 'costa' : 'risparmia'}`}>
-                            {et.energia > 1 ? `+${Math.round((et.energia - 1) * 100)}% fiato` : `−${Math.round((1 - et.energia) * 100)}% fiato`}
+                            {et.energia > 1 ? `+${Math.round((et.energia - 1) * 100)}% stanchezza` : `−${Math.round((1 - et.energia) * 100)}% stanchezza`}
                           </em>
                         )}</strong>
                         <small>{et.detto}</small>

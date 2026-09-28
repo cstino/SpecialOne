@@ -620,10 +620,6 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         focus={focusCorsia}
         xpDisposizione={xpDisposizione}
         xpIndicazioni={xpIndicazioni}
-        interpreti={titolari.map((id) => {
-          const p = players.find((player) => player.id === id)
-          return p ? { nome: cognome(p.nome), overall: p.overall_corrente, attributi: p.attributi } : null
-        })}
         onChange={(d, r, c) => { setDisposizione(d); setRuoli(r); setCompiti(c); setSaved(false) }}
         onFocus={(f) => { setFocusCorsia(f); setSaved(false) }}
         onClose={() => setSchemaAperto(false)}
