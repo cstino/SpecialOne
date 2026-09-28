@@ -51,19 +51,23 @@ entrambi i gruppi. Qui i due gruppi usano regole **diverse**:
 **Title Playoff (8 squadre, nessun bye)**: seeding incrociato classico, invariato da §10.7 —
 1ª-8ª, 2ª-7ª, 3ª-6ª, 4ª-5ª.
 
-**Draft Playoff (6 squadre, 2 bye)**: **accoppiamento per posizioni adiacenti**, non
-incrociato. Le teste di serie sono le due squadre col piazzamento peggiore (13ª e 14ª: la
-peggiore assoluta ha il vantaggio maggiore, coerente con lo spirito del vecchio playout).
+**Draft Playoff**: **seeding incrociato, identico al Title Playoff**, con la numerazione
+invertita: il seed 1 e' l'ULTIMA in classifica assoluta (vantaggio maggiore, coerente con lo
+spirito del vecchio playout). *Rivisto il 28 settembre 2026: la versione precedente
+accoppiava per posizioni adiacenti (9a-10a, 11a-12a) ed era sbagliata.*
 
 ```
-Primo turno:  9ª vs 10ª          11ª vs 12ª
-Semifinali:   vinc.(9-10) vs 13ª  vinc.(11-12) vs 14ª
-Finale:       vincenti delle due semifinali
+16 squadre (Draft Playoff a 8, nessun bye):
+Quarti:  16a-9a   15a-10a   14a-11a   13a-12a   (1-8, 2-7, 3-6, 4-5)
+
+14 squadre (Draft Playoff a 6, 2 bye):
+Primo turno:  12a-9a   11a-10a
+Semifinali:   14a vs vinc.(11a-10a)   13a vs vinc.(12a-9a)
 ```
 
-Questo è **diverso** dall'algoritmo generico `private.ordine_tabellone` usato oggi (che per
-6 squadre produrrebbe 9ª-12ª e 10ª-11ª, non 9ª-10ª e 11ª-12ª): serve una funzione di seeding
-apposta per il Draft Playoff, non un riuso di quella esistente.
+Implementazione: `private.ordine_draft_playoff` restituisce `private.ordine_tabellone`
+(migrazione `20260928010000_draft_playoff_incrociato.sql`), che ha anche riaccoppiato il
+tabellone gia' generato di Serie F, non ancora giocato.
 
 ---
 
