@@ -1,6 +1,6 @@
-import { simulaPartita, schiera } from '/Users/cristianobraccili/SpecialOne/engine/engine.js';
-import { creaRosaPerModulo, setSeed } from '/Users/cristianobraccili/SpecialOne/tools/validazione/roster.js';
-import { MODULI } from '/Users/cristianobraccili/SpecialOne/engine/config.js';
+import { simulaPartita, schiera } from '../../engine/engine.js';
+import { creaRosaPerModulo, setSeed } from './roster.js';
+import { MODULI } from '../../engine/config.js';
 const M = MODULI['4-4-2'];
 const GIORNATE = 30, STAGIONI = 400;
 

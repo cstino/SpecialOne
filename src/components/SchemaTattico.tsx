@@ -21,12 +21,28 @@
 //  in SQL e di quoteFamiliarita nell'Edge Function — tre posti, una formula.
 // ============================================================
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { COMPITI, COMPITI_REPARTO, FAM_PARTITE_PIENA, MODULI, REPARTO, RUOLI_SLOT, SPOSTAMENTI_SLOT } from '../lib/tattica'
+import { COMPITI, COMPITI_REPARTO, FAM_PARTITE_PIENA, MODULI, REPARTO, RUOLI_SLOT, SPOSTAMENTI_SLOT, idoneitaRuolo } from '../lib/tattica'
 import { ANCORE, nomeSchieramento, schieramentoInCampo, type Ancora } from '../lib/schieramento'
 
 const ruoliPerSlot = (slot: string): string[] => RUOLI_SLOT[slot] ?? []
 
 export type XpDisposizione = { disposizione: string[]; partite: number }
+
+// Chi occupa oggi ogni posizione, nello stesso ordine degli undici. Serve solo
+// dentro il foglio di una posizione, per dire quanto quel giocatore e' adatto a
+// ciascun ruolo: le card restano senza nomi (vedi sopra).
+export type Interprete = { nome: string; overall: number; attributi: Record<string, number | null> } | null
+
+// Come FC: "++" e "+" per chi rende di piu', "−" per chi rende di meno. Le
+// soglie tagliano il 18% circa dei colleghi per fascia agli estremi
+// (tools/validazione/taratura-ruoli.mjs).
+function segnoIdoneita(v: number): { segno: string; tono: string } | null {
+  if (v >= 0.6) return { segno: '++', tono: 'piu' }
+  if (v >= 0.25) return { segno: '+', tono: 'piu' }
+  if (v <= -0.6) return { segno: '−−', tono: 'meno' }
+  if (v <= -0.25) return { segno: '−', tono: 'meno' }
+  return null
+}
 
 type Props = {
   modulo: string
@@ -36,6 +52,7 @@ type Props = {
   focus: string | null
   xpDisposizione: XpDisposizione[]
   xpIndicazioni: number
+  interpreti: Interprete[]
   onChange: (d: string[] | null, r: (string | null)[] | null, c: (string | null)[] | null) => void
   onFocus: (f: string | null) => void
   onClose: () => void
@@ -60,7 +77,7 @@ const RUOLO_LABEL: Record<string, { nome: string; detto: string }> = {
   esterno: { nome: 'Esterno', detto: 'Tiene la fascia in entrambe le fasi.' },
   ala_pura: { nome: 'Ala pura', detto: 'Larghissima, salta l’uomo e crossa.' },
   esterno_a_rientrare: { nome: 'A rientrare', detto: 'Converge dentro per calciare.' },
-  esterno_di_rientro: { nome: 'Esterno di rientro', detto: 'Raddoppia sul terzino avversario.' },
+  esterno_difensivo: { nome: 'Esterno difensivo', detto: 'Raddoppia sul terzino avversario e copre la fascia.' },
   punta: { nome: 'Punta', detto: 'Gioca sul filo e attacca la porta.' },
   finalizzatore: { nome: 'Finalizzatore', detto: 'Vive in area, tocca poco e segna.' },
   punta_di_manovra: { nome: 'Punta di manovra', detto: 'Scende a legare il gioco.' },
@@ -110,7 +127,7 @@ const RAGGIO_CALAMITA = 13
 const SOGLIA_TRASCINAMENTO = 3
 
 export default function SchemaTattico({
-  modulo, disposizione, ruoli, compiti, focus, xpDisposizione, xpIndicazioni, onChange, onFocus, onClose,
+  modulo, disposizione, ruoli, compiti, focus, xpDisposizione, xpIndicazioni, interpreti, onChange, onFocus, onClose,
 }: Props) {
   const standard = MODULI[modulo] ?? []
   const schema = disposizione ?? standard
@@ -351,6 +368,7 @@ export default function SchemaTattico({
             <header>
               <strong>{slotAperto}</strong>
               <small>{slotAperto === standard[postoAperto.index] ? 'Posizione di partenza' : `Era ${standard[postoAperto.index]}`}</small>
+              {interpreti[postoAperto.index] && <small>Oggi qui: {interpreti[postoAperto.index]!.nome}</small>}
             </header>
 
             {slotAperto === 'GK'
@@ -377,12 +395,22 @@ export default function SchemaTattico({
                     onClick={() => scrivi(postoAperto.index, 'ruolo', null)}>
                     <strong>Nessuno</strong><small>Gioca la posizione senza indicazioni.</small>
                   </button>
-                  {ruoliPerSlot(slotAperto).map((r) => (
-                    <button key={r} type="button" className={ruoli?.[postoAperto.index] === r ? 'is-attiva' : ''}
-                      onClick={() => scrivi(postoAperto.index, 'ruolo', r)}>
-                      <strong>{RUOLO_LABEL[r]?.nome ?? r}</strong><small>{RUOLO_LABEL[r]?.detto}</small>
-                    </button>
-                  ))}
+                  {ruoliPerSlot(slotAperto).map((r) => {
+                    const chi = interpreti[postoAperto.index]
+                    const idoneo = chi ? segnoIdoneita(idoneitaRuolo(chi.attributi, chi.overall, r)) : null
+                    return (
+                      <button key={r} type="button" className={ruoli?.[postoAperto.index] === r ? 'is-attiva' : ''}
+                        onClick={() => scrivi(postoAperto.index, 'ruolo', r)}>
+                        <strong>{RUOLO_LABEL[r]?.nome ?? r}{idoneo && (
+                          <em className={`schema__idoneo schema__idoneo--${idoneo.tono}`}
+                            title={idoneo.tono === 'piu' ? `${chi!.nome} rende di più in questo ruolo` : `${chi!.nome} rende di meno in questo ruolo`}>
+                            {idoneo.segno}
+                          </em>
+                        )}</strong>
+                        <small>{RUOLO_LABEL[r]?.detto}</small>
+                      </button>
+                    )
+                  })}
                 </div>
 
                 <h3>Compito</h3>

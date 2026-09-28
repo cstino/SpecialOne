@@ -18,41 +18,125 @@
 //  Cosi' un ruolo nuovo e' due numeri e una riga di commento, non un blocco di
 //  codice — e si compone con i compiti invece di sovrapporsi a loro.
 //
-//  Gli ATTRIBUTI CHIAVE dicono chi sa interpretarlo. Come per i compiti, il
-//  peso che se ne va se ne va comunque: chi non ha il profilo lascia il suo
-//  posto senza portare niente dove arriva.
+//  Il PROFILO dice chi sa interpretarlo: attributi FC 26, letti come
+//  sbilanciamento e non come valore assoluto (registro, punti 1 e 27). Il
+//  ruolo base di ogni posizione non ha profilo ed e' neutro: chi non tocca
+//  niente non guadagna e non perde.
+//
+//  La resistenza non entra in nessun profilo: la conta gia' il motore nella
+//  fatica, e i compiti di corsa la usano come idoneita'. Metterla anche qui
+//  la premierebbe due volte.
 // ============================================================
+
+// Le chiavi sono quelle del catalogo (tools/importazione/normalizza.py).
+const MARCATURA = 'defending_marking_awareness';
+const CONTRASTO = 'standing_tackle';
+const FORZA = 'power_strength';
+const TESTA = 'attacking_heading_accuracy';
+const PASS_CORTO = 'short_passing';
+const PASS_LUNGO = 'skill_long_passing';
+const VISIONE = 'mentality_vision';
+const FREDDEZZA = 'mentality_composure';
+const CROSS = 'attacking_crossing';
+const VELOCITA = 'movement_sprint_speed';
+const ACCELERAZIONE = 'movement_acceleration';
+const DRIBBLING = 'dribbling';
+const CONTROLLO = 'skill_ball_control';
+const INTERCETTI = 'mentality_interceptions';
+const AGGRESSIVITA = 'mentality_aggression';
+const INSERIMENTO = 'mentality_positioning';
+const TIRO = 'finishing';
+const TIRO_LONTANO = 'power_long_shots';
+const EFFETTO = 'skill_curve';
+const AGILITA = 'movement_agility';
+const REATTIVITA = 'movement_reactions';
 
 export const RUOLI = {
   // --- difensori centrali ---
-  centrale:            { per: ['CB'], dentro:  0.0, avanti:  0.0, chiave: ['tackle'] },
-  centrale_marcatore:  { per: ['CB'], dentro:  0.2, avanti: -0.5, chiave: ['tackle'] },
-  centrale_impostatore:{ per: ['CB'], dentro:  0.0, avanti:  0.5, chiave: ['short_passing'] },
+  centrale:            { per: ['CB'], dentro:  0.0, avanti:  0.0, profilo: null },
+  centrale_marcatore:  { per: ['CB'], dentro:  0.2, avanti: -0.5, profilo: [MARCATURA, CONTRASTO, FORZA, TESTA] },
+  centrale_impostatore:{ per: ['CB'], dentro:  0.0, avanti:  0.5, profilo: [PASS_CORTO, PASS_LUNGO, VISIONE, FREDDEZZA] },
 
   // --- terzini ---
-  terzino:             { per: ['LB','RB','LWB','RWB'], dentro:  0.0, avanti:  0.0, chiave: ['tackle'] },
-  terzino_offensivo:   { per: ['LB','RB','LWB','RWB'], dentro: -0.3, avanti:  0.8, chiave: ['dribbling'] },
-  terzino_interno:     { per: ['LB','RB','LWB','RWB'], dentro:  0.8, avanti:  0.4, chiave: ['short_passing'] },
-  terzino_bloccato:    { per: ['LB','RB','LWB','RWB'], dentro:  0.1, avanti: -0.6, chiave: ['tackle'] },
+  terzino:             { per: ['LB','RB','LWB','RWB'], dentro:  0.0, avanti:  0.0, profilo: null },
+  terzino_offensivo:   { per: ['LB','RB','LWB','RWB'], dentro: -0.3, avanti:  0.8, profilo: [CROSS, VELOCITA, DRIBBLING, ACCELERAZIONE] },
+  terzino_interno:     { per: ['LB','RB','LWB','RWB'], dentro:  0.8, avanti:  0.4, profilo: [PASS_CORTO, CONTROLLO, VISIONE, INTERCETTI] },
+  terzino_bloccato:    { per: ['LB','RB','LWB','RWB'], dentro:  0.1, avanti: -0.6, profilo: [MARCATURA, CONTRASTO, INTERCETTI, FORZA] },
 
   // --- centrocampisti centrali ---
-  mediano:             { per: ['CDM','CM','CAM'], dentro:  0.0, avanti:  0.0, chiave: ['short_passing'] },
-  regista:             { per: ['CDM','CM','CAM'], dentro:  0.4, avanti: -0.2, chiave: ['short_passing'] },
-  mezzala:             { per: ['CDM','CM','CAM'], dentro: -0.5, avanti:  0.4, chiave: ['dribbling'] },
-  incursore:           { per: ['CDM','CM','CAM'], dentro:  0.1, avanti:  0.8, chiave: ['finishing'] },
-  schermo:             { per: ['CDM','CM','CAM'], dentro:  0.3, avanti: -0.7, chiave: ['tackle'] },
+  mediano:             { per: ['CDM','CM','CAM'], dentro:  0.0, avanti:  0.0, profilo: null },
+  regista:             { per: ['CDM','CM','CAM'], dentro:  0.4, avanti: -0.2, profilo: [VISIONE, PASS_LUNGO, PASS_CORTO, FREDDEZZA] },
+  mezzala:             { per: ['CDM','CM','CAM'], dentro: -0.5, avanti:  0.4, profilo: [DRIBBLING, CONTROLLO, PASS_CORTO, AGILITA] },
+  incursore:           { per: ['CDM','CM','CAM'], dentro:  0.1, avanti:  0.8, profilo: [INSERIMENTO, TIRO, ACCELERAZIONE, TIRO_LONTANO] },
+  schermo:             { per: ['CDM','CM','CAM'], dentro:  0.3, avanti: -0.7, profilo: [INTERCETTI, CONTRASTO, MARCATURA, AGGRESSIVITA] },
 
   // --- esterni ---
-  esterno:             { per: ['LM','RM','LW','RW'], dentro:  0.0, avanti:  0.0, chiave: ['dribbling'] },
-  ala_pura:            { per: ['LM','RM','LW','RW'], dentro: -0.5, avanti:  0.4, chiave: ['dribbling'] },
-  esterno_a_rientrare: { per: ['LM','RM','LW','RW'], dentro:  0.8, avanti:  0.3, chiave: ['finishing'] },
-  esterno_di_rientro:  { per: ['LM','RM','LW','RW'], dentro:  0.2, avanti: -0.5, chiave: ['tackle'] },
+  esterno:             { per: ['LM','RM','LW','RW'], dentro:  0.0, avanti:  0.0, profilo: null },
+  ala_pura:            { per: ['LM','RM','LW','RW'], dentro: -0.5, avanti:  0.4, profilo: [VELOCITA, ACCELERAZIONE, CROSS, DRIBBLING] },
+  esterno_a_rientrare: { per: ['LM','RM','LW','RW'], dentro:  0.8, avanti:  0.3, profilo: [TIRO, EFFETTO, DRIBBLING, AGILITA] },
+  esterno_difensivo:   { per: ['LM','RM','LW','RW'], dentro:  0.2, avanti: -0.5, profilo: [CONTRASTO, INTERCETTI, VELOCITA, MARCATURA] },
 
   // --- punte ---
-  punta:               { per: ['ST','CF'], dentro:  0.0, avanti:  0.0, chiave: ['finishing'] },
-  finalizzatore:       { per: ['ST','CF'], dentro:  0.3, avanti:  0.4, chiave: ['finishing'] },
-  punta_di_manovra:    { per: ['ST','CF'], dentro:  0.0, avanti: -0.6, chiave: ['short_passing'] },
+  punta:               { per: ['ST','CF'], dentro:  0.0, avanti:  0.0, profilo: null },
+  finalizzatore:       { per: ['ST','CF'], dentro:  0.3, avanti:  0.4, profilo: [TIRO, INSERIMENTO, REATTIVITA, FREDDEZZA] },
+  punta_di_manovra:    { per: ['ST','CF'], dentro:  0.0, avanti: -0.6, profilo: [PASS_CORTO, VISIONE, CONTROLLO, FORZA] },
 };
+
+// Il metro di paragone interno al giocatore: tutti gli attributi che un
+// profilo puo' chiedere. Il profilo e' la differenza fra la media dei suoi
+// attributi e questa, cioe' "in cosa e' piu' bravo di quanto sia in generale".
+export const ATTRIBUTI_GENERALI = [...new Set(Object.values(RUOLI).flatMap((r) => r.profilo ?? []))];
+
+function media(attributi, chiavi) {
+  let somma = 0;
+  for (const k of chiavi) {
+    const v = attributi?.[k];
+    if (typeof v !== 'number' || !Number.isFinite(v)) return null;
+    somma += v;
+  }
+  return somma / chiavi.length;
+}
+
+/** Lo sbilanciamento grezzo verso un profilo, in punti di attributo. null se mancano dati. */
+export function scartoProfilo(attributi, profilo) {
+  if (!profilo?.length) return null;
+  const suo = media(attributi, profilo);
+  const generale = media(attributi, ATTRIBUTI_GENERALI);
+  return suo === null || generale === null ? null : suo - generale;
+}
+
+// Dove sta il collega tipico, per ruolo: fra i giocatori veri la cui posizione
+// principale e' nella famiglia del ruolo, lo scarto atteso a ogni livello di
+// overall (retta: atteso a 75 + pendenza per punto) e la deviazione intorno.
+// GENERATA da tools/validazione/taratura-ruoli.mjs su pool-reale.json: se
+// cambiano i profili, va rigenerata.
+//
+// Due confronti, due trappole evitate. Senza il collega tipico un centrale
+// sarebbe sempre "piu' marcatore che altro" e il marcatore converrebbe a tutti.
+// Senza il livello, fra le punte i finalizzatori sarebbero quasi sempre le piu'
+// forti (correlazione 0,52): overall travestito, di nuovo.
+export const TARATURA_RUOLI = {
+  centrale_marcatore: { atteso: 11.71, pendenza: 0.363, deviazione: 3.93 },
+  centrale_impostatore: { atteso: 2.13, pendenza: 0.284, deviazione: 3.51 },
+  terzino_offensivo: { atteso: 5.81, pendenza: -0.260, deviazione: 3.84 },
+  terzino_interno: { atteso: 1.63, pendenza: 0.164, deviazione: 1.94 },
+  terzino_bloccato: { atteso: 1.64, pendenza: -0.071, deviazione: 3.82 },
+  regista: { atteso: 4.68, pendenza: 0.244, deviazione: 2.56 },
+  mezzala: { atteso: 5.07, pendenza: 0.028, deviazione: 3.65 },
+  incursore: { atteso: -1.89, pendenza: -0.004, deviazione: 5.19 },
+  schermo: { atteso: -2.15, pendenza: -0.063, deviazione: 9.26 },
+  ala_pura: { atteso: 10.65, pendenza: -0.120, deviazione: 4.33 },
+  esterno_a_rientrare: { atteso: 8.15, pendenza: 0.096, deviazione: 4.00 },
+  esterno_difensivo: { atteso: -14.11, pendenza: -0.305, deviazione: 7.93 },
+  finalizzatore: { atteso: 9.72, pendenza: 0.409, deviazione: 2.91 },
+  punta_di_manovra: { atteso: 6.79, pendenza: 0.175, deviazione: 3.07 },
+};
+
+const OVERALL_RIFERIMENTO = 75;
+
+// A quante deviazioni dal collega tipico si e' l'interprete perfetto (o il
+// peggiore). 1,5 lascia il 13% circa dei giocatori oltre i due estremi.
+const DEVIAZIONI_PIENE = 1.5;
 
 /** I ruoli che uno slot puo' assumere. */
 export function ruoliPerSlot(slot) {
@@ -70,17 +154,20 @@ export function ruoloNaturale(slot) {
 export const SCALA_DENTRO = 0.13;
 export const SCALA_AVANTI = 0.09;
 
-/** Quanto un giocatore sa interpretare il ruolo, da -1 a +1. */
+/**
+ * Quanto un giocatore sa interpretare il ruolo, da -1 a +1, rispetto al
+ * collega tipico. Vale anche fuori posizione: un centrale schierato da schermo
+ * e' confrontato con i centrocampisti. 0 se il ruolo e' quello base o se
+ * mancano attributi: mai un profilo inventato (registro, punto 8).
+ */
 export function idoneitaRuolo(g, ruolo) {
   const r = RUOLI[ruolo];
-  if (!g || !r || !r.chiave?.length) return 0;
-  const suoi = r.chiave.map((k) => g[k]).filter((v) => typeof v === 'number');
-  if (!suoi.length) return 0;
-  const mio = suoi.reduce((a, b) => a + b, 0) / suoi.length;
-  // Confronto con la sua media generale: premia chi in quella cosa e' meglio
-  // di quanto sia in generale, non semplicemente chi e' piu' forte.
-  const media = ((g.finishing ?? 50) + (g.short_passing ?? 50) + (g.tackle ?? 50) + (g.dribbling ?? 50)) / 4;
-  return Math.max(-1, Math.min(1, (mio - media) / 12));
+  const t = TARATURA_RUOLI[ruolo];
+  if (!g || !r?.profilo || !t || typeof g.ovr !== 'number') return 0;
+  const s = scartoProfilo(g.attributi, r.profilo);
+  if (s === null) return 0;
+  const atteso = t.atteso + t.pendenza * (g.ovr - OVERALL_RIFERIMENTO);
+  return Math.max(-1, Math.min(1, (s - atteso) / (t.deviazione * DEVIAZIONI_PIENE)));
 }
 
 /** I pesi di corsia dopo il ruolo. */
@@ -103,13 +190,8 @@ export function corsiaConRuolo(wc, ruolo, giocatore) {
   };
 }
 
-// Quanto COSTA non saper interpretare il ruolo, in punti di overall efficace a
-// inadeguatezza piena. Solo costo, mai premio: vedi deltaRuoli(). E' il pezzo che mancava: prima l'idoneita' governava solo
-// come il peso si smistava fra le corsie, cioe' una cosa che LEGGE L'AVVERSARIO
-// e non il rendimento di chi gioca. Il risultato era un ruolo che rendeva
-// uguale a chiunque lo si desse, che e' esattamente il contrario di come
-// funziona in Football Manager: li' la resa di un giocatore dipende da quanto
-// il ruolo gli somiglia.
+// Quanto vale interpretare il ruolo, in punti di overall efficace, a idoneita'
+// piena: in piu' per l'interprete giusto, in meno per quello sbagliato.
 export const VALORE_IDONEITA = 2.0;
 
 /**
@@ -134,17 +216,11 @@ export function deltaRuoli(lineup) {
   return (g) => {
     const r = perGiocatore.get(g);
     if (!r) return 0;
-    // SOLO PENALITA', mai bonus. In FC un giocatore in un ruolo che non gli
-    // appartiene paga il 10% sulle statistiche difensive; non esiste un premio
-    // per il ruolo azzeccato. La ragione e' di disegno, non di realismo: se il
-    // ruolo giusto desse un bonus, chi non entra nella schermata partirebbe in
-    // svantaggio — e le tattiche devono restare una cosa che si puo' ignorare
-    // senza essere puniti.
-    //
-    // Il valore tattico di un ruolo non sta qui: sta in DOVE mette il
-    // giocatore (corsiaConRuolo, avanzamentoRuolo), che e' una scelta a due
-    // facce. Questo canale dice solo se sa eseguirlo.
-    return Math.min(0, idoneitaRuolo(g, r)) * VALORE_IDONEITA;
+    // Bonus e malus (registro, punto 27): la tattica e' l'identita' della
+    // squadra, e il suo valore sta nell'accordo fra metodo e giocatori. Il
+    // ruolo base resta neutro, quindi chi non tocca niente sta a zero; che chi
+    // sceglie a caso non ci guadagni lo verifica prova-default-non-svantaggiato.
+    return idoneitaRuolo(g, r) * VALORE_IDONEITA;
   };
 }
 

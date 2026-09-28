@@ -1,11 +1,11 @@
 // Il caso onesto: chi entra nella schermata, tocca le cose senza studiarle, e
 // se ne va. Non il sabotaggio deliberato — quello nessuno lo fa.
-import { simulaPartita, schiera } from '/Users/cristianobraccili/SpecialOne/engine/engine.js';
-import { creaRosaPerModulo, setSeed, rnd } from '/Users/cristianobraccili/SpecialOne/tools/validazione/roster.js';
-import { MODULI, COMPITI } from '/Users/cristianobraccili/SpecialOne/engine/config.js';
-import { deltaMorale } from '/Users/cristianobraccili/SpecialOne/engine/morale.js';
-import { deltaRuoli, sommaDelta, ruoliPerSlot } from '/Users/cristianobraccili/SpecialOne/engine/ruoli.js';
-import { deltaCorsie } from '/Users/cristianobraccili/SpecialOne/engine/corsie.js';
+import { simulaPartita, schiera } from '../../engine/engine.js';
+import { creaRosaPerModulo, setSeed, rnd } from './roster.js';
+import { MODULI, COMPITI } from '../../engine/config.js';
+import { deltaMorale } from '../../engine/morale.js';
+import { deltaRuoli, sommaDelta, ruoliPerSlot } from '../../engine/ruoli.js';
+import { deltaCorsie } from '../../engine/corsie.js';
 const M = MODULI['4-4-2'], N = 12000;
 const ruoliB = M.map((s) => (s === 'LB' ? 'terzino_interno' : null));
 const scelta = (a) => a[Math.floor(rnd() * a.length)];

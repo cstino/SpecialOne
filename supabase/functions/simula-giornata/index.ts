@@ -27,7 +27,7 @@ type EventoCartellino = { tipo: 'cartellino'; minuto: number; blocco: number; la
 type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio | EventoCartellino
 type DbPlayer = { id: number; nome: string; posizioni: string[]; piede: string | null }
 type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number; posizioni_override: string[] | null; specializzazione_attiva: string | null; morale: number | null }
-type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; tiltTecnico: number | null; tiltRapido: number | null; specialita: { rigori: number }; piede: string | null; piazzati: { battuta: number; testa: number; marcatura: number; punizione: number; presa: number }; specializzazione: string | null; morale: number; composure: number }
+type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; tiltTecnico: number | null; tiltRapido: number | null; specialita: { rigori: number }; piede: string | null; piazzati: { battuta: number; testa: number; marcatura: number; punizione: number; presa: number }; specializzazione: string | null; morale: number; composure: number; attributi: Record<string, number> }
 // moltiplicatoreInfortuni e' facoltativo: se assente l'engine usa 1 (nessun
 // effetto), esattamente come nella suite di validazione.
 type EngineRoster = { nome: string; giocatori: EnginePlayer[]; esperienzaModulo: Record<string, number>; esperienzaStile: Record<string, number>; moltiplicatoreInfortuni?: number; xpDisposizione?: Array<{ disposizione: string[]; partite: number }>; xpIndicazioni?: number; familiarita?: { disposizione: number; indicazioni: number } }
@@ -152,6 +152,8 @@ function adaptPlayer(instance: Instance, player: DbPlayer, attributi: Record<str
     // di un portiere vale punti di overall aggiuntivi dal dischetto.
     // Vedi engine/rigori.js, portiereDaLineup().
     specializzazione: instance.specializzazione_attiva ?? null,
+    // L'idoneita' ai ruoli legge il profilo del giocatore (engine/ruoli.js).
+    attributi: quadroCompleto,
   }
 }
 

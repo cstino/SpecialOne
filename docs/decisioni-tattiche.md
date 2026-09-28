@@ -935,3 +935,58 @@ indicazioni di squadra. Vincoli:
 3. voti in pagella
 4. ritaratura del sistema intero, con la prova del predefinito
 5. preset: combinazioni pronte delle due pagine
+
+## 28. I ruoli leggono il profilo vero, e premiano — 28 settembre 2026
+
+Primo pezzo del punto 27. Decisioni del committente nella stessa sessione:
+- l'idoneità al ruolo usa gli attributi FC 26 **solo** per dire chi è adatto; il motore
+  resta a overall (decisione del 28 settembre sulla chat dell'allenamento), e l'effetto
+  è uno scarto di overall come quello che c'era già;
+- il ruolo vale **anche fuori posizione**: un centrale schierato da schermo è confrontato
+  con i centrocampisti. Non cancella mai il malus di posizione (giallo = −9% di overall,
+  il ruolo vale al massimo ±2 punti);
+- "Esterno di rientro" diventa **"Esterno difensivo"**, anche nella chiave
+  (`esterno_difensivo`, migrazione `20260928100000`);
+- la **resistenza** non entra nei profili: la conta già il motore nella fatica.
+
+**Profili.** Ogni ruolo non base chiede 4 attributi (`engine/ruoli.js`). Il ruolo base di
+ogni posizione (centrale, terzino, mediano, esterno, punta) non ha profilo ed è neutro.
+
+**Due trappole, misurate e chiuse** (`tools/validazione/taratura-ruoli.mjs`):
+1. *Senza il collega tipico* il profilo si misura contro la media del giocatore stesso, e un
+   centrale è sempre "più marcatore che altro": il marcatore converrebbe a tutti.
+2. *Senza il livello*, anche confrontando coi colleghi, il profilo resta legato all'overall:
+   correlazione **0,52** per il finalizzatore, 0,43 per il terzino interno. Overall travestito.
+
+La soluzione: lo scarto atteso per ruolo è una **retta sull'overall** calcolata sui colleghi
+veri (3.463 giocatori di `pool-reale.json`). Dopo: correlazione con l'overall **0,00** in tutti
+i ruoli; circa il 18% dei colleghi è "++" e altrettanti "−−"; nessun ruolo è il migliore per
+tutti (fra i centrali 49% marcatore, 51% impostatore).
+
+**Bonus e malus**, `VALORE_IDONEITA = 2` punti di overall a idoneità piena.
+
+**Misura su giocatori veri** (`tools/validazione/prova-ruoli-reali.mjs`, 40.000 partite per
+riga, 4-4-2; le rose sintetiche hanno 5 attributi e lì l'idoneità è zero per tutti):
+
+| A | punti/38 | rispetto a chi non tocca niente |
+|---|---|---|
+| non tocca niente | 60,9 | — |
+| ruolo base ovunque | 60,9 | 0,0 |
+| ruoli a caso | 60,4 | −0,6 |
+| tocca tutto a caso (ruoli, compiti, corsia) | 59,8 | −1,1 |
+| sa leggere i suoi giocatori | 66,9 | **+5,9** |
+| sbaglia apposta | 53,3 | −7,7 |
+
+In 4-3-3 (8.000 partite): +6,9 e −8,9. Il vincolo regge. I ruoli ora sono la leva più
+grande del sistema, più del morale (3,8) e della corsia (4,6): è voluto, perché è la leva
+d'identità del punto 27, ma la ritaratura del sistema intero (task 4) deve ripartire da qui.
+
+Con 8.000 partite "tocca tutto a caso" dava +0,4: era rumore (±0,6). Per le prove fra
+strategie vicine servono decine di migliaia di partite.
+
+`simulate-reale` invariato: 2,87 gol · 13,46 tiri · 23,3% pareggi · 46,1% vittorie casa.
+
+**Frontend.** `src/lib/tattica.ts` ha la stessa formula, **generata** dallo script di taratura
+(`--scrivi`), che poi verifica che frontend e motore diano lo stesso numero su tutti i
+giocatori (65.797 confronti). Nel foglio di una posizione compare chi ci gioca oggi e, per
+ogni ruolo, "++" / "+" / "−" / "−−". Le card restano senza nomi.

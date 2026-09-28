@@ -1,11 +1,11 @@
 // Tutte le leve tattiche INSIEME, nella stessa composizione dell'Edge Function.
 // Misurare i pezzi uno alla volta non dice come si comportano sommati.
-import { simulaPartita, schiera } from '/Users/cristianobraccili/SpecialOne/engine/engine.js';
-import { creaRosaPerModulo, setSeed } from '/Users/cristianobraccili/SpecialOne/tools/validazione/roster.js';
-import { MODULI } from '/Users/cristianobraccili/SpecialOne/engine/config.js';
-import { deltaMorale } from '/Users/cristianobraccili/SpecialOne/engine/morale.js';
-import { deltaRuoli, sommaDelta } from '/Users/cristianobraccili/SpecialOne/engine/ruoli.js';
-import { deltaCorsie } from '/Users/cristianobraccili/SpecialOne/engine/corsie.js';
+import { simulaPartita, schiera } from '../../engine/engine.js';
+import { creaRosaPerModulo, setSeed } from './roster.js';
+import { MODULI } from '../../engine/config.js';
+import { deltaMorale } from '../../engine/morale.js';
+import { deltaRuoli, sommaDelta } from '../../engine/ruoli.js';
+import { deltaCorsie } from '../../engine/corsie.js';
 
 const M = MODULI['4-4-2'];
 const N = 12000;
@@ -50,7 +50,7 @@ const tutto = prova('TUTTO giusto insieme', {
 });
 const peggio = prova('TUTTO sbagliato insieme', {
   morale: 45, focus: 'CEN',
-  ruoli: { CM: 'incursore', LM: 'esterno_di_rientro', RM: 'esterno_di_rientro', ST: 'punta_di_manovra', LB: 'terzino_bloccato', RB: 'terzino_bloccato', CB: 'centrale_impostatore' },
+  ruoli: { CM: 'incursore', LM: 'esterno_difensivo', RM: 'esterno_difensivo', ST: 'punta_di_manovra', LB: 'terzino_bloccato', RB: 'terzino_bloccato', CB: 'centrale_impostatore' },
   compiti: { CB: 'attacco', ST: 'difesa' },
 });
 console.log(`\n  scarto fra tutto giusto e tutto sbagliato: ${(tutto - peggio).toFixed(1)} punti su 38`);

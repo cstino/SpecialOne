@@ -31,7 +31,7 @@
 // ============================================================
 
 import { sel } from './_db-produzione.js';
-import { REPARTO } from '/Users/cristianobraccili/SpecialOne/engine/config.js';
+import { REPARTO } from '../../engine/config.js';
 
 const A = k => o => Number(o?.[k] ?? NaN);
 const media = a => a.reduce((x,y)=>x+y,0)/a.length;

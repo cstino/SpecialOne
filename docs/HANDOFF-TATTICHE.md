@@ -67,10 +67,20 @@ casa. **Non** `simulate.js`, che è la suite storica superata (registro, punto E
 l'identità della squadra, non la mossa della giornata; il ruolo azzeccato ora dà
 un bonus. Ordine concordato, un task alla volta:
 
-1. **Indicazioni individuali**: profili dei ruoli su 2-4 attributi, bonus e
-   penalità, indicatore di idoneità stile FC (+ / ++). ← **task corrente**
+1. **Indicazioni individuali**: fatto il 28 settembre (registro, punto 28):
+   profili su 4 attributi, bonus e malus, "++"/"+"/"−" nel foglio della
+   posizione. Restano: la riga "ruoli in cui rende" nella scheda del giocatore
+   (`SchedaGiocatore.tsx`, che l'altra chat modifica spesso su `main`: fare dopo
+   un merge), e applicare in produzione la migrazione `20260928100000`.
 2. **Indicazioni di squadra** (seconda pagina): stile, dove attacchiamo legato
    alla propria rosa, linea difensiva e ampiezza nuove.
+   Qui anche il **portiere-libero**, che conta con la linea alta: dà senso al
+   piano di sviluppo "Fuori dai pali". Su `main` l'anteprima di quel piano dice
+   che conterà con le tattiche (`SchedaGiocatore.tsx`, confrontoScelta del
+   PannelloAllenamento): toglierla o legarla a `leagues.tattiche_attive` quando
+   il ruolo esiste. Attributi utili: `goalkeeping_speed`, `gk_positioning`,
+   `gk_kicking`. `engine/tattiche.js` ha già un asse "linea" alta/media/bassa
+   con profilo, mai collegato: riusarlo senza la parte di lettura dell'avversario.
 3. **Voti in pagella** stile SofaScore, da azioni riuscite/sbagliate, RNG separato.
 4. **Ritaratura del sistema intero** con la prova del predefinito;
    **`FAM_MALUS_MAX`** (punto F) va rivisto qui.
