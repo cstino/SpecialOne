@@ -21,7 +21,7 @@
 //  in SQL e di quoteFamiliarita nell'Edge Function — tre posti, una formula.
 // ============================================================
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { COMPITI, COMPITI_REPARTO, FAM_PARTITE_PIENA, MODULI, REPARTO, RUOLI_SLOT, SPOSTAMENTI_SLOT, idoneitaRuolo } from '../lib/tattica'
+import { COMPITI, COMPITI_REPARTO, FAM_PARTITE_PIENA, MODULI, REPARTO, RUOLI_SLOT, SPOSTAMENTI_SLOT, idoneitaRuolo, segnoIdoneita } from '../lib/tattica'
 import { ANCORE, nomeSchieramento, schieramentoInCampo, type Ancora } from '../lib/schieramento'
 
 const ruoliPerSlot = (slot: string): string[] => RUOLI_SLOT[slot] ?? []
@@ -33,16 +33,6 @@ export type XpDisposizione = { disposizione: string[]; partite: number }
 // ciascun ruolo: le card restano senza nomi (vedi sopra).
 export type Interprete = { nome: string; overall: number; attributi: Record<string, number | null> } | null
 
-// Come FC: "++" e "+" per chi rende di piu', "−" per chi rende di meno. Le
-// soglie tagliano il 18% circa dei colleghi per fascia agli estremi
-// (tools/validazione/taratura-ruoli.mjs).
-function segnoIdoneita(v: number): { segno: string; tono: string } | null {
-  if (v >= 0.6) return { segno: '++', tono: 'piu' }
-  if (v >= 0.25) return { segno: '+', tono: 'piu' }
-  if (v <= -0.6) return { segno: '−−', tono: 'meno' }
-  if (v <= -0.25) return { segno: '−', tono: 'meno' }
-  return null
-}
 
 type Props = {
   modulo: string

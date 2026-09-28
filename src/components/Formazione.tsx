@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { attributiCorrenti } from '../lib/attributiGiocatore'
 import { schieramentoInCampo } from '../lib/schieramento'
 import SchemaTattico, { type XpDisposizione } from './SchemaTattico'
+import { idoneitaRuolo, segnoIdoneita } from '../lib/tattica'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { cognome } from '../lib/nomi'
 import { ROSA_MASSIMA } from '../lib/league'
@@ -97,6 +98,9 @@ type PlayerPortraitProps = {
   onClick: (event: ReactMouseEvent<HTMLButtonElement>) => void
   compact?: boolean
   empty?: boolean
+  // Il ruolo dato alla posizione nello Schema Tattico: se c'e', la maglietta
+  // dice al volo quanto il giocatore e' adatto, senza aprire lo schema.
+  ruolo?: string | null
 }
 
 type PositionFit = 'natural' | 'adapted' | 'out'
@@ -168,7 +172,7 @@ function AnonymousPlayer() {
   return <span className="anonymous-player" aria-hidden="true"><svg viewBox="0 0 100 110" focusable="false"><circle cx="50" cy="33" r="22" /><path d="M12 108c2-31 16-48 38-48s36 17 38 48H12Z" /></svg></span>
 }
 
-function PlayerPortrait({ player, imageUrl, position, selected = false, onClick, compact = false, empty = false }: PlayerPortraitProps) {
+function PlayerPortrait({ player, imageUrl, position, selected = false, onClick, compact = false, empty = false, ruolo = null }: PlayerPortraitProps) {
   // Slot libero (panchina/tribuna non ancora al tetto): un riquadro
   // grigio/trasparente con un "+", non la sagoma anonima del giocatore
   // ne' overall/ruolo, che qui non hanno senso.
@@ -179,6 +183,7 @@ function PlayerPortrait({ player, imageUrl, position, selected = false, onClick,
     </button>
   }
   const fit = player ? positionFit(position, player.posizioni) : 'natural'
+  const idoneo = player && ruolo ? segnoIdoneita(idoneitaRuolo(player.attributi, player.overall_corrente, ruolo)) : null
   return <button className={`lineup-player ${compact ? 'lineup-player--compact' : ''} ${selected ? 'is-selected' : ''}`} type="button" onClick={onClick} aria-label={`${player?.nome ?? 'Slot vuoto'}, ${position}, overall ${player?.overall_corrente ?? 'non disponibile'}`}>
     <span className={`lineup-player__portrait lineup-player__portrait--${reparto(position)} ${imageUrl ? 'has-photo' : ''}`}>
       <AnonymousPlayer />
@@ -197,6 +202,8 @@ function PlayerPortrait({ player, imageUrl, position, selected = false, onClick,
       <span className="lineup-player__meta">
         <span className={`lineup-player__position lineup-player__position--${reparto(position)}`}>{position}</span>
         <b>{player?.overall_corrente ?? '—'}</b>
+        {idoneo && <span className={`lineup-player__ruolo lineup-player__ruolo--${idoneo.tono}`}
+          title={idoneo.tono === 'piu' ? 'Adatto al ruolo che gli hai dato nello schema' : 'Poco adatto al ruolo che gli hai dato nello schema'}>{idoneo.segno}</span>}
       </span>
     </span>
   </button>
@@ -705,7 +712,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
                   {posti.map(({ slot, index, x, y }) => {
                     const player = players.find((item) => item.id === titolari[index])
                     const location = { zone: 'starter', index, id: titolari[index] ?? 0 } as PlayerLocation
-                    return <div className={`pitch-posto pitch-slot pitch-slot--${reparto(slot)}`} style={{ left: `${x}%`, top: `${100 - y}%` }} key={`${slot}-${index}`}><PlayerPortrait player={player} empty={!player} imageUrl={imageUrls[player?.id ?? 0]} position={slot} selected={selected?.zone === 'starter' && selected.index === index} onClick={player ? (event) => handlePlayerClick(event, location, player) : () => selectEmptyStarter(index)} /></div>
+                    return <div className={`pitch-posto pitch-slot pitch-slot--${reparto(slot)}`} style={{ left: `${x}%`, top: `${100 - y}%` }} key={`${slot}-${index}`}><PlayerPortrait player={player} empty={!player} imageUrl={imageUrls[player?.id ?? 0]} position={slot} ruolo={ruoli?.[index] ?? null} selected={selected?.zone === 'starter' && selected.index === index} onClick={player ? (event) => handlePlayerClick(event, location, player) : () => selectEmptyStarter(index)} /></div>
                   })}
                 </div>
               </div>
