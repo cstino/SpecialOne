@@ -76,6 +76,14 @@ un bonus. Ordine concordato, un task alla volta:
    **`FAM_MALUS_MAX`** (punto F) va rivisto qui.
 5. **Preset**: combinazioni pronte delle due pagine.
 
+**Da sistemare dopo il merge del 28 settembre** (piani di sviluppo su `main`):
+`private.incaricati_automatici` e `private.qualita_capitano` leggono gli
+attributi con `private.attributi_effettivi` (catalogo + crescita +
+`attributi_override`), ma `main` ha svuotato `attributi_override` e ora calcola
+tutto con `private.attributi_istanza`. Non si rompe niente, ma i piani di
+sviluppo verrebbero ignorati per incaricati e capitano. Serve una migrazione che
+passi a `attributi_istanza`, ricostruendo le funzioni dal `prosrc` live.
+
 Fuori da questa sequenza: **accendere su LegaBot** (distribuire l'Edge Function
 del branch) tocca il vivo, chiedere prima.
 Anteprima navigabile per il telefono: artifact "Schema Tattico"
