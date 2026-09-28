@@ -9,6 +9,7 @@ import type { GameView } from './GameNav'
 import { firmaFoto, RosaElenco, type RosterPlayer } from './RosaElenco'
 import { LoadingLogo } from './LoadingLogo'
 import { PopupSpiegazione } from './PopupSpiegazione'
+import { Icona } from './Icona'
 
 type DraftTeamState = {
   pick_numero: number
@@ -620,7 +621,7 @@ function RosaModale({ league, teamId, nome, onClose }: { league: League; teamId:
       <div className="modale-rosa" onClick={(e) => e.stopPropagation()}>
         <div className="modale-rosa__testa">
           <div><p className="kicker">{nome}</p><h2>{giocatori.length} / {league.slot_rosa} giocatori</h2><small>{milioni(speso)} di ingaggi complessivi</small></div>
-          <button className="button-icona" type="button" onClick={onClose} aria-label="Chiudi">✕</button>
+          <button className="button-icona" type="button" onClick={onClose} aria-label="Chiudi"><Icona nome="chiudi" /></button>
         </div>
         <RosaElenco giocatori={giocatori} foto={foto} loading={loading} />
       </div>

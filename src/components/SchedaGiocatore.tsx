@@ -3,6 +3,7 @@ import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, Responsi
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { Progress } from './ui/progress'
 import { UnderlineTabs } from './ui/underline-tabs'
+import { Icona } from './Icona'
 
 export type StatsStagione = {
   presenze: number
@@ -660,7 +661,7 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
 
   return <div className="player-modal-backdrop" role="presentation" onPointerDown={(evento) => { if (evento.target === evento.currentTarget) onClose() }}>
     <section className="player-modal" role="dialog" aria-modal="true" aria-labelledby="player-modal-title">
-      <button className="player-modal__close" type="button" onClick={onClose} aria-label="Chiudi dettagli giocatore">×</button>
+      <button className="player-modal__close" type="button" onClick={onClose} aria-label="Chiudi dettagli giocatore"><Icona nome="chiudi" /></button>
 
       {haTraining && <UnderlineTabs
         className="player-modal__tabs"

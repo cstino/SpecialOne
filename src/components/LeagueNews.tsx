@@ -6,6 +6,7 @@ import { isEventoGol } from '../types'
 import type { Fixture, Match, Standing, Team } from '../types'
 import { Crest } from './Crest'
 import { formaPerSquadra, type Esito } from './SeasonUI'
+import { Icona } from './Icona'
 
 type NewsItem = {
   id: string
@@ -438,6 +439,6 @@ export function LeagueNews({ leagueId, fixtures, matches, standings, teamById, c
         </div>
       </button>
     </div>
-    {notizie.length > 1 && <footer className="league-news__controls"><button type="button" aria-label="Notizia precedente" onClick={() => setIndice((indice - 1 + notizie.length) % notizie.length)}>‹</button><div>{notizie.map((notizia, posizione) => <button key={notizia.id} className={posizione === indice ? 'is-active' : ''} type="button" aria-label={`Vai alla notizia ${posizione + 1}`} onClick={() => setIndice(posizione)} />)}</div><button type="button" aria-label="Notizia successiva" onClick={() => setIndice((indice + 1) % notizie.length)}>›</button></footer>}
+    {notizie.length > 1 && <footer className="league-news__controls"><button type="button" aria-label="Notizia precedente" onClick={() => setIndice((indice - 1 + notizie.length) % notizie.length)}><Icona nome="indietro" /></button><div>{notizie.map((notizia, posizione) => <button key={notizia.id} className={posizione === indice ? 'is-active' : ''} type="button" aria-label={`Vai alla notizia ${posizione + 1}`} onClick={() => setIndice(posizione)} />)}</div><button type="button" aria-label="Notizia successiva" onClick={() => setIndice((indice + 1) % notizie.length)}><Icona nome="avanti" /></button></footer>}
   </article>
 }

@@ -3281,3 +3281,10 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .free-agent-card__apri:focus-visible { outline:2px solid #c58cff; outline-offset:3px; border-radius:6px; }
 .free-agent-card__infortunio { justify-self:start; display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:.68rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#ffb4a2; background:rgba(224,92,72,.16); border:1px solid rgba(224,92,72,.34); }
 .free-agent-card__infortunio::before { content:'✚'; font-size:.78rem; line-height:1; }
+
+/* Icone dei pulsanti rotondi (src/components/Icona.tsx). Specificita' zero:
+   dove una classe fissa gia' il display vince la classe, altrove il pulsante
+   diventa una griglia che centra l'icona. */
+.icona { display: block; flex: none; }
+:where(button:has(> .icona:only-child)) { display: inline-grid; place-items: center; padding: 0; }
+

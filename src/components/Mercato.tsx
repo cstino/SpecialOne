@@ -14,6 +14,7 @@ import { GameNav, type GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { UnderlineTabs } from './ui/underline-tabs'
+import { Icona } from './Icona'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
@@ -757,9 +758,9 @@ export function Mercato({ membership, onNavigate }: Props) {
                   </li>)}
             </ul>)}
             {righeRumor.length > PAGINA_RUMOR && <div className="rumors-paginazione">
-              <button type="button" disabled={paginaRumor === 0} onClick={() => setPaginaRumor((p) => Math.max(0, p - 1))} aria-label="Pagina precedente">‹</button>
+              <button type="button" disabled={paginaRumor === 0} onClick={() => setPaginaRumor((p) => Math.max(0, p - 1))} aria-label="Pagina precedente"><Icona nome="indietro" /></button>
               <span>{paginaRumor + 1} / {paginaRumorMax + 1}</span>
-              <button type="button" disabled={paginaRumor === paginaRumorMax} onClick={() => setPaginaRumor((p) => Math.min(paginaRumorMax, p + 1))} aria-label="Pagina successiva">›</button>
+              <button type="button" disabled={paginaRumor === paginaRumorMax} onClick={() => setPaginaRumor((p) => Math.min(paginaRumorMax, p + 1))} aria-label="Pagina successiva"><Icona nome="avanti" /></button>
             </div>}
           </>}
       </section>

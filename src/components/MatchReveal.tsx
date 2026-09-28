@@ -8,6 +8,7 @@ import { isEventoGol, type EventoGol, type EventoPartita, type Membership } from
 import { Crest } from './Crest'
 import { firmaFoto } from './RosaElenco'
 import { MatchIntro } from './MatchIntro'
+import { Icona } from './Icona'
 
 type Props = { membership: Membership; matchId: number; onClose: () => void; onRevealed: (matchId: number) => void; onOpenReport: () => void }
 type Player = { id: number; nome: string; foto?: string }
@@ -419,7 +420,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     {elementiAudio}
     <section className="match-reveal">
       <div className="match-reveal__sfondo" style={{ backgroundImage: `url(${SFONDO_FASE_VERTICALE[fase]})` }} />
-      <button className="match-reveal__close" type="button" onClick={onClose} aria-label="Chiudi cronaca">×</button>
+      <button className="match-reveal__close" type="button" onClick={onClose} aria-label="Chiudi cronaca"><Icona nome="chiudi" /></button>
 
       {popupGol && <div className="match-reveal__gol-popup" role="alert">
         <div className="match-reveal__gol-popup-card">

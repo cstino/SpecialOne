@@ -7,6 +7,7 @@ import type { Membership, Season, Standing } from '../types'
 import { Crest } from './Crest'
 import { GuidaArgomenti, ARGOMENTI_AIUTO } from './Help'
 import { Notifiche } from './Notifiche'
+import { Icona } from './Icona'
 
 type Props = {
   user: User
@@ -256,7 +257,7 @@ export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, 
             <b>{nomeAllenatore ?? 'Senza nome'}</b>
             <small>{user.email}</small>
           </div>
-          <button className="pannello-chiudi" type="button" onClick={() => setMenuAperto(false)} aria-label="Chiudi il menu">×</button>
+          <button className="pannello-chiudi" type="button" onClick={() => setMenuAperto(false)} aria-label="Chiudi il menu"><Icona nome="chiudi" /></button>
         </div>
         <nav className="pannello-voci">
           <button type="button" onClick={() => { setVista('profilo'); setMenuAperto(false) }}>

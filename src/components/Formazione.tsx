@@ -12,6 +12,7 @@ import { LoadingLogo } from './LoadingLogo'
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { UnderlineTabs } from './ui/underline-tabs'
 import { FtsgGauge } from './FtsgGauge'
+import { Icona } from './Icona'
 
 // Mirror di engine/config.js CFG.FAM_PARTITE_PIENA: qui serve solo a
 // mostrare la stessa percentuale che il motore usa per il malus di
@@ -714,7 +715,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           <div className="player-action-menu__player">
             <span className={`player-action-menu__photo player-action-menu__photo--${reparto(playerAction.player.posizioni[0] ?? 'ATT')} has-photo`}><AnonymousPlayer /><img src={imageUrls[playerAction.player.id]} alt="" onError={(event) => { event.currentTarget.hidden = true; event.currentTarget.parentElement?.classList.remove('has-photo') }} /></span>
             <div><strong>{playerAction.player.nome}</strong><small>{playerAction.player.posizioni.join(' · ')} · OVR {playerAction.player.overall_corrente}</small></div>
-            <button type="button" onClick={() => setPlayerAction(null)} aria-label="Chiudi menu">×</button>
+            <button type="button" onClick={() => setPlayerAction(null)} aria-label="Chiudi menu"><Icona nome="chiudi" /></button>
           </div>
           <div className="player-action-menu__choices">
             <button type="button" onClick={() => { const location = playerAction.location; setPlayerAction(null); selectPlayer(location) }}><span>⇄</span><strong>Sostituzione</strong></button>

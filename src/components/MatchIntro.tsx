@@ -7,6 +7,7 @@ import { firmaFoto } from './RosaElenco'
 import type { useSeasonData } from '../lib/useSeasonData'
 import type { BracketTie, Fixture, Match, Membership, Team } from '../types'
 import { Crest } from './Crest'
+import { Icona } from './Icona'
 
 type RigaClassificaStorica = { teamId: number; punti: number; differenzaReti: number; golFatti: number; posizione: number }
 
@@ -252,7 +253,7 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
   if (!pronto) {
     return (
       <div className="match-intro" role="dialog" aria-modal="true" aria-label="Presentazione della partita">
-        <button className="match-intro__chiudi" type="button" onClick={onClose} aria-label="Chiudi">×</button>
+        <button className="match-intro__chiudi" type="button" onClick={onClose} aria-label="Chiudi"><Icona nome="chiudi" /></button>
       </div>
     )
   }
@@ -261,7 +262,7 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
     <div className="match-intro" role="dialog" aria-modal="true" aria-label="Presentazione della partita">
       <audio src={MUSICA_FASE[fase]} autoPlay loop />
       <div className="match-intro__sfondo" data-fase={fase} />
-      <button className="match-intro__chiudi" type="button" onClick={onClose} aria-label="Chiudi">×</button>
+      <button className="match-intro__chiudi" type="button" onClick={onClose} aria-label="Chiudi"><Icona nome="chiudi" /></button>
       <button className="match-intro__salta" type="button" onClick={onSkip}>Salta intro ›</button>
 
       {beat.tipo === 'locandina' && (
