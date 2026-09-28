@@ -27,10 +27,12 @@ Modello nuovo, deciso con l'utente, riferimento EA FC 26 (migrazione `2026092701
 - corretto anche un bug di Scambi: la scheda cercava gli attributi con l'id dell'istanza come se
   fosse quello del catalogo, mostrando le abilita' di un altro giocatore.
 
-Aperto: il motore misura ogni giocatore col solo overall (gli attributi servono solo alle
-statistiche individuali), quindi un piano non cambia la forza in campo. Per il portiere e' evidente:
-"Fuori dai pali" non fa nulla in partita. L'utente vuole che il motore legga gli attributi:
-proposta da decidere, e' una modifica al motore validato. Sul branch `feat/tattiche`, `qualita_capitano` e
+Deciso il 28 settembre 2026: il motore resta com'e', impostazione "stile EA FC" (forza dei reparti
+dall'overall, abilita' solo per le statistiche individuali e la resistenza per la stanchezza).
+Valutata e scartata per ora la proposta di tre valutazioni per fase (difesa/costruzione/attacco)
+calcolate dalle abilita': misurato sul catalogo, a parita' di overall il reparto principale e'
+gia' spiegato dall'overall (R² 0,95-0,97), le differenze stanno nell'altra fase (±5-7 punti).
+Conseguenza aperta: "Fuori dai pali" non ha effetti in partita. Sul branch `feat/tattiche`, `qualita_capitano` e
 `incaricati_automatici` usano ancora `attributi_effettivi(..., attributi_override)`: vanno
 portati su `private.attributi_istanza` al prossimo merge di main.
 
