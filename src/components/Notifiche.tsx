@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { quandoRelativo, useNotifiche, type Notifica, type TipoNotifica } from '../lib/notifiche'
 import { attivaPush, disattivaPush, permessoPush, sottoscrizioneAttuale } from '../lib/pushNotifiche'
+import { Icona } from './Icona'
 
 type NotificheProps = {
   userId: string
@@ -118,7 +119,7 @@ export function Notifiche({ userId, onApriNotifica, embedded = false }: Notifich
         <div className="notifiche__pannello" role="dialog" aria-label="Notifiche">
           <header>
             <strong>Notifiche</strong>
-            <button className="notifiche__chiudi" type="button" onClick={() => setAperto(false)} aria-label="Chiudi le notifiche">×</button>
+            <button className="notifiche__chiudi" type="button" onClick={() => setAperto(false)} aria-label="Chiudi le notifiche"><Icona nome="chiudi" /></button>
           </header>
 
           {(statoPush === 'inattivo' || statoPush === 'attivo' || statoPush === 'in-corso') && (
@@ -164,7 +165,7 @@ export function Notifiche({ userId, onApriNotifica, embedded = false }: Notifich
                   aria-label={`Elimina: ${notifica.titolo}`}
                   title="Elimina avviso"
                   onClick={() => void elimina(notifica.id)}
-                >×</button>
+                ><Icona nome="chiudi" /></button>
               </li>
             ))}
           </ul>

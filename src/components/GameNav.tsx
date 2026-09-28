@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNotificheContesto, useTornaAllaHome } from '../lib/navigazione'
 import type { League } from '../types'
+import { Icona as IconaTonda } from './Icona'
 
 export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'under' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse'
 type GameNavProps = { league: League; active: GameView; onNavigate?: (view: GameView) => void }
@@ -249,7 +250,7 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
         <aside className="game-drawer" role="dialog" aria-modal="true" aria-label="Menu della lega">
           <header className="game-drawer__header">
             <div><img src="/specialone-mark.svg" alt="" /><span><strong>{league.nome}</strong><small>Stagione {league.stagione_corrente}</small></span></div>
-            <button type="button" onClick={() => setMenuMobileAperto(false)} aria-label="Chiudi menu">×</button>
+            <button type="button" onClick={() => setMenuMobileAperto(false)} aria-label="Chiudi menu"><IconaTonda nome="chiudi" /></button>
           </header>
           <nav className="game-drawer__nav" aria-label="Navigazione lega mobile">
             {vociMenu(true)}

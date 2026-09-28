@@ -25,6 +25,7 @@ import { firmaFoto } from './RosaElenco'
 import { macroRuolo } from '../lib/ruoli'
 import { Crest } from './Crest'
 import type { Team } from '../types'
+import { Icona } from './Icona'
 
 // Ogni quanto si richiede lo stato al database mentre il draft e' in corso.
 // Cinque secondi: la chiamata cade una volta al minuto, quindi appare con meno
@@ -368,7 +369,7 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId, onN
                   disabled={paginaValida === 0}
                   aria-label="Chiamate precedenti"
                   className="grid h-7 w-7 place-items-center rounded-lg bg-white/8 text-white/70 transition enabled:hover:bg-white/15 enabled:hover:text-white disabled:opacity-25"
-                >‹</button>
+                ><Icona nome="indietro" /></button>
                 <span className="min-w-[3.2rem] text-center text-[.62rem] font-extrabold uppercase tracking-[.1em] text-white/35 tabular-nums">
                   {paginaValida + 1} / {pagine}
                 </span>
@@ -378,7 +379,7 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId, onN
                   disabled={paginaValida >= pagine - 1}
                   aria-label="Chiamate successive"
                   className="grid h-7 w-7 place-items-center rounded-lg bg-white/8 text-white/70 transition enabled:hover:bg-white/15 enabled:hover:text-white disabled:opacity-25"
-                >›</button>
+                ><Icona nome="avanti" /></button>
               </div>
             )}
           </div>

@@ -5,6 +5,7 @@ import type { League, Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { IconaNotifica } from './Notifiche'
 import { LoadingLogo } from './LoadingLogo'
+import { Icona } from './Icona'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
@@ -42,7 +43,7 @@ export function Avvisi({ membership, onNavigate }: Props) {
               <span><strong>{notifica.titolo}</strong>{notifica.corpo && <small>{notifica.corpo}</small>}</span>
               <time dateTime={notifica.creata_il}>{quandoRelativo(notifica.creata_il)}</time>
             </button>
-            <button className="alerts-list__delete" type="button" aria-label={`Elimina: ${notifica.titolo}`} title="Elimina avviso" onClick={() => void centro?.elimina(notifica.id)}>×</button>
+            <button className="alerts-list__delete" type="button" aria-label={`Elimina: ${notifica.titolo}`} title="Elimina avviso" onClick={() => void centro?.elimina(notifica.id)}><Icona nome="chiudi" /></button>
           </li>)}</ol></section>}
     </div>
   </main>
