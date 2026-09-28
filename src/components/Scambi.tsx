@@ -12,7 +12,7 @@ import { GameNav, type GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { SchedaGiocatore } from './SchedaGiocatore'
-import { attributiDi, type Attributi } from '../lib/attributiGiocatore'
+import { attributiIstanza, type Attributi } from '../lib/attributiGiocatore'
 import { UnderlineTabs } from './ui/underline-tabs'
 
 // Ordine di CALENDARIO, non alfabetico. Dentro una stagione l'ON-Season cade a
@@ -143,8 +143,11 @@ export function Scambi({ membership, onNavigate }: Props) {
 
   // Gli attributi si caricano per il giocatore che si apre davvero: chiederli
   // per tutta la lega in lista costava centinaia di kilobyte a ogni apertura.
+  // `id` e' l'istanza (player_instances.id), non il catalogo: prima finiva in
+  // attributiDi, che cerca per players.id, e la scheda mostrava le abilita'
+  // di un altro giocatore. Ora arrivano quelle vere, crescita compresa.
   async function apriScheda(id: number) {
-    setAttributiScheda(await attributiDi(id))
+    setAttributiScheda(await attributiIstanza(id))
     setSchedaApertaId(id)
   }
   const [tabComposer, setTabComposer] = useState<'giocatori' | 'scelte'>('giocatori')

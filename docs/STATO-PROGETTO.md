@@ -1,5 +1,41 @@
 # Stato progetto e handoff
 
+### Allenamento: da specializzazione a piano di sviluppo (27 settembre 2026)
+
+Segnalato dall'utente: allenando un giovane la scheda prometteva "Dribbling 90 → 98" e alcuni
+arrivavano a 99 in meno di una stagione. Misurato: l'allenamento dava in media +1,8 sopra la
+crescita normale; il salto visibile nasceva dalla scheda, che mostrava catalogo + override e
+nascondeva la crescita quotidiana. In più l'override era un numero fisso che bloccava la crescita
+di quei tre attributi (17 attributi erano gia' sotto il valore che avrebbero avuto senza
+allenamento).
+
+Modello nuovo, deciso con l'utente, riferimento EA FC 26 (migrazione `20260927010000`):
+- il piano **non regala punti** e **non da' bonus overall**: sposta la crescita che il giocatore
+  fa comunque. Come in FC 26 pesa **tutte** le abilita' su scala 4-15 (`private.piano_pesi`:
+  2×15, 2×12, 2×10, 6×7, resto 4); scostamento = 0,5 × (peso / peso medio − 1) × pendenza × |Δ|,
+  con peso medio pesato sulle pendenze (`private.piano_media`), quindi somma zero. In pratica da
+  −20% a +62% sulla crescita naturale. "Bilanciato" (tutto a 4) c'e' per ogni ruolo;
+- scostamento ∝ |overall attuale − overall all'attivazione| (`piano_overall_rif`): nel declino
+  le abilita' del piano calano meno;
+- cambiare piano congela lo scostamento maturato in `piano_scostamenti`; riavviare lo stesso
+  piano e' rifiutato;
+- **formula unica** `private.attributi_istanza`, esposta come `public.attributi_correnti(ids)`:
+  la usano il motore (`simula-giornata`, che non ricalcola piu' la crescita da se'), Squadra,
+  Formazione e Scambi; `public.attributi_giocatore_lega` per gli svincolati del Mercato
+  (overall da istanza, `free_agent_progression` o catalogo). `attributi_override` e' dismessa (sempre null); i giocatori gia' allenati
+  hanno tenuto il vantaggio positivo che avevano;
+- corretto anche un bug di Scambi: la scheda cercava gli attributi con l'id dell'istanza come se
+  fosse quello del catalogo, mostrando le abilita' di un altro giocatore.
+
+Deciso il 28 settembre 2026: il motore resta com'e', impostazione "stile EA FC" (forza dei reparti
+dall'overall, abilita' solo per le statistiche individuali e la resistenza per la stanchezza).
+Valutata e scartata per ora la proposta di tre valutazioni per fase (difesa/costruzione/attacco)
+calcolate dalle abilita': misurato sul catalogo, a parita' di overall il reparto principale e'
+gia' spiegato dall'overall (R² 0,95-0,97), le differenze stanno nell'altra fase (±5-7 punti).
+Conseguenza aperta: "Fuori dai pali" non ha effetti in partita. Sul branch `feat/tattiche`, `qualita_capitano` e
+`incaricati_automatici` usano ancora `attributi_effettivi(..., attributi_override)`: vanno
+portati su `private.attributi_istanza` al prossimo merge di main.
+
 ### Rose delle squadre PC bilanciate per reparto
 
 Segnalazione dell'utente sulla lega di test Test2: il draft PC in modalita `BY ROLE`

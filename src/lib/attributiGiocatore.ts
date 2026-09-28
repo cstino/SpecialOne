@@ -37,3 +37,41 @@ export async function attributiDi(playerId: number): Promise<Attributi> {
   inMemoria.set(playerId, attributi)
   return attributi
 }
+
+// ============================================================
+//  GLI ATTRIBUTI VERI DI UN GIOCATORE IN ROSA
+//
+//  Quelli del catalogo sono il giocatore di quando e' stato importato. Un
+//  giocatore in rosa ha in piu' la crescita (o il calo) insieme all'overall e
+//  il piano di sviluppo dell'allenamento: li calcola il database con la
+//  stessa formula che usa il motore (private.attributi_istanza), cosi' la
+//  scheda mostra esattamente i numeri con cui il giocatore scende in campo.
+//
+//  Qui niente memoria di sessione: cambiano a ogni giornata.
+// ============================================================
+
+/** Attributi correnti di piu' istanze (player_instances.id) in una chiamata. */
+export async function attributiCorrenti(instanceIds: readonly number[]): Promise<Map<number, Attributi>> {
+  const out = new Map<number, Attributi>()
+  if (instanceIds.length === 0) return out
+  const { data, error } = await supabase.rpc('attributi_correnti', { p_instance_ids: [...instanceIds] })
+  if (error) return out
+  for (const riga of (data ?? []) as Array<{ instance_id: number; attributi: Attributi }>) out.set(riga.instance_id, riga.attributi)
+  return out
+}
+
+/** Attributi correnti di un giocatore in rosa. Vuoto se qualcosa va storto: la scheda mostra il resto. */
+export async function attributiIstanza(instanceId: number): Promise<Attributi> {
+  return (await attributiCorrenti([instanceId])).get(instanceId) ?? {}
+}
+
+/**
+ * Attributi di un giocatore come li vede una lega, anche se non e' in rosa
+ * (svincolati del Mercato): crescita e piano compresi, dall'overall vero.
+ * Ripiega sul catalogo se la chiamata fallisce.
+ */
+export async function attributiInLega(leagueId: number, playerId: number): Promise<Attributi> {
+  const { data, error } = await supabase.rpc('attributi_giocatore_lega', { p_league_id: leagueId, p_player_id: playerId })
+  if (error || !data || Object.keys(data as object).length === 0) return attributiDi(playerId)
+  return data as Attributi
+}
