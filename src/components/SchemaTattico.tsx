@@ -172,7 +172,9 @@ export default function SchemaTattico({
       // sarebbe il salvataggio a rifiutarlo, e con un errore oscuro.
       if (r[i] && !ruoliPerSlot(valore).includes(r[i] as string)) r[i] = null
     }
-    if (campo === 'ruolo') r[i] = valore
+    // Il ruolo base della posizione E' "nessuna indicazione": si salva come
+    // null, cosi' la barra delle indicazioni non lo conta come una scelta.
+    if (campo === 'ruolo') r[i] = valore && valore !== ruoliPerSlot(d[i])[0] ? valore : null
     if (campo === 'compito') c[i] = valore
     onChange(
       uguali(d, standard) === 11 ? null : d,
@@ -385,18 +387,21 @@ export default function SchemaTattico({
 
                 <h3>Ruolo</h3>
                 <div className="schema__scelte">
-                  <button type="button" className={!ruoli?.[postoAperto.index] ? 'is-attiva' : ''}
-                    onClick={() => scrivi(postoAperto.index, 'ruolo', null)}>
-                    <strong>Nessuno</strong><small>Gioca la posizione senza indicazioni.</small>
-                  </button>
                   {/* Niente idoneita' qui: lo schema e' della squadra, i segnalini
                       "++"/"−" stanno sulle magliette della formazione. */}
-                  {ruoliPerSlot(slotAperto).map((r) => (
-                    <button key={r} type="button" className={ruoli?.[postoAperto.index] === r ? 'is-attiva' : ''}
-                      onClick={() => scrivi(postoAperto.index, 'ruolo', r)}>
-                      <strong>{RUOLO_LABEL[r]?.nome ?? r}</strong><small>{RUOLO_LABEL[r]?.detto}</small>
-                    </button>
-                  ))}
+                  {ruoliPerSlot(slotAperto).map((r, i) => {
+                    // Il primo ruolo e' quello base: scelto quando non si tocca
+                    // niente, e il modo per tornare senza indicazioni.
+                    const base = i === 0
+                    const attivo = base ? !ruoli?.[postoAperto.index] || ruoli[postoAperto.index] === r : ruoli?.[postoAperto.index] === r
+                    return (
+                      <button key={r} type="button" className={attivo ? 'is-attiva' : ''}
+                        onClick={() => scrivi(postoAperto.index, 'ruolo', base ? null : r)}>
+                        <strong>{RUOLO_LABEL[r]?.nome ?? r}{base && <em className="schema__base">nessuna indicazione</em>}</strong>
+                        <small>{RUOLO_LABEL[r]?.detto}</small>
+                      </button>
+                    )
+                  })}
                 </div>
 
                 <h3>Compito</h3>
