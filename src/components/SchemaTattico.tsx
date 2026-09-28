@@ -23,6 +23,7 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { COMPITI, COMPITI_REPARTO, FAM_PARTITE_PIENA, MODULI, REPARTO, RUOLI_SLOT, SPOSTAMENTI_SLOT } from '../lib/tattica'
 import { ANCORE, nomeSchieramento, schieramentoInCampo, type Ancora } from '../lib/schieramento'
+import { Icona } from './Icona'
 
 const ruoliPerSlot = (slot: string): string[] => RUOLI_SLOT[slot] ?? []
 
@@ -267,7 +268,7 @@ export default function SchemaTattico({
   return (
     <div className="schema" role="dialog" aria-label="Schema tattico">
       <header className="schema__testa">
-        <button className="schema__chiudi" type="button" onClick={onClose} aria-label="Torna alla formazione">‹</button>
+        <button className="schema__chiudi" type="button" onClick={onClose} aria-label="Torna alla formazione"><Icona nome="indietro" /></button>
         <div className="schema__titolo">
           {/* Il nome grande e' quello che c'e' DAVVERO in campo: spostando le
               posizioni si arriva a una forma che col modulo di partenza non

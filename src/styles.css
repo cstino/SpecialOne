@@ -3280,7 +3280,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .schema > * { flex-shrink: 0; }
 .schema__testa { position: sticky; top: 0; z-index: 3; display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 8px; padding: 14px 16px; background: rgba(12,14,17,.92); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,.06); }
 .schema__chiudi, .schema__reset { font: inherit; color: #d7dce2; background: transparent; border: 1px solid rgba(255,255,255,.14); border-radius: 999px; cursor: pointer; }
-.schema__chiudi { width: 36px; height: 36px; font-size: 22px; line-height: 1; padding: 0 0 3px; }
+.schema__chiudi { width: 36px; height: 36px; display: grid; place-items: center; font-size: 20px; line-height: 1; padding: 0; }
 .schema__reset { padding: 7px 14px; font-size: 13px; }
 .schema__reset:hover, .schema__chiudi:hover { border-color: rgba(255,255,255,.3); }
 .schema__titolo { display: grid; gap: 1px; min-width: 0; }
