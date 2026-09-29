@@ -20,6 +20,15 @@ la mappa; il registro è il territorio.
 - L'Edge Function in produzione è quella di `main`. Distribuire quella del
   branch è il passo che accende il sistema: va chiesto al committente.
 
+## Come si applicano le migrazioni
+
+**Una per una**, con `supabase db query --linked --experimental --file <migrazione>`.
+**Mai `supabase db push`**: la cronologia remota (`supabase_migrations.schema_migrations`)
+si ferma a `20260827110000`, e ~250 migrazioni successive sono applicate ma non registrate;
+`db push` proverebbe a rieseguirle tutte. Il worktree ha bisogno di una copia di
+`supabase/.temp` dalla cartella principale (link del progetto, in `.gitignore`).
+Dopo averle applicate, verificarle in una transazione con `rollback` impersonando un utente.
+
 ## Il principio guida
 
 **Football Manager è il riferimento**, e le tarature si ancorano a dati misurati
@@ -71,9 +80,10 @@ un bonus. Ordine concordato, un task alla volta:
    profili su 4 attributi, bonus e malus, "++"/"+"/"−" nel foglio della
    posizione. Restano: la riga "ruoli in cui rende" nella scheda del giocatore
    (`SchedaGiocatore.tsx`, che l'altra chat modifica spesso su `main`: fare dopo
-   un merge), e applicare in produzione la migrazione `20260928100000`.
+   un merge). Migrazioni `20260928100000` e `20260929100000` **applicate in
+   produzione** il 29 settembre.
    Fatti anche (29 settembre): moduli personalizzati (registro, punto 29,
-   migrazione `20260929100000` da applicare), segnalino allenamento sulla rosa,
+   migrazione `20260929100000`), segnalino allenamento sulla rosa,
    icone centrate, Schema Tattico sistemato per il telefono.
    **Anteprima Vercel**: il branch si prova su
    `specialone-git-feat-tattiche-cstinos-projects.vercel.app`, ma NON fare push
