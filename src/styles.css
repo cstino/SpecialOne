@@ -2013,7 +2013,15 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    in etichetta SOTTO il cerchio (non sovrapposta: dentro il cerchio si
    leggeva male, tagliata dall'overflow:hidden della foto) — stesso
    linguaggio del bordo colorato di .player-modal__photo. */
-.team-roster-player__avatar { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.team-roster-player__avatar { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+/* Segnalini "sta lavorando": sull'angolo alto della foto, fuori dal cerchio
+   (la foto ha overflow nascosto, quindi stanno sul contenitore). */
+.team-roster-player__lavori { position: absolute; top: -3px; right: -7px; display: flex; flex-direction: column; gap: 3px; }
+.team-roster-player__lavoro { width: 19px; height: 19px; display: grid; place-items: center; border: 2px solid #15111c; border-radius: 50%; font-size: 12px; font-style: normal; color: #150f1c; }
+.team-roster-player__lavoro--piano { background: #c77dff; }
+.team-roster-player__lavoro--ruolo { background: #5fd3c7; }
+.team-roster-legenda { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 12px; font-size: .74rem; color: #9d93ab; }
+.team-roster-legenda span { display: inline-flex; align-items: center; gap: 6px; }
 .team-roster-player__portrait { position: relative; width: 54px; height: 54px; flex: none; display: grid; place-items: center; overflow: hidden; border: 2px solid #e89935; border-radius: 50%; background: radial-gradient(circle at 50% 35%, #4a3f59, #201a29 72%); }
 .team-roster-player--DEF .team-roster-player__portrait { border-color: #45bde5; }
 .team-roster-player--MID .team-roster-player__portrait { border-color: #4ed27f; }

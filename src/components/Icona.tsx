@@ -6,6 +6,10 @@ const TRACCIATI = {
   indietro: 'M14.5 5.5 8 12l6.5 6.5',
   avanti: 'M9.5 5.5 16 12l-6.5 6.5',
   chiudi: 'M6.5 6.5l11 11M17.5 6.5l-11 11',
+  // piano di sviluppo attivo: un manubrio
+  allenamento: 'M3.5 10v4M6.5 7.5v9M17.5 7.5v9M20.5 10v4M6.5 12h11',
+  // cambio ruolo in corso: due frecce opposte
+  cambio: 'M5 8.5h13m-3.5-3.5L18 8.5 14.5 12M19 15.5H6m3.5 3.5L6 15.5 9.5 12',
 } as const
 
 export type NomeIcona = keyof typeof TRACCIATI

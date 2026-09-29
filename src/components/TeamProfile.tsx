@@ -14,6 +14,7 @@ import { GameNav, type GameView } from './GameNav'
 import { SchedaGiocatore, type EsitoRinnovo, type PropostaRinnovo, type StatsStagione } from './SchedaGiocatore'
 import { FixtureScore, SeasonState, TeamLabel } from './SeasonUI'
 import { UnderlineTabs } from './ui/underline-tabs'
+import { Icona } from './Icona'
 
 type Props = {
   membership: Membership
@@ -712,6 +713,10 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
 
       {tab === 'rosa' && <section className="team-roster-panel">
         <div className="season-card__heading"><div><p className="kicker">Rosa completa</p><h2>Dal portiere all’attacco</h2></div><span>{players.length} giocatori · min {ROSA_MINIMA} · max {ROSA_MASSIMA}</span></div>
+        {ownTeam && <p className="team-roster-legenda">
+          <span><i className="team-roster-player__lavoro team-roster-player__lavoro--piano" aria-hidden="true"><Icona nome="allenamento" /></i> piano di sviluppo attivo</span>
+          <span><i className="team-roster-player__lavoro team-roster-player__lavoro--ruolo" aria-hidden="true"><Icona nome="cambio" /></i> cambio ruolo in corso</span>
+        </p>}
         {rosterNotice && <p className="notice notice--success">{rosterNotice}</p>}
         {rosterError && <p className="notice notice--error">{rosterError}</p>}
         {rosterLoading ? <p className="season-empty">Carico la rosa…</p> : <div className="team-roster-list">{players.map((player) => <button className={`team-roster-player team-roster-player--${department(player.posizioni[0])}`} type="button" key={player.id} onClick={() => openPlayer(player)} aria-label={`Scheda di ${player.nome}`}>
@@ -720,6 +725,12 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       {player.fotoFirmata ? <img src={player.fotoFirmata} alt="" loading="lazy" /> : <b aria-hidden="true">{player.nome.charAt(0)}</b>}
                     </span>
                     <i className="team-roster-player__ruolo">{player.posizioni[0] ?? '—'}</i>
+                    {/* Al volo, chi sta lavorando e chi no. "Bilanciato" non conta:
+                        e' la crescita naturale, senza piano. */}
+                    {ownTeam && ((player.specializzazioneAttiva && player.specializzazioneAttiva !== 'bilanciato') || cambiRuolo.has(player.id)) && <span className="team-roster-player__lavori">
+                      {player.specializzazioneAttiva && player.specializzazioneAttiva !== 'bilanciato' && <i className="team-roster-player__lavoro team-roster-player__lavoro--piano" title="Piano di sviluppo attivo" aria-label="Piano di sviluppo attivo"><Icona nome="allenamento" /></i>}
+                      {cambiRuolo.has(player.id) && <i className="team-roster-player__lavoro team-roster-player__lavoro--ruolo" title="Cambio ruolo in corso" aria-label="Cambio ruolo in corso"><Icona nome="cambio" /></i>}
+                    </span>}
                   </span>
                   <div><strong>{player.nome}</strong><small>{player.posizioni.join(' · ')} · {player.eta} anni · <em>{money(player.ingaggio)}/stagione</em> · <em className={contratto(player, league.stagione_corrente).urgente ? 'contratto-urgente' : 'contratto-residuo'}>{contratto(player, league.stagione_corrente).testo}</em></small></div>
                   <b>
