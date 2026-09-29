@@ -2864,6 +2864,8 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .match-intro__giocatore-foto { width: 46px; height: 46px; }
 }
 
+.spot-video { position: fixed; z-index: 90; inset: 0; background: #000; display: grid; place-items: center; }
+.spot-video video { width: 100%; height: 100%; object-fit: contain; }
 .match-reveal-backdrop { position: fixed; z-index: 80; inset: 0; padding: 0; background: #0a0812; }
 /* z-index:0 qui e' essenziale, non decorativo: senza, .match-reveal non
    crea un proprio stacking context (position:relative da sola non basta) e

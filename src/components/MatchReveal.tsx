@@ -8,6 +8,7 @@ import { isEventoGol, type EventoGol, type EventoPartita, type Membership } from
 import { Crest } from './Crest'
 import { firmaFoto } from './RosaElenco'
 import { MatchIntro } from './MatchIntro'
+import { SpotVideo } from './SpotVideo'
 
 type Props = { membership: Membership; matchId: number; onClose: () => void; onRevealed: (matchId: number) => void; onOpenReport: () => void }
 type Player = { id: number; nome: string; foto?: string }
@@ -165,6 +166,11 @@ const TACCHE = [15, 30, 45, 60, 75, 90]
 // interrotto a meta'.
 const DURATA_POPUP_GOL_MS = 2200
 
+// Sorpresa una tantum: uno spot prima dell'intro, solo per Maudit Printemps
+// (squadra 285) e solo per la prima partita del turno playoff (fixture 2424,
+// giornata 31). Chiusa la partita viene segnata come vista, quindi non si ripete.
+const SPOT = { teamId: 285, fixtureId: 2424, src: '/spot/maudit-printemps.mp4' }
+
 export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenReport }: Props) {
   const data = useSeasonData(membership)
   const match = data.matches.find((item) => item.id === matchId)
@@ -172,6 +178,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const [nomi, setNomi] = useState<Map<number, Player>>(new Map())
   const [statsStoriche, setStatsStoriche] = useState<StatEventoStorico[]>([])
   const revealRegistrato = useRef(false)
+  const [spotFinito, setSpotFinito] = useState(false)
   // Un secondo reale per ogni minuto di gioco: il reveal non salta da
   // un'azione all'altra, ma percorre tutta la partita come una cronaca.
   const [minutoCorrente, setMinutoCorrente] = useState(-1)
@@ -393,6 +400,13 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   // L'intro (musica di fase, locandina, formazioni) precede il calcio
   // d'inizio solo quando c'e' davvero una cronaca da vivere: per le partite
   // simulate prima della cronaca estesa non avrebbe nulla da presentare.
+  if (minutoCorrente < 0 && eventi.length > 0 && !spotFinito && membership.id === SPOT.teamId && fixture.id === SPOT.fixtureId) {
+    return <>
+    {elementiAudio}
+    <SpotVideo src={SPOT.src} onFine={() => setSpotFinito(true)} />
+    </>
+  }
+
   if (minutoCorrente < 0 && eventi.length > 0) {
     return <>
     {elementiAudio}
