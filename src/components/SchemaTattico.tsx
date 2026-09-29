@@ -41,7 +41,15 @@ type Props = {
   onChange: (d: string[] | null, r: (string | null)[] | null, c: (string | null)[] | null) => void
   onFocus: (f: string | null) => void
   onClose: () => void
+  // Moduli personalizzati (max 3): salvare lo schema con un nome, sovrascriverne
+  // uno o eliminarne uno. Le funzioni rispondono con un messaggio d'errore o null.
+  moduliSalvati: { id: number; nome: string }[]
+  moduloSalvatoAttivo: number | null
+  onSalvaModulo: (nome: string, sostituisci: number | null) => Promise<string | null>
+  onEliminaModulo: (id: number) => Promise<string | null>
 }
+
+const MODULI_SALVABILI = 3
 
 // I nomi che l'utente legge. Le chiavi sono quelle del motore (engine/ruoli.js):
 // tenerle separate dalle etichette permette di cambiare parole senza toccare
@@ -113,10 +121,12 @@ const SOGLIA_TRASCINAMENTO = 3
 
 export default function SchemaTattico({
   modulo, disposizione, ruoli, compiti, focus, xpDisposizione, xpIndicazioni, onChange, onFocus, onClose,
+  moduliSalvati, moduloSalvatoAttivo, onSalvaModulo, onEliminaModulo,
 }: Props) {
   const standard = MODULI[modulo] ?? []
   const schema = disposizione ?? standard
   const [aperto, setAperto] = useState<number | null>(null)
+  const [salvataggio, setSalvataggio] = useState<{ nome: string; errore: string | null; inCorso: boolean } | null>(null)
   const [trascino, setTrascino] = useState<{ index: number; x: number; y: number; mosso: boolean } | null>(null)
   const campoRef = useRef<HTMLDivElement | null>(null)
   // Indice della card appena trascinata: il click che il browser genera dopo il
@@ -292,6 +302,12 @@ export default function SchemaTattico({
           nota={conIndicazioni === 0 ? 'Nessuna indicazione data.' : `${conIndicazioni} ${conIndicazioni === 1 ? 'indicazione attiva' : 'indicazioni attive'}.`} />
       </div>
 
+      {(cambiati > 0 || conIndicazioni > 0) && (moduloSalvatoAttivo
+        ? <p className="schema__salvato">Salvato come «{moduliSalvati.find((m) => m.id === moduloSalvatoAttivo)?.nome}»</p>
+        : <button className="schema__salva-modulo" type="button" onClick={() => setSalvataggio({ nome: '', errore: null, inCorso: false })}>
+          Salva come modulo personalizzato
+        </button>)}
+
       <div className="schema__campo pitch-field" ref={campoRef} aria-label={`Schema ${modulo}`}>
         <div className="pitch-field__circle" />
         <div className="pitch-field__box pitch-field__box--top" />
@@ -426,6 +442,50 @@ export default function SchemaTattico({
           </section>
         </>
       )}
+
+      {salvataggio && (() => {
+        const pieni = moduliSalvati.length >= MODULI_SALVABILI
+        const esegui = async (azione: () => Promise<string | null>) => {
+          setSalvataggio((s) => s && { ...s, inCorso: true, errore: null })
+          const errore = await azione()
+          if (errore) setSalvataggio((s) => s && { ...s, inCorso: false, errore })
+          else setSalvataggio(null)
+        }
+        const nome = salvataggio.nome.trim()
+        return <>
+          <button className="schema__scrim" type="button" aria-label="Chiudi" onClick={() => setSalvataggio(null)} />
+          <section className="schema__foglio" role="dialog" aria-label="Salva modulo personalizzato">
+            <header>
+              <button className="schema__fatto" type="button" onClick={() => setSalvataggio(null)}>Annulla</button>
+              <strong>Salva modulo</strong>
+              <small>Posizioni, ruoli, compiti e dove attacchiamo. Lo vedi solo tu.</small>
+            </header>
+            <h3>Nome</h3>
+            <input className="schema__nome" type="text" maxLength={30} value={salvataggio.nome}
+              placeholder={`Es. il mio ${nomeSchieramento(schema, MODULI)}`}
+              onChange={(e) => setSalvataggio((s) => s && { ...s, nome: e.target.value, errore: null })} />
+            {!pieni && <button className="schema__conferma" type="button" disabled={!nome || salvataggio.inCorso}
+              onClick={() => void esegui(() => onSalvaModulo(nome, null))}>Salva</button>}
+            {pieni && <p className="schema__vuoto">Hai già {MODULI_SALVABILI} moduli personalizzati: sovrascrivine uno o eliminane uno per fare spazio.</p>}
+            {salvataggio.errore && <p className="schema__errore" role="alert">{salvataggio.errore}</p>}
+            {moduliSalvati.length > 0 && <>
+              <h3>I tuoi moduli · {moduliSalvati.length}/{MODULI_SALVABILI}</h3>
+              <ul className="schema__salvati">
+                {moduliSalvati.map((m) => <li key={m.id}>
+                  <strong>{m.nome}</strong>
+                  <button type="button" disabled={salvataggio.inCorso}
+                    onClick={() => { if (window.confirm(`Sovrascrivere «${m.nome}» con lo schema attuale${nome && nome !== m.nome ? `, col nome «${nome}»` : ''}?`)) void esegui(() => onSalvaModulo(nome || m.nome, m.id)) }}>Sovrascrivi</button>
+                  <button type="button" className="schema__elimina" disabled={salvataggio.inCorso}
+                    onClick={() => { if (window.confirm(`Eliminare il modulo «${m.nome}»?`)) void (async () => {
+                      const errore = await onEliminaModulo(m.id)
+                      setSalvataggio((s) => s && { ...s, errore })
+                    })() }}>Elimina</button>
+                </li>)}
+              </ul>
+            </>}
+          </section>
+        </>
+      })()}
     </div>
   )
 }

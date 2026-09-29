@@ -72,6 +72,12 @@ un bonus. Ordine concordato, un task alla volta:
    posizione. Restano: la riga "ruoli in cui rende" nella scheda del giocatore
    (`SchedaGiocatore.tsx`, che l'altra chat modifica spesso su `main`: fare dopo
    un merge), e applicare in produzione la migrazione `20260928100000`.
+   Fatti anche (29 settembre): moduli personalizzati (registro, punto 29,
+   migrazione `20260929100000` da applicare), segnalino allenamento sulla rosa,
+   icone centrate, Schema Tattico sistemato per il telefono.
+   **Anteprima Vercel**: il branch si prova su
+   `specialone-git-feat-tattiche-cstinos-projects.vercel.app`, ma NON fare push
+   a ogni modifica (storage Vercel): si accumula e si pubblica su richiesta.
 2. **Indicazioni di squadra** (seconda pagina): stile, dove attacchiamo legato
    alla propria rosa, linea difensiva e ampiezza nuove.
    Qui anche il **portiere-libero**, che conta con la linea alta: dà senso al

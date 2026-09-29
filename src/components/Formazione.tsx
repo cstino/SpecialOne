@@ -1,7 +1,7 @@
 import { useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { supabase } from '../lib/supabase'
 import { attributiCorrenti } from '../lib/attributiGiocatore'
-import { schieramentoInCampo } from '../lib/schieramento'
+import { nomeSchieramento, schieramentoInCampo } from '../lib/schieramento'
 import SchemaTattico, { type XpDisposizione } from './SchemaTattico'
 import { idoneitaRuolo, segnoIdoneita } from '../lib/tattica'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
@@ -80,6 +80,15 @@ const STILE_DESCRIZIONI: Record<string, string> = {
 
 type PlayerStats = Record<string, number | null>
 type Player = { id: number; fc_id: number; nome: string; club: string; nazionalita: string | null; overall_corrente: number; eta_corrente: number; posizioni: string[]; piede: string | null; altezza: number | null; condizione: number; infortunato_fino_a: number; squalificato_fino_a: number; ritiro_annunciato: boolean; attributi: PlayerStats; foto_url: string | null }
+// Uno schema salvato con un nome (tabella moduli_personalizzati): posizioni,
+// ruoli, compiti e dove si attacca. Al massimo 3 per squadra, visibili solo a
+// chi li ha salvati.
+type ModuloPersonalizzato = { id: number; nome: string; modulo: string; disposizione: string[]; ruoli: (string | null)[] | null; compiti: (string | null)[] | null; focus_corsia: string | null }
+const MODULI_PERSONALIZZATI_MAX = 3
+const stessiValori = (a: (string | null)[] | null | undefined, b: (string | null)[] | null | undefined) =>
+  JSON.stringify((a ?? []).map((v) => v ?? null)) === JSON.stringify((b ?? []).map((v) => v ?? null))
+  || (!(a ?? []).some(Boolean) && !(b ?? []).some(Boolean))
+
 type SavedLineup = { modulo: string; stile_gioco: string; titolari: number[]; panchina: number[]; tribuna: number[]; salvata_il: string; disposizione: string[] | null; ruoli: (string | null)[] | null; compiti: (string | null)[] | null; focus_corsia: string | null }
 
 const formatSalvataIl = (iso: string) => new Intl.DateTimeFormat('it-IT', {
@@ -228,6 +237,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [ruoli, setRuoli] = useState<(string | null)[] | null>(null)
   const [compiti, setCompiti] = useState<(string | null)[] | null>(null)
   const [focusCorsia, setFocusCorsia] = useState<string | null>(null)
+  const [moduliPersonalizzati, setModuliPersonalizzati] = useState<ModuloPersonalizzato[]>([])
   const [schemaAperto, setSchemaAperto] = useState(false)
   const [xpDisposizione, setXpDisposizione] = useState<XpDisposizione[]>([])
   const [xpIndicazioni, setXpIndicazioni] = useState(0)
@@ -292,6 +302,12 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         supabase.from('stile_xp').select('stile, partite_giocate').eq('league_id', league.id).eq('team_id', membership.id),
         supabase.from('indicazioni_xp').select('partite_giocate').eq('team_id', membership.id).maybeSingle(),
       ])
+      // I moduli salvati non sono indispensabili per schierare: se la lettura
+      // fallisce la pagina funziona lo stesso, senza la sezione "I tuoi moduli".
+      const { data: moduliSalvati } = await supabase.from('moduli_personalizzati')
+        .select('id, nome, modulo, disposizione, ruoli, compiti, focus_corsia')
+        .eq('team_id', membership.id).order('creato_il')
+      if (active) setModuliPersonalizzati((moduliSalvati ?? []) as ModuloPersonalizzato[])
       if (formationXpError) { setError(formationXpError.message); setLoading(false); return }
       if (stileXpError) { setError(stileXpError.message); setLoading(false); return }
       if (active) {
@@ -601,6 +617,49 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     setModuleMenuOpen(false)
   }
 
+  function scegliModuloPersonalizzato(m: ModuloPersonalizzato) {
+    chooseModule(m.modulo)
+    const standard = MODULI[m.modulo] ?? []
+    setDisposizione(stessiValori(m.disposizione, standard) ? null : m.disposizione)
+    setRuoli(m.ruoli?.some(Boolean) ? m.ruoli : null)
+    setCompiti(m.compiti?.some((c) => c && c !== 'equilibrio') ? m.compiti : null)
+    setFocusCorsia(m.focus_corsia)
+  }
+
+  async function ricaricaModuliPersonalizzati() {
+    const { data } = await supabase.from('moduli_personalizzati')
+      .select('id, nome, modulo, disposizione, ruoli, compiti, focus_corsia')
+      .eq('team_id', membership.id).order('creato_il')
+    setModuliPersonalizzati((data ?? []) as ModuloPersonalizzato[])
+  }
+
+  async function salvaModuloPersonalizzato(nome: string, sostituisci: number | null): Promise<string | null> {
+    const { error } = await supabase.rpc('salva_modulo_personalizzato', {
+      p_league_id: league.id, p_nome: nome, p_modulo: modulo,
+      p_disposizione: disposizione ?? MODULI[modulo], p_ruoli: ruoli, p_compiti: compiti,
+      p_focus_corsia: focusCorsia, p_sostituisci: sostituisci,
+    })
+    if (error) return error.message
+    await ricaricaModuliPersonalizzati()
+    return null
+  }
+
+  async function eliminaModuloPersonalizzato(id: number): Promise<string | null> {
+    const { error } = await supabase.rpc('elimina_modulo_personalizzato', { p_id: id })
+    if (error) return error.message
+    setModuliPersonalizzati((lista) => lista.filter((m) => m.id !== id))
+    return null
+  }
+
+  // Il modulo salvato che corrisponde esattamente a quello in campo, se c'e':
+  // il suo nome va nel selettore al posto del modulo di partenza.
+  const moduloPersonalizzatoAttivo = moduliPersonalizzati.find((m) =>
+    m.modulo === modulo
+    && stessiValori(m.disposizione, disposizione ?? MODULI[modulo])
+    && stessiValori(m.ruoli, ruoli)
+    && stessiValori((m.compiti ?? []).map((c) => (c === 'equilibrio' ? null : c)), (compiti ?? []).map((c) => (c === 'equilibrio' ? null : c)))
+    && (m.focus_corsia ?? null) === (focusCorsia ?? null)) ?? null
+
   function chooseStile(nextStile: string) {
     setStile(nextStile)
     setSaved(false)
@@ -623,6 +682,10 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         xpIndicazioni={xpIndicazioni}
         onChange={(d, r, c) => { setDisposizione(d); setRuoli(r); setCompiti(c); setSaved(false) }}
         onFocus={(f) => { setFocusCorsia(f); setSaved(false) }}
+        moduliSalvati={moduliPersonalizzati.map((m) => ({ id: m.id, nome: m.nome }))}
+        moduloSalvatoAttivo={moduloPersonalizzatoAttivo?.id ?? null}
+        onSalvaModulo={salvaModuloPersonalizzato}
+        onEliminaModulo={eliminaModuloPersonalizzato}
         onClose={() => setSchemaAperto(false)}
       />}
       <PopupSpiegazione userId={membership.user_id} hintKey="formazione" titolo="Come funziona la Formazione">
@@ -664,10 +727,18 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
             <div className="formation-tattica">
               <div className="formation-tattica__voce formation-module-selector">
                 <button className="formation-tattica__trigger" type="button" aria-haspopup="listbox" aria-expanded={moduleMenuOpen} onClick={() => { setModuleMenuOpen((open) => !open); setStileMenuOpen(false) }}>
-                  <span className="formation-tattica__testo"><small>Modulo tattico</small><strong>{modulo}</strong></span>
+                  <span className="formation-tattica__testo"><small>{moduloPersonalizzatoAttivo ? `Modulo personalizzato · da ${modulo}` : 'Modulo tattico'}</small><strong>{moduloPersonalizzatoAttivo?.nome ?? modulo}</strong></span>
                   <i aria-hidden="true">{moduleMenuOpen ? '×' : '⌄'}</i>
                 </button>
-                {moduleMenuOpen && <><button className="formation-module-scrim" type="button" aria-label="Chiudi selezione modulo" onClick={() => setModuleMenuOpen(false)} /><div className="formation-module-menu" role="listbox" aria-label="Scegli il modulo">{Object.keys(MODULI).map((name) => <button className={name === modulo ? 'is-active' : ''} type="button" role="option" aria-selected={name === modulo} key={name} onClick={() => chooseModule(name)}><strong>{name}</strong><small>{MODULO_DESCRIZIONI[name]}</small><span>{name === modulo ? '✓' : '›'}</span></button>)}</div></>}
+                {moduleMenuOpen && <><button className="formation-module-scrim" type="button" aria-label="Chiudi selezione modulo" onClick={() => setModuleMenuOpen(false)} /><div className="formation-module-menu" role="listbox" aria-label="Scegli il modulo">{Object.keys(MODULI).map((name) => { const attivo = name === modulo && !moduloPersonalizzatoAttivo; return <button className={attivo ? 'is-active' : ''} type="button" role="option" aria-selected={attivo} key={name} onClick={() => chooseModule(name)}><strong>{name}</strong><small>{MODULO_DESCRIZIONI[name]}</small><span>{attivo ? '✓' : '›'}</span></button> })}
+                  {moduliPersonalizzati.length > 0 && <>
+                    <p className="formation-module-menu__sezione">I tuoi moduli · {moduliPersonalizzati.length}/{MODULI_PERSONALIZZATI_MAX}</p>
+                    {moduliPersonalizzati.map((m) => { const attivo = moduloPersonalizzatoAttivo?.id === m.id; return <div className="formation-module-menu__personale" key={`p-${m.id}`}>
+                      <button className={attivo ? 'is-active' : ''} type="button" role="option" aria-selected={attivo} onClick={() => scegliModuloPersonalizzato(m)}><strong>{m.nome}</strong><small>da {m.modulo} · {nomeSchieramento(m.disposizione, MODULI)}</small><span>{attivo ? '✓' : '›'}</span></button>
+                      <button className="formation-module-menu__elimina" type="button" aria-label={`Elimina il modulo ${m.nome}`} onClick={() => { if (window.confirm(`Eliminare il modulo "${m.nome}"?`)) void eliminaModuloPersonalizzato(m.id).then((e) => { if (e) setError(e) }) }}><Icona nome="chiudi" /></button>
+                    </div> })}
+                  </>}
+                </div></>}
               </div>
               <div className="formation-tattica__voce formation-stile-selector">
                 <button className="formation-tattica__trigger" type="button" aria-haspopup="listbox" aria-expanded={stileMenuOpen} onClick={() => { setStileMenuOpen((open) => !open); setModuleMenuOpen(false) }}>

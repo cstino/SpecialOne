@@ -993,3 +993,24 @@ magliette della formazione**, accanto all'overall, e solo se la posizione ha un 
 Decisione del committente: lo Schema Tattico è lo schema della squadra, fatto di posizioni,
 ruoli e compiti, non di giocatori; i segnalini appartengono ai giocatori. Nello stesso
 giro il costo dei compiti si legge in "stanchezza" invece che in "fiato".
+
+## 29. Moduli personalizzati — 29 settembre 2026
+
+Richiesta del committente: uno schema modificato si salva con un nome e compare nel menu dei
+moduli della Formazione. Decisioni sue:
+- si salva **tutto**: posizioni, ruoli, compiti e dove si attacca;
+- **massimo 3** per squadra; al quarto se ne sovrascrive uno o se ne elimina uno;
+- ognuno vede **solo i suoi** (RLS sulla tabella, scrittura solo dalle funzioni).
+
+Tabella `public.moduli_personalizzati`, funzioni `salva_modulo_personalizzato` (con
+`p_sostituisci` per sovrascrivere) ed `elimina_modulo_personalizzato`, migrazione
+`20260929100000`. Stessi controlli di `salva_formazione` su posizioni, ruoli e compiti.
+
+Il modulo salvato è un modello: richiamarlo riempie lo schema, e per la partita conta la
+formazione salvata. La familiarità non ha bisogno di niente, perché `formation_xp` è già
+indicizzata sullo schieramento: tornare a un modulo salvato ritrova il suo contatore.
+
+Nello Schema Tattico il pulsante "Salva come modulo personalizzato" compare quando lo schema
+differisce dal modulo standard; se coincide con uno salvato, compare "Salvato come «nome»".
+Nel menu dei moduli della Formazione i salvati stanno in una sezione "I tuoi moduli", con la
+"x" per eliminarli, e il selettore mostra il nome del modulo personalizzato in campo.
