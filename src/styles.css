@@ -3286,7 +3286,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    che ha solo un rapporto d'aspetto, finiva alto 135px su un telefono e la
    pagina non scorreva piu'. */
 .schema > * { flex-shrink: 0; }
-.schema__testa { position: sticky; top: 0; z-index: 3; display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 8px; padding: 14px 16px; background: rgba(12,14,17,.92); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,.06); }
+.schema__testa { position: sticky; top: 0; z-index: 10; display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 8px; padding: 14px 16px; background: rgba(12,14,17,.92); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,.06); }
 .schema__chiudi, .schema__reset { font: inherit; color: #d7dce2; background: transparent; border: 1px solid rgba(255,255,255,.14); border-radius: 999px; cursor: pointer; }
 .schema__chiudi { width: 36px; height: 36px; display: grid; place-items: center; font-size: 20px; line-height: 1; padding: 0; }
 .schema__reset { padding: 7px 14px; font-size: 13px; }
@@ -3307,7 +3307,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .schema__barra small { font-size: 11.5px; color: #79828b; }
 .schema__spiega { margin: 0; padding: 4px 16px 14px; font-size: 12.5px; line-height: 1.5; color: #79828b; }
 
-.schema__campo { position: relative; width: min(100%, 520px); margin: 4px auto 16px; }
+/* z-index 0 fa del campo un livello a se': le card (z 3, 6 in mano) restano
+   dentro e passano SOTTO la testata fissa invece di disegnarsi sopra. */
+.schema__campo { position: relative; z-index: 0; width: min(100%, 520px); margin: 4px auto 16px; }
 .schema__posto { position: absolute; z-index: 3; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 2px; width: 60px; padding: 8px 4px 7px; touch-action: none; user-select: none; font: inherit; color: #eef2f5; text-align: center; background: rgba(16,20,24,.86); border: 1px solid rgba(255,255,255,.14); border-radius: 12px; cursor: pointer; transition: border-color .18s ease, transform .18s ease; }
 .schema__posto:hover { border-color: rgba(255,255,255,.34); }
 .schema__posto.is-aperta { border-color: #62b8c9; transform: translate(-50%, -50%) scale(1.06); }
