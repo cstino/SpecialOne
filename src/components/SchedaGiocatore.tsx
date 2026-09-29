@@ -254,13 +254,14 @@ function RigaPianoAttributo({ etichetta, valore, pct }: { etichetta: string; val
   </div>
 }
 
-function AnteprimaPiano({ crescita, attributi, soloGk }: { crescita: Array<[string, number]>; attributi: Record<string, number | null>; soloGk: boolean }) {
+function AnteprimaPiano({ crescita, attributi, soloGk, haPiano }: { crescita: Array<[string, number]>; attributi: Record<string, number | null>; soloGk: boolean; haPiano: boolean }) {
   const mappa = new Map(crescita)
   const neutro = crescita.every(([, pct]) => pct === 0)
   return <>
     <p className="field-help">
       {neutro
-        ? <>Crescita naturale: ogni abilità cresce (o cala) insieme all'overall, senza spingerne nessuna.</>
+        ? <>Crescita naturale: ogni abilità cresce (o cala) insieme all'overall, senza spingerne nessuna.
+          {haPiano && <> Il piano attuale smette di spingere le sue abilità; quello che ha già guadagnato resta.</>}</>
         : <>Non aggiunge punti subito. Da qui in avanti, quando il giocatore cresce, ogni abilità cresce della
           percentuale indicata in più o in meno rispetto al normale. L'overall resta quello che sarebbe stato
           comunque. Se il giocatore cala, le abilità del piano calano meno.</>}
@@ -876,7 +877,7 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
                   <strong>Attenzione:</strong> per ora cambia solo le abilità del portiere, non il rendimento in partita: conterà quando saranno
                   attive le tattiche, con il ruolo di portiere-libero e la difesa alta.
                 </p>}
-                <AnteprimaPiano crescita={opzione.crescita} attributi={giocatore.attributi} soloGk={rep === 'GK'} />
+                <AnteprimaPiano crescita={opzione.crescita} attributi={giocatore.attributi} soloGk={rep === 'GK'} haPiano={Boolean(specializzazione?.attiva)} />
               </>
             })()}
           />}

@@ -445,16 +445,22 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     await caricaRoster()
   }
 
-  async function caricaOpzioniSpecializzazione(instanceId: number) {
+  async function caricaCatalogoSpecializzazioni(instanceId: number) {
     const { data, error } = await supabase.rpc('specializzazioni_disponibili', { p_instance_id: instanceId })
     if (error) throw new Error(error.message)
     const catalogo = (data ?? {}) as Record<string, { etichetta: string; crescita_pct: Record<string, number>; attivo: boolean }>
-    // Il piano che il giocatore segue gia' non si offre: riavviarlo non
-    // cambierebbe nulla (e il server lo rifiuta).
-    return Object.entries(catalogo).filter(([, valore]) => !valore.attivo).map(([chiave, valore]) => ({
-      chiave, etichetta: valore.etichetta,
+    return Object.entries(catalogo).map(([chiave, valore]) => ({
+      chiave, etichetta: valore.etichetta, attivo: valore.attivo,
       crescita: Object.entries(valore.crescita_pct ?? {}).sort((a, b) => b[1] - a[1]),
     }))
+  }
+
+  // Il piano che il giocatore segue gia' non si offre: riavviarlo non
+  // cambierebbe nulla (e il server lo rifiuta). Le etichette invece servono
+  // anche per lui, quindi escono dal catalogo intero.
+  async function caricaOpzioniSpecializzazione(instanceId: number) {
+    const catalogo = await caricaCatalogoSpecializzazioni(instanceId)
+    return catalogo.filter((voce) => !voce.attivo)
       // "Bilanciato" in testa, poi gli archetipi nell'ordine del server.
       .sort((a, b) => Number(b.chiave === 'bilanciato') - Number(a.chiave === 'bilanciato'))
   }
@@ -543,7 +549,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     async function caricaEtichette() {
       if (!schedaAperta) return
       try {
-        const opzioni = await caricaOpzioniSpecializzazione(schedaAperta.id)
+        const opzioni = await caricaCatalogoSpecializzazioni(schedaAperta.id)
         if (active) setSpecEtichette(new Map(opzioni.map((o) => [o.chiave, o.etichetta])))
       } catch {
         // silenzioso: sono solo etichette per il riepilogo, il pannello di
