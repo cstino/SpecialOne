@@ -380,10 +380,6 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     pitchEl.scrollTo({ top: Math.max(0, posizioneMinuto(minuto, altezzaCanvas, margine) - pitchEl.clientHeight / 2), behavior: 'smooth' })
   }, [pitchEl, minuto, altezzaCanvas, margine])
 
-  if (data.loading || !match || !fixture) return null
-  const casa = data.teamById.get(fixture.home_team_id)
-  const ospite = data.teamById.get(fixture.away_team_id)
-
   // I due elementi audio stanno FUORI dal ramo dell'intro, cosi' esistono
   // gia' al primo render — cioe' subito dopo il tocco che ha aperto la
   // partita — e restano gli stessi quando l'intro lascia il posto alla
@@ -396,6 +392,15 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     <audio ref={suonoGolRef} src="/suoni-effetti/esultanza-gol.m4a" preload="auto" />
     <audio ref={sottofondoRef} src="/suoni-effetti/stadio-sottofondo.m4a" loop preload="auto" />
   </>
+
+  // Anche mentre i dati si caricano: lo sblocco dell'audio (effect qui sopra)
+  // gira al primo render, cioe' dentro il tocco che ha aperto la partita, e
+  // deve trovare gia' gli elementi. Con `return null` non c'erano, e su iPhone
+  // restavano muti sia il pubblico sia il boato del gol.
+  if (data.loading || !match || !fixture) return <>{elementiAudio}</>
+  const casa = data.teamById.get(fixture.home_team_id)
+  const ospite = data.teamById.get(fixture.away_team_id)
+
 
   // L'intro (musica di fase, locandina, formazioni) precede il calcio
   // d'inizio solo quando c'e' davvero una cronaca da vivere: per le partite
@@ -429,8 +434,9 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const crestGolUrl = popupGol && data.crestUrlByTeamId.get(popupGol.lato === 'casa' ? fixture.home_team_id : fixture.away_team_id)
   const marcatore = popupGol && nomi.get(popupGol.marcatore)
 
-  return <div className="match-reveal-backdrop" role="dialog" aria-modal="true" aria-label="Cronaca della partita">
+  return <>
     {elementiAudio}
+    <div className="match-reveal-backdrop" role="dialog" aria-modal="true" aria-label="Cronaca della partita">
     <section className="match-reveal">
       <div className="match-reveal__sfondo" style={{ backgroundImage: `url(${SFONDO_FASE_VERTICALE[fase]})` }} />
       <button className="match-reveal__close" type="button" onClick={onClose} aria-label="Chiudi cronaca">×</button>
@@ -485,5 +491,6 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
         </footer>
       </>}
     </section>
-  </div>
+    </div>
+  </>
 }
