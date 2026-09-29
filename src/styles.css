@@ -3390,6 +3390,12 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .formation-module-menu__personale { grid-column: 1 / -1; display: flex; gap: 7px; align-items: stretch; }
 .formation-module-menu__personale > button:first-child { flex: 1; min-width: 0; }
 .formation-module-menu__elimina { flex: none; width: 40px; display: grid; place-items: center; padding: 0; font-size: 15px; color: #d49aa9; background: transparent; border: 1px solid #3d3348; border-radius: 10px; cursor: pointer; }
+.schema__pagine { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 0 16px 12px; padding: 4px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); border-radius: 12px; }
+.schema__pagine button { padding: 9px 8px; font: inherit; font-size: 14px; font-weight: 700; color: #8b949d; background: transparent; border: 0; border-radius: 9px; cursor: pointer; }
+.schema__pagine button.is-attiva { color: #0b0e11; background: #62b8c9; }
+.schema__squadra { display: grid; gap: 4px; padding: 0 16px; }
+.schema__gruppo h3 { margin: 14px 0 8px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #7d868f; }
+.schema__squadra .schema__spiega { padding: 12px 0 0; }
 .schema__base { margin-left: 8px; font-style: normal; font-size: 10.5px; font-weight: 600; letter-spacing: .02em; padding: 2px 7px; border-radius: 999px; color: #b7c0c8; background: rgba(255,255,255,.08); }
 
 /* Dove attacchiamo: una scelta di squadra, sopra il campo. */

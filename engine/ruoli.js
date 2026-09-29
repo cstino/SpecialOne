@@ -97,11 +97,15 @@ function media(attributi, chiavi) {
   return somma / chiavi.length;
 }
 
-/** Lo sbilanciamento grezzo verso un profilo, in punti di attributo. null se mancano dati. */
-export function scartoProfilo(attributi, profilo) {
+/**
+ * Lo sbilanciamento grezzo verso un profilo, in punti di attributo. null se
+ * mancano dati. `generali` e' il metro interno al giocatore: per i portieri si
+ * passano gli attributi da portiere (engine/squadra.js).
+ */
+export function scartoProfilo(attributi, profilo, generali = ATTRIBUTI_GENERALI) {
   if (!profilo?.length) return null;
   const suo = media(attributi, profilo);
-  const generale = media(attributi, ATTRIBUTI_GENERALI);
+  const generale = media(attributi, generali);
   return suo === null || generale === null ? null : suo - generale;
 }
 
@@ -163,8 +167,18 @@ export const SCALA_AVANTI = 0.09;
 export function idoneitaRuolo(g, ruolo) {
   const r = RUOLI[ruolo];
   const t = TARATURA_RUOLI[ruolo];
-  if (!g || !r?.profilo || !t || typeof g.ovr !== 'number') return 0;
-  const s = scartoProfilo(g.attributi, r.profilo);
+  if (!r?.profilo) return 0;
+  return idoneitaProfilo(g, r.profilo, t);
+}
+
+/**
+ * Il cuore comune a ruoli e indicazioni di squadra: quanto il giocatore e'
+ * sbilanciato verso un profilo rispetto al collega tipico del suo livello
+ * (taratura: retta sull'overall + deviazione). Da -1 a +1, 0 se mancano dati.
+ */
+export function idoneitaProfilo(g, profilo, t, generali = ATTRIBUTI_GENERALI) {
+  if (!g || !profilo?.length || !t || typeof g.ovr !== 'number') return 0;
+  const s = scartoProfilo(g.attributi, profilo, generali);
   if (s === null) return 0;
   const atteso = t.atteso + t.pendenza * (g.ovr - OVERALL_RIFERIMENTO);
   return Math.max(-1, Math.min(1, (s - atteso) / (t.deviazione * DEVIAZIONI_PIENE)));

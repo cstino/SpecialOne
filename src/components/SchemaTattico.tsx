@@ -24,6 +24,7 @@ import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointer
 import { COMPITI, COMPITI_REPARTO, FAM_PARTITE_PIENA, MODULI, REPARTO, RUOLI_SLOT, SPOSTAMENTI_SLOT } from '../lib/tattica'
 import { ANCORE, nomeSchieramento, schieramentoInCampo, type Ancora } from '../lib/schieramento'
 import { Icona } from './Icona'
+import { STILI, STILE_LABEL, STILE_DESCRIZIONI } from '../lib/stili'
 
 const ruoliPerSlot = (slot: string): string[] => RUOLI_SLOT[slot] ?? []
 
@@ -47,7 +48,39 @@ type Props = {
   moduloSalvatoAttivo: number | null
   onSalvaModulo: (nome: string, sostituisci: number | null) => Promise<string | null>
   onEliminaModulo: (id: number) => Promise<string | null>
+  // La pagina "Squadra": stile, linea difensiva, ampiezza, portiere. null =
+  // l'opzione predefinita (registro tattico, punto 30).
+  squadra: IndicazioniSquadra
+  onSquadra: (q: Partial<IndicazioniSquadra>) => void
 }
+
+export type IndicazioniSquadra = { stile: string; linea: string | null; ampiezza: string | null; portiere: string | null }
+
+// Cosa fa ogni indicazione e che giocatori chiede. I numeri stanno in
+// engine/squadra.js: qui c'e' solo come si spiegano.
+const CHIEDE_STILE: Record<string, string> = {
+  equilibrato: '',
+  contropiede: 'Vuole attaccanti veloci.',
+  possesso_palla: 'Vuole centrocampisti tecnici.',
+  fasce: 'Vuole esterni e terzini che crossano e corrono.',
+  recupero_veloce: 'Vuole giocatori aggressivi e bravi negli intercetti.',
+  diretto: 'Vuole punte forti di testa e fisicamente.',
+  blocco_basso: 'Vuole difensori forti e bravi a marcare.',
+}
+const LINEE: [string | null, string, string][] = [
+  ['bassa', 'Bassa', 'Si difende vicino all’area: dietro più solidi, il resto della squadra più lontano. Vuole difensori forti e bravi a marcare.'],
+  [null, 'Media', 'Nessuna indicazione particolare.'],
+  ['alta', 'Alta', 'Squadra corta e centrocampo più forte, ma campo alle spalle dei difensori. Vuole difensori veloci.'],
+]
+const AMPIEZZE: [string | null, string, string][] = [
+  ['stretta', 'Stretta', 'Superiorità in mezzo, fasce lasciate agli avversari. Vuole centrocampisti tecnici.'],
+  [null, 'Normale', 'Nessuna indicazione particolare.'],
+  ['larga', 'Larga', 'Più gioco sulle fasce, centro più solo. Vuole esterni e terzini che crossano e corrono.'],
+]
+const PORTIERI: [string | null, string, string][] = [
+  [null, 'Normale', 'Resta tra i pali.'],
+  ['libero', 'Portiere-libero', 'Esce dai pali e gioca coi piedi. Con la linea alta copre lo spazio dietro i difensori. Lo allena il piano «Fuori dai pali».'],
+]
 
 const MODULI_SALVABILI = 3
 
@@ -121,11 +154,12 @@ const SOGLIA_TRASCINAMENTO = 3
 
 export default function SchemaTattico({
   modulo, disposizione, ruoli, compiti, focus, xpDisposizione, xpIndicazioni, onChange, onFocus, onClose,
-  moduliSalvati, moduloSalvatoAttivo, onSalvaModulo, onEliminaModulo,
+  moduliSalvati, moduloSalvatoAttivo, onSalvaModulo, onEliminaModulo, squadra, onSquadra,
 }: Props) {
   const standard = MODULI[modulo] ?? []
   const schema = disposizione ?? standard
   const [aperto, setAperto] = useState<number | null>(null)
+  const [pagina, setPagina] = useState<'giocatori' | 'squadra'>('giocatori')
   const [salvataggio, setSalvataggio] = useState<{ nome: string; errore: string | null; inCorso: boolean } | null>(null)
   const [trascino, setTrascino] = useState<{ index: number; x: number; y: number; mosso: boolean } | null>(null)
   const campoRef = useRef<HTMLDivElement | null>(null)
@@ -148,14 +182,17 @@ export default function SchemaTattico({
     return Math.min(1, Math.round(migliore * FAM_PARTITE_PIENA) / FAM_PARTITE_PIENA)
   }, [xpDisposizione, schema])
 
-  // Ventiquattro elementi come in SQL (private.avanza_familiarita): lo stile,
-  // gli undici ruoli, gli undici compiti e dove si attacca.
+  // Ventisette elementi come in SQL (private.avanza_familiarita): lo stile,
+  // gli undici ruoli, gli undici compiti, dove si attacca, linea, ampiezza e
+  // portiere.
   const conIndicazioni = (ruoli?.filter(Boolean).length ?? 0)
     + (compiti?.filter((c) => c && c !== 'equilibrio').length ?? 0)
     + (focus ? 1 : 0)
+    + (squadra.stile !== 'equilibrato' ? 1 : 0)
+    + (squadra.linea ? 1 : 0) + (squadra.ampiezza ? 1 : 0) + (squadra.portiere ? 1 : 0)
   const quotaIndicazioni = Math.min(1,
     Math.round(Math.min(1, xpIndicazioni / FAM_PARTITE_PIENA)
-      * resaFamiliarita(conIndicazioni / 24) * FAM_PARTITE_PIENA) / FAM_PARTITE_PIENA)
+      * resaFamiliarita(conIndicazioni / 27) * FAM_PARTITE_PIENA) / FAM_PARTITE_PIENA)
 
   const cambiati = 11 - uguali(standard, schema)
   const nome = useMemo(() => nomeSchieramento(schema, MODULI), [schema])
@@ -193,7 +230,11 @@ export default function SchemaTattico({
     )
   }
 
-  const ripristina = () => { onChange(null, null, null); onFocus(null); setAperto(null) }
+  const ripristina = () => {
+    onChange(null, null, null); onFocus(null)
+    onSquadra({ stile: 'equilibrato', linea: null, ampiezza: null, portiere: null })
+    setAperto(null)
+  }
 
   // --- trascinamento ---
   //
@@ -308,6 +349,12 @@ export default function SchemaTattico({
           Salva come modulo personalizzato
         </button>)}
 
+      <div className="schema__pagine" role="tablist" aria-label="Pagine dello schema">
+        <button type="button" role="tab" aria-selected={pagina === 'giocatori'} className={pagina === 'giocatori' ? 'is-attiva' : ''} onClick={() => setPagina('giocatori')}>Giocatori</button>
+        <button type="button" role="tab" aria-selected={pagina === 'squadra'} className={pagina === 'squadra' ? 'is-attiva' : ''} onClick={() => setPagina('squadra')}>Squadra</button>
+      </div>
+
+      {pagina === 'giocatori' && <>
       <div className="schema__campo pitch-field" ref={campoRef} aria-label={`Schema ${modulo}`}>
         <div className="pitch-field__circle" />
         <div className="pitch-field__box pitch-field__box--top" />
@@ -351,27 +398,41 @@ export default function SchemaTattico({
         })}
       </div>
 
-      {/* Dove si attacca: una scelta di squadra, non di posizione. Paga se
-          l'avversario e' scoperto li' e costa se e' il suo lato forte — otto
-          punti e sei di scarto fra leggere bene e leggere male. Non
-          concentrare e' una scelta legittima, non una mancanza. */}
-      <div className="schema__focus">
-        <span className="schema__focus-titolo">Dove attacchiamo</span>
-        <div className="schema__focus-scelte">
-          {([[null, 'Ovunque'], ['SX', 'A sinistra'], ['CEN', 'Al centro'], ['DX', 'A destra']] as const).map(([v, et]) => (
-            <button key={et} type="button" className={focus === v ? 'is-attiva' : ''}
-              onClick={() => onFocus(v)}>{et}</button>
-          ))}
-        </div>
-        <small>{focus
-          ? 'Concentrare paga se l’avversario è scoperto lì, e costa se è il suo lato forte.'
-          : 'Nessuna concentrazione: si attacca dove capita, senza rischi né vantaggi.'}</small>
-      </div>
-
       <p className="schema__spiega">
         Tocca una posizione per darle ruolo e compito, trascinala per spostarla. Cambiare molto insieme fa
         scendere le barre, che tornano su giocando.
       </p>
+      </>}
+
+      {pagina === 'squadra' && <div className="schema__squadra">
+        <Gruppo titolo="Stile di gioco">
+          {STILI.map((k) => <Scelta key={k} attiva={squadra.stile === k} nome={STILE_LABEL[k].charAt(0) + STILE_LABEL[k].slice(1).toLowerCase()}
+            detto={[STILE_DESCRIZIONI[k], CHIEDE_STILE[k]].filter(Boolean).join(' ')}
+            onClick={() => onSquadra({ stile: k })} />)}
+        </Gruppo>
+        {/* Dove si attacca guarda la PROPRIA squadra (registro, punto 27): la
+            corsia dove si hanno i giocatori piu' forti. */}
+        <Gruppo titolo="Dove attacchiamo">
+          {([[null, 'Ovunque', 'Nessuna concentrazione: si attacca dove capita.'],
+            ['SX', 'A sinistra', 'Rende se a sinistra hai i giocatori migliori, costa se è il tuo lato debole.'],
+            ['CEN', 'Al centro', 'Rende se al centro hai i giocatori migliori, costa se è il tuo lato debole.'],
+            ['DX', 'A destra', 'Rende se a destra hai i giocatori migliori, costa se è il tuo lato debole.']] as const).map(([v, n, d]) =>
+            <Scelta key={n} attiva={focus === v} nome={n} detto={d} onClick={() => onFocus(v)} />)}
+        </Gruppo>
+        <Gruppo titolo="Linea difensiva">
+          {LINEE.map(([v, n, d]) => <Scelta key={n} attiva={squadra.linea === v} nome={n} detto={d} predefinita={v === null} onClick={() => onSquadra({ linea: v })} />)}
+        </Gruppo>
+        <Gruppo titolo="Ampiezza">
+          {AMPIEZZE.map(([v, n, d]) => <Scelta key={n} attiva={squadra.ampiezza === v} nome={n} detto={d} predefinita={v === null} onClick={() => onSquadra({ ampiezza: v })} />)}
+        </Gruppo>
+        <Gruppo titolo="Portiere">
+          {PORTIERI.map(([v, n, d]) => <Scelta key={n} attiva={squadra.portiere === v} nome={n} detto={d} predefinita={v === null} onClick={() => onSquadra({ portiere: v })} />)}
+        </Gruppo>
+        <p className="schema__spiega">
+          Ogni indicazione rende se la tua rosa ha i giocatori adatti, e costa se non li ha. Quelle predefinite
+          non danno né tolgono niente.
+        </p>
+      </div>}
 
       {postoAperto && slotAperto && (
         <>
@@ -498,5 +559,23 @@ function Barra({ nome, quota, nota }: { nome: string; quota: number; nota: strin
       <div className="schema__barra-pista"><i style={{ width: `${pct}%` }} data-basso={pct < 60 ? 'si' : undefined} /></div>
       <small>{nota}</small>
     </div>
+  )
+}
+
+function Gruppo({ titolo, children }: { titolo: string; children: React.ReactNode }) {
+  return (
+    <section className="schema__gruppo">
+      <h3>{titolo}</h3>
+      <div className="schema__scelte">{children}</div>
+    </section>
+  )
+}
+
+function Scelta({ nome, detto, attiva, predefinita = false, onClick }: { nome: string; detto: string; attiva: boolean; predefinita?: boolean; onClick: () => void }) {
+  return (
+    <button type="button" className={attiva ? 'is-attiva' : ''} onClick={onClick}>
+      <strong>{nome}{predefinita && <em className="schema__base">nessuna indicazione</em>}</strong>
+      <small>{detto}</small>
+    </button>
   )
 }

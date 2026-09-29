@@ -26,8 +26,8 @@ function prova(et, cfg) {
     B.ruoli = ruoliB;
     A.ruoli = cfg.ruoli ? M.map((s) => cfg.ruoli[s] ?? null) : null;
     A.compiti = cfg.compiti ? M.map((s) => cfg.compiti[s] ?? null) : null;
-    A.tattica = sommaDelta(deltaMorale(A), deltaRuoli(A), deltaCorsie(A, B, cfg.focus));
-    B.tattica = sommaDelta(deltaMorale(B), deltaRuoli(B), deltaCorsie(B, A, null));
+    A.tattica = sommaDelta(deltaMorale(A), deltaRuoli(A), deltaCorsie(A, cfg.focus));
+    B.tattica = sommaDelta(deltaMorale(B), deltaRuoli(B), deltaCorsie(B, null));
     const r = simulaPartita(ra, rb, '4-4-2', '4-4-2', { usaCondizione: true, lineupCasa: A, lineupOspite: B });
     if (r.golC > r.golO) v++; else if (r.golC === r.golO) p++;
   }

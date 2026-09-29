@@ -88,8 +88,8 @@ un bonus. Ordine concordato, un task alla volta:
    **Anteprima Vercel**: il branch si prova su
    `specialone-git-feat-tattiche-cstinos-projects.vercel.app`, ma NON fare push
    a ogni modifica (storage Vercel): si accumula e si pubblica su richiesta.
-2. **Indicazioni di squadra** (seconda pagina): stile, dove attacchiamo legato
-   alla propria rosa, linea difensiva e ampiezza nuove.
+2. **Indicazioni di squadra**: fatto il 29 settembre (registro, punto 30),
+   migrazione `20260929110000` applicata. ← il prossimo è il 3.
    Qui anche il **portiere-libero**, che conta con la linea alta: dà senso al
    piano di sviluppo "Fuori dai pali". Su `main` l'anteprima di quel piano dice
    che conterà con le tattiche (`SchedaGiocatore.tsx`, confrontoScelta del

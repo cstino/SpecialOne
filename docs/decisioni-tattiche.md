@@ -1014,3 +1014,56 @@ Nello Schema Tattico il pulsante "Salva come modulo personalizzato" compare quan
 differisce dal modulo standard; se coincide con uno salvato, compare "Salvato come «nome»".
 Nel menu dei moduli della Formazione i salvati stanno in una sezione "I tuoi moduli", con la
 "x" per eliminarli, e il selettore mostra il nome del modulo personalizzato in campo.
+
+## 30. La pagina "Squadra": stile, dove attacchiamo, linea, ampiezza, portiere — 29 settembre 2026
+
+Task 2 del punto 27, sulla tabella proposta al committente e approvata. Lo Schema Tattico ha
+due schede: **Giocatori** (campo, ruoli, compiti) e **Squadra**. Lo stile di gioco esce dalla
+Formazione e va qui.
+
+**Regola comune.** L'opzione predefinita (equilibrato, ovunque, linea media, ampiezza normale,
+portiere normale) è neutra. Le altre spostano forza fra i reparti e chiedono un profilo alla
+rosa, con la stessa misura dei ruoli (collega tipico dello stesso livello, punto 28):
+`engine/squadra.js`, profili tarati da `taratura-ruoli.mjs` (correlazione con l'overall ≤ 0,02).
+
+| indicazione | sposta | chiede |
+|---|---|---|
+| linea alta | DEF −1, MID +1 | difensori veloci |
+| linea bassa | DEF +1, MID e ATT −0,5 | difensori da marcatura e forza |
+| ampiezza larga | fasce +0,8, centro −0,8 | esterni e terzini che crossano e corrono |
+| ampiezza stretta | centro +0,8, fasce −0,8 | centrocampisti tecnici |
+| stile (6 non neutri) | come prima (STILI) | contropiede: attaccanti veloci · possesso: centrocampisti tecnici · fasce: esterni che crossano · recupero veloce: aggressività e intercetti · diretto: punte forti di testa e fisico · blocco basso: difensori da marcatura e forza |
+| portiere-libero | — | uscite, posizionamento, rinvii; con la linea alta copre i difensori (`COPERTURA_LIBERO`) |
+
+Valore a idoneità piena: 2 punti di overall (1,5 il portiere), come i ruoli.
+
+**Dove attacchiamo guarda la propria squadra** (`engine/corsie.js`): rende sulla corsia dove si
+hanno i giocatori più forti, costa su quella debole. Non legge più l'avversario.
+
+**La formazione ereditata tiene la tattica.** Chi salta un salvataggio riceve la formazione della
+giornata prima: prima si ereditavano solo modulo e giocatori, ora anche schema, ruoli, compiti e
+indicazioni. È la conseguenza diretta di "la tattica è l'identità".
+
+**Database** (migrazione `20260929110000`, applicata): colonne `linea_difensiva`, `ampiezza`,
+`ruolo_portiere` su `lineups`, `indicazioni_xp` e `moduli_personalizzati`; `salva_formazione` e
+`salva_modulo_personalizzato` con tre (quattro) parametri in più, firme vecchie tolte; la barra
+Indicazioni conta 27 elementi. Funzioni ricostruite dalla definizione live. Verificato che il
+salvataggio come lo fa l'app di produzione (undici parametri) funziona ancora, in rollback.
+
+**Misura** (`prova-ruoli-reali.mjs`, 40.000 partite, 4-4-2, rose vere):
+
+| A | rispetto a chi non tocca niente |
+|---|---|
+| solo ruoli giusti | +5,9 |
+| solo stile giusto | +2,2 |
+| solo ampiezza giusta | +1,5 |
+| solo linea giusta | +0,9 |
+| solo corsia giusta | +0,2 |
+| linea alta + portiere-libero | +0,1 |
+| **tocca tutto a caso** | **−0,1** |
+| sa leggere la sua rosa (tutto) | +10,6 |
+| sbaglia apposta (tutto) | −10,6 |
+
+Il vincolo regge. Da rivedere nel task 4: la corsia è quasi inerte (le corsie di una rosa vera
+differiscono poco), il portiere-libero vale poco, e lo scarto totale di 21 punti su 38 fra tutto
+giusto e tutto sbagliato va confrontato col limite del punto 6. `simulate-reale` invariato.

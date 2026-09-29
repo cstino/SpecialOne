@@ -10,6 +10,7 @@
 import { readFileSync, writeFileSync } from 'fs';
 import assert from 'assert';
 import { RUOLI, scartoProfilo, idoneitaRuolo, TARATURA_RUOLI } from '../../engine/ruoli.js';
+import { PROFILI_SQUADRA, FAMIGLIE, TARATURA_SQUADRA, idoneitaSquadra } from '../../engine/squadra.js';
 
 const RIF = 75;
 const pool = JSON.parse(readFileSync(new URL('./pool-reale.json', import.meta.url), 'utf8'));
@@ -46,6 +47,29 @@ if (process.argv.includes('--scrivi')) {
   const nuovo = src.replace(re, `export const TARATURA_RUOLI = {\n${righe.join('\n')}\n};`);
   assert.ok(righe.every((r) => nuovo.includes(r)), 'la tabella scritta non e\' quella calcolata');
   writeFileSync(file, nuovo);
+
+  // Le indicazioni di squadra (engine/squadra.js): stessa retta, per profilo.
+  const righeSq = [];
+  console.log('\n  profilo di squadra        n  atteso75  pendenza  dev   corr.grezza');
+  for (const [k, pr] of Object.entries(PROFILI_SQUADRA)) {
+    const fam = FAMIGLIE[pr.famiglia];
+    const d = pool.filter((p) => fam.includes(p.posizioni?.[0]))
+      .map((p) => [scartoProfilo(p.attributi, pr.attributi, pr.generali), p.overall - RIF]).filter(([v]) => v !== null);
+    const sv = d.map(([v]) => v), xv = d.map(([, v]) => v);
+    const mx = media(xv), ms = media(sv);
+    const b = xv.reduce((t, xi, i) => t + (xi - mx) * (sv[i] - ms), 0) / xv.reduce((t, xi) => t + (xi - mx) ** 2, 0);
+    const a = ms - b * mx;
+    const dev = Math.sqrt(media(sv.map((si, i) => (si - (a + b * xv[i])) ** 2)));
+    righeSq.push(`  ${k}: { atteso: ${a.toFixed(2)}, pendenza: ${b.toFixed(3)}, deviazione: ${dev.toFixed(2)} },`);
+    console.log('  ' + k.padEnd(22) + String(sv.length).padStart(5) + a.toFixed(1).padStart(9) + b.toFixed(3).padStart(10) + dev.toFixed(1).padStart(6) + corr(sv, xv).toFixed(2).padStart(12));
+  }
+  const fileSq = new URL('../../engine/squadra.js', import.meta.url);
+  const srcSq = readFileSync(fileSq, 'utf8');
+  const reSq = /export const TARATURA_SQUADRA = \{[\s\S]*?\};/;
+  assert.equal((srcSq.match(new RegExp(reSq, 'g')) ?? []).length, 1, 'TARATURA_SQUADRA deve comparire una volta sola');
+  const nuovoSq = srcSq.replace(reSq, `export const TARATURA_SQUADRA = {\n${righeSq.join('\n')}\n};`);
+  assert.ok(righeSq.every((r) => nuovoSq.includes(r)), 'la tabella di squadra scritta non e\' quella calcolata');
+  writeFileSync(fileSq, nuovoSq);
 
   // La copia per il frontend: stessi profili, stessa taratura, stessa formula.
   const fe = new URL('../../src/lib/tattica.ts', import.meta.url);
@@ -127,4 +151,15 @@ for (const [fam, ruoli] of Object.entries(famiglie)) {
   const cont = Object.fromEntries(ruoli.map((k) => [k, 0]));
   for (const p of gi) cont[ruoli.reduce((a, b) => (idoneitaRuolo(g(p), b) > idoneitaRuolo(g(p), a) ? b : a))]++;
   console.log('  ' + fam.padEnd(14) + ruoli.map((k) => `${k} ${(cont[k] / gi.length * 100).toFixed(0)}%`).join('  '));
+}
+
+console.log('\n  profili di squadra        corr.overall     ++     +  neutro     -    --');
+for (const [k, pr] of Object.entries(PROFILI_SQUADRA)) {
+  assert.ok(TARATURA_SQUADRA[k], `${k}: taratura mancante, lanciare con --scrivi`);
+  const gi = pool.filter((p) => FAMIGLIE[pr.famiglia].includes(p.posizioni?.[0]));
+  const v = gi.map((p) => idoneitaSquadra(g(p), k));
+  const q = (f) => (v.filter(f).length / v.length * 100).toFixed(0).padStart(5) + '%';
+  console.log('  ' + k.padEnd(22) + corr(v, gi.map((p) => p.overall)).toFixed(2).padStart(13) + '  '
+    + q((x) => x >= 0.6) + q((x) => x >= 0.25 && x < 0.6) + q((x) => x > -0.25 && x < 0.25).padStart(7)
+    + q((x) => x <= -0.25 && x > -0.6) + q((x) => x <= -0.6));
 }

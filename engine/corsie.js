@@ -24,64 +24,43 @@ export function forzeCorsia(lineup) {
 }
 
 // ============================================================
-//  DOVE ATTACCARE — lo scontro di corsia
+//  DOVE ATTACCARE — il proprio lato forte
 //
-//  La mia sinistra incontra la loro destra: e' cosi' che si guarda una
-//  partita. Concentrare l'attacco su una fascia porta li' piu' peso, e rende
-//  in proporzione a quanto quella fascia e' sguarnita dall'altra parte.
+//  Registro, punto 27: la tattica e' l'identita' della squadra, non la mossa
+//  della giornata. "Dove attacchiamo" non legge piu' il buco dell'avversario
+//  (che andava riletto ogni giornata): guarda la PROPRIA squadra. Concentrare
+//  l'attacco sulla corsia dove hai i giocatori piu' forti rende; sulla corsia
+//  debole costa. Non concentrare non da' ne' toglie.
 //
-//  E' QUI CHE NASCE L'INTERAZIONE che ai compiti mancava (punto 13: leggere
-//  l'avversario valeva +0,0). Non serve nessuna matrice inventata: il buco lo
-//  crea l'avversario da solo, mandando avanti un terzino. Chi se ne accorge lo
-//  attacca, chi non se ne accorge attacca dove c'e' gente.
+//  La forza di una corsia e' la media degli overall pesata per quanto ognuno
+//  attacca li' (forzeCorsia): una MEDIA, non un totale, quindi il centro non
+//  vince solo perche' ci stanno piu' giocatori.
 // ============================================================
-const SPECCHIO = { SX: 'DX', CEN: 'CEN', DX: 'SX' };
 
-// Quanto pesa una corsia scoperta. Tarato a 40 perche' la vulnerabilita' e'
-// una frazione piccola — mandare avanti un terzino scopre la sua fascia
-// dell'11% — e va moltiplicata per arrivare a un effetto leggibile.
-//
-// Al valore scelto, indovinare la fascia sguarnita vale circa +8 punti
-// percentuali di vittorie, cioe' poco piu' di un punto di overall; sbagliarla
-// ne costa 2. Sopra, diventava una roulette: a 110 si passava dal 27% al 57%
-// secondo dove si attaccava, e la partita la decideva la lettura invece della
-// squadra.
-export const SCALA_CORSIA = 20;
+// Punti di overall, sugli attaccanti, a vantaggio pieno. Tarato nel sistema
+// intero (task 4).
+export const SCALA_CORSIA = 2.5;
+// Quanti punti di scarto fra la corsia scelta e la media delle tre valgono il
+// vantaggio pieno.
+export const SCARTO_PIENO = 4;
 export const CONCENTRAZIONE = 0.35;
 
-export function deltaCorsie(mio, suo, focus) {
-  const fs = forzeCorsia(suo);
-  // Il confronto e' con LORO STESSI a compiti neutri, non con la media fra le
-  // corsie. Due correzioni in una:
-  //
-  //  - confrontare le corsie fra loro faceva punire SEMPRE il centro, che ha
-  //    strutturalmente piu' difensori: attaccare in mezzo diventava un
-  //    suicidio a prescindere, il che non e' calcio;
-  //  - e soprattutto cosi' si misura esattamente cio' che l'avversario ha
-  //    SCELTO di lasciare, che e' l'unica cosa che un allenatore puo' leggere.
-  //    La sua forma di partenza non e' una sua colpa.
-  // Il paragone e' l'avversario con se' stesso a compiti e ruoli neutri: cosi'
-  // si isola quello che ha SCELTO di lasciare scoperto, invece di premiare la
-  // corsia che in ogni modulo e' naturalmente piu' sguarnita. Anche i ruoli
-  // vanno azzerati, non solo i compiti: schierare un terzino che rientra e'
-  // una scelta tanto quanto spingerlo in avanti, e deve potersi leggere.
-  const neutro = forzeCorsia({ ...suo, compiti: null, ruoli: null });
-  const vulnerabilita = {};
-  for (const c of ['SX', 'CEN', 'DX']) {
-    const q = SPECCHIO[c];
-    const base = neutro.pesoDif[q] || 1;
-    vulnerabilita[c] = (base - fs.pesoDif[q]) / base;
-  }
+export function vantaggioCorsia(mio, focus) {
+  if (!focus) return 0;
+  const f = forzeCorsia({ ...mio, compiti: null, ruoli: null });
+  const media = (f.att.SX + f.att.CEN + f.att.DX) / 3;
+  return Math.max(-1, Math.min(1, (f.att[focus] - media) / SCARTO_PIENO));
+}
 
-  // Concentrare paga in proporzione a quanto quella corsia e' sguarnita, e
-  // costa se e' presidiata. Non concentrare non da' ne' toglie.
+export function deltaCorsie(mio, focus) {
+  if (!focus) return null;
+  const v = vantaggioCorsia(mio, focus);
+  if (!v) return null;
+  // Chi attacca sulla corsia scelta ne raccoglie di piu', gli altri meno:
+  // stessa distribuzione di prima, con il vantaggio che nasce dalla propria
+  // squadra invece che dall'avversario.
   const vant = { SX: 0, CEN: 0, DX: 0 };
-  if (focus) {
-    for (const c of ['SX', 'CEN', 'DX']) {
-      vant[c] = (c === focus ? 1 : -0.35) * vulnerabilita[c];
-    }
-  }
-
+  for (const c of ['SX', 'CEN', 'DX']) vant[c] = (c === focus ? 1 : -CONCENTRAZIONE) * v;
   return (g, slot) => {
     if (!g || slot === 'GK') return 0;
     const wl = PESI_SLOT[slot], wc = PESI_CORSIA[slot];

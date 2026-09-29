@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { attributiCorrenti } from '../lib/attributiGiocatore'
 import { nomeSchieramento, schieramentoInCampo } from '../lib/schieramento'
 import SchemaTattico, { type XpDisposizione } from './SchemaTattico'
+import { STILE_LABEL } from '../lib/stili'
 import { idoneitaRuolo, segnoIdoneita } from '../lib/tattica'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { cognome } from '../lib/nomi'
@@ -54,42 +55,19 @@ const MODULO_DESCRIZIONI: Record<string, string> = {
   '4-2-4': '4 dif · 2 cen · 4 att',
 }
 
-// Le stesse 7 chiavi di engine/config.js STILI e private.stili_validi() lato DB
-// (sync a mano, stesso pattern gia' in uso per MODULI/moduli_validi()).
-const STILI: string[] = ['equilibrato', 'contropiede', 'possesso_palla', 'fasce', 'recupero_veloce', 'diretto', 'blocco_basso']
-
-const STILE_LABEL: Record<string, string> = {
-  equilibrato: 'EQUILIBRATO',
-  contropiede: 'CONTROPIEDE',
-  possesso_palla: 'POSSESSO PALLA',
-  fasce: 'GIOCO SULLE FASCE',
-  recupero_veloce: 'RECUPERO VELOCE',
-  diretto: 'GIOCO DIRETTO',
-  blocco_basso: 'DIFESA A OLTRANZA',
-}
-
-const STILE_DESCRIZIONI: Record<string, string> = {
-  equilibrato: 'Nessun aggiustamento tattico.',
-  contropiede: 'Difensivo e attendista, sfrutta le occasioni in ripartenza.',
-  possesso_palla: 'Dominio del centrocampo e del possesso.',
-  fasce: 'Veloce sulle corsie, cross e ampiezza.',
-  recupero_veloce: 'Difesa alta e pressing per riconquistare la palla.',
-  diretto: 'Verticale, salta il centrocampo, punta sulla profondità.',
-  blocco_basso: 'Massima solidità difensiva, rischia il minimo indispensabile.',
-}
 
 type PlayerStats = Record<string, number | null>
 type Player = { id: number; fc_id: number; nome: string; club: string; nazionalita: string | null; overall_corrente: number; eta_corrente: number; posizioni: string[]; piede: string | null; altezza: number | null; condizione: number; infortunato_fino_a: number; squalificato_fino_a: number; ritiro_annunciato: boolean; attributi: PlayerStats; foto_url: string | null }
 // Uno schema salvato con un nome (tabella moduli_personalizzati): posizioni,
 // ruoli, compiti e dove si attacca. Al massimo 3 per squadra, visibili solo a
 // chi li ha salvati.
-type ModuloPersonalizzato = { id: number; nome: string; modulo: string; disposizione: string[]; ruoli: (string | null)[] | null; compiti: (string | null)[] | null; focus_corsia: string | null }
+type ModuloPersonalizzato = { id: number; nome: string; modulo: string; disposizione: string[]; ruoli: (string | null)[] | null; compiti: (string | null)[] | null; focus_corsia: string | null; stile: string | null; linea_difensiva: string | null; ampiezza: string | null; ruolo_portiere: string | null }
 const MODULI_PERSONALIZZATI_MAX = 3
 const stessiValori = (a: (string | null)[] | null | undefined, b: (string | null)[] | null | undefined) =>
   JSON.stringify((a ?? []).map((v) => v ?? null)) === JSON.stringify((b ?? []).map((v) => v ?? null))
   || (!(a ?? []).some(Boolean) && !(b ?? []).some(Boolean))
 
-type SavedLineup = { modulo: string; stile_gioco: string; titolari: number[]; panchina: number[]; tribuna: number[]; salvata_il: string; disposizione: string[] | null; ruoli: (string | null)[] | null; compiti: (string | null)[] | null; focus_corsia: string | null }
+type SavedLineup = { modulo: string; stile_gioco: string; titolari: number[]; panchina: number[]; tribuna: number[]; salvata_il: string; disposizione: string[] | null; ruoli: (string | null)[] | null; compiti: (string | null)[] | null; focus_corsia: string | null; linea_difensiva: string | null; ampiezza: string | null; ruolo_portiere: string | null }
 
 const formatSalvataIl = (iso: string) => new Intl.DateTimeFormat('it-IT', {
   timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
@@ -226,7 +204,6 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [modulo, setModulo] = useState('4-3-3')
   const [moduleMenuOpen, setModuleMenuOpen] = useState(false)
   const [stile, setStile] = useState('equilibrato')
-  const [stileMenuOpen, setStileMenuOpen] = useState(false)
   const [salvataIl, setSalvataIl] = useState<string | null>(null)
   const [titolari, setTitolari] = useState<number[]>([])
   const [panchina, setPanchina] = useState<number[]>([])
@@ -238,6 +215,10 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [compiti, setCompiti] = useState<(string | null)[] | null>(null)
   const [focusCorsia, setFocusCorsia] = useState<string | null>(null)
   const [moduliPersonalizzati, setModuliPersonalizzati] = useState<ModuloPersonalizzato[]>([])
+  // Indicazioni di squadra (registro tattico, punto 30). null = predefinita.
+  const [linea, setLinea] = useState<string | null>(null)
+  const [ampiezza, setAmpiezza] = useState<string | null>(null)
+  const [portiere, setPortiere] = useState<string | null>(null)
   const [schemaAperto, setSchemaAperto] = useState(false)
   const [xpDisposizione, setXpDisposizione] = useState<XpDisposizione[]>([])
   const [xpIndicazioni, setXpIndicazioni] = useState(0)
@@ -305,7 +286,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       // I moduli salvati non sono indispensabili per schierare: se la lettura
       // fallisce la pagina funziona lo stesso, senza la sezione "I tuoi moduli".
       const { data: moduliSalvati } = await supabase.from('moduli_personalizzati')
-        .select('id, nome, modulo, disposizione, ruoli, compiti, focus_corsia')
+        .select('id, nome, modulo, disposizione, ruoli, compiti, focus_corsia, stile, linea_difensiva, ampiezza, ruolo_portiere')
         .eq('team_id', membership.id).order('creato_il')
       if (active) setModuliPersonalizzati((moduliSalvati ?? []) as ModuloPersonalizzato[])
       if (formationXpError) { setError(formationXpError.message); setLoading(false); return }
@@ -324,7 +305,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       const targetGiornata = nextFixture?.giornata ?? league.giornate_totali
       if (active) setGiornata(targetGiornata)
       const { data: lineup, error: lineupError } = await supabase.from('lineups')
-        .select('modulo, stile_gioco, titolari, panchina, tribuna, salvata_il, disposizione, ruoli, compiti, focus_corsia')
+        .select('modulo, stile_gioco, titolari, panchina, tribuna, salvata_il, disposizione, ruoli, compiti, focus_corsia, linea_difensiva, ampiezza, ruolo_portiere')
         .eq('league_id', league.id)
         .eq('team_id', membership.id)
         .lte('giornata', targetGiornata)
@@ -368,6 +349,9 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         setRuoli(current.ruoli ?? null)
         setCompiti(current.compiti ?? null)
         setFocusCorsia(current.focus_corsia ?? null)
+        setLinea(current.linea_difensiva ?? null)
+        setAmpiezza(current.ampiezza ?? null)
+        setPortiere(current.ruolo_portiere ?? null)
         setStile(current.stile_gioco)
         setSalvataIl(current.salvata_il)
         setTitolari(titolariCompleti)
@@ -595,6 +579,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       p_disposizione: disposizione, p_ruoli: ruoli, p_compiti: compiti, p_focus_corsia: focusCorsia,
       p_titolari: titolari, p_panchina: cleanBench, p_tribuna: tribuna,
       p_stile_gioco: stile,
+      p_linea: linea, p_ampiezza: ampiezza, p_portiere: portiere,
     })
     if (saveError) setError(saveError.message)
     else { setPanchina(cleanBench); setSaved(true); setSalvataIl(new Date().toISOString()) }
@@ -624,11 +609,15 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     setRuoli(m.ruoli?.some(Boolean) ? m.ruoli : null)
     setCompiti(m.compiti?.some((c) => c && c !== 'equilibrio') ? m.compiti : null)
     setFocusCorsia(m.focus_corsia)
+    if (m.stile) setStile(m.stile)
+    setLinea(m.linea_difensiva)
+    setAmpiezza(m.ampiezza)
+    setPortiere(m.ruolo_portiere)
   }
 
   async function ricaricaModuliPersonalizzati() {
     const { data } = await supabase.from('moduli_personalizzati')
-      .select('id, nome, modulo, disposizione, ruoli, compiti, focus_corsia')
+      .select('id, nome, modulo, disposizione, ruoli, compiti, focus_corsia, stile, linea_difensiva, ampiezza, ruolo_portiere')
       .eq('team_id', membership.id).order('creato_il')
     setModuliPersonalizzati((data ?? []) as ModuloPersonalizzato[])
   }
@@ -638,6 +627,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       p_league_id: league.id, p_nome: nome, p_modulo: modulo,
       p_disposizione: disposizione ?? MODULI[modulo], p_ruoli: ruoli, p_compiti: compiti,
       p_focus_corsia: focusCorsia, p_sostituisci: sostituisci,
+      p_stile: stile, p_linea: linea, p_ampiezza: ampiezza, p_portiere: portiere,
     })
     if (error) return error.message
     await ricaricaModuliPersonalizzati()
@@ -658,13 +648,10 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     && stessiValori(m.disposizione, disposizione ?? MODULI[modulo])
     && stessiValori(m.ruoli, ruoli)
     && stessiValori((m.compiti ?? []).map((c) => (c === 'equilibrio' ? null : c)), (compiti ?? []).map((c) => (c === 'equilibrio' ? null : c)))
-    && (m.focus_corsia ?? null) === (focusCorsia ?? null)) ?? null
+    && (m.focus_corsia ?? null) === (focusCorsia ?? null)
+    && (m.stile ?? 'equilibrato') === stile
+    && (m.linea_difensiva ?? null) === linea && (m.ampiezza ?? null) === ampiezza && (m.ruolo_portiere ?? null) === portiere) ?? null
 
-  function chooseStile(nextStile: string) {
-    setStile(nextStile)
-    setSaved(false)
-    setStileMenuOpen(false)
-  }
 
   if (loading) return <main className="loading-screen"><LoadingLogo /><p>Preparo la formazione…</p></main>
 
@@ -682,6 +669,14 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         xpIndicazioni={xpIndicazioni}
         onChange={(d, r, c) => { setDisposizione(d); setRuoli(r); setCompiti(c); setSaved(false) }}
         onFocus={(f) => { setFocusCorsia(f); setSaved(false) }}
+        squadra={{ stile, linea, ampiezza, portiere }}
+        onSquadra={(q) => {
+          if (q.stile !== undefined) setStile(q.stile ?? 'equilibrato')
+          if (q.linea !== undefined) setLinea(q.linea)
+          if (q.ampiezza !== undefined) setAmpiezza(q.ampiezza)
+          if (q.portiere !== undefined) setPortiere(q.portiere)
+          setSaved(false)
+        }}
         moduliSalvati={moduliPersonalizzati.map((m) => ({ id: m.id, nome: m.nome }))}
         moduloSalvatoAttivo={moduloPersonalizzatoAttivo?.id ?? null}
         onSalvaModulo={salvaModuloPersonalizzato}
@@ -726,7 +721,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
             </div>
             <div className="formation-tattica">
               <div className="formation-tattica__voce formation-module-selector">
-                <button className="formation-tattica__trigger" type="button" aria-haspopup="listbox" aria-expanded={moduleMenuOpen} onClick={() => { setModuleMenuOpen((open) => !open); setStileMenuOpen(false) }}>
+                <button className="formation-tattica__trigger" type="button" aria-haspopup="listbox" aria-expanded={moduleMenuOpen} onClick={() => { setModuleMenuOpen((open) => !open) }}>
                   <span className="formation-tattica__testo"><small>{moduloPersonalizzatoAttivo ? `Modulo personalizzato · da ${modulo}` : 'Modulo tattico'}</small><strong>{moduloPersonalizzatoAttivo?.nome ?? modulo}</strong></span>
                   <i aria-hidden="true">{moduleMenuOpen ? '×' : '⌄'}</i>
                 </button>
@@ -740,18 +735,11 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
                   </>}
                 </div></>}
               </div>
-              <div className="formation-tattica__voce formation-stile-selector">
-                <button className="formation-tattica__trigger" type="button" aria-haspopup="listbox" aria-expanded={stileMenuOpen} onClick={() => { setStileMenuOpen((open) => !open); setModuleMenuOpen(false) }}>
-                  <span className="formation-tattica__testo"><small>Stile di gioco</small><strong>{STILE_LABEL[stile]}</strong></span>
-                  <i aria-hidden="true">{stileMenuOpen ? '×' : '⌄'}</i>
-                </button>
-                {stileMenuOpen && <><button className="formation-stile-scrim" type="button" aria-label="Chiudi selezione stile di gioco" onClick={() => setStileMenuOpen(false)} /><div className="formation-stile-menu" role="listbox" aria-label="Scegli lo stile di gioco">{STILI.map((key) => <button className={key === stile ? 'is-active' : ''} type="button" role="option" aria-selected={key === stile} key={key} onClick={() => chooseStile(key)}><strong>{STILE_LABEL[key]}</strong><small>{STILE_DESCRIZIONI[key]}</small><span>{key === stile ? '✓' : '›'}</span></button>)}</div></>}
-              </div>
               <div className="formation-tattica__voce">
-                <button className="formation-tattica__trigger" type="button" onClick={() => { setSchemaAperto(true); setModuleMenuOpen(false); setStileMenuOpen(false) }}>
+                <button className="formation-tattica__trigger" type="button" onClick={() => { setSchemaAperto(true); setModuleMenuOpen(false) }}>
                   <span className="formation-tattica__testo">
-                    <small>Schema</small>
-                    <strong>{disposizione || ruoli || compiti || focusCorsia ? 'Personalizzato' : 'Standard'}</strong>
+                    <small>Schema e stile · {STILE_LABEL[stile]?.toLowerCase()}</small>
+                    <strong>{disposizione || ruoli || compiti || focusCorsia || linea || ampiezza || portiere || stile !== 'equilibrato' ? 'Personalizzato' : 'Standard'}</strong>
                   </span>
                   <i aria-hidden="true">›</i>
                 </button>

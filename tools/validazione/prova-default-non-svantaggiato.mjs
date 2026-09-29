@@ -25,8 +25,8 @@ function prova(et, come) {
       A.compiti = M.map(() => scelta(COMPITI));
       focus = scelta([null, 'SX', 'CEN', 'DX']);
     }
-    A.tattica = sommaDelta(deltaMorale(A), deltaRuoli(A), deltaCorsie(A, B, focus));
-    B.tattica = sommaDelta(deltaMorale(B), deltaRuoli(B), deltaCorsie(B, A, null));
+    A.tattica = sommaDelta(deltaMorale(A), deltaRuoli(A), deltaCorsie(A, focus));
+    B.tattica = sommaDelta(deltaMorale(B), deltaRuoli(B), deltaCorsie(B, null));
     const r = simulaPartita(ra, rb, '4-4-2', '4-4-2', { usaCondizione: true, lineupCasa: A, lineupOspite: B });
     if (r.golC > r.golO) v++; else if (r.golC === r.golO) p++;
   }
