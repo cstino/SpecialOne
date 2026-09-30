@@ -162,6 +162,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [rosterError, setRosterError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
   const [teamName, setTeamName] = useState('')
+  const [sigla, setSigla] = useState('')
   const [crest, setCrest] = useState<CrestChoice>({ type: 'preset', value: STEMMA_SQUADRA_DEFAULT })
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -229,6 +230,14 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     return () => { active = false }
   }, [team?.stemma_url])
 
+  // Anteprima della disponibilita': la verifica vera e' il vincolo unique
+  // lato database, questa evita solo di scoprirlo al salvataggio.
+  const siglaOccupataDa = useMemo(
+    () => seasonData.teams.find((t) => t.id !== teamId && t.sigla === sigla) ?? null,
+    [seasonData.teams, teamId, sigla]
+  )
+  const siglaValida = /^[A-Z0-9]{3}$/.test(sigla)
+
   const stemmiUsati = useMemo(
     () => seasonData.teams.filter((t) => t.attiva && t.id !== teamId).map((t) => t.stemma_url).filter((value): value is string => !!value),
     [seasonData.teams, teamId]
@@ -237,6 +246,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   useEffect(() => {
     if (!team) return
     setTeamName(team.nome)
+    setSigla(team.sigla ?? '')
     setCrest(team.stemma_url?.startsWith('preset:')
       ? { type: 'preset', value: team.stemma_url }
       : team.stemma_url && crestUrl
@@ -576,7 +586,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         if (error) throw error
         crestPath = uploadedPath
       }
-      const { data, error } = await supabase.rpc('aggiorna_profilo_squadra', { p_team_id: team.id, p_nome: teamName, p_stemma_url: crestPath })
+      const { data, error } = await supabase.rpc('aggiorna_profilo_squadra', { p_team_id: team.id, p_nome: teamName, p_stemma_url: crestPath, p_sigla: sigla })
       if (error) throw error
       const updated = data as Team
       setTeamOverride(updated)
@@ -644,10 +654,16 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       <div className="season-page team-profile-page">
 
       {ownTeam && editing && <form className="team-settings-panel" onSubmit={saveProfile}>
-        <div><p className="kicker">Impostazioni squadra</p><h2>Nome e logo</h2><label>Nome squadra<input type="text" minLength={2} maxLength={40} required value={teamName} onChange={(event) => setTeamName(event.target.value)} /></label></div>
+        <div><p className="kicker">Impostazioni squadra</p><h2>Nome, sigla e logo</h2><label>Nome squadra<input type="text" minLength={2} maxLength={40} required value={teamName} onChange={(event) => setTeamName(event.target.value)} /></label>
+          <label className="team-sigla-campo">Sigla<input type="text" inputMode="text" autoCapitalize="characters" autoComplete="off" spellCheck={false} minLength={3} maxLength={3} required value={sigla} onChange={(event) => setSigla(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3))} /></label>
+          <p className={`field-help ${siglaOccupataDa || (sigla && !siglaValida) ? 'is-errore' : ''}`}>
+            {siglaOccupataDa ? `${sigla} è già usata da ${siglaOccupataDa.nome}.`
+              : !siglaValida ? 'Tre caratteri tra lettere e cifre.'
+              : 'Compare nello scoreboard delle partite al posto del nome.'}
+          </p></div>
         <CrestPicker value={crest} onChange={setCrest} disabled={saving} disabledValues={stemmiUsati} />
         {saveError && <p className="notice notice--error">{saveError}</p>}
-        <button className="button button--primary" type="submit" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva modifiche'}</button>
+        <button className="button button--primary" type="submit" disabled={saving || !siglaValida || !!siglaOccupataDa}>{saving ? 'Salvataggio…' : 'Salva modifiche'}</button>
       </form>}
 
       {/* Due tab, non cinque per imitare un riferimento: sono i due

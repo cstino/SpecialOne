@@ -3,7 +3,9 @@ import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
 import { ricostruisciEventiStorici, type StatEventoStorico } from '../lib/matchEvents'
 import { useSeasonData } from '../lib/useSeasonData'
-import { SFONDO_FASE_VERTICALE, type FaseSquadra } from '../lib/faseSquadra'
+import { LOGO_FASE, SFONDO_FASE_VERTICALE, type FaseSquadra } from '../lib/faseSquadra'
+
+const NOME_FASE: Record<FaseSquadra, string> = { regular: 'Stagione regolare', title: 'Title Playoffs', draft: 'Draft Playoffs' }
 import { isEventoGol, type EventoGol, type EventoPartita, type Membership } from '../types'
 import { Crest } from './Crest'
 import { firmaFoto } from './RosaElenco'
@@ -613,16 +615,27 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
         <p className="match-reveal__stacco-sotto"><em>{annuncio === 'supplementari' ? '+30′' : '11 m'}</em>{annuncio === 'supplementari' ? 'Altri trenta minuti per decidere.' : 'Decidono gli undici metri.'}</p>
       </div>}
 
-      <header className="match-reveal__header">
-        <div><Crest value={casa?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /><strong><span className="match-reveal__nome-intero">{casa?.nome}</span><span className="match-reveal__sigla">{casa?.sigla}</span></strong></div>
-        <div className="match-reveal__score">
-          <small>{completata ? (haRigori ? 'DOPO I RIGORI' : supplementari ? 'DOPO I SUPPLEMENTARI' : 'RISULTATO FINALE')
-            : fasePartita === 'rigori' ? 'CALCI DI RIGORE'
-            : <><i className="match-reveal__live-dot" aria-hidden="true" />{minuto}’{minuto > 90 ? ' · SUPPL.' : ''}</>}</small>
-          <b>{punteggio.casa} <i>–</i> {punteggio.ospite}</b>
-          {andata && fasePartita !== 'rigori' && <span className="match-reveal__rigori-score">totale {andata.casa + punteggio.casa}–{andata.ospite + punteggio.ospite}</span>}
+      <header className={`match-reveal__header scoreboard scoreboard--${fase}`}>
+        <div className="scoreboard__comp"><img src={LOGO_FASE[fase]} alt={NOME_FASE[fase]} /></div>
+        <div className="scoreboard__bar">
+          <div className="scoreboard__team">
+            <span className="scoreboard__stemma"><Crest value={casa?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /></span>
+            <b title={casa?.nome}>{casa?.sigla}</b>
+          </div>
+          <div className="scoreboard__score" aria-label={`${punteggio.casa} a ${punteggio.ospite}`}>
+            <b>{punteggio.casa}</b><i aria-hidden="true" /><b>{punteggio.ospite}</b>
+          </div>
+          <div className="scoreboard__team scoreboard__team--ospite">
+            <b title={ospite?.nome}>{ospite?.sigla}</b>
+            <span className="scoreboard__stemma"><Crest value={ospite?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" /></span>
+          </div>
+          <span className="scoreboard__stato">
+            {completata ? (haRigori ? 'FINALE D.C.R.' : supplementari ? 'FINALE D.T.S.' : 'FINALE')
+              : fasePartita === 'rigori' ? 'RIGORI'
+              : <><i className="match-reveal__live-dot" aria-hidden="true" />{minuto}’{minuto > 90 ? ' SUPPL.' : ''}</>}
+            {andata && fasePartita !== 'rigori' && <em>TOT. {andata.casa + punteggio.casa}–{andata.ospite + punteggio.ospite}</em>}
+          </span>
         </div>
-        <div><strong><span className="match-reveal__nome-intero">{ospite?.nome}</span><span className="match-reveal__sigla">{ospite?.sigla}</span></strong><Crest value={ospite?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" /></div>
       </header>
 
       {eventi.length === 0 ? <div className="match-reveal__empty"><p>Questa partita è stata simulata prima della cronaca estesa.</p><button className="button button--primary" type="button" onClick={onOpenReport}>Vedi risultato</button></div> : <>
