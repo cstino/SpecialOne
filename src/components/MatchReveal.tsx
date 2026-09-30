@@ -582,12 +582,11 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
       {popupGol && <div className="match-reveal__gol-popup" role="alert">
         <div className="rig__card rig__card--gol" key={`${popupGol.minuto}-${popupGol.team_id}`}>
           <span className="rig__filigrana" aria-hidden="true">{cognome(marcatore?.nome ?? '')}</span>
-          <p className="rig__numero">{popupGol.minuto}’ · {popupGol.minuto > 105 ? '2º supplementare' : popupGol.minuto > 90 ? '1º supplementare' : popupGol.minuto > 45 ? '2º tempo' : '1º tempo'}</p>
+          <div className="rig__banda rig__banda--testa"><strong>GOOOL!</strong></div>
           <div className="rig__ritratto">
             <div className="rig__foto">
               {marcatore?.foto ? <img src={marcatore.foto} alt="" /> : <span aria-hidden="true">{cognome(marcatore?.nome ?? '?').charAt(0)}</span>}
             </div>
-            <div className="rig__banda"><strong>GOOOL!</strong></div>
           </div>
           <strong className="rig__nome">{cognome(marcatore?.nome ?? 'Giocatore')}</strong>
           <div className="match-reveal__gol-risultato">
@@ -598,6 +597,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
           <div className="rig__squadra-tiro">
             <span className="rig__stemma"><Crest value={squadraGol?.stemma_url ?? null} imageUrl={crestGolUrl ?? undefined} size="small" /></span>
             <span>{squadraGol?.nome ?? 'Squadra'}</span>
+            <em>{popupGol.minuto}’ · {popupGol.minuto > 105 ? '2º supplementare' : popupGol.minuto > 90 ? '1º supplementare' : popupGol.minuto > 45 ? '2º tempo' : '1º tempo'}</em>
           </div>
         </div>
       </div>}
