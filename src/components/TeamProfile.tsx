@@ -455,14 +455,15 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     }))
   }
 
-  // Il piano che il giocatore segue gia' non si offre: riavviarlo non
-  // cambierebbe nulla (e il server lo rifiuta). Le etichette invece servono
-  // anche per lui, quindi escono dal catalogo intero.
+  // Il piano attuale resta in elenco, segnato come tale e non selezionabile
+  // (il server rifiuta di riavviarlo). "Bilanciato" compare solo per chi ha un
+  // piano da lasciare: senza piano equivale gia' a non allenare.
   async function caricaOpzioniSpecializzazione(instanceId: number) {
     const catalogo = await caricaCatalogoSpecializzazioni(instanceId)
-    return catalogo.filter((voce) => !voce.attivo)
-      // "Bilanciato" in testa, poi gli archetipi nell'ordine del server.
-      .sort((a, b) => Number(b.chiave === 'bilanciato') - Number(a.chiave === 'bilanciato'))
+    const ordine = (voce: { chiave: string; attivo: boolean }) => (voce.attivo ? 0 : voce.chiave === 'bilanciato' ? 2 : 1)
+    return catalogo
+      .filter((voce) => !(voce.chiave === 'bilanciato' && voce.attivo))
+      .sort((a, b) => ordine(a) - ordine(b) || a.etichetta.localeCompare(b.etichetta, 'it'))
   }
 
   async function avviaSpecializzazione(instanceId: number, specializzazione: string) {

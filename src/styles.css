@@ -3283,3 +3283,6 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .free-agent-card__apri:focus-visible { outline:2px solid #c58cff; outline-offset:3px; border-radius:6px; }
 .free-agent-card__infortunio { justify-self:start; display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:.68rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#ffb4a2; background:rgba(224,92,72,.16); border:1px solid rgba(224,92,72,.34); }
 .free-agent-card__infortunio::before { content:'✚'; font-size:.78rem; line-height:1; }
+.player-training-opzioni__voce:disabled { cursor: default; opacity: .7; }
+.player-training-opzioni__voce:disabled:hover { background: transparent; }
+.player-training-opzioni__badge { margin-left: 8px; padding: 2px 7px; border-radius: 999px; background: rgba(163,84,232,.18); color: #c9a5f1; font-size: .58rem; font-style: normal; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; vertical-align: middle; }

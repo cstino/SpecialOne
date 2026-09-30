@@ -108,7 +108,7 @@ type Props = {
     inCorso: { specializzazionePrecedente: string | null; specializzazioneTarget: string; avviatoGiornata: number; completaGiornata: number } | null
     prossimaGiornata: number | null
     /** crescita: [attributo, % di crescita in piu' o in meno], dal piu' spinto. Tutte le abilita'. */
-    onCaricaOpzioni: () => Promise<Array<{ chiave: string; etichetta: string; crescita: Array<[string, number]> }>>
+    onCaricaOpzioni: () => Promise<Array<{ chiave: string; etichetta: string; attivo: boolean; crescita: Array<[string, number]> }>>
     onAvvia: (specializzazione: string) => Promise<void>
     onAnnulla: () => Promise<void>
   }
@@ -324,7 +324,7 @@ function PannelloAllenamento({
   attuale: string | null
   inCorso: AllenamentoInCorso | null
   prossimaGiornata: number | null
-  opzioni: Array<{ chiave: string; etichetta: string; sottotesto?: string }> | null
+  opzioni: Array<{ chiave: string; etichetta: string; sottotesto?: string; attuale?: boolean }> | null
   opzioniCaricamento: boolean
   scelta: string
   onScegli: (chiave: string) => void
@@ -382,13 +382,14 @@ function PannelloAllenamento({
             <div className="player-training-opzioni" role="radiogroup" aria-label={titolo}>
               {opzioni.map((opzione) => (
                 <button
-                  className={`player-training-opzioni__voce ${scelta === opzione.chiave ? 'is-active' : ''}`}
+                  className={`player-training-opzioni__voce ${scelta === opzione.chiave ? 'is-active' : ''} ${opzione.attuale ? 'is-attuale' : ''}`}
                   type="button" role="radio" aria-checked={scelta === opzione.chiave} key={opzione.chiave}
+                  disabled={opzione.attuale}
                   onClick={() => onScegli(opzione.chiave)}
                 >
                   <i className="player-training-opzioni__pallino" aria-hidden="true">{scelta === opzione.chiave && '✓'}</i>
                   <span>
-                    <strong>{opzione.etichetta}</strong>
+                    <strong>{opzione.etichetta}{opzione.attuale && <em className="player-training-opzioni__badge">Attuale</em>}</strong>
                     {opzione.sottotesto && <small>{opzione.sottotesto}</small>}
                   </span>
                 </button>
@@ -442,7 +443,7 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
   const [cambioInCorso, setCambioInCorso] = useState(false)
   const [cambioErrore, setCambioErrore] = useState<string | null>(null)
   const [cambioCaricamento, setCambioCaricamento] = useState(false)
-  const [specOpzioni, setSpecOpzioni] = useState<Array<{ chiave: string; etichetta: string; crescita: Array<[string, number]> }> | null>(null)
+  const [specOpzioni, setSpecOpzioni] = useState<Array<{ chiave: string; etichetta: string; attivo: boolean; crescita: Array<[string, number]> }> | null>(null)
   const [specScelta, setSpecScelta] = useState('')
   const [specInCorso, setSpecInCorso] = useState(false)
   const [specErrore, setSpecErrore] = useState<string | null>(null)
@@ -467,7 +468,7 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
     setSpecCaricamento(true)
     setSpecErrore(null)
     specializzazione.onCaricaOpzioni()
-      .then((opzioni) => { setSpecOpzioni(opzioni); setSpecScelta(opzioni[0]?.chiave ?? '') })
+      .then((opzioni) => { setSpecOpzioni(opzioni); setSpecScelta('') })
       .catch((errore) => setSpecErrore(errore instanceof Error ? errore.message : 'Specializzazioni non disponibili.'))
       .finally(() => setSpecCaricamento(false))
   }, [pagina, specializzazione, specOpzioni])
@@ -850,7 +851,9 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
             } : null}
             prossimaGiornata={specializzazione.prossimaGiornata}
             opzioni={specOpzioni?.map((o) => ({
-              chiave: o.chiave, etichetta: o.etichetta,
+              chiave: o.chiave,
+              etichetta: o.chiave === 'bilanciato' ? 'Torna alla crescita naturale' : o.etichetta,
+              attuale: o.attivo,
               // Le quattro abilita' che il piano spinge di piu': l'elenco
               // completo sta nell'anteprima qui sotto.
               sottotesto: o.crescita.every(([, pct]) => pct === 0)
