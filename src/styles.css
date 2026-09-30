@@ -1945,6 +1945,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .team-settings-panel h2 { margin: 4px 0 20px; }
 .team-settings-panel .crest-picker { color: #eee8f4; }
 .team-settings-panel .field-help { color: #8f869a; }
+.team-settings-panel .team-sigla-campo { margin-top: 16px; }
+.team-settings-panel .team-sigla-campo input { width: 7ch; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; }
+.team-settings-panel .field-help.is-errore { color: #ff8fa2; }
 .team-settings-panel > .notice, .team-settings-panel > .button { grid-column: 1 / -1; }
 /* Una statistica guida, tre di supporto. */
 .team-profile-stats { display: grid; gap: 10px; }
@@ -2867,6 +2870,8 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .match-intro__giocatore-foto { width: 46px; height: 46px; }
 }
 
+.spot-video { position: fixed; z-index: 90; inset: 0; background: #000; display: grid; place-items: center; }
+.spot-video video { width: 100%; height: 100%; object-fit: contain; }
 .match-reveal-backdrop { position: fixed; z-index: 80; inset: 0; padding: 0; background: #0a0812; }
 /* z-index:0 qui e' essenziale, non decorativo: senza, .match-reveal non
    crea un proprio stacking context (position:relative da sola non basta) e
@@ -2886,32 +2891,24 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 /* Card del gol: ferma la scena al centro dello schermo finche' non e'
    "sistemata" nella sua porzione di cronaca (vedi popupGol in MatchReveal). */
 .match-reveal__gol-popup { position: absolute; z-index: 10; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(6,4,12,.72); backdrop-filter: blur(6px); animation: gol-popup-sfondo .25s ease-out both; }
-.match-reveal__gol-popup-card { display: grid; justify-items: center; gap: 10px; max-width: 260px; padding: 28px 32px; border-radius: 24px; text-align: center; background: linear-gradient(160deg, rgba(155,76,255,.24), rgba(20,14,32,.92)); border: 1px solid rgba(226,155,255,.35); box-shadow: 0 20px 60px rgba(0,0,0,.5); animation: gol-popup-card .4s cubic-bezier(.2,.8,.2,1.4) both; }
-.match-reveal__gol-popup-titolo { margin: 0; color: #fff; font: 900 1.9rem/1 "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .04em; text-shadow: 0 0 24px rgba(180,110,255,.7); }
-.match-reveal__gol-popup-foto { width: 92px; height: 92px; overflow: hidden; border-radius: 50%; border: 3px solid rgba(226,155,255,.6); background: #241a30; display: grid; place-items: center; }
-.match-reveal__gol-popup-foto img { width: 100%; height: 100%; object-fit: cover; }
-.match-reveal__gol-popup-foto span { color: rgba(255,255,255,.5); font: 900 2rem/1 Inter, Arial, sans-serif; }
-.match-reveal__gol-popup-card > strong { color: #fff; font-size: 1.1rem; font-weight: 900; }
-.match-reveal__gol-popup-squadra { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,.75); font-size: .78rem; font-weight: 700; }
-.match-reveal__gol-popup-squadra b { color: #e29bff; font-variant-numeric: tabular-nums; }
 @keyframes gol-popup-sfondo { from { opacity: 0; } to { opacity: 1; } }
-@keyframes gol-popup-card { 0% { opacity: 0; transform: scale(.7); } 60% { transform: scale(1.06); } 100% { opacity: 1; transform: scale(1); } }
-.match-reveal__header { position: relative; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 20px; padding: max(22px, env(safe-area-inset-top)) 58px 20px 20px; border-bottom: 1px solid rgba(255,255,255,.08); }
-.match-reveal__header > div:not(.match-reveal__score) { display: flex; align-items: center; gap: 10px; min-width: 0; color: #f5eff8; font-size: .82rem; font-weight: 700; }
-.match-reveal__header > div:last-child { justify-content: flex-end; text-align: right; }
-.match-reveal__header strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.match-reveal__score { position: absolute; left: 50%; display: grid; justify-items: center; gap: 6px; min-width: 126px; transform: translateX(-50%); }
-.match-reveal__score small { display: flex; align-items: center; gap: 5px; color: #cbb9e6; font-size: .58rem; font-weight: 900; letter-spacing: .1em; text-align: center; }
 .match-reveal__live-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff4d6d; box-shadow: 0 0 8px #ff4d6d; animation: match-reveal-pulse 1.4s ease-in-out infinite; }
-.match-reveal__score b { color: #fff; font-family: "Aptos Narrow", "Arial Narrow", "Impact", sans-serif; font-size: 2.6rem; font-weight: 900; letter-spacing: .02em; text-shadow: 0 0 30px rgba(196,120,255,.35); }
-.match-reveal__score i { color: rgba(255,255,255,.3); font-style: normal; }
 .match-reveal__pitch { position: relative; flex: 1; min-height: 0; overflow-y: auto; }
 /* Il canvas e' il sistema di riferimento di tutto: linea, tacche ed eventi
    sono posizionati sulla sua altezza, quindi restano allineati fra loro anche
    quando (raramente) deve crescere oltre la schermata. */
 .match-reveal__canvas { position: relative; display: grid; grid-template-columns: 1fr 64px 1fr; grid-template-rows: minmax(0, 1fr); width: 100%; }
 .match-reveal__half { position: absolute; z-index: 0; left: 0; width: 100%; height: 50%; padding: 18px 25px; color: rgba(255,255,255,.12); font: 900 .6rem/1 Inter, Arial, sans-serif; letter-spacing: .2em; }
-.match-reveal__half--second { top: 50%; border-top: 1px dashed rgba(255,255,255,.07); }
+.match-reveal__half--second { border-top: 1px dashed rgba(255,255,255,.07); }
+.match-reveal__half--extra { background: rgba(226,155,255,.05); padding-inline: 25px; }
+.match-reveal__rigore { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; margin: 0; padding: 8px 10px; border-radius: 10px; color: rgba(255,255,255,.88); background: rgba(255,255,255,.05); font-size: .72rem; animation: reveal-event .3s cubic-bezier(.2,.8,.2,1) both; }
+.match-reveal__rigore strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; }
+.match-reveal__rigore em { font-size: .58rem; font-style: normal; font-weight: 900; letter-spacing: .08em; }
+.match-reveal__rigore.e-gol { background: linear-gradient(110deg, rgba(52,211,153,.2), rgba(52,211,153,.06)); }
+.match-reveal__rigore.e-gol em { color: #34d399; }
+.match-reveal__rigore.e-errore { background: linear-gradient(110deg, rgba(224,79,95,.22), rgba(150,30,45,.08)); }
+.match-reveal__rigore.e-errore em { color: #ff8a95; }
+.match-reveal__rigore.is-vuoto { background: transparent; animation: none; }
 .match-reveal__line { position: absolute; z-index: 1; left: 50%; width: 4px; overflow: visible; border-radius: 99px; background: rgba(255,255,255,.07); transform: translateX(-50%); }
 .match-reveal__line span { display: block; width: 100%; border-radius: inherit; background: linear-gradient(#e29bff, #8a4bff); box-shadow: 0 0 14px rgba(180,110,255,.55); transition: height .7s linear; }
 .match-reveal__minute { position: absolute; z-index: 2; left: 50%; display: grid; place-items: center; width: 46px; height: 26px; border: 1px solid rgba(226,155,255,.6); border-radius: 20px; color: #fff; background: linear-gradient(135deg, #9b4cff, #6726c4); font-size: .68rem; font-weight: 800; box-shadow: 0 4px 16px rgba(122,48,215,.5); transform: translate(-50%, -50%); transition: top .7s linear; }
@@ -2965,7 +2962,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 }
 
 @media (max-width: 560px) {
-  .match-reveal__header { gap: 6px; padding: max(18px, env(safe-area-inset-top)) 40px 16px 14px; }.match-reveal__header > div:not(.match-reveal__score) { font-size: .63rem; }.match-reveal__header .crest { width: 30px; height: 30px; }.match-reveal__score { min-width: 84px; }.match-reveal__score b { font-size: 1.9rem; }.match-reveal__score small { font-size: .48rem; }.match-reveal__canvas { grid-template-columns: 1fr 42px 1fr; }.match-reveal__events p { left: 6px; right: 6px; padding: 7px 8px; font-size: .63rem; }.match-reveal__events time { font-size: .54rem; }.match-reveal__half { padding: 14px 7px; font-size: .48rem; }.match-reveal__minute { width: 38px; height: 22px; font-size: .58rem; }.match-reveal__footer { padding: 16px; }.match-reveal__gol-popup-card { max-width: 210px; padding: 22px 20px; gap: 8px; }.match-reveal__gol-popup-titolo { font-size: 1.5rem; }.match-reveal__gol-popup-foto { width: 74px; height: 74px; }
+  .match-reveal__canvas { grid-template-columns: 1fr 42px 1fr; }.match-reveal__events p { left: 6px; right: 6px; padding: 7px 8px; font-size: .63rem; }.match-reveal__events time { font-size: .54rem; }.match-reveal__half { padding: 14px 7px; font-size: .48rem; }.match-reveal__minute { width: 38px; height: 22px; font-size: .58rem; }.match-reveal__footer { padding: 16px; }
 }
 .finanza-tooltip span { color: #a79db8; font-size: .68rem; }
 
@@ -3415,6 +3412,162 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .free-agent-card__apri:focus-visible { outline:2px solid #c58cff; outline-offset:3px; border-radius:6px; }
 .free-agent-card__infortunio { justify-self:start; display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:.68rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#ffb4a2; background:rgba(224,92,72,.16); border:1px solid rgba(224,92,72,.34); }
 .free-agent-card__infortunio::before { content:'✚'; font-size:.78rem; line-height:1; }
+.player-training-opzioni__voce:disabled { cursor: default; opacity: .7; }
+.player-training-opzioni__voce:disabled:hover { background: transparent; }
+.player-training-opzioni__badge { margin-left: 8px; padding: 2px 7px; border-radius: 999px; background: rgba(163,84,232,.18); color: #c9a5f1; font-size: .58rem; font-style: normal; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; vertical-align: middle; }
+
+/* ============================================================
+   REVEAL: STACCO FRA LE FASI (supplementari / rigori)
+   ============================================================ */
+.match-reveal__stacco { --acc1: #8b5cff; --acc2: #46e3ff; position: absolute; z-index: 11; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px 18px; overflow: hidden; text-align: center; background: radial-gradient(circle at 50% 36%, rgba(124,58,237,.42), transparent 62%), linear-gradient(160deg, #0b0718, #170c33 55%, #07040f); animation: stacco-in .35s ease-out both, stacco-out .45s ease-in 2.75s forwards; }
+.match-reveal__stacco.is-rigori { --acc1: #ff4d6d; --acc2: #ffc94d; background: radial-gradient(circle at 50% 36%, rgba(255,77,109,.36), transparent 62%), linear-gradient(160deg, #130712, #2a0d22 55%, #0a0408); }
+.match-reveal__stacco > * { position: relative; z-index: 1; }
+.match-reveal__stacco > .match-reveal__stacco-lame { position: absolute; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; }
+.match-reveal__stacco-lame::before, .match-reveal__stacco-lame::after { content: ''; position: absolute; top: -12%; bottom: -12%; width: 34%; background: linear-gradient(180deg, var(--acc1), var(--acc2)); opacity: .17; }
+.match-reveal__stacco-lame::before { left: -6%; transform: skewX(-16deg); animation: stacco-lama-sx .9s cubic-bezier(.2,.8,.2,1) both; }
+.match-reveal__stacco-lame::after { right: -6%; transform: skewX(-16deg); animation: stacco-lama-dx .9s .1s cubic-bezier(.2,.8,.2,1) both; }
+.match-reveal__stacco-kicker { margin: 0; color: var(--acc2); font: 900 .66rem/1 Inter, Arial, sans-serif; letter-spacing: .32em; text-transform: uppercase; animation: stacco-sale .5s .15s both; }
+.match-reveal__stacco-squadre { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; width: 100%; max-width: 440px; }
+.match-reveal__stacco-squadre > div { display: grid; justify-items: center; gap: 8px; min-width: 0; color: rgba(255,255,255,.82); font-size: .7rem; font-weight: 800; }
+.match-reveal__stacco-squadre > div span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.match-reveal__stacco-squadre .crest { filter: drop-shadow(0 8px 18px rgba(0,0,0,.55)); }
+.match-reveal__stacco-squadre > div:first-child { animation: stacco-da-sx .7s .2s cubic-bezier(.2,.8,.2,1) both; }
+.match-reveal__stacco-squadre > div:last-child { animation: stacco-da-dx .7s .2s cubic-bezier(.2,.8,.2,1) both; }
+.match-reveal__stacco-squadre b { color: #fff; font: 900 clamp(3.2rem, 17vw, 4.8rem)/1 "Aptos Narrow", "Arial Narrow", Impact, sans-serif; letter-spacing: .02em; text-shadow: 0 0 34px var(--acc1); animation: stacco-sale .55s .3s cubic-bezier(.2,.8,.2,1.3) both; }
+.match-reveal__stacco-squadre b i { margin: 0 .08em; color: rgba(255,255,255,.35); font-style: normal; }
+.match-reveal__stacco-titolo { margin: 0; font: 900 italic clamp(2rem, 10.5vw, 3.3rem)/1.02 "Aptos Narrow", "Arial Narrow", Impact, sans-serif; letter-spacing: .04em; text-transform: uppercase; background: linear-gradient(90deg, #fff 25%, var(--acc2)); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 22px var(--acc1)); animation: stacco-titolo .8s .5s cubic-bezier(.2,.8,.2,1) both; }
+.match-reveal__stacco-sotto { display: flex; align-items: center; gap: 10px; margin: 0; color: rgba(255,255,255,.75); font-size: .8rem; font-weight: 700; animation: stacco-sale .5s .85s both; }
+.match-reveal__stacco-sotto em { padding: 4px 11px; border-radius: 99px; background: linear-gradient(90deg, var(--acc1), var(--acc2)); color: #0b0718; font-size: .72rem; font-style: normal; font-weight: 900; letter-spacing: .06em; }
+@keyframes stacco-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes stacco-out { to { opacity: 0; } }
+@keyframes stacco-lama-sx { from { transform: translateX(-140%) skewX(-16deg); } to { transform: translateX(0) skewX(-16deg); } }
+@keyframes stacco-lama-dx { from { transform: translateX(140%) skewX(-16deg); } to { transform: translateX(0) skewX(-16deg); } }
+@keyframes stacco-sale { from { opacity: 0; transform: translateY(12px) scale(.9); } to { opacity: 1; transform: none; } }
+@keyframes stacco-da-sx { from { opacity: 0; transform: translateX(-46px); } to { opacity: 1; transform: none; } }
+@keyframes stacco-da-dx { from { opacity: 0; transform: translateX(46px); } to { opacity: 1; transform: none; } }
+@keyframes stacco-titolo { from { opacity: 0; letter-spacing: .34em; transform: scale(1.18); } to { opacity: 1; letter-spacing: .04em; transform: none; } }
+
+/* ============================================================
+   REVEAL: CALCI DI RIGORE (card del tiratore stile videogioco)
+   ============================================================ */
+.match-reveal__stacco-totale { margin: -6px 0 0; color: rgba(255,255,255,.7); font-size: .78rem; font-weight: 700; animation: stacco-sale .5s .7s both; }
+.match-reveal__stacco-totale b { color: #fff; font-weight: 900; }
+.match-reveal__pitch--rigori { display: flex; }
+.rig { position: relative; flex: 1; display: flex; flex-direction: column; gap: 14px; min-height: 100%; padding: 14px 14px 18px; overflow: hidden; }
+.rig > * { position: relative; z-index: 1; }
+.rig::before { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: conic-gradient(from 150deg at 50% -10%, transparent 0deg, rgba(186,150,255,.16) 30deg, transparent 60deg), radial-gradient(ellipse at 50% 58%, rgba(124,58,237,.22), transparent 60%); }
+.rig::after { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: 0; }
+.rig[data-fase='rincorsa']::after { opacity: 1; animation: rig-battito .85s ease-in-out infinite; }
+.rig.is-gol::after { background: radial-gradient(circle at 50% 50%, rgba(52,224,161,.45), transparent 64%); animation: rig-flash 1.4s ease-out forwards; }
+.rig.is-errore::after { background: radial-gradient(circle at 50% 50%, rgba(255,77,109,.42), transparent 64%); animation: rig-flash 1.4s ease-out forwards; }
+
+.rig__stemma { display: grid; place-items: center; flex: none; width: 30px; height: 30px; }
+.rig__stemma .crest { width: 100%; height: 100%; object-fit: contain; }
+.rig__stemma--grande { width: 88px; height: 88px; filter: drop-shadow(0 10px 22px rgba(0,0,0,.55)); animation: stacco-sale .6s .1s cubic-bezier(.2,.8,.2,1.3) both; }
+
+.rig__tabellone { display: grid; gap: 6px; padding: 6px; border: 1px solid rgba(255,255,255,.1); border-radius: 18px; background: rgba(10,8,18,.6); backdrop-filter: blur(10px); }
+.rig__squadra { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto 30px; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 13px; color: rgba(255,255,255,.7); transition: background .3s, color .3s, box-shadow .3s; }
+.rig__squadra.is-attiva { color: #fff; background: linear-gradient(100deg, rgba(166,107,255,.3), rgba(166,107,255,.06)); box-shadow: inset 3px 0 0 #b98cff; }
+.rig__squadra > b { min-width: 0; overflow: hidden; font-size: .8rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.rig__pallini { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; max-width: 124px; }
+.rig__pallino { display: grid; place-items: center; width: 18px; height: 18px; border: 1.5px solid rgba(255,255,255,.25); border-radius: 50%; color: #071a12; font-size: .58rem; font-style: normal; font-weight: 900; line-height: 1; }
+.rig__pallino.is-gol { border-color: #34e0a1; background: #34e0a1; box-shadow: 0 0 10px rgba(52,224,161,.6); animation: rig-pallino .45s cubic-bezier(.2,.9,.3,1.5) both; }
+.rig__pallino.is-errore { border-color: #ff4d6d; background: #ff4d6d; color: #2a0510; box-shadow: 0 0 10px rgba(255,77,109,.55); animation: rig-pallino .45s cubic-bezier(.2,.9,.3,1.5) both; }
+.rig__pallino.is-attivo { border-color: #ffc94d; animation: rig-attivo .8s ease-in-out infinite; }
+.rig__squadra > strong { color: #fff; font: 900 1.6rem/1 "Aptos Narrow", "Arial Narrow", Impact, sans-serif; text-align: right; font-variant-numeric: tabular-nums; animation: rig-punto .5s cubic-bezier(.2,.9,.3,1.6); }
+
+.rig__palco { position: relative; flex: 1; display: grid; place-items: center; min-height: 0; }
+.rig__card { --acc: #b98cff; position: relative; display: grid; justify-items: center; gap: 14px; width: 100%; max-width: 420px; padding: 22px 18px 20px; overflow: hidden; border: 1px solid rgba(226,155,255,.28); border-radius: 26px; background: linear-gradient(165deg, rgba(58,32,104,.78), rgba(14,10,26,.94) 62%); box-shadow: 0 24px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08); text-align: center; animation: rig-card .5s cubic-bezier(.2,.8,.2,1) both; }
+.rig.is-gol .rig__card { --acc: #34e0a1; border-color: rgba(52,224,161,.55); }
+.rig.is-errore .rig__card { --acc: #ff4d6d; border-color: rgba(255,77,109,.55); }
+.rig__card > * { position: relative; z-index: 1; }
+.rig__card > .rig__filigrana { position: absolute; z-index: 0; left: 50%; top: 42%; max-width: none; color: transparent; font: 900 italic 7.5rem/1 "Aptos Narrow", "Arial Narrow", Impact, sans-serif; letter-spacing: .02em; text-transform: uppercase; white-space: nowrap; -webkit-text-stroke: 1px rgba(226,155,255,.16); transform: translate(-50%, -50%) skewX(-8deg); pointer-events: none; }
+.rig__numero { margin: 0; padding: 5px 12px; border: 1px solid rgba(255,255,255,.14); border-radius: 99px; background: rgba(0,0,0,.28); color: #ffd98a; font-size: .6rem; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; }
+.rig__ritratto { position: relative; display: grid; place-items: center; width: 100%; }
+.rig__foto { position: relative; display: grid; place-items: center; width: 132px; height: 132px; padding: 4px; border-radius: 50%; background: conic-gradient(from 0deg, var(--acc), #6f3bff, var(--acc)); box-shadow: 0 0 34px color-mix(in srgb, var(--acc) 45%, transparent); transition: box-shadow .4s; }
+.rig[data-fase='rincorsa'] .rig__foto { animation: rig-anello 1.2s linear infinite; }
+.rig__foto > img, .rig__foto > span { width: 100%; height: 100%; border-radius: 50%; background: #1d1430; }
+.rig__foto > img { object-fit: cover; object-position: 50% 15%; }
+.rig__foto > span { display: grid; place-items: center; color: rgba(255,255,255,.5); font: 900 3rem/1 "Aptos Narrow", "Arial Narrow", Impact, sans-serif; }
+.rig__banda { position: absolute; left: -30px; right: -30px; top: 50%; display: grid; place-items: center; padding: 8px 0; background: linear-gradient(90deg, transparent, var(--acc) 18%, var(--acc) 82%, transparent); transform: translateY(-50%) skewY(-5deg); animation: rig-banda .55s cubic-bezier(.2,.9,.25,1.2) both; }
+.rig__banda strong { color: #fff; font: 900 italic clamp(2.6rem, 14vw, 3.6rem)/1 "Aptos Narrow", "Arial Narrow", Impact, sans-serif; letter-spacing: .03em; text-shadow: 0 3px 0 rgba(0,0,0,.35), 0 0 24px rgba(0,0,0,.35); transform: skewX(-8deg); animation: rig-esito .7s .08s cubic-bezier(.2,.9,.25,1.25) both; }
+.rig.is-errore .rig__banda { animation: rig-banda .55s cubic-bezier(.2,.9,.25,1.2) both, rig-scossa .45s .3s; }
+.rig__testi { display: grid; gap: 6px; min-width: 0; max-width: 100%; animation: rig-testo .35s ease-out both; }
+.rig__testi small { color: #cdb6f2; font-size: .64rem; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; }
+.rig__nome { color: #fff; font: 900 clamp(2.1rem, 11vw, 2.9rem)/1 "Aptos Narrow", "Arial Narrow", Impact, sans-serif; letter-spacing: .02em; text-transform: uppercase; overflow-wrap: anywhere; }
+.rig__frase { font: 800 1.12rem/1.3 Inter, Arial, sans-serif; text-wrap: balance; }
+.rig__frase.is-gol { color: #7dffc9; }
+.rig__frase.is-errore { color: #ff9aab; }
+.rig__puntini i { font-style: normal; animation: rig-punto-testo 1.1s infinite; }
+.rig__puntini i:nth-child(2) { animation-delay: .18s; }
+.rig__puntini i:nth-child(3) { animation-delay: .36s; }
+.rig__squadra-tiro { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.1); width: 100%; color: #fff; font-size: .82rem; font-weight: 800; }
+.rig__squadra-tiro .rig__stemma { width: 26px; height: 26px; }
+.rig__squadra-tiro em { flex-basis: 100%; color: rgba(255,255,255,.55); font-size: .7rem; font-style: normal; font-weight: 700; }
+.rig__attesa { position: absolute !important; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255,255,255,.08); }
+.rig__attesa span { display: block; height: 100%; background: linear-gradient(90deg, #ffc94d, #ff4d6d); transform-origin: left; animation: rig-attesa-barra 2.8s linear both; }
+
+.rig__finale { position: absolute; z-index: 5; inset: 0; display: grid; align-content: center; justify-items: center; gap: 10px; border-radius: 26px; background: radial-gradient(circle at 50% 42%, rgba(166,107,255,.38), rgba(8,6,16,.95) 72%); animation: stacco-in .5s ease-out both; }
+.rig__finale small { padding: 4px 12px; border-radius: 99px; background: linear-gradient(90deg, #ffc94d, #ff9f43); color: #2a1604; font-size: .62rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
+.rig__finale strong { color: #fff; font-size: 1.25rem; font-weight: 900; }
+.rig__finale b { color: #fff; font: 900 3.2rem/1 "Aptos Narrow", "Arial Narrow", Impact, sans-serif; text-shadow: 0 0 30px rgba(180,110,255,.8); animation: stacco-sale .6s .25s cubic-bezier(.2,.8,.2,1.3) both; }
+
+@keyframes rig-battito { 0%, 100% { box-shadow: inset 0 0 70px rgba(255,77,109,0); } 50% { box-shadow: inset 0 0 110px rgba(255,77,109,.4); } }
+@keyframes rig-flash { 0% { opacity: 0; } 18% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes rig-card { from { opacity: 0; transform: translateY(24px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes rig-anello { 0%, 100% { box-shadow: 0 0 18px rgba(255,201,77,.35); } 50% { box-shadow: 0 0 46px rgba(255,77,109,.7); } }
+@keyframes rig-banda { from { opacity: 0; transform: translateY(-50%) skewY(-5deg) scaleX(0); } to { opacity: 1; transform: translateY(-50%) skewY(-5deg) scaleX(1); } }
+@keyframes rig-esito { 0% { opacity: 0; transform: skewX(-8deg) scale(2.2); } 60% { opacity: 1; transform: skewX(-8deg) scale(.95); } 100% { opacity: 1; transform: skewX(-8deg) scale(1); } }
+@keyframes rig-scossa { 0%, 100% { translate: 0 0; } 25% { translate: -9px 0; } 50% { translate: 8px 0; } 75% { translate: -5px 0; } }
+@keyframes rig-testo { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes rig-attesa-barra { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes rig-pallino { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes rig-attivo { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,201,77,.6); } 50% { box-shadow: 0 0 0 6px rgba(255,201,77,0); } }
+@keyframes rig-punto { 0% { transform: scale(1.7); color: #6dffc3; } 100% { transform: scale(1); } }
+@keyframes rig-punto-testo { 0%, 60%, 100% { opacity: .2; } 30% { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .match-reveal__stacco, .match-reveal__stacco *, .rig *, .rig::after { animation-duration: .01s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
+}
+
+/* Card del gol: stessi pezzi della card dei rigori, in verde. */
+.rig__card--gol { --acc: #34e0a1; max-width: 340px; border-color: rgba(52,224,161,.5); background: linear-gradient(165deg, rgba(20,92,70,.8), rgba(12,10,24,.95) 62%); }
+.rig__card--gol .rig__filigrana { -webkit-text-stroke-color: rgba(52,224,161,.18); }
+.match-reveal__gol-risultato { display: flex; align-items: center; gap: 14px; color: rgba(255,255,255,.55); font-size: .8rem; font-weight: 900; letter-spacing: .14em; }
+.match-reveal__gol-risultato span.is-segna { color: #7dffc9; }
+.match-reveal__gol-risultato b { color: #fff; font: 900 2.4rem/1 "Aptos Narrow", "Arial Narrow", Impact, sans-serif; letter-spacing: .02em; animation: rig-punto .6s .35s cubic-bezier(.2,.9,.3,1.6) both; }
+.match-reveal__gol-risultato b i { margin: 0 .1em; color: rgba(255,255,255,.3); font-style: normal; }
+
+/* Scoreboard stile broadcast: blocco competizione + barra con stemmi,
+   sigle e punteggio. Colori presi dagli sfondi di ogni fase. */
+.scoreboard { --sb-comp: #061a14; --sb-1: #0a6a41; --sb-2: #19b36c; --sb-centro: #03140d; --sb-luce: #6dffc3; position: relative; display: flex; align-items: stretch; gap: 4px; padding: max(16px, env(safe-area-inset-top)) 60px 30px 16px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.scoreboard--title { --sb-comp: #061453; --sb-1: #0d2f85; --sb-2: #2a64e6; --sb-centro: #040f45; --sb-luce: #7fb0ff; }
+.scoreboard--draft { --sb-comp: #1c0b03; --sb-1: #8a3303; --sb-2: #e0761a; --sb-centro: #230c02; --sb-luce: #ffc07a; }
+.scoreboard__comp { display: grid; place-items: center; flex: none; width: clamp(60px, 18vw, 110px); height: 44px; padding: 0 6px; background: var(--sb-comp); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+.scoreboard__comp img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+.scoreboard__bar { position: relative; flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; min-width: 0; height: 44px; background: linear-gradient(90deg, var(--sb-1), var(--sb-2) 30%, var(--sb-2) 70%, var(--sb-1)); box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+.scoreboard__bar::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(100deg, transparent 8%, rgba(255,255,255,.14) 12%, transparent 17%, transparent 83%, rgba(255,255,255,.14) 88%, transparent 92%); }
+.scoreboard__team { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; padding: 0 4px 0 7px; color: #fff; }
+.scoreboard__team--ospite { justify-content: flex-end; padding: 0 7px 0 4px; }
+.scoreboard__team b { font: 900 clamp(.82rem, 3.6vw, 1.05rem)/1 Inter, Arial, sans-serif; letter-spacing: .05em; text-shadow: 0 1px 2px rgba(0,0,0,.4); }
+.scoreboard__stemma { display: grid; place-items: center; flex: none; width: clamp(20px, 6.4vw, 28px); height: clamp(20px, 6.4vw, 28px); }
+.scoreboard__stemma .crest { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); }
+.scoreboard__score { position: relative; display: flex; align-items: center; justify-content: center; gap: 6px; height: 100%; padding: 0 13px; background: var(--sb-centro); clip-path: polygon(0 0, 100% 0, 90% 50%, 100% 100%, 0 100%, 10% 50%); }
+.scoreboard__score b { min-width: .55em; color: #fff; font: 900 1.6rem/1 "Aptos Narrow", "Arial Narrow", Impact, sans-serif; text-align: center; font-variant-numeric: tabular-nums; }
+.scoreboard__score i { width: 2px; height: 16px; border-radius: 2px; background: var(--sb-luce); opacity: .6; }
+.scoreboard__stato { position: absolute; top: calc(100% + 1px); left: 50%; display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 0 0 8px 8px; background: var(--sb-centro); color: #fff; font-size: .56rem; font-weight: 900; letter-spacing: .12em; white-space: nowrap; transform: translateX(-50%); }
+.scoreboard__stato em { color: var(--sb-luce); font-style: normal; }
+.scoreboard__bar > .scoreboard__stato { top: 100%; }
+@media (max-width: 380px) { .scoreboard { padding-left: 10px; padding-right: 54px; } }
+.rig__card--gol { gap: 12px; padding-top: 0; }
+.rig__card--gol > .rig__banda--testa { position: relative; left: auto; right: auto; top: auto; width: calc(100% + 36px); margin: -10px -18px 8px; padding: 26px 0 14px; background: linear-gradient(90deg, #1fb57c, #34e0a1 30%, #34e0a1 70%, #1fb57c); transform: skewY(-4deg); transform-origin: left; animation: gol-testa .45s cubic-bezier(.2,.9,.25,1.2) both; }
+.rig__card--gol .rig__foto { animation: gol-entra .4s .3s cubic-bezier(.2,.8,.2,1.3) both; }
+.rig__card--gol > .rig__nome { animation: gol-entra .35s .45s ease-out both; }
+.rig__card--gol .match-reveal__gol-risultato { animation: gol-entra .35s .6s ease-out both; }
+.rig__card--gol .match-reveal__gol-risultato b { animation-delay: .75s; }
+.rig__card--gol .rig__squadra-tiro { animation: gol-entra .35s .7s ease-out both; }
+@keyframes gol-testa { from { opacity: 0; transform: skewY(-4deg) scaleX(0); } to { opacity: 1; transform: skewY(-4deg) scaleX(1); } }
+@keyframes gol-entra { from { opacity: 0; transform: translateY(12px) scale(.92); } to { opacity: 1; transform: none; } }
 
 /* Icone dei pulsanti rotondi (src/components/Icona.tsx). Specificita' zero:
    dove una classe fissa gia' il display vince la classe, altrove il pulsante

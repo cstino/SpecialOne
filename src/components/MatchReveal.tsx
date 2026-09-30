@@ -3,12 +3,16 @@ import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
 import { ricostruisciEventiStorici, type StatEventoStorico } from '../lib/matchEvents'
 import { useSeasonData } from '../lib/useSeasonData'
-import { SFONDO_FASE_VERTICALE, type FaseSquadra } from '../lib/faseSquadra'
+import { LOGO_FASE, SFONDO_FASE_VERTICALE, type FaseSquadra } from '../lib/faseSquadra'
+
+const NOME_FASE: Record<FaseSquadra, string> = { regular: 'Stagione regolare', title: 'Title Playoffs', draft: 'Draft Playoffs' }
 import { isEventoGol, type EventoGol, type EventoPartita, type Membership } from '../types'
 import { Crest } from './Crest'
 import { firmaFoto } from './RosaElenco'
 import { MatchIntro } from './MatchIntro'
 import { Icona } from './Icona'
+import { SpotVideo } from './SpotVideo'
+import { RigoriScena, type FaseRigore } from './RigoriScena'
 
 type Props = { membership: Membership; matchId: number; onClose: () => void; onRevealed: (matchId: number) => void; onOpenReport: () => void }
 type Player = { id: number; nome: string; foto?: string }
@@ -22,9 +26,9 @@ function normalizzaMinuti(eventi: EventoPartita[]) {
   const gruppi = new Map<number, number[]>()
   eventi.forEach((evento, indice) => {
     const minuto = Number(evento.minuto)
-    if (Number.isInteger(minuto) && minuto >= 1 && minuto <= 90) return
+    if (Number.isInteger(minuto) && minuto >= 1 && minuto <= 120) return
     const bloccoLetto = Number(evento.blocco)
-    const blocco = Number.isInteger(bloccoLetto) && bloccoLetto >= 1 && bloccoLetto <= 6
+    const blocco = Number.isInteger(bloccoLetto) && bloccoLetto >= 1 && bloccoLetto <= 8
       ? bloccoLetto
       : Math.min(6, Math.floor(indice * 6 / Math.max(1, eventi.length)) + 1)
     const gruppo = gruppi.get(blocco) ?? []
@@ -44,10 +48,29 @@ function normalizzaMinuti(eventi: EventoPartita[]) {
 
   return eventi.map((evento, indice) => {
     const minuto = Number(evento.minuto)
-    return Number.isInteger(minuto) && minuto >= 1 && minuto <= 90
+    return Number.isInteger(minuto) && minuto >= 1 && minuto <= 120
       ? evento
       : { ...evento, minuto: minutiRicostruiti.get(indice) ?? 90 }
   }).sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.team_id - destra.team_id)
+}
+
+// Le partite con supplementari simulate prima della correzione della Edge
+// Function hanno i gol dei supplementari "riparati" dentro i 90 minuti. Si
+// riconoscono perche' nessun evento supera il 90' e i gol dei tempi
+// regolamentari sono piu' del parziale salvato: gli ultimi in eccesso tornano
+// nei supplementari, cosi' il punteggio a 90' coincide con quello vero.
+function ricollocaSupplementari(eventi: EventoPartita[], golRegolamentari: { casa: number; ospite: number }) {
+  if (eventi.some((evento) => evento.minuto > 90)) return eventi
+  const inEccesso = new Set<EventoPartita>()
+  for (const lato of ['casa', 'ospite'] as const) {
+    const gol = eventi.filter((evento) => isEventoGol(evento) && evento.lato === lato)
+    gol.slice(golRegolamentari[lato]).forEach((evento) => inEccesso.add(evento))
+  }
+  if (!inEccesso.size) return eventi
+  let k = 0
+  return eventi.map((evento) => inEccesso.has(evento)
+    ? { ...evento, minuto: 90 + Math.round(++k * 30 / (inEccesso.size + 1)), blocco: 7 }
+    : evento).sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.team_id - destra.team_id)
 }
 
 // Tiri parati e fuori: gli unici eventi che non restano in cronaca. Sono
@@ -100,8 +123,10 @@ function limitaTiri(eventi: EventoPartita[]) {
 // mezza card di margine sopra e sotto, cosi' il primo e l'ultimo evento non
 // escono dal riquadro. La stessa mappatura vale per linea, tacche ed eventi:
 // e' l'unico modo perche' restino allineati fra loro.
-function posizioneMinuto(minuto: number, altezza: number, margine: number) {
-  return margine + (Math.min(90, Math.max(0, minuto)) / 90) * Math.max(0, altezza - margine * 2)
+// `inizio` e `durata` descrivono la finestra mostrata: 0-90 per i tempi
+// regolamentari, 90-120 per i supplementari (ognuno sulla sua schermata).
+function posizioneMinuto(minuto: number, altezza: number, margine: number, durata: number, inizio = 0) {
+  return margine + (Math.min(durata, Math.max(0, minuto - inizio)) / durata) * Math.max(0, altezza - margine * 2)
 }
 
 // Ogni card parte dal proprio minuto sulla linea del tempo e scivola verso il
@@ -112,11 +137,11 @@ function posizioneMinuto(minuto: number, altezza: number, margine: number) {
 // radi, e degrada in modo prevedibile quando si infittiscono. Il canvas e'
 // sempre alto almeno quanto serve a contenerli tutti, quindi la passata
 // all'indietro trova sempre una soluzione valida.
-function disponiEventi(eventi: EventoPartita[], altezza: number, altezzaEvento: number, margine: number) {
+function disponiEventi(eventi: EventoPartita[], altezza: number, altezzaEvento: number, margine: number, durata: number, inizio: number) {
   const posizioni = new Map<EventoPartita, number>()
   let cursore = margine
   for (const evento of eventi) {
-    const top = Math.max(posizioneMinuto(evento.minuto, altezza, margine) - altezzaEvento / 2, cursore)
+    const top = Math.max(posizioneMinuto(evento.minuto, altezza, margine, durata, inizio) - altezzaEvento / 2, cursore)
     posizioni.set(evento, top)
     cursore = top + altezzaEvento + GAP_EVENTO
   }
@@ -161,10 +186,27 @@ function classeEvento(evento: EventoPartita): string {
 }
 
 const TACCHE = [15, 30, 45, 60, 75, 90]
+const TACCHE_SUPPLEMENTARI = [95, 100, 105, 110, 115, 120]
+// Lo stacco fra una fase e l'altra (simulazione ferma). La schermata sotto
+// cambia a SWITCH_STACCO_MS, quando lo stacco e' ancora opaco; poi si dissolve.
+const DURATA_ANNUNCIO_MS = 3200
+const SWITCH_STACCO_MS = 2700
+// Ritmo di ogni rigore: presentazione del tiratore, rincorsa, esito. L'ultimo
+// (quello che decide la serie) si fa aspettare di piu'.
+const RIGORE_INTRO_MS = 2300
+const RIGORE_INTRO_DECISIVO_MS = 3400
+const RIGORE_RINCORSA_MS = 1700
+const RIGORE_TIRO_MS = 1100
+const RIGORE_ESITO_MS = 3200
 // Quanto resta in scena la card del gol: stessa durata del file audio
 // dell'esultanza (~2,4s), un filo piu' corta cosi' il boato non viene
 // interrotto a meta'.
 const DURATA_POPUP_GOL_MS = 2200
+
+// Sorpresa una tantum: uno spot prima dell'intro, solo per Maudit Printemps
+// (squadra 285) e solo per la prima partita del turno playoff (fixture 2424,
+// giornata 31). Chiusa la partita viene segnata come vista, quindi non si ripete.
+const SPOT = { teamId: 285, fixtureId: 2424, src: '/spot/maudit-printemps.mp4' }
 
 export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenReport }: Props) {
   const data = useSeasonData(membership)
@@ -173,6 +215,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const [nomi, setNomi] = useState<Map<number, Player>>(new Map())
   const [statsStoriche, setStatsStoriche] = useState<StatEventoStorico[]>([])
   const revealRegistrato = useRef(false)
+  const [spotFinito, setSpotFinito] = useState(false)
   // Un secondo reale per ogni minuto di gioco: il reveal non salta da
   // un'azione all'altra, ma percorre tutta la partita come una cronaca.
   const [minutoCorrente, setMinutoCorrente] = useState(-1)
@@ -209,14 +252,56 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     return () => { vivo = false }
   }, [fixture?.bracket_tie_id])
 
+  // Nel ritorno di un'eliminatoria conta il totale delle due partite: senza
+  // l'andata un 1-0 che porta ai supplementari sembrerebbe un errore.
+  const [andata, setAndata] = useState<{ casa: number; ospite: number } | null>(null)
+  useEffect(() => {
+    let vivo = true
+    async function caricaAndata() {
+      if (!fixture?.bracket_tie_id || fixture.mano !== 2) { if (vivo) setAndata(null); return }
+      const { data: riga } = await supabase.from('fixtures').select('home_team_id, matches(gol_home, gol_away)')
+        .eq('bracket_tie_id', fixture.bracket_tie_id).eq('mano', 1).maybeSingle()
+      const partita = Array.isArray(riga?.matches) ? riga.matches[0] : riga?.matches
+      if (!vivo || !riga || !partita) return
+      const casaInCasa = riga.home_team_id === fixture.home_team_id
+      setAndata({ casa: casaInCasa ? partita.gol_home : partita.gol_away, ospite: casaInCasa ? partita.gol_away : partita.gol_home })
+    }
+    void caricaAndata()
+    return () => { vivo = false }
+  }, [fixture?.bracket_tie_id, fixture?.mano, fixture?.home_team_id])
+
   const eventi = useMemo(() => {
     if (!match) return []
     const estesa = match.blocchi.some((evento) => !isEventoGol(evento))
-    if (estesa || !fixture) return limitaTiri(normalizzaMinuti([...match.blocchi]))
-    return limitaTiri(normalizzaMinuti(ricostruisciEventiStorici(match.blocchi, statsStoriche, match.titolari_home, match.titolari_away, fixture.home_team_id, fixture.away_team_id, match.id)))
+    const cronaca = estesa || !fixture
+      ? normalizzaMinuti([...match.blocchi])
+      : normalizzaMinuti(ricostruisciEventiStorici(match.blocchi, statsStoriche, match.titolari_home, match.titolari_away, fixture.home_team_id, fixture.away_team_id, match.id))
+    return limitaTiri(match.gol_home_90 != null && match.gol_away_90 != null
+      ? ricollocaSupplementari(cronaca, { casa: match.gol_home_90, ospite: match.gol_away_90 })
+      : cronaca)
   }, [fixture, match, statsStoriche])
-  const inCorso = minutoCorrente >= 0 && minutoCorrente < 90
-  const completata = minutoCorrente >= 90
+  // Supplementari e rigori esistono solo nelle eliminatorie finite in parita':
+  // il parziale dei 90' c'e' solo se si sono giocati i supplementari, la serie
+  // dei rigori solo se sono serviti. Il tempo di gioco diventa 120' e, in coda,
+  // si aggiunge la sequenza dal dischetto.
+  const supplementari = match?.gol_home_90 != null
+  const serieRigori = useMemo(() => match?.rigori_home != null ? (match.rigori_serie ?? []) : [], [match])
+  const haRigori = serieRigori.length > 0
+  // La partita si guarda una fase alla volta, senza anticipare la successiva:
+  // prima i 90', poi (se ci sono stati) i supplementari, infine i rigori.
+  const [annuncio, setAnnuncio] = useState<'supplementari' | 'rigori' | null>(null)
+  const [fasePartita, setFasePartita] = useState<'regolamentari' | 'supplementari' | 'rigori'>('regolamentari')
+  const annunciFatti = useRef({ supplementari: false, rigori: false })
+  const [rigoreCorrente, setRigoreCorrente] = useState(0)
+  const [faseRigore, setFaseRigore] = useState<FaseRigore>('intro')
+  const rigoriFiniti = !haRigori || rigoreCorrente >= serieRigori.length
+  const oraFinale = supplementari ? 120 : 90
+  const fineFase = fasePartita === 'regolamentari' && supplementari ? 90 : oraFinale
+  const inizioFase = fasePartita === 'supplementari' ? 90 : 0
+  const durata = fineFase - inizioFase
+  const inCorso = minutoCorrente >= 0 && minutoCorrente < fineFase
+  const inRigori = fasePartita === 'rigori' && !rigoriFiniti
+  const completata = minutoCorrente >= oraFinale && rigoriFiniti
   const minuto = Math.max(0, minutoCorrente)
   const punteggio = eventi.filter((evento) => evento.minuto <= minuto).reduce((totale, evento) => {
     if (isEventoGol(evento)) {
@@ -239,9 +324,15 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   }, [match])
 
   useEffect(() => {
-    const ids = [...new Set(eventi.flatMap((evento) => isEventoGol(evento)
+    // Per i rigori servono anche i tiratori e i portieri (titolari[0] e' sempre
+    // il portiere: lo e' in tutti i moduli).
+    const idRigori = [
+      ...serieRigori.flatMap((tiro) => tiro.tiratoreId != null ? [tiro.tiratoreId] : []),
+      ...(haRigori && match ? [match.titolari_home[0], match.titolari_away[0]].filter((id): id is number => id != null) : []),
+    ]
+    const ids = [...new Set([...eventi.flatMap((evento) => isEventoGol(evento)
       ? [evento.marcatore, ...(evento.assist ? [evento.assist] : [])]
-      : evento.tipo === 'sostituzione' || evento.tipo === 'infortunio' ? [evento.esce, evento.entra] : [evento.giocatore]))]
+      : evento.tipo === 'sostituzione' || evento.tipo === 'infortunio' ? [evento.esce, evento.entra] : [evento.giocatore]), ...idRigori])]
     if (!ids.length) return
     let attivo = true
     async function caricaNomi() {
@@ -266,12 +357,12 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     }
     void caricaNomi()
     return () => { attivo = false }
-  }, [eventi])
+  }, [eventi, serieRigori, haRigori, match])
 
   // L'avanzamento si ferma mentre c'e' un gol in scena: riprende da solo
   // quando popupGol torna null (vedi l'effetto piu' sotto).
   useEffect(() => {
-    if (minutoCorrente < 0 || minutoCorrente >= 90 || popupGol) return
+    if (minutoCorrente < 0 || minutoCorrente >= fineFase || popupGol || annuncio) return
     const timer = window.setTimeout(() => {
       const prossimo = minutoCorrente + 1
       const golAlMinuto = eventi.filter((evento): evento is EventoGol => isEventoGol(evento) && evento.minuto === prossimo)
@@ -282,7 +373,51 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
       }
     }, 700)
     return () => window.clearTimeout(timer)
-  }, [minutoCorrente, popupGol, eventi])
+  }, [minutoCorrente, popupGol, annuncio, fineFase, eventi])
+
+  // A fine fase la partita si ferma e annuncia la successiva: dai 90' ai
+  // supplementari (se in parita'), da li' ai rigori (se serve). Aspetta che
+  // l'eventuale gol dell'ultimo minuto abbia finito la sua scena.
+  useEffect(() => {
+    if (popupGol || annuncio || minutoCorrente !== fineFase) return
+    if (fasePartita === 'regolamentari' && supplementari && !annunciFatti.current.supplementari) {
+      annunciFatti.current.supplementari = true
+      setAnnuncio('supplementari')
+    } else if (fasePartita !== 'rigori' && haRigori && !annunciFatti.current.rigori) {
+      annunciFatti.current.rigori = true
+      setAnnuncio('rigori')
+    }
+  }, [minutoCorrente, fineFase, fasePartita, popupGol, annuncio, supplementari, haRigori])
+
+  useEffect(() => {
+    if (!annuncio) return
+    const cambio = window.setTimeout(() => setFasePartita(annuncio), SWITCH_STACCO_MS)
+    const fine = window.setTimeout(() => setAnnuncio(null), DURATA_ANNUNCIO_MS)
+    return () => { window.clearTimeout(cambio); window.clearTimeout(fine) }
+  }, [annuncio])
+
+  // Ogni rigore: presentazione, rincorsa, tiro (il pallone vola), esito; poi il successivo. L'ultimo
+  // esito porta rigoreCorrente a serie.length, cioe' a serie conclusa.
+  useEffect(() => {
+    if (fasePartita !== 'rigori' || annuncio || rigoreCorrente >= serieRigori.length) return
+    const ms = faseRigore === 'intro'
+      ? (rigoreCorrente === serieRigori.length - 1 ? RIGORE_INTRO_DECISIVO_MS : RIGORE_INTRO_MS)
+      : faseRigore === 'rincorsa' ? RIGORE_RINCORSA_MS : faseRigore === 'tiro' ? RIGORE_TIRO_MS : RIGORE_ESITO_MS
+    const timer = window.setTimeout(() => {
+      if (faseRigore === 'intro') setFaseRigore('rincorsa')
+      else if (faseRigore === 'rincorsa') setFaseRigore('tiro')
+      else if (faseRigore === 'tiro') setFaseRigore('esito')
+      else { setRigoreCorrente((i) => i + 1); setFaseRigore('intro') }
+    }, ms)
+    return () => window.clearTimeout(timer)
+  }, [fasePartita, annuncio, rigoreCorrente, faseRigore, serieRigori.length])
+
+  // Il boato dello stadio quando un rigore finisce in rete.
+  useEffect(() => {
+    if (fasePartita !== 'rigori' || faseRigore !== 'esito' || !serieRigori[rigoreCorrente]?.segnato) return
+    const audio = suonoGolRef.current
+    if (audio) { audio.currentTime = 0; void audio.play().catch(() => {}) }
+  }, [fasePartita, faseRigore, rigoreCorrente, serieRigori])
 
   // Sblocco dell'audio all'apertura della cronaca: un play() immediatamente
   // seguito da pause() mentre il tocco dell'utente e' ancora "valido"
@@ -299,7 +434,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
 
   // Sottofondo dello stadio: si accende mentre la partita scorre (o mentre
   // un gol e' in scena) e si spegne a fine cronaca.
-  const sottofondoAcceso = eventi.length > 0 && (inCorso || popupGol !== null)
+  const sottofondoAcceso = eventi.length > 0 && (inCorso || inRigori || popupGol !== null || annuncio !== null)
   useEffect(() => {
     const audio = sottofondoRef.current
     if (!audio) return
@@ -324,10 +459,10 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   }, [popupGol])
 
   useEffect(() => {
-    if (minutoCorrente < 90 || revealRegistrato.current) return
+    if (!completata || revealRegistrato.current) return
     revealRegistrato.current = true
     onRevealed(matchId)
-  }, [matchId, minutoCorrente, onRevealed])
+  }, [matchId, completata, onRevealed])
 
   // La card ha altezza fissa (testo troncato a due righe): serve a poterne
   // calcolare la disposizione senza doverle prima misurare una a una.
@@ -355,8 +490,9 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   // occupare spazio (era la causa dei buchi enormi in cronaca). Un gol invece
   // resta escluso finche' non e' passato dalla card grande (inTimeline).
   const visibili = useMemo(() => eventi.filter((evento) => evento.minuto <= minuto
+    && evento.minuto > inizioFase
     && (!isEventoGol(evento) || inTimeline.has(evento))
-    && (!eTransitorio(evento) || minuto - evento.minuto < MINUTI_VITA_TRANSITORIO)), [eventi, minuto, inTimeline])
+    && (!eTransitorio(evento) || minuto - evento.minuto < MINUTI_VITA_TRANSITORIO)), [eventi, minuto, inTimeline, inizioFase])
   const eventiCasa = useMemo(() => visibili.filter((evento) => evento.lato === 'casa'), [visibili])
   const eventiOspite = useMemo(() => visibili.filter((evento) => evento.lato === 'ospite'), [visibili])
 
@@ -366,17 +502,16 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   // quando si scorre.
   const spazioPerEventi = (quanti: number) => quanti === 0 ? 0 : quanti * (altezzaEvento + GAP_EVENTO) - GAP_EVENTO + margine * 2
   const altezzaCanvas = Math.max(altezzaVisibile, spazioPerEventi(eventiCasa.length), spazioPerEventi(eventiOspite.length))
-  const posizioniCasa = useMemo(() => disponiEventi(eventiCasa, altezzaCanvas, altezzaEvento, margine), [eventiCasa, altezzaCanvas, altezzaEvento, margine])
-  const posizioniOspite = useMemo(() => disponiEventi(eventiOspite, altezzaCanvas, altezzaEvento, margine), [eventiOspite, altezzaCanvas, altezzaEvento, margine])
+  const posizioniCasa = useMemo(() => disponiEventi(eventiCasa, altezzaCanvas, altezzaEvento, margine, durata, inizioFase), [eventiCasa, altezzaCanvas, altezzaEvento, margine, durata, inizioFase])
+  const posizioniOspite = useMemo(() => disponiEventi(eventiOspite, altezzaCanvas, altezzaEvento, margine, durata, inizioFase), [eventiOspite, altezzaCanvas, altezzaEvento, margine, durata, inizioFase])
 
   useEffect(() => {
     if (!pitchEl || altezzaCanvas <= pitchEl.clientHeight) return
-    pitchEl.scrollTo({ top: Math.max(0, posizioneMinuto(minuto, altezzaCanvas, margine) - pitchEl.clientHeight / 2), behavior: 'smooth' })
-  }, [pitchEl, minuto, altezzaCanvas, margine])
+    pitchEl.scrollTo({ top: Math.max(0, posizioneMinuto(minuto, altezzaCanvas, margine, durata, inizioFase) - pitchEl.clientHeight / 2), behavior: 'smooth' })
+  }, [pitchEl, minuto, altezzaCanvas, margine, durata, inizioFase])
 
-  if (data.loading || !match || !fixture) return null
-  const casa = data.teamById.get(fixture.home_team_id)
-  const ospite = data.teamById.get(fixture.away_team_id)
+  // Ogni fase riparte dall'alto della sua schermata.
+  useEffect(() => { pitchEl?.scrollTo({ top: 0 }) }, [pitchEl, fasePartita])
 
   // I due elementi audio stanno FUORI dal ramo dell'intro, cosi' esistono
   // gia' al primo render — cioe' subito dopo il tocco che ha aperto la
@@ -391,9 +526,25 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     <audio ref={sottofondoRef} src="/suoni-effetti/stadio-sottofondo.m4a" loop preload="auto" />
   </>
 
+  // Anche mentre i dati si caricano: lo sblocco dell'audio (effect qui sopra)
+  // gira al primo render, cioe' dentro il tocco che ha aperto la partita, e
+  // deve trovare gia' gli elementi. Con `return null` non c'erano, e su iPhone
+  // restavano muti sia il pubblico sia il boato del gol.
+  if (data.loading || !match || !fixture) return <>{elementiAudio}</>
+  const casa = data.teamById.get(fixture.home_team_id)
+  const ospite = data.teamById.get(fixture.away_team_id)
+
+
   // L'intro (musica di fase, locandina, formazioni) precede il calcio
   // d'inizio solo quando c'e' davvero una cronaca da vivere: per le partite
   // simulate prima della cronaca estesa non avrebbe nulla da presentare.
+  if (minutoCorrente < 0 && eventi.length > 0 && !spotFinito && membership.id === SPOT.teamId && fixture.id === SPOT.fixtureId) {
+    return <>
+    {elementiAudio}
+    <SpotVideo src={SPOT.src} onFine={() => setSpotFinito(true)} />
+    </>
+  }
+
   if (minutoCorrente < 0 && eventi.length > 0) {
     return <>
     {elementiAudio}
@@ -412,51 +563,108 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     </>
   }
 
+  const tacche = fasePartita === 'supplementari' ? TACCHE_SUPPLEMENTARI : TACCHE
+  const fasceTempo = fasePartita === 'supplementari'
+    ? [{ inizio: 90, fine: 105, etichetta: '1º SUPPL.' }, { inizio: 105, fine: 120, etichetta: '2º SUPPL.' }]
+    : [{ inizio: 0, fine: 45, etichetta: '1º TEMPO' }, { inizio: 45, fine: 90, etichetta: '2º TEMPO' }]
+  const inCorsoSupplementari = fasePartita === 'supplementari'
+
   const squadraGol = popupGol && (popupGol.lato === 'casa' ? casa : ospite)
   const crestGolUrl = popupGol && data.crestUrlByTeamId.get(popupGol.lato === 'casa' ? fixture.home_team_id : fixture.away_team_id)
   const marcatore = popupGol && nomi.get(popupGol.marcatore)
 
-  return <div className="match-reveal-backdrop" role="dialog" aria-modal="true" aria-label="Cronaca della partita">
+  return <>
     {elementiAudio}
+    <div className="match-reveal-backdrop" role="dialog" aria-modal="true" aria-label="Cronaca della partita">
     <section className="match-reveal">
       <div className="match-reveal__sfondo" style={{ backgroundImage: `url(${SFONDO_FASE_VERTICALE[fase]})` }} />
       <button className="match-reveal__close" type="button" onClick={onClose} aria-label="Chiudi cronaca"><Icona nome="chiudi" /></button>
 
       {popupGol && <div className="match-reveal__gol-popup" role="alert">
-        <div className="match-reveal__gol-popup-card">
-          <p className="match-reveal__gol-popup-titolo">GOOOL!</p>
-          <div className="match-reveal__gol-popup-foto">
-            {marcatore?.foto ? <img src={marcatore.foto} alt="" /> : <span aria-hidden="true">{cognome(marcatore?.nome ?? '?').charAt(0)}</span>}
+        <div className="rig__card rig__card--gol" key={`${popupGol.minuto}-${popupGol.team_id}`}>
+          <span className="rig__filigrana" aria-hidden="true">{cognome(marcatore?.nome ?? '')}</span>
+          <div className="rig__banda rig__banda--testa"><strong>GOOOL!</strong></div>
+          <div className="rig__ritratto">
+            <div className="rig__foto">
+              {marcatore?.foto ? <img src={marcatore.foto} alt="" /> : <span aria-hidden="true">{cognome(marcatore?.nome ?? '?').charAt(0)}</span>}
+            </div>
           </div>
-          <strong>{cognome(marcatore?.nome ?? 'Giocatore')}</strong>
-          <div className="match-reveal__gol-popup-squadra">
-            <Crest value={squadraGol?.stemma_url ?? null} imageUrl={crestGolUrl ?? undefined} size="small" />
+          <strong className="rig__nome">{cognome(marcatore?.nome ?? 'Giocatore')}</strong>
+          <div className="match-reveal__gol-risultato">
+            <span className={popupGol.lato === 'casa' ? 'is-segna' : ''}>{casa?.sigla}</span>
+            <b>{punteggio.casa}<i>–</i>{punteggio.ospite}</b>
+            <span className={popupGol.lato === 'ospite' ? 'is-segna' : ''}>{ospite?.sigla}</span>
+          </div>
+          <div className="rig__squadra-tiro">
+            <span className="rig__stemma"><Crest value={squadraGol?.stemma_url ?? null} imageUrl={crestGolUrl ?? undefined} size="small" /></span>
             <span>{squadraGol?.nome ?? 'Squadra'}</span>
-            <b>{popupGol.minuto}’</b>
+            <em>{popupGol.minuto}’ · {popupGol.minuto > 105 ? '2º supplementare' : popupGol.minuto > 90 ? '1º supplementare' : popupGol.minuto > 45 ? '2º tempo' : '1º tempo'}</em>
           </div>
         </div>
       </div>}
 
-      <header className="match-reveal__header">
-        <div><Crest value={casa?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /><strong>{casa?.nome}</strong></div>
-        <div className="match-reveal__score">
-          <small>{completata ? 'RISULTATO FINALE' : <><i className="match-reveal__live-dot" aria-hidden="true" />{minuto}’</>}</small>
-          <b>{punteggio.casa} <i>–</i> {punteggio.ospite}</b>
+      {annuncio && <div className={`match-reveal__stacco is-${annuncio}`} role="alert">
+        <div className="match-reveal__stacco-lame" aria-hidden="true" />
+        <p className="match-reveal__stacco-kicker">{annuncio === 'supplementari' ? 'Fine dei tempi regolamentari' : supplementari ? 'Dopo i supplementari' : 'Dopo i 90′'}</p>
+        <div className="match-reveal__stacco-squadre">
+          <div><Crest value={casa?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="large" /><span>{casa?.nome}</span></div>
+          <b>{punteggio.casa}<i>–</i>{punteggio.ospite}</b>
+          <div><Crest value={ospite?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="large" /><span>{ospite?.nome}</span></div>
         </div>
-        <div><strong>{ospite?.nome}</strong><Crest value={ospite?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" /></div>
+        <h2 className="match-reveal__stacco-titolo">{annuncio === 'supplementari' ? 'Supplementari' : 'Calci di rigore'}</h2>
+        {andata && <p className="match-reveal__stacco-totale">Andata {andata.casa}–{andata.ospite} · totale <b>{andata.casa + punteggio.casa}–{andata.ospite + punteggio.ospite}</b></p>}
+        <p className="match-reveal__stacco-sotto"><em>{annuncio === 'supplementari' ? '+30′' : '11 m'}</em>{annuncio === 'supplementari' ? 'Altri trenta minuti per decidere.' : 'Decidono gli undici metri.'}</p>
+      </div>}
+
+      <header className={`match-reveal__header scoreboard scoreboard--${fase}`}>
+        <div className="scoreboard__comp"><img src={LOGO_FASE[fase]} alt={NOME_FASE[fase]} /></div>
+        <div className="scoreboard__bar">
+          <div className="scoreboard__team">
+            <span className="scoreboard__stemma"><Crest value={casa?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /></span>
+            <b title={casa?.nome}>{casa?.sigla}</b>
+          </div>
+          <div className="scoreboard__score" aria-label={`${punteggio.casa} a ${punteggio.ospite}`}>
+            <b>{punteggio.casa}</b><i aria-hidden="true" /><b>{punteggio.ospite}</b>
+          </div>
+          <div className="scoreboard__team scoreboard__team--ospite">
+            <b title={ospite?.nome}>{ospite?.sigla}</b>
+            <span className="scoreboard__stemma"><Crest value={ospite?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" /></span>
+          </div>
+          <span className="scoreboard__stato">
+            {completata ? (haRigori ? 'FINALE D.C.R.' : supplementari ? 'FINALE D.T.S.' : 'FINALE')
+              : fasePartita === 'rigori' ? 'RIGORI'
+              : <><i className="match-reveal__live-dot" aria-hidden="true" />{minuto}’{minuto > 90 ? ' SUPPL.' : ''}</>}
+            {andata && fasePartita !== 'rigori' && <em>TOT. {andata.casa + punteggio.casa}–{andata.ospite + punteggio.ospite}</em>}
+          </span>
+        </div>
       </header>
 
       {eventi.length === 0 ? <div className="match-reveal__empty"><p>Questa partita è stata simulata prima della cronaca estesa.</p><button className="button button--primary" type="button" onClick={onOpenReport}>Vedi risultato</button></div> : <>
-        <div className="match-reveal__pitch" ref={setPitchEl} aria-label={`Minuto ${minuto} su 90`}>
+        {fasePartita === 'rigori'
+          ? <div className="match-reveal__pitch match-reveal__pitch--rigori" aria-label="Calci di rigore">
+            <RigoriScena
+              serie={serieRigori}
+              indice={rigoreCorrente}
+              fase={faseRigore}
+              seed={match.id}
+              casa={{ nome: casa?.nome ?? 'Casa', stemma: casa?.stemma_url ?? null, stemmaUrl: data.crestUrlByTeamId.get(fixture.home_team_id) }}
+              ospite={{ nome: ospite?.nome ?? 'Ospite', stemma: ospite?.stemma_url ?? null, stemmaUrl: data.crestUrlByTeamId.get(fixture.away_team_id) }}
+              giocatori={nomi}
+              portiereCasa={match.titolari_home[0] ?? null}
+              portiereOspite={match.titolari_away[0] ?? null}
+            />
+          </div>
+          : <div className="match-reveal__pitch" ref={setPitchEl} aria-label={`Minuto ${minuto}`}>
           <div className="match-reveal__canvas" style={{ height: `${altezzaCanvas}px` }}>
-            <div className="match-reveal__half match-reveal__half--first">1º TEMPO</div>
-            <div className="match-reveal__half match-reveal__half--second">2º TEMPO</div>
+            {fasceTempo.map((fascia) => (
+              <div className={`match-reveal__half ${fascia.inizio > inizioFase ? 'match-reveal__half--second' : ''} ${fascia.inizio >= 90 ? 'match-reveal__half--extra' : ''}`} style={{ top: `${(fascia.inizio - inizioFase) / durata * 100}%`, height: `${(fascia.fine - fascia.inizio) / durata * 100}%` }} key={fascia.etichetta}>{fascia.etichetta}</div>
+            ))}
             <div className="match-reveal__line" style={{ top: `${margine}px`, bottom: `${margine}px` }}>
-              <span style={{ height: `${Math.min(100, minuto / 90 * 100)}%` }} />
-              <b className={`match-reveal__minute ${inCorso ? 'is-live' : ''}`} style={{ top: `${Math.min(100, minuto / 90 * 100)}%` }}>{minuto}’</b>
+              <span style={{ height: `${Math.min(100, (minuto - inizioFase) / durata * 100)}%` }} />
+              <b className={`match-reveal__minute ${inCorso ? 'is-live' : ''}`} style={{ top: `${Math.min(100, (minuto - inizioFase) / durata * 100)}%` }}>{minuto}’</b>
             </div>
-            {TACCHE.map((tacca) => (
-              <span className={`match-reveal__marker ${tacca === 45 || tacca === 90 ? 'is-forte' : ''}`} style={{ top: `${posizioneMinuto(tacca, altezzaCanvas, margine)}px` }} key={tacca}>{tacca}’</span>
+            {tacche.map((tacca) => (
+              <span className={`match-reveal__marker ${tacca === 45 || tacca === 90 || tacca === 105 ? 'is-forte' : ''}`} style={{ top: `${posizioneMinuto(tacca, altezzaCanvas, margine, durata, inizioFase)}px` }} key={tacca}>{tacca}’</span>
             ))}
             <div className="match-reveal__events match-reveal__events--home">
               {eventiCasa.map((evento, i) => <p className={classeEvento(evento)} style={{ top: `${posizioniCasa.get(evento) ?? 0}px`, height: `${altezzaEvento}px` }} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}
@@ -465,12 +673,14 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
               {eventiOspite.map((evento, i) => <p className={classeEvento(evento)} style={{ top: `${posizioniOspite.get(evento) ?? 0}px`, height: `${altezzaEvento}px` }} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}
             </div>
           </div>
-        </div>
+        </div>}
         <footer className="match-reveal__footer">
-          {inCorso ? <span className="match-reveal__in-corso"><i aria-hidden="true" />La partita è in corso…</span>
+          {!completata && fasePartita === 'rigori' ? <span className="match-reveal__in-corso"><i aria-hidden="true" />Si decide dal dischetto…</span>
+            : !completata ? <span className="match-reveal__in-corso"><i aria-hidden="true" />{inCorsoSupplementari ? 'Supplementari in corso…' : 'La partita è in corso…'}</span>
             : <button className="button button--primary" type="button" onClick={onOpenReport}>Vedi rapporto partita</button>}
         </footer>
       </>}
     </section>
-  </div>
+    </div>
+  </>
 }

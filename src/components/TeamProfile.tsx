@@ -163,6 +163,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [rosterError, setRosterError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
   const [teamName, setTeamName] = useState('')
+  const [sigla, setSigla] = useState('')
   const [crest, setCrest] = useState<CrestChoice>({ type: 'preset', value: STEMMA_SQUADRA_DEFAULT })
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -230,6 +231,14 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     return () => { active = false }
   }, [team?.stemma_url])
 
+  // Anteprima della disponibilita': la verifica vera e' il vincolo unique
+  // lato database, questa evita solo di scoprirlo al salvataggio.
+  const siglaOccupataDa = useMemo(
+    () => seasonData.teams.find((t) => t.id !== teamId && t.sigla === sigla) ?? null,
+    [seasonData.teams, teamId, sigla]
+  )
+  const siglaValida = /^[A-Z0-9]{3}$/.test(sigla)
+
   const stemmiUsati = useMemo(
     () => seasonData.teams.filter((t) => t.attiva && t.id !== teamId).map((t) => t.stemma_url).filter((value): value is string => !!value),
     [seasonData.teams, teamId]
@@ -238,6 +247,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   useEffect(() => {
     if (!team) return
     setTeamName(team.nome)
+    setSigla(team.sigla ?? '')
     setCrest(team.stemma_url?.startsWith('preset:')
       ? { type: 'preset', value: team.stemma_url }
       : team.stemma_url && crestUrl
@@ -446,18 +456,25 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     await caricaRoster()
   }
 
-  async function caricaOpzioniSpecializzazione(instanceId: number) {
+  async function caricaCatalogoSpecializzazioni(instanceId: number) {
     const { data, error } = await supabase.rpc('specializzazioni_disponibili', { p_instance_id: instanceId })
     if (error) throw new Error(error.message)
     const catalogo = (data ?? {}) as Record<string, { etichetta: string; crescita_pct: Record<string, number>; attivo: boolean }>
-    // Il piano che il giocatore segue gia' non si offre: riavviarlo non
-    // cambierebbe nulla (e il server lo rifiuta).
-    return Object.entries(catalogo).filter(([, valore]) => !valore.attivo).map(([chiave, valore]) => ({
-      chiave, etichetta: valore.etichetta,
+    return Object.entries(catalogo).map(([chiave, valore]) => ({
+      chiave, etichetta: valore.etichetta, attivo: valore.attivo,
       crescita: Object.entries(valore.crescita_pct ?? {}).sort((a, b) => b[1] - a[1]),
     }))
-      // "Bilanciato" in testa, poi gli archetipi nell'ordine del server.
-      .sort((a, b) => Number(b.chiave === 'bilanciato') - Number(a.chiave === 'bilanciato'))
+  }
+
+  // Il piano attuale resta in elenco, segnato come tale e non selezionabile
+  // (il server rifiuta di riavviarlo). "Bilanciato" compare solo per chi ha un
+  // piano da lasciare: senza piano equivale gia' a non allenare.
+  async function caricaOpzioniSpecializzazione(instanceId: number) {
+    const catalogo = await caricaCatalogoSpecializzazioni(instanceId)
+    const ordine = (voce: { chiave: string; attivo: boolean }) => (voce.attivo ? 0 : voce.chiave === 'bilanciato' ? 2 : 1)
+    return catalogo
+      .filter((voce) => !(voce.chiave === 'bilanciato' && voce.attivo))
+      .sort((a, b) => ordine(a) - ordine(b) || a.etichetta.localeCompare(b.etichetta, 'it'))
   }
 
   async function avviaSpecializzazione(instanceId: number, specializzazione: string) {
@@ -544,7 +561,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     async function caricaEtichette() {
       if (!schedaAperta) return
       try {
-        const opzioni = await caricaOpzioniSpecializzazione(schedaAperta.id)
+        const opzioni = await caricaCatalogoSpecializzazioni(schedaAperta.id)
         if (active) setSpecEtichette(new Map(opzioni.map((o) => [o.chiave, o.etichetta])))
       } catch {
         // silenzioso: sono solo etichette per il riepilogo, il pannello di
@@ -570,7 +587,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         if (error) throw error
         crestPath = uploadedPath
       }
-      const { data, error } = await supabase.rpc('aggiorna_profilo_squadra', { p_team_id: team.id, p_nome: teamName, p_stemma_url: crestPath })
+      const { data, error } = await supabase.rpc('aggiorna_profilo_squadra', { p_team_id: team.id, p_nome: teamName, p_stemma_url: crestPath, p_sigla: sigla })
       if (error) throw error
       const updated = data as Team
       setTeamOverride(updated)
@@ -638,10 +655,16 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       <div className="season-page team-profile-page">
 
       {ownTeam && editing && <form className="team-settings-panel" onSubmit={saveProfile}>
-        <div><p className="kicker">Impostazioni squadra</p><h2>Nome e logo</h2><label>Nome squadra<input type="text" minLength={2} maxLength={40} required value={teamName} onChange={(event) => setTeamName(event.target.value)} /></label></div>
+        <div><p className="kicker">Impostazioni squadra</p><h2>Nome, sigla e logo</h2><label>Nome squadra<input type="text" minLength={2} maxLength={40} required value={teamName} onChange={(event) => setTeamName(event.target.value)} /></label>
+          <label className="team-sigla-campo">Sigla<input type="text" inputMode="text" autoCapitalize="characters" autoComplete="off" spellCheck={false} minLength={3} maxLength={3} required value={sigla} onChange={(event) => setSigla(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3))} /></label>
+          <p className={`field-help ${siglaOccupataDa || (sigla && !siglaValida) ? 'is-errore' : ''}`}>
+            {siglaOccupataDa ? `${sigla} è già usata da ${siglaOccupataDa.nome}.`
+              : !siglaValida ? 'Tre caratteri tra lettere e cifre.'
+              : 'Compare nello scoreboard delle partite al posto del nome.'}
+          </p></div>
         <CrestPicker value={crest} onChange={setCrest} disabled={saving} disabledValues={stemmiUsati} />
         {saveError && <p className="notice notice--error">{saveError}</p>}
-        <button className="button button--primary" type="submit" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva modifiche'}</button>
+        <button className="button button--primary" type="submit" disabled={saving || !siglaValida || !!siglaOccupataDa}>{saving ? 'Salvataggio…' : 'Salva modifiche'}</button>
       </form>}
 
       {/* Due tab, non cinque per imitare un riferimento: sono i due
