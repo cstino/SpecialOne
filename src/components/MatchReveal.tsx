@@ -249,6 +249,24 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     return () => { vivo = false }
   }, [fixture?.bracket_tie_id])
 
+  // Nel ritorno di un'eliminatoria conta il totale delle due partite: senza
+  // l'andata un 1-0 che porta ai supplementari sembrerebbe un errore.
+  const [andata, setAndata] = useState<{ casa: number; ospite: number } | null>(null)
+  useEffect(() => {
+    let vivo = true
+    async function caricaAndata() {
+      if (!fixture?.bracket_tie_id || fixture.mano !== 2) { if (vivo) setAndata(null); return }
+      const { data: riga } = await supabase.from('fixtures').select('home_team_id, matches(gol_home, gol_away)')
+        .eq('bracket_tie_id', fixture.bracket_tie_id).eq('mano', 1).maybeSingle()
+      const partita = Array.isArray(riga?.matches) ? riga.matches[0] : riga?.matches
+      if (!vivo || !riga || !partita) return
+      const casaInCasa = riga.home_team_id === fixture.home_team_id
+      setAndata({ casa: casaInCasa ? partita.gol_home : partita.gol_away, ospite: casaInCasa ? partita.gol_away : partita.gol_home })
+    }
+    void caricaAndata()
+    return () => { vivo = false }
+  }, [fixture?.bracket_tie_id, fixture?.mano, fixture?.home_team_id])
+
   const eventi = useMemo(() => {
     if (!match) return []
     const estesa = match.blocchi.some((evento) => !isEventoGol(evento))
@@ -586,6 +604,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
           <div><Crest value={ospite?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="large" /><span>{ospite?.nome}</span></div>
         </div>
         <h2 className="match-reveal__stacco-titolo">{annuncio === 'supplementari' ? 'Supplementari' : 'Calci di rigore'}</h2>
+        {andata && <p className="match-reveal__stacco-totale">Andata {andata.casa}–{andata.ospite} · totale <b>{andata.casa + punteggio.casa}–{andata.ospite + punteggio.ospite}</b></p>}
         <p className="match-reveal__stacco-sotto"><em>{annuncio === 'supplementari' ? '+30′' : '11 m'}</em>{annuncio === 'supplementari' ? 'Altri trenta minuti per decidere.' : 'Decidono gli undici metri.'}</p>
       </div>}
 
@@ -596,7 +615,8 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
             : fasePartita === 'rigori' ? 'CALCI DI RIGORE'
             : <><i className="match-reveal__live-dot" aria-hidden="true" />{minuto}’{minuto > 90 ? ' · SUPPL.' : ''}</>}</small>
           <b>{punteggio.casa} <i>–</i> {punteggio.ospite}</b>
-          {fasePartita === 'rigori' && <span className="match-reveal__rigori-score">rigori {rigoriCasa}–{rigoriOspite}</span>}
+          {fasePartita === 'rigori' ? <span className="match-reveal__rigori-score">rigori {rigoriCasa}–{rigoriOspite}</span>
+            : andata && <span className="match-reveal__rigori-score">totale {andata.casa + punteggio.casa}–{andata.ospite + punteggio.ospite}</span>}
         </div>
         <div><strong>{ospite?.nome}</strong><Crest value={ospite?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" /></div>
       </header>

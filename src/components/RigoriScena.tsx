@@ -49,27 +49,6 @@ function varianteDi(seed: number, indice: number, segnato: boolean): Variante {
     : scegli<Variante>(r, [['para', 55], ['fuori', 30], ['male', 15]])
 }
 
-// Coordinate in % del riquadro della porta (0,0 = angolo in alto a sinistra).
-// `lato` e' da che parte va il pallone: -1 sinistra, +1 destra; `dir` la
-// direzione del tuffo del portiere, nello stesso verso.
-function traiettoria(variante: Variante, lato: -1 | 1) {
-  const x = (scarto: number) => `${50 + lato * scarto}%`
-  const tuffo = (dir: number, scarto: number) => ({
-    kl: `${50 + dir * scarto}%`,
-    kr: `${dir * 68}deg`,
-    ky: '-14%',
-  })
-  switch (variante) {
-    case 'spiazza': return { bx: x(35), by: '70%', bs: 0.55, arco: '0%', ...tuffo(-lato, 30) }
-    case 'intuisce': return { bx: x(41), by: '66%', bs: 0.55, arco: '0%', ...tuffo(lato, 30) }
-    case 'freddezza': return { bx: x(38), by: '16%', bs: 0.5, arco: '0%', ...tuffo(-lato, 28) }
-    case 'cucchiaio': return { bx: '50%', by: '30%', bs: 0.52, arco: '-70%', ...tuffo(lato, 28) }
-    case 'para': return { bx: x(20), by: '56%', bs: 0.6, arco: '0%', ...tuffo(lato, 22) }
-    case 'fuori': return { bx: x(68), by: '26%', bs: 0.45, arco: '0%', ...tuffo(lato, 26) }
-    case 'male': return { bx: x(12), by: '-50%', bs: 0.32, arco: '-20%', ...tuffo(-lato, 26) }
-  }
-}
-
 function testoEsito(variante: Variante, portiere: string, tiratore: string) {
   switch (variante) {
     case 'spiazza': return `Spiazza ${portiere}!`
@@ -82,33 +61,18 @@ function testoEsito(variante: Variante, portiere: string, tiratore: string) {
   }
 }
 
-function Portiere({ colore }: { colore: string }) {
-  return <svg viewBox="0 0 64 84" aria-hidden="true" style={{ ['--maglia' as string]: colore }}>
-    <path d="M22 54 L18 80 M42 54 L46 80" stroke="#1b1330" strokeWidth="9" strokeLinecap="round" />
-    <path d="M20 28 L6 12 M44 28 L58 12" stroke="var(--maglia)" strokeWidth="8" strokeLinecap="round" />
-    <circle cx="5" cy="9" r="6" fill="#f4f1ff" />
-    <circle cx="59" cy="9" r="6" fill="#f4f1ff" />
-    <rect x="18" y="24" width="28" height="34" rx="11" fill="var(--maglia)" />
-    <rect x="18" y="44" width="28" height="14" rx="6" fill="rgba(0,0,0,.18)" />
-    <circle cx="32" cy="14" r="9" fill="#f0cfb3" />
-    <path d="M23 12 Q32 2 41 12 Q32 8 23 12Z" fill="#2a1d3d" />
-  </svg>
-}
-
 export function RigoriScena({ serie, indice, fase, seed, casa, ospite, giocatori, portiereCasa, portiereOspite }: Props) {
   const finita = indice >= serie.length
   const tiro = finita ? null : serie[indice]
   const visti = serie.slice(0, finita ? serie.length : indice + (fase === 'esito' ? 1 : 0))
   const punti = (lato: 'casa' | 'ospite') => visti.filter((item) => item.lato === lato && item.segnato).length
   const ultimo = !finita && indice === serie.length - 1
-  // Il pallone parte in 'tiro' e l'esito (testo, pallini, punteggio) si svela
-  // solo dopo, in 'esito': rincorsa e tiro condividono lo stesso testo.
-  const inVolo = fase === 'tiro' || fase === 'esito'
+  // rincorsa e tiro condividono lo stesso testo: la pausa in piu' allunga
+  // l'attesa prima dell'esito, che (testo, pallini, punteggio) si svela solo
+  // in 'esito'.
   const faseTesto = fase === 'tiro' ? 'rincorsa' : fase
 
   const variante = tiro ? varianteDi(seed, indice, tiro.segnato) : null
-  const latoPalla: -1 | 1 = casuale(seed, indice, 2) < 0.5 ? -1 : 1
-  const percorso = variante ? traiettoria(variante, latoPalla) : null
 
   const squadraTiro = tiro?.lato === 'casa' ? casa : ospite
   const squadraPorta = tiro?.lato === 'casa' ? ospite : casa
@@ -128,7 +92,7 @@ export function RigoriScena({ serie, indice, fase, seed, casa, ospite, giocatori
 
   const riga = (lato: 'casa' | 'ospite', squadra: SquadraScena) => (
     <div className={`rig__squadra ${tiro?.lato === lato ? 'is-attiva' : ''}`}>
-      <Crest value={squadra.stemma} imageUrl={squadra.stemmaUrl} size="small" />
+      <span className="rig__stemma"><Crest value={squadra.stemma} imageUrl={squadra.stemmaUrl} size="small" /></span>
       <b>{squadra.nome}</b>
       <div className="rig__pallini">{pallini(lato)}</div>
       <strong key={punti(lato)}>{punti(lato)}</strong>
@@ -138,60 +102,50 @@ export function RigoriScena({ serie, indice, fase, seed, casa, ospite, giocatori
   const esito = fase === 'esito' && tiro ? (tiro.segnato ? 'gol' : 'errore') : null
   const vincitrice = punti('casa') > punti('ospite') ? casa : ospite
 
-  return <div className={`rig ${esito ? `is-${esito}` : ''} ${finita ? 'is-finita' : ''}`} data-fase={finita ? 'fine' : fase}>
+  return <div className={`rig ${esito ? `is-${esito}` : ''} ${finita ? 'is-finita' : ''}`} data-fase={finita ? 'fine' : faseTesto}>
     <div className="rig__tabellone">
       {riga('casa', casa)}
       {riga('ospite', ospite)}
     </div>
 
-    <div className="rig__scena">
-      <div className="rig__campo">
-        <div className="rig__prato" aria-hidden="true"><span className="rig__dischetto" /></div>
-        <div className="rig__porta">
-          <div className="rig__rete" aria-hidden="true" />
-          {percorso && <div
-            className={`rig__portiere ${inVolo ? 'is-tuffo' : 'is-attesa'}`}
-            style={{ ['--kl' as string]: percorso.kl, ['--kr' as string]: percorso.kr, ['--ky' as string]: percorso.ky }}
-          ><Portiere colore={tiro?.lato === 'casa' ? '#3de0b0' : '#ffc94d'} /></div>}
-          {!finita && percorso && <span
-            key={indice}
-            className={`rig__palla ${inVolo ? 'is-tiro' : ''}`}
-            style={{ ['--bx' as string]: percorso.bx, ['--by' as string]: percorso.by, ['--bs' as string]: percorso.bs, ['--arco' as string]: percorso.arco }}
-          />}
+    <div className="rig__palco">
+      {tiro && variante && <div className="rig__card" key={indice}>
+        <span className="rig__filigrana" aria-hidden="true">{nomeTiratore}</span>
+        <p className="rig__numero">{ultimo ? 'Rigore decisivo' : `Rigore n. ${tiro.numero}`}</p>
+        <div className="rig__ritratto">
+          <div className="rig__foto">
+            {tiratore?.foto ? <img src={tiratore.foto} alt="" /> : <span aria-hidden="true">{nomeTiratore.charAt(0)}</span>}
+          </div>
+          {esito && <div className="rig__banda" key={`banda-${indice}`}><strong>{tiro.segnato ? 'GOOOL!' : 'SBAGLIA!'}</strong></div>}
         </div>
-        {esito && tiro && <div className="rig__esito" key={`esito-${indice}`}>
-          <strong>{tiro.segnato ? 'GOOOL!' : 'SBAGLIA!'}</strong>
-        </div>}
-        {finita && <div className="rig__finale">
-          <small>Vittoria ai rigori</small>
-          <Crest value={vincitrice.stemma} imageUrl={vincitrice.stemmaUrl} size="large" />
-          <strong>{vincitrice.nome}</strong>
-          <b>{punti('casa')}–{punti('ospite')}</b>
-        </div>}
-      </div>
-    </div>
-
-    {tiro && variante && <div className="rig__pannello" key={`${indice}-${faseTesto}`}>
-      <div className="rig__foto">
-        {tiratore?.foto ? <img src={tiratore.foto} alt="" /> : <span aria-hidden="true">{nomeTiratore.charAt(0)}</span>}
-        <Crest value={squadraTiro.stemma} imageUrl={squadraTiro.stemmaUrl} size="small" />
-      </div>
-      <div className="rig__testi">
-        {faseTesto === 'intro' && <>
-          <small>{ultimo ? 'Rigore decisivo · è il momento di' : 'È il momento di'}</small>
-          <strong>{nomeTiratore}</strong>
+        <div className="rig__testi" key={faseTesto}>
+          {faseTesto === 'intro' && <>
+            <small>È il momento di</small>
+            <strong className="rig__nome">{nomeTiratore}</strong>
+          </>}
+          {faseTesto === 'rincorsa' && <>
+            <small>{nomeTiratore} sul dischetto</small>
+            <strong className="rig__nome rig__puntini">Parte il tiro<i>.</i><i>.</i><i>.</i></strong>
+          </>}
+          {faseTesto === 'esito' && <>
+            <small>{nomeTiratore}</small>
+            <strong className={`rig__frase is-${esito}`}>{testoEsito(variante, nomePortiere, nomeTiratore)}</strong>
+          </>}
+        </div>
+        <div className="rig__squadra-tiro">
+          <span className="rig__stemma"><Crest value={squadraTiro.stemma} imageUrl={squadraTiro.stemmaUrl} size="small" /></span>
           <span>{squadraTiro.nome}</span>
-        </>}
-        {faseTesto === 'rincorsa' && <>
-          <small>{nomeTiratore} · {squadraTiro.nome}</small>
-          <strong className="rig__puntini">Parte il tiro<i>.</i><i>.</i><i>.</i></strong>
-          <span>Davanti a lui {nomePortiere} ({squadraPorta.nome})</span>
-        </>}
-        {faseTesto === 'esito' && <>
-          <small>{nomeTiratore} · {squadraTiro.nome}</small>
-          <strong className={tiro.segnato ? 'is-gol' : 'is-errore'}>{testoEsito(variante, nomePortiere, nomeTiratore)}</strong>
-        </>}
-      </div>
-    </div>}
+          <em>contro {nomePortiere} · {squadraPorta.nome}</em>
+        </div>
+        {faseTesto === 'rincorsa' && <div className="rig__attesa" aria-hidden="true"><span /></div>}
+      </div>}
+
+      {finita && <div className="rig__finale">
+        <small>Vittoria ai rigori</small>
+        <span className="rig__stemma rig__stemma--grande"><Crest value={vincitrice.stemma} imageUrl={vincitrice.stemmaUrl} size="large" /></span>
+        <strong>{vincitrice.nome}</strong>
+        <b>{punti('casa')}–{punti('ospite')}</b>
+      </div>}
+    </div>
   </div>
 }
