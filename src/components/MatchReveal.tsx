@@ -578,16 +578,24 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
       <button className="match-reveal__close" type="button" onClick={onClose} aria-label="Chiudi cronaca">×</button>
 
       {popupGol && <div className="match-reveal__gol-popup" role="alert">
-        <div className="match-reveal__gol-popup-card">
-          <p className="match-reveal__gol-popup-titolo">GOOOL!</p>
-          <div className="match-reveal__gol-popup-foto">
-            {marcatore?.foto ? <img src={marcatore.foto} alt="" /> : <span aria-hidden="true">{cognome(marcatore?.nome ?? '?').charAt(0)}</span>}
+        <div className="rig__card rig__card--gol" key={`${popupGol.minuto}-${popupGol.team_id}`}>
+          <span className="rig__filigrana" aria-hidden="true">{cognome(marcatore?.nome ?? '')}</span>
+          <p className="rig__numero">{popupGol.minuto}’ · {popupGol.minuto > 105 ? '2º supplementare' : popupGol.minuto > 90 ? '1º supplementare' : popupGol.minuto > 45 ? '2º tempo' : '1º tempo'}</p>
+          <div className="rig__ritratto">
+            <div className="rig__foto">
+              {marcatore?.foto ? <img src={marcatore.foto} alt="" /> : <span aria-hidden="true">{cognome(marcatore?.nome ?? '?').charAt(0)}</span>}
+            </div>
+            <div className="rig__banda"><strong>GOOOL!</strong></div>
           </div>
-          <strong>{cognome(marcatore?.nome ?? 'Giocatore')}</strong>
-          <div className="match-reveal__gol-popup-squadra">
-            <Crest value={squadraGol?.stemma_url ?? null} imageUrl={crestGolUrl ?? undefined} size="small" />
+          <strong className="rig__nome">{cognome(marcatore?.nome ?? 'Giocatore')}</strong>
+          <div className="match-reveal__gol-risultato">
+            <span className={popupGol.lato === 'casa' ? 'is-segna' : ''}>{casa?.sigla}</span>
+            <b>{punteggio.casa}<i>–</i>{punteggio.ospite}</b>
+            <span className={popupGol.lato === 'ospite' ? 'is-segna' : ''}>{ospite?.sigla}</span>
+          </div>
+          <div className="rig__squadra-tiro">
+            <span className="rig__stemma"><Crest value={squadraGol?.stemma_url ?? null} imageUrl={crestGolUrl ?? undefined} size="small" /></span>
             <span>{squadraGol?.nome ?? 'Squadra'}</span>
-            <b>{popupGol.minuto}’</b>
           </div>
         </div>
       </div>}
@@ -606,7 +614,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
       </div>}
 
       <header className="match-reveal__header">
-        <div><Crest value={casa?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /><strong>{casa?.nome}</strong></div>
+        <div><Crest value={casa?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /><strong><span className="match-reveal__nome-intero">{casa?.nome}</span><span className="match-reveal__sigla">{casa?.sigla}</span></strong></div>
         <div className="match-reveal__score">
           <small>{completata ? (haRigori ? 'DOPO I RIGORI' : supplementari ? 'DOPO I SUPPLEMENTARI' : 'RISULTATO FINALE')
             : fasePartita === 'rigori' ? 'CALCI DI RIGORE'
@@ -614,7 +622,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
           <b>{punteggio.casa} <i>–</i> {punteggio.ospite}</b>
           {andata && fasePartita !== 'rigori' && <span className="match-reveal__rigori-score">totale {andata.casa + punteggio.casa}–{andata.ospite + punteggio.ospite}</span>}
         </div>
-        <div><strong>{ospite?.nome}</strong><Crest value={ospite?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" /></div>
+        <div><strong><span className="match-reveal__nome-intero">{ospite?.nome}</span><span className="match-reveal__sigla">{ospite?.sigla}</span></strong><Crest value={ospite?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" /></div>
       </header>
 
       {eventi.length === 0 ? <div className="match-reveal__empty"><p>Questa partita è stata simulata prima della cronaca estesa.</p><button className="button button--primary" type="button" onClick={onOpenReport}>Vedi risultato</button></div> : <>

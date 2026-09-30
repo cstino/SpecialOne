@@ -29,6 +29,8 @@ export type Team = {
   // a stringa vuota prima di usarle nei componenti che indicizzano per user id.
   user_id: string
   nome: string
+  // 3 caratteri, unica nella lega, calcolata dal database (trigger teams_sigla).
+  sigla: string
   stemma_url: string | null
   reroll_rimasti: number
   ordine_draft: number | null
