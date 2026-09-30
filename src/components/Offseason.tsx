@@ -14,7 +14,7 @@ type Props = { user: User; membership: Membership; onNavigate: (view: GameView) 
 export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh }: Props) {
   const league = membership.league as League
   const admin = league.admin_id === user.id
-  const { aperto: sbloccata, apertoIl } = useSbloccoOffseason(league)
+  const { aperto: sbloccata, apertoIl, stagioneInCorso } = useSbloccoOffseason(league)
   const [teams, setTeams] = useState<Team[]>([])
   const [crestUrls, setCrestUrls] = useState<Record<number, string>>({})
   const [status, setStatus] = useState<StatoOffseason | null>(null)
@@ -130,8 +130,8 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
 
       {league.fase_carriera !== 'offseason' && !sbloccata && <section className="offseason-countdown">
         <div>
-          <p className="kicker">Stagione appena conclusa</p>
-          <h2>Prima i risultati.</h2>
+          <p className="kicker">{stagioneInCorso ? 'Stagione in corso' : 'Stagione appena conclusa'}</p>
+          <h2>{stagioneInCorso ? 'Prima si gioca.' : 'Prima i risultati.'}</h2>
           <p>L’off-season si apre 24 ore dopo l’ultima giornata, così tutti hanno il tempo di rivedere partite e classifica.{apertoIl ? ` Sarà disponibile ${apertoIl.toLocaleString('it-IT', { timeZone: 'Europe/Rome', weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}.` : ''}</p>
         </div>
       </section>}
