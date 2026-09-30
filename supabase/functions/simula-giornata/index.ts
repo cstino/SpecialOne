@@ -217,6 +217,11 @@ function scalaInfortunio(giornateOriginali: number, giornateTotali: number) {
 // ============================================================
 
 const MINUTI_PER_BLOCCO = 15
+// Con i supplementari (blocchi 7 e 8) la cronaca arriva a 120': prima il tetto
+// era 90 e i gol dei supplementari finivano senza minuto, poi "riparati" dentro
+// i tempi regolamentari.
+const BLOCCO_MASSIMO = 8
+const MINUTO_MASSIMO = BLOCCO_MASSIMO * MINUTI_PER_BLOCCO
 const QUOTA_GOL_SENZA_ASSIST = 0.28 // rigori, tiri da fuori, ribattute, azioni personali
 
 // Propensione all'assist per slot. Non deriva da PESI_STAT.passaggi, che misura
@@ -330,7 +335,7 @@ function costruisciEventiGol(
       const eraGiaInCampo = evento.blocco === 1 || (lato.presenzePerBlocco[evento.blocco - 2] ?? []).includes(marcatore)
       inizio = eraGiaInCampo
         ? (evento.blocco - 1) * MINUTI_PER_BLOCCO + 1
-        : Math.min(90, evento.blocco * MINUTI_PER_BLOCCO + 1)
+        : Math.min(MINUTO_MASSIMO, evento.blocco * MINUTI_PER_BLOCCO + 1)
     } else {
       // Fallback del ripescaggio qui sopra (nessuno dei "rimasti" presente in
       // questo blocco, evento raro): il marcatore forzato puo' non essere
@@ -349,7 +354,7 @@ function costruisciEventiGol(
       evento.blocco = bloccoReale
       inizio = (bloccoReale - 1) * MINUTI_PER_BLOCCO + 1
     }
-    const fine = Math.min(90, inizio + MINUTI_PER_BLOCCO - 1)
+    const fine = Math.min(MINUTO_MASSIMO, inizio + MINUTI_PER_BLOCCO - 1)
     let minutiUsati = minutiUsatiPerSquadra.get(evento.team_id)
     if (!minutiUsati) { minutiUsati = new Set<number>(); minutiUsatiPerSquadra.set(evento.team_id, minutiUsati) }
     let candidati = Array.from({ length: fine - inizio + 1 }, (_, indice) => inizio + indice)
@@ -485,7 +490,7 @@ function costruisciEventiPartita(
     eventi.push({
       tipo: 'infortunio',
       // Il cambio diventa effettivo alla fine del blocco in cui si verifica.
-      minuto: Math.min(90, infortunio.blocco * MINUTI_PER_BLOCCO),
+      minuto: Math.min(MINUTO_MASSIMO, infortunio.blocco * MINUTI_PER_BLOCCO),
       blocco: infortunio.blocco,
       lato: infortunio.lato,
       team_id: lato.teamId,
@@ -498,7 +503,7 @@ function costruisciEventiPartita(
     if (!lato) continue
     eventi.push({
       tipo: 'cartellino',
-      minuto: Math.min(90, cartellino.blocco * MINUTI_PER_BLOCCO),
+      minuto: Math.min(MINUTO_MASSIMO, cartellino.blocco * MINUTI_PER_BLOCCO),
       blocco: cartellino.blocco,
       lato: cartellino.lato,
       team_id: lato.teamId,
@@ -554,13 +559,13 @@ function normalizzaCronaca(eventi: EventoPartita[]) {
   const senzaMinutoPerBlocco = new Map<number, number[]>()
   const haMinutoValido = (evento: EventoPartita) => {
     const minuto = Number(evento.minuto)
-    return Number.isInteger(minuto) && minuto >= 1 && minuto <= 90
+    return Number.isInteger(minuto) && minuto >= 1 && minuto <= MINUTO_MASSIMO
   }
 
   eventi.forEach((evento, indice) => {
     if (haMinutoValido(evento)) return
     const bloccoLetto = Number(evento.blocco)
-    const blocco = Number.isInteger(bloccoLetto) && bloccoLetto >= 1 && bloccoLetto <= 6
+    const blocco = Number.isInteger(bloccoLetto) && bloccoLetto >= 1 && bloccoLetto <= BLOCCO_MASSIMO
       ? bloccoLetto
       : Math.min(6, Math.floor(indice * 6 / Math.max(1, eventi.length)) + 1)
     const indici = senzaMinutoPerBlocco.get(blocco) ?? []
