@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { useSbloccoOffseason } from '../lib/useSbloccoOffseason'
 import type { League, Membership, Team } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { Crest } from './Crest'
@@ -13,6 +14,7 @@ type Props = { user: User; membership: Membership; onNavigate: (view: GameView) 
 export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh }: Props) {
   const league = membership.league as League
   const admin = league.admin_id === user.id
+  const { aperto: sbloccata, apertoIl } = useSbloccoOffseason(league)
   const [teams, setTeams] = useState<Team[]>([])
   const [crestUrls, setCrestUrls] = useState<Record<number, string>>({})
   const [status, setStatus] = useState<StatoOffseason | null>(null)
@@ -126,7 +128,15 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
       {error && <p className="notice notice--error" role="alert">{error}</p>}
       {notice && <p className="notice notice--success">{notice}</p>}
 
-      {league.fase_carriera !== 'offseason' && <section className="offseason-launch">
+      {league.fase_carriera !== 'offseason' && !sbloccata && <section className="offseason-countdown">
+        <div>
+          <p className="kicker">Stagione appena conclusa</p>
+          <h2>Prima i risultati.</h2>
+          <p>L’off-season si apre 24 ore dopo l’ultima giornata, così tutti hanno il tempo di rivedere partite e classifica.{apertoIl ? ` Sarà disponibile ${apertoIl.toLocaleString('it-IT', { timeZone: 'Europe/Rome', weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}.` : ''}</p>
+        </div>
+      </section>}
+
+      {league.fase_carriera !== 'offseason' && sbloccata && <section className="offseason-launch">
         <div className="offseason-launch__intro">
           <span className="offseason-launch__number">01</span>
           <p className="kicker">Decisione dell’admin</p><h2>Chi resta in gioco?</h2>

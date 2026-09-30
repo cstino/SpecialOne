@@ -321,7 +321,10 @@ export default function App() {
     setActiveLeagueId(leagueId)
     setNelMenu(false)
     const selected = memberships.find(item => item.league_id === leagueId)
-    setGameView(selected?.league?.stato === 'conclusa' || selected?.league?.fase_carriera === 'offseason' ? 'offseason' : 'overview')
+    // A stagione conclusa si resta sulle schermate di stagione: l'off-season
+    // si apre 24 ore dopo l'ultima giornata (useSbloccoOffseason) e la si
+    // raggiunge dal menu, cosi' nessuno salta i risultati.
+    setGameView(selected?.league?.fase_carriera === 'offseason' ? 'offseason' : 'overview')
     setOpenMatch(null)
     setViewedTeamId(null)
   }
