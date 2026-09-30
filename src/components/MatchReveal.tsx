@@ -564,9 +564,6 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const fasceTempo = fasePartita === 'supplementari'
     ? [{ inizio: 90, fine: 105, etichetta: '1º SUPPL.' }, { inizio: 105, fine: 120, etichetta: '2º SUPPL.' }]
     : [{ inizio: 0, fine: 45, etichetta: '1º TEMPO' }, { inizio: 45, fine: 90, etichetta: '2º TEMPO' }]
-  const rigoriVisti = serieRigori.slice(0, rigoreCorrente + (faseRigore === 'esito' ? 1 : 0))
-  const rigoriCasa = rigoriVisti.filter((tiro) => tiro.lato === 'casa' && tiro.segnato).length
-  const rigoriOspite = rigoriVisti.filter((tiro) => tiro.lato === 'ospite' && tiro.segnato).length
   const inCorsoSupplementari = fasePartita === 'supplementari'
 
   const squadraGol = popupGol && (popupGol.lato === 'casa' ? casa : ospite)
@@ -615,8 +612,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
             : fasePartita === 'rigori' ? 'CALCI DI RIGORE'
             : <><i className="match-reveal__live-dot" aria-hidden="true" />{minuto}’{minuto > 90 ? ' · SUPPL.' : ''}</>}</small>
           <b>{punteggio.casa} <i>–</i> {punteggio.ospite}</b>
-          {fasePartita === 'rigori' ? <span className="match-reveal__rigori-score">rigori {rigoriCasa}–{rigoriOspite}</span>
-            : andata && <span className="match-reveal__rigori-score">totale {andata.casa + punteggio.casa}–{andata.ospite + punteggio.ospite}</span>}
+          {andata && fasePartita !== 'rigori' && <span className="match-reveal__rigori-score">totale {andata.casa + punteggio.casa}–{andata.ospite + punteggio.ospite}</span>}
         </div>
         <div><strong>{ospite?.nome}</strong><Crest value={ospite?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" /></div>
       </header>
