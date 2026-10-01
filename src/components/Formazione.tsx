@@ -205,7 +205,7 @@ function PlayerPortrait({ player, imageUrl, position, selected = false, onClick,
 export function CartaCampo({ player, imageUrl, position, selected, onClick, ruolo }: { player?: Player; imageUrl?: string; position: string; selected: boolean; onClick: (event: ReactMouseEvent<HTMLButtonElement>) => void; ruolo: string | null }) {
   if (!player) {
     return <button className="rosa-card rosa-card--vuota" type="button" onClick={onClick} aria-label={`Posizione ${position} libera: tocca per assegnare un giocatore`}>
-      <span className="rosa-card__foto"><span className="rosa-card__iniziale">+</span></span>
+      <span className="rosa-card__foto"><span className="rosa-card__ritratto"><span className="rosa-card__iniziale">+</span></span></span>
       <span className="rosa-card__nome">Libero</span>
       <span className="rosa-card__riga"><i>{position}</i></span>
     </button>
@@ -217,7 +217,9 @@ export function CartaCampo({ player, imageUrl, position, selected, onClick, ruol
   return <button className={`rosa-card${selected ? ' is-selected' : ''}${fuoriGioco ? ' is-indisponibile' : ''}`} type="button" onClick={onClick}
     aria-label={`${player.nome}, ${position}, overall ${player.overall_corrente}`}>
     <span className="rosa-card__foto">
-      {imageUrl ? <img src={imageUrl} alt="" onError={(event) => { event.currentTarget.hidden = true }} /> : <span className="rosa-card__iniziale">{player.nome.charAt(0)}</span>}
+      <span className="rosa-card__ritratto">
+        {imageUrl ? <img src={imageUrl} alt="" onError={(event) => { event.currentTarget.hidden = true }} /> : <span className="rosa-card__iniziale">{player.nome.charAt(0)}</span>}
+      </span>
       <span className={`rosa-card__energia energia--${livello}`} title={
         player.infortunato_fino_a > 0 ? `Infortunato: salta ancora ${player.infortunato_fino_a} ${player.infortunato_fino_a === 1 ? 'giornata' : 'giornate'}`
         : player.squalificato_fino_a > 0 ? `Squalificato: salta ancora ${player.squalificato_fino_a} ${player.squalificato_fino_a === 1 ? 'giornata' : 'giornate'}`
