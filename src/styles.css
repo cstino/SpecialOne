@@ -2816,8 +2816,6 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 @media (prefers-reduced-motion: reduce) {
   .match-intro__sfondo, .match-intro__card { animation: none; opacity: 1; }
 }
-@media (max-width: 480px) {
-}
 
 .spot-video { position: fixed; z-index: 90; inset: 0; background: #000; display: grid; place-items: center; }
 .spot-video video { width: 100%; height: 100%; object-fit: contain; }
@@ -2954,65 +2952,11 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 
 .tabellone-segmented { max-width: 420px; margin-bottom: 28px; }
 
-.tabellone-card {
-  padding: 40px 24px; margin-bottom: 24px; border-radius: 18px;
-  background: linear-gradient(135deg, rgba(43,29,61,.42), rgba(19,18,27,.34));
-  backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%);
-  border: 1px solid rgba(178,140,220,.2); box-shadow: 0 18px 44px rgba(0,0,0,.32);
-}
-.tabellone-testa { display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
-.tabellone-logo-fase { height: 88px; width: auto; max-width: 82%; object-fit: contain; filter: drop-shadow(0 10px 26px rgba(0,0,0,.55)); }
-.tabellone-vincitore { color: #c8b6dd; font-size: .85rem; }
-.tabellone-vincitore b { color: #fff; }
-.tabellone-card--draft .tabellone-vincitore b { color: #67e8b0; }
 
-@media (max-width: 720px) {
-  .tabellone-logo-fase { height: 64px; }
-}
 
-.bracket-scroll { display: flex; overflow-x: auto; padding: 28px 6px 18px; margin: 0 -6px; -webkit-overflow-scrolling: touch; }
-.bracket-nodo { display: flex; flex-direction: row; align-items: center; flex: none; }
-.bracket-nodo__figli { display: flex; flex-direction: column; gap: 24px; flex: none; }
-.bracket-nodo__connettore {
-  flex: none; align-self: stretch; width: 22px;
-  border: 2px solid rgba(201,167,255,.32); border-left: none; border-radius: 0 10px 10px 0;
-}
 
-.bracket-match {
-  display: flex; flex-direction: column; justify-content: center; gap: 5px; flex: none;
-  width: 232px; box-sizing: border-box; padding: 10px 13px;
-  background: linear-gradient(135deg, rgba(43,29,61,.55), rgba(19,18,27,.5));
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(178,140,220,.24); border-radius: 14px; box-shadow: 0 10px 24px rgba(0,0,0,.28);
-}
-.bracket-match__turno { margin: 0 0 1px; color: #9d8fb5; font-size: .58rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-.bracket-match__nota { margin: 2px 0 0; color: #8f86a0; font-size: .72rem; font-style: italic; }
-.bracket-match__mani { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.08); }
-.bracket-match__mano {
-  font-size: .66rem; font-weight: 700; color: #cabfd8; background: rgba(255,255,255,.05);
-  border: 1px solid rgba(255,255,255,.1); border-radius: 6px; padding: 2px 6px;
-}
-.bracket-match__mano--link { cursor: pointer; }
-.bracket-match__mano--link:hover { border-color: #9b43f5; color: #fff; }
-.bracket-match__badge {
-  font-size: .6rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #b99dce;
-  background: rgba(155,67,245,.16); border-radius: 6px; padding: 2px 6px;
-}
 
-.bracket-riga { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 8px; align-items: center; color: #a9a0b7; }
-.bracket-riga .crest { width: 24px; height: 24px; }
-.bracket-riga--vuota { color: #7d7489; font-style: italic; grid-template-columns: 1fr; }
-.bracket-nome { display: flex; gap: 6px; align-items: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .82rem; font-weight: 650; }
-.bracket-seed { flex: none; font-style: normal; font-size: .62rem; color: #8f86a0; border: 1px solid rgba(255,255,255,.14); border-radius: 5px; padding: 0 4px; }
-.bracket-gol { font-weight: 800; font-variant-numeric: tabular-nums; font-size: .84rem; }
-.bracket-gol em { font-style: normal; color: #b99dce; font-weight: 600; font-size: .74rem; }
-.bracket-riga.e-vincitore { color: #fff; }
-.bracket-riga.e-vincitore .bracket-gol { color: #c68aff; }
-.tabellone-card--draft .bracket-riga.e-vincitore .bracket-gol { color: #34d399; }
 
-@media (max-width: 720px) {
-  .bracket-match { width: 200px; }
-}
 
 /* ---- Calci di rigore nel tabellino ---- */
 .rigori-punteggio { display:grid;grid-template-columns:1fr auto 1fr;gap:1rem;align-items:center;margin:.8rem 0; }
@@ -3609,6 +3553,46 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .match-intro__strada-stemma .crest { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 6px rgba(0,0,0,.4)); }
 .match-intro__strada-lista.is-poche .match-intro__strada-nome { font-size: clamp(.68rem, 3.1vw, .88rem); letter-spacing: .05em; }
 .match-intro__strada-lista.is-poche .match-intro__strada-v { font-size: 2rem; }
+
+/* Pagina Tabellone, stile bracket UEFA: testata con logo e campione, albero
+   verticale a scalini (posizioni calcolate in Tabellone.tsx), carte a due
+   righe con andata, ritorno e totale. Colori per fase. */
+.tabellone-blocco { --carta-luce: #3fe0d0; --carta-1: #2a8fd8; --carta-2: #1530b8; --carta-scura: #0b1a78; --carta-linea: rgba(255,255,255,.85); }
+.tabellone-blocco--draft { --carta-luce: #ffc46b; --carta-1: #e0861f; --carta-2: #9a3d07; --carta-scura: #3b1503; --carta-linea: rgba(255,236,210,.85); }
+.tabellone-eroe { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 16px; margin-bottom: 22px; }
+.tabellone-eroe__comp { display: grid; justify-items: start; gap: 6px; }
+.tabellone-eroe__comp img { height: 44px; width: auto; max-width: 100%; object-fit: contain; filter: drop-shadow(0 6px 16px rgba(0,0,0,.5)); }
+.tabellone-eroe__comp strong { color: var(--carta-luce); font: 700 clamp(2.2rem, 10vw, 3rem)/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .01em; text-shadow: 0 0 24px color-mix(in srgb, var(--carta-luce) 40%, transparent); }
+.tabellone-eroe__campione { display: grid; justify-items: center; gap: 4px; text-align: center; }
+.tabellone-eroe__campione small { color: rgba(255,255,255,.75); font-size: .7rem; font-weight: 700; letter-spacing: .06em; }
+.tabellone-eroe__campione b { color: #fff; font: 700 clamp(1.2rem, 5.5vw, 1.6rem)/1.05 "Oswald", "Arial Narrow", sans-serif; text-transform: uppercase; overflow-wrap: anywhere; }
+.tabellone-eroe__stemma { display: grid; place-items: center; width: 84px; height: 84px; margin-top: 6px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--carta-luce) 55%, #fff) 0%, var(--carta-luce) 55%, color-mix(in srgb, var(--carta-luce) 40%, #000) 100%); box-shadow: 0 0 30px color-mix(in srgb, var(--carta-luce) 55%, transparent); }
+.tabellone-eroe__stemma .crest { width: 64px; height: 64px; object-fit: contain; }
+.albero { position: relative; width: 100%; margin-bottom: 32px; }
+.albero__linea { position: absolute; border: 0 solid var(--carta-linea); border-right-width: 2px; border-radius: 0 6px 6px 0; pointer-events: none; }
+.albero__posto { position: absolute; width: var(--larghezza-carta); }
+.carta { display: grid; grid-template-rows: 16px 1fr 1fr; height: 100%; overflow: hidden; border: 1px solid rgba(255,255,255,.18); border-radius: 4px; background: var(--carta-scura); box-shadow: 0 10px 24px rgba(0,0,0,.4); }
+.carta__testa, .carta__riga { display: grid; grid-template-columns: 22px minmax(0, 1fr) repeat(3, 24px); align-items: center; gap: 6px; padding: 0 8px; }
+.carta--secca .carta__testa, .carta--secca .carta__riga { grid-template-columns: 22px minmax(0, 1fr) 30px; }
+.carta__testa { background: rgba(0,0,0,.35); color: rgba(255,255,255,.65); font-size: .52rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.carta__testa span { grid-column: 1 / 3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.carta__testa b { font-weight: 800; text-align: center; }
+.carta__riga { color: #fff; }
+.carta__riga { background: linear-gradient(90deg, var(--carta-2), var(--carta-scura)); }
+.carta__riga.is-luce { background: linear-gradient(90deg, var(--carta-luce), var(--carta-1) 45%, var(--carta-2)); color: #06123d; }
+.tabellone-blocco--draft .carta__riga.is-luce { color: #2a0f02; }
+.carta__riga.is-eliminato { opacity: .55; }
+.carta__riga.is-vincitore .carta__nome { font-weight: 800; }
+.carta__riga--vuota { grid-template-columns: 1fr !important; color: rgba(255,255,255,.55) !important; background: rgba(255,255,255,.04) !important; font-size: .74rem; font-style: italic; }
+.carta__stemma { display: grid; place-items: center; width: 22px; height: 22px; }
+.carta__stemma .crest { width: 100%; height: 100%; object-fit: contain; }
+.carta__nome { display: flex; align-items: center; gap: 5px; min-width: 0; font-size: .8rem; font-weight: 600; white-space: nowrap; }
+.carta__nome > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.carta__nome i { flex: none; padding: 0 4px; border: 1px solid currentColor; border-radius: 4px; font-size: .56rem; font-style: normal; opacity: .6; }
+.carta__num { display: block; padding: 0; border: 0; background: none; color: inherit; font: 600 .8rem/1 Inter, Arial, sans-serif; text-align: center; font-variant-numeric: tabular-nums; }
+button.carta__num { cursor: pointer; text-decoration: underline; text-decoration-color: rgba(255,255,255,.3); text-underline-offset: 3px; }
+.carta__num.is-forte { font-weight: 900; font-size: .9rem; }
+.carta__num sup { margin-left: 1px; font-size: .55rem; font-weight: 800; opacity: .8; }
 
 /* Icone dei pulsanti rotondi (src/components/Icona.tsx). Specificita' zero:
    dove una classe fissa gia' il display vince la classe, altrove il pulsante

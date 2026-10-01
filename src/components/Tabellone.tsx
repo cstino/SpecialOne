@@ -12,17 +12,27 @@ type Props = { membership: Membership; onNavigate: (view: GameView) => void; onO
 
 const TITOLO: Record<Bracket['tipo'], string> = { title: 'Title Playoff', draft: 'Draft Playoff' }
 
-// Altezza fissa di ogni carta-incontro e spaziatura verticale fra due
-// sorelle: sono le uniche due costanti da cui dipende la geometria del
-// tabellone. Il connettore fra un turno e il successivo si calcola da
-// queste, ricorsivamente, così le linee toccano sempre il centro esatto
-// di ogni carta, a qualunque profondità (vedi altezzaSottoalbero).
-const ALTEZZA_MATCH = 112
-const GAP_VERTICALE = 24
+// Geometria dell'albero verticale "a scalini" (stile bracket UEFA): ogni
+// turno e' spostato a destra e la carta di un turno siede nello spazio fra
+// le sue due sfide d'origine. La riga di ogni carta e' la sua posizione in un
+// attraversamento in-order dell'albero: cosi' nessuna carta si sovrappone a
+// un'altra, a qualunque numero di turni.
+const ALTEZZA_CARTA = 86
+const GAP_CARTE = 12
+const STACCO_CONNETTORE = 16
 
-function altezzaSottoalbero(turno: number): number {
-  if (turno <= 1) return ALTEZZA_MATCH
-  return 2 * altezzaSottoalbero(turno - 1) + GAP_VERTICALE
+type NodoAlbero = { turno: number; posizione: number; riga: number }
+
+function righeAlbero(turniTotali: number): NodoAlbero[] {
+  const nodi: NodoAlbero[] = []
+  let riga = 0
+  function visita(turno: number, posizione: number) {
+    if (turno > 1) visita(turno - 1, posizione * 2)
+    nodi.push({ turno, posizione, riga: riga++ })
+    if (turno > 1) visita(turno - 1, posizione * 2 + 1)
+  }
+  if (turniTotali > 0) visita(turniTotali, 0)
+  return nodi
 }
 
 // Il turno si numera da quanti round ha DAVVERO il tabellone (dedotto dal
@@ -128,13 +138,6 @@ export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
           scelte, quindi vale la pena giocarselo fino in fondo. La classifica finale della lega nasce
           combinando l'esito di entrambi i tabelloni, non solo del Title Playoff.</p>
       </PopupSpiegazione>
-      <section className="season-title-row">
-        <div>
-          <p className="kicker">{league.nome}</p>
-          <h1>Tabellone.</h1>
-        </div>
-      </section>
-
       {bracketsStagione.length === 0 && <section className="offseason-card">
         <p className="kicker">Non ancora</p>
         <h2>I tabelloni non sono ancora nati</h2>
@@ -161,131 +164,129 @@ export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
         const turniTotali = turniTotaliDa(suoi)
         const tieMap = new Map(suoi.map((t) => [`${t.turno}:${t.posizione}`, t]))
 
+        const campione = bracket.stato === 'concluso' && bracket.vincitore_team_id ? teamById.get(bracket.vincitore_team_id) : undefined
+
         return <div className={`tabellone-blocco tabellone-blocco--${bracket.tipo}`}>
-          <section className={`tabellone-card tabellone-card--${bracket.tipo}`}>
-            <div className="tabellone-testa">
-              <img className="tabellone-logo-fase" src={LOGO_FASE[bracket.tipo]} alt={TITOLO[bracket.tipo]} />
-              {bracket.stato === 'concluso' && bracket.vincitore_team_id && (
-                <span className="tabellone-vincitore">
-                  {bracket.tipo === 'title' ? 'Campione' : 'Vince il Draft Playoff'}: <b>{teamById.get(bracket.vincitore_team_id)?.nome ?? '—'}</b>
-                </span>
-              )}
+          <section className="tabellone-eroe">
+            <div className="tabellone-eroe__comp">
+              <img src={LOGO_FASE[bracket.tipo]} alt={TITOLO[bracket.tipo]} />
+              <strong>Tabellone</strong>
+            </div>
+            <div className="tabellone-eroe__campione">
+              {campione ? <>
+                <small>{bracket.tipo === 'title' ? `Campione · Season ${league.stagione_corrente}` : 'Vince il Draft Playoff'}</small>
+                <b>{campione.nome}</b>
+                <span className="tabellone-eroe__stemma"><Crest value={campione.stemma_url} imageUrl={dati.crestUrlByTeamId.get(campione.id)} size="large" /></span>
+              </> : <>
+                <small>Season {league.stagione_corrente}</small>
+                <b>{bracket.tipo === 'title' ? 'Chi vince il titolo?' : 'In palio la prima scelta'}</b>
+              </>}
             </div>
           </section>
 
-          {turniTotali > 0 && <div className="bracket-scroll">
-            <NodoBracket
-              turno={turniTotali} posizione={0} turniTotali={turniTotali}
-              tieMap={tieMap} dati={datiComuni}
-            />
-          </div>}
+          {turniTotali > 0 && <AlberoBracket turniTotali={turniTotali} tieMap={tieMap} dati={datiComuni} />}
         </div>
       })()}
     </div>
   </main>
 }
 
-function NodoBracket({ turno, posizione, turniTotali, tieMap, dati }: {
-  turno: number
-  posizione: number
+function AlberoBracket({ turniTotali, tieMap, dati }: {
   turniTotali: number
   tieMap: Map<string, BracketTie>
   dati: DatiTabellone
 }) {
-  const tie = tieMap.get(`${turno}:${posizione}`)
-  const carta = <ConfrontoBracket tie={tie} turno={turno} turniTotali={turniTotali} dati={dati} />
+  const nodi = righeAlbero(turniTotali)
+  const rigaDi = new Map(nodi.map((n) => [`${n.turno}:${n.posizione}`, n.riga]))
+  const frazione = (turno: number) => turniTotali > 1 ? (turno - 1) / (turniTotali - 1) : 0
+  const sinistra = (turno: number) => `calc((100% - var(--larghezza-carta)) * ${frazione(turno)})`
+  const passo = ALTEZZA_CARTA + GAP_CARTE
 
-  if (turno <= 1) return carta
-
-  const margineConnettore = altezzaSottoalbero(turno - 1) / 2
-
-  return <div className="bracket-nodo">
-    <div className="bracket-nodo__figli">
-      <NodoBracket turno={turno - 1} posizione={posizione * 2} turniTotali={turniTotali} tieMap={tieMap} dati={dati} />
-      <NodoBracket turno={turno - 1} posizione={posizione * 2 + 1} turniTotali={turniTotali} tieMap={tieMap} dati={dati} />
-    </div>
-    <span className="bracket-nodo__connettore" style={{ margin: `${margineConnettore}px 0` }} aria-hidden="true" />
-    {carta}
+  return <div className="albero" style={{ '--larghezza-carta': `min(250px, calc(100% - ${46 * (turniTotali - 1)}px))`, height: nodi.length * passo - GAP_CARTE } as React.CSSProperties}>
+    {nodi.filter((n) => n.turno < turniTotali).map((n) => {
+      // Dal centro del lato destro della carta figlia, in orizzontale, poi in
+      // verticale fino al bordo della carta del turno dopo.
+      const rigaPadre = rigaDi.get(`${n.turno + 1}:${Math.floor(n.posizione / 2)}`) ?? 0
+      const centro = n.riga * passo + ALTEZZA_CARTA / 2
+      const sopra = n.riga < rigaPadre
+      const bordoPadre = sopra ? rigaPadre * passo : rigaPadre * passo + ALTEZZA_CARTA
+      const x = `calc(${sinistra(n.turno)} + var(--larghezza-carta))`
+      return <span className="albero__linea" aria-hidden="true" key={`l-${n.turno}-${n.posizione}`} style={{
+        left: x,
+        top: Math.min(centro, bordoPadre),
+        width: STACCO_CONNETTORE,
+        height: Math.abs(bordoPadre - centro),
+        borderTopWidth: sopra ? 2 : 0,
+        borderBottomWidth: sopra ? 0 : 2,
+      }} />
+    })}
+    {nodi.map((n) => (
+      <div className="albero__posto" key={`${n.turno}-${n.posizione}`} style={{ top: n.riga * passo, left: sinistra(n.turno), height: ALTEZZA_CARTA }}>
+        <CartaSfida tie={tieMap.get(`${n.turno}:${n.posizione}`)} turno={n.turno} turniTotali={turniTotali} dati={dati} />
+      </div>
+    ))}
   </div>
 }
 
-function ConfrontoBracket({ tie, turno, turniTotali, dati }: {
+function CartaSfida({ tie, turno, turniTotali, dati }: {
   tie: BracketTie | undefined
   turno: number
   turniTotali: number
   dati: DatiTabellone
 }) {
   const { teamById, fixturePerTie, matchPerFixture, crestUrls, onOpenMatch } = dati
+  const alta = tie?.alta_team_id ? teamById.get(tie.alta_team_id) ?? null : null
+  const bassa = tie?.bassa_team_id ? teamById.get(tie.bassa_team_id) ?? null : null
+  const fx = tie ? fixturePerTie.get(tie.id) ?? [] : []
+  const secca = !!tie?.gara_secca || fx.length === 1
+  const colonne = secca ? ['RIS'] : ['A', 'R', 'TOT']
 
-  return <div className="bracket-match" style={{ height: ALTEZZA_MATCH }}>
-    <p className="bracket-match__turno">{nomeTurno(turno, turniTotali)}</p>
-    {!tie ? <>
-      <RigaSquadra team={null} seed={null} crestUrls={crestUrls} />
-      <RigaSquadra team={null} seed={null} crestUrls={crestUrls} />
-    </> : (() => {
-      const alta = tie.alta_team_id ? teamById.get(tie.alta_team_id) : null
-      const bassa = tie.bassa_team_id ? teamById.get(tie.bassa_team_id) : null
+  const golDi = (team: Team | null, f: Fixture | undefined) => {
+    const m = f ? matchPerFixture.get(f.id) : undefined
+    if (!team || !f || !m) return null
+    return f.home_team_id === team.id ? m.gol_home : m.gol_away
+  }
+  const rigoriDi = (team: Team | null) => {
+    for (const f of fx) {
+      const m = matchPerFixture.get(f.id)
+      if (team && m && m.rigori_home != null) return f.home_team_id === team.id ? m.rigori_home : m.rigori_away
+    }
+    return null
+  }
+  const andata = fx.find((f) => f.mano === 1) ?? fx[0]
+  const ritorno = secca ? undefined : fx.find((f) => f.mano === 2)
 
-      if (!alta || !bassa) {
-        const solo = alta ?? bassa
-        return <>
-          <RigaSquadra team={solo} seed={alta ? tie.alta_seed : tie.bassa_seed} crestUrls={crestUrls} vincitore />
-          <p className="bracket-match__nota">Passa senza giocare</p>
-        </>
-      }
+  const riga = (team: Team | null, seed: number | null | undefined, chiave: string) => {
+    if (!team) return <div className="carta__riga carta__riga--vuota" key={chiave}><span>{turno === 1 && tie && (alta || bassa) ? 'Passa senza giocare' : 'Da definire'}</span></div>
+    const a = golDi(team, andata)
+    const r = golDi(team, ritorno)
+    const totale = a == null && r == null ? null : (a ?? 0) + (r ?? 0)
+    const rig = rigoriDi(team)
+    // Riga luminosa: la vincitrice a sfida chiusa, altrimenti quella in alto.
+    const deciso = tie?.stato === 'concluso' && tie.vincitore_team_id != null
+    const esito = deciso ? (tie!.vincitore_team_id === team.id ? 'is-vincitore is-luce' : 'is-eliminato') : chiave === 'alta' ? 'is-luce' : ''
+    const cella = (valore: number | null, f: Fixture | undefined, forte = false) => {
+      const m = f ? matchPerFixture.get(f.id) : undefined
+      const testo = <>{valore == null ? '–' : valore}{forte && rig != null && <sup title="Calci di rigore">{rig}</sup>}</>
+      return m
+        ? <button type="button" className={`carta__num ${forte ? 'is-forte' : ''}`} onClick={() => onOpenMatch(m.id)}>{testo}</button>
+        : <span className={`carta__num ${forte ? 'is-forte' : ''}`}>{testo}</span>
+    }
+    return <div className={`carta__riga ${esito}`} key={chiave}>
+      <span className="carta__stemma"><Crest value={team.stemma_url} imageUrl={crestUrls.get(team.id)} size="small" /></span>
+      <span className="carta__nome"><span>{team.nome}</span>{seed != null && <i>{seed}</i>}</span>
+      {secca
+        ? <>{cella(a, andata, true)}</>
+        : <>{cella(a, andata)}{cella(r, ritorno)}{cella(totale, undefined, true)}</>}
+    </div>
+  }
 
-      const fx = fixturePerTie.get(tie.id) ?? []
-      const aggregato = fx.reduce((acc, f) => {
-        const m = matchPerFixture.get(f.id)
-        if (!m) return acc
-        const golAlta = f.home_team_id === tie.alta_team_id ? m.gol_home : m.gol_away
-        const golBassa = f.home_team_id === tie.alta_team_id ? m.gol_away : m.gol_home
-        return { alta: acc.alta + golAlta, bassa: acc.bassa + golBassa, giocate: acc.giocate + 1 }
-      }, { alta: 0, bassa: 0, giocate: 0 })
-      const rigori = fx.map((f) => matchPerFixture.get(f.id)).find((m) => m && m.rigori_home !== null)
-      const fxRigori = rigori ? fx.find((f) => matchPerFixture.get(f.id) === rigori) : undefined
-      const rigoriAlta = rigori && fxRigori ? (fxRigori.home_team_id === tie.alta_team_id ? rigori.rigori_home : rigori.rigori_away) : null
-      const rigoriBassa = rigori && fxRigori ? (fxRigori.home_team_id === tie.alta_team_id ? rigori.rigori_away : rigori.rigori_home) : null
-
-      return <>
-        <RigaSquadra team={alta} seed={tie.alta_seed} crestUrls={crestUrls}
-          gol={aggregato.giocate ? aggregato.alta : null} rigori={rigoriAlta}
-          vincitore={tie.vincitore_team_id === alta.id} />
-        <RigaSquadra team={bassa} seed={tie.bassa_seed} crestUrls={crestUrls}
-          gol={aggregato.giocate ? aggregato.bassa : null} rigori={rigoriBassa}
-          vincitore={tie.vincitore_team_id === bassa.id} />
-        <div className="bracket-match__mani">
-          {tie.gara_secca && <span className="bracket-match__badge">Campo neutro</span>}
-          {fx.map((f) => {
-            const m = matchPerFixture.get(f.id)
-            const etichetta = tie.gara_secca ? 'Finale' : f.mano === 1 ? 'A' : 'R'
-            if (!m) return <span className="bracket-match__mano" key={f.id}>{etichetta} · g.{f.giornata}</span>
-            return <button className="bracket-match__mano bracket-match__mano--link" type="button" key={f.id}
-              onClick={() => onOpenMatch(m.id)}>
-              {etichetta} {m.gol_home}-{m.gol_away}
-            </button>
-          })}
-        </div>
-      </>
-    })()}
-  </div>
-}
-
-function RigaSquadra({ team, seed, crestUrls, gol = null, rigori = null, vincitore = false }: {
-  team: Team | null | undefined
-  seed: number | null
-  crestUrls: Map<number, string>
-  gol?: number | null
-  rigori?: number | null
-  vincitore?: boolean
-}) {
-  if (!team) return <div className="bracket-riga bracket-riga--vuota"><span>Da definire</span></div>
-  return <div className={`bracket-riga ${vincitore ? 'e-vincitore' : ''}`}>
-    <Crest value={team.stemma_url} imageUrl={crestUrls.get(team.id)} />
-    <span className="bracket-nome">{team.nome}{seed != null && <i className="bracket-seed">{seed}</i>}</span>
-    <span className="bracket-gol">
-      {gol != null ? gol : '—'}
-      {rigori != null && <em> ({rigori})</em>}
-    </span>
+  return <div className={`carta ${secca ? 'carta--secca' : ''}`}>
+    <div className="carta__testa">
+      <span>{nomeTurno(turno, turniTotali)}{tie?.gara_secca ? ' · campo neutro' : ''}</span>
+      {colonne.map((c) => <b key={c}>{c}</b>)}
+    </div>
+    {riga(alta, tie?.alta_seed, 'alta')}
+    {riga(bassa, tie?.bassa_seed, 'bassa')}
   </div>
 }
