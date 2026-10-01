@@ -14,7 +14,7 @@ import { SchedaGiocatore } from './SchedaGiocatore'
 import type { GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
 import { PopupSpiegazione } from './PopupSpiegazione'
-import { UnderlineTabs } from './ui/underline-tabs'
+import { useFaseSquadra } from '../lib/faseSquadra'
 import { FtsgGauge } from './FtsgGauge'
 import { Icona } from './Icona'
 
@@ -215,6 +215,16 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [compiti, setCompiti] = useState<(string | null)[] | null>(null)
   const [focusCorsia, setFocusCorsia] = useState<string | null>(null)
   const [moduliPersonalizzati, setModuliPersonalizzati] = useState<ModuloPersonalizzato[]>([])
+  // La fase della squadra (stagione regolare, Title o Draft Playoffs) da' il
+  // colore alla pagina, come scoreboard, tabellone e riepilogo partita.
+  const [stagioneId, setStagioneId] = useState<number | null>(null)
+  useEffect(() => {
+    let vivo = true
+    void supabase.from('seasons').select('id').eq('league_id', league.id).eq('numero', league.stagione_corrente).maybeSingle()
+      .then(({ data }) => { if (vivo) setStagioneId(data?.id ?? null) })
+    return () => { vivo = false }
+  }, [league.id, league.stagione_corrente])
+  const fase = useFaseSquadra(league.id, membership.id, stagioneId)
   // Indicazioni di squadra (registro tattico, punto 30). null = predefinita.
   const [linea, setLinea] = useState<string | null>(null)
   const [ampiezza, setAmpiezza] = useState<string | null>(null)
@@ -729,7 +739,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       <section className="formation-hero"><p className="kicker">La tua distinta · {league.nome}</p><h1>Schiera la squadra.</h1></section>
       {error && <p className="notice notice--error" role="alert">{error}</p>}
       {players.length < 11 ? <section className="formation-panel"><h2>Rosa incompleta</h2><p>Servono almeno 11 giocatori prima di poter salvare una formazione.</p></section> : (
-        <section className="formation-panel formation-panel--tactical">
+        <section className={`formation-panel formation-panel--tactical formazione-broadcast formazione-broadcast--${fase}`}>
           <div className="formation-toolbar">
             <div className="formation-save-row">
               <button className="formation-save-button button button--primary" type="button" disabled={saving} onClick={save}>{saving ? 'Salvo…' : 'Salva'}</button>
@@ -750,7 +760,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
               <div className="formation-tattica__voce formation-module-selector">
                 <button className="formation-tattica__trigger" type="button" aria-haspopup="listbox" aria-expanded={moduleMenuOpen} onClick={() => { setModuleMenuOpen((open) => !open) }}>
                   <span className="formation-tattica__testo"><small>{moduloPersonalizzatoAttivo ? `Modulo personalizzato · da ${modulo}` : 'Modulo tattico'}</small><strong>{moduloPersonalizzatoAttivo?.nome ?? modulo}</strong></span>
-                  <i aria-hidden="true">{moduleMenuOpen ? '×' : '⌄'}</i>
+                  <i aria-hidden="true"><Icona nome={moduleMenuOpen ? 'chiudi' : 'giu'} /></i>
                 </button>
                 {moduleMenuOpen && <><button className="formation-module-scrim" type="button" aria-label="Chiudi selezione modulo" onClick={() => setModuleMenuOpen(false)} /><div className="formation-module-menu" role="listbox" aria-label="Scegli il modulo">{Object.keys(MODULI).map((name) => { const attivo = name === modulo && !moduloPersonalizzatoAttivo; return <button className={attivo ? 'is-active' : ''} type="button" role="option" aria-selected={attivo} key={name} onClick={() => chooseModule(name)}><strong>{name}</strong><small>{MODULO_DESCRIZIONI[name]}</small><span>{attivo ? '✓' : '›'}</span></button> })}
                   {moduliPersonalizzati.length > 0 && <>
@@ -768,22 +778,20 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
                     <small>Schema e stile · {STILE_LABEL[stile]?.toLowerCase()}</small>
                     <strong>{disposizione || ruoli || compiti || focusCorsia || linea || ampiezza || portiere || stile !== 'equilibrato' ? 'Personalizzato' : 'Standard'}</strong>
                   </span>
-                  <i aria-hidden="true">›</i>
+                  <i aria-hidden="true"><Icona nome="avanti" /></i>
                 </button>
               </div>
             </div>
           </div>
-          <UnderlineTabs
-            tabs={[
-              { value: 'starter', label: 'Titolari', badge: locations.starter.length },
-              { value: 'bench', label: 'Panchina', badge: locations.bench.length },
-              { value: 'tribuna', label: 'Tribuna', badge: locations.tribuna.length },
-            ] as const}
-            value={openZone}
-            onChange={setOpenZone}
-            layoutId="formazione-zone-indicator"
-            className="mb-4"
-          />
+          {/* Schede in vetro come Title/Draft nel tabellone: barra luminosa
+              sotto quella attiva, nel colore della fase. */}
+          <div className="formazione-schede" role="tablist" aria-label="Zone della distinta">
+            {([['starter', 'Titolari', locations.starter.length], ['bench', 'Panchina', locations.bench.length], ['tribuna', 'Tribuna', locations.tribuna.length]] as const).map(([zona, etichetta, quanti]) =>
+              <button key={zona} type="button" role="tab" aria-selected={openZone === zona}
+                className={`formazione-scheda${openZone === zona ? ' is-attiva' : ''}`} onClick={() => setOpenZone(zona)}>
+                <span>{etichetta}</span><b>{quanti}</b>
+              </button>)}
+          </div>
           {selected && <p className="formation-swap-hint">Tocca il giocatore (o uno slot libero) con cui spostare {selectedPlayer?.nome ?? ''}.</p>}
           <div className="formation-view-card">
             {openZone === 'starter' ? (
