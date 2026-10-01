@@ -19,6 +19,9 @@ la mappa; il registro è il territorio.
   tutte le leghe.
 - L'Edge Function in produzione è quella di `main`. Distribuire quella del
   branch è il passo che accende il sistema: va chiesto al committente.
+  **Prima di distribuirla, unire `origin/main`**: su `main` arrivano fix alla
+  simulazione (es. v64-v65 del 1° ottobre: cartellini riletti prima del calcolo,
+  marcatori abbinati ai gol) che una distribuzione dal branch annullerebbe.
 
 ## Come si applicano le migrazioni
 
