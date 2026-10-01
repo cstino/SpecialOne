@@ -807,18 +807,23 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
         </div>
 
         {haTraining && <div className={`player-modal__page player-modal__page--training ${pagina !== 'training' ? 'is-nascosta' : ''}`}>
-          {userId && <PopupSpiegazione userId={userId} hintKey="training-giocatore" titolo="Come funziona il Training">
-            <p><strong>Cambio ruolo</strong> sostituisce il ruolo primario con uno vicino (es. un CB può diventare
-              terzino o mediano, non ala). <strong>Piano di sviluppo</strong>, come in EA FC, resta nel ruolo attuale
-              e sceglie un archetipo (es. un CC può diventare regista, box-to-box...) oppure la crescita bilanciata. Sono mutuamente esclusivi: un
-              allenamento alla volta per giocatore.</p>
-            <p>Il piano non regala punti. Ogni giocatore cresce (o cala) a ogni giornata in base a età, potenziale
-              e minuti; il piano decide <strong>dove</strong> va quella crescita. Pesa tutte le abilità: quelle
-              chiave dell'archetipo crescono fino al 75% in più, quelle lontane dal ruolo un po' meno. L'overall resta lo stesso: il giocatore non diventa
-              più forte, diventa più forte dove vuoi tu.</p>
-            <p>Per questo rende molto su un giovane che crescerà tanto, e poco su chi è già arrivato. Su un
-              veterano che cala, protegge le abilità del piano. Cambiare piano non toglie quello che ha già
-              maturato.</p>
+          {/* Chiave nuova (v2) per mostrarlo di nuovo a tutti dopo il passaggio
+              dalle specializzazioni ai piani di sviluppo: chi aveva chiuso
+              la versione vecchia non avrebbe mai visto le differenze. */}
+          {userId && <PopupSpiegazione userId={userId} hintKey="training-giocatore-v2" titolo="Training: cosa è cambiato">
+            <p><strong>Prima</strong> la specializzazione regalava punti: alzava tre abilità più un piccolo bonus
+              di overall, sommandosi alla crescita normale. <strong>Ora</strong> c'è il <strong>piano di sviluppo</strong>,
+              come in EA FC: non regala niente, ma decide <strong>dove</strong> va la crescita che il giocatore fa comunque.</p>
+            <p>Ogni giocatore cresce (o cala) a ogni giornata in base a età, potenziale e minuti. Con un piano, le
+              abilità chiave dell'archetipo scelto crescono fino al 75% in più e quelle lontane un po' meno:
+              l'overall resta lo stesso, il giocatore diventa forte dove serve a te.</p>
+            <p>Puoi scegliere i piani del suo ruolo e dei ruoli vicini (un terzino può puntare su terzino offensivo,
+              ala di fascia, marcatore...). Rende molto su un giovane che crescerà tanto, poco su chi è già arrivato;
+              su un veterano che cala protegge le abilità del piano. Cambiare piano non toglie quello che ha già
+              maturato, e "Torna alla crescita naturale" lo rimette senza piano.</p>
+            <p><strong>Cambio ruolo</strong> non cambia: sostituisce il ruolo primario con uno vicino (un CB può
+              diventare terzino o mediano, non ala). Piano e cambio ruolo restano alternativi: un allenamento alla
+              volta per giocatore.</p>
           </PopupSpiegazione>}
           <p className="player-training-intro">Allenamento di {giocatore.nome}: cambio di ruolo e piano di sviluppo, dal ramo TRAINING di Gestione risorse.</p>
 
