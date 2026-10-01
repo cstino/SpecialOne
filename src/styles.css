@@ -703,7 +703,17 @@ input:disabled { opacity: 0.65; }
 .rosa-campo { --und-acc: var(--fz-luce, #9ff2c8); --larghezza: clamp(60px, 17.5vw, 78px); border-radius: 6px; background: linear-gradient(rgba(12,12,20,.70), rgba(12,12,20,.80)), var(--und-fondo) center / cover no-repeat, #0c0c14 !important; }
 .rosa-campo::before, .rosa-campo::after { display: none; }
 .rosa-campo .match-intro__gesso { inset: 1.5% 3%; border-width: 2.5px; opacity: .9; }
-.rosa-campo .match-intro__gesso > span { border-width: 2.5px; }
+/* Le linee interne (aree e meta campo) sono puntini di sfondo, non bordi: su
+   iPhone i bordi laterali dei riquadri con un lato a zero non venivano
+   disegnati (segnalato dal committente, 1° ottobre 2026), mentre il
+   rettangolo esterno e il cerchio, con i quattro lati uguali, si vedevano. */
+.rosa-campo { --punto: color-mix(in srgb, var(--und-acc) 72%, transparent); --dot: radial-gradient(circle at center, var(--punto) 1.3px, transparent 1.75px); }
+.rosa-campo .match-intro__gesso > span { border: 0 !important; background-size: 5px 5px; }
+.rosa-campo .match-intro__gesso > .match-intro__gesso-cerchio { border: 2.5px dotted var(--punto) !important; background: none; }
+.rosa-campo .match-intro__gesso-area { left: 24%; right: 24%; height: 14%; background-repeat: repeat-y, repeat-y, repeat-x; }
+.rosa-campo .match-intro__gesso-area--alto { top: 0; background-image: var(--dot), var(--dot), var(--dot); background-position: 0 0, 100% 0, 0 100%; }
+.rosa-campo .match-intro__gesso-area--basso { top: auto; bottom: 0; background-image: var(--dot), var(--dot), var(--dot); background-position: 0 0, 100% 0, 0 0; }
+.rosa-campo .match-intro__gesso-meta { left: 0; right: 0; top: 50%; height: 5px; transform: translateY(-50%); background-image: var(--dot); background-repeat: repeat-x; }
 .rosa-campo .pitch-posto { width: var(--larghezza); max-width: none; }
 .rosa-card { display: grid; justify-items: center; width: 100%; padding: 0; color: #fff; background: transparent; border: 0; font: inherit; cursor: pointer; }
 .rosa-card__foto { position: relative; display: grid; place-items: end center; width: 100%; height: calc(var(--larghezza) * .78); border-radius: 4px; }

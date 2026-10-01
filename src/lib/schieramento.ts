@@ -244,11 +244,19 @@ export function disponiCard(posti: Punto[], campo: { w: number; h: number }, car
   const linee = Math.max(1, lineeDistinte(posti))
   let scala = Math.min(1, campo.h / (linee * (card.h + 4)))
   for (let tentativo = 0; tentativo < 12; tentativo++) {
-    const r = senzaSovrapposizioni(posti, campo, { w: card.w * scala, h: card.h * scala }, 4, bordo)
-    if (r.riuscito) return { posti: r.posti, scala }
+    const misura = { w: card.w * scala, h: card.h * scala }
+    const r = senzaSovrapposizioni(posti, campo, misura, 4, bordo)
+    if (r.riuscito) {
+      // Allineati gli esterni alla propria linea, si ricontrolla: spostarli
+      // puo' farli toccare con chi sta sopra o sotto.
+      const a = senzaSovrapposizioni(allineaEsterni(posti, r.posti, campo, misura.h), campo, misura, 4, bordo)
+      if (a.riuscito) return { posti: a.posti, scala }
+    }
     scala *= 0.92
   }
-  return { posti: senzaSovrapposizioni(posti, campo, { w: card.w * scala, h: card.h * scala }, 4, bordo).posti, scala }
+  const misura = { w: card.w * scala, h: card.h * scala }
+  const ultima = senzaSovrapposizioni(posti, campo, misura, 4, bordo)
+  return { posti: senzaSovrapposizioni(allineaEsterni(posti, ultima.posti, campo, misura.h), campo, misura, 4, bordo).posti, scala }
 }
 
 function sfalsaLineeAffollate(posti: Punto[], campo: { w: number; h: number }, card: { w: number; h: number }, tolleranza = 6): Punto[] {
@@ -271,6 +279,35 @@ function sfalsaLineeAffollate(posti: Punto[], campo: { w: number; h: number }, c
       out[sx].y += salita
       out[dx].y += salita
     }
+  }
+  return out
+}
+
+/**
+ * Gli esterni seguono la propria linea. Quando una linea viene spinta in su o in
+ * giu' per fare spazio (i centrali sopra il portiere, per dire), i terzini e gli
+ * esterni di centrocampo devono spostarsi della stessa quantita': altrimenti,
+ * spostati solo i centrali, i terzini restano indietro e sembrano piu' bassi
+ * della difesa. Mantengono invece la loro quota rispetto ai compagni di linea,
+ * quella delle postazioni (terzino un po' piu' alto del centrale, come l'esterno
+ * rispetto al centrocampista). Segnalato dal committente, 1° ottobre 2026.
+ */
+function allineaEsterni(origine: Punto[], finali: Punto[], campo: { w: number; h: number }, altezzaCard: number, tolleranza = 6): Punto[] {
+  const out = finali.map((p) => ({ ...p }))
+  const ordine = origine.map((_, i) => i).sort((a, b) => origine[a].y - origine[b].y)
+  const linee: number[][] = []
+  for (const i of ordine) {
+    const g = linee[linee.length - 1]
+    if (g && origine[i].y - origine[g[g.length - 1]].y <= tolleranza) g.push(i)
+    else linee.push([i])
+  }
+  const mezza = (altezzaCard / 2 / campo.h) * 100
+  for (const g of linee) {
+    const centrali = g.filter((i) => origine[i].x > 25 && origine[i].x < 75)
+    const esterni = g.filter((i) => origine[i].x <= 25 || origine[i].x >= 75)
+    if (!centrali.length || !esterni.length) continue
+    const spostamento = centrali.reduce((t, i) => t + (finali[i].y - origine[i].y), 0) / centrali.length
+    for (const i of esterni) out[i].y = Math.min(100 - mezza, Math.max(mezza, origine[i].y + spostamento))
   }
   return out
 }
