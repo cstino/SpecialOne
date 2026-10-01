@@ -149,10 +149,12 @@ export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
       </section>}
 
       {bracketsStagione.length > 1 && (
-        <div className="segmented tabellone-segmented" aria-label="Scegli tabellone">
+        <div className="tabellone-schede" role="tablist" aria-label="Scegli tabellone">
           {bracketsStagione.map((b) => (
-            <button key={b.tipo} type="button" aria-pressed={tabAttivo === b.tipo} onClick={() => setTabAttivo(b.tipo)}>
-              {TITOLO[b.tipo]}
+            <button key={b.tipo} type="button" role="tab" aria-selected={tabAttivo === b.tipo}
+              className={`tabellone-scheda tabellone-scheda--${b.tipo} ${tabAttivo === b.tipo ? 'is-attiva' : ''}`}
+              onClick={() => setTabAttivo(b.tipo)}>
+              <img src={LOGO_FASE[b.tipo]} alt={TITOLO[b.tipo]} />
             </button>
           ))}
         </div>
@@ -169,7 +171,9 @@ export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
         return <div className={`tabellone-blocco tabellone-blocco--${bracket.tipo}`}>
           <section className="tabellone-eroe">
             <div className="tabellone-eroe__comp">
-              <img src={LOGO_FASE[bracket.tipo]} alt={TITOLO[bracket.tipo]} />
+              {/* Il logo della fase c'e' gia' nelle schede qui sopra; resta
+                  qui solo se il tabellone e' uno (niente schede). */}
+              {bracketsStagione.length < 2 && <img src={LOGO_FASE[bracket.tipo]} alt={TITOLO[bracket.tipo]} />}
               <strong>Tabellone</strong>
             </div>
             <div className="tabellone-eroe__campione">
@@ -262,9 +266,10 @@ function CartaSfida({ tie, turno, turniTotali, dati }: {
     const r = golDi(team, ritorno)
     const totale = a == null && r == null ? null : (a ?? 0) + (r ?? 0)
     const rig = rigoriDi(team)
-    // Riga luminosa: la vincitrice a sfida chiusa, altrimenti quella in alto.
+    // Riga luminosa solo per chi ha passato il turno: a sfida aperta le due
+    // righe restano neutre, altrimenti sembra che abbia gia' vinto qualcuno.
     const deciso = tie?.stato === 'concluso' && tie.vincitore_team_id != null
-    const esito = deciso ? (tie!.vincitore_team_id === team.id ? 'is-vincitore is-luce' : 'is-eliminato') : chiave === 'alta' ? 'is-luce' : ''
+    const esito = deciso ? (tie!.vincitore_team_id === team.id ? 'is-vincitore is-luce' : 'is-eliminato') : ''
     const cella = (valore: number | null, f: Fixture | undefined, forte = false) => {
       const m = f ? matchPerFixture.get(f.id) : undefined
       const testo = <>{valore == null ? '–' : valore}{forte && rig != null && <sup title="Calci di rigore">{rig}</sup>}</>
