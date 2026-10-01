@@ -2,8 +2,7 @@ import '@supabase/functions-js/edge-runtime.d.ts'
 import { withSupabase } from '@supabase/server'
 import { ovrEfficace, schiera, simulaPartita } from '../../../engine/engine.js'
 import { tiltTecnico, tiltRapido } from '../../../engine/tattiche.js'
-import { CFG } from '../../../engine/config.js'
-import { MODULI } from '../../../engine/config.js'
+import { CFG, MODULI, PESI_SLOT } from '../../../engine/config.js'
 import { setSeed } from '../../../engine/random.js'
 import { calciaRigori, portiereDaLineup, tiratoriDaLineup } from '../../../engine/rigori.js'
 import { capitanoAutomatico, deltaMorale } from '../../../engine/morale.js'
@@ -350,6 +349,7 @@ const MINUTI_PER_BLOCCO = 15
 // era 90 e i gol dei supplementari finivano senza minuto, poi "riparati" dentro
 // i tempi regolamentari.
 const BLOCCO_MASSIMO = 8
+const BLOCCHI_REGOLAMENTARI = 6
 const MINUTO_MASSIMO = BLOCCO_MASSIMO * MINUTI_PER_BLOCCO
 const QUOTA_GOL_SENZA_ASSIST = 0.28 // rigori, tiri da fuori, ribattute, azioni personali
 
@@ -437,21 +437,67 @@ function costruisciEventiGol(
   // (evento raro), si ripiega sul primo rimasto pur di non perdere il gol: il
   // totale per giocatore a fine partita resta comunque quello del motore,
   // cambia solo in quale blocco viene mostrato.
-  const rimasti = new Map<string, number[]>()
-  for (const lato of lati) rimasti.set(lato.lato, [...lato.marcatori])
+  // Abbinamento marcatori-gol per tutta la partita insieme (matching
+  // bipartito), non in ordine cronologico: con l'assegnazione "al primo
+  // libero" i gol dei primi blocchi consumavano i marcatori che servivano
+  // dopo, e un gol dei supplementari restava a chi era gia' uscito — poi
+  // veniva spostato nei 90' e la cronaca contraddiceva il risultato.
+  const marcatorePerEvento = new Map<EventoGol, number>()
+  for (const lato of lati) {
+    const golLato = eventi.filter((evento) => evento.lato === lato.lato)
+    const pool = [...lato.marcatori]
+    const presenteIn = (evento: EventoGol, id: number) => (lato.presenzePerBlocco[evento.blocco - 1] ?? []).includes(id)
+    const golDiSlot: Array<number | null> = pool.map(() => null)
+    const prova = (g: number, visti: Set<number>): boolean => {
+      for (let j = 0; j < pool.length; j++) {
+        if (visti.has(j) || !presenteIn(golLato[g], pool[j])) continue
+        visti.add(j)
+        const occupante = golDiSlot[j]
+        if (occupante === null || prova(occupante, visti)) { golDiSlot[j] = g; return true }
+      }
+      return false
+    }
+    for (let g = 0; g < golLato.length; g++) prova(g, new Set())
+    golDiSlot.forEach((g, j) => { if (g !== null) marcatorePerEvento.set(golLato[g], pool[j]) })
+    // Gol senza nessun marcatore della lista in campo in quel blocco (il
+    // motore sceglie i marcatori sull'intera partita, compresi i sostituiti):
+    // lo segna un compagno presente, con gli stessi pesi del motore. Il
+    // totale di squadra non cambia; il chiamante ricalcola i gol per
+    // giocatore da questi eventi.
+    for (const evento of golLato) {
+      if (marcatorePerEvento.has(evento)) continue
+      const presenti = lato.presenzePerBlocco[evento.blocco - 1] ?? []
+      const candidati: number[] = []
+      const pesi: number[] = []
+      lato.lineup.slots.forEach((slot, i) => {
+        const giocatore = lato.lineup.titolari[i]
+        if (!giocatore || slot === 'GK' || !presenti.includes(giocatore.id)) return
+        candidati.push(giocatore.id)
+        pesi.push(((PESI_SLOT as Record<string, { ATT: number }>)[slot]?.ATT ?? 0.1) * Math.pow(giocatore.finishing / 100, 1.5) + 0.001)
+      })
+      const liberi = pool.filter((_, j) => golDiSlot[j] === null)
+      const scelto = candidati.length ? scegliPesatoLocale(candidati, pesi, rnd) : liberi[0]
+      if (scelto === undefined) continue
+      marcatorePerEvento.set(evento, scelto)
+      const slotLibero = pool.findIndex((_, j) => golDiSlot[j] === null)
+      if (slotLibero >= 0) golDiSlot[slotLibero] = -1
+    }
+  }
   const minutiUsatiPerSquadra = new Map<number, Set<number>>()
 
   for (const evento of eventi) {
     const lato = lati.find((item) => item.lato === evento.lato)!
-    const pool = rimasti.get(evento.lato)!
     const presenti = lato.presenzePerBlocco[evento.blocco - 1] ?? []
-    let indice = pool.findIndex((id) => presenti.includes(id))
-    if (indice === -1) indice = 0
-    const marcatore = pool.splice(indice, 1)[0]
+    const marcatore = marcatorePerEvento.get(evento)
     if (marcatore === undefined) continue
     evento.marcatore = marcatore
     evento.assist = scegliAssist(lato.lineup, marcatore, presenti, rnd)
 
+    // Un gol non attraversa mai il 90': regolamentari (blocchi 1-6) e
+    // supplementari (7-8) sono fasi distinte e il loro parziale e' gia'
+    // deciso dal motore (gol_home_90/gol_away_90).
+    const primoBloccoFase = evento.blocco <= BLOCCHI_REGOLAMENTARI ? 1 : BLOCCHI_REGOLAMENTARI + 1
+    const ultimoBloccoFase = evento.blocco <= BLOCCHI_REGOLAMENTARI ? BLOCCHI_REGOLAMENTARI : BLOCCO_MASSIMO
     let inizio: number
     if (presenti.includes(marcatore)) {
       // Caso comune: il marcatore scelto era davvero presente in questo
@@ -460,22 +506,22 @@ function costruisciEventiGol(
       // 46'-60'. Se pero' non c'era ancora nel blocco precedente (e' appena
       // subentrato), il gol non puo' essere raccontato dal suo primissimo
       // minuto: lo spostiamo al blocco successivo (61'-75'), corretto il 4
-      // agosto 2026.
+      // agosto 2026. Nell'ultimo blocco di una fase si resta nel blocco,
+      // nella sua seconda meta'.
       const eraGiaInCampo = evento.blocco === 1 || (lato.presenzePerBlocco[evento.blocco - 2] ?? []).includes(marcatore)
       inizio = eraGiaInCampo
         ? (evento.blocco - 1) * MINUTI_PER_BLOCCO + 1
-        : Math.min(MINUTO_MASSIMO, evento.blocco * MINUTI_PER_BLOCCO + 1)
+        : evento.blocco < ultimoBloccoFase
+          ? evento.blocco * MINUTI_PER_BLOCCO + 1
+          : (evento.blocco - 1) * MINUTI_PER_BLOCCO + 8
     } else {
-      // Fallback del ripescaggio qui sopra (nessuno dei "rimasti" presente in
-      // questo blocco, evento raro): il marcatore forzato puo' non essere
-      // mai stato in questo blocco, anche perche' e' gia' uscito per cambio
-      // o infortunio (segnalazione utente, lega reale: un marcatore usciva
-      // per infortunio al 45' e un suo secondo gol restava agganciato al
-      // blocco finale, dopo la sua uscita). Si cerca il blocco vero piu'
-      // vicino in cui risultava presente, e si racconta li'.
+      // Nessun marcatore presente disponibile (raro dopo il matching): si
+      // racconta il gol nel blocco piu' vicino in cui il marcatore era in
+      // campo, ma sempre dentro la stessa fase; se nella fase non c'era mai,
+      // il gol resta nel suo blocco.
       let distanzaMinima = Infinity
       let bloccoReale = evento.blocco
-      for (let b = 1; b <= lato.presenzePerBlocco.length; b++) {
+      for (let b = primoBloccoFase; b <= ultimoBloccoFase; b++) {
         if (!(lato.presenzePerBlocco[b - 1] ?? []).includes(marcatore)) continue
         const distanza = Math.abs(b - evento.blocco)
         if (distanza < distanzaMinima) { distanzaMinima = distanza; bloccoReale = b }
@@ -483,7 +529,7 @@ function costruisciEventiGol(
       evento.blocco = bloccoReale
       inizio = (bloccoReale - 1) * MINUTI_PER_BLOCCO + 1
     }
-    const fine = Math.min(MINUTO_MASSIMO, inizio + MINUTI_PER_BLOCCO - 1)
+    const fine = Math.min(evento.blocco <= BLOCCHI_REGOLAMENTARI ? BLOCCHI_REGOLAMENTARI * MINUTI_PER_BLOCCO : MINUTO_MASSIMO, Math.floor((inizio - 1) / MINUTI_PER_BLOCCO + 1) * MINUTI_PER_BLOCCO)
     let minutiUsati = minutiUsatiPerSquadra.get(evento.team_id)
     if (!minutiUsati) { minutiUsati = new Set<number>(); minutiUsatiPerSquadra.set(evento.team_id, minutiUsati) }
     let candidati = Array.from({ length: fine - inizio + 1 }, (_, indice) => inizio + indice)
@@ -665,7 +711,11 @@ function costruisciEventiPartita(
         ? evento.giocatore
         : null
     if (protagonista === null) continue
+    // Solo blocchi della stessa fase: spostare un gol oltre il 90' cambierebbe
+    // il parziale raccontato rispetto a quello deciso dal motore.
+    const regolamentare = evento.blocco <= BLOCCHI_REGOLAMENTARI
     const blocchi = presenzePerLato.get(evento.lato)?.get(protagonista)
+      ?.filter((blocco) => (blocco <= BLOCCHI_REGOLAMENTARI) === regolamentare)
     if (!blocchi?.length || blocchi.includes(evento.blocco)) continue
     let bloccoValido = blocchi[0]
     for (const blocco of blocchi) {
@@ -1035,6 +1085,11 @@ export default {
           { lato: 'casa', teamId: fixture.home_team_id, lineup: homeLineup, marcatori: result.perGiocatore.casa.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.casa },
           { lato: 'ospite', teamId: fixture.away_team_id, lineup: awayLineup, marcatori: result.perGiocatore.ospite.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.ospite },
         ], seed)
+        // I gol per giocatore seguono la cronaca: costruisciEventiGol puo'
+        // aver dato un gol a un compagno presente al posto di un marcatore
+        // gia' sostituito.
+        result.perGiocatore.casa.marcatoriIds = eventi.filter((evento) => evento.lato === 'casa').map((evento) => evento.marcatore)
+        result.perGiocatore.ospite.marcatoriIds = eventi.filter((evento) => evento.lato === 'ospite').map((evento) => evento.marcatore)
         const assistPerGiocatore = new Map<number, number>()
         for (const evento of eventi) {
           if (evento.assist === null) continue
@@ -1135,7 +1190,14 @@ export default {
       // scatta la diffida (si azzera il conto e si aggiunge una giornata di
       // squalifica); un rosso, diretto o da doppio giallo, aggiunge sempre
       // una giornata di squalifica per conto suo.
-      const instanceById = new Map(instances.map((instance) => [instance.id, instance]))
+      // Riletti adesso, non presi da `instances`: registrando l'ultima partita
+      // di stagione regolare private.crea_tabelloni azzera le ammonizioni, e
+      // i valori letti a inizio giornata le riporterebbero in vita.
+      const { data: cartelliniAttuali, error: cartelliniAttualiError } = await ctx.supabaseAdmin.from('player_instances')
+        .select('id, ammonizioni_stagione, squalificato_fino_a').in('id', instances.map((instance) => instance.id))
+      if (cartelliniAttualiError) throw cartelliniAttualiError
+      type CartelliniAttuali = { id: number; ammonizioni_stagione: number; squalificato_fino_a: number }
+      const instanceById = new Map(((cartelliniAttuali ?? []) as CartelliniAttuali[]).map((instance) => [instance.id, instance]))
       const valoriCartellini: Array<{ id: number; ammonizioni_stagione: number; squalificato_fino_a: number }> = []
       const nuoveSqualifiche: Array<{ teamId: number; playerId: number; nome: string; motivo: 'rosso_diretto' | 'doppio_giallo' | 'diffida' }> = []
       for (const [teamId, roster] of rosters) {
