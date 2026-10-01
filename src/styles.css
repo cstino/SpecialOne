@@ -2947,7 +2947,6 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 }
 .tabellone-page { position: relative; z-index: 1; }
 
-.tabellone-segmented { max-width: 420px; margin-bottom: 28px; }
 
 
 
@@ -3459,3 +3458,15 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 button.carta__num { cursor: pointer; text-decoration: underline; text-decoration-color: rgba(255,255,255,.3); text-underline-offset: 3px; }
 .carta__num.is-forte { font-weight: 900; font-size: .9rem; }
 .carta__num sup { margin-left: 1px; font-size: .55rem; font-weight: 800; opacity: .8; }
+
+/* Schede Title/Draft: il logo della fase al posto del testo, barra luminosa
+   sotto quella attiva nel colore della fase. */
+.tabellone-schede { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+.tabellone-scheda { --scheda-luce: #3fe0d0; position: relative; display: grid; place-items: center; height: 58px; margin: 0; padding: 8px 14px; border: 1px solid rgba(255,255,255,.12); border-radius: 6px; background: rgba(8,10,28,.55); backdrop-filter: blur(8px); cursor: pointer; transition: background .2s, border-color .2s; }
+.tabellone-scheda--draft { --scheda-luce: #ffc46b; }
+.tabellone-scheda img { max-width: 100%; height: 30px; object-fit: contain; filter: grayscale(1) brightness(.75); opacity: .55; transition: filter .2s, opacity .2s; }
+.tabellone-scheda::after { content: ''; position: absolute; left: 12%; right: 12%; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--scheda-luce); box-shadow: 0 0 14px var(--scheda-luce); opacity: 0; transform: scaleX(.4); transition: opacity .2s, transform .25s; }
+.tabellone-scheda.is-attiva { border-color: color-mix(in srgb, var(--scheda-luce) 45%, transparent); background: linear-gradient(180deg, rgba(10,14,40,.75), color-mix(in srgb, var(--scheda-luce) 14%, rgba(10,14,40,.75))); }
+.tabellone-scheda.is-attiva img { filter: drop-shadow(0 3px 8px rgba(0,0,0,.5)); opacity: 1; }
+.tabellone-scheda.is-attiva::after { opacity: 1; transform: none; }
+.tabellone-scheda:focus-visible { outline: 2px solid var(--scheda-luce); outline-offset: 2px; }
