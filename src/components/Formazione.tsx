@@ -1,7 +1,7 @@
-import { useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { supabase } from '../lib/supabase'
 import { attributiCorrenti } from '../lib/attributiGiocatore'
-import { nomeSchieramento, schieramentoInCampo } from '../lib/schieramento'
+import { disponiCard, nomeSchieramento, schieramentoInCampo } from '../lib/schieramento'
 import SchemaTattico, { type XpDisposizione } from './SchemaTattico'
 import { STILE_LABEL } from '../lib/stili'
 import { idoneitaRuolo, segnoIdoneita } from '../lib/tattica'
@@ -382,6 +382,33 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   // in parti uguali, quindi due CDM — che stanno entrambi al centro — finivano
   // sulle fasce come se fossero due esterni.
   const posti = schieramentoInCampo(slots)
+
+  // Le card non devono mai coprirsi (lib/schieramento.ts, disponiCard): si
+  // misurano campo e card veri e si allontanano solo quelle che si toccano,
+  // rimpicciolendole se lo spazio non basta. La misura si ripete quando il
+  // campo cambia dimensione (rotazione, finestra).
+  const campoRef = useRef<HTMLDivElement | null>(null)
+  const [misure, setMisure] = useState<{ w: number; h: number; cw: number; ch: number } | null>(null)
+  useLayoutEffect(() => {
+    const el = campoRef.current
+    if (!el) return
+    const misura = () => {
+      const card = el.querySelector<HTMLElement>('.pitch-posto')
+      if (!card || !el.clientWidth) return
+      // offsetWidth/offsetHeight non risentono della scala applicata: e' la
+      // misura "piena" della card. Qualche pixel in piu' per il badge
+      // dell'energia, che sporge sopra la foto.
+      const nuove = { w: el.clientWidth, h: el.clientHeight, cw: card.offsetWidth, ch: card.offsetHeight + 8 }
+      setMisure((prima) => (prima && prima.w === nuove.w && prima.h === nuove.h && prima.cw === nuove.cw && prima.ch === nuove.ch ? prima : nuove))
+    }
+    misura()
+    const osservatore = new ResizeObserver(misura)
+    osservatore.observe(el)
+    return () => osservatore.disconnect()
+  })
+  const disposizioneCard = misure
+    ? disponiCard(posti.map((p) => ({ x: p.x, y: p.y })), { w: misure.w, h: misure.h }, { w: misure.cw, h: misure.ch })
+    : null
 
   // Overall medio dei titolari, nello slot in cui sono davvero schierati:
   // un giocatore fuori ruolo pesa meno, esattamente come nel motore —
@@ -764,8 +791,9 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
                 <div className="pitch-field__line pitch-field__line--half" />
                 <div className="pitch-field__circle" />
                 <div className="pitch-field__box pitch-field__box--top" /><div className="pitch-field__box pitch-field__box--bottom" />
-                <div className="pitch-grid pitch-grid--assoluta">
-                  {posti.map(({ slot, index, x, y }) => {
+                <div className="pitch-grid pitch-grid--assoluta" ref={campoRef} style={{ ['--scala-card' as string]: disposizioneCard?.scala ?? 1 }}>
+                  {posti.map(({ slot, index, x: x0, y: y0 }, i) => {
+                    const { x, y } = disposizioneCard?.posti[i] ?? { x: x0, y: y0 }
                     const player = players.find((item) => item.id === titolari[index])
                     const location = { zone: 'starter', index, id: titolari[index] ?? 0 } as PlayerLocation
                     return <div className={`pitch-posto pitch-slot pitch-slot--${reparto(slot)}`} style={{ left: `${x}%`, top: `${100 - y}%` }} key={`${slot}-${index}`}><PlayerPortrait player={player} empty={!player} imageUrl={imageUrls[player?.id ?? 0]} position={slot} ruolo={ruoli?.[index] ?? null} selected={selected?.zone === 'starter' && selected.index === index} onClick={player ? (event) => handlePlayerClick(event, location, player) : () => selectEmptyStarter(index)} /></div>

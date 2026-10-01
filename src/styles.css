@@ -3389,7 +3389,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    le righe a griglia, che ridistribuivano in parti uguali e mandavano due CDM
    sulle fasce come se fossero esterni. */
 .pitch-grid--assoluta { display: block; }
-.pitch-posto { position: absolute; transform: translate(-50%, -50%); width: 22%; max-width: 118px; }
+.pitch-posto { position: absolute; transform: translate(-50%, -50%) scale(var(--scala-card, 1)); width: 22%; max-width: 118px; }
 .pitch-posto .lineup-player { width: 100%; }
 @media (max-width: 420px) { .pitch-posto { width: 25%; } }
 

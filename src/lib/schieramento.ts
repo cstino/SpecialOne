@@ -157,3 +157,120 @@ export function nomeSchieramento(slots: string[], moduli: Record<string, string[
   }
   return formaDiSchieramento(slots)
 }
+
+// ============================================================
+//  NIENTE CARD UNA SOPRA L'ALTRA
+//
+//  Le postazioni sono percentuali del campo, le card hanno una misura in
+//  pixel: su un telefono il 15% che separa il portiere dai centrali e' una
+//  settantina di pixel, e una card ne e' alta un centinaio. Segnalato dal
+//  committente (1° ottobre 2026): ogni giocatore deve avere sempre il suo
+//  spazio.
+//
+//  Si parte dalle postazioni tattiche e si allontanano solo le card che si
+//  toccano: di lato se stanno sulla stessa linea, in verticale se stanno su
+//  linee diverse, senza mai uscire dal campo. Se lo spazio non basta neanche
+//  cosi', il chiamante rimpicciolisce le card (scalaCard) e riprova.
+// ============================================================
+
+export type Punto = { x: number; y: number }
+
+/** Quante linee distinte ci sono (postazioni entro `tolleranza` punti di altezza = stessa linea). */
+export function lineeDistinte(posti: Punto[], tolleranza = 6): number {
+  const ys = [...posti.map((p) => p.y)].sort((a, b) => a - b)
+  let n = 0
+  let ultima = -Infinity
+  for (const y of ys) { if (y - ultima > tolleranza) n++; ultima = y }
+  return n
+}
+
+/**
+ * Sposta le postazioni (x e y in percentuale, y dal basso come in ANCORE)
+ * finche' nessuna card, larga `card.w` e alta `card.h` pixel, ne tocca un'altra
+ * in un campo di `campo.w` x `campo.h` pixel. Restituisce le nuove percentuali
+ * e se ci e' riuscita.
+ */
+export function senzaSovrapposizioni(
+  posti: Punto[], campo: { w: number; h: number }, card: { w: number; h: number }, margine = 4,
+): { posti: Punto[]; riuscito: boolean } {
+  const cw = card.w + margine, ch = card.h + margine
+  const P = posti.map((p) => ({ X: (p.x / 100) * campo.w, Y: ((100 - p.y) / 100) * campo.h }))
+  const limita = (q: { X: number; Y: number }) => {
+    q.X = Math.min(campo.w - card.w / 2, Math.max(card.w / 2, q.X))
+    q.Y = Math.min(campo.h - card.h / 2, Math.max(card.h / 2, q.Y))
+  }
+  P.forEach(limita)
+  let riuscito = false
+  for (let giro = 0; giro < 400 && !riuscito; giro++) {
+    riuscito = true
+    for (let i = 0; i < P.length; i++) {
+      for (let j = i + 1; j < P.length; j++) {
+        const a = P[i], b = P[j]
+        const dx = b.X - a.X, dy = b.Y - a.Y
+        const ox = cw - Math.abs(dx), oy = ch - Math.abs(dy)
+        if (ox <= 0.5 || oy <= 0.5) continue
+        riuscito = false
+        // Stessa linea (poco scarto in altezza): si allargano. Linee diverse:
+        // si allontanano in verticale, che e' come si legge un modulo.
+        if (Math.abs(dy) < card.h * 0.45) {
+          const s = (dx === 0 ? (i < j ? 1 : -1) : Math.sign(dx)) * (ox / 2 + 0.5)
+          a.X -= s; b.X += s
+        } else {
+          const s = Math.sign(dy) * (oy / 2 + 0.5)
+          a.Y -= s; b.Y += s
+        }
+        limita(a); limita(b)
+      }
+    }
+  }
+  return {
+    posti: P.map((q) => ({ x: (q.X / campo.w) * 100, y: 100 - (q.Y / campo.h) * 100 })),
+    riuscito,
+  }
+}
+
+/**
+ * La disposizione finale per un campo vero: la scala piu' grande (fino a 1) a
+ * cui le card stanno tutte senza toccarsi, e le postazioni a quella scala.
+ */
+export function disponiCard(posti: Punto[], campo: { w: number; h: number }, card: { w: number; h: number }): { posti: Punto[]; scala: number } {
+  if (!campo.w || !campo.h || !card.w || !card.h) return { posti, scala: 1 }
+  // Una linea troppo affollata per la larghezza (cinque difensori su un
+  // telefono) non si risolve rimpicciolendo tutto: le due card piu' esterne
+  // salgono un poco, come fanno i quinti e i terzini in campo, e la linea
+  // respira. Si ripete finche' quelle rimaste stanno in larghezza.
+  posti = sfalsaLineeAffollate(posti, campo, card)
+  // Punto di partenza: abbastanza piccole da far stare tutte le linee in altezza.
+  const linee = Math.max(1, lineeDistinte(posti))
+  let scala = Math.min(1, campo.h / (linee * (card.h + 4)))
+  for (let tentativo = 0; tentativo < 12; tentativo++) {
+    const r = senzaSovrapposizioni(posti, campo, { w: card.w * scala, h: card.h * scala })
+    if (r.riuscito) return { posti: r.posti, scala }
+    scala *= 0.92
+  }
+  return { posti: senzaSovrapposizioni(posti, campo, { w: card.w * scala, h: card.h * scala }).posti, scala }
+}
+
+function sfalsaLineeAffollate(posti: Punto[], campo: { w: number; h: number }, card: { w: number; h: number }, tolleranza = 6): Punto[] {
+  const out = posti.map((p) => ({ ...p }))
+  const salita = (card.h * 0.75 / campo.h) * 100
+  const indici = out.map((_, i) => i).sort((a, b) => out[a].y - out[b].y)
+  const gruppi: number[][] = []
+  for (const i of indici) {
+    const g = gruppi[gruppi.length - 1]
+    if (g && out[i].y - out[g[g.length - 1]].y <= tolleranza) g.push(i)
+    else gruppi.push([i])
+  }
+  for (const g of gruppi) {
+    const restanti = [...g].sort((a, b) => out[a].x - out[b].x)
+    // Solo dalle cinque in su: con quattro basta stringerle un poco, e farle
+    // salire costringerebbe a rimpicciolire tutte le altre.
+    if (g.length < 5) continue
+    while (restanti.length >= 3 && restanti.length * (card.w + 4) > campo.w * 0.98) {
+      const sx = restanti.shift()!, dx = restanti.pop()!
+      out[sx].y += salita
+      out[dx].y += salita
+    }
+  }
+  return out
+}
