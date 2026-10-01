@@ -4,10 +4,13 @@ import { cognome } from '../lib/nomi'
 import { ricostruisciEventiStorici } from '../lib/matchEvents'
 import { ordineRuolo } from '../lib/ruoli'
 import { useSeasonData } from '../lib/useSeasonData'
-import { isEventoGol, type EventoGol, type EventoPartita, type League, type MatchPlayerStat, type MatchTeamStats, type Membership } from '../types'
+import { isEventoGol, type EventoGol, type League, type MatchPlayerStat, type MatchTeamStats, type Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
-import { SeasonState, TeamLabel } from './SeasonUI'
+import { SeasonState } from './SeasonUI'
 import { fasciaVoto, formatoVoto } from '../lib/voti'
+import { LOGO_FASE, SFONDO_FASE, type FaseSquadra } from '../lib/faseSquadra'
+import { Crest } from './Crest'
+import { Icona } from './Icona'
 
 type Props = {
   membership: Membership
@@ -18,22 +21,6 @@ type Props = {
 }
 
 type PlayerIdentity = { id: number; nome: string; posizioni: string[] }
-
-// Come sul tabellone di uno stadio: i marcatori stanno sotto la propria squadra.
-function ScorerList({ eventi, lato, players }: { eventi: EventoPartita[]; lato: 'casa' | 'ospite'; players: Map<number, PlayerIdentity> }) {
-  const propri = eventi.filter((evento): evento is EventoGol => isEventoGol(evento) && evento.lato === lato)
-  if (propri.length === 0) return null
-  return <ul className={`match-scorers match-scorers--${lato}`}>
-    {propri.map((evento, indice) => {
-      const assistman = evento.assist === null ? undefined : players.get(evento.assist)
-      return <li key={`${evento.minuto}-${evento.marcatore}-${indice}`}>
-        <b>{cognome(players.get(evento.marcatore)?.nome ?? `Giocatore ${evento.marcatore}`)}</b>
-        <time>{evento.minuto}&#39;</time>
-        {assistman && <em title={`Assist di ${assistman.nome}`}>({cognome(assistman.nome)})</em>}
-      </li>
-    })}
-  </ul>
-}
 
 const STAT_ROWS: Array<[string, keyof MatchTeamStats, (value: number) => string]> = [
   ['Possesso', 'possesso', (value) => `${Math.round(value * 100)}%`],
@@ -148,6 +135,42 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
     return mappa
   }, [match, fixture, titolariLineupByTeam])
 
+  // Fase, turno e andata: come la cronaca live (MatchReveal) e l'intro
+  // (MatchIntro), cosi' il riepilogo ha la stessa veste grafica della partita.
+  const [fase, setFase] = useState<FaseSquadra>('regular')
+  const [turno, setTurno] = useState<string | null>(null)
+  const [andata, setAndata] = useState<{ casa: number; ospite: number } | null>(null)
+  useEffect(() => {
+    let vivo = true
+    async function carica() {
+      if (!fixture?.bracket_tie_id) { if (vivo) { setFase('regular'); setTurno(null); setAndata(null) }; return }
+      const { data: tie } = await supabase.from('bracket_ties').select('bracket_id, turno').eq('id', fixture.bracket_tie_id).single()
+      if (!tie || !vivo) return
+      const [{ data: bracketRow }, { data: tutte }, { data: primaMano }] = await Promise.all([
+        supabase.from('brackets').select('tipo').eq('id', tie.bracket_id).single(),
+        supabase.from('bracket_ties').select('turno').eq('bracket_id', tie.bracket_id),
+        fixture.mano === 2
+          ? supabase.from('fixtures').select('home_team_id, matches(gol_home, gol_away)').eq('bracket_tie_id', fixture.bracket_tie_id).eq('mano', 1).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ])
+      if (!vivo) return
+      setFase((bracketRow?.tipo as FaseSquadra | undefined) ?? 'regular')
+      // Il totale dei turni si legge dal primo, che e' completo dall'inizio
+      // (stessa regola di Tabellone.tsx e MatchIntro.tsx).
+      const primoTurno = (tutte ?? []).filter((t) => t.turno === 1).length
+      const totali = primoTurno > 0 ? Math.ceil(Math.log2(primoTurno * 2)) : 0
+      const mancanti = totali - tie.turno
+      setTurno(mancanti === 0 ? 'Finale' : mancanti === 1 ? 'Semifinale' : mancanti === 2 ? 'Quarti di finale' : `Turno ${tie.turno}`)
+      const partita = primaMano ? (Array.isArray(primaMano.matches) ? primaMano.matches[0] : primaMano.matches) : null
+      if (primaMano && partita) {
+        const stessoVerso = primaMano.home_team_id === fixture.home_team_id
+        setAndata({ casa: stessoVerso ? partita.gol_home : partita.gol_away, ospite: stessoVerso ? partita.gol_away : partita.gol_home })
+      } else setAndata(null)
+    }
+    void carica()
+    return () => { vivo = false }
+  }, [fixture?.bracket_tie_id, fixture?.mano, fixture?.home_team_id])
+
   // Le partite simulate prima dell'introduzione della cronaca hanno blocchi vuoto.
   const eventi = useMemo(() => {
     const registrati = match?.blocchi
@@ -214,72 +237,50 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
     </div>
   }
 
+  const nome = (id: number | null | undefined) => (id == null ? '' : cognome(players.get(id)?.nome ?? `Giocatore ${id}`))
+  // I momenti che contano, in ordine: gol, cartellini, cambi e infortuni. I
+  // tiri restano fuori, sarebbero rumore.
+  const momenti = eventi.filter((e) => isEventoGol(e) || e.tipo === 'cartellino' || e.tipo === 'sostituzione' || e.tipo === 'infortunio')
+
   return <main className="app-shell season-shell">
     <GameNav league={league} active="matches" onNavigate={navigate} />
     <header className="topbar season-topbar"><button className="match-detail-back" type="button" onClick={onBack}>← Torna alle partite</button><span>Rapporto partita</span></header>
     <SeasonState loading={data.loading} error={data.error} onRetry={data.reload} />
     {!data.loading && !data.error && (!match || !fixture) && <section className="season-state"><span className="season-state__icon">!</span><h2>Partita non trovata</h2><button className="button button--primary" type="button" onClick={onBack}>Torna indietro</button></section>}
-    {!data.loading && !data.error && match && fixture && <div className="season-page season-page--narrow match-detail-page">
-      <section className="match-report-hero">
-        <p className="kicker">Giornata {fixture.giornata} · Stagione {league.stagione_corrente}</p>
-        {/* Stemmi e punteggio stanno sulla prima riga della griglia, i marcatori
-            sulla seconda: cosi' la lista puo' crescere senza spostare gli stemmi. */}
-        <div className="match-report-score">
-          <div><TeamLabel team={data.teamById.get(fixture.home_team_id)} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} onClick={() => onOpenTeam(fixture.home_team_id)} /></div>
-          <strong><span>{match.gol_home}</span><i>-</i><span>{match.gol_away}</span></strong>
-          <div><TeamLabel team={data.teamById.get(fixture.away_team_id)} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} reversed onClick={() => onOpenTeam(fixture.away_team_id)} /></div>
-          <ScorerList eventi={eventi} lato="casa" players={players} />
-          <ScorerList eventi={eventi} lato="ospite" players={players} />
-        </div>
-        <span className="match-report-final">
-          {match.rigori_home !== null ? 'DOPO I CALCI DI RIGORE'
-            : match.gol_home_90 !== null ? 'DOPO I SUPPLEMENTARI'
-            : 'RISULTATO FINALE'}
-        </span>
-      </section>
-
-      {/* Playoff/playout (design §10.7): senza questo riquadro il punteggio in
-          alto sarebbe incomprensibile — una gara vinta ai rigori mostrerebbe
-          un pareggio con un vincitore. */}
-      {match.rigori_home !== null && match.rigori_away !== null && <section className="match-report-panel">
-        <div className="match-report-heading"><p className="kicker">Dagli undici metri</p><h2>Calci di rigore</h2></div>
-        <div className="rigori-punteggio">
-          <span>{data.teamById.get(fixture.home_team_id)?.nome ?? 'Casa'}</span>
-          <strong>{match.rigori_home}<i>-</i>{match.rigori_away}</strong>
-          <span>{data.teamById.get(fixture.away_team_id)?.nome ?? 'Ospite'}</span>
-        </div>
-        {match.gol_home_90 !== null && <p className="rigori-nota">
-          Al 90’ {match.gol_home_90}-{match.gol_away_90}, dopo i supplementari {match.gol_home}-{match.gol_away}.
-        </p>}
-        {match.rigori_serie && <ol className="rigori-serie">
-          {match.rigori_serie.map((tiro, i) => (
-            <li key={i} className={`rigori-tiro rigori-tiro--${tiro.lato} ${tiro.segnato ? 'e-gol' : 'e-errore'}`}>
-              <b>{tiro.numero}</b>
-              <span>{tiro.tiratore}</span>
-              <em>{tiro.segnato ? 'gol' : 'errore'}</em>
-            </li>
-          ))}
-        </ol>}
-      </section>}
-
-      <section className="match-report-panel">
-        <div className="match-report-heading"><p className="kicker">Numeri della gara</p><h2>Statistiche squadre</h2></div>
-        <div className="match-team-stats">
-          {STAT_ROWS.map(([label, key, format]) => {
-            const home = Number(match.stats_squadra.home[key] ?? 0)
-            const away = Number(match.stats_squadra.away[key] ?? 0)
-            const total = home + away || 1
-            return <div className="match-stat-row" key={key}>
-              <b>{format(home)}</b><span>{label}</span><b>{format(away)}</b>
-              <i><span style={{ width: `${home / total * 100}%` }} /><span style={{ width: `${away / total * 100}%` }} /></i>
+    {!data.loading && !data.error && match && fixture && (() => {
+      const casa = data.teamById.get(fixture.home_team_id)
+      const ospite = data.teamById.get(fixture.away_team_id)
+      const stato = match.rigori_home !== null ? 'Finale d.c.r.' : match.gol_home_90 !== null ? 'Finale d.t.s.' : 'Finale'
+      const squadraEroe = (teamId: number, team: typeof casa, lato: 'casa' | 'ospite') =>
+        <button className={`riepilogo-eroe__squadra riepilogo-eroe__squadra--${lato}`} type="button" onClick={() => onOpenTeam(teamId)}>
+          <span className="riepilogo-eroe__stemma"><Crest value={team?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(teamId)} size="large" /></span>
+          <b>{team?.sigla ?? team?.nome?.slice(0, 3).toUpperCase()}</b>
+          <small>{team?.nome ?? 'Squadra'}</small>
+        </button>
+      return <div className={`season-page season-page--narrow match-detail-page riepilogo riepilogo--${fase}`}>
+        <section className="riepilogo-eroe" style={{ ['--rie-fondo' as string]: `url(${SFONDO_FASE[fase]})` }}>
+          <div className="riepilogo-eroe__testa">
+            <img src={LOGO_FASE[fase]} alt="" />
+            <p>{turno ? `${turno}${fixture.mano ? ` · ${fixture.mano === 1 ? 'andata' : 'ritorno'}` : ''}` : `Giornata ${fixture.giornata}`} · Stagione {league.stagione_corrente}</p>
+          </div>
+          <div className="riepilogo-eroe__tabellone">
+            {squadraEroe(fixture.home_team_id, casa, 'casa')}
+            <div className="riepilogo-eroe__punteggio" aria-label={`${match.gol_home} a ${match.gol_away}`}>
+              <b>{match.gol_home}</b><i aria-hidden="true" /><b>{match.gol_away}</b>
+              <span className="riepilogo-eroe__stato">{stato}{match.rigori_home !== null && <em>{match.rigori_home}–{match.rigori_away} rig.</em>}</span>
             </div>
-          })}
-        </div>
-      </section>
+            {squadraEroe(fixture.away_team_id, ospite, 'ospite')}
+          </div>
+          {andata && <p className="riepilogo-eroe__totale">Andata {andata.casa}–{andata.ospite} · totale <b>{andata.casa + match.gol_home}–{andata.ospite + match.gol_away}</b></p>}
+          <div className="riepilogo-eroe__marcatori">
+            {(['casa', 'ospite'] as const).map((lato) => <ul key={lato} className={`riepilogo-marcatori riepilogo-marcatori--${lato}`}>
+              {eventi.filter((e): e is EventoGol => isEventoGol(e) && e.lato === lato).map((e, k) => <li key={`${e.minuto}-${k}`}>
+                <time>{e.minuto}′</time><b>{nome(e.marcatore)}</b>{e.assist !== null && <em>{nome(e.assist)}</em>}
+              </li>)}
+            </ul>)}
+          </div>
+        </section>
 
-      <section className="match-report-panel">
-        <div className="match-report-heading"><p className="kicker">Prestazioni</p><h2>Statistiche giocatori</h2></div>
-        {statsError && <p className="notice notice--error">{statsError}</p>}
         {!statsLoading && (() => {
           const mvp = [...pagelle.entries()].find(([, p]) => p.migliore)
           if (!mvp || mvp[1].voto === null) return null
@@ -301,28 +302,88 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
             </ul>}
           </div>
         })()}
-        {statsLoading ? <p className="season-empty">Carico le prestazioni…</p> : <div className="match-player-columns">
-          {[fixture.home_team_id, fixture.away_team_id].map((teamId) => {
-            const gruppi = gruppiByTeam.get(teamId)
-            const modulo = teamId === fixture.home_team_id ? match.modulo_home : match.modulo_away
-            return <div className="match-player-team" key={teamId}>
-              <h3><span>{data.teamById.get(teamId)?.nome ?? 'Squadra'}</span><small>{modulo}</small></h3>
-              <div className="match-player-table">
-                <div className="match-player-table__head"><span>Giocatore</span><span>VOTO</span><span>MIN</span><span>G</span><span>A</span><span>T</span><span>PASS</span></div>
-                {gruppi && gruppi.titolari.length > 0 && <>
-                  <p className="match-player-group">Titolari</p>
-                  {gruppi.titolari.map((row) => rigaGiocatore(row, true))}
-                </>}
-                {gruppi && gruppi.subentrati.length > 0 && <>
-                  <p className="match-player-group">Subentrati</p>
-                  {gruppi.subentrati.map((row) => rigaGiocatore(row, false))}
-                </>}
+
+        {momenti.length > 0 && <section className="riepilogo-pannello">
+          <h2 className="riepilogo-titolo">Momenti chiave</h2>
+          <ol className="riepilogo-momenti">
+            {momenti.map((e, k) => {
+              const contenuto = isEventoGol(e)
+                ? <><span className="momento-icona momento-icona--gol" aria-label="Gol" /><span><b>{nome(e.marcatore)}</b>{e.assist !== null && <small>assist {nome(e.assist)}</small>}</span></>
+                : e.tipo === 'cartellino'
+                  ? <><span className={`momento-icona momento-icona--${e.colore === 'giallo' ? 'giallo' : 'rosso'}`} aria-label={e.colore === 'giallo' ? 'Ammonizione' : 'Espulsione'} /><span><b>{nome(e.giocatore)}</b>{e.colore === 'doppio_giallo' && <small>secondo giallo</small>}</span></>
+                  : e.tipo === 'sostituzione'
+                    ? <><span className="momento-icona momento-icona--cambio" aria-label="Sostituzione"><Icona nome="cambio" /></span><span><b className="entra">{nome(e.entra)}</b><small>esce {nome(e.esce)}</small></span></>
+                    : e.tipo === 'infortunio'
+                      ? <><span className="momento-icona momento-icona--infortunio" aria-label="Infortunio" /><span><b>{nome(e.esce)}</b><small>infortunato, entra {nome(e.entra)}</small></span></>
+                      : null
+              return <li key={k} className={`riepilogo-momento riepilogo-momento--${e.lato}${isEventoGol(e) ? ' is-gol' : ''}`}>
+                <time>{e.minuto}′</time>
+                <div>{contenuto}</div>
+              </li>
+            })}
+          </ol>
+        </section>}
+
+        {/* Playoff/playout (design §10.7): senza questo riquadro il punteggio in
+            alto sarebbe incomprensibile — una gara vinta ai rigori mostrerebbe
+            un pareggio con un vincitore. */}
+        {match.rigori_home !== null && match.rigori_away !== null && <section className="riepilogo-pannello">
+          <h2 className="riepilogo-titolo">Calci di rigore</h2>
+          <div className="riepilogo-rigori">
+            {(['casa', 'ospite'] as const).map((lato) => <div key={lato} className="riepilogo-rigori__riga">
+              <span className="riepilogo-rigori__stemma"><Crest value={(lato === 'casa' ? casa : ospite)?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(lato === 'casa' ? fixture.home_team_id : fixture.away_team_id)} size="small" /></span>
+              <b>{(lato === 'casa' ? casa : ospite)?.sigla}</b>
+              <ol>{(match.rigori_serie ?? []).filter((t) => t.lato === lato).map((t) =>
+                <li key={t.numero} className={t.segnato ? 'is-gol' : 'is-errore'} title={`${t.tiratore}: ${t.segnato ? 'gol' : 'errore'}`}>{t.segnato ? '✓' : '✕'}</li>)}</ol>
+              <strong>{lato === 'casa' ? match.rigori_home : match.rigori_away}</strong>
+            </div>)}
+          </div>
+          {match.gol_home_90 !== null && <p className="riepilogo-nota">Al 90’ {match.gol_home_90}–{match.gol_away_90}, dopo i supplementari {match.gol_home}–{match.gol_away}.</p>}
+        </section>}
+
+        <section className="riepilogo-pannello">
+          <h2 className="riepilogo-titolo">Statistiche</h2>
+          <div className="riepilogo-stat__sigle"><b>{casa?.sigla}</b><b>{ospite?.sigla}</b></div>
+          <div className="riepilogo-stat">
+            {STAT_ROWS.map(([label, key, format]) => {
+              const home = Number(match.stats_squadra.home[key] ?? 0)
+              const away = Number(match.stats_squadra.away[key] ?? 0)
+              const total = home + away || 1
+              return <div className={`riepilogo-stat__riga${home > away ? ' is-casa' : away > home ? ' is-ospite' : ''}`} key={key}>
+                <b>{format(home)}</b><span>{label}</span><b>{format(away)}</b>
+                <i><span style={{ width: `${home / total * 100}%` }} /><span style={{ width: `${away / total * 100}%` }} /></i>
               </div>
-            </div>
-          })}
-        </div>}
-      </section>
-    </div>}
+            })}
+          </div>
+        </section>
+
+        <section className="riepilogo-pannello">
+          <h2 className="riepilogo-titolo">Pagelle e prestazioni</h2>
+          {statsError && <p className="notice notice--error">{statsError}</p>}
+          {statsLoading ? <p className="season-empty">Carico le prestazioni…</p> : <div className="match-player-columns">
+            {[fixture.home_team_id, fixture.away_team_id].map((teamId) => {
+              const gruppi = gruppiByTeam.get(teamId)
+              const modulo = teamId === fixture.home_team_id ? match.modulo_home : match.modulo_away
+              const team = data.teamById.get(teamId)
+              return <div className="match-player-team" key={teamId}>
+                <h3><span className="riepilogo-squadra"><span className="riepilogo-squadra__stemma"><Crest value={team?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(teamId)} size="small" /></span>{team?.nome ?? 'Squadra'}</span><small>{modulo}</small></h3>
+                <div className="match-player-table">
+                  <div className="match-player-table__head"><span>Giocatore</span><span>VOTO</span><span>MIN</span><span>G</span><span>A</span><span>T</span><span>PASS</span></div>
+                  {gruppi && gruppi.titolari.length > 0 && <>
+                    <p className="match-player-group">Titolari</p>
+                    {gruppi.titolari.map((row) => rigaGiocatore(row, true))}
+                  </>}
+                  {gruppi && gruppi.subentrati.length > 0 && <>
+                    <p className="match-player-group">Subentrati</p>
+                    {gruppi.subentrati.map((row) => rigaGiocatore(row, false))}
+                  </>}
+                </div>
+              </div>
+            })}
+          </div>}
+        </section>
+      </div>
+    })()}
   </main>
 }
 

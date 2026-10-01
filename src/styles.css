@@ -692,6 +692,105 @@ input:disabled { opacity: 0.65; }
 
 /* Voti in pagella (src/lib/voti.ts): il quadratino colorato stile SofaScore. */
 .match-player-table .voto { justify-self: center; }
+
+/* ============================================================
+   RIEPILOGO PARTITA in stile broadcast (MatchDetail.tsx): stessa
+   palette per fase dello scoreboard della cronaca live, sfondo della
+   fase nell'eroe, Oswald per i titoli, numeri "Aptos Narrow".
+   ============================================================ */
+.riepilogo { --rie-1: #0a6a41; --rie-2: #19b36c; --rie-luce: #6dffc3; --rie-scuro: #03140d; display: grid; gap: 16px; }
+.riepilogo--title { --rie-1: #0d2f85; --rie-2: #2a64e6; --rie-luce: #7fb0ff; --rie-scuro: #040f45; }
+.riepilogo--draft { --rie-1: #8a3303; --rie-2: #e0761a; --rie-luce: #ffc07a; --rie-scuro: #230c02; }
+.riepilogo-eroe { position: relative; overflow: hidden; display: grid; gap: 16px; padding: 18px 14px 20px; border: 1px solid color-mix(in srgb, var(--rie-2) 35%, #2b2436); border-radius: 20px; background: linear-gradient(180deg, rgba(10,8,18,.2), rgba(10,8,18,.88) 62%, #0a0812), var(--rie-fondo) center / cover, #0a0812; box-shadow: 0 24px 60px rgba(0,0,0,.4); animation: rie-entra .45s ease-out both; }
+.riepilogo-eroe::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 2px, transparent 2px 10px); }
+.riepilogo-eroe > * { position: relative; }
+.riepilogo-eroe__testa { display: grid; justify-items: center; gap: 8px; }
+.riepilogo-eroe__testa img { height: 30px; width: auto; max-width: 60vw; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,.6)); }
+.riepilogo-eroe__testa p { margin: 0; color: rgba(255,255,255,.88); font: 600 .74rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .22em; text-transform: uppercase; }
+.riepilogo-eroe__tabellone { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 8px; margin-top: 6px; }
+.riepilogo-eroe__squadra { min-width: 0; display: grid; justify-items: center; gap: 6px; padding: 0; color: #fff; background: transparent; border: 0; font: inherit; cursor: pointer; }
+.riepilogo-eroe__stemma { display: grid; place-items: center; width: clamp(58px, 18vw, 76px); height: clamp(58px, 18vw, 76px); }
+.riepilogo-eroe__stemma .crest { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 10px 18px rgba(0,0,0,.55)); }
+.riepilogo-eroe__squadra b { font: 700 clamp(1.3rem, 6vw, 1.7rem)/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .06em; text-shadow: 0 2px 8px rgba(0,0,0,.5); }
+.riepilogo-eroe__squadra small { display: -webkit-box; max-width: 100%; overflow: hidden; color: rgba(255,255,255,.7); font-size: .66rem; font-weight: 700; line-height: 1.2; text-align: center; overflow-wrap: anywhere; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.riepilogo-eroe__punteggio { position: relative; display: flex; align-items: center; gap: 10px; align-self: center; margin-top: 8px; padding: 10px clamp(18px, 6vw, 28px); background: var(--rie-scuro); clip-path: polygon(0 0, 100% 0, 92% 50%, 100% 100%, 0 100%, 8% 50%); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+.riepilogo-eroe__punteggio b { min-width: .6em; color: #fff; font: 900 clamp(2.6rem, 13vw, 3.6rem)/.9 "Aptos Narrow", "Arial Narrow", Impact, sans-serif; text-align: center; font-variant-numeric: tabular-nums; animation: rie-numero .5s .2s cubic-bezier(.2,.9,.3,1.3) both; }
+.riepilogo-eroe__punteggio i { width: 3px; height: 26px; border-radius: 2px; background: var(--rie-luce); opacity: .7; }
+.riepilogo-eroe__stato { position: absolute; left: 50%; bottom: -1px; display: flex; gap: 6px; padding: 3px 9px 3px; border-radius: 6px 6px 0 0; color: var(--rie-scuro); background: var(--rie-luce); font: 700 .56rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; transform: translate(-50%, 0); }
+.riepilogo-eroe__stato em { font-style: normal; opacity: .75; }
+.riepilogo-eroe__punteggio { padding-bottom: 22px; }
+.riepilogo-eroe__totale { margin: -4px 0 0; color: rgba(255,255,255,.75); font-size: .72rem; font-weight: 700; text-align: center; letter-spacing: .04em; }
+.riepilogo-eroe__totale b { color: var(--rie-luce); }
+.riepilogo-eroe__marcatori { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.riepilogo-marcatori { display: grid; align-content: start; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.riepilogo-marcatori li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; color: #fff; font-size: .74rem; }
+.riepilogo-marcatori--ospite li { flex-direction: row-reverse; text-align: right; }
+.riepilogo-marcatori time { padding: 1px 5px; border-radius: 4px; color: var(--rie-scuro); background: var(--rie-luce); font: 700 .62rem/1.3 "Oswald", "Arial Narrow", sans-serif; }
+.riepilogo-marcatori b { font-weight: 800; }
+.riepilogo-marcatori em { flex-basis: 100%; color: rgba(255,255,255,.55); font-size: .62rem; font-style: normal; }
+.riepilogo-marcatori em::before { content: 'assist '; }
+.riepilogo-pannello { display: grid; gap: 12px; padding: 16px 14px; border: 1px solid #2b2436; border-radius: 18px; background: linear-gradient(180deg, #15111d, #0f0c15); }
+.riepilogo-titolo { display: flex; align-items: center; gap: 9px; margin: 0; color: #fff; font: 700 1.05rem/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.riepilogo-titolo::before { content: ''; width: 4px; height: 18px; border-radius: 2px; background: linear-gradient(180deg, var(--rie-luce), var(--rie-2)); }
+.riepilogo-momenti { position: relative; display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.riepilogo-momenti::before { content: ''; position: absolute; top: 4px; bottom: 4px; left: 50%; width: 2px; background: linear-gradient(180deg, transparent, #3a3046 8%, #3a3046 92%, transparent); transform: translateX(-50%); }
+.riepilogo-momento { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr); align-items: center; min-height: 38px; }
+.riepilogo-momento time { grid-column: 2; grid-row: 1; justify-self: center; z-index: 1; padding: 3px 6px; border-radius: 6px; color: #d9d0e6; background: #1e1828; border: 1px solid #3a3046; font: 700 .64rem/1 "Oswald", "Arial Narrow", sans-serif; }
+.riepilogo-momento.is-gol time { color: var(--rie-scuro); background: var(--rie-luce); border-color: transparent; }
+.riepilogo-momento > div { grid-row: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.riepilogo-momento--casa > div { grid-column: 1; flex-direction: row-reverse; text-align: right; }
+.riepilogo-momento--ospite > div { grid-column: 3; }
+.riepilogo-momento > div > span:last-child { display: grid; min-width: 0; }
+.riepilogo-momento b { overflow: hidden; color: #f2ecf8; font-size: .76rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.riepilogo-momento.is-gol b { color: #fff; font-size: .82rem; }
+.riepilogo-momento b.entra { color: #6fe3b4; }
+.riepilogo-momento small { overflow: hidden; color: #8d839c; font-size: .62rem; text-overflow: ellipsis; white-space: nowrap; }
+.momento-icona { position: relative; flex: none; display: grid; place-items: center; width: 18px; height: 18px; }
+.momento-icona--gol { border-radius: 50%; background: radial-gradient(circle at 50% 50%, #0d0b12 0 22%, transparent 23%), conic-gradient(from 0deg, #fff 0 60deg, #d7d2de 60deg 120deg, #fff 120deg 180deg, #d7d2de 180deg 240deg, #fff 240deg 300deg, #d7d2de 300deg); box-shadow: 0 0 0 2px color-mix(in srgb, var(--rie-luce) 60%, transparent), 0 0 12px color-mix(in srgb, var(--rie-luce) 50%, transparent); }
+.momento-icona--giallo, .momento-icona--rosso { width: 12px; height: 16px; margin: 0 3px; border-radius: 2px; transform: rotate(8deg); box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+.momento-icona--giallo { background: #ffd43b; }
+.momento-icona--rosso { background: #ff4d5e; }
+.momento-icona--cambio { border-radius: 50%; color: #0b1a14; background: #5fd3c7; font-size: 12px; }
+.momento-icona--infortunio { border-radius: 4px; background: #ff4d5e; }
+.momento-icona--infortunio::before, .momento-icona--infortunio::after { content: ''; position: absolute; left: 50%; top: 50%; width: 10px; height: 3px; border-radius: 1px; background: #fff; transform: translate(-50%, -50%); }
+.momento-icona--infortunio::after { transform: translate(-50%, -50%) rotate(90deg); }
+.riepilogo-rigori { display: grid; gap: 8px; }
+.riepilogo-rigori__riga { display: grid; grid-template-columns: 26px 40px minmax(0, 1fr) 30px; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; background: #1a1523; }
+.riepilogo-rigori__stemma { display: grid; place-items: center; width: 26px; height: 26px; }
+.riepilogo-rigori__stemma .crest { width: 100%; height: 100%; object-fit: contain; }
+.riepilogo-rigori__riga > b { color: #fff; font: 700 .9rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .06em; }
+.riepilogo-rigori__riga ol { display: flex; flex-wrap: wrap; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.riepilogo-rigori__riga li { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font-size: .66rem; font-weight: 900; }
+.riepilogo-rigori__riga li.is-gol { color: #1a1205; background: #ffc94a; }
+.riepilogo-rigori__riga li.is-errore { color: #fff; background: #4a2131; box-shadow: inset 0 0 0 1px #ff4d5e; }
+.riepilogo-rigori__riga > strong { color: #fff; font: 900 1.4rem/1 "Aptos Narrow", "Arial Narrow", Impact, sans-serif; text-align: right; }
+.riepilogo-nota { margin: 0; color: #8d839c; font-size: .7rem; }
+.riepilogo-stat__sigle { display: flex; justify-content: space-between; margin-bottom: -4px; }
+.riepilogo-stat__sigle b { padding: 3px 8px; border-radius: 6px; color: var(--rie-scuro); background: var(--rie-luce); font: 700 .66rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .08em; }
+.riepilogo-stat__sigle b:last-child { color: #15111d; background: #e9e3f1; }
+.riepilogo-stat { display: grid; gap: 13px; }
+.riepilogo-stat__riga { display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; gap: 6px 10px; text-align: center; }
+.riepilogo-stat__riga > b { color: #9d93ab; font: 800 1.05rem/1 "Aptos Narrow", "Arial Narrow", Impact, sans-serif; font-variant-numeric: tabular-nums; }
+.riepilogo-stat__riga > b:first-child { text-align: left; }
+.riepilogo-stat__riga > b:nth-child(3) { text-align: right; }
+.riepilogo-stat__riga.is-casa > b:first-child, .riepilogo-stat__riga.is-ospite > b:nth-child(3) { color: #fff; }
+.riepilogo-stat__riga > span { color: #b6abc4; font-size: .7rem; font-weight: 700; letter-spacing: .04em; }
+.riepilogo-stat__riga > i { grid-column: 1 / -1; display: flex; gap: 3px; height: 6px; }
+.riepilogo-stat__riga > i span { border-radius: 3px; }
+.riepilogo-stat__riga > i span:first-child { margin-left: 0; background: linear-gradient(90deg, var(--rie-2), var(--rie-luce)); }
+.riepilogo-stat__riga > i span:last-child { background: #e9e3f1; opacity: .75; }
+.riepilogo-stat__riga:not(.is-casa) > i span:first-child { filter: saturate(.5) brightness(.75); }
+.riepilogo-stat__riga:not(.is-ospite) > i span:last-child { opacity: .35; }
+.riepilogo .match-player-team { border-color: #2b2436; background: #120f18; }
+.riepilogo .match-player-team h3 { padding: 12px 14px; font: 700 .9rem/1.1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+.riepilogo .match-player-team h3 small { border-color: color-mix(in srgb, var(--rie-2) 50%, transparent); color: var(--rie-luce); background: color-mix(in srgb, var(--rie-1) 35%, transparent); font-family: "Oswald", "Arial Narrow", sans-serif; }
+.riepilogo-squadra { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.riepilogo-squadra__stemma { display: grid; place-items: center; flex: none; width: 22px; height: 22px; }
+.riepilogo-squadra__stemma .crest { width: 100%; height: 100%; object-fit: contain; }
+.riepilogo .mvp-card { margin: 0; }
+@keyframes rie-entra { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes rie-numero { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .riepilogo-eroe, .riepilogo-eroe__punteggio b { animation: none; } }
 .voto.is-migliore { box-shadow: 0 0 0 2px #0c0b12, 0 0 0 3.5px #e29bff; }
 /* Il migliore in campo nella pagina partita: card in stile broadcast. */
 .mvp-card { position: relative; overflow: hidden; display: grid; gap: 10px; margin: 0 0 16px; padding: 16px 16px 14px; border: 1px solid #3b2d4f; border-radius: 16px; background: radial-gradient(ellipse at 100% 0%, rgba(166,107,255,.28), transparent 55%), linear-gradient(135deg, #1c1428, #0e0b15 70%); animation: mvp-entra .45s ease-out both; }
