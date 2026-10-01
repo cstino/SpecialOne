@@ -233,7 +233,9 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
   const lineupInScena = squadraInScena ? lineups.get(squadraInScena.id) : undefined
 
   const righe = useMemo(
-    () => lineupInScena ? righeFormazione(lineupInScena.modulo, lineupInScena.titolari) : [],
+    // Il portiere sta in alto e la squadra guarda verso il basso: la sua
+    // sinistra e' la destra dello schermo, quindi ogni riga va specchiata.
+    () => lineupInScena ? righeFormazione(lineupInScena.modulo, lineupInScena.titolari).map((riga) => [...riga].reverse()) : [],
     [lineupInScena],
   )
   // Ordine di comparsa globale (dal portiere agli attaccanti) per calcolare
@@ -380,8 +382,12 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
                 {riga.map((slot) => {
                   const giocatore = slot.valore ? giocatori.get(slot.valore) : undefined
                   const ritardo = ((ordineComparsa.get(slot.index) ?? 0) / totaleSlot) * Math.max(1, beat.durata - margineFineBattuta)
+                  // Trequartista piu' avanzato (in basso) e mediano piu' arretrato dei
+                  // due centrocampisti con cui condividono la riga.
+                  const conCentrocampisti = riga.some((altro) => altro.slot === 'CM')
+                  const sfalsamento = !conCentrocampisti ? 0 : slot.slot === 'CAM' ? 22 : slot.slot === 'CDM' ? -16 : 0
                   return (
-                    <div className="match-intro__card" style={{ animationDelay: `${ritardo}s` }} key={slot.index}>
+                    <div className="match-intro__card" style={{ animationDelay: `${ritardo}s`, ...(sfalsamento ? { position: 'relative', top: sfalsamento } : {}) }} key={slot.index}>
                       <div className="match-intro__card-foto">
                         {giocatore?.foto ? <img src={giocatore.foto} alt="" /> : <span aria-hidden="true">{giocatore ? giocatore.nome.charAt(0) : '?'}</span>}
                       </div>
