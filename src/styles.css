@@ -762,7 +762,7 @@ input:disabled { opacity: 0.65; }
 .riepilogo-rigori__riga > b { color: #fff; font: 700 .9rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .06em; }
 .riepilogo-rigori__riga ol { display: flex; flex-wrap: wrap; gap: 5px; margin: 0; padding: 0; list-style: none; }
 .riepilogo-rigori__riga li { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font-size: .66rem; font-weight: 900; }
-.riepilogo-rigori__riga li.is-gol { color: #1a1205; background: #ffc94a; }
+.riepilogo-rigori__riga li.is-gol { color: #062a1b; background: #34e0a1; box-shadow: 0 0 10px rgba(52,224,161,.35); }
 .riepilogo-rigori__riga li.is-errore { color: #fff; background: #4a2131; box-shadow: inset 0 0 0 1px #ff4d5e; }
 .riepilogo-rigori__riga > strong { color: #fff; font: 900 1.4rem/1 "Aptos Narrow", "Arial Narrow", Impact, sans-serif; text-align: right; }
 .riepilogo-nota { margin: 0; color: #8d839c; font-size: .7rem; }
