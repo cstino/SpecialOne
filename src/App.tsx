@@ -136,7 +136,17 @@ export default function App() {
     setViewedTeamId(null)
     setGameView(notifica.dati?.view === 'squad' ? 'squad' : 'overview')
     const partita = notifica.dati?.match_id
-    setOpenMatch(typeof partita === 'number' ? { id: partita, from: 'overview' } : null)
+    setOpenMatch(null)
+    setRevealMatch(null)
+    if (typeof partita !== 'number') return
+    // Una partita non ancora vista si apre dall'intro e dalla cronaca, mai
+    // dal rapporto: aprirebbe il risultato saltando tutta la suspense. Si
+    // chiede al database e non a partiteViste, che aprendo l'app da una
+    // notifica push puo' non essere ancora caricato.
+    void supabase.from('match_reveals').select('match_id').eq('match_id', partita).maybeSingle().then(({ data }) => {
+      if (data) setOpenMatch({ id: partita, from: 'overview' })
+      else setRevealMatch({ id: partita, from: 'overview' })
+    })
   }, [])
 
   const contestoNotifiche = useMemo(
@@ -167,6 +177,31 @@ export default function App() {
     navigator.serviceWorker.addEventListener('message', alMessaggio)
     return () => navigator.serviceWorker.removeEventListener('message', alMessaggio)
   }, [apriNotifica])
+
+  // App chiusa al tocco della push: il service worker la apre con i dati
+  // della notifica nell'indirizzo (?notifica=...). Si leggono una volta,
+  // appena c'e' la sessione, e si tolgono dall'URL.
+  useEffect(() => {
+    if (!session) return
+    const parametri = new URLSearchParams(window.location.search)
+    const grezzo = parametri.get('notifica')
+    if (!grezzo) return
+    parametri.delete('notifica')
+    const resto = parametri.toString()
+    window.history.replaceState(window.history.state, '', `${window.location.pathname}${resto ? `?${resto}` : ''}${window.location.hash}`)
+    let dati: Record<string, unknown>
+    try { dati = JSON.parse(grezzo) as Record<string, unknown> } catch { return }
+    apriNotifica({
+      id: Number(dati.notification_id) || 0,
+      league_id: typeof dati.league_id === 'number' ? dati.league_id : null,
+      tipo: 'sistema',
+      titolo: '',
+      corpo: null,
+      dati,
+      letta_il: null,
+      creata_il: new Date().toISOString(),
+    })
+  }, [session, apriNotifica])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {

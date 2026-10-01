@@ -20,8 +20,9 @@ self.addEventListener('push', (event) => {
 })
 
 // Un tocco sulla notifica porta all'app gia' aperta (e le passa dove
-// andare, come fa la campanella in-app) oppure ne apre una nuova sulla home:
-// da li' la notifica resta comunque in campanella, non e' persa.
+// andare, come fa la campanella in-app) oppure ne apre una nuova, con i dati
+// della notifica nell'indirizzo: App.tsx li legge all'avvio e va nello stesso
+// posto (per una partita non ancora vista, l'intro).
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   const dati = event.notification.data || {}
@@ -33,6 +34,6 @@ self.addEventListener('notificationclick', (event) => {
         return client.focus()
       }
     }
-    return self.clients.openWindow('/')
+    return self.clients.openWindow(`/?notifica=${encodeURIComponent(JSON.stringify(dati))}`)
   })())
 })

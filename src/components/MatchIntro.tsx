@@ -322,7 +322,7 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
         <div className={`match-intro__strada match-intro__strada--${fase}`}>
           <img className="match-intro__strada-logo" src={LOGO_FASE[fase]} alt="" />
           <p className="match-intro__strada-turno">{bracket.etichettaTurno}</p>
-          <div className="match-intro__strada-lista">
+          <div className={`match-intro__strada-lista ${tiesDelTurno.length <= 2 ? 'is-poche' : ''}`}>
             {tiesDelTurno.map((tie, indice) => {
               // La sfida in corso non deve mai rivelare il proprio esito qui,
               // anche se in tabella risultasse gia' concluso: l'utente non
@@ -334,6 +334,8 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
               const esito = (squadra: Team | undefined) => !concluso || !squadra ? '' : tie.vincitore_team_id === squadra.id ? 'is-vincitrice' : 'is-eliminata'
               return (
                 <div className={`match-intro__strada-sfida ${eQuestaSfida ? 'is-in-corso' : ''}`} style={{ animationDelay: `${0.35 + indice * 0.14}s` }} key={tie.id}>
+                  <i className="match-intro__strada-pezzo match-intro__strada-pezzo--sx" aria-hidden="true" />
+                  <i className="match-intro__strada-pezzo match-intro__strada-pezzo--dx" aria-hidden="true" />
                   <span className={`match-intro__strada-nome ${esito(alta)}`}>{alta?.nome ?? 'Da definire'}</span>
                   <span className={`match-intro__strada-stemma ${esito(alta)}`}><Crest value={alta?.stemma_url ?? null} imageUrl={alta ? data.crestUrlByTeamId.get(alta.id) : undefined} size="small" /></span>
                   <b className="match-intro__strada-v">V</b>
