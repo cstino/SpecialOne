@@ -946,7 +946,14 @@ export default {
       // scatta la diffida (si azzera il conto e si aggiunge una giornata di
       // squalifica); un rosso, diretto o da doppio giallo, aggiunge sempre
       // una giornata di squalifica per conto suo.
-      const instanceById = new Map(instances.map((instance) => [instance.id, instance]))
+      // Riletti adesso, non presi da `instances`: registrando l'ultima partita
+      // di stagione regolare private.crea_tabelloni azzera le ammonizioni, e
+      // i valori letti a inizio giornata le riporterebbero in vita.
+      const { data: cartelliniAttuali, error: cartelliniAttualiError } = await ctx.supabaseAdmin.from('player_instances')
+        .select('id, ammonizioni_stagione, squalificato_fino_a').in('id', instances.map((instance) => instance.id))
+      if (cartelliniAttualiError) throw cartelliniAttualiError
+      type CartelliniAttuali = { id: number; ammonizioni_stagione: number; squalificato_fino_a: number }
+      const instanceById = new Map(((cartelliniAttuali ?? []) as CartelliniAttuali[]).map((instance) => [instance.id, instance]))
       const valoriCartellini: Array<{ id: number; ammonizioni_stagione: number; squalificato_fino_a: number }> = []
       const nuoveSqualifiche: Array<{ teamId: number; playerId: number; nome: string; motivo: 'rosso_diretto' | 'doppio_giallo' | 'diffida' }> = []
       for (const [teamId, roster] of rosters) {
