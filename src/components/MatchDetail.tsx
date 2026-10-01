@@ -333,7 +333,7 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
               const prima = k > 0 ? momenti[k - 1].minuto : 0
               const separatori: ReactElement[] = []
               if (prima <= 45 && e.minuto > 45) separatori.push(<li key={`s45-${k}`} className="riepilogo-separatore"><span>45′ · Intervallo</span></li>)
-              if (match.gol_home_90 !== null && prima <= 90 && e.minuto > 90) separatori.push(<li key={`s90-${k}`} className="riepilogo-separatore"><span>90′ · Supplementari</span></li>)
+              if (match.gol_home_90 !== null && prima <= 90 && e.minuto > 90) separatori.push(<li key={`s90-${k}`} className="riepilogo-separatore"><span>90′ · Supplementari {match.gol_home_90}–{match.gol_away_90}</span></li>)
               const contenuto = isEventoGol(e)
                 ? <><span className="momento-icona momento-icona--gol" role="img" aria-label="Gol"><Pallone /></span><span><b>{nome(e.marcatore)} <em className="momento-parziale">{parziali.get(e)}</em></b>{e.assist !== null && <small>assist {nome(e.assist)}</small>}</span></>
                 : e.tipo === 'cartellino'
@@ -348,7 +348,9 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
                 <div>{contenuto}</div>
               </li>]
             })}
-            {match.rigori_home !== null && <li className="riepilogo-separatore"><span>Calci di rigore</span></li>}
+            {/* Supplementari senza eventi: il separatore serve comunque, la partita e' andata oltre. */}
+            {match.gol_home_90 !== null && !momenti.some((e) => e.minuto > 90) && <li className="riepilogo-separatore"><span>90′ · Supplementari {match.gol_home_90}–{match.gol_away_90}</span></li>}
+            {match.rigori_home !== null && <li className="riepilogo-separatore riepilogo-separatore--fine"><span>Rigori {match.rigori_home}–{match.rigori_away}</span></li>}
           </ol>
         </section>}
 
