@@ -448,7 +448,7 @@ export function Scambi({ membership, onNavigate }: Props) {
       <span className={`mercato-finestra ${aperto ? 'e-aperto' : ''}`}>{etichettaMercato}</span>
     </header>
 
-    {caricamento && <div className="season-page"><section className="season-state mercato-caricamento"><LoadingLogo compatto /><h2>Preparo il mercato scambi…</h2><p>Recupero rose, scelte e trattative.</p></section></div>}
+    {caricamento && <div className="season-page"><section className="season-state is-caricamento mercato-caricamento"><LoadingLogo compatto /><h2>Preparo il mercato scambi…</h2><p>Recupero rose, scelte e trattative.</p><span className="caricamento-barra" aria-hidden="true" /></section></div>}
     {errore && <div className="season-page"><p className="season-empty">{errore}</p></div>}
 
     {!caricamento && !errore && <div className="season-page season-page--narrow scambi-page">

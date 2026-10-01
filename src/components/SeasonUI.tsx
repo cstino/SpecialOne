@@ -132,7 +132,7 @@ export function Forma({ esiti, slot = 5, nascondiUltimo = false }: { esiti?: Esi
 }
 
 export function SeasonState({ loading, error, onRetry }: { loading: boolean; error: string | null; onRetry: () => void }) {
-  if (loading) return <section className="season-state"><LoadingLogo compatto /><h2>Preparo la stagione…</h2><p>Recupero calendario, risultati e classifica.</p></section>
+  if (loading) return <section className="season-state is-caricamento"><LoadingLogo compatto /><h2>Preparo la stagione…</h2><p>Recupero calendario, risultati e classifica.</p><span className="caricamento-barra" aria-hidden="true" /></section>
   if (error) return <section className="season-state"><span className="season-state__icon">!</span><h2>Dati non disponibili</h2><p>{error}</p><button className="button button--primary" type="button" onClick={onRetry}>Riprova</button></section>
   return null
 }

@@ -35,7 +35,7 @@ export function Avvisi({ membership, onNavigate }: Props) {
         <div className="alerts-heading__count"><strong>{notifiche.length}</strong><span>{notifiche.length === 1 ? 'avviso' : 'avvisi'}</span></div>
       </section>
 
-      {centro?.caricamento ? <section className="alerts-empty"><LoadingLogo compatto /><h2>Carico gli avvisi…</h2></section>
+      {centro?.caricamento ? <section className="season-state is-caricamento"><LoadingLogo compatto /><h2>Carico gli avvisi…</h2><span className="caricamento-barra" aria-hidden="true" /></section>
         : notifiche.length === 0 ? <section className="alerts-empty"><span aria-hidden="true">◎</span><h2>Nessun avviso per ora.</h2><p>Qui arriveranno i risultati delle giornate, le proposte di mercato e gli aggiornamenti importanti.</p></section>
           : <section className="alerts-list" aria-label="Elenco avvisi"><ol>{notifiche.map((notifica) => <li className={notifica.letta_il ? '' : 'is-new'} key={notifica.id}>
             <button className="alerts-list__open" type="button" onClick={() => centro?.apri(notifica)}>

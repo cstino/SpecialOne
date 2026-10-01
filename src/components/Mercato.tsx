@@ -635,7 +635,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       </span>
     </header>
 
-    {caricamento && <div className="season-page"><section className="season-state mercato-caricamento"><LoadingLogo compatto /><h2>Preparo il mercato…</h2><p>Recupero trattative, svincolati e disponibilità.</p></section></div>}
+    {caricamento && <div className="season-page"><section className="season-state is-caricamento mercato-caricamento"><LoadingLogo compatto /><h2>Preparo il mercato…</h2><p>Recupero trattative, svincolati e disponibilità.</p><span className="caricamento-barra" aria-hidden="true" /></section></div>}
     {errore && <div className="season-page"><p className="season-empty">{errore}</p></div>}
 
     {!caricamento && !errore && <div className="season-page season-page--narrow">
