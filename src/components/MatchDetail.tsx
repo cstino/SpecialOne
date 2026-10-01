@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
 import { ricostruisciEventiStorici } from '../lib/matchEvents'
@@ -11,6 +11,8 @@ import { fasciaVoto, formatoVoto } from '../lib/voti'
 import { LOGO_FASE, SFONDO_FASE, type FaseSquadra } from '../lib/faseSquadra'
 import { Crest } from './Crest'
 import { Icona } from './Icona'
+import { urlFotoGiocatore } from '../lib/fotoGiocatore'
+import { REPARTO } from '../lib/tattica'
 
 type Props = {
   membership: Membership
@@ -20,7 +22,7 @@ type Props = {
   onOpenTeam: (teamId: number) => void
 }
 
-type PlayerIdentity = { id: number; nome: string; posizioni: string[] }
+type PlayerIdentity = { id: number; nome: string; posizioni: string[]; foto_url: string | null }
 
 const STAT_ROWS: Array<[string, keyof MatchTeamStats, (value: number) => string]> = [
   ['Possesso', 'possesso', (value) => `${Math.round(value * 100)}%`],
@@ -42,11 +44,11 @@ function motivazioni(d: Record<string, number> | null): string[] {
   if (d.gol) voci.push([100, `${d.gol} gol`])
   if (d.assist) voci.push([90, `${d.assist} assist`])
   if (d.parate) voci.push([80, `${d.parate} ${d.parate === 1 ? 'parata' : 'parate'}`])
-  if (d.interventiRiusciti) voci.push([60 + d.interventiRiusciti, `${d.interventiRiusciti} interventi difensivi riusciti`])
-  if (d.contrastiVinti) voci.push([50 + d.contrastiVinti, `${d.contrastiVinti} contrasti vinti`])
-  if (d.dribblingRiusciti) voci.push([45 + d.dribblingRiusciti, `${d.dribblingRiusciti} dribbling riusciti su ${d.dribbling}`])
+  if (d.interventiRiusciti) voci.push([60 + d.interventiRiusciti, `${d.interventiRiusciti} interventi`])
+  if (d.contrastiVinti) voci.push([50 + d.contrastiVinti, `${d.contrastiVinti} contrasti`])
+  if (d.dribblingRiusciti) voci.push([45 + d.dribblingRiusciti, `${d.dribblingRiusciti} dribbling`])
   if (d.tiriInPorta && !d.gol) voci.push([40, `${d.tiriInPorta} tiri in porta`])
-  if (d.passaggi >= 20) voci.push([30, `${Math.round(d.passaggiRiusciti / d.passaggi * 100)}% di passaggi riusciti`])
+  if (d.passaggi >= 20) voci.push([30, `${Math.round(d.passaggiRiusciti / d.passaggi * 100)}% passaggi`])
   return voci.sort((a, b) => b[0] - a[0]).slice(0, 3).map(([, testo]) => testo)
 }
 
@@ -77,7 +79,7 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
       if (instanceError) { if (active) { setStatsError(instanceError.message); setStatsLoading(false) }; return }
       const playerIds = [...new Set((instances ?? []).map((item) => item.player_id))]
       const { data: catalog, error: catalogError } = playerIds.length
-        ? await supabase.from('players').select('id, nome, posizioni').in('id', playerIds)
+        ? await supabase.from('players').select('id, nome, posizioni, foto_url').in('id', playerIds)
         : { data: [], error: null }
       if (catalogError) { if (active) { setStatsError(catalogError.message); setStatsLoading(false) }; return }
       const catalogById = new Map((catalog ?? []).map((player) => [player.id, player as PlayerIdentity]))
@@ -224,16 +226,25 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
 
   // mostraUscita e' vero solo per i titolari: e' l'unico caso in cui minuti
   // ridotti significano senza ambiguita' "sostituito", non "entrato tardi".
-  function rigaGiocatore(row: MatchPlayerStat, mostraUscita: boolean) {
+  function rigaGiocatore(row: MatchPlayerStat, mostraUscita: boolean, posizione: number) {
     const identita = players.get(row.player_instance_id)
-    return <div key={row.id}>
-      <span><strong>{identita?.nome ?? `Giocatore ${row.player_instance_id}`}</strong><small>{identita?.posizioni.join(' · ')}</small></span>
+    const ruolo = identita?.posizioni[0] ?? '—'
+    const foto = urlFotoGiocatore(identita?.foto_url)
+    // Gol e assist come icone accanto al nome: niente colonne in piu', cosi'
+    // la riga non scorre mai di lato anche a 360 px.
+    return <div className="pagella-riga" key={row.id} style={{ ['--i' as string]: posizione }}>
+      <span className="pagella-riga__foto">{foto ? <img src={foto} alt="" loading="lazy" /> : <b>{(identita?.nome ?? '?').charAt(0)}</b>}</span>
+      <span className="pagella-riga__chi">
+        <strong>{identita ? cognome(identita.nome) : `Giocatore ${row.player_instance_id}`}</strong>
+        <span className="pagella-riga__info">
+          <i className={`ruolo-chip ruolo-chip--${REPARTO[ruolo] ?? 'MID'}`}>{ruolo}</i>
+          {Array.from({ length: row.gol }, (_, k) => <span key={`g${k}`} className="pagella-icona" title="Gol"><Pallone /></span>)}
+          {Array.from({ length: row.assist }, (_, k) => <span key={`a${k}`} className="pagella-icona pagella-icona--assist" title="Assist"><Scarpa /></span>)}
+          {mostraUscita && row.minuti < 90 && <em className="pagella-uscita" title={`Uscito al ${row.minuti}'`}>↓ {row.minuti}′</em>}
+        </span>
+      </span>
       <VotoCella pagella={pagelle.get(row.player_instance_id)} assenti={pagelle.size === 0} />
-      <b>{row.minuti}{mostraUscita && row.minuti < 90 && <i className="match-player-uscita" title={`Uscito al ${row.minuti}'`}>↓</i>}</b>
-      <b className={row.gol ? 'is-highlight' : ''}>{row.gol}</b>
-      <b className={row.assist ? 'is-assist' : ''}>{row.assist}</b>
-      <b>{row.tiri}</b>
-      <b>{row.passaggi_riusciti}/{row.passaggi_tentati}</b>
+      <b className="pagella-riga__min">{row.minuti}′</b>
     </div>
   }
 
@@ -241,6 +252,12 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
   // I momenti che contano, in ordine: gol, cartellini, cambi e infortuni. I
   // tiri restano fuori, sarebbero rumore.
   const momenti = eventi.filter((e) => isEventoGol(e) || e.tipo === 'cartellino' || e.tipo === 'sostituzione' || e.tipo === 'infortunio')
+  // Il risultato dopo ogni gol, per la linea del tempo.
+  const parziali = new Map<EventoGol, string>()
+  {
+    let c = 0, o = 0
+    for (const e of momenti) if (isEventoGol(e)) { if (e.lato === 'casa') c++; else o++; parziali.set(e, `${c}–${o}`) }
+  }
 
   return <main className="app-shell season-shell">
     <GameNav league={league} active="matches" onNavigate={navigate} />
@@ -266,12 +283,12 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
           <div className="riepilogo-eroe__tabellone">
             {squadraEroe(fixture.home_team_id, casa, 'casa')}
             <div className="riepilogo-eroe__punteggio" aria-label={`${match.gol_home} a ${match.gol_away}`}>
-              <b>{match.gol_home}</b><i aria-hidden="true" /><b>{match.gol_away}</b>
-              <span className="riepilogo-eroe__stato">{stato}{match.rigori_home !== null && <em>{match.rigori_home}–{match.rigori_away} rig.</em>}</span>
+              <b>{match.gol_home}{match.rigori_home !== null && <sup>{match.rigori_home}</sup>}</b><i aria-hidden="true" /><b>{match.gol_away}{match.rigori_away !== null && <sup>{match.rigori_away}</sup>}</b>
+              <span className="riepilogo-eroe__stato">{stato}</span>
             </div>
             {squadraEroe(fixture.away_team_id, ospite, 'ospite')}
           </div>
-          {andata && <p className="riepilogo-eroe__totale">Andata {andata.casa}–{andata.ospite} · totale <b>{andata.casa + match.gol_home}–{andata.ospite + match.gol_away}</b></p>}
+          {andata && <p className="riepilogo-eroe__totale"><span>Andata {andata.casa}–{andata.ospite}</span><b>Totale {andata.casa + match.gol_home}–{andata.ospite + match.gol_away}</b></p>}
           <div className="riepilogo-eroe__marcatori">
             {(['casa', 'ospite'] as const).map((lato) => <ul key={lato} className={`riepilogo-marcatori riepilogo-marcatori--${lato}`}>
               {eventi.filter((e): e is EventoGol => isEventoGol(e) && e.lato === lato).map((e, k) => <li key={`${e.minuto}-${k}`}>
@@ -288,27 +305,37 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
           const riga = stats.find((r) => r.player_instance_id === id)
           const identita = players.get(id)
           const squadra = riga ? data.teamById.get(riga.team_id)?.nome : undefined
+          const foto = urlFotoGiocatore(identita?.foto_url)
           return <div className="mvp-card">
-            <span className="mvp-card__etichetta">Migliore in campo</span>
-            <div className="mvp-card__corpo">
+            <div className="mvp-card__testo">
+              <span className="mvp-card__etichetta"><Stella />Migliore in campo</span>
               <div className="mvp-card__chi">
                 <strong>{identita?.nome ?? `Giocatore ${id}`}</strong>
                 <small>{[identita?.posizioni[0], squadra].filter(Boolean).join(' · ')}</small>
               </div>
+              {motivazioni(p.dettaglio).length > 0 && <ul className="mvp-card__perche">
+                {motivazioni(p.dettaglio).map((m) => <li key={m}>{m}</li>)}
+              </ul>}
+            </div>
+            <div className="mvp-card__ritratto">
+              {foto ? <img src={foto} alt="" /> : <span>{(identita?.nome ?? '?').charAt(0)}</span>}
               <b className={`mvp-card__voto voto--${fasciaVoto(p.voto!)}`}>{formatoVoto(p.voto!)}</b>
             </div>
-            {motivazioni(p.dettaglio).length > 0 && <ul className="mvp-card__perche">
-              {motivazioni(p.dettaglio).map((m) => <li key={m}>{m}</li>)}
-            </ul>}
           </div>
         })()}
 
         {momenti.length > 0 && <section className="riepilogo-pannello">
           <h2 className="riepilogo-titolo">Momenti chiave</h2>
           <ol className="riepilogo-momenti">
-            {momenti.map((e, k) => {
+            {momenti.flatMap((e, k) => {
+              // Separatori di tempo fra un evento e il successivo: intervallo,
+              // fine dei 90' se si e' andati ai supplementari.
+              const prima = k > 0 ? momenti[k - 1].minuto : 0
+              const separatori: ReactElement[] = []
+              if (prima <= 45 && e.minuto > 45) separatori.push(<li key={`s45-${k}`} className="riepilogo-separatore"><span>45′ · Intervallo</span></li>)
+              if (match.gol_home_90 !== null && prima <= 90 && e.minuto > 90) separatori.push(<li key={`s90-${k}`} className="riepilogo-separatore"><span>90′ · Supplementari</span></li>)
               const contenuto = isEventoGol(e)
-                ? <><span className="momento-icona momento-icona--gol" role="img" aria-label="Gol"><Pallone /></span><span><b>{nome(e.marcatore)}</b>{e.assist !== null && <small>assist {nome(e.assist)}</small>}</span></>
+                ? <><span className="momento-icona momento-icona--gol" role="img" aria-label="Gol"><Pallone /></span><span><b>{nome(e.marcatore)} <em className="momento-parziale">{parziali.get(e)}</em></b>{e.assist !== null && <small>assist {nome(e.assist)}</small>}</span></>
                 : e.tipo === 'cartellino'
                   ? <><span className={`momento-icona momento-icona--${e.colore === 'giallo' ? 'giallo' : 'rosso'}`} aria-label={e.colore === 'giallo' ? 'Ammonizione' : 'Espulsione'} /><span><b>{nome(e.giocatore)}</b>{e.colore === 'doppio_giallo' && <small>secondo giallo</small>}</span></>
                   : e.tipo === 'sostituzione'
@@ -316,11 +343,12 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
                     : e.tipo === 'infortunio'
                       ? <><span className="momento-icona momento-icona--infortunio" aria-label="Infortunio" /><span><b>{nome(e.esce)}</b><small>infortunato, entra {nome(e.entra)}</small></span></>
                       : null
-              return <li key={k} className={`riepilogo-momento riepilogo-momento--${e.lato}${isEventoGol(e) ? ' is-gol' : ''}`}>
+              return [...separatori, <li key={k} className={`riepilogo-momento riepilogo-momento--${e.lato}${isEventoGol(e) ? ' is-gol' : ''}`}>
                 <time>{e.minuto}′</time>
                 <div>{contenuto}</div>
-              </li>
+              </li>]
             })}
+            {match.rigori_home !== null && <li className="riepilogo-separatore"><span>Calci di rigore</span></li>}
           </ol>
         </section>}
 
@@ -333,17 +361,20 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
             {(['casa', 'ospite'] as const).map((lato) => <div key={lato} className="riepilogo-rigori__riga">
               <span className="riepilogo-rigori__stemma"><Crest value={(lato === 'casa' ? casa : ospite)?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(lato === 'casa' ? fixture.home_team_id : fixture.away_team_id)} size="small" /></span>
               <b>{(lato === 'casa' ? casa : ospite)?.sigla}</b>
-              <ol>{(match.rigori_serie ?? []).filter((t) => t.lato === lato).map((t) =>
-                <li key={t.numero} className={t.segnato ? 'is-gol' : 'is-errore'} title={`${t.tiratore}: ${t.segnato ? 'gol' : 'errore'}`}>{t.segnato ? '✓' : '✕'}</li>)}</ol>
+              <ol>{(match.rigori_serie ?? []).filter((t) => t.lato === lato).map((t, k) =>
+                <li key={t.numero} className={t.segnato ? 'is-gol' : 'is-errore'} style={{ ['--i' as string]: k }} title={`${t.tiratore}: ${t.segnato ? 'gol' : 'errore'}`} aria-label={`${t.tiratore}: ${t.segnato ? 'gol' : 'errore'}`}>{t.segnato ? '✓' : '✕'}</li>)}</ol>
               <strong>{lato === 'casa' ? match.rigori_home : match.rigori_away}</strong>
             </div>)}
           </div>
-          {match.gol_home_90 !== null && <p className="riepilogo-nota">Al 90’ {match.gol_home_90}–{match.gol_away_90}, dopo i supplementari {match.gol_home}–{match.gol_away}.</p>}
+          {match.gol_home_90 !== null && <p className="riepilogo-nota"><span>Al 90′ {match.gol_home_90}–{match.gol_away_90}</span><span>Dopo i supplementari {match.gol_home}–{match.gol_away}</span></p>}
         </section>}
 
         <section className="riepilogo-pannello">
           <h2 className="riepilogo-titolo">Statistiche</h2>
-          <div className="riepilogo-stat__sigle"><b>{casa?.sigla}</b><b>{ospite?.sigla}</b></div>
+          <div className="riepilogo-stat__sigle">
+            <span className="riepilogo-stat__squadra riepilogo-stat__squadra--casa"><span className="riepilogo-squadra__stemma"><Crest value={casa?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /></span>{casa?.sigla}</span>
+            <span className="riepilogo-stat__squadra riepilogo-stat__squadra--ospite">{ospite?.sigla}<span className="riepilogo-squadra__stemma"><Crest value={ospite?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" /></span></span>
+          </div>
           <div className="riepilogo-stat">
             {STAT_ROWS.map(([label, key, format]) => {
               const home = Number(match.stats_squadra.home[key] ?? 0)
@@ -367,15 +398,15 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
               const team = data.teamById.get(teamId)
               return <div className="match-player-team" key={teamId}>
                 <h3><span className="riepilogo-squadra"><span className="riepilogo-squadra__stemma"><Crest value={team?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(teamId)} size="small" /></span>{team?.nome ?? 'Squadra'}</span><small>{modulo}</small></h3>
-                <div className="match-player-table">
-                  <div className="match-player-table__head"><span>Giocatore</span><span>VOTO</span><span>MIN</span><span>G</span><span>A</span><span>T</span><span>PASS</span></div>
+                <div className="pagella-tabella">
+                  <div className="pagella-tabella__testa"><span>Giocatore</span><span>Voto</span><span>Min</span></div>
                   {gruppi && gruppi.titolari.length > 0 && <>
-                    <p className="match-player-group">Titolari</p>
-                    {gruppi.titolari.map((row) => rigaGiocatore(row, true))}
+                    <p className="pagella-gruppo">Titolari</p>
+                    {gruppi.titolari.map((row, k) => rigaGiocatore(row, true, k))}
                   </>}
                   {gruppi && gruppi.subentrati.length > 0 && <>
-                    <p className="match-player-group">Subentrati</p>
-                    {gruppi.subentrati.map((row) => rigaGiocatore(row, false))}
+                    <p className="pagella-gruppo">Subentrati</p>
+                    {gruppi.subentrati.map((row, k) => rigaGiocatore(row, false, gruppi.titolari.length + k))}
                   </>}
                 </div>
               </div>
@@ -392,10 +423,30 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
 function Pallone() {
   return (
     <svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true" focusable="false">
-      <defs><radialGradient id="pallone-luce" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#ffffff" /><stop offset="1" stop-color="#d6d0df" /></radialGradient></defs>
+      <defs><radialGradient id="pallone-luce" cx="38%" cy="32%" r="75%"><stop offset="0" stopColor="#ffffff" /><stop offset="1" stopColor="#d6d0df" /></radialGradient></defs>
       <circle cx="12" cy="12" r="10.8" fill="url(#pallone-luce)" />
       <path d="M12.00 8.40L15.64 6.98 M12.00 8.40L8.36 6.98 M15.42 10.89L15.64 6.98 M15.42 10.89L17.90 13.92 M14.12 14.91L17.90 13.92 M14.12 14.91L12.00 18.20 M9.88 14.91L12.00 18.20 M9.88 14.91L6.10 13.92 M8.58 10.89L6.10 13.92 M8.58 10.89L8.36 6.98 M19.80 3.97L19.52 4.25 M22.05 16.93L21.69 16.76 M13.59 23.08L13.53 22.69 M1.95 16.93L2.31 16.76 M6.77 2.10L6.95 2.45" stroke="#4a4256" strokeWidth="0.75" strokeLinecap="round" />
       <g fill="#16121e"><polygon points="12.00,8.40 15.42,10.89 14.12,14.91 9.88,14.91 8.58,10.89" /><polygon points="15.64,6.98 14.66,3.97 17.23,2.10 19.80,3.97 18.82,6.98" /><polygon points="17.90,13.92 20.46,12.05 23.03,13.92 22.05,16.93 18.88,16.93" /><polygon points="12.00,18.20 14.57,20.07 13.59,23.08 10.41,23.08 9.43,20.07" /><polygon points="6.10,13.92 5.12,16.93 1.95,16.93 0.97,13.92 3.54,12.05" /><polygon points="8.36,6.98 5.18,6.98 4.20,3.97 6.77,2.10 9.34,3.97" /></g>
+    </svg>
+  )
+}
+
+// L'assist: una scarpetta, in coppia col pallone del gol.
+function Scarpa() {
+  return (
+    <svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true" focusable="false">
+      <path d="M3 9.5 9.2 9l2.3 3.2 5.6 1.4c2.4.6 3.9 1.8 3.9 3.4v.5H3z" fill="#e9e3f1" />
+      <path d="M3 17.5h18" stroke="#15111d" strokeWidth="1.4" />
+      <path d="M6 19.5v-1.2M10 19.5v-1.2M14 19.5v-1.2M18 19.5v-1.2" stroke="#e9e3f1" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+// Il migliore in campo: stella oro, come il Player of the Match di EA FC.
+function Stella() {
+  return (
+    <svg className="mvp-stella" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true" focusable="false">
+      <path d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z" fill="currentColor" />
     </svg>
   )
 }

@@ -189,7 +189,7 @@ function PlayerPortrait({ player, imageUrl, position, selected = false, onClick,
       <strong>{player ? cognome(player.nome) : 'Seleziona'}</strong>
       <span className="lineup-player__meta">
         <span className={`lineup-player__position lineup-player__position--${reparto(position)}`}>{position}</span>
-        <b>{player?.overall_corrente ?? '—'}</b>
+        <b className={player && player.overall_corrente >= 85 ? 'ovr-alto' : undefined}>{player?.overall_corrente ?? '—'}</b>
         {idoneo && <span className={`lineup-player__ruolo lineup-player__ruolo--${idoneo.tono}`}
           title={idoneo.tono === 'piu' ? 'Adatto al ruolo che gli hai dato nello schema' : 'Poco adatto al ruolo che gli hai dato nello schema'}>{idoneo.segno}</span>}
       </span>
@@ -408,7 +408,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       // offsetWidth/offsetHeight non risentono della scala applicata: e' la
       // misura "piena" della card. Qualche pixel in piu' per il badge
       // dell'energia, che sporge sopra la foto.
-      const nuove = { w: el.clientWidth, h: el.clientHeight, cw: card.offsetWidth, ch: card.offsetHeight + 8 }
+      const nuove = { w: el.clientWidth, h: el.clientHeight, cw: card.offsetWidth, ch: card.offsetHeight + 14 }
       setMisure((prima) => (prima && prima.w === nuove.w && prima.h === nuove.h && prima.cw === nuove.cw && prima.ch === nuove.ch ? prima : nuove))
     }
     misura()
@@ -417,7 +417,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     return () => osservatore.disconnect()
   })
   const disposizioneCard = misure
-    ? disponiCard(posti.map((p) => ({ x: p.x, y: p.y })), { w: misure.w, h: misure.h }, { w: misure.cw, h: misure.ch })
+    ? disponiCard(posti.map((p) => ({ x: p.x, y: p.y })), { w: misure.w, h: misure.h }, { w: misure.cw, h: misure.ch }, 10)
     : null
 
   // Overall medio dei titolari, nello slot in cui sono davvero schierati:
@@ -754,7 +754,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
             </div>}
             <div className="formation-ftsg">
               <FtsgGauge moduloPct={ftsgModuloPct} stilePct={ftsgStilePct} onClick={() => setFtsgInfoOpen(true)} />
-              <span>FTSG</span>
+              <span>Familiarità</span>
             </div>
             <div className="formation-tattica">
               <div className="formation-tattica__voce formation-module-selector">
@@ -762,11 +762,11 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
                   <span className="formation-tattica__testo"><small>{moduloPersonalizzatoAttivo ? `Modulo personalizzato · da ${modulo}` : 'Modulo tattico'}</small><strong>{moduloPersonalizzatoAttivo?.nome ?? modulo}</strong></span>
                   <i aria-hidden="true"><Icona nome={moduleMenuOpen ? 'chiudi' : 'giu'} /></i>
                 </button>
-                {moduleMenuOpen && <><button className="formation-module-scrim" type="button" aria-label="Chiudi selezione modulo" onClick={() => setModuleMenuOpen(false)} /><div className="formation-module-menu" role="listbox" aria-label="Scegli il modulo">{Object.keys(MODULI).map((name) => { const attivo = name === modulo && !moduloPersonalizzatoAttivo; return <button className={attivo ? 'is-active' : ''} type="button" role="option" aria-selected={attivo} key={name} onClick={() => chooseModule(name)}><strong>{name}</strong><small>{MODULO_DESCRIZIONI[name]}</small><span>{attivo ? '✓' : '›'}</span></button> })}
+                {moduleMenuOpen && <><button className="formation-module-scrim" type="button" aria-label="Chiudi selezione modulo" onClick={() => setModuleMenuOpen(false)} /><div className="formation-module-menu" role="listbox" aria-label="Scegli il modulo">{Object.keys(MODULI).map((name) => { const attivo = name === modulo && !moduloPersonalizzatoAttivo; return <button className={attivo ? 'is-active' : ''} type="button" role="option" aria-selected={attivo} key={name} onClick={() => chooseModule(name)}><MiniModulo slots={MODULI[name]} /><strong>{name}</strong><small>{MODULO_DESCRIZIONI[name]}</small><span>{attivo ? '✓' : '›'}</span></button> })}
                   {moduliPersonalizzati.length > 0 && <>
                     <p className="formation-module-menu__sezione">I tuoi moduli · {moduliPersonalizzati.length}/{MODULI_PERSONALIZZATI_MAX}</p>
                     {moduliPersonalizzati.map((m) => { const attivo = moduloPersonalizzatoAttivo?.id === m.id; return <div className="formation-module-menu__personale" key={`p-${m.id}`}>
-                      <button className={attivo ? 'is-active' : ''} type="button" role="option" aria-selected={attivo} onClick={() => scegliModuloPersonalizzato(m)}><strong>{m.nome}</strong><small>da {m.modulo} · {nomeSchieramento(m.disposizione, MODULI)}</small><span>{attivo ? '✓' : '›'}</span></button>
+                      <button className={attivo ? 'is-active' : ''} type="button" role="option" aria-selected={attivo} onClick={() => scegliModuloPersonalizzato(m)}><MiniModulo slots={m.disposizione} /><strong>{m.nome}</strong><small>da {m.modulo} · {nomeSchieramento(m.disposizione, MODULI)}</small><span>{attivo ? '✓' : '›'}</span></button>
                       <button className="formation-module-menu__elimina" type="button" aria-label={`Elimina il modulo ${m.nome}`} onClick={() => { if (window.confirm(`Eliminare il modulo "${m.nome}"?`)) void eliminaModuloPersonalizzato(m.id).then((e) => { if (e) setError(e) }) }}><Icona nome="chiudi" /></button>
                     </div> })}
                   </>}
@@ -775,8 +775,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
               <div className="formation-tattica__voce">
                 <button className="formation-tattica__trigger" type="button" onClick={() => { setSchemaAperto(true); setModuleMenuOpen(false) }}>
                   <span className="formation-tattica__testo">
-                    <small>Schema e stile · {STILE_LABEL[stile]?.toLowerCase()}</small>
-                    <strong>{disposizione || ruoli || compiti || focusCorsia || linea || ampiezza || portiere || stile !== 'equilibrato' ? 'Personalizzato' : 'Standard'}</strong>
+                    <small>Schema e stile{disposizione || ruoli || compiti || focusCorsia || linea || ampiezza || portiere ? <em className="formation-tattica__tag">personalizzato</em> : null}</small>
+                    <strong>{(STILE_LABEL[stile] ?? stile).toLowerCase()}</strong>
                   </span>
                   <i aria-hidden="true"><Icona nome="avanti" /></i>
                 </button>
@@ -878,5 +878,17 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         </div>
       </div>}
     </main>
+  )
+}
+
+// La forma di un modulo in undici puntini, nel menu dei moduli: si riconosce a
+// colpo d'occhio, come nella scelta della formazione di EA FC.
+function MiniModulo({ slots }: { slots: string[] }) {
+  return (
+    <span className="mini-modulo" aria-hidden="true">
+      {schieramentoInCampo(slots).map((p) => (
+        <i key={p.index} className={`mini-modulo__punto mini-modulo__punto--${reparto(p.slot)}`} style={{ left: `${p.x}%`, top: `${100 - p.y}%` }} />
+      ))}
+    </span>
   )
 }

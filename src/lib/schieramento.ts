@@ -191,12 +191,12 @@ export function lineeDistinte(posti: Punto[], tolleranza = 6): number {
  * e se ci e' riuscita.
  */
 export function senzaSovrapposizioni(
-  posti: Punto[], campo: { w: number; h: number }, card: { w: number; h: number }, margine = 4,
+  posti: Punto[], campo: { w: number; h: number }, card: { w: number; h: number }, margine = 4, bordo = 0,
 ): { posti: Punto[]; riuscito: boolean } {
   const cw = card.w + margine, ch = card.h + margine
   const P = posti.map((p) => ({ X: (p.x / 100) * campo.w, Y: ((100 - p.y) / 100) * campo.h }))
   const limita = (q: { X: number; Y: number }) => {
-    q.X = Math.min(campo.w - card.w / 2, Math.max(card.w / 2, q.X))
+    q.X = Math.min(campo.w - card.w / 2 - bordo, Math.max(card.w / 2 + bordo, q.X))
     q.Y = Math.min(campo.h - card.h / 2, Math.max(card.h / 2, q.Y))
   }
   P.forEach(limita)
@@ -233,7 +233,7 @@ export function senzaSovrapposizioni(
  * La disposizione finale per un campo vero: la scala piu' grande (fino a 1) a
  * cui le card stanno tutte senza toccarsi, e le postazioni a quella scala.
  */
-export function disponiCard(posti: Punto[], campo: { w: number; h: number }, card: { w: number; h: number }): { posti: Punto[]; scala: number } {
+export function disponiCard(posti: Punto[], campo: { w: number; h: number }, card: { w: number; h: number }, bordo = 0): { posti: Punto[]; scala: number } {
   if (!campo.w || !campo.h || !card.w || !card.h) return { posti, scala: 1 }
   // Una linea troppo affollata per la larghezza (cinque difensori su un
   // telefono) non si risolve rimpicciolendo tutto: le due card piu' esterne
@@ -244,11 +244,11 @@ export function disponiCard(posti: Punto[], campo: { w: number; h: number }, car
   const linee = Math.max(1, lineeDistinte(posti))
   let scala = Math.min(1, campo.h / (linee * (card.h + 4)))
   for (let tentativo = 0; tentativo < 12; tentativo++) {
-    const r = senzaSovrapposizioni(posti, campo, { w: card.w * scala, h: card.h * scala })
+    const r = senzaSovrapposizioni(posti, campo, { w: card.w * scala, h: card.h * scala }, 4, bordo)
     if (r.riuscito) return { posti: r.posti, scala }
     scala *= 0.92
   }
-  return { posti: senzaSovrapposizioni(posti, campo, { w: card.w * scala, h: card.h * scala }).posti, scala }
+  return { posti: senzaSovrapposizioni(posti, campo, { w: card.w * scala, h: card.h * scala }, 4, bordo).posti, scala }
 }
 
 function sfalsaLineeAffollate(posti: Punto[], campo: { w: number; h: number }, card: { w: number; h: number }, tolleranza = 6): Punto[] {
