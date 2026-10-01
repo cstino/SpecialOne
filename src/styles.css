@@ -3470,3 +3470,21 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .tabellone-scheda.is-attiva img { filter: drop-shadow(0 3px 8px rgba(0,0,0,.5)); opacity: 1; }
 .tabellone-scheda.is-attiva::after { opacity: 1; transform: none; }
 .tabellone-scheda:focus-visible { outline: 2px solid var(--scheda-luce); outline-offset: 2px; }
+
+/* Caricamenti nello stile broadcast: logo dentro un anello luminoso che
+   ruota, testo in Oswald, barra con una luce che scorre. */
+.loading-logo { position: relative; width: 112px; height: 112px; }
+.loading-logo img { position: relative; z-index: 1; width: 52px; height: 72px; }
+.loading-logo--compatto { width: 78px; height: 78px; }
+.loading-logo--compatto img { width: 36px; height: 50px; }
+.loading-logo::before { content: ''; position: absolute; inset: -30%; border-radius: 50%; background: radial-gradient(circle, rgba(155,76,255,.32), transparent 62%); animation: caricamento-respiro 2.4s ease-in-out infinite; }
+.loading-logo__anello { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, transparent 0deg, rgba(166,107,255,.15) 120deg, #a66bff 250deg, #46e3ff 330deg, transparent 360deg); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); filter: drop-shadow(0 0 8px rgba(70,227,255,.55)); animation: caricamento-giro 1.3s linear infinite; }
+.loading-screen { position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 42%, rgba(124,58,237,.28), transparent 60%), repeating-linear-gradient(115deg, rgba(255,255,255,.025) 0 2px, transparent 2px 90px), #0a0812; }
+.loading-screen p, .season-state.is-caricamento p { margin: 6px 0 0; color: rgba(226,214,245,.62); font: 600 .72rem/1.4 Inter, Arial, sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+.loading-screen p { margin-top: 22px; color: #fff; font: 700 clamp(1.3rem, 6vw, 1.7rem)/1.1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .04em; }
+.loading-screen::after, .caricamento-barra { content: ''; display: block; width: min(220px, 60vw); height: 3px; margin-top: 18px; border-radius: 3px; background: linear-gradient(90deg, transparent, #46e3ff, #a66bff, transparent) -120% 0 / 60% 100% no-repeat, rgba(255,255,255,.08); animation: caricamento-scorre 1.4s cubic-bezier(.45,0,.55,1) infinite; }
+.season-state.is-caricamento h2 { margin: 18px 0 2px; color: #fff; font: 700 clamp(1.4rem, 6.4vw, 1.9rem)/1.1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+@keyframes caricamento-giro { to { transform: rotate(360deg); } }
+@keyframes caricamento-respiro { 0%, 100% { opacity: .6; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.04); } }
+@keyframes caricamento-scorre { from { background-position: -120% 0, 0 0; } to { background-position: 220% 0, 0 0; } }
+@media (prefers-reduced-motion: reduce) { .loading-logo__anello, .loading-logo::before, .loading-screen::after, .caricamento-barra { animation: none; } }
