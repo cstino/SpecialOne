@@ -240,6 +240,16 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
   const totaleSlot = Math.max(1, ordineComparsa.size)
   const margineFineBattuta = 1 // secondi di margine prima della fine della battuta, cosi' l'ultimo giocatore resta visibile
 
+  // Sotto il titolo della locandina: andata/ritorno (solo se il turno ha
+  // davvero due partite) e la data, sempre nel fuso di Roma.
+  const sottotitoloLocandina = useMemo(() => {
+    const giorno = new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', weekday: 'short', day: 'numeric', month: 'short' })
+      .format(new Date(fixture.data_sim)).replace(/\./g, '').toUpperCase()
+    const mani = fixture.bracket_tie_id ? data.fixtures.filter((riga) => riga.bracket_tie_id === fixture.bracket_tie_id).length : 0
+    const mano = mani > 1 ? (fixture.mano === 1 ? 'ANDATA' : 'RITORNO') : null
+    return mano ? `${mano} · ${giorno}` : giorno
+  }, [fixture, data.fixtures])
+
   const classificaPrecedente = useMemo(
     () => classificaFinoA(data.fixtures, data.matchByFixture, data.teams.map((team) => team.id), fixture.giornata),
     [data.fixtures, data.matchByFixture, data.teams, fixture.giornata]
@@ -265,21 +275,26 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
       <button className="match-intro__salta" type="button" onClick={onSkip}>Salta intro ›</button>
 
       {beat.tipo === 'locandina' && (
-        <div className="match-intro__locandina">
-          <img className="match-intro__logo-fase" src={LOGO_FASE[fase]} alt="" />
-          <p className="match-intro__competizione">{league?.nome}</p>
-          <div className="match-intro__sfida">
-            <div className="match-intro__sfida-squadra">
+        <div className={`match-intro__locandina match-intro__locandina--${fase}`}>
+          <div className="match-intro__locandina-testa">
+            <h2 className="match-intro__locandina-titolo">{bracket ? bracket.etichettaTurno : `Giornata ${fixture.giornata}`}</h2>
+            <p className="match-intro__locandina-data">{sottotitoloLocandina}</p>
+          </div>
+          <div className="match-intro__locandina-card">
+            <div className="match-intro__locandina-squadra">
               <Crest value={homeTeam?.stemma_url ?? null} imageUrl={homeCrestUrl} size="large" />
               <strong>{homeTeam?.nome ?? 'Casa'}</strong>
             </div>
-            <span className="match-intro__vs">VS</span>
-            <div className="match-intro__sfida-squadra">
+            <span className="match-intro__locandina-vs">VS</span>
+            <div className="match-intro__locandina-squadra">
               <Crest value={awayTeam?.stemma_url ?? null} imageUrl={awayCrestUrl} size="large" />
               <strong>{awayTeam?.nome ?? 'Ospite'}</strong>
             </div>
           </div>
-          <p className="match-intro__turno">{bracket ? bracket.etichettaTurno : `Giornata ${fixture.giornata} di ${league?.giornate_totali ?? '—'}`}</p>
+          <div className="match-intro__locandina-piede">
+            <img src={LOGO_FASE[fase]} alt="" />
+            <span>{league?.nome}</span>
+          </div>
         </div>
       )}
 
@@ -304,13 +319,11 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
       )}
 
       {beat.tipo === 'tabellone' && bracket && (
-        <div className="match-intro__tabellone">
-          {/* Stesso marchio della locandina: era l'unica battuta dei playoff
-              senza, e si perdeva il riferimento alla competizione. */}
-          <img className="match-intro__logo-fase" src={LOGO_FASE[fase]} alt="" />
-          <p className="match-intro__classifica-titolo">{bracket.tipo === 'title' ? 'Title Playoff' : 'Draft Playoff'} · {bracket.etichettaTurno}</p>
-          <div className="match-intro__tie-lista">
-            {tiesDelTurno.map((tie) => {
+        <div className={`match-intro__strada match-intro__strada--${fase}`}>
+          <img className="match-intro__strada-logo" src={LOGO_FASE[fase]} alt="" />
+          <p className="match-intro__strada-turno">{bracket.etichettaTurno}</p>
+          <div className="match-intro__strada-lista">
+            {tiesDelTurno.map((tie, indice) => {
               // La sfida in corso non deve mai rivelare il proprio esito qui,
               // anche se in tabella risultasse gia' concluso: l'utente non
               // l'ha ancora "vista" finche' non arriva a questo punto.
@@ -318,56 +331,59 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
               const alta = tie.alta_team_id ? data.teamById.get(tie.alta_team_id) : undefined
               const bassa = tie.bassa_team_id ? data.teamById.get(tie.bassa_team_id) : undefined
               const concluso = !eQuestaSfida && tie.stato === 'concluso'
+              const esito = (squadra: Team | undefined) => !concluso || !squadra ? '' : tie.vincitore_team_id === squadra.id ? 'is-vincitrice' : 'is-eliminata'
               return (
-                <div className={`match-intro__tie ${eQuestaSfida ? 'is-in-corso' : ''}`} key={tie.id}>
-                  <div className="match-intro__tie-squadra">
-                    <Crest value={alta?.stemma_url ?? null} imageUrl={alta ? data.crestUrlByTeamId.get(alta.id) : undefined} size="small" />
-                    <span className={concluso && tie.vincitore_team_id === alta?.id ? 'is-vincitrice' : ''}>{alta?.nome ?? 'Da definire'}</span>
-                  </div>
-                  <span className="match-intro__tie-stato">{eQuestaSfida ? 'IN CORSO' : concluso ? '—' : 'da giocare'}</span>
-                  <div className="match-intro__tie-squadra match-intro__tie-squadra--destra">
-                    <span className={concluso && tie.vincitore_team_id === bassa?.id ? 'is-vincitrice' : ''}>{bassa?.nome ?? 'Da definire'}</span>
-                    <Crest value={bassa?.stemma_url ?? null} imageUrl={bassa ? data.crestUrlByTeamId.get(bassa.id) : undefined} size="small" />
-                  </div>
+                <div className={`match-intro__strada-sfida ${eQuestaSfida ? 'is-in-corso' : ''}`} style={{ animationDelay: `${0.35 + indice * 0.14}s` }} key={tie.id}>
+                  <span className={`match-intro__strada-nome ${esito(alta)}`}>{alta?.nome ?? 'Da definire'}</span>
+                  <span className={`match-intro__strada-stemma ${esito(alta)}`}><Crest value={alta?.stemma_url ?? null} imageUrl={alta ? data.crestUrlByTeamId.get(alta.id) : undefined} size="small" /></span>
+                  <b className="match-intro__strada-v">V</b>
+                  <span className={`match-intro__strada-stemma ${esito(bassa)}`}><Crest value={bassa?.stemma_url ?? null} imageUrl={bassa ? data.crestUrlByTeamId.get(bassa.id) : undefined} size="small" /></span>
+                  <span className={`match-intro__strada-nome match-intro__strada-nome--destra ${esito(bassa)}`}>{bassa?.nome ?? 'Da definire'}</span>
                 </div>
               )
             })}
+          </div>
+          <div className="match-intro__strada-motto">
+            <span>Road to</span>
+            <strong>{fase === 'draft' ? 'The Draft' : 'The Title'}</strong>
+            <small>Season {league?.stagione_corrente ?? 1}</small>
           </div>
         </div>
       )}
 
       {beat.tipo === 'formazione' && squadraInScena && (
-        <div className="match-intro__formazione" key={beat.lato}>
-          <header className="match-intro__formazione-testa">
-            <Crest value={squadraInScena.stemma_url ?? null} imageUrl={crestInScena} size="small" />
-            <div>
-              <strong>{squadraInScena.nome}</strong>
-              {lineupInScena && <small>{lineupInScena.modulo}</small>}
-            </div>
+        <div className={`match-intro__undici match-intro__undici--${fase}`} key={beat.lato}>
+          <header className="match-intro__undici-testa">
+            <span className="match-intro__undici-stemma"><Crest value={squadraInScena.stemma_url ?? null} imageUrl={crestInScena} size="large" /></span>
+            <strong>{squadraInScena.nome}</strong>
+            {lineupInScena && <small>{lineupInScena.modulo}</small>}
           </header>
-          <div className="match-intro__righe">
-            <div className="match-intro__campo" aria-hidden="true">
-              <span className="match-intro__campo-linea" />
-              <span className="match-intro__campo-cerchio" />
+          <div className="match-intro__undici-campo">
+            <div className="match-intro__gesso" aria-hidden="true">
+              <span className="match-intro__gesso-area match-intro__gesso-area--alto" />
+              <span className="match-intro__gesso-meta" />
+              <span className="match-intro__gesso-cerchio" />
+              <span className="match-intro__gesso-area match-intro__gesso-area--basso" />
             </div>
             {righe.map((riga, indiceRiga) => (
-              <div className="match-intro__riga" key={indiceRiga}>
+              <div className="match-intro__undici-riga" style={{ '--n-riga': riga.length } as React.CSSProperties} key={indiceRiga}>
                 {riga.map((slot) => {
                   const giocatore = slot.valore ? giocatori.get(slot.valore) : undefined
                   const ritardo = ((ordineComparsa.get(slot.index) ?? 0) / totaleSlot) * Math.max(1, beat.durata - margineFineBattuta)
                   return (
-                    <div className="match-intro__giocatore" style={{ animationDelay: `${ritardo}s` }} key={slot.index}>
-                      <div className="match-intro__giocatore-foto">
+                    <div className="match-intro__card" style={{ animationDelay: `${ritardo}s` }} key={slot.index}>
+                      <div className="match-intro__card-foto">
                         {giocatore?.foto ? <img src={giocatore.foto} alt="" /> : <span aria-hidden="true">{giocatore ? giocatore.nome.charAt(0) : '?'}</span>}
                       </div>
-                      <span className="match-intro__giocatore-ruolo">{slot.slot}</span>
-                      <strong>{giocatore ? cognome(giocatore.nome) : '—'}</strong>
+                      <strong className="match-intro__card-nome">{giocatore ? cognome(giocatore.nome) : '—'}</strong>
+                      <span className="match-intro__card-ruolo">{slot.slot}</span>
                     </div>
                   )
                 })}
               </div>
             ))}
           </div>
+          <img className="match-intro__undici-logo" src={LOGO_FASE[fase]} alt="" />
         </div>
       )}
     </div>
