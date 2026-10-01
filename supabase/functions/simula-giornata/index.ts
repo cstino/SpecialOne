@@ -235,7 +235,10 @@ const PESO_ASSIST: Record<string, number> = {
 }
 
 function creaRng(seme: number) {
-  let stato = seme % 4294967296
+  // `seed ^ costante` in JavaScript e' un intero a 32 bit CON segno: con un seme
+  // negativo il generatore restituiva numeri negativi, e minuti e blocchi dei
+  // tiri uscivano fuori dall'intervallo (tiri prima dell'ingresso del giocatore).
+  let stato = seme >>> 0
   return () => {
     stato = (stato * 1664525 + 1013904223) % 4294967296
     return stato / 4294967296
