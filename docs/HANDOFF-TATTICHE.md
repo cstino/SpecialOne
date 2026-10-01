@@ -92,7 +92,7 @@ un bonus. Ordine concordato, un task alla volta:
    `specialone-git-feat-tattiche-cstinos-projects.vercel.app`, ma NON fare push
    a ogni modifica (storage Vercel): si accumula e si pubblica su richiesta.
 2. **Indicazioni di squadra**: fatto il 29 settembre (registro, punto 30),
-   migrazione `20260929110000` applicata. ← il prossimo è il 3.
+   migrazione `20260929110000` applicata.
    Qui anche il **portiere-libero**, che conta con la linea alta: dà senso al
    piano di sviluppo "Fuori dai pali". Su `main` l'anteprima di quel piano dice
    che conterà con le tattiche (`SchedaGiocatore.tsx`, confrontoScelta del
@@ -100,7 +100,8 @@ un bonus. Ordine concordato, un task alla volta:
    il ruolo esiste. Attributi utili: `goalkeeping_speed`, `gk_positioning`,
    `gk_kicking`. `engine/tattiche.js` ha già un asse "linea" alta/media/bassa
    con profilo, mai collegato: riusarlo senza la parte di lettura dell'avversario.
-3. **Voti in pagella** stile SofaScore, da azioni riuscite/sbagliate, RNG separato.
+3. **Voti in pagella**: fatto il 1° ottobre (registro, punto 31), tabella `pagelle`
+   applicata. ← il prossimo è il 4.
 4. **Ritaratura del sistema intero** con la prova del predefinito;
    **`FAM_MALUS_MAX`** (punto F) va rivisto qui.
 5. **Preset**: combinazioni pronte delle due pagine.

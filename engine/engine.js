@@ -621,6 +621,9 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
       minuti: minuti(rosaCasa),
       marcatori: marcatoriCasa.map(g => g.nome),
       marcatoriIds: marcatoriCasa.map(g => g.id),
+      // La posizione giocata da ognuno (l'ultima, se ha cambiato slot): serve
+      // alle pagelle (engine/pagelle.js), che giudicano ognuno nel suo reparto.
+      slot: slotStoricoCasa,
     },
     ospite: {
       tiri: distribuisci(lo, 'tiri', sO.tiri, 'finishing'),
@@ -630,6 +633,9 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
       minuti: minuti(rosaOspite),
       marcatori: marcatoriOspite.map(g => g.nome),
       marcatoriIds: marcatoriOspite.map(g => g.id),
+      // La posizione giocata da ognuno (l'ultima, se ha cambiato slot): serve
+      // alle pagelle (engine/pagelle.js), che giudicano ognuno nel suo reparto.
+      slot: slotStoricoOspite,
     },
   }; })() : null;
 

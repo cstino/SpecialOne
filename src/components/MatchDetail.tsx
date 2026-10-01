@@ -7,6 +7,7 @@ import { useSeasonData } from '../lib/useSeasonData'
 import { isEventoGol, type EventoGol, type EventoPartita, type League, type MatchPlayerStat, type MatchTeamStats, type Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { SeasonState, TeamLabel } from './SeasonUI'
+import { fasciaVoto, formatoVoto } from '../lib/voti'
 
 type Props = {
   membership: Membership
@@ -44,6 +45,24 @@ const STAT_ROWS: Array<[string, keyof MatchTeamStats, (value: number) => string]
   ['Dribbling', 'dribbling', String],
 ]
 
+type Pagella = { voto: number | null; migliore: boolean; dettaglio: Record<string, number> | null }
+
+// Le azioni che spiegano il voto del migliore in campo: le tre piu' parlanti
+// per il suo ruolo, mai uno zero.
+function motivazioni(d: Record<string, number> | null): string[] {
+  if (!d) return []
+  const voci: [number, string][] = []
+  if (d.gol) voci.push([100, `${d.gol} gol`])
+  if (d.assist) voci.push([90, `${d.assist} assist`])
+  if (d.parate) voci.push([80, `${d.parate} ${d.parate === 1 ? 'parata' : 'parate'}`])
+  if (d.interventiRiusciti) voci.push([60 + d.interventiRiusciti, `${d.interventiRiusciti} interventi difensivi riusciti`])
+  if (d.contrastiVinti) voci.push([50 + d.contrastiVinti, `${d.contrastiVinti} contrasti vinti`])
+  if (d.dribblingRiusciti) voci.push([45 + d.dribblingRiusciti, `${d.dribblingRiusciti} dribbling riusciti su ${d.dribbling}`])
+  if (d.tiriInPorta && !d.gol) voci.push([40, `${d.tiriInPorta} tiri in porta`])
+  if (d.passaggi >= 20) voci.push([30, `${Math.round(d.passaggiRiusciti / d.passaggi * 100)}% di passaggi riusciti`])
+  return voci.sort((a, b) => b[0] - a[0]).slice(0, 3).map(([, testo]) => testo)
+}
+
 export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTeam }: Props) {
   const league = membership.league as League
   const data = useSeasonData(membership)
@@ -52,6 +71,7 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
   const [statsLoading, setStatsLoading] = useState(true)
   const [statsError, setStatsError] = useState<string | null>(null)
   const [titolariLineupByTeam, setTitolariLineupByTeam] = useState<Map<number, Set<number>>>(new Map())
+  const [pagelle, setPagelle] = useState<Map<number, Pagella>>(new Map())
   const match = data.matches.find((item) => item.id === matchId)
   const fixture = match ? data.fixtures.find((item) => item.id === match.fixture_id) : undefined
 
@@ -79,7 +99,14 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
         const player = catalogById.get(instance.player_id)
         if (player) instancePlayers.set(instance.id, player)
       }
-      if (active) { setStats(loadedStats); setPlayers(instancePlayers); setStatsLoading(false) }
+      // Le pagelle esistono dalle partite simulate con la Edge Function delle
+      // tattiche: per quelle di prima la colonna resta vuota, senza errori.
+      const { data: righePagelle } = await supabase.from('pagelle')
+        .select('player_instance_id, voto, migliore_in_campo, dettaglio').eq('match_id', matchId)
+      const mappaPagelle = new Map<number, Pagella>((righePagelle ?? []).map((riga) => [riga.player_instance_id, {
+        voto: riga.voto === null ? null : Number(riga.voto), migliore: riga.migliore_in_campo, dettaglio: riga.dettaglio,
+      }]))
+      if (active) { setStats(loadedStats); setPlayers(instancePlayers); setPagelle(mappaPagelle); setStatsLoading(false) }
     }
     void loadStats()
     return () => { active = false }
@@ -178,6 +205,7 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
     const identita = players.get(row.player_instance_id)
     return <div key={row.id}>
       <span><strong>{identita?.nome ?? `Giocatore ${row.player_instance_id}`}</strong><small>{identita?.posizioni.join(' · ')}</small></span>
+      <VotoCella pagella={pagelle.get(row.player_instance_id)} assenti={pagelle.size === 0} />
       <b>{row.minuti}{mostraUscita && row.minuti < 90 && <i className="match-player-uscita" title={`Uscito al ${row.minuti}'`}>↓</i>}</b>
       <b className={row.gol ? 'is-highlight' : ''}>{row.gol}</b>
       <b className={row.assist ? 'is-assist' : ''}>{row.assist}</b>
@@ -252,6 +280,27 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
       <section className="match-report-panel">
         <div className="match-report-heading"><p className="kicker">Prestazioni</p><h2>Statistiche giocatori</h2></div>
         {statsError && <p className="notice notice--error">{statsError}</p>}
+        {!statsLoading && (() => {
+          const mvp = [...pagelle.entries()].find(([, p]) => p.migliore)
+          if (!mvp || mvp[1].voto === null) return null
+          const [id, p] = mvp
+          const riga = stats.find((r) => r.player_instance_id === id)
+          const identita = players.get(id)
+          const squadra = riga ? data.teamById.get(riga.team_id)?.nome : undefined
+          return <div className="mvp-card">
+            <span className="mvp-card__etichetta">Migliore in campo</span>
+            <div className="mvp-card__corpo">
+              <div className="mvp-card__chi">
+                <strong>{identita?.nome ?? `Giocatore ${id}`}</strong>
+                <small>{[identita?.posizioni[0], squadra].filter(Boolean).join(' · ')}</small>
+              </div>
+              <b className={`mvp-card__voto voto--${fasciaVoto(p.voto!)}`}>{formatoVoto(p.voto!)}</b>
+            </div>
+            {motivazioni(p.dettaglio).length > 0 && <ul className="mvp-card__perche">
+              {motivazioni(p.dettaglio).map((m) => <li key={m}>{m}</li>)}
+            </ul>}
+          </div>
+        })()}
         {statsLoading ? <p className="season-empty">Carico le prestazioni…</p> : <div className="match-player-columns">
           {[fixture.home_team_id, fixture.away_team_id].map((teamId) => {
             const gruppi = gruppiByTeam.get(teamId)
@@ -259,7 +308,7 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
             return <div className="match-player-team" key={teamId}>
               <h3><span>{data.teamById.get(teamId)?.nome ?? 'Squadra'}</span><small>{modulo}</small></h3>
               <div className="match-player-table">
-                <div className="match-player-table__head"><span>Giocatore</span><span>MIN</span><span>G</span><span>A</span><span>T</span><span>PASS</span></div>
+                <div className="match-player-table__head"><span>Giocatore</span><span>VOTO</span><span>MIN</span><span>G</span><span>A</span><span>T</span><span>PASS</span></div>
                 {gruppi && gruppi.titolari.length > 0 && <>
                   <p className="match-player-group">Titolari</p>
                   {gruppi.titolari.map((row) => rigaGiocatore(row, true))}
@@ -275,4 +324,11 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
       </section>
     </div>}
   </main>
+}
+
+function VotoCella({ pagella, assenti }: { pagella?: Pagella; assenti: boolean }) {
+  if (assenti) return <span />
+  if (!pagella || pagella.voto === null) return <span className="voto voto--vuoto" title="Senza voto: meno di 15 minuti">SV</span>
+  return <span className={`voto voto--${fasciaVoto(pagella.voto)}${pagella.migliore ? ' is-migliore' : ''}`}
+    title={pagella.migliore ? 'Migliore in campo' : undefined}>{formatoVoto(pagella.voto)}</span>
 }

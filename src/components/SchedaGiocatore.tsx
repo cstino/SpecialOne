@@ -4,6 +4,7 @@ import { PopupSpiegazione } from './PopupSpiegazione'
 import { Progress } from './ui/progress'
 import { UnderlineTabs } from './ui/underline-tabs'
 import { Icona } from './Icona'
+import { fasciaVoto, formatoVoto } from '../lib/voti'
 
 export type StatsStagione = {
   presenze: number
@@ -17,6 +18,11 @@ export type StatsStagione = {
   passaggiRiusciti: number
   contrastiVinti: number
   dribbling: number
+  // Pagelle (registro tattico, punto 31): media dei voti della stagione,
+  // quante volte migliore in campo, gli ultimi voti dal piu' recente.
+  mediaVoto: number | null
+  migliore: number
+  ultimiVoti: number[]
 }
 
 export type DatiScheda = {
@@ -764,6 +770,17 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
                   <div><b>{stagione.porteInviolate}</b><span>Porta inviolata</span></div>
                   <div><b>{stagione.minuti > 0 ? ((stagione.gol + stagione.assist) * 90 / stagione.minuti).toFixed(2) : '—'}</b><span>G+A ogni 90&#39;</span></div>
                 </div>
+                {stagione.mediaVoto !== null && <div className="scheda-voti">
+                  <div className="scheda-voti__media">
+                    <span>Media voto</span>
+                    <b className={`voto voto--${fasciaVoto(stagione.mediaVoto)}`}>{formatoVoto(stagione.mediaVoto)}</b>
+                    {stagione.migliore > 0 && <small>{stagione.migliore === 1 ? '1 volta' : `${stagione.migliore} volte`} migliore in campo</small>}
+                  </div>
+                  <div className="scheda-voti__ultimi">
+                    <span>Ultime partite</span>
+                    <div>{stagione.ultimiVoti.map((v, i) => <b key={i} className={`voto voto--${fasciaVoto(v)}`}>{formatoVoto(v)}</b>)}</div>
+                  </div>
+                </div>}
                 <div className="scheda-quote">
                   <div><span>Tiri in porta</span><b>{percentuale(stagione.tiriPorta, stagione.tiri)}</b><small>{stagione.tiriPorta} su {stagione.tiri}</small></div>
                   <div><span>Passaggi riusciti</span><b>{percentuale(stagione.passaggiRiusciti, stagione.passaggiTentati)}</b><small>{stagione.passaggiRiusciti} su {stagione.passaggiTentati}</small></div>

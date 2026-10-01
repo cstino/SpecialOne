@@ -1067,3 +1067,44 @@ salvataggio come lo fa l'app di produzione (undici parametri) funziona ancora, i
 Il vincolo regge. Da rivedere nel task 4: la corsia è quasi inerte (le corsie di una rosa vera
 differiscono poco), il portiere-libero vale poco, e lo scarto totale di 21 punti su 38 fra tutto
 giusto e tutto sbagliato va confrontato col limite del punto 6. `simulate-reale` invariato.
+
+## 31. Voti in pagella, stile SofaScore — 1° ottobre 2026
+
+Task 3 del punto 27. Decisione del committente: come SofaScore, tutti i reparti pesano uguale e
+anche un difensore o un portiere possono essere il migliore in campo.
+
+**Come nasce il voto** (`engine/pagelle.js`). Dopo la partita, con un generatore casuale suo
+(seme separato: gol e risultato non cambiano), ogni giocatore con almeno 15 minuti riceve:
+- le **azioni** che il motore gli ha già assegnato (passaggi, contrasti, dribbling, tiri) più
+  gli **interventi difensivi**, che il motore non distribuiva (senza, un difensore aveva due
+  contrasti a partita e poteva solo perdere punti);
+- per ogni azione, **riuscita o errore**, secondo il suo attributo, il reparto avversario che ha
+  davanti e il suo **scarto tattico** (`lineup.tattica`: ruolo, indicazioni di squadra, morale);
+- gol, assist, tiri in porta, parate, gol subiti, porta inviolata, cartellini, risultato.
+
+I passaggi pesano per la **precisione rispetto all'attesa**, non uno per uno: un centrocampista
+ne tenta 60, e contarli singolarmente dava a chi passa molto un voto a caso. Chi gioca poco
+resta vicino al 6. Sotto i 15 minuti: "SV".
+
+**Taratura** (`tools/validazione/prova-pagelle.mjs`, 1.500 partite con rose vere):
+
+| misura | valore | riferimento |
+|---|---|---|
+| media voti | 6,80 | SofaScore ~6,8 |
+| scarto | 0,65 | |
+| 90% dei voti | 5,9 – 8,0 | |
+| migliore in campo | ~8,2 (7,7–8,9) | |
+| MVP per reparto | GK 11% · DEF 30% · MID 29% · ATT 30% | titolari: 9 · 36 · 27 · 27 |
+| interpreti adatti / inadatti | 6,84 / 6,65 | il segnale della media voto |
+
+Il migliore in campo viene dalla squadra che vince nel 97% delle partite non pareggiate: più che
+su SofaScore. Da rivedere se in gioco sembra troppo legato al risultato.
+
+**Dove si vedono.** Tabella `public.pagelle` (migrazione `20261001200000`, applicata; scritta
+dalla Edge Function dopo `registra_risultato_partita`, senza toccarla). Pagina partita: card
+"Migliore in campo" con le tre azioni che spiegano il voto, colonna VOTO subito dopo il nome.
+Rosa: colonna MV (media voto della stagione). Scheda giocatore: media voto, volte migliore in
+campo, ultimi cinque voti. Colori SofaScore in `src/lib/voti.ts`.
+
+Le pagelle nascono solo con l'Edge Function del branch: finché in produzione gira quella di
+`main`, la tabella resta vuota e le pagine non mostrano voti (senza errori).

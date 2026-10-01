@@ -15,6 +15,7 @@ import { SchedaGiocatore, type EsitoRinnovo, type PropostaRinnovo, type StatsSta
 import { FixtureScore, SeasonState, TeamLabel } from './SeasonUI'
 import { UnderlineTabs } from './ui/underline-tabs'
 import { Icona } from './Icona'
+import { fasciaVoto, formatoVoto } from '../lib/voti'
 
 type Props = {
   membership: Membership
@@ -156,6 +157,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [crestUrl, setCrestUrl] = useState<string | null>(null)
   const [players, setPlayers] = useState<RosterPlayer[]>([])
   const [statRows, setStatRows] = useState<MatchPlayerStat[]>([])
+  const [pagelleRows, setPagelleRows] = useState<Array<{ match_id: number; player_instance_id: number; voto: number | null; migliore_in_campo: boolean }>>([])
   const [schedaAperta, setSchedaAperta] = useState<RosterPlayer | null>(null)
   const [fotoScheda, setFotoScheda] = useState<string | undefined>(undefined)
   const [allenatore, setAllenatore] = useState<string | null>(null)
@@ -264,6 +266,10 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         supabase.from('cambi_ruolo').select('id, player_instance_id, ruolo_precedente, ruolo_target, avviato_giornata, completa_giornata').eq('league_id', league.id).eq('team_id', teamId).is('completato_il', null),
         supabase.from('specializzazioni_giocatore').select('id, player_instance_id, specializzazione_precedente, specializzazione_target, avviato_giornata, completa_giornata').eq('league_id', league.id).eq('team_id', teamId).is('completato_il', null),
       ])
+      // Le pagelle non sono indispensabili: se mancano la rosa si vede lo stesso.
+      const { data: righePagelle } = await supabase.from('pagelle')
+        .select('match_id, player_instance_id, voto, migliore_in_campo').eq('league_id', league.id).eq('team_id', teamId)
+      setPagelleRows((righePagelle ?? []).map((r) => ({ ...r, voto: r.voto === null ? null : Number(r.voto) })))
       setCambiRuolo(new Map(((cambiRuoloResult.data ?? []) as CambioRuoloRiga[]).map((riga) => [riga.player_instance_id, riga])))
       setSpecializzazioni(new Map(((specializzazioniResult.data ?? []) as SpecializzazioneRiga[]).map((riga) => [riga.player_instance_id, riga])))
       const firstError = instancesResult.error ?? statsResult.error
@@ -527,6 +533,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       const corrente = mappa.get(riga.player_instance_id) ?? {
         presenze: 0, minuti: 0, gol: 0, assist: 0, porteInviolate: 0,
         tiri: 0, tiriPorta: 0, passaggiTentati: 0, passaggiRiusciti: 0, contrastiVinti: 0, dribbling: 0,
+        mediaVoto: null, migliore: 0, ultimiVoti: [],
       }
       if (riga.minuti > 0) {
         corrente.presenze += 1
@@ -543,8 +550,29 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       corrente.dribbling += riga.dribbling
       mappa.set(riga.player_instance_id, corrente)
     }
+    // Media voto della STAGIONE in corso: solo le partite di questa stagione,
+    // nell'ordine in cui si sono giocate.
+    const ordine = new Map(seasonData.matches.map((m) => {
+      const f = seasonData.fixtures.find((x) => x.id === m.fixture_id)
+      return [m.id, f?.giornata ?? 0] as const
+    }))
+    const voti = new Map<number, { giornata: number; voto: number; migliore: boolean }[]>()
+    for (const r of pagelleRows) {
+      if (r.voto === null || !ordine.has(r.match_id)) continue
+      const lista = voti.get(r.player_instance_id) ?? []
+      lista.push({ giornata: ordine.get(r.match_id)!, voto: r.voto, migliore: r.migliore_in_campo })
+      voti.set(r.player_instance_id, lista)
+    }
+    for (const [id, lista] of voti) {
+      const corrente = mappa.get(id)
+      if (!corrente) continue
+      lista.sort((a, b) => b.giornata - a.giornata)
+      corrente.mediaVoto = Math.round(lista.reduce((t, x) => t + x.voto, 0) / lista.length * 100) / 100
+      corrente.migliore = lista.filter((x) => x.migliore).length
+      corrente.ultimiVoti = lista.slice(0, 5).map((x) => x.voto)
+    }
     return mappa
-  }, [statRows, subitiPerPartita])
+  }, [statRows, subitiPerPartita, pagelleRows, seasonData.matches, seasonData.fixtures])
 
   // Indirizzo pubblico e stabile: niente chiamata di rete, quindi niente
   // effetto asincrono da annullare.
@@ -765,7 +793,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       >{player.deltaOverall > 0 ? '+' : '−'}{Math.abs(player.deltaOverall)}</i>}
                     </span>
                   </b>
-                  <dl><span>{player.minuti}<small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span></dl>
+                  <dl><span>{player.minuti}<small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span><span>{(() => { const mv = statsPerGiocatore.get(player.id)?.mediaVoto; return mv == null ? '—' : <b className={`voto voto--${fasciaVoto(mv)}`}>{formatoVoto(mv)}</b> })()}<small>MV</small></span></dl>
                 </button>)}</div>}
       </section>}
 
@@ -910,6 +938,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         stagione={statsPerGiocatore.get(schedaAperta.id) ?? {
           presenze: 0, minuti: 0, gol: 0, assist: 0, porteInviolate: 0,
           tiri: 0, tiriPorta: 0, passaggiTentati: 0, passaggiRiusciti: 0, contrastiVinti: 0, dribbling: 0,
+          mediaVoto: null, migliore: 0, ultimiVoti: [],
         }}
         azionePericolosa={ownTeam && league.stato === 'stagione' ? {
           etichetta: 'Svincola giocatore',

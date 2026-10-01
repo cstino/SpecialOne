@@ -9,6 +9,7 @@ import { capitanoAutomatico, deltaMorale } from '../../../engine/morale.js'
 import { deltaRuoli, sommaDelta } from '../../../engine/ruoli.js'
 import { deltaCorsie } from '../../../engine/corsie.js'
 import { deltaSquadra, deltaCoperturaLibero } from '../../../engine/squadra.js'
+import { pagelle, migliorInCampo } from '../../../engine/pagelle.js'
 
 // La chiave segreta del progetto, esposta con un nome non riservato: la
 // piattaforma non inietta SUPABASE_SECRET_KEY e vieta di crearla a mano.
@@ -1146,6 +1147,40 @@ export default {
         })
         if (saveError) throw saveError
         summaries.push(saved)
+
+        // Le pagelle (engine/pagelle.js, registro tattico punto 31): un voto
+        // per chi ha giocato, dalle sue azioni riuscite e sbagliate. Seme suo,
+        // quindi gol e risultato restano quelli appena registrati. Non bloccano
+        // la giornata: se la scrittura fallisce, si registra l'errore e si va
+        // avanti. Una partita gia' simulata non si rivota.
+        if (saved && !saved.gia_simulata && saved.match_id) {
+          try {
+            const lato = (nome: Lato, roster: EngineRoster, lineup: EngineLineup, gf: number, gs: number) => ({
+              giocatori: new Map(roster.giocatori.map((g) => [g.id, g])),
+              lineup,
+              stats: result.perGiocatore![nome],
+              squadra: nome === 'casa' ? result.statsCasa : result.statsOspite,
+              golFatti: gf, golSubiti: gs,
+              assist: assistPerGiocatore,
+              cartellini: cartelliniPartita.filter((c) => c.lato === nome).map((c) => ({ giocatore: c.giocatore, tipo: c.tipo })),
+            })
+            const voti = pagelle({
+              casa: lato('casa', homeRoster, homeLineup, result.golC, result.golO),
+              ospite: lato('ospite', awayRoster, awayLineup, result.golO, result.golC),
+            }, (seed ^ 0x5eed1a6e) >>> 0)
+            const migliore = migliorInCampo(voti)
+            const righe = [...voti.entries()].map(([id, v]) => ({
+              match_id: saved.match_id, league_id: leagueId,
+              team_id: v.lato === 'ospite' ? fixture.away_team_id : fixture.home_team_id,
+              player_instance_id: id, voto: v.voto, migliore_in_campo: id === migliore, dettaglio: v.dettaglio ?? null,
+            }))
+            const { error: pagelleError } = await ctx.supabaseAdmin.from('pagelle')
+              .upsert(righe, { onConflict: 'match_id,player_instance_id', ignoreDuplicates: true })
+            if (pagelleError) console.error(`Pagelle della partita ${saved.match_id} non salvate: ${pagelleError.message}`)
+          } catch (errore) {
+            console.error(`Pagelle della partita ${saved.match_id} non calcolate: ${errore instanceof Error ? errore.message : String(errore)}`)
+          }
+        }
       }
 
       // Condizione e infortuni tornano sul database: senza questo passaggio il
