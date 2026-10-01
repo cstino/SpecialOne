@@ -694,6 +694,58 @@ input:disabled { opacity: 0.65; }
 .match-player-table .voto { justify-self: center; }
 
 /* ============================================================
+   SCHEMA TATTICO nello stile broadcast della Rosa (colore della fase, vetro
+   scuro, Oswald, campo a gesso). Tutto sotto .schema--broadcast: le variabili
+   --fz-* arrivano da .formazione-broadcast--{fase} sulla stessa radice.
+   ============================================================ */
+.schema.schema--broadcast { --und-acc: var(--fz-luce); background: radial-gradient(ellipse 130% 30% at 50% 0%, color-mix(in srgb, var(--fz-2) 20%, transparent), transparent 72%), linear-gradient(180deg, #0b0a12, #07070b); }
+.schema--broadcast .schema__testa { background: rgba(10,9,18,.94); border-bottom: 1px solid color-mix(in srgb, var(--fz-luce) 24%, rgba(255,255,255,.06)); }
+.schema--broadcast .schema__chiudi, .schema--broadcast .schema__reset { color: #fff; border: 1px solid color-mix(in srgb, var(--fz-luce) 45%, transparent); background: rgba(255,255,255,.04); }
+.schema--broadcast .schema__chiudi { color: var(--fz-luce); }
+.schema--broadcast .schema__reset { padding: 9px 14px; border-radius: 6px; font: 700 .7rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .16em; text-transform: uppercase; }
+.schema--broadcast .schema__titolo small { color: color-mix(in srgb, var(--fz-luce) 75%, #fff); font: 600 .6rem/1.1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .2em; }
+.schema--broadcast .schema__titolo strong { color: #fff; font: 700 1.4rem/1.05 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .03em; text-transform: uppercase; }
+.schema--broadcast .schema__titolo em { color: var(--fz-luce); font-size: .6em; letter-spacing: .12em; }
+.schema--broadcast .schema__barre { padding: 14px 16px 8px; }
+.schema--broadcast .schema__barra { border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: linear-gradient(180deg, rgba(12,10,22,.8), color-mix(in srgb, var(--fz-2) 11%, rgba(12,10,22,.8))); }
+.schema--broadcast .schema__barra-testa span { color: color-mix(in srgb, var(--fz-luce) 75%, #fff); font: 600 .58rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .18em; }
+.schema--broadcast .schema__barra-testa strong { color: #fff; font: 800 1.35rem/1 "Aptos Narrow", "Arial Narrow", Impact, sans-serif; }
+.schema--broadcast .schema__barra-pista i { background: linear-gradient(90deg, var(--fz-2), var(--fz-luce)); box-shadow: 0 0 10px color-mix(in srgb, var(--fz-luce) 50%, transparent); }
+.schema--broadcast .schema__barra-pista i[data-basso] { background: linear-gradient(90deg, #a8623a, #ffb547); box-shadow: none; }
+.schema--broadcast .schema__barra small { color: rgba(255,255,255,.62); }
+.schema--broadcast .schema__salva-modulo { border: 1px solid color-mix(in srgb, var(--fz-luce) 50%, transparent); border-radius: 8px; color: #fff; background: linear-gradient(180deg, rgba(12,10,22,.8), color-mix(in srgb, var(--fz-2) 16%, rgba(12,10,22,.8))); font: 700 .8rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+.schema--broadcast .schema__salvato { color: var(--fz-luce); font: 600 .7rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+.schema--broadcast .schema__pagine { margin: 0 16px 14px; grid-template-columns: 1fr 1fr; }
+.schema--broadcast .schema__campo { aspect-ratio: .62; }
+.schema--broadcast .schema__posto { border: 1px solid rgba(255,255,255,.16); border-radius: 8px; background: rgba(8,8,14,.78); backdrop-filter: blur(6px); box-shadow: 0 6px 14px rgba(0,0,0,.45); }
+.schema--broadcast .schema__slot { font: 700 .95rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .06em; }
+.schema--broadcast .schema__posto.is-aperta, .schema--broadcast .schema__posto.is-in-mano { border-color: var(--fz-luce); box-shadow: 0 0 14px color-mix(in srgb, var(--fz-luce) 55%, transparent); }
+.schema--broadcast .schema__posto.is-spostata { border-color: var(--fz-luce); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fz-luce) 18%, transparent); }
+.schema--broadcast .schema__badge { border-radius: 4px; color: #fff; background: color-mix(in srgb, var(--fz-luce) 22%, rgba(0,0,0,.55)); font-family: "Oswald", "Arial Narrow", sans-serif; letter-spacing: .08em; }
+.schema--broadcast .schema__ancora { color: color-mix(in srgb, var(--fz-luce) 70%, #fff); border-color: color-mix(in srgb, var(--fz-luce) 50%, transparent); border-radius: 8px; }
+.schema--broadcast .schema__ancora.is-bersaglio { color: var(--fz-scuro); background: var(--fz-luce); border-color: var(--fz-luce); box-shadow: 0 0 0 6px color-mix(in srgb, var(--fz-luce) 20%, transparent); }
+.schema--broadcast .schema__spiega { color: rgba(255,255,255,.6); }
+/* Pagina Squadra: titoli a linguetta inclinata, opzioni in vetro. */
+.schema--broadcast .schema__gruppo h3 { display: block; width: max-content; margin: 16px 0 10px -2px; padding: 6px 16px 6px 12px; color: #fff; background: linear-gradient(90deg, var(--fz-1), var(--fz-2)); clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); font: 700 .85rem/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .12em; text-transform: uppercase; box-shadow: inset 0 -2px 0 var(--fz-luce); }
+.schema--broadcast .schema__scelte button { border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: rgba(12,10,22,.7); }
+.schema--broadcast .schema__scelte button strong { color: #fff; font: 700 1rem/1.1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+.schema--broadcast .schema__scelte button small { color: rgba(255,255,255,.62); }
+.schema--broadcast .schema__scelte button:hover { border-color: color-mix(in srgb, var(--fz-luce) 40%, transparent); }
+.schema--broadcast .schema__scelte button.is-attiva { border-color: color-mix(in srgb, var(--fz-luce) 60%, transparent); background: linear-gradient(180deg, color-mix(in srgb, var(--fz-1) 50%, #0c0b14), color-mix(in srgb, var(--fz-scuro) 70%, #0c0b14)); box-shadow: inset 3px 0 0 var(--fz-luce); }
+.schema--broadcast .schema__scelte--riga button { text-align: center; }
+.schema--broadcast .schema__base { color: var(--fz-scuro); background: var(--fz-luce); font-family: "Oswald", "Arial Narrow", sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+/* Foglio e finestre: stesso vetro, stessi colori. */
+.schema--broadcast .schema__scrim { background: rgba(3,3,8,.74); backdrop-filter: blur(2px); }
+.schema--broadcast .schema__foglio { border-top: 1px solid color-mix(in srgb, var(--fz-luce) 30%, rgba(255,255,255,.08)); border-radius: 14px 14px 0 0; background: rgba(10,9,18,.98); }
+.schema--broadcast .schema__foglio header strong { color: #fff; font: 700 1.4rem/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+.schema--broadcast .schema__foglio h3 { color: color-mix(in srgb, var(--fz-luce) 70%, #fff); font: 600 .62rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .2em; }
+.schema--broadcast .schema__fatto, .schema--broadcast .schema__conferma { color: var(--fz-scuro); background: linear-gradient(135deg, var(--fz-luce), var(--fz-2)); border-radius: 6px; font-family: "Oswald", "Arial Narrow", sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+.schema--broadcast .schema__nome { border-radius: 8px; background: rgba(255,255,255,.05); }
+.schema--broadcast .schema__nome:focus { border-color: var(--fz-luce); }
+.schema--broadcast .schema__salvati li { border-radius: 8px; border-color: rgba(255,255,255,.12); background: rgba(12,10,22,.7); }
+.schema--broadcast .schema__salvati li button { border-radius: 6px; border-color: color-mix(in srgb, var(--fz-luce) 40%, transparent); }
+
+/* ============================================================
    CAMPO DELLA ROSA nello stile della formazione dell'intro (MatchIntro):
    regole copiate e adattate, senza l'animazione d'ingresso dell'intro che
    lascerebbe le card a opacity 0. --und-acc segue l'accento di fase.
@@ -3597,9 +3649,6 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .formation-module-menu__personale { grid-column: 1 / -1; display: flex; gap: 7px; align-items: stretch; }
 .formation-module-menu__personale > button:first-child { flex: 1; min-width: 0; }
 .formation-module-menu__elimina { flex: none; width: 40px; display: grid; place-items: center; padding: 0; font-size: 15px; color: #ff6b6b; background: transparent; border: 1px solid #3d3348; border-radius: 10px; cursor: pointer; }
-.schema__pagine { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 0 16px 12px; padding: 4px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); border-radius: 12px; }
-.schema__pagine button { padding: 9px 8px; font: inherit; font-size: 14px; font-weight: 700; color: #8b949d; background: transparent; border: 0; border-radius: 9px; cursor: pointer; }
-.schema__pagine button.is-attiva { color: #0b0e11; background: #62b8c9; }
 .schema__squadra { display: grid; gap: 4px; padding: 0 16px; }
 .schema__gruppo h3 { margin: 14px 0 8px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #7d868f; }
 .schema__squadra .schema__spiega { padding: 12px 0 0; }

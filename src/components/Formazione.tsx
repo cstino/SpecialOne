@@ -734,6 +734,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       <GameNav league={league} active="squad" onNavigate={onNavigate} />
       <header className="topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span className="kicker">Giornata {giornata}</span></header>
       {schemaAperto && <SchemaTattico
+        fase={fase}
         modulo={modulo}
         disposizione={disposizione}
         ruoli={ruoli}

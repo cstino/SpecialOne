@@ -25,6 +25,7 @@ import { COMPITI, COMPITI_REPARTO, FAM_PARTITE_PIENA, MODULI, REPARTO, RUOLI_SLO
 import { ANCORE, nomeSchieramento, schieramentoInCampo, type Ancora } from '../lib/schieramento'
 import { Icona } from './Icona'
 import { STILI, STILE_LABEL, STILE_DESCRIZIONI } from '../lib/stili'
+import { SFONDO_FASE_VERTICALE, type FaseSquadra } from '../lib/faseSquadra'
 
 const ruoliPerSlot = (slot: string): string[] => RUOLI_SLOT[slot] ?? []
 
@@ -32,6 +33,8 @@ export type XpDisposizione = { disposizione: string[]; partite: number }
 
 
 type Props = {
+  // La fase della squadra da' il colore a tutta la pagina, come nella Rosa.
+  fase: FaseSquadra
   modulo: string
   disposizione: string[] | null
   ruoli: (string | null)[] | null
@@ -153,7 +156,7 @@ const RAGGIO_CALAMITA = 13
 const SOGLIA_TRASCINAMENTO = 3
 
 export default function SchemaTattico({
-  modulo, disposizione, ruoli, compiti, focus, xpDisposizione, xpIndicazioni, onChange, onFocus, onClose,
+  fase, modulo, disposizione, ruoli, compiti, focus, xpDisposizione, xpIndicazioni, onChange, onFocus, onClose,
   moduliSalvati, moduloSalvatoAttivo, onSalvaModulo, onEliminaModulo, squadra, onSquadra,
 }: Props) {
   const standard = MODULI[modulo] ?? []
@@ -319,7 +322,7 @@ export default function SchemaTattico({
   const legaliAperte = postoAperto ? ancoreLegali(postoAperto.index) : []
 
   return (
-    <div className="schema" role="dialog" aria-label="Schema tattico">
+    <div className={`schema schema--broadcast formazione-broadcast formazione-broadcast--${fase}`} role="dialog" aria-label="Schema tattico">
       <header className="schema__testa">
         <button className="schema__chiudi" type="button" onClick={onClose} aria-label="Torna alla formazione"><Icona nome="indietro" /></button>
         <div className="schema__titolo">
@@ -349,16 +352,20 @@ export default function SchemaTattico({
           Salva come modulo personalizzato
         </button>)}
 
-      <div className="schema__pagine" role="tablist" aria-label="Pagine dello schema">
-        <button type="button" role="tab" aria-selected={pagina === 'giocatori'} className={pagina === 'giocatori' ? 'is-attiva' : ''} onClick={() => setPagina('giocatori')}>Giocatori</button>
-        <button type="button" role="tab" aria-selected={pagina === 'squadra'} className={pagina === 'squadra' ? 'is-attiva' : ''} onClick={() => setPagina('squadra')}>Squadra</button>
+      <div className="schema__pagine formazione-schede" role="tablist" aria-label="Pagine dello schema">
+        <button type="button" role="tab" aria-selected={pagina === 'giocatori'} className={`formazione-scheda${pagina === 'giocatori' ? ' is-attiva' : ''}`} onClick={() => setPagina('giocatori')}><span>Giocatori</span></button>
+        <button type="button" role="tab" aria-selected={pagina === 'squadra'} className={`formazione-scheda${pagina === 'squadra' ? ' is-attiva' : ''}`} onClick={() => setPagina('squadra')}><span>Squadra</span></button>
       </div>
 
       {pagina === 'giocatori' && <>
-      <div className="schema__campo pitch-field" ref={campoRef} aria-label={`Schema ${modulo}`}>
-        <div className="pitch-field__circle" />
-        <div className="pitch-field__box pitch-field__box--top" />
-        <div className="pitch-field__box pitch-field__box--bottom" />
+      <div className="schema__campo pitch-field rosa-campo" ref={campoRef} aria-label={`Schema ${modulo}`}
+        style={{ ['--und-fondo' as string]: `url(${SFONDO_FASE_VERTICALE[fase]})` }}>
+        <div className="match-intro__gesso" aria-hidden="true">
+          <span className="match-intro__gesso-area match-intro__gesso-area--alto" />
+          <span className="match-intro__gesso-meta" />
+          <span className="match-intro__gesso-cerchio" />
+          <span className="match-intro__gesso-area match-intro__gesso-area--basso" />
+        </div>
 
         {/* Le postazioni libere dove la card che stai trascinando puo' finire. */}
         {trascino?.mosso && ancoreLegali(trascino.index).map((a) => (
