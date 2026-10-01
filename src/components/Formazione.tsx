@@ -14,7 +14,7 @@ import { SchedaGiocatore } from './SchedaGiocatore'
 import type { GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
 import { PopupSpiegazione } from './PopupSpiegazione'
-import { useFaseSquadra } from '../lib/faseSquadra'
+import { SFONDO_FASE_VERTICALE, useFaseSquadra } from '../lib/faseSquadra'
 import { FtsgGauge } from './FtsgGauge'
 import { Icona } from './Icona'
 
@@ -194,6 +194,41 @@ function PlayerPortrait({ player, imageUrl, position, selected = false, onClick,
           title={idoneo.tono === 'piu' ? 'Adatto al ruolo che gli hai dato nello schema' : 'Poco adatto al ruolo che gli hai dato nello schema'}>{idoneo.segno}</span>}
       </span>
     </span>
+  </button>
+}
+
+// La card di un titolare sul campo, nello stile dell'intro del match: foto con
+// fascio di luce, targhetta nera col cognome, sotto ruolo e OVR. Quello che
+// l'intro non ha sta dove non copre il volto (indicazioni della chat di main,
+// 1° ottobre 2026): energia in alto al centro, fuori posizione in alto a
+// destra, idoneita' al ruolo in basso a destra.
+export function CartaCampo({ player, imageUrl, position, selected, onClick, ruolo }: { player?: Player; imageUrl?: string; position: string; selected: boolean; onClick: (event: ReactMouseEvent<HTMLButtonElement>) => void; ruolo: string | null }) {
+  if (!player) {
+    return <button className="rosa-card rosa-card--vuota" type="button" onClick={onClick} aria-label={`Posizione ${position} libera: tocca per assegnare un giocatore`}>
+      <span className="rosa-card__foto"><span className="rosa-card__iniziale">+</span></span>
+      <span className="rosa-card__nome">Libero</span>
+      <span className="rosa-card__riga"><i>{position}</i></span>
+    </button>
+  }
+  const fit = positionFit(position, player.posizioni)
+  const idoneo = ruolo ? segnoIdoneita(idoneitaRuolo(player.attributi, player.overall_corrente, ruolo)) : null
+  const livello = livelloEnergia(player)
+  const fuoriGioco = player.infortunato_fino_a > 0 || player.squalificato_fino_a > 0
+  return <button className={`rosa-card${selected ? ' is-selected' : ''}${fuoriGioco ? ' is-indisponibile' : ''}`} type="button" onClick={onClick}
+    aria-label={`${player.nome}, ${position}, overall ${player.overall_corrente}`}>
+    <span className="rosa-card__foto">
+      {imageUrl ? <img src={imageUrl} alt="" onError={(event) => { event.currentTarget.hidden = true }} /> : <span className="rosa-card__iniziale">{player.nome.charAt(0)}</span>}
+      <span className={`rosa-card__energia energia--${livello}`} title={
+        player.infortunato_fino_a > 0 ? `Infortunato: salta ancora ${player.infortunato_fino_a} ${player.infortunato_fino_a === 1 ? 'giornata' : 'giornate'}`
+        : player.squalificato_fino_a > 0 ? `Squalificato: salta ancora ${player.squalificato_fino_a} ${player.squalificato_fino_a === 1 ? 'giornata' : 'giornate'}`
+        : `Energia ${player.condizione}%`}>
+        {player.infortunato_fino_a > 0 ? '✚' : player.squalificato_fino_a > 0 ? '■' : `${player.condizione}%`}
+      </span>
+      {fit !== 'natural' && <i className={`rosa-card__fuori rosa-card__fuori--${fit}`} title={fit === 'adapted' ? 'Adattato in un ruolo vicino' : 'Completamente fuori posizione'} aria-label={fit === 'adapted' ? 'Fuori posizione di poco' : 'Completamente fuori posizione'} />}
+      {idoneo && <i className={`rosa-card__idoneo rosa-card__idoneo--${idoneo.tono}`} title={idoneo.tono === 'piu' ? 'Adatto al ruolo che gli hai dato nello schema' : 'Poco adatto al ruolo che gli hai dato nello schema'}>{idoneo.segno}</i>}
+    </span>
+    <span className="rosa-card__nome">{cognome(player.nome)}</span>
+    <span className="rosa-card__riga"><i>{position}</i><b className={player.overall_corrente >= 85 ? 'ovr-alto' : undefined}>{player.overall_corrente}</b></span>
   </button>
 }
 
@@ -795,16 +830,22 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           {selected && <p className="formation-swap-hint">Tocca il giocatore (o uno slot libero) con cui spostare {selectedPlayer?.nome ?? ''}.</p>}
           <div className="formation-view-card">
             {openZone === 'starter' ? (
-              <div className="pitch-field" aria-label={`Campo con modulo ${modulo}`}>
-                <div className="pitch-field__line pitch-field__line--half" />
-                <div className="pitch-field__circle" />
-                <div className="pitch-field__box pitch-field__box--top" /><div className="pitch-field__box pitch-field__box--bottom" />
+              // Il campo e le card nello stile della formazione dell'intro del
+              // match (MatchIntro): gesso puntinato e fascio di luce nel colore
+              // della fase, sullo sfondo verticale della fase.
+              <div className="pitch-field rosa-campo" aria-label={`Campo con modulo ${modulo}`} style={{ ['--und-fondo' as string]: `url(${SFONDO_FASE_VERTICALE[fase]})` }}>
+                <div className="match-intro__gesso" aria-hidden="true">
+                  <span className="match-intro__gesso-area match-intro__gesso-area--alto" />
+                  <span className="match-intro__gesso-meta" />
+                  <span className="match-intro__gesso-cerchio" />
+                  <span className="match-intro__gesso-area match-intro__gesso-area--basso" />
+                </div>
                 <div className="pitch-grid pitch-grid--assoluta" ref={campoRef} style={{ ['--scala-card' as string]: disposizioneCard?.scala ?? 1 }}>
                   {posti.map(({ slot, index, x: x0, y: y0 }, i) => {
                     const { x, y } = disposizioneCard?.posti[i] ?? { x: x0, y: y0 }
                     const player = players.find((item) => item.id === titolari[index])
                     const location = { zone: 'starter', index, id: titolari[index] ?? 0 } as PlayerLocation
-                    return <div className={`pitch-posto pitch-slot pitch-slot--${reparto(slot)}`} style={{ left: `${x}%`, top: `${100 - y}%` }} key={`${slot}-${index}`}><PlayerPortrait player={player} empty={!player} imageUrl={imageUrls[player?.id ?? 0]} position={slot} ruolo={ruoli?.[index] ?? null} selected={selected?.zone === 'starter' && selected.index === index} onClick={player ? (event) => handlePlayerClick(event, location, player) : () => selectEmptyStarter(index)} /></div>
+                    return <div className={`pitch-posto pitch-slot pitch-slot--${reparto(slot)}`} style={{ left: `${x}%`, top: `${100 - y}%` }} key={`${slot}-${index}`}><CartaCampo player={player} imageUrl={imageUrls[player?.id ?? 0]} position={slot} ruolo={ruoli?.[index] ?? null} selected={selected?.zone === 'starter' && selected.index === index} onClick={player ? (event) => handlePlayerClick(event, location, player) : () => selectEmptyStarter(index)} /></div>
                   })}
                 </div>
               </div>
