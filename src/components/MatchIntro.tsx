@@ -180,6 +180,14 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
         .in('team_id', [fixture.home_team_id, fixture.away_team_id])
       if (!vivo) return
       const mappaLineup = new Map<number, Lineup>((righeLineup ?? []).map((riga) => [riga.team_id, { modulo: riga.modulo, titolari: riga.titolari as number[] }]))
+      // L'undici salvato in `lineups` puo' differire da quello sceso in campo
+      // (titolare infortunato sostituito, formazione automatica delle 23:00,
+      // modulo cambiato): la presentazione deve mostrare chi ha giocato davvero.
+      const giocata = data.matchByFixture.get(fixture.id)
+      if (giocata) {
+        if (giocata.titolari_home?.length === 11) mappaLineup.set(fixture.home_team_id, { modulo: giocata.modulo_home, titolari: giocata.titolari_home })
+        if (giocata.titolari_away?.length === 11) mappaLineup.set(fixture.away_team_id, { modulo: giocata.modulo_away, titolari: giocata.titolari_away })
+      }
       setLineups(mappaLineup)
 
       const idsIstanze = [...mappaLineup.values()].flatMap((lineup) => lineup.titolari).filter((id) => id > 0)
@@ -203,7 +211,7 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
     }
     void carica()
     return () => { vivo = false }
-  }, [fixture.league_id, fixture.giornata, fixture.home_team_id, fixture.away_team_id])
+  }, [fixture.id, fixture.league_id, fixture.giornata, fixture.home_team_id, fixture.away_team_id, data.matchByFixture])
 
   // Timer della scaletta: parte solo quando la fase e' nota, perche' stagione
   // regolare e playoff hanno durate diverse per ogni battuta. Un solo

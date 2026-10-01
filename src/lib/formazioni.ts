@@ -41,6 +41,8 @@ const RIGHE_PER_MODULO: Record<string, string[][]> = {
   '4-3-3 offensivo': [['GK'], ['LB', 'CB', 'RB'], ['CM', 'CAM', 'CDM'], ['LW', 'ST', 'RW']],
   '4-3-3 difensivo': [['GK'], ['LB', 'CB', 'RB'], ['CM', 'CAM', 'CDM'], ['LW', 'ST', 'RW']],
 }
+// Moduli a tre centrocampisti in cui uno dei tre ha un ruolo diverso: sta in mezzo.
+const SLOT_AL_CENTRO: Record<string, string> = { '4-3-3 offensivo': 'CAM', '4-3-3 difensivo': 'CDM' }
 const RIGHE_GENERICHE: string[][] = [['GK'], ['LB', 'CB', 'RB', 'LWB', 'RWB'], ['CDM', 'CM', 'CAM', 'LM', 'RM'], ['LW', 'RW', 'ST', 'CF']]
 
 export type SlotFormazione<T> = { slot: string; index: number; valore: T | undefined }
@@ -53,8 +55,16 @@ export function righeFormazione<T>(modulo: string, valori: readonly T[]): SlotFo
   const slots = MODULI[modulo]
   if (!slots) return []
   const gruppi = RIGHE_PER_MODULO[modulo] ?? RIGHE_GENERICHE
-  return gruppi.map((gruppo) => slots
-    .map((slot, index) => ({ slot, index, valore: valori[index] }))
-    .filter((item) => gruppo.includes(item.slot))
-    .sort((sinistra, destra) => gruppo.indexOf(sinistra.slot) - gruppo.indexOf(destra.slot)))
+  const centro = SLOT_AL_CENTRO[modulo]
+  return gruppi.map((gruppo) => {
+    const riga = slots
+      .map((slot, index) => ({ slot, index, valore: valori[index] }))
+      .filter((item) => gruppo.includes(item.slot))
+      .sort((sinistra, destra) => gruppo.indexOf(sinistra.slot) - gruppo.indexOf(destra.slot))
+    // L'ordinamento per gruppo mette CM, CM, CAM: il trequartista (o il
+    // mediano) finirebbe a destra invece che in mezzo ai due centrocampisti.
+    const posizione = riga.findIndex((item) => item.slot === centro)
+    if (centro && riga.length === 3 && posizione > -1 && posizione !== 1) [riga[1], riga[posizione]] = [riga[posizione], riga[1]]
+    return riga
+  })
 }
