@@ -746,7 +746,8 @@ input:disabled { opacity: 0.65; }
 .riepilogo-momento b.entra { color: #6fe3b4; }
 .riepilogo-momento small { overflow: hidden; color: #8d839c; font-size: .62rem; text-overflow: ellipsis; white-space: nowrap; }
 .momento-icona { position: relative; flex: none; display: grid; place-items: center; width: 18px; height: 18px; }
-.momento-icona--gol { border-radius: 50%; background: radial-gradient(circle at 50% 50%, #0d0b12 0 22%, transparent 23%), conic-gradient(from 0deg, #fff 0 60deg, #d7d2de 60deg 120deg, #fff 120deg 180deg, #d7d2de 180deg 240deg, #fff 240deg 300deg, #d7d2de 300deg); box-shadow: 0 0 0 2px color-mix(in srgb, var(--rie-luce) 60%, transparent), 0 0 12px color-mix(in srgb, var(--rie-luce) 50%, transparent); }
+.momento-icona--gol { width: 22px; height: 22px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
+.momento-icona--gol svg { display: block; }
 .momento-icona--giallo, .momento-icona--rosso { width: 12px; height: 16px; margin: 0 3px; border-radius: 2px; transform: rotate(8deg); box-shadow: 0 2px 6px rgba(0,0,0,.4); }
 .momento-icona--giallo { background: #ffd43b; }
 .momento-icona--rosso { background: #ff4d5e; }

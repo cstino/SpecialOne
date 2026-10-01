@@ -308,7 +308,7 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
           <ol className="riepilogo-momenti">
             {momenti.map((e, k) => {
               const contenuto = isEventoGol(e)
-                ? <><span className="momento-icona momento-icona--gol" aria-label="Gol" /><span><b>{nome(e.marcatore)}</b>{e.assist !== null && <small>assist {nome(e.assist)}</small>}</span></>
+                ? <><span className="momento-icona momento-icona--gol" role="img" aria-label="Gol"><Pallone /></span><span><b>{nome(e.marcatore)}</b>{e.assist !== null && <small>assist {nome(e.assist)}</small>}</span></>
                 : e.tipo === 'cartellino'
                   ? <><span className={`momento-icona momento-icona--${e.colore === 'giallo' ? 'giallo' : 'rosso'}`} aria-label={e.colore === 'giallo' ? 'Ammonizione' : 'Espulsione'} /><span><b>{nome(e.giocatore)}</b>{e.colore === 'doppio_giallo' && <small>secondo giallo</small>}</span></>
                   : e.tipo === 'sostituzione'
@@ -385,6 +385,19 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
       </div>
     })()}
   </main>
+}
+
+// Il pallone dei momenti chiave: pentagono nero al centro, cuciture e toppe al
+// bordo. Un gradiente circolare sembrava un CD.
+function Pallone() {
+  return (
+    <svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true" focusable="false">
+      <defs><radialGradient id="pallone-luce" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#ffffff" /><stop offset="1" stop-color="#d6d0df" /></radialGradient></defs>
+      <circle cx="12" cy="12" r="10.8" fill="url(#pallone-luce)" />
+      <path d="M12.00 8.40L15.64 6.98 M12.00 8.40L8.36 6.98 M15.42 10.89L15.64 6.98 M15.42 10.89L17.90 13.92 M14.12 14.91L17.90 13.92 M14.12 14.91L12.00 18.20 M9.88 14.91L12.00 18.20 M9.88 14.91L6.10 13.92 M8.58 10.89L6.10 13.92 M8.58 10.89L8.36 6.98 M19.80 3.97L19.52 4.25 M22.05 16.93L21.69 16.76 M13.59 23.08L13.53 22.69 M1.95 16.93L2.31 16.76 M6.77 2.10L6.95 2.45" stroke="#4a4256" strokeWidth="0.75" strokeLinecap="round" />
+      <g fill="#16121e"><polygon points="12.00,8.40 15.42,10.89 14.12,14.91 9.88,14.91 8.58,10.89" /><polygon points="15.64,6.98 14.66,3.97 17.23,2.10 19.80,3.97 18.82,6.98" /><polygon points="17.90,13.92 20.46,12.05 23.03,13.92 22.05,16.93 18.88,16.93" /><polygon points="12.00,18.20 14.57,20.07 13.59,23.08 10.41,23.08 9.43,20.07" /><polygon points="6.10,13.92 5.12,16.93 1.95,16.93 0.97,13.92 3.54,12.05" /><polygon points="8.36,6.98 5.18,6.98 4.20,3.97 6.77,2.10 9.34,3.97" /></g>
+    </svg>
+  )
 }
 
 function VotoCella({ pagella, assenti }: { pagella?: Pagella; assenti: boolean }) {
