@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
 import { ricostruisciEventiStorici, type StatEventoStorico } from '../lib/matchEvents'
@@ -555,7 +555,11 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
               })}
             </div>
             <GraficoPressione curva={curva} minuto={minuto} fine={oraFinale} eventi={eventi} colori={colori ?? { casa: COLORE_FASE[fase], ospite: COLORE_OSPITE }}
-              sigle={{ casa: casa?.sigla ?? 'CASA', ospite: ospite?.sigla ?? 'OSP' }} />
+              sigle={{ casa: casa?.sigla ?? 'CASA', ospite: ospite?.sigla ?? 'OSP' }}
+              stemmi={{
+                casa: <Crest value={casa?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" />,
+                ospite: <Crest value={ospite?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" />,
+              }} />
           </div>}
         <footer className="match-reveal__footer">
           {!completata && fasePartita === 'rigori' ? <span className="match-reveal__in-corso"><i aria-hidden="true" />Si decide dal dischetto…</span>
@@ -591,9 +595,11 @@ export function IconaTelecronaca({ tipo }: { tipo: Riga['tipo'] }) {
 
 // La pressione offensiva: sopra la linea attacca la squadra di casa, sotto
 // l'ospite. Sotto l'asse, i gol e i cartellini rossi al loro minuto.
-export function GraficoPressione({ curva, minuto, fine, eventi, colori, sigle }: {
+export function GraficoPressione({ curva, minuto, fine, eventi, colori, sigle, stemmi }: {
   curva: number[]; minuto: number; fine: number; eventi: EventoPartita[]
   colori: { casa: string; ospite: string }; sigle: { casa: string; ospite: string }
+  // Gli stemmi a sinistra del grafico, ognuno al centro della sua meta'.
+  stemmi?: { casa: ReactNode; ospite: ReactNode }
 }) {
   const W = 1000, H = 120
   const id = useId().replace(/:/g, '')
@@ -608,6 +614,11 @@ export function GraficoPressione({ curva, minuto, fine, eventi, colori, sigle }:
         <i style={{ background: colori.ospite }} />{sigle.ospite}
       </span>
     </header>
+    <div className={`pressione__corpo${stemmi ? ' con-stemmi' : ''}`}>
+    {stemmi && <div className="pressione__stemmi" aria-hidden="true">
+      <span title={sigle.casa}>{stemmi.casa}</span>
+      <span title={sigle.ospite}>{stemmi.ospite}</span>
+    </div>}
     <div className="pressione__area">
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
         <defs>
@@ -629,7 +640,8 @@ export function GraficoPressione({ curva, minuto, fine, eventi, colori, sigle }:
         {segni.map((e, k) => <span key={k} className={`pressione__segno ${isEventoGol(e) ? 'is-gol' : 'is-rosso'} is-${e.lato}`} style={{ left: `clamp(5px, ${pct(e.minuto)}, calc(100% - 5px))`, ['--tc-colore' as string]: colori[e.lato as 'casa' | 'ospite'] }} title={`${e.minuto}′`} />)}
       </div>
     </div>
-    <footer className="pressione__assi">
+    </div>
+    <footer className={`pressione__assi${stemmi ? ' con-stemmi' : ''}`}>
       <span>1′</span><span style={{ left: pct(45) }}>Intervallo</span>{fine > 90 && <span style={{ left: pct(90) }}>90′</span>}<span>{fine > 90 ? '120′' : '90′'}</span>
     </footer>
   </section>

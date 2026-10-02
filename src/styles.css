@@ -3256,6 +3256,12 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .pressione__legenda { display: inline-flex; align-items: center; gap: 6px; color: #fff; letter-spacing: .1em; }
 .pressione__legenda i { display: inline-block; width: 10px; height: 4px; margin-left: 6px; border-radius: 2px; }
 .pressione__area { position: relative; height: clamp(70px, 12dvh, 104px); }
+/* Gli stemmi a sinistra: casa al centro della meta' alta, ospite di quella bassa. */
+.pressione__corpo.con-stemmi { display: grid; grid-template-columns: 26px 1fr; gap: 8px; }
+.pressione__stemmi { display: grid; grid-template-rows: 1fr 1fr; justify-items: center; align-items: center; }
+.pressione__stemmi span { display: grid; place-items: center; width: 24px; height: 24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
+.pressione__stemmi .crest { width: 24px; height: 24px; object-fit: contain; }
+.pressione__assi.con-stemmi { margin-left: 34px; }
 .pressione__area svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .pressione__zero { stroke: rgba(255,255,255,.35); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .pressione__tempo { stroke: rgba(255,255,255,.22); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
