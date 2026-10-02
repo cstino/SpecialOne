@@ -279,6 +279,11 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  // La formazione com'era all'ultimo salvataggio (o al caricamento di una
+  // distinta gia' salvata): il bottone Salva si accende solo se quella attuale
+  // e' diversa. null = mai salvata, quindi c'e' sempre qualcosa da salvare.
+  const [firmaSalvata, setFirmaSalvata] = useState<string | null>(null)
+  const fissaFirma = useRef(false)
   const [error, setError] = useState<string | null>(null)
   const [giornata, setGiornata] = useState(1)
   const [esperienzaModulo, setEsperienzaModulo] = useState<Record<string, number>>({})
@@ -404,6 +409,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         setPortiere(current.ruolo_portiere ?? null)
         setStile(current.stile_gioco)
         setSalvataIl(current.salvata_il)
+        fissaFirma.current = true
         setTitolari(titolariCompleti)
         setPanchina(panchinaSalvata)
         setTribuna([...tribunaSalvata, ...nuoviArrivi])
@@ -671,7 +677,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       p_linea: linea, p_ampiezza: ampiezza, p_portiere: portiere,
     })
     if (saveError) setError(saveError.message)
-    else { setPanchina(cleanBench); setSaved(true); setSalvataIl(new Date().toISOString()) }
+    else { setPanchina(cleanBench); setSaved(true); setSalvataIl(new Date().toISOString()); fissaFirma.current = true }
     setSaving(false)
   }
 
@@ -742,6 +748,16 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     && (m.linea_difensiva ?? null) === linea && (m.ampiezza ?? null) === ampiezza && (m.ruolo_portiere ?? null) === portiere) ?? null
 
 
+  const firmaCorrente = JSON.stringify({ modulo, disposizione, ruoli, compiti, focusCorsia, linea, ampiezza, portiere, stile, titolari, panchina, tribuna })
+  const modificata = firmaSalvata === null || firmaSalvata !== firmaCorrente
+  // Dopo il caricamento di una distinta salvata, o dopo un salvataggio
+  // riuscito, la formazione in pagina diventa il nuovo riferimento.
+  useEffect(() => {
+    if (loading || !fissaFirma.current) return
+    fissaFirma.current = false
+    setFirmaSalvata(firmaCorrente)
+  }, [loading, firmaCorrente])
+
   if (loading) return <main className="loading-screen"><LoadingLogo /><p>Preparo la formazione…</p></main>
 
   return (
@@ -795,7 +811,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         <section className={`formation-panel formation-panel--tactical formazione-broadcast formazione-broadcast--${fase}`}>
           <div className="formation-toolbar">
             <div className="formation-save-row">
-              <button className="formation-save-button button button--primary" type="button" disabled={saving} onClick={save}>{saving ? 'Salvo…' : 'Salva'}</button>
+              <button className={`formation-save-button button button--primary${modificata ? '' : ' is-salvata'}`} type="button" disabled={saving || !modificata} onClick={save}>{saving ? 'Salvo…' : modificata ? 'Salva' : 'Salvata'}</button>
               {(saved || salvataIl) && <div className="formation-save-stato">
                 {saved && <span>Formazione salvata</span>}
                 {salvataIl && <small>Salvata il {formatSalvataIl(salvataIl)}</small>}
