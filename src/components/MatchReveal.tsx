@@ -353,6 +353,18 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   // La telecronaca: fissa per partita, costruita quando ci sono i nomi.
   const casaSq = fixture ? data.teamById.get(fixture.home_team_id) : undefined
   const ospiteSq = fixture ? data.teamById.get(fixture.away_team_id) : undefined
+  // Gli allenatori raccontano i cambi ("Rossi pesca dalla panchina…"); le
+  // squadre del PC non ne hanno uno.
+  const [allenatori, setAllenatori] = useState<Record<string, string>>({})
+  const idAllenatori = [casaSq, ospiteSq].filter((t) => t && !t.controllata_da_pc && t.user_id).map((t) => t!.user_id).join(',')
+  useEffect(() => {
+    if (!idAllenatori) return
+    let vivo = true
+    void supabase.from('profiles').select('user_id, nome_allenatore').in('user_id', idAllenatori.split(',')).then(({ data: righe }) => {
+      if (vivo) setAllenatori(Object.fromEntries((righe ?? []).map((r: { user_id: string; nome_allenatore: string | null }) => [r.user_id, r.nome_allenatore ?? ''])))
+    })
+    return () => { vivo = false }
+  }, [idAllenatori])
   const telecronaca = useMemo<Riga[]>(() => {
     if (!match || !eventi.length || !nomi.size) return []
     return costruisciTelecronaca({
@@ -360,9 +372,11 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
       titolariCasa: match.titolari_home ?? [], titolariOspite: match.titolari_away ?? [],
       casa: { nome: casaSq?.nome ?? 'Casa', sigla: casaSq?.sigla ?? 'CAS' },
       ospite: { nome: ospiteSq?.nome ?? 'Ospite', sigla: ospiteSq?.sigla ?? 'OSP' },
+      allenatoreCasa: casaSq && !casaSq.controllata_da_pc ? allenatori[casaSq.user_id] : null,
+      allenatoreOspite: ospiteSq && !ospiteSq.controllata_da_pc ? allenatori[ospiteSq.user_id] : null,
       seme: match.id, supplementari,
     })
-  }, [match, eventi, nomi, casaSq, ospiteSq, supplementari])
+  }, [match, eventi, nomi, casaSq, ospiteSq, supplementari, allenatori])
   // Un gol entra in telecronaca solo dopo la sua scena (inTimeline).
   const righeVisibili = useMemo(() => telecronaca.filter((riga) => riga.minuto <= minuto
     && (!riga.gol || inTimeline.has(riga.gol))), [telecronaca, minuto, inTimeline])

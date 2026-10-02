@@ -558,7 +558,10 @@ function costruisciEventiGol(
 // particolare un marcatore ha sempre almeno un tiro e un tiro in porta per
 // ogni gol: requisito necessario per poter raccontare azioni reali, non un
 // evento inventato dalla UI.
-function rendiTiriCoerenti(righe: Array<Record<string, number>>, teamStats: JsonMap) {
+// `portieri`: i tiri che mancano al totale di squadra si distribuivano a giro
+// fra TUTTI i giocatori, portiere compreso (27 tiri di portieri su 7.685 nelle
+// partite di settembre). Ora vanno solo ai giocatori di movimento.
+function rendiTiriCoerenti(righe: Array<Record<string, number>>, teamStats: JsonMap, portieri: Set<number> = new Set()) {
   const totaleTiri = Number(teamStats.tiri ?? 0)
   const totaleInPorta = Number(teamStats.inPorta ?? 0)
   const ordinaPerCapacita = (campo: 'tiri' | 'tiri_porta') => [...righe].sort((a, b) =>
@@ -570,7 +573,9 @@ function rendiTiriCoerenti(righe: Array<Record<string, number>>, teamStats: Json
   }
   let differenza = totaleTiri - righe.reduce((somma, riga) => somma + riga.tiri, 0)
   let indice = 0
-  while (differenza > 0 && righe.length) { righe[indice++ % righe.length].tiri++; differenza-- }
+  const tiratori = righe.filter((riga) => !portieri.has(riga.player_instance_id))
+  const daRiempire = tiratori.length ? tiratori : righe
+  while (differenza > 0 && daRiempire.length) { daRiempire[indice++ % daRiempire.length].tiri++; differenza-- }
   while (differenza < 0) {
     const candidata = ordinaPerCapacita('tiri')[0]
     if (!candidata || candidata.tiri <= candidata.gol) break
@@ -1228,8 +1233,9 @@ export default {
           ...playerStats(fixture.home_team_id, result.perGiocatore.casa, result.statsCasa, assistPerGiocatore),
           ...playerStats(fixture.away_team_id, result.perGiocatore.ospite, result.statsOspite, assistPerGiocatore),
         ]
-        rendiTiriCoerenti(stats.filter((stat) => stat.team_id === fixture.home_team_id), result.statsCasa)
-        rendiTiriCoerenti(stats.filter((stat) => stat.team_id === fixture.away_team_id), result.statsOspite)
+        const portieri = (slot: unknown) => new Set([...((slot as Map<number, string> | undefined) ?? new Map()).entries()].filter(([, s]) => s === 'GK').map(([id]) => id))
+        rendiTiriCoerenti(stats.filter((stat) => stat.team_id === fixture.home_team_id), result.statsCasa, portieri(result.perGiocatore?.casa.slot))
+        rendiTiriCoerenti(stats.filter((stat) => stat.team_id === fixture.away_team_id), result.statsOspite, portieri(result.perGiocatore?.ospite.slot))
         const cronaca = normalizzaCronaca(costruisciEventiPartita(eventi, [
           { lato: 'casa', teamId: fixture.home_team_id, presenzePerBlocco: presenzePerBlocco.casa, stats: stats.filter((stat) => stat.team_id === fixture.home_team_id) },
           { lato: 'ospite', teamId: fixture.away_team_id, presenzePerBlocco: presenzePerBlocco.ospite, stats: stats.filter((stat) => stat.team_id === fixture.away_team_id) },

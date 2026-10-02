@@ -35,6 +35,10 @@ export type DatiTelecronaca = {
   titolariOspite: number[]
   casa: Squadra
   ospite: Squadra
+  // Il nome dell'allenatore (profiles.nome_allenatore); le squadre del PC
+  // non ce l'hanno e i cambi si raccontano col nome della squadra.
+  allenatoreCasa?: string | null
+  allenatoreOspite?: string | null
   seme: number
   supplementari: boolean
   // Tiri raccontati al massimo per squadra: gli altri restano nelle
@@ -175,11 +179,35 @@ const ANGOLO = [
   'Corner di {A}, la difesa di {O} si salva in qualche modo.',
   'Angolo corto di {S}, {A} prova il cross ma {B} allontana di testa.',
 ]
+// Cambi raccontati attraverso l'allenatore: {T} e' il suo nome, {C} l'elenco
+// dei cambi ("dentro X per Y").
+const CAMBIO_ALLENATORE = [
+  '{T} decide di cambiare qualcosa: {C}.',
+  '{T} pesca dalla panchina: {C}.',
+  'Si muove {T}: {C}.',
+  '{T} prova a dare una scossa ai suoi: {C}.',
+  'Mossa di {T}: {C}.',
+]
+const CAMBI_ALLENATORE = [
+  '{T} rivoluziona la squadra: {C}.',
+  '{T} cambia volto ai suoi: {C}.',
+  'Doppia mossa di {T}: {C}.',
+]
+const CAMBIO_INTERVALLO = [
+  '{T} cambia all\'intervallo: {C}.',
+  'Negli spogliatoi {T} ha deciso: {C}.',
+]
 const INFORTUNIO = [
   '{A} resta a terra dopo uno scontro… non ce la fa: al suo posto {B}.',
   'Problema muscolare per {A}, che chiede il cambio. Entra {B}.',
   'Brutta notizia per {S}: {A} esce in barella. Dentro {B}.',
   '{A} si tocca la coscia e alza bandiera bianca. Lo sostituisce {B}.',
+]
+
+const INFORTUNIO_ALLENATORE = [
+  '{A} resta a terra dopo uno scontro… {T} è costretto al cambio: dentro {B}.',
+  'Problema fisico per {A}: {T} manda subito a scaldare {B}, che entra al suo posto.',
+  '{A} non ce la fa. {T} allarga le braccia e si affida a {B}.',
 ]
 
 // ---------------------------------------------------------------------------
@@ -221,16 +249,18 @@ export function costruisciTelecronaca(d: DatiTelecronaca): Riga[] {
   const suFascia = (id: number) => FASCIA.has(d.nomi.get(id)?.posizioni?.[0] ?? '')
   const squadra = (lato: Lato) => (lato === 'casa' ? d.casa : d.ospite).nome
   const altro = (lato: Lato): Lato => (lato === 'casa' ? 'ospite' : 'casa')
+  const allenatore = (lato: Lato) => (lato === 'casa' ? d.allenatoreCasa : d.allenatoreOspite)?.trim().toUpperCase() || null
 
   const componi = (modello: string, v: { A?: number | null; B?: number | null; P?: number | null; lato: Lato; N?: string }): Parte[] => {
     const parti: Parte[] = []
-    for (const pezzo of modello.split(/(\{[ABPSON]\})/)) {
+    for (const pezzo of modello.split(/(\{[ABPSONT]\})/)) {
       if (pezzo === '{A}') parti.push({ g: nome(v.A) })
       else if (pezzo === '{B}') parti.push({ g: nome(v.B) })
       else if (pezzo === '{P}') parti.push({ g: nome(v.P) || 'il portiere' })
       else if (pezzo === '{S}') parti.push(squadra(v.lato))
       else if (pezzo === '{O}') parti.push(squadra(altro(v.lato)))
       else if (pezzo === '{N}') parti.push(v.N ?? 'dieci')
+      else if (pezzo === '{T}') parti.push({ g: allenatore(v.lato) ?? squadra(v.lato) })
       else if (pezzo) parti.push(pezzo)
     }
     return parti
@@ -280,7 +310,9 @@ export function costruisciTelecronaca(d: DatiTelecronaca): Riga[] {
   const maxTiri = d.maxTiri ?? 6
   const tiriTenuti = new Set<EventoPartita>()
   for (const lato of ['casa', 'ospite'] as Lato[]) {
-    const tiri = eventi.filter((e) => e.lato === lato && (e.tipo === 'tiro_parato' || e.tipo === 'tiro_fuori'))
+    // Un portiere che tira e' un residuo di una vecchia distribuzione dei tiri
+    // (corretta il 2 ottobre 2026): in telecronaca non si racconta.
+    const tiri = eventi.filter((e) => e.lato === lato && (e.tipo === 'tiro_parato' || e.tipo === 'tiro_fuori') && reparto(e.giocatore) !== 'GK')
     if (tiri.length <= maxTiri) { tiri.forEach((t) => tiriTenuti.add(t)); continue }
     const parati = tiri.filter((t) => t.tipo === 'tiro_parato')
     const scelti = [...parati.slice(0, Math.ceil(maxTiri * 0.6)), ...tiri.filter((t) => t.tipo === 'tiro_fuori')]
@@ -350,7 +382,8 @@ export function costruisciTelecronaca(d: DatiTelecronaca): Riga[] {
       return
     }
     if (e.tipo === 'infortunio') {
-      righe.push({ chiave, minuto: e.minuto, lato, tipo: 'infortunio', testo: componi(pesca(INFORTUNIO), { A: e.esce, B: e.entra, lato }) })
+      const modello = pesca(allenatore(lato) && rnd() < 0.6 ? INFORTUNIO_ALLENATORE : INFORTUNIO)
+      righe.push({ chiave, minuto: e.minuto, lato, tipo: 'infortunio', testo: componi(modello, { A: e.esce, B: e.entra, lato }) })
       return
     }
     if (e.tipo === 'sostituzione') {
@@ -358,15 +391,22 @@ export function costruisciTelecronaca(d: DatiTelecronaca): Riga[] {
       const gruppo = eventi.filter((x) => x.tipo === 'sostituzione' && x.lato === e.lato && x.minuto === e.minuto) as Array<Extract<EventoPartita, { tipo: 'sostituzione' }>>
       gruppo.forEach((x) => cambiRaccolti.add(x))
       const all = e.minuto === 46 ? 'all\'intervallo' : e.minuto === 91 ? 'prima dei supplementari' : ''
-      const apertura = gruppo.length === 1
-        ? (all ? `${squadra(lato)} cambia ${all}: ` : rnd() < 0.5 ? `Cambio per ${squadra(lato)}: ` : `Mossa dalla panchina di ${squadra(lato)}: `)
-        : `${gruppo.length === 2 ? 'Doppio' : 'Triplo'} cambio per ${squadra(lato)}${all ? ' ' + all : ''}: `
-      const testo: Parte[] = [apertura]
+      const elenco: Parte[] = []
       gruppo.forEach((x, k) => {
-        if (k > 0) testo.push(k === gruppo.length - 1 ? ' e ' : ', ')
-        testo.push(k === 0 ? 'dentro ' : '', { g: nome(x.entra) }, ' per ', { g: nome(x.esce) })
+        if (k > 0) elenco.push(k === gruppo.length - 1 ? ' e ' : ', ')
+        elenco.push(k === 0 ? 'dentro ' : '', { g: nome(x.entra) }, ' per ', { g: nome(x.esce) })
       })
-      testo.push('.')
+      let testo: Parte[]
+      if (allenatore(lato)) {
+        const modello = pesca(e.minuto === 46 ? CAMBIO_INTERVALLO : gruppo.length > 1 ? CAMBI_ALLENATORE : CAMBIO_ALLENATORE)
+        testo = componi(modello, { lato }).flatMap((parte) => parte === '{C}' ? elenco : typeof parte === 'string' && parte.includes('{C}')
+          ? parte.split('{C}').flatMap((pezzo, k) => k === 0 ? [pezzo] : [...elenco, pezzo]) : [parte])
+      } else {
+        const apertura = gruppo.length === 1
+          ? (all ? `${squadra(lato)} cambia ${all}: ` : rnd() < 0.5 ? `Cambio per ${squadra(lato)}: ` : `Mossa dalla panchina di ${squadra(lato)}: `)
+          : `${gruppo.length === 2 ? 'Doppio' : 'Triplo'} cambio per ${squadra(lato)}${all ? ' ' + all : ''}: `
+        testo = [apertura, ...elenco, '.']
+      }
       righe.push({ chiave, minuto: e.minuto, lato, tipo: 'cambio', testo })
     }
   })
