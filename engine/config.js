@@ -114,6 +114,22 @@ export const CFG = {
   // Alzata da 55: col consumo nuovo un titolare arriva a ~78 alla prima
   // finestra e ~63 all'ultima. A 55 nessuna finestra si sarebbe mai aperta.
   SOGLIA_CAMBIO_COND: 75,
+  // Regola vera dei cambi (IFAB, cinque cambi): al massimo 3 interruzioni di
+  // gioco per sostituire, l'intervallo non conta. Prima il motore cambiava
+  // sempre e solo al 45', 60' e 75' e l'intervallo valeva come una delle tre
+  // finestre: nelle partite vere i cambi si spalmano su tutto il secondo
+  // tempo. Deciso col committente il 2 ottobre 2026.
+  BLOCCO_INTERVALLO: 3,
+  MAX_SOSTE: 3,
+  // All'intervallo si cambia meno che a gara in corso: esce solo chi e' gia'
+  // stanco davvero, e al massimo MAX_CAMBI_INTERVALLO. Valori tarati sulla
+  // distribuzione dei minuti dei cambi (vedi docs/decisioni-tattiche.md).
+  SOGLIA_CAMBIO_INTERVALLO: 65,
+  MAX_CAMBI_INTERVALLO: 1,
+  // A gara in corso dopo il 75' una squadra con piu' cambi e stop ancora
+  // liberi a volte li divide in due momenti (un cambio subito, l'ultimo
+  // verso la fine). Conta come una sosta in piu'. Probabilita' della divisione.
+  QUOTA_SOSTA_DIVISA: 0.5,
 };
 
 // ============================================================

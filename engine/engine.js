@@ -197,16 +197,23 @@ export function stileTattico(stile) {
 
 // ---------- Sostituzioni automatiche ----------
 
-function sostituzioni(lineup) {
-  if (lineup.cambiFatti >= CFG.MAX_CAMBI) return;
+// `intervallo`: la finestra dell'intervallo non consuma una delle MAX_SOSTE
+// interruzioni, ma e' piu' prudente (soglia piu' bassa, al massimo
+// MAX_CAMBI_INTERVALLO). Restituisce i cambi fatti, per la cronaca.
+function sostituzioni(lineup, intervallo = false) {
+  const fattiOra = [];
+  if (lineup.cambiFatti >= CFG.MAX_CAMBI) return fattiOra;
+  if (!intervallo && lineup.soste >= CFG.MAX_SOSTE) return fattiOra;
+  const soglia = intervallo ? CFG.SOGLIA_CAMBIO_INTERVALLO : CFG.SOGLIA_CAMBIO_COND;
+  const massimo = intervallo ? CFG.MAX_CAMBI_INTERVALLO : CFG.MAX_CAMBI_FINESTRA;
   let fatti = 0;
-  for (let i = 0; i < lineup.slots.length && fatti < CFG.MAX_CAMBI_FINESTRA; i++) {
+  for (let i = 0; i < lineup.slots.length && fatti < massimo; i++) {
     const slot = lineup.slots[i], tit = lineup.titolari[i];
     // Il portiere non si sostituisce per stanchezza: nel calcio vero esce solo
     // per infortunio. Col modello di fatica da partita scendeva sotto soglia
     // come tutti e veniva cambiato all'intervallo.
     if (slot === 'GK') continue;
-    if (!tit || tit.condizione >= CFG.SOGLIA_CAMBIO_COND) continue;
+    if (!tit || tit.condizione >= soglia) continue;
     let bestIdx = -1, bestVal = ovrEfficace(tit, slot, dt(lineup, tit, slot));
     for (let j = 0; j < lineup.panchina.length; j++) {
       const r = lineup.panchina[j];
@@ -218,9 +225,12 @@ function sostituzioni(lineup) {
       lineup.titolari[i] = entra;
       entra._entrato = true;
       lineup.cambiFatti++; fatti++;
-      if (lineup.cambiFatti >= CFG.MAX_CAMBI) return;
+      fattiOra.push({ esce: tit.id, entra: entra.id });
+      if (lineup.cambiFatti >= CFG.MAX_CAMBI) break;
     }
   }
+  if (fatti > 0 && !intervallo) lineup.soste++;
+  return fattiOra;
 }
 
 // Un infortunio non aspetta il fischio finale: se c'e' una riserva e un cambio
@@ -229,6 +239,9 @@ function sostituzioni(lineup) {
 // disponibile anche se non migliora l'overall dello slot.
 function sostituisciInfortunato(lineup, slot) {
   if (lineup.cambiFatti >= CFG.MAX_CAMBI || !lineup.titolari[slot]) return null;
+  // Anche il cambio per infortunio ferma il gioco: senza soste libere
+  // l'infortunato non si puo' sostituire (come nel calcio vero).
+  if (lineup.soste >= CFG.MAX_SOSTE) return null;
   let bestIdx = -1, bestVal = -Infinity;
   for (let j = 0; j < lineup.panchina.length; j++) {
     const r = lineup.panchina[j];
@@ -241,6 +254,7 @@ function sostituisciInfortunato(lineup, slot) {
   lineup.titolari[slot] = entra;
   entra._entrato = true;
   lineup.cambiFatti++;
+  lineup.soste++;
   return { esce: esce.id, entra: entra.id };
 }
 
@@ -389,6 +403,25 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   // Stesso principio, flusso proprio: i cartellini non devono spostare ne'
   // lo stream dei gol ne' quello degli infortuni.
   const rndCartellino = creaRngInfortuni(opt.seedCartellini ?? (seedInfortuni + 97));
+  // Flusso proprio anche per i cambi (solo la divisione di una finestra in
+  // due soste): non sposta gli altri flussi.
+  const rndCambi = creaRngInfortuni(opt.seedCambi ?? (seedInfortuni + 211));
+  // Soste usate e cambi fatti, per lato: la cronaca li racconta coi minuti.
+  lc.soste = 0; lo.soste = 0;
+  const cambiInPartita = [];
+  const registraCambi = (lato, L, blocco, fatti, intervallo) => {
+    if (!fatti.length) return;
+    // Dopo il 75' una finestra con piu' cambi a volte si divide in due soste
+    // (l'ultimo cambio arriva verso la fine), se resta una sosta libera.
+    let divisa = false;
+    if (!intervallo && blocco === CFG.BLOCCHI_PARTITA - 1 && fatti.length >= 2 && L.soste < CFG.MAX_SOSTE
+      && rndCambi() < CFG.QUOTA_SOSTA_DIVISA) { L.soste++; divisa = true; }
+    fatti.forEach((c, k) => cambiInPartita.push({
+      lato, blocco, ...c, motivo: 'stanchezza',
+      sosta: intervallo ? 0 : divisa && k === fatti.length - 1 ? L.soste : divisa ? L.soste - 1 : L.soste,
+      tardiva: divisa && k === fatti.length - 1,
+    }));
+  };
   const ammonitiCasa = new Map(); // id -> true se ha gia' un giallo in questa partita
   const ammonitiOspite = new Map();
   const cartelliniInPartita = [];
@@ -523,6 +556,7 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
           g.infortunatoFinoA = durataInfortunio(rndInfortunio);
           g._nuovoInfortunio = true;
           infortuniInPartita.push({ lato, blocco: b + 1, ...cambio, giornate: g.infortunatoFinoA });
+          cambiInPartita.push({ lato, blocco: b + 1, ...cambio, motivo: 'infortunio', sosta: L.soste, tardiva: false });
         }
       }
 
@@ -549,7 +583,11 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
       }
     }
 
-    if (CFG.FINESTRE_CAMBI.includes(b + 1)) { sostituzioni(lc); sostituzioni(lo); }
+    if (CFG.FINESTRE_CAMBI.includes(b + 1)) {
+      const intervallo = b + 1 === CFG.BLOCCO_INTERVALLO;
+      registraCambi('casa', lc, b + 1, sostituzioni(lc, intervallo), intervallo);
+      registraCambi('ospite', lo, b + 1, sostituzioni(lo, intervallo), intervallo);
+    }
 
     if (b + 1 === CFG.BLOCCHI_PARTITA) {
       golRegolamentari = { casa: golC, ospite: golO };
@@ -558,8 +596,10 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
         supplementariGiocati = true;
         // Finestra di cambi extra concessa all'inizio dei supplementari, come
         // nel calcio vero. Resta soggetta a MAX_CAMBI: chi li ha gia' esauriti
-        // non ne guadagna uno in piu'.
-        sostituzioni(lc); sostituzioni(lo);
+        // non ne guadagna uno in piu'. Come l'intervallo, la pausa prima dei
+        // supplementari non consuma una sosta.
+        registraCambi('casa', lc, b + 1, sostituzioni(lc, true), true);
+        registraCambi('ospite', lo, b + 1, sostituzioni(lo, true), true);
       }
     }
   }
@@ -677,6 +717,9 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     presenzePerBlocco: { casa: presenzeCasaPerBlocco, ospite: presenzeOspitePerBlocco },
     infortuniInPartita,
     cartelliniInPartita,
+    // Ogni cambio col blocco al cui termine e' avvenuto e la sosta di gioco
+    // (0 = intervallo o pausa prima dei supplementari, 1-3 a gara in corso).
+    cambiInPartita,
     // golC/golO sono il risultato FINALE (supplementari inclusi). Chi presenta
     // la partita ha qui anche il parziale dei 90', e se i supplementari sono
     // stati davvero giocati.

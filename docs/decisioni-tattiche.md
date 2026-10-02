@@ -1108,3 +1108,44 @@ campo, ultimi cinque voti. Colori SofaScore in `src/lib/voti.ts`.
 
 Le pagelle nascono solo con l'Edge Function del branch: finché in produzione gira quella di
 `main`, la tabella resta vuota e le pagine non mostrano voti (senza errori).
+
+## 32. Cambi come nel calcio vero: 3 soste più l'intervallo — 2 ottobre 2026
+
+**Prima**: il motore cambiava solo al 45', 60' e 75' (fine dei blocchi 3, 4, 5),
+massimo 2 per volta, e l'intervallo valeva come una delle tre finestre. In
+produzione (736 partite) i cambi cadevano tutti e soli a quei tre minuti.
+
+**Regola** (IFAB, cinque cambi): massimo 5 cambi e 3 interruzioni di gioco per
+farli; l'intervallo e la pausa prima dei supplementari non contano.
+
+- Motore (`engine/engine.js`, `config.js`): `lineup.soste`; all'intervallo esce
+  solo chi è sotto `SOGLIA_CAMBIO_INTERVALLO` (65), al massimo
+  `MAX_CAMBI_INTERVALLO` (1); anche il cambio per infortunio consuma una sosta, e
+  senza soste libere l'infortunato non si sostituisce. Dopo il 75' una finestra
+  con più cambi a volte si divide in due soste (`QUOTA_SOSTA_DIVISA`, 0,5). Flusso
+  casuale proprio (`seedCambi`), il motore restituisce `cambiInPartita`.
+- Cronaca (`simula-giornata`): `minutiCambi` dà a ogni sosta un minuto vero
+  vicino al confine del blocco (stanchezza 56'-70' e 71'-85', l'ultima di una
+  finestra divisa 82'-89', infortuni dentro il loro blocco); `finestreInCampo` e
+  `adattaAiMinutiInCampo` tengono gol, assist, tiri e cartellini dentro i minuti
+  in cui il giocatore era in campo; i minuti giocati (tabellino, pagelle)
+  seguono il minuto vero. Anche i cartellini non cadono più a fine blocco.
+  L'effetto del cambio sulla forza resta al confine del blocco: lo scarto è al
+  massimo di 10-14 minuti, dentro la risoluzione del motore (blocchi da 15').
+
+**Numeri** (`tools/validazione/prova-cambi.mjs`, banco della cronaca su 1.800
+partite): 4,3 cambi per squadra; intervallo 19%, 51'-60' 15%, 61'-70' 28%,
+71'-80' 18%, 81'-90' 14%, infortuni del primo tempo 5%. Nessun evento fuori dai
+minuti in campo, nessuna squadra oltre 5 cambi o 3 soste.
+
+**Validazione** (`simulate-reale`, riga PRODUZIONE): 2,87 gol · 13,46 tiri ·
+22,6% pareggi · 46,9% casa. Il pareggio esce di 0,4 dal target sul seme della
+suite; su sei semi la media è 23,2% col motore nuovo e 23,1% col vecchio, che
+scende a 22,9% su due semi: è rumore attorno al bordo, non un effetto dei cambi.
+Segnalato al committente.
+
+**Aperto, non legato ai cambi**: nel ramo i gol da calcio piazzato
+(`engine/piazzati.js`) si aggiungono a `golC/golO` dopo il ciclo dei blocchi e
+non entrano in `golPerBlocco`: la cronaca non li racconta e il parziale dei 90'
+li esclude. Su `main` i piazzati non ci sono e i conti tornano (238 partite su
+238). Va risolto prima di distribuire l'Edge Function del ramo.

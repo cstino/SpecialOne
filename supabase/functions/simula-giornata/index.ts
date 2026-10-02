@@ -26,6 +26,15 @@ type EventoSostituzione = { tipo: 'sostituzione'; minuto: number; blocco: number
 type EventoInfortunio = { tipo: 'infortunio'; minuto: number; blocco: number; lato: Lato; team_id: number; esce: number; entra: number }
 type EventoCartellino = { tipo: 'cartellino'; minuto: number; blocco: number; lato: Lato; team_id: number; giocatore: number; colore: 'giallo' | 'rosso_diretto' | 'doppio_giallo' }
 type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio | EventoCartellino
+// Un cambio come lo restituisce il motore (blocco al cui termine avviene e
+// sosta di gioco: 0 = intervallo o pausa prima dei supplementari) e come lo
+// racconta la cronaca, col suo minuto.
+type CambioMotore = { lato: Lato; blocco: number; esce: number; entra: number; motivo: 'stanchezza' | 'infortunio'; sosta: number; tardiva: boolean }
+type CambioCronaca = CambioMotore & { minuto: number }
+type CartellinoMotore = { lato: Lato; blocco: number; giocatore: number; tipo: 'giallo' | 'rosso_diretto' | 'doppio_giallo' }
+type CartellinoCronaca = CartellinoMotore & { minuto: number }
+// Da che minuto a che minuto ogni giocatore e' stato in campo, per lato.
+type Finestre = Map<Lato, Map<number, { da: number; a: number }>>
 type DbPlayer = { id: number; nome: string; posizioni: string[]; piede: string | null }
 type Instance = { id: number; team_id: number; player_id: number; overall_corrente: number; eta_corrente: number; condizione: number; infortunato_fino_a: number; ammonizioni_stagione: number; squalificato_fino_a: number; posizioni_override: string[] | null; specializzazione_attiva: string | null; morale: number | null }
 type EnginePlayer = { id: number; nome: string; posizioni: string[]; ovr: number; eta: number; stamina: number; finishing: number; short_passing: number; tackle: number; dribbling: number; condizione: number; infortunatoFinoA: number; squalificatoFinoA: number; tiltTecnico: number | null; tiltRapido: number | null; specialita: { rigori: number }; piede: string | null; piazzati: { battuta: number; testa: number; marcatura: number; punizione: number; presa: number }; specializzazione: string | null; morale: number; composure: number; attributi: Record<string, number> }
@@ -512,12 +521,9 @@ function costruisciEventiGol(
       // minuto: lo spostiamo al blocco successivo (61'-75'), corretto il 4
       // agosto 2026. Nell'ultimo blocco di una fase si resta nel blocco,
       // nella sua seconda meta'.
-      const eraGiaInCampo = evento.blocco === 1 || (lato.presenzePerBlocco[evento.blocco - 2] ?? []).includes(marcatore)
-      inizio = eraGiaInCampo
-        ? (evento.blocco - 1) * MINUTI_PER_BLOCCO + 1
-        : evento.blocco < ultimoBloccoFase
-          ? evento.blocco * MINUTI_PER_BLOCCO + 1
-          : (evento.blocco - 1) * MINUTI_PER_BLOCCO + 8
+      // Che un subentrato non segni prima del suo ingresso lo garantisce
+      // ora adattaAiMinutiInCampo, sul minuto vero del cambio (2 ottobre 2026).
+      inizio = (evento.blocco - 1) * MINUTI_PER_BLOCCO + 1
     } else {
       // Nessun marcatore presente disponibile (raro dopo il matching): si
       // racconta il gol nel blocco piu' vicino in cui il marcatore era in
@@ -586,50 +592,149 @@ function rendiTiriCoerenti(righe: Array<Record<string, number>>, teamStats: Json
   }
 }
 
+// Il minuto di ogni cambio. Il motore gioca a blocchi di 15' e cambia al
+// confine di un blocco; la cronaca da' al cambio un minuto vero vicino a quel
+// confine, cosi' i cambi non cadono piu' tutti al 45', 60' e 75'. Stessa sosta,
+// stesso minuto. La coerenza con tiri e gol (chi esce non fa nulla dopo quel
+// minuto, chi entra nulla prima) la garantisce adattaAiMinutiInCampo.
+function minutiCambi(cambi: CambioMotore[], seed: number): CambioCronaca[] {
+  const rnd = creaRng(seed ^ 0x5bd1e995)
+  const out: CambioCronaca[] = []
+  for (const lato of ['casa', 'ospite'] as Lato[]) {
+    const gruppi = new Map<string, CambioMotore[]>()
+    for (const cambio of cambi.filter((c) => c.lato === lato)) {
+      const chiave = cambio.sosta === 0 ? `pausa-${cambio.blocco}` : `sosta-${cambio.sosta}`
+      gruppi.set(chiave, [...(gruppi.get(chiave) ?? []), cambio])
+    }
+    // In ordine di tempo: nello stesso blocco l'infortunio avviene durante il
+    // gioco, i cambi per stanchezza e l'intervallo alla sua fine.
+    const momento = (c: CambioMotore) => c.motivo === 'infortunio' ? 0 : 1
+    const ordinati = [...gruppi.values()].sort((a, b) => a[0].blocco - b[0].blocco || momento(a[0]) - momento(b[0]) || a[0].sosta - b[0].sosta)
+    let ultimo = 0
+    for (const gruppo of ordinati) {
+      const { blocco, sosta, motivo, tardiva } = gruppo[0]
+      const confine = blocco * MINUTI_PER_BLOCCO
+      let minuto: number
+      if (sosta === 0) {
+        // Intervallo (46') o pausa prima dei supplementari (91').
+        minuto = confine + 1
+      } else {
+        // Infortunio: dentro il blocco in cui succede. Cambio per stanchezza:
+        // da poco prima a poco dopo il confine; l'ultimo di una finestra
+        // divisa arriva verso la fine.
+        let da = motivo === 'infortunio' ? confine - MINUTI_PER_BLOCCO + 2 : tardiva ? confine + 7 : confine - 4
+        // L'infortunio resta ad almeno 2' dalla fine del blocco: chi entra puo'
+        // ancora prendere un cartellino in quel blocco, dopo il suo ingresso.
+        const a = motivo === 'infortunio' ? confine - 2 : tardiva ? confine + 14 : confine + 10
+        da = Math.min(Math.max(da, ultimo + 3), a)
+        minuto = da + Math.floor(rnd() * (a - da + 1))
+      }
+      ultimo = Math.max(ultimo, minuto)
+      for (const cambio of gruppo) out.push({ ...cambio, minuto })
+    }
+  }
+  return out
+}
+
+// Chi e' in campo e da quando: i titolari dal fischio d'inizio, i subentrati
+// dal minuto del loro cambio, fino al cambio che li toglie o al fischio finale.
+function finestreInCampo(lati: Array<{ lato: Lato; titolari: number[] }>, cambi: CambioCronaca[], fine: number): Finestre {
+  const finestre: Finestre = new Map()
+  for (const lato of lati) {
+    const mappa = new Map<number, { da: number; a: number }>()
+    for (const id of lato.titolari) mappa.set(id, { da: 0, a: fine })
+    for (const cambio of cambi.filter((c) => c.lato === lato.lato).sort((a, b) => a.minuto - b.minuto)) {
+      const esce = mappa.get(cambio.esce)
+      if (esce) esce.a = Math.min(esce.a, cambio.minuto)
+      mappa.set(cambio.entra, { da: cambio.minuto, a: fine })
+    }
+    finestre.set(lato.lato, mappa)
+  }
+  return finestre
+}
+
+// I cartellini cadevano tutti a fine blocco (15', 30', 45'...). Ora prendono un
+// minuto nel loro blocco, dentro la finestra in campo del giocatore; un rosso
+// chiude la finestra, il secondo giallo viene dopo il primo.
+function minutiCartellini(cartellini: CartellinoMotore[], finestre: Finestre, seed: number): CartellinoCronaca[] {
+  const rnd = creaRng(seed ^ 0x27d4eb2f)
+  const ultimoPerGiocatore = new Map<number, number>()
+  return cartellini.map((cartellino) => {
+    const finestra = finestre.get(cartellino.lato)?.get(cartellino.giocatore)
+    const inizioBlocco = (cartellino.blocco - 1) * MINUTI_PER_BLOCCO + 1
+    let da = Math.max(inizioBlocco, (finestra?.da ?? 0) + 1, (ultimoPerGiocatore.get(cartellino.giocatore) ?? 0) + 1)
+    const a = Math.min(cartellino.blocco * MINUTI_PER_BLOCCO, finestra?.a ?? MINUTO_MASSIMO)
+    if (da > a) da = a
+    const minuto = Math.max(1, da + Math.floor(rnd() * (a - da + 1)))
+    ultimoPerGiocatore.set(cartellino.giocatore, minuto)
+    if (finestra && cartellino.tipo !== 'giallo') finestra.a = minuto
+    return { ...cartellino, minuto }
+  })
+}
+
+// Rete di sicurezza sui minuti veri: ogni gol, assist, tiro e cartellino cade
+// dentro il suo blocco E dentro la finestra in campo del protagonista (e
+// dell'uomo assist). Se nel blocco non c'e' posto, si cerca nella stessa fase
+// (regolamentari o supplementari): il parziale dei 90' non cambia mai.
+function adattaAiMinutiInCampo(eventi: EventoPartita[], finestre: Finestre, rnd: () => number) {
+  const intervallo = (evento: EventoPartita, bloccoDa: number, bloccoA: number) => {
+    let da = (bloccoDa - 1) * MINUTI_PER_BLOCCO + 1
+    let a = bloccoA * MINUTI_PER_BLOCCO
+    const finestreLato = finestre.get(evento.lato)
+    const protagonisti = evento.tipo === 'gol' ? [evento.marcatore, evento.assist]
+      : evento.tipo === 'tiro_parato' || evento.tipo === 'tiro_fuori' ? [evento.giocatore] : []
+    for (const id of protagonisti) {
+      if (id === null) continue
+      const finestra = finestreLato?.get(id)
+      if (!finestra) continue
+      // Chi entra al minuto m tira dal minuto dopo; chi esce al minuto m al
+      // massimo in quel minuto.
+      da = Math.max(da, finestra.da + 1)
+      a = Math.min(a, finestra.a)
+    }
+    return { da, a }
+  }
+  for (const evento of eventi) {
+    if (evento.tipo !== 'gol' && evento.tipo !== 'tiro_parato' && evento.tipo !== 'tiro_fuori') continue
+    let { da, a } = intervallo(evento, evento.blocco, evento.blocco)
+    if (evento.minuto >= da && evento.minuto <= a) continue
+    if (da > a && evento.tipo === 'gol' && evento.assist !== null) {
+      // Marcatore e uomo assist non sono mai stati in campo insieme in quel
+      // blocco: il gol resta, senza assist.
+      evento.assist = null
+      ;({ da, a } = intervallo(evento, evento.blocco, evento.blocco))
+    }
+    if (da > a) {
+      const regolamentare = evento.blocco <= BLOCCHI_REGOLAMENTARI
+      ;({ da, a } = intervallo(evento, regolamentare ? 1 : BLOCCHI_REGOLAMENTARI + 1, regolamentare ? BLOCCHI_REGOLAMENTARI : BLOCCO_MASSIMO))
+      if (da > a) continue
+    }
+    evento.minuto = da + Math.floor(rnd() * (a - da + 1))
+  }
+}
+
+// Minuti giocati dai minuti veri dei cambi e dei rossi, non piu' a multipli
+// di 15: servono al tabellino e alle pagelle.
+function minutiGiocati(finestre: Map<number, { da: number; a: number }> | undefined, minuti: Map<number, number> | undefined) {
+  if (!finestre || !minuti) return
+  for (const id of minuti.keys()) {
+    const finestra = finestre.get(id)
+    if (finestra) minuti.set(id, Math.max(1, finestra.a - finestra.da))
+  }
+}
+
 function costruisciEventiPartita(
   gol: EventoGol[],
   lati: Array<{ lato: Lato; teamId: number; presenzePerBlocco: number[][]; stats: Array<Record<string, number>> }>,
-  infortuni: Array<{ lato: Lato; blocco: number; esce: number; entra: number }>,
-  cartellini: Array<{ lato: Lato; blocco: number; giocatore: number; tipo: 'giallo' | 'rosso_diretto' | 'doppio_giallo' }>,
+  cambi: CambioCronaca[],
+  cartellini: CartellinoCronaca[],
+  finestre: Finestre,
   seed: number,
 ): EventoPartita[] {
   const rnd = creaRng(seed ^ 0x9e3779b9)
   const eventi: EventoPartita[] = [...gol]
 
   for (const lato of lati) {
-    // I cambi sono letti direttamente dall'undici realmente presente in due
-    // blocchi consecutivi. Il motore effettua cambi solo dopo 45', 60' e 75'.
-    //
-    // Il confronto e' per INSIEMI, non per posizione nell'array: il motore
-    // costruisce le presenze saltando gli slot vuoti (`if (!g) continue`),
-    // quindi dopo un'espulsione senza sostituto l'undici diventa un array di
-    // 10 e tutti gli indici slittano di uno. Confrontando prima[i] con dopo[i]
-    // una sola espulsione inventava sei "sostituzioni" fra giocatori che erano
-    // in campo da sempre — ed era una delle cause dei tiri attribuiti a chi
-    // "doveva ancora entrare".
-    for (let blocco = 1; blocco < lato.presenzePerBlocco.length; blocco++) {
-      const prima = lato.presenzePerBlocco[blocco - 1] ?? []
-      const dopo = lato.presenzePerBlocco[blocco] ?? []
-      // Un espulso lascia il campo senza che entri nessuno al suo posto: va
-      // tolto dagli "usciti" prima di accoppiare, altrimenti in una giornata
-      // con espulsione E cambio nello stesso momento il subentrato verrebbe
-      // abbinato all'espulso invece che al giocatore davvero sostituito.
-      const espulsi = new Set(cartellini
-        .filter((evento) => evento.lato === lato.lato && evento.tipo !== 'giallo' && evento.blocco <= blocco)
-        .map((evento) => evento.giocatore))
-      const usciti = prima.filter((id) => !dopo.includes(id) && !espulsi.has(id))
-      const entrati = dopo.filter((id) => !prima.includes(id))
-      for (let indice = 0; indice < Math.min(usciti.length, entrati.length); indice++) {
-        const esce = usciti[indice]
-        const entra = entrati[indice]
-        if (!esce || !entra || esce === entra) continue
-        // Lo stesso cambio e' gia' raccontato come infortunio: non duplicarlo
-        // con la generica sostituzione derivata dalle presenze per blocco.
-        if (infortuni.some((evento) => evento.lato === lato.lato && evento.blocco === blocco && evento.esce === esce && evento.entra === entra)) continue
-        eventi.push({ tipo: 'sostituzione', minuto: blocco * MINUTI_PER_BLOCCO, blocco, lato: lato.lato, team_id: lato.teamId, esce, entra })
-      }
-    }
-
     const blocchiPerGiocatore = new Map<number, number[]>()
     for (let indice = 0; indice < lato.presenzePerBlocco.length; indice++) {
       for (const giocatore of lato.presenzePerBlocco[indice] ?? []) {
@@ -663,18 +768,20 @@ function costruisciEventiPartita(
       }
     }
   }
-  for (const infortunio of infortuni) {
-    const lato = lati.find((item) => item.lato === infortunio.lato)
+  // I cambi, compresi quelli per infortunio, arrivano dal motore col loro
+  // minuto (minutiCambi): prima erano ricostruiti confrontando le presenze
+  // di due blocchi, e cadevano tutti al confine.
+  for (const cambio of cambi) {
+    const lato = lati.find((item) => item.lato === cambio.lato)
     if (!lato) continue
     eventi.push({
-      tipo: 'infortunio',
-      // Il cambio diventa effettivo alla fine del blocco in cui si verifica.
-      minuto: Math.min(MINUTO_MASSIMO, infortunio.blocco * MINUTI_PER_BLOCCO),
-      blocco: infortunio.blocco,
-      lato: infortunio.lato,
+      tipo: cambio.motivo === 'infortunio' ? 'infortunio' : 'sostituzione',
+      minuto: Math.min(MINUTO_MASSIMO, cambio.minuto),
+      blocco: Math.ceil(cambio.minuto / MINUTI_PER_BLOCCO),
+      lato: cambio.lato,
       team_id: lato.teamId,
-      esce: infortunio.esce,
-      entra: infortunio.entra,
+      esce: cambio.esce,
+      entra: cambio.entra,
     })
   }
   for (const cartellino of cartellini) {
@@ -682,7 +789,7 @@ function costruisciEventiPartita(
     if (!lato) continue
     eventi.push({
       tipo: 'cartellino',
-      minuto: Math.min(MINUTO_MASSIMO, cartellino.blocco * MINUTI_PER_BLOCCO),
+      minuto: Math.min(MINUTO_MASSIMO, cartellino.minuto),
       blocco: cartellino.blocco,
       lato: cartellino.lato,
       team_id: lato.teamId,
@@ -728,6 +835,8 @@ function costruisciEventiPartita(
     evento.blocco = bloccoValido
     evento.minuto = (bloccoValido - 1) * MINUTI_PER_BLOCCO + 1 + Math.floor(rnd() * MINUTI_PER_BLOCCO)
   }
+  // Poi i minuti veri: nessuno tira prima di entrare o dopo essere uscito.
+  adattaAiMinutiInCampo(eventi, finestre, rnd)
 
   return eventi.sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.team_id - destra.team_id)
 }
@@ -1089,6 +1198,21 @@ export default {
           { lato: 'casa', teamId: fixture.home_team_id, lineup: homeLineup, marcatori: result.perGiocatore.casa.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.casa },
           { lato: 'ospite', teamId: fixture.away_team_id, lineup: awayLineup, marcatori: result.perGiocatore.ospite.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.ospite },
         ], seed)
+        // Minuti veri dei cambi e dei cartellini, e chi e' in campo minuto per
+        // minuto: i gol (e i loro assist) si adattano PRIMA di contare gli
+        // assist, cosi' un assist tolto perche' l'uomo assist era gia' uscito
+        // non resta nelle statistiche.
+        const cambiCronaca = minutiCambi(result.cambiInPartita as CambioMotore[], seed)
+        const finestre = finestreInCampo([
+          { lato: 'casa', titolari: titolariHomeIds },
+          { lato: 'ospite', titolari: titolariAwayIds },
+        ], cambiCronaca, result.supplementari ? MINUTO_MASSIMO : BLOCCHI_REGOLAMENTARI * MINUTI_PER_BLOCCO)
+        const cartelliniPartita = result.cartelliniInPartita as CartellinoMotore[]
+        const cartelliniCronaca = minutiCartellini(cartelliniPartita, finestre, seed)
+        adattaAiMinutiInCampo(eventi, finestre, creaRng(seed ^ 0x165667b1))
+        eventi.sort((a, b) => a.minuto - b.minuto || a.blocco - b.blocco)
+        minutiGiocati(finestre.get('casa'), result.perGiocatore?.casa.minuti as Map<number, number> | undefined)
+        minutiGiocati(finestre.get('ospite'), result.perGiocatore?.ospite.minuti as Map<number, number> | undefined)
         // I gol per giocatore seguono la cronaca: costruisciEventiGol puo'
         // aver dato un gol a un compagno presente al posto di un marcatore
         // gia' sostituito.
@@ -1106,11 +1230,10 @@ export default {
         ]
         rendiTiriCoerenti(stats.filter((stat) => stat.team_id === fixture.home_team_id), result.statsCasa)
         rendiTiriCoerenti(stats.filter((stat) => stat.team_id === fixture.away_team_id), result.statsOspite)
-        const cartelliniPartita = result.cartelliniInPartita as Array<{ lato: Lato; blocco: number; giocatore: number; tipo: 'giallo' | 'rosso_diretto' | 'doppio_giallo' }>
         const cronaca = normalizzaCronaca(costruisciEventiPartita(eventi, [
           { lato: 'casa', teamId: fixture.home_team_id, presenzePerBlocco: presenzePerBlocco.casa, stats: stats.filter((stat) => stat.team_id === fixture.home_team_id) },
           { lato: 'ospite', teamId: fixture.away_team_id, presenzePerBlocco: presenzePerBlocco.ospite, stats: stats.filter((stat) => stat.team_id === fixture.away_team_id) },
-        ], result.infortuniInPartita as Array<{ lato: Lato; blocco: number; esce: number; entra: number }>, cartelliniPartita, seed))
+        ], cambiCronaca, cartelliniCronaca, finestre, seed))
         // Raccolti qui per la diffida (§ post-simulazione): serve sapere di
         // quale squadra e' ciascun cartellino, dato che il motore conosce
         // solo casa/ospite, non gli id reali.
