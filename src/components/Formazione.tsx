@@ -127,6 +127,25 @@ function positionFit(slot: string, preferred: string[]): PositionFit {
 // indicatore proprio su ogni maglietta). Non e' un'approssimazione: sono
 // gli stessi moltiplicatori con cui il motore decide davvero la partita.
 const ADIACENTI_REPARTO: Record<string, string[]> = { DEF: ['MID'], MID: ['DEF', 'ATT'], ATT: ['MID'] }
+// La forma fisica sull'overall: copia di fattoreCondizione() in
+// engine/engine.js, stesse ancore (da 85 in su nessuna perdita, a 25 il -18%).
+// Se cambia il motore va aggiornata anche qui.
+const ANCORE_CONDIZIONE: Array<[number, number]> = [[25, 0.820], [40, 0.890], [55, 0.940], [70, 0.975], [85, 1.000]]
+function fattoreCondizione(c: number): number {
+  if (c >= 85) return 1
+  if (c <= 25) return 0.82
+  for (let i = ANCORE_CONDIZIONE.length - 1; i > 0; i--) {
+    const [x1, y1] = ANCORE_CONDIZIONE[i - 1], [x2, y2] = ANCORE_CONDIZIONE[i]
+    if (c >= x1) return y1 + (y2 - y1) * ((c - x1) / (x2 - x1))
+  }
+  return 0.82
+}
+// L'overall che il giocatore avrebbe in campo oggi in quel posto: penalita'
+// di ruolo E forma fisica, come ovrEfficace() del motore (senza tattiche).
+function overallInCampo(player: Player, slot: string): number {
+  return Math.round(overallEfficacePosizione(player, slot) * fattoreCondizione(player.condizione))
+}
+
 function overallEfficacePosizione(player: Player, slot: string): number {
   const repSlot = reparto(slot)
   const repNat = reparto(player.posizioni[0] ?? slot)
@@ -212,9 +231,9 @@ export function CartaCampo({ player, imageUrl, position, selected, onClick, ruol
     </button>
   }
   const fit = positionFit(position, player.posizioni)
-  // L'overall che ha davvero in quel posto, con la penalita' di fuori ruolo
-  // (stessi moltiplicatori del motore): e' quello che conta in partita.
-  const efficace = Math.round(overallEfficacePosizione(player, position))
+  // L'overall che ha davvero in quel posto oggi: penalita' di fuori ruolo e
+  // forma fisica (stessi moltiplicatori del motore). E' quello che conta in partita.
+  const efficace = overallInCampo(player, position)
   const idoneo = ruolo ? segnoIdoneita(idoneitaRuolo(player.attributi, player.overall_corrente, ruolo)) : null
   const livello = livelloEnergia(player)
   const fuoriGioco = player.infortunato_fino_a > 0 || player.squalificato_fino_a > 0
@@ -224,16 +243,18 @@ export function CartaCampo({ player, imageUrl, position, selected, onClick, ruol
       <span className="rosa-card__ritratto">
         {imageUrl ? <img src={imageUrl} alt="" onError={(event) => { event.currentTarget.hidden = true }} /> : <span className="rosa-card__iniziale">{player.nome.charAt(0)}</span>}
       </span>
-      <span className={`rosa-card__energia energia--${livello}`} title={
-        player.infortunato_fino_a > 0 ? `Infortunato: salta ancora ${player.infortunato_fino_a} ${player.infortunato_fino_a === 1 ? 'giornata' : 'giornate'}`
-        : player.squalificato_fino_a > 0 ? `Squalificato: salta ancora ${player.squalificato_fino_a} ${player.squalificato_fino_a === 1 ? 'giornata' : 'giornate'}`
-        : `Energia ${player.condizione}%`}>
-        {player.infortunato_fino_a > 0 ? '✚' : player.squalificato_fino_a > 0 ? '■' : `${player.condizione}%`}
-      </span>
+      {/* Infortunio o squalifica: il segnalino resta sulla foto. L'energia
+          invece e' la barretta sotto il nome. */}
+      {fuoriGioco && <span className={`rosa-card__energia energia--${livello}`} title={player.infortunato_fino_a > 0
+        ? `Infortunato: salta ancora ${player.infortunato_fino_a} ${player.infortunato_fino_a === 1 ? 'giornata' : 'giornate'}`
+        : `Squalificato: salta ancora ${player.squalificato_fino_a} ${player.squalificato_fino_a === 1 ? 'giornata' : 'giornate'}`}>
+        {player.infortunato_fino_a > 0 ? '✚' : '■'}
+      </span>}
       {fit !== 'natural' && <i className={`rosa-card__fuori rosa-card__fuori--${fit}`} title={fit === 'adapted' ? 'Adattato in un ruolo vicino' : 'Completamente fuori posizione'} aria-label={fit === 'adapted' ? 'Fuori posizione di poco' : 'Completamente fuori posizione'} >!</i>}
       {idoneo && <i className={`rosa-card__idoneo rosa-card__idoneo--${idoneo.tono}`} title={idoneo.tono === 'piu' ? 'Adatto al ruolo che gli hai dato nello schema' : 'Poco adatto al ruolo che gli hai dato nello schema'}>{idoneo.segno}</i>}
     </span>
     <span className="rosa-card__nome"><TestoAdattato>{cognome(player.nome)}</TestoAdattato></span>
+    <span className="rosa-card__barra" title={`Energia ${player.condizione}%`} aria-label={`Energia ${player.condizione}%`}><i className={`energia--${livello}`} style={{ width: `${Math.max(4, Math.min(100, player.condizione))}%` }} /></span>
     <span className="rosa-card__riga"><i className={`rosa-card__ruolo--${reparto(position)}`}>{position}</i><b>{efficace}</b></span>
   </button>
 }
@@ -477,7 +498,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     .map((id, index) => ({ player: players.find((item) => item.id === id), slot: slots[index] }))
     .filter((item): item is { player: Player; slot: string } => Boolean(item.player))
   const overallTitolari = titolariConSlot.length
-    ? Math.round(titolariConSlot.reduce((somma, item) => somma + overallEfficacePosizione(item.player, item.slot), 0) / titolariConSlot.length)
+    ? Math.round(titolariConSlot.reduce((somma, item) => somma + overallEfficacePosizione(item.player, item.slot) * fattoreCondizione(item.player.condizione), 0) / titolariConSlot.length)
     : null
 
   // Indice FTSG: stessa combinazione (media modulo+stile) che il motore usa
@@ -919,7 +940,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           ...tribuna.map((id, index) => ({ id, location: { zone: 'tribuna', index, id } as PlayerLocation })),
         ].flatMap((c) => {
           const player = players.find((item) => item.id === c.id)
-          return player ? [{ ...c, player, fit: positionFit(posto, player.posizioni), efficace: Math.round(overallEfficacePosizione(player, posto)), fuori: indisponibile(player) }] : []
+          return player ? [{ ...c, player, fit: positionFit(posto, player.posizioni), efficace: overallInCampo(player, posto), fuori: indisponibile(player) }] : []
         }).sort((a, b) => Number(a.fuori) - Number(b.fuori) || ordineFit[a.fit] - ordineFit[b.fit] || b.efficace - a.efficace || b.player.overall_corrente - a.player.overall_corrente)
         const etichettaFit: Record<PositionFit, string> = { natural: 'Nel suo ruolo', adapted: 'Adattato', out: 'Fuori ruolo' }
         return <div className={`scelta-titolare-layer formazione-broadcast formazione-broadcast--${fase}`} role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setSceltaPosto(null) }}>
