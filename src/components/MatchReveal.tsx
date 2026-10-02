@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
 import { ricostruisciEventiStorici, type StatEventoStorico } from '../lib/matchEvents'
@@ -13,9 +13,11 @@ import { MatchIntro } from './MatchIntro'
 import { Icona } from './Icona'
 import { SpotVideo } from './SpotVideo'
 import { RigoriScena, type FaseRigore } from './RigoriScena'
+import { costruisciTelecronaca, type Riga } from '../lib/telecronaca'
+import { coloreStemma, coloriDistinti, curvaPressione, percorsoCurva } from '../lib/pressione'
 
 type Props = { membership: Membership; matchId: number; onClose: () => void; onRevealed: (matchId: number) => void; onOpenReport: () => void }
-type Player = { id: number; nome: string; foto?: string }
+type Player = { id: number; nome: string; foto?: string; posizioni?: string[] }
 
 // Le cronache salvate dal backend piu' recente hanno sempre `minuto`. Alcune
 // partite gia' registrate (o scritte durante un deploy parziale) possono pero'
@@ -76,117 +78,6 @@ function ricollocaSupplementari(eventi: EventoPartita[], golRegolamentari: { cas
 // Tiri parati e fuori: gli unici eventi che non restano in cronaca. Sono
 // anche gli unici di cui ha senso limitare il numero, perche' sono gli unici
 // che si ripetono decine di volte nella stessa partita.
-function eTransitorio(evento: EventoPartita): boolean {
-  return evento.tipo === 'tiro_parato' || evento.tipo === 'tiro_fuori'
-}
-
-const MAX_TIRI_PER_SQUADRA = 15
-// Quanti minuti di gioco un evento minore resta in cronaca prima di sparire.
-// A 700ms al minuto sono ~2,8s reali: il tempo di leggerlo e di far
-// completare la dissolvenza (che parte a 2s e dura 0,4s).
-const MINUTI_VITA_TRANSITORIO = 4
-// Card ad altezza fissa, tarata su due righe di testo piene (il minuto sta in
-// linea, non sopra, proprio per stare in due righe): serve a poter calcolare
-// la disposizione senza dover misurare ogni card prima di posizionarla.
-const ALTEZZA_EVENTO = 54
-const ALTEZZA_EVENTO_STRETTA = 46
-const GAP_EVENTO = 6
-
-// Cap dei tiri mostrati in cronaca (deciso con l'utente il 1 settembre 2026):
-// una squadra puo' arrivare a 40-59 tiri in una partita, e mostrarli tutti
-// trasforma la cronaca in un elenco. Ne teniamo al massimo 15 per squadra,
-// presi a passo costante sulla sequenza: restano distribuiti su tutto l'arco
-// della partita e la densita' relativa si conserva (se una squadra ha
-// assediato l'area fra il 40' e il 45', da li' ne escono di piu' che da un
-// quarto d'ora di nulla). Non cambia cosa e' successo davvero: le statistiche
-// restano quelle vere in match_stats e stats_squadra, qui si decide soltanto
-// che cosa scorre a schermo.
-function limitaTiri(eventi: EventoPartita[]) {
-  const perSquadra = new Map<number, EventoPartita[]>()
-  for (const evento of eventi) {
-    if (!eTransitorio(evento)) continue
-    const lista = perSquadra.get(evento.team_id) ?? []
-    lista.push(evento)
-    perSquadra.set(evento.team_id, lista)
-  }
-  const tenuti = new Set<EventoPartita>()
-  for (const lista of perSquadra.values()) {
-    if (lista.length <= MAX_TIRI_PER_SQUADRA) { for (const evento of lista) tenuti.add(evento); continue }
-    for (let i = 0; i < MAX_TIRI_PER_SQUADRA; i += 1) {
-      tenuti.add(lista[Math.round(i * (lista.length - 1) / (MAX_TIRI_PER_SQUADRA - 1))])
-    }
-  }
-  return eventi.filter((evento) => !eTransitorio(evento) || tenuti.has(evento))
-}
-
-// Il minuto 0 e il minuto 90 non stanno agli estremi assoluti del canvas:
-// mezza card di margine sopra e sotto, cosi' il primo e l'ultimo evento non
-// escono dal riquadro. La stessa mappatura vale per linea, tacche ed eventi:
-// e' l'unico modo perche' restino allineati fra loro.
-// `inizio` e `durata` descrivono la finestra mostrata: 0-90 per i tempi
-// regolamentari, 90-120 per i supplementari (ognuno sulla sua schermata).
-function posizioneMinuto(minuto: number, altezza: number, margine: number, durata: number, inizio = 0) {
-  return margine + (Math.min(durata, Math.max(0, minuto - inizio)) / durata) * Math.max(0, altezza - margine * 2)
-}
-
-// Ogni card parte dal proprio minuto sulla linea del tempo e scivola verso il
-// basso solo quel tanto che serve a non sovrapporsi alla precedente (passata
-// in avanti); se l'ultima sfora il fondo si risale spingendo verso l'alto
-// (passata all'indietro). E' il posizionamento classico delle etichette su un
-// asse: lo scostamento dal minuto vero resta minimo finche' gli eventi sono
-// radi, e degrada in modo prevedibile quando si infittiscono. Il canvas e'
-// sempre alto almeno quanto serve a contenerli tutti, quindi la passata
-// all'indietro trova sempre una soluzione valida.
-function disponiEventi(eventi: EventoPartita[], altezza: number, altezzaEvento: number, margine: number, durata: number, inizio: number) {
-  const posizioni = new Map<EventoPartita, number>()
-  let cursore = margine
-  for (const evento of eventi) {
-    const top = Math.max(posizioneMinuto(evento.minuto, altezza, margine, durata, inizio) - altezzaEvento / 2, cursore)
-    posizioni.set(evento, top)
-    cursore = top + altezzaEvento + GAP_EVENTO
-  }
-  if (cursore - GAP_EVENTO > altezza - margine) {
-    let limite = altezza - margine
-    for (let i = eventi.length - 1; i >= 0; i -= 1) {
-      const top = Math.min(posizioni.get(eventi[i]) ?? 0, limite - altezzaEvento)
-      posizioni.set(eventi[i], top)
-      limite = top - GAP_EVENTO
-    }
-  }
-  return posizioni
-}
-
-function testoEvento(evento: EventoPartita, nomi: Map<number, Player>) {
-  const nome = (id: number) => cognome(nomi.get(id)?.nome ?? `Giocatore ${id}`)
-  if (isEventoGol(evento)) return <><strong>GOOOL!</strong> {nome(evento.marcatore)} la mette dentro.</>
-  if (evento.tipo === 'tiro_parato') return <>Il tiro di <strong>{nome(evento.giocatore)}</strong> viene parato.</>
-  if (evento.tipo === 'tiro_fuori') return <>Il tiro di <strong>{nome(evento.giocatore)}</strong> termina fuori.</>
-  // Testi tenuti corti apposta: la card della cronaca e' alta due righe fisse,
-  // e la vecchia formulazione ("si infortuna ed esce. Al suo posto…") ne
-  // occupava tre, quindi finiva troncata.
-  if (evento.tipo === 'infortunio') return <><strong>{nome(evento.esce)}</strong> si infortuna, entra <strong>{nome(evento.entra)}</strong>.</>
-  if (evento.tipo === 'sostituzione') return <><strong>{nome(evento.esce)}</strong> esce, entra <strong>{nome(evento.entra)}</strong>.</>
-  if (evento.tipo === 'cartellino') return evento.colore === 'giallo'
-    ? <>Ammonito <strong>{nome(evento.giocatore)}</strong>.</>
-    : evento.colore === 'doppio_giallo'
-      ? <>Secondo giallo per <strong>{nome(evento.giocatore)}</strong>: espulso.</>
-      : <>Cartellino rosso per <strong>{nome(evento.giocatore)}</strong>: espulso.</>
-  return null
-}
-
-// Gol, infortuni, sostituzioni e cartellini restano fissi in cronaca; solo i
-// tiri (parati o fuori) sono eventi minori che altrimenti riempirebbero la
-// lista, e scompaiono da soli qualche secondo dopo essere comparsi
-// (is-transitorio, vedi l'animazione di uscita in styles.css).
-function classeEvento(evento: EventoPartita): string {
-  if (isEventoGol(evento)) return 'is-goal'
-  if (evento.tipo === 'infortunio' || evento.tipo === 'sostituzione') return ''
-  if (evento.tipo === 'cartellino') return evento.colore === 'giallo' ? 'is-giallo' : 'is-rosso'
-  return 'is-transitorio'
-}
-
-const TACCHE = [15, 30, 45, 60, 75, 90]
-const TACCHE_SUPPLEMENTARI = [95, 100, 105, 110, 115, 120]
 // Lo stacco fra una fase e l'altra (simulazione ferma). La schermata sotto
 // cambia a SWITCH_STACCO_MS, quando lo stacco e' ancora opaco; poi si dissolve.
 const DURATA_ANNUNCIO_MS = 3200
@@ -223,11 +114,6 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   // immagine dell'intro): non serve il dettaglio del tabellone qui, solo
   // sapere quale delle tre immagini di fase mostrare.
   const [fase, setFase] = useState<FaseSquadra>('regular')
-  // Il canvas della cronaca si misura da solo: le card sono posizionate in
-  // pixel al loro minuto, quindi serve sapere quanto spazio c'e' davvero.
-  const [pitchEl, setPitchEl] = useState<HTMLDivElement | null>(null)
-  const [altezzaVisibile, setAltezzaVisibile] = useState(0)
-  const [stretto, setStretto] = useState(false)
   const suonoGolRef = useRef<HTMLAudioElement>(null)
   const sottofondoRef = useRef<HTMLAudioElement>(null)
   // Il gol appena segnato resta in scena da solo (simulazione ferma) prima di
@@ -276,9 +162,11 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     const cronaca = estesa || !fixture
       ? normalizzaMinuti([...match.blocchi])
       : normalizzaMinuti(ricostruisciEventiStorici(match.blocchi, statsStoriche, match.titolari_home, match.titolari_away, fixture.home_team_id, fixture.away_team_id, match.id))
-    return limitaTiri(match.gol_home_90 != null && match.gol_away_90 != null
+    // Tutti i tiri restano: alimentano il grafico della pressione, e quanti
+    // raccontarne lo decide la telecronaca.
+    return match.gol_home_90 != null && match.gol_away_90 != null
       ? ricollocaSupplementari(cronaca, { casa: match.gol_home_90, ospite: match.gol_away_90 })
-      : cronaca)
+      : cronaca
   }, [fixture, match, statsStoriche])
   // Supplementari e rigori esistono solo nelle eliminatorie finite in parita':
   // il parziale dei 90' c'e' solo se si sono giocati i supplementari, la serie
@@ -297,8 +185,6 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const rigoriFiniti = !haRigori || rigoreCorrente >= serieRigori.length
   const oraFinale = supplementari ? 120 : 90
   const fineFase = fasePartita === 'regolamentari' && supplementari ? 90 : oraFinale
-  const inizioFase = fasePartita === 'supplementari' ? 90 : 0
-  const durata = fineFase - inizioFase
   const inCorso = minutoCorrente >= 0 && minutoCorrente < fineFase
   const inRigori = fasePartita === 'rigori' && !rigoriFiniti
   const completata = minutoCorrente >= oraFinale && rigoriFiniti
@@ -328,7 +214,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     // il portiere: lo e' in tutti i moduli).
     const idRigori = [
       ...serieRigori.flatMap((tiro) => tiro.tiratoreId != null ? [tiro.tiratoreId] : []),
-      ...(haRigori && match ? [match.titolari_home[0], match.titolari_away[0]].filter((id): id is number => id != null) : []),
+      ...(match ? [...match.titolari_home, ...match.titolari_away].filter((id): id is number => id != null) : []),
     ]
     const ids = [...new Set([...eventi.flatMap((evento) => isEventoGol(evento)
       ? [evento.marcatore, ...(evento.assist ? [evento.assist] : [])]
@@ -340,7 +226,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
       if (error || !attivo) return
       const playerIds = [...new Set((istanze ?? []).map((istanza) => istanza.player_id))]
       const { data: giocatori } = playerIds.length
-        ? await supabase.from('players').select('id, nome, foto_url').in('id', playerIds)
+        ? await supabase.from('players').select('id, nome, foto_url, posizioni').in('id', playerIds)
         : { data: [] }
       if (!attivo) return
       // La foto serve solo per la card del gol, ma firmarla per tutti evita di
@@ -349,7 +235,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
       const foto = await Promise.all((giocatori ?? []).map(async (giocatore) => [giocatore.id, await firmaFoto(giocatore.foto_url)] as const))
       if (!attivo) return
       const fotoPerGiocatore = new Map(foto)
-      const perCatalogo = new Map((giocatori ?? []).map((giocatore) => [giocatore.id, { id: giocatore.id, nome: giocatore.nome, foto: fotoPerGiocatore.get(giocatore.id) } as Player]))
+      const perCatalogo = new Map((giocatori ?? []).map((giocatore) => [giocatore.id, { id: giocatore.id, nome: giocatore.nome, foto: fotoPerGiocatore.get(giocatore.id), posizioni: giocatore.posizioni ?? undefined } as Player]))
       setNomi(new Map((istanze ?? []).flatMap((istanza) => {
         const giocatore = perCatalogo.get(istanza.player_id)
         return giocatore ? [[istanza.id, giocatore] as const] : []
@@ -464,54 +350,39 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     onRevealed(matchId)
   }, [matchId, completata, onRevealed])
 
-  // La card ha altezza fissa (testo troncato a due righe): serve a poterne
-  // calcolare la disposizione senza doverle prima misurare una a una.
-  const altezzaEvento = stretto ? ALTEZZA_EVENTO_STRETTA : ALTEZZA_EVENTO
-  const margine = altezzaEvento / 2 + 4
+  // La telecronaca: fissa per partita, costruita quando ci sono i nomi.
+  const casaSq = fixture ? data.teamById.get(fixture.home_team_id) : undefined
+  const ospiteSq = fixture ? data.teamById.get(fixture.away_team_id) : undefined
+  const telecronaca = useMemo<Riga[]>(() => {
+    if (!match || !eventi.length || !nomi.size) return []
+    return costruisciTelecronaca({
+      eventi, nomi,
+      titolariCasa: match.titolari_home ?? [], titolariOspite: match.titolari_away ?? [],
+      casa: { nome: casaSq?.nome ?? 'Casa', sigla: casaSq?.sigla ?? 'CAS' },
+      ospite: { nome: ospiteSq?.nome ?? 'Ospite', sigla: ospiteSq?.sigla ?? 'OSP' },
+      seme: match.id, supplementari,
+    })
+  }, [match, eventi, nomi, casaSq, ospiteSq, supplementari])
+  // Un gol entra in telecronaca solo dopo la sua scena (inTimeline).
+  const righeVisibili = useMemo(() => telecronaca.filter((riga) => riga.minuto <= minuto
+    && (!riga.gol || inTimeline.has(riga.gol))), [telecronaca, minuto, inTimeline])
 
+  // Il grafico della pressione: la curva e' calcolata una volta su tutta la
+  // partita (scala fissa), e si disegna fino al minuto corrente.
+  const curva = useMemo(() => curvaPressione(eventi, oraFinale, match?.id ?? 0), [eventi, oraFinale, match?.id])
+  const [colori, setColori] = useState<{ casa: string; ospite: string } | null>(null)
+  const urlStemmaCasa = fixture ? data.crestUrlByTeamId.get(fixture.home_team_id) : undefined
+  const urlStemmaOspite = fixture ? data.crestUrlByTeamId.get(fixture.away_team_id) : undefined
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 560px)')
-    const aggiorna = () => setStretto(mq.matches)
-    aggiorna()
-    mq.addEventListener('change', aggiorna)
-    return () => mq.removeEventListener('change', aggiorna)
-  }, [])
-
-  useEffect(() => {
-    if (!pitchEl) return
-    const osservatore = new ResizeObserver(() => setAltezzaVisibile(pitchEl.clientHeight))
-    osservatore.observe(pitchEl)
-    setAltezzaVisibile(pitchEl.clientHeight)
-    return () => osservatore.disconnect()
-  }, [pitchEl])
-
-  // Un evento minore sparisce da solo dopo qualche minuto di gioco: da qui in
-  // poi esce proprio dalla lista, non resta piu' una card invisibile a
-  // occupare spazio (era la causa dei buchi enormi in cronaca). Un gol invece
-  // resta escluso finche' non e' passato dalla card grande (inTimeline).
-  const visibili = useMemo(() => eventi.filter((evento) => evento.minuto <= minuto
-    && evento.minuto > inizioFase
-    && (!isEventoGol(evento) || inTimeline.has(evento))
-    && (!eTransitorio(evento) || minuto - evento.minuto < MINUTI_VITA_TRANSITORIO)), [eventi, minuto, inTimeline, inizioFase])
-  const eventiCasa = useMemo(() => visibili.filter((evento) => evento.lato === 'casa'), [visibili])
-  const eventiOspite = useMemo(() => visibili.filter((evento) => evento.lato === 'ospite'), [visibili])
-
-  // Di norma la cronaca sta esattamente in una schermata. Solo se una partita
-  // fittissima non ci sta il canvas cresce, e cresce per tutti: linea, tacche
-  // ed eventi condividono la stessa altezza, quindi restano allineati anche
-  // quando si scorre.
-  const spazioPerEventi = (quanti: number) => quanti === 0 ? 0 : quanti * (altezzaEvento + GAP_EVENTO) - GAP_EVENTO + margine * 2
-  const altezzaCanvas = Math.max(altezzaVisibile, spazioPerEventi(eventiCasa.length), spazioPerEventi(eventiOspite.length))
-  const posizioniCasa = useMemo(() => disponiEventi(eventiCasa, altezzaCanvas, altezzaEvento, margine, durata, inizioFase), [eventiCasa, altezzaCanvas, altezzaEvento, margine, durata, inizioFase])
-  const posizioniOspite = useMemo(() => disponiEventi(eventiOspite, altezzaCanvas, altezzaEvento, margine, durata, inizioFase), [eventiOspite, altezzaCanvas, altezzaEvento, margine, durata, inizioFase])
-
-  useEffect(() => {
-    if (!pitchEl || altezzaCanvas <= pitchEl.clientHeight) return
-    pitchEl.scrollTo({ top: Math.max(0, posizioneMinuto(minuto, altezzaCanvas, margine, durata, inizioFase) - pitchEl.clientHeight / 2), behavior: 'smooth' })
-  }, [pitchEl, minuto, altezzaCanvas, margine, durata, inizioFase])
-
-  // Ogni fase riparte dall'alto della sua schermata.
-  useEffect(() => { pitchEl?.scrollTo({ top: 0 }) }, [pitchEl, fasePartita])
+    let vivo = true
+    void Promise.all([coloreStemma(urlStemmaCasa), coloreStemma(urlStemmaOspite)]).then(([c, o]) => {
+      if (!vivo) return
+      const casaColore = c ?? COLORE_FASE[fase]
+      const ospiteColore = o && coloriDistinti(casaColore, o) ? o : coloriDistinti(casaColore, COLORE_OSPITE) ? COLORE_OSPITE : COLORE_FASE[fase]
+      setColori({ casa: casaColore, ospite: ospiteColore })
+    })
+    return () => { vivo = false }
+  }, [urlStemmaCasa, urlStemmaOspite, fase])
 
   // I due elementi audio stanno FUORI dal ramo dell'intro, cosi' esistono
   // gia' al primo render — cioe' subito dopo il tocco che ha aperto la
@@ -563,10 +434,6 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     </>
   }
 
-  const tacche = fasePartita === 'supplementari' ? TACCHE_SUPPLEMENTARI : TACCHE
-  const fasceTempo = fasePartita === 'supplementari'
-    ? [{ inizio: 90, fine: 105, etichetta: '1º SUPPL.' }, { inizio: 105, fine: 120, etichetta: '2º SUPPL.' }]
-    : [{ inizio: 0, fine: 45, etichetta: '1º TEMPO' }, { inizio: 45, fine: 90, etichetta: '2º TEMPO' }]
   const inCorsoSupplementari = fasePartita === 'supplementari'
 
   const squadraGol = popupGol && (popupGol.lato === 'casa' ? casa : ospite)
@@ -654,26 +521,28 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
               portiereOspite={match.titolari_away[0] ?? null}
             />
           </div>
-          : <div className="match-reveal__pitch" ref={setPitchEl} aria-label={`Minuto ${minuto}`}>
-          <div className="match-reveal__canvas" style={{ height: `${altezzaCanvas}px` }}>
-            {fasceTempo.map((fascia) => (
-              <div className={`match-reveal__half ${fascia.inizio > inizioFase ? 'match-reveal__half--second' : ''} ${fascia.inizio >= 90 ? 'match-reveal__half--extra' : ''}`} style={{ top: `${(fascia.inizio - inizioFase) / durata * 100}%`, height: `${(fascia.fine - fascia.inizio) / durata * 100}%` }} key={fascia.etichetta}>{fascia.etichetta}</div>
-            ))}
-            <div className="match-reveal__line" style={{ top: `${margine}px`, bottom: `${margine}px` }}>
-              <span style={{ height: `${Math.min(100, (minuto - inizioFase) / durata * 100)}%` }} />
-              <b className={`match-reveal__minute ${inCorso ? 'is-live' : ''}`} style={{ top: `${Math.min(100, (minuto - inizioFase) / durata * 100)}%` }}>{minuto}’</b>
+          : <div className="telecronaca">
+            <div className="telecronaca__feed" aria-live="polite" aria-label="Telecronaca">
+              {[...righeVisibili].reverse().map((riga) => {
+                const stemma = riga.lato === 'casa' ? fixture.home_team_id : riga.lato === 'ospite' ? fixture.away_team_id : null
+                const squadra = riga.lato === 'casa' ? casa : riga.lato === 'ospite' ? ospite : null
+                return <article className={`tc-riga tc-riga--${riga.tipo}${riga.lato ? ` tc-riga--${riga.lato}` : ''}`} key={riga.chiave}
+                  style={riga.lato && colori ? { ['--tc-colore' as string]: colori[riga.lato] } : undefined}>
+                  <span className="tc-riga__quando">
+                    <time>{riga.minuto}’</time>
+                    {stemma && <span className="tc-riga__stemma" title={squadra?.nome}><Crest value={squadra?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(stemma)} size="small" /></span>}
+                  </span>
+                  <span className="tc-riga__icona" aria-hidden="true"><IconaTelecronaca tipo={riga.tipo} /></span>
+                  <div className="tc-riga__corpo">
+                    {riga.tipo === 'gol' && <b className="tc-riga__titolo">GOL!</b>}
+                    <p>{riga.testo.map((parte, k) => typeof parte === 'string' ? parte : <strong key={k}>{parte.g}</strong>)}</p>
+                  </div>
+                </article>
+              })}
             </div>
-            {tacche.map((tacca) => (
-              <span className={`match-reveal__marker ${tacca === 45 || tacca === 90 || tacca === 105 ? 'is-forte' : ''}`} style={{ top: `${posizioneMinuto(tacca, altezzaCanvas, margine, durata, inizioFase)}px` }} key={tacca}>{tacca}’</span>
-            ))}
-            <div className="match-reveal__events match-reveal__events--home">
-              {eventiCasa.map((evento, i) => <p className={classeEvento(evento)} style={{ top: `${posizioniCasa.get(evento) ?? 0}px`, height: `${altezzaEvento}px` }} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}
-            </div>
-            <div className="match-reveal__events match-reveal__events--away">
-              {eventiOspite.map((evento, i) => <p className={classeEvento(evento)} style={{ top: `${posizioniOspite.get(evento) ?? 0}px`, height: `${altezzaEvento}px` }} key={`${evento.minuto}-${i}`}><time>{evento.minuto}’</time>{testoEvento(evento, nomi)}</p>)}
-            </div>
-          </div>
-        </div>}
+            <GraficoPressione curva={curva} minuto={minuto} fine={oraFinale} eventi={eventi} colori={colori ?? { casa: COLORE_FASE[fase], ospite: COLORE_OSPITE }}
+              sigle={{ casa: casa?.sigla ?? 'CASA', ospite: ospite?.sigla ?? 'OSP' }} />
+          </div>}
         <footer className="match-reveal__footer">
           {!completata && fasePartita === 'rigori' ? <span className="match-reveal__in-corso"><i aria-hidden="true" />Si decide dal dischetto…</span>
             : !completata ? <span className="match-reveal__in-corso"><i aria-hidden="true" />{inCorsoSupplementari ? 'Supplementari in corso…' : 'La partita è in corso…'}</span>
@@ -683,4 +552,71 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     </section>
     </div>
   </>
+}
+
+// Colori di riserva del grafico, se lo stemma non da' un colore leggibile.
+const COLORE_FASE: Record<FaseSquadra, string> = { regular: 'rgb(109, 255, 195)', title: 'rgb(127, 176, 255)', draft: 'rgb(255, 192, 122)' }
+const COLORE_OSPITE = 'rgb(242, 244, 248)'
+
+export function IconaTelecronaca({ tipo }: { tipo: Riga['tipo'] }) {
+  const comune = { width: 16, height: 16, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+  switch (tipo) {
+    case 'gol': return <svg {...comune}><circle cx="8" cy="8" r="6.2" /><path d="M8 4.6 10.9 6.7 9.8 10.1H6.2L5.1 6.7Z" fill="currentColor" stroke="none" /></svg>
+    case 'parata': return <svg {...comune}><path d="M5 14V7.5M5 7.5V3.8a1 1 0 0 1 2 0V7M7 7V2.8a1 1 0 0 1 2 0V7M9 7V3.5a1 1 0 0 1 2 0V8M11 8V5.8a1 1 0 0 1 2 0V10c0 2.4-1.8 4-4 4H7.5C6 14 5 13 5 11.5" /></svg>
+    case 'fuori': return <svg {...comune}><circle cx="5" cy="11" r="2.6" /><path d="M7.5 8.5 13 3M9.5 3H13v3.5" /></svg>
+    case 'legno': return <svg {...comune}><path d="M3 14V3h10v11" /><circle cx="12" cy="6" r="2" fill="currentColor" stroke="none" /></svg>
+    case 'giallo': return <svg {...comune}><rect x="4.5" y="2.5" width="7" height="11" rx="1.2" fill="#f5c84b" stroke="none" /></svg>
+    case 'rosso': return <svg {...comune}><rect x="4.5" y="2.5" width="7" height="11" rx="1.2" fill="#e13e52" stroke="none" /></svg>
+    case 'cambio': return <svg {...comune}><path d="M3 5.5h9M9.5 3 12 5.5 9.5 8M13 10.5H4M6.5 8 4 10.5 6.5 13" /></svg>
+    case 'infortunio': return <svg {...comune}><path d="M6.3 2.5h3.4v3.8h3.8v3.4H9.7v3.8H6.3V9.7H2.5V6.3h3.8Z" fill="currentColor" stroke="none" /></svg>
+    case 'angolo': return <svg {...comune}><path d="M4 14V2.5l7 2.5-7 2.5" /></svg>
+    case 'fallo':
+    case 'fischio': return <svg {...comune}><circle cx="6" cy="10" r="3.6" /><path d="M8.8 7.6 14 4.5V7l-3.4 2" /></svg>
+  }
+}
+
+// La pressione offensiva: sopra la linea attacca la squadra di casa, sotto
+// l'ospite. Sotto l'asse, i gol e i cartellini rossi al loro minuto.
+export function GraficoPressione({ curva, minuto, fine, eventi, colori, sigle }: {
+  curva: number[]; minuto: number; fine: number; eventi: EventoPartita[]
+  colori: { casa: string; ospite: string }; sigle: { casa: string; ospite: string }
+}) {
+  const W = 1000, H = 120
+  const id = useId().replace(/:/g, '')
+  const { linea, area } = percorsoCurva(curva, minuto, W, H, fine)
+  const segni = eventi.filter((e) => e.minuto <= minuto && (isEventoGol(e) || (e.tipo === 'cartellino' && e.colore !== 'giallo')))
+  const pct = (m: number) => `${(m / fine) * 100}%`
+  return <section className="pressione" aria-label="Pressione offensiva">
+    <header className="pressione__testa">
+      <span>Pressione offensiva</span>
+      <span className="pressione__legenda">
+        <i style={{ background: colori.casa }} />{sigle.casa}
+        <i style={{ background: colori.ospite }} />{sigle.ospite}
+      </span>
+    </header>
+    <div className="pressione__area">
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <clipPath id={`sopra-${id}`}><rect x="0" y="0" width={W} height={H / 2} /></clipPath>
+          <clipPath id={`sotto-${id}`}><rect x="0" y={H / 2} width={W} height={H / 2} /></clipPath>
+          <linearGradient id={`gc-${id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={colori.casa} stopOpacity=".95" /><stop offset=".5" stopColor={colori.casa} stopOpacity=".25" /></linearGradient>
+          <linearGradient id={`go-${id}`} x1="0" y1="1" x2="0" y2="0"><stop offset="0" stopColor={colori.ospite} stopOpacity=".95" /><stop offset=".5" stopColor={colori.ospite} stopOpacity=".25" /></linearGradient>
+        </defs>
+        <line x1="0" y1={H / 2} x2={W} y2={H / 2} className="pressione__zero" />
+        {[45, ...(fine > 90 ? [90] : [])].map((m) => <line key={m} x1={(m / fine) * W} y1="4" x2={(m / fine) * W} y2={H - 4} className="pressione__tempo" />)}
+        {area && <>
+          <path d={area} fill={`url(#gc-${id})`} clipPath={`url(#sopra-${id})`} />
+          <path d={area} fill={`url(#go-${id})`} clipPath={`url(#sotto-${id})`} />
+          <path d={linea} className="pressione__linea" />
+        </>}
+        {minuto < fine && <line x1={(minuto / fine) * W} y1="2" x2={(minuto / fine) * W} y2={H - 2} className="pressione__cursore" />}
+      </svg>
+      <div className="pressione__segni">
+        {segni.map((e, k) => <span key={k} className={`pressione__segno ${isEventoGol(e) ? 'is-gol' : 'is-rosso'} is-${e.lato}`} style={{ left: `clamp(5px, ${pct(e.minuto)}, calc(100% - 5px))`, ['--tc-colore' as string]: colori[e.lato as 'casa' | 'ospite'] }} title={`${e.minuto}′`} />)}
+      </div>
+    </div>
+    <footer className="pressione__assi">
+      <span>1′</span><span style={{ left: pct(45) }}>Intervallo</span>{fine > 90 && <span style={{ left: pct(90) }}>90′</span>}<span>{fine > 90 ? '120′' : '90′'}</span>
+    </footer>
+  </section>
 }

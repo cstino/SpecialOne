@@ -3211,6 +3211,58 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 @keyframes gol-popup-sfondo { from { opacity: 0; } to { opacity: 1; } }
 .match-reveal__live-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff4d6d; box-shadow: 0 0 8px #ff4d6d; animation: match-reveal-pulse 1.4s ease-in-out infinite; }
 .match-reveal__pitch { position: relative; flex: 1; min-height: 0; overflow-y: auto; }
+
+/* ============================================================
+   TELECRONACA E PRESSIONE OFFENSIVA (2 ottobre 2026): al centro la
+   telecronaca, l'ultima frase in alto; sotto il grafico della pressione,
+   sopra la linea attacca la casa, sotto l'ospite. --tc-colore e' il colore
+   della squadra ricavato dallo stemma.
+   ============================================================ */
+.telecronaca { position: relative; display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.telecronaca__feed { position: relative; display: flex; flex: 1; flex-direction: column; gap: 8px; min-height: 0; padding: 12px 12px 18px; overflow-y: auto; -webkit-mask-image: linear-gradient(#000 78%, transparent); mask-image: linear-gradient(#000 78%, transparent); }
+.tc-riga { --tc-colore: rgba(255,255,255,.6); position: relative; display: grid; grid-template-columns: 34px 22px 1fr; align-items: start; gap: 8px; flex-shrink: 0; padding: 10px 10px 10px 8px; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: linear-gradient(90deg, color-mix(in srgb, var(--tc-colore) 14%, rgba(10,9,18,.82)), rgba(10,9,18,.78) 45%); backdrop-filter: blur(10px); box-shadow: inset 3px 0 0 var(--tc-colore), 0 8px 20px rgba(0,0,0,.35); animation: tc-entra .45s cubic-bezier(.2,.8,.2,1) both; }
+.tc-riga:not(:first-child) { opacity: .82; }
+.tc-riga:nth-child(n+5) { opacity: .6; }
+.tc-riga__quando { display: grid; justify-items: end; gap: 5px; }
+.tc-riga time { padding-top: 2px; color: #fff; font: 700 .95rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .02em; text-align: right; }
+.tc-riga__icona { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: #fff; background: rgba(255,255,255,.08); }
+.tc-riga__corpo { min-width: 0; }
+.tc-riga__corpo p { margin: 0; color: rgba(255,255,255,.86); font-size: .88rem; line-height: 1.38; }
+.tc-riga__corpo strong { color: #fff; font: 700 .86rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .04em; }
+.tc-riga__stemma { display: grid; place-items: center; width: 18px; height: 18px; }
+.tc-riga__stemma .crest { width: 18px; height: 18px; object-fit: contain; }
+.tc-riga__titolo { display: block; margin-bottom: 3px; color: #ffd34d; font: 800 1.05rem/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .12em; }
+.tc-riga--gol { border-color: color-mix(in srgb, #ffd34d 55%, transparent); background: linear-gradient(90deg, rgba(255,211,77,.2), rgba(10,9,18,.82) 60%); box-shadow: inset 3px 0 0 #ffd34d, 0 0 22px rgba(255,211,77,.18), 0 8px 20px rgba(0,0,0,.4); opacity: 1 !important; }
+.tc-riga--gol .tc-riga__icona { color: #1a1300; background: linear-gradient(135deg, #ffd34d, #f0a500); }
+.tc-riga--gol .tc-riga__corpo p { color: #fff; }
+.tc-riga--parata .tc-riga__icona { color: #8fd3ff; }
+.tc-riga--legno .tc-riga__icona { color: #ffb547; }
+.tc-riga--rosso { border-color: rgba(225,62,82,.5); }
+.tc-riga--cambio .tc-riga__icona { color: #7fd49c; }
+.tc-riga--infortunio .tc-riga__icona { color: #f08a72; }
+.tc-riga--fischio { border-style: dashed; background: rgba(10,9,18,.6); box-shadow: none; }
+.tc-riga--fischio .tc-riga__corpo p { color: rgba(255,255,255,.72); font: 600 .74rem/1.4 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+.tc-riga--fallo .tc-riga__corpo p, .tc-riga--angolo .tc-riga__corpo p { color: rgba(255,255,255,.7); font-size: .82rem; }
+@keyframes tc-entra { from { opacity: 0; transform: translateY(-14px) scale(.97); } to { opacity: 1; transform: none; } }
+
+.pressione { flex-shrink: 0; padding: 8px 14px 6px; border-top: 1px solid rgba(255,255,255,.08); background: rgba(8,7,14,.7); backdrop-filter: blur(14px); }
+.pressione__testa { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; color: rgba(255,255,255,.7); font: 600 .6rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .18em; text-transform: uppercase; }
+.pressione__legenda { display: inline-flex; align-items: center; gap: 6px; color: #fff; letter-spacing: .1em; }
+.pressione__legenda i { display: inline-block; width: 10px; height: 4px; margin-left: 6px; border-radius: 2px; }
+.pressione__area { position: relative; height: clamp(70px, 12dvh, 104px); }
+.pressione__area svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.pressione__zero { stroke: rgba(255,255,255,.35); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.pressione__tempo { stroke: rgba(255,255,255,.22); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+.pressione__linea { fill: none; stroke: rgba(255,255,255,.85); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.pressione__cursore { stroke: #fff; stroke-width: 1.5; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 4px rgba(255,255,255,.8)); }
+.pressione__segni { position: absolute; left: 0; right: 0; bottom: -10px; height: 10px; }
+.pressione__segno { position: absolute; top: 0; width: 9px; height: 9px; border-radius: 50%; transform: translateX(-50%); animation: tc-entra .4s ease-out both; }
+.pressione__segno.is-gol { border: 2px solid var(--tc-colore); background: #0a0812; box-shadow: 0 0 6px var(--tc-colore); }
+.pressione__segno.is-gol::after { content: ''; position: absolute; inset: 1.5px; border-radius: 50%; background: var(--tc-colore); }
+.pressione__segno.is-rosso { width: 6px; height: 9px; border-radius: 1.5px; background: #e13e52; }
+.pressione__assi { position: relative; display: flex; justify-content: space-between; height: 14px; margin-top: 12px; color: rgba(255,255,255,.55); font: 600 .58rem/14px "Oswald", "Arial Narrow", sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+.pressione__assi span[style] { position: absolute; transform: translateX(-50%); }
+@media (prefers-reduced-motion: reduce) { .tc-riga, .pressione__segno { animation: none; } }
 /* Il canvas e' il sistema di riferimento di tutto: linea, tacche ed eventi
    sono posizionati sulla sua altezza, quindi restano allineati fra loro anche
    quando (raramente) deve crescere oltre la schermata. */
