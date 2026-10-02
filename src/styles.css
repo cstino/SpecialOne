@@ -801,7 +801,7 @@ input:disabled { opacity: 0.65; }
 .scelta-titolare__foto b { align-self: center; color: rgba(255,255,255,.7); font: 700 1.1rem/1 "Oswald", "Arial Narrow", sans-serif; }
 .scelta-titolare__nome { min-width: 0; }
 .scelta-titolare__testa { display: flex; align-items: center; gap: 7px; min-width: 0; }
-.scelta-titolare__nome strong { display: block; flex: 1 1 auto; min-width: 0; overflow: hidden; color: #fff; font: 700 .95rem/1.1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+.scelta-titolare__nome strong { display: block; flex: 0 1 auto; min-width: 0; overflow: hidden; color: #fff; font: 700 .95rem/1.1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
 /* Nomi che non entrano: si rimpiccioliscono (TestoAdattato), mai i puntini. */
 .testo-adattato { display: inline-block; max-width: none; white-space: nowrap; vertical-align: bottom; }
 .scelta-titolare__energia { flex: none; padding: 2px 6px; border-radius: 999px; font: 700 .62rem/1.1 "Oswald", "Arial Narrow", sans-serif; font-style: normal; letter-spacing: .03em; }
