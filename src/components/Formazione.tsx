@@ -212,11 +212,14 @@ export function CartaCampo({ player, imageUrl, position, selected, onClick, ruol
     </button>
   }
   const fit = positionFit(position, player.posizioni)
+  // L'overall che ha davvero in quel posto, con la penalita' di fuori ruolo
+  // (stessi moltiplicatori del motore): e' quello che conta in partita.
+  const efficace = Math.round(overallEfficacePosizione(player, position))
   const idoneo = ruolo ? segnoIdoneita(idoneitaRuolo(player.attributi, player.overall_corrente, ruolo)) : null
   const livello = livelloEnergia(player)
   const fuoriGioco = player.infortunato_fino_a > 0 || player.squalificato_fino_a > 0
   return <button className={`rosa-card${selected ? ' is-selected' : ''}${fuoriGioco ? ' is-indisponibile' : ''}`} type="button" onClick={onClick}
-    aria-label={`${player.nome}, ${position}, overall ${player.overall_corrente}`}>
+    aria-label={`${player.nome}, ${position}, overall ${efficace}${efficace !== player.overall_corrente ? ` in questo ruolo (${player.overall_corrente} nel suo)` : ''}`}>
     <span className="rosa-card__foto">
       <span className="rosa-card__ritratto">
         {imageUrl ? <img src={imageUrl} alt="" onError={(event) => { event.currentTarget.hidden = true }} /> : <span className="rosa-card__iniziale">{player.nome.charAt(0)}</span>}
@@ -231,7 +234,7 @@ export function CartaCampo({ player, imageUrl, position, selected, onClick, ruol
       {idoneo && <i className={`rosa-card__idoneo rosa-card__idoneo--${idoneo.tono}`} title={idoneo.tono === 'piu' ? 'Adatto al ruolo che gli hai dato nello schema' : 'Poco adatto al ruolo che gli hai dato nello schema'}>{idoneo.segno}</i>}
     </span>
     <span className="rosa-card__nome"><TestoAdattato>{cognome(player.nome)}</TestoAdattato></span>
-    <span className="rosa-card__riga"><i className={`rosa-card__ruolo--${reparto(position)}`}>{position}</i><b>{player.overall_corrente}</b></span>
+    <span className="rosa-card__riga"><i className={`rosa-card__ruolo--${reparto(position)}`}>{position}</i><b>{efficace}</b></span>
   </button>
 }
 
