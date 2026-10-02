@@ -639,7 +639,13 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     const tiri = Math.max(gol, Math.round(xgTot / conv));
     const inPorta = Math.max(gol, Math.round(tiri * clamp(gauss(CFG.TIRI_PORTA_MEDIA, CFG.TIRI_PORTA_SIGMA), 0.15, 0.65)));
     const pTent = Math.round(CFG.PASSAGGI_BASE * ctrl * 2);
-    const pPct = clamp(0.78 + 0.0025 * (forze.MID - 75), 0.62, 0.94);
+    // Precisione passaggi: prima dipendeva solo dalla forza del centrocampo,
+    // che fra le squadre varia poco, e usciva quasi sempre fra il 74% e il 78%
+    // (1.504 prestazioni di squadra, settembre 2026). Ora conta soprattutto il
+    // possesso: chi tiene palla sbaglia meno, come nel calcio vero (dal 70% a
+    // oltre il 90%). Solo statistica: nessun numero casuale, nessun effetto sul
+    // risultato (2 ottobre 2026).
+    const pPct = clamp(0.815 + 0.0025 * (forze.MID - 75) + 0.45 * (ctrl - 0.5), 0.62, 0.94);
     return {
       gol, tiri, inPorta,
       passaggiT: pTent, passaggiR: Math.round(pTent * pPct), passaggiPct: pPct,
