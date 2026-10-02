@@ -780,9 +780,11 @@ input:disabled { opacity: 0.65; }
 .rosa-card__riga b { color: #fff; font: 700 .78rem/1 "Oswald", "Arial Narrow", sans-serif; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
 .rosa-card__riga b.ovr-alto { color: #ffd34d; }
 .rosa-card__energia { position: absolute; z-index: 2; top: 2px; left: 50%; padding: 1px 5px; border-radius: 999px; transform: translateX(-50%); font: 700 .56rem/1.2 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .02em; box-shadow: 0 2px 6px rgba(0,0,0,.5); }
-.rosa-card__fuori { position: absolute; z-index: 2; top: 3px; right: 2px; width: 9px; height: 12px; border-radius: 2px; box-shadow: 0 1px 4px rgba(0,0,0,.6); }
+/* Fuori posizione: un punto esclamativo tondo, non un rettangolo (sembrava un
+   cartellino giallo; segnalato dal committente il 2 ottobre 2026). */
+.rosa-card__fuori { position: absolute; z-index: 2; top: 2px; right: 0; display: grid; place-items: center; width: 16px; height: 16px; border: 1.5px solid #0b0b12; border-radius: 50%; color: #17130a; font: 800 .66rem/1 "Oswald", "Arial Narrow", sans-serif; font-style: normal; box-shadow: 0 1px 5px rgba(0,0,0,.6); }
 .rosa-card__fuori--adapted { background: #f3c84b; }
-.rosa-card__fuori--out { background: #e13e52; }
+.rosa-card__fuori--out { color: #fff; background: #e13e52; }
 .rosa-card__idoneo { position: absolute; z-index: 2; right: 1px; bottom: 2px; min-width: 14px; height: 14px; padding: 0 3px; display: grid; place-items: center; border-radius: 4px; background: rgba(11,11,18,.85); font: 700 .55rem/1 "Oswald", "Arial Narrow", sans-serif; font-style: normal; }
 .rosa-card__idoneo--piu { color: #7fd49c; box-shadow: inset 0 0 0 1px #7fd49c; }
 .rosa-card__idoneo--meno { color: #f08a72; box-shadow: inset 0 0 0 1px #f08a72; }

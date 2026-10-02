@@ -226,7 +226,7 @@ export function CartaCampo({ player, imageUrl, position, selected, onClick, ruol
         : `Energia ${player.condizione}%`}>
         {player.infortunato_fino_a > 0 ? '✚' : player.squalificato_fino_a > 0 ? '■' : `${player.condizione}%`}
       </span>
-      {fit !== 'natural' && <i className={`rosa-card__fuori rosa-card__fuori--${fit}`} title={fit === 'adapted' ? 'Adattato in un ruolo vicino' : 'Completamente fuori posizione'} aria-label={fit === 'adapted' ? 'Fuori posizione di poco' : 'Completamente fuori posizione'} />}
+      {fit !== 'natural' && <i className={`rosa-card__fuori rosa-card__fuori--${fit}`} title={fit === 'adapted' ? 'Adattato in un ruolo vicino' : 'Completamente fuori posizione'} aria-label={fit === 'adapted' ? 'Fuori posizione di poco' : 'Completamente fuori posizione'} >!</i>}
       {idoneo && <i className={`rosa-card__idoneo rosa-card__idoneo--${idoneo.tono}`} title={idoneo.tono === 'piu' ? 'Adatto al ruolo che gli hai dato nello schema' : 'Poco adatto al ruolo che gli hai dato nello schema'}>{idoneo.segno}</i>}
     </span>
     <span className="rosa-card__nome">{cognome(player.nome)}</span>
