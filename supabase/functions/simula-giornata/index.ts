@@ -589,7 +589,10 @@ function rendiTiriCoerenti(righe: Array<Record<string, number>>, teamStats: Json
   differenza = totaleInPorta - righe.reduce((somma, riga) => somma + riga.tiri_porta, 0)
   indice = 0
   while (differenza > 0) {
-    const candidate = righe.filter((riga) => riga.tiri_porta < riga.tiri)
+    const candidateTutte = righe.filter((riga) => riga.tiri_porta < riga.tiri)
+    const candidate = candidateTutte.filter((riga) => !portieri.has(riga.player_instance_id)).length
+      ? candidateTutte.filter((riga) => !portieri.has(riga.player_instance_id))
+      : candidateTutte
     if (!candidate.length) break
     candidate[indice++ % candidate.length].tiri_porta++; differenza--
   }
