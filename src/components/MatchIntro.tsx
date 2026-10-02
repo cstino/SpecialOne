@@ -310,17 +310,19 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
       )}
 
       {beat.tipo === 'classifica' && (
-        <div className="match-intro__classifica" style={{ '--n-squadre': classificaPrecedente.length } as React.CSSProperties}>
-          <p className="match-intro__classifica-titolo">Classifica · Prima della giornata {fixture.giornata}</p>
+        <div className={`match-intro__classifica classifica-broadcast formazione-broadcast formazione-broadcast--${fase}`} style={{ '--n-squadre': classificaPrecedente.length } as React.CSSProperties}>
+          <p className="match-intro__classifica-titolo"><span>Classifica</span><small>Prima della giornata {fixture.giornata}</small></p>
+          <div className="classifica-broadcast__testa" aria-hidden="true"><span>#</span><span>Squadra</span><span>DR</span><span>PT</span></div>
           <ol>
             {classificaPrecedente.map((riga) => {
               const evidenziata = riga.teamId === fixture.home_team_id || riga.teamId === fixture.away_team_id
               const squadra = data.teamById.get(riga.teamId)
               return (
-                <li className={evidenziata ? 'is-evidenziata' : ''} key={riga.teamId}>
+                <li className={evidenziata ? 'is-evidenziata' : ''} key={riga.teamId} style={{ '--i': riga.posizione } as React.CSSProperties}>
                   <span className="match-intro__classifica-pos">{riga.posizione}</span>
                   <Crest value={squadra?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(riga.teamId)} size="small" />
                   <strong>{squadra?.nome ?? 'Squadra'}</strong>
+                  <em>{riga.differenzaReti > 0 ? `+${riga.differenzaReti}` : riga.differenzaReti}</em>
                   <b>{riga.punti}</b>
                 </li>
               )
