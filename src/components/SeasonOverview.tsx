@@ -90,7 +90,10 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
         </div>
       </section>
 
-      <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-10 px-5 py-10 md:px-8 md:py-14">
+      {/* Sotto la copertina, lo stile broadcast (2 ottobre 2026): schede in
+          vetro nel colore della fase, titoli a linguetta inclinata, risultati
+          come un tabellone. La copertina sopra resta com'era. */}
+      <div className={`dashboard-broadcast formazione-broadcast formazione-broadcast--${fase} mx-auto flex w-full max-w-[1180px] flex-col gap-7 px-4 py-8 md:px-8 md:py-12`}>
         {/* Primo in colonna mentre e' in corso: un draft in diretta dura una
             ventina di minuti e non deve stare sotto la classifica. Il
             componente si nasconde da solo quando non c'e' niente da vedere. */}
@@ -103,73 +106,63 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
         />
 
         {data.lastFixture && ultimaPartita && (
-          <button
-            type="button"
-            onClick={apriUltimaPartita}
-            className="group flex flex-col gap-5 border-b border-white/10 pb-10 text-left"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[.62rem] font-extrabold uppercase tracking-[.14em] text-purple-300/80">Ultima partita</p>
-                <h2 className="font-display mt-1 text-2xl font-extrabold text-white">Giornata {data.lastFixture.giornata}</h2>
+          <section className="dash-sezione">
+            <header className="dash-testa">
+              <h2 className="dash-linguetta">Ultima partita</h2>
+              <span className="dash-sotto">Giornata {data.lastFixture.giornata}</span>
+            </header>
+            <button type="button" onClick={apriUltimaPartita} className="dash-card dash-partita">
+              <div className="overview-fixture-teams dash-partita__squadre">
+                <TeamLabel team={data.teamById.get(data.lastFixture.home_team_id)} imageUrl={data.crestUrlByTeamId.get(data.lastFixture.home_team_id)} onClick={() => onOpenTeam(data.lastFixture!.home_team_id)} />
+                <FixtureScore fixture={data.lastFixture} match={ultimaPartita} reveal={!ultimaVista} />
+                <TeamLabel team={data.teamById.get(data.lastFixture.away_team_id)} imageUrl={data.crestUrlByTeamId.get(data.lastFixture.away_team_id)} reversed onClick={() => onOpenTeam(data.lastFixture!.away_team_id)} />
               </div>
-              <span className="whitespace-nowrap text-[.66rem] font-extrabold uppercase tracking-wide text-purple-200 transition group-hover:text-white">
-                {ultimaVista ? 'Dettagli ›' : 'Vedi risultato ›'}
-              </span>
-            </div>
-            <div className="overview-fixture-teams flex items-center justify-between gap-3">
-              <TeamLabel team={data.teamById.get(data.lastFixture.home_team_id)} imageUrl={data.crestUrlByTeamId.get(data.lastFixture.home_team_id)} onClick={() => onOpenTeam(data.lastFixture!.home_team_id)} />
-              <FixtureScore fixture={data.lastFixture} match={ultimaPartita} reveal={!ultimaVista} />
-              <TeamLabel team={data.teamById.get(data.lastFixture.away_team_id)} imageUrl={data.crestUrlByTeamId.get(data.lastFixture.away_team_id)} reversed onClick={() => onOpenTeam(data.lastFixture!.away_team_id)} />
-            </div>
-          </button>
+              <span className="dash-partita__azione">{ultimaVista ? 'Rapporto partita' : 'Guarda la partita'} ›</span>
+            </button>
+          </section>
         )}
 
-        <article className="flex flex-col gap-5 border-b border-white/10 pb-10">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[.62rem] font-extrabold uppercase tracking-[.14em] text-purple-300/80">Prossima partita</p>
-              <h2 className="font-display mt-1 text-2xl font-extrabold text-white">{data.nextFixture ? formatMatchDate(data.nextFixture.data_sim) : 'Calendario concluso'}</h2>
-              {data.nextFixture && <p className="mt-1 text-[.78rem] text-white/55">Si gioca tra <strong className="text-white">{formatCountdown(millisecondiAllaPartita)}</strong></p>}
+        <section className="dash-sezione">
+          <header className="dash-testa">
+            <h2 className="dash-linguetta">Prossima partita</h2>
+            <span className="dash-sotto">G{data.nextFixture?.giornata ?? data.giornateStagione}</span>
+          </header>
+          <article className="dash-card dash-partita">
+            <div className="dash-partita__quando">
+              <strong>{data.nextFixture ? formatMatchDate(data.nextFixture.data_sim) : 'Calendario concluso'}</strong>
+              {data.nextFixture && <span className="dash-countdown"><i aria-hidden="true" />{formatCountdown(millisecondiAllaPartita)}</span>}
             </div>
-            <span className="whitespace-nowrap text-[.66rem] font-extrabold uppercase tracking-wide text-purple-200">
-              G{data.nextFixture?.giornata ?? data.giornateStagione}
-            </span>
-          </div>
-          {data.nextFixture ? (
-            <div className="overview-fixture-teams flex items-center justify-between gap-3">
-              <TeamLabel team={data.teamById.get(data.nextFixture.home_team_id)} imageUrl={data.crestUrlByTeamId.get(data.nextFixture.home_team_id)} onClick={() => onOpenTeam(data.nextFixture!.home_team_id)} />
-              <FixtureScore fixture={data.nextFixture} match={data.matchByFixture.get(data.nextFixture.id)} />
-              <TeamLabel team={data.teamById.get(data.nextFixture.away_team_id)} imageUrl={data.crestUrlByTeamId.get(data.nextFixture.away_team_id)} reversed onClick={() => onOpenTeam(data.nextFixture!.away_team_id)} />
+            {data.nextFixture ? (
+              <div className="overview-fixture-teams dash-partita__squadre">
+                <TeamLabel team={data.teamById.get(data.nextFixture.home_team_id)} imageUrl={data.crestUrlByTeamId.get(data.nextFixture.home_team_id)} onClick={() => onOpenTeam(data.nextFixture!.home_team_id)} />
+                <FixtureScore fixture={data.nextFixture} match={data.matchByFixture.get(data.nextFixture.id)} />
+                <TeamLabel team={data.teamById.get(data.nextFixture.away_team_id)} imageUrl={data.crestUrlByTeamId.get(data.nextFixture.away_team_id)} reversed onClick={() => onOpenTeam(data.nextFixture!.away_team_id)} />
+              </div>
+            ) : <p className="dash-vuoto">Non ci sono altre partite programmate.</p>}
+            <div className="dash-azioni">
+              <button className="overview-cta-button dash-cta" type="button" onClick={() => onNavigate('squad')}>Prepara formazione</button>
+              <button className="dash-link" type="button" onClick={() => onNavigate('matches')}>Calendario ›</button>
             </div>
-          ) : <p className="text-sm text-white/40">Non ci sono altre partite programmate.</p>}
-          <div className="mt-1 flex items-center justify-center gap-4">
-            <button className="overview-cta-button button button--primary" type="button" onClick={() => onNavigate('squad')}>Prepara formazione</button>
-            <button className="text-[.76rem] font-bold text-white/60 transition hover:text-white" type="button" onClick={() => onNavigate('matches')}>Tutto il calendario →</button>
-          </div>
-        </article>
+          </article>
+        </section>
 
         <LeagueNews leagueId={league.id} fixtures={data.fixtures} matches={data.matches} standings={data.standings} teamById={data.teamById} crestUrlByTeamId={data.crestUrlByTeamId} onOpenMatch={onOpenMatch} onOpenTeam={onOpenTeam} />
 
-        <article className="flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[.62rem] font-extrabold uppercase tracking-[.14em] text-purple-300/80">Classifica</p>
-              <h2 className="font-display mt-1 text-2xl font-extrabold text-white">La vetta</h2>
-            </div>
-            <button className="text-[.76rem] font-bold text-white/60 transition hover:text-white" type="button" onClick={() => onNavigate('table')}>Vedi tutta →</button>
-          </div>
-          <div className="flex flex-col divide-y divide-white/10">
+        <section className="dash-sezione">
+          <header className="dash-testa">
+            <h2 className="dash-linguetta">La vetta</h2>
+            <button className="dash-link" type="button" onClick={() => onNavigate('table')}>Classifica ›</button>
+          </header>
+          <ol className="dash-vetta">
             {data.standings.slice(0, 4).map((standing, index) => (
-              <div key={standing.team_id} className={`flex items-center gap-3 py-3 ${standing.team_id === membership.id ? 'text-purple-200' : ''}`}>
-                <b className="font-display w-6 shrink-0 text-lg font-extrabold text-white/70">{standing.posizione ?? index + 1}</b>
-                <div className="min-w-0 flex-1"><TeamLabel team={data.teamById.get(standing.team_id)} imageUrl={data.crestUrlByTeamId.get(standing.team_id)} onClick={() => onOpenTeam(standing.team_id)} /></div>
-                <strong className="font-display text-lg font-extrabold text-white">{standing.punti}</strong>
-                <small className="text-[.6rem] font-extrabold uppercase text-white/40">pt</small>
-              </div>
+              <li key={standing.team_id} className={standing.team_id === membership.id ? 'is-mia' : undefined} style={{ ['--i' as string]: index + 1 }}>
+                <b className="dash-vetta__pos">{standing.posizione ?? index + 1}</b>
+                <div className="dash-vetta__squadra"><TeamLabel team={data.teamById.get(standing.team_id)} imageUrl={data.crestUrlByTeamId.get(standing.team_id)} onClick={() => onOpenTeam(standing.team_id)} /></div>
+                <strong className="dash-vetta__punti">{standing.punti}<small>pt</small></strong>
+              </li>
             ))}
-          </div>
-        </article>
+          </ol>
+        </section>
       </div>
     </>}
   </main>
