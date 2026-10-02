@@ -4119,3 +4119,17 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 @keyframes caricamento-respiro { 0%, 100% { opacity: .6; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.04); } }
 @keyframes caricamento-scorre { from { background-position: -120% 0, 0 0; } to { background-position: 220% 0, 0 0; } }
 @media (prefers-reduced-motion: reduce) { .loading-logo__anello, .loading-logo::before, .loading-screen::after, .caricamento-barra { animation: none; } }
+
+/* Caricamento con un solo simbolo (2 ottobre 2026, richiesta del committente:
+   niente anello piu' barretta insieme). Il logo resta fermo e grande; un
+   riflesso di luce lo attraversa in diagonale, ritagliato sulla forma del
+   logo come sugli stemmi delle carte, e dietro respira un alone. */
+.loading-logo__anello, .loading-screen::after, .caricamento-barra { display: none !important; }
+.loading-logo { --logo-w: 64px; --logo-h: 88px; width: 120px; height: 120px; }
+.loading-logo--compatto { --logo-w: 46px; --logo-h: 64px; width: 92px; height: 92px; }
+.loading-logo img, .loading-logo--compatto img { width: var(--logo-w); height: var(--logo-h); animation: caricamento-logo 2.2s ease-in-out infinite; filter: drop-shadow(0 10px 22px rgba(151,89,239,.35)); }
+.loading-logo::before { inset: -10%; background: radial-gradient(circle, rgba(155,76,255,.38), rgba(70,227,255,.08) 45%, transparent 66%); }
+.loading-logo::after { content: ''; position: absolute; z-index: 2; left: 50%; top: 50%; width: var(--logo-w); height: var(--logo-h); transform: translate(-50%, -50%); background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.95) 49%, rgba(140,230,255,.7) 53%, transparent 64%) 0 0 / 300% 100% no-repeat; -webkit-mask: url(/loghi/specialone_logo.svg) center / contain no-repeat; mask: url(/loghi/specialone_logo.svg) center / contain no-repeat; mix-blend-mode: screen; animation: caricamento-riflesso 2.2s cubic-bezier(.45,0,.2,1) infinite; pointer-events: none; }
+@keyframes caricamento-riflesso { 0% { background-position: 120% 0; } 55%, 100% { background-position: -40% 0; } }
+@keyframes caricamento-logo { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+@media (prefers-reduced-motion: reduce) { .loading-logo img, .loading-logo::after { animation: none; } }
