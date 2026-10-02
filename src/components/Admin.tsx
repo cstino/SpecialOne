@@ -8,6 +8,9 @@ type AdminProps = { membership: Membership; onNavigate: (view: GameView) => void
 
 type EsitoAzione = { tono: 'ok' | 'errore'; testo: string }
 
+// LegaBot: l'unica lega che prova le regole della season 2 prima del lancio.
+const LEGA_PROVA_SEASON_2 = 62
+
 // Fallback manuale per le tre azioni che normalmente fa pg_cron da solo:
 // simulazione notturna (00:00), estrazione svincolati (07:00), chiusura
 // mercato (21:00). Pensato per quando un cron non parte, non per sostituire
@@ -48,7 +51,13 @@ export function Admin({ membership, onNavigate }: AdminProps) {
 
   async function simulaGiornata() {
     setSimulando(true); setEsitoSimula(null)
-    const { data, error } = await supabase.functions.invoke('simula-giornata', {
+    // Season 2 in prova: LegaBot si simula con le regole nuove del motore
+    // (funzione simula-giornata-s2, pubblicata dal ramo). Tutte le altre leghe
+    // restano sulla simulazione di main, anche se il tasto si preme
+    // dall'anteprima. Da togliere al lancio, quando simula-giornata diventa
+    // quella del ramo.
+    const funzione = league.id === LEGA_PROVA_SEASON_2 ? 'simula-giornata-s2' : 'simula-giornata'
+    const { data, error } = await supabase.functions.invoke(funzione, {
       body: { league_id: league.id },
     })
     setSimulando(false)
