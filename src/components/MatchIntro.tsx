@@ -181,6 +181,14 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
         .in('team_id', [fixture.home_team_id, fixture.away_team_id])
       if (!vivo) return
       const mappaLineup = new Map<number, Lineup>((righeLineup ?? []).map((riga) => [riga.team_id, { modulo: riga.modulo, titolari: riga.titolari as number[] }]))
+      // L'undici salvato in `lineups` puo' differire da quello sceso in campo
+      // (titolare infortunato sostituito, formazione automatica delle 23:00,
+      // modulo cambiato): la presentazione deve mostrare chi ha giocato davvero.
+      const giocata = data.matchByFixture.get(fixture.id)
+      if (giocata) {
+        if (giocata.titolari_home?.length === 11) mappaLineup.set(fixture.home_team_id, { modulo: giocata.modulo_home, titolari: giocata.titolari_home })
+        if (giocata.titolari_away?.length === 11) mappaLineup.set(fixture.away_team_id, { modulo: giocata.modulo_away, titolari: giocata.titolari_away })
+      }
       setLineups(mappaLineup)
 
       const idsIstanze = [...mappaLineup.values()].flatMap((lineup) => lineup.titolari).filter((id) => id > 0)
@@ -204,7 +212,7 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
     }
     void carica()
     return () => { vivo = false }
-  }, [fixture.league_id, fixture.giornata, fixture.home_team_id, fixture.away_team_id])
+  }, [fixture.id, fixture.league_id, fixture.giornata, fixture.home_team_id, fixture.away_team_id, data.matchByFixture])
 
   // Timer della scaletta: parte solo quando la fase e' nota, perche' stagione
   // regolare e playoff hanno durate diverse per ogni battuta. Un solo
@@ -226,7 +234,9 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
   const lineupInScena = squadraInScena ? lineups.get(squadraInScena.id) : undefined
 
   const righe = useMemo(
-    () => lineupInScena ? righeFormazione(lineupInScena.modulo, lineupInScena.titolari) : [],
+    // Il portiere sta in alto e la squadra guarda verso il basso: la sua
+    // sinistra e' la destra dello schermo, quindi ogni riga va specchiata.
+    () => lineupInScena ? righeFormazione(lineupInScena.modulo, lineupInScena.titolari).map((riga) => [...riga].reverse()) : [],
     [lineupInScena],
   )
   // Ordine di comparsa globale (dal portiere agli attaccanti) per calcolare
@@ -373,8 +383,12 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
                 {riga.map((slot) => {
                   const giocatore = slot.valore ? giocatori.get(slot.valore) : undefined
                   const ritardo = ((ordineComparsa.get(slot.index) ?? 0) / totaleSlot) * Math.max(1, beat.durata - margineFineBattuta)
+                  // Trequartista piu' avanzato (in basso) e mediano piu' arretrato dei
+                  // due centrocampisti con cui condividono la riga.
+                  const conCentrocampisti = riga.some((altro) => altro.slot === 'CM')
+                  const sfalsamento = !conCentrocampisti ? 0 : slot.slot === 'CAM' ? 22 : slot.slot === 'CDM' ? -16 : 0
                   return (
-                    <div className="match-intro__card" style={{ animationDelay: `${ritardo}s` }} key={slot.index}>
+                    <div className="match-intro__card" style={{ animationDelay: `${ritardo}s`, ...(sfalsamento ? { position: 'relative', top: sfalsamento } : {}) }} key={slot.index}>
                       <div className="match-intro__card-foto">
                         {giocatore?.foto ? <img src={giocatore.foto} alt="" /> : <span aria-hidden="true">{giocatore ? giocatore.nome.charAt(0) : '?'}</span>}
                       </div>
