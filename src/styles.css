@@ -778,7 +778,12 @@ input:disabled { opacity: 0.65; }
 .rosa-card__riga { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 3px; padding: 2px 6px; border-radius: 4px; background: rgba(11,11,18,.72); }
 .rosa-card__riga i { color: var(--und-acc); font: 600 .56rem/1 "Oswald", "Arial Narrow", sans-serif; font-style: normal; letter-spacing: .14em; }
 .rosa-card__riga b { color: #fff; font: 700 .78rem/1 "Oswald", "Arial Narrow", sans-serif; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
-.rosa-card__riga b.ovr-alto { color: #ffd34d; }
+/* Il ruolo nel colore del suo reparto, come nella legenda sotto il campo;
+   l'OVR sempre bianco (indicazioni del committente, 2 ottobre 2026). */
+.rosa-card__riga i.rosa-card__ruolo--GK { color: #f59b45; }
+.rosa-card__riga i.rosa-card__ruolo--DEF { color: #55c9ed; }
+.rosa-card__riga i.rosa-card__ruolo--MID { color: #5dd17b; }
+.rosa-card__riga i.rosa-card__ruolo--ATT { color: #ed6375; }
 .rosa-card__energia { position: absolute; z-index: 2; top: 2px; left: 50%; padding: 1px 5px; border-radius: 999px; transform: translateX(-50%); font: 700 .56rem/1.2 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .02em; box-shadow: 0 2px 6px rgba(0,0,0,.5); }
 /* Fuori posizione: un punto esclamativo tondo, non un rettangolo (sembrava un
    cartellino giallo; segnalato dal committente il 2 ottobre 2026). */
@@ -878,7 +883,6 @@ input:disabled { opacity: 0.65; }
 .formazione-broadcast .pitch-field::after, .formazione-broadcast .pitch-field__circle, .formazione-broadcast .pitch-field__box { border-color: rgba(255,255,255,.36); }
 .formazione-broadcast .lineup-player__plate { border-radius: 9px; border: 1px solid rgba(255,255,255,.15); background: rgba(8,8,14,.78); backdrop-filter: blur(6px); box-shadow: 0 6px 14px rgba(0,0,0,.45); }
 .formazione-broadcast .lineup-player__plate b { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: #fff; -webkit-text-fill-color: #fff; }
-.formazione-broadcast .lineup-player__plate b.ovr-alto { color: #ffd34d; -webkit-text-fill-color: #ffd34d; }
 .formazione-broadcast .pitch-posto .energia { left: 50%; top: -9px; transform: translateX(-50%); }
 
 /* ============================================================

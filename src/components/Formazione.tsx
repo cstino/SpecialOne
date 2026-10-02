@@ -189,7 +189,7 @@ function PlayerPortrait({ player, imageUrl, position, selected = false, onClick,
       <strong>{player ? cognome(player.nome) : 'Seleziona'}</strong>
       <span className="lineup-player__meta">
         <span className={`lineup-player__position lineup-player__position--${reparto(position)}`}>{position}</span>
-        <b className={player && player.overall_corrente >= 85 ? 'ovr-alto' : undefined}>{player?.overall_corrente ?? '—'}</b>
+        <b>{player?.overall_corrente ?? '—'}</b>
         {idoneo && <span className={`lineup-player__ruolo lineup-player__ruolo--${idoneo.tono}`}
           title={idoneo.tono === 'piu' ? 'Adatto al ruolo che gli hai dato nello schema' : 'Poco adatto al ruolo che gli hai dato nello schema'}>{idoneo.segno}</span>}
       </span>
@@ -207,7 +207,7 @@ export function CartaCampo({ player, imageUrl, position, selected, onClick, ruol
     return <button className="rosa-card rosa-card--vuota" type="button" onClick={onClick} aria-label={`Posizione ${position} libera: tocca per assegnare un giocatore`}>
       <span className="rosa-card__foto"><span className="rosa-card__ritratto"><span className="rosa-card__iniziale">+</span></span></span>
       <span className="rosa-card__nome">Libero</span>
-      <span className="rosa-card__riga"><i>{position}</i></span>
+      <span className="rosa-card__riga"><i className={`rosa-card__ruolo--${reparto(position)}`}>{position}</i></span>
     </button>
   }
   const fit = positionFit(position, player.posizioni)
@@ -230,7 +230,7 @@ export function CartaCampo({ player, imageUrl, position, selected, onClick, ruol
       {idoneo && <i className={`rosa-card__idoneo rosa-card__idoneo--${idoneo.tono}`} title={idoneo.tono === 'piu' ? 'Adatto al ruolo che gli hai dato nello schema' : 'Poco adatto al ruolo che gli hai dato nello schema'}>{idoneo.segno}</i>}
     </span>
     <span className="rosa-card__nome">{cognome(player.nome)}</span>
-    <span className="rosa-card__riga"><i>{position}</i><b className={player.overall_corrente >= 85 ? 'ovr-alto' : undefined}>{player.overall_corrente}</b></span>
+    <span className="rosa-card__riga"><i className={`rosa-card__ruolo--${reparto(position)}`}>{position}</i><b>{player.overall_corrente}</b></span>
   </button>
 }
 
