@@ -2,7 +2,7 @@
 //  MOTORE DI SIMULAZIONE — MODELLO A BLOCCHI
 // ============================================================
 
-import { CFG, MODULI, CONTEGGI, PESI_SLOT, REPARTO, STILI, penalitaRuolo, pesoStat, pesiConCompito, costoEnergiaCompito, puntiCompiti } from './config.js';
+import { CFG, MODULI, CONTEGGI, PESI_SLOT, REPARTO, STILI, STILI_PARTITA, RITMO_NORMA, TIRI_NORMA, penalitaRuolo, pesoStat, pesiConCompito, costoEnergiaCompito, puntiCompiti } from './config.js';
 import { rnd, gauss, poisson, scegliPesato } from './random.js';
 import { deltaTattico } from './tattiche.js';
 import { avanzamentoRuolo } from './ruoli.js';
@@ -193,6 +193,14 @@ export function familiarita(rosa, modulo, stile) {
 // 'equilibrato' o stile mancante/sconosciuto -> nessun aggiustamento.
 export function stileTattico(stile) {
   return STILI[stile] || STILI.equilibrato;
+}
+
+// Come lo stile fa giocare la partita (ritmo, possesso, volume dei tiri):
+// vedi STILI_PARTITA in config.js. Senza stile, nessun effetto (1, 0, 1).
+export function identitaStile(stile) {
+  const s = STILI_PARTITA[stile];
+  if (!s) return { ritmo: 1, possesso: 0, volumeTiri: 1 };
+  return { ritmo: s.ritmo * RITMO_NORMA, possesso: s.possesso, volumeTiri: s.volumeTiri * TIRI_NORMA };
 }
 
 // ---------- Sostituzioni automatiche ----------
@@ -395,6 +403,9 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   const famO = familiarita(rosaOspite, modOspite, opt.stileOspite);
   const stC = stileTattico(opt.stileCasa);
   const stO = stileTattico(opt.stileOspite);
+  const idC = identitaStile(opt.stileCasa), idO = identitaStile(opt.stileOspite);
+  // Il ritmo e' della partita, non di una squadra: media dei due stili.
+  const ritmoPartita = (idC.ritmo + idO.ritmo) / 2;
   // Separato dal RNG dei gol: l'introduzione degli infortuni in partita non
   // deve cambiare lo stream validato di xG/gol. L'Edge Function passa il seed
   // della fixture; il fallback rende riproducibili anche i test standalone.
@@ -492,7 +503,7 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     xgC *= (1 - (fo.GK - 75) / CFG.DIVISORE_PORTIERE);
     xgO *= (1 - (fc.GK - 75) / CFG.DIVISORE_PORTIERE);
 
-    xgC = Math.max(0, xgC); xgO = Math.max(0, xgO);
+    xgC = Math.max(0, xgC) * ritmoPartita; xgO = Math.max(0, xgO) * ritmoPartita;
     xgTotC += xgC; xgTotO += xgO;
     // stesse due estrazioni di prima, nello stesso ordine: qui vengono solo
     // trattenute per sapere in quale blocco e' caduto ogni gol
@@ -630,13 +641,13 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
 
   // ---------- statistiche ----------
   const ctrlMedio = ctrlStorico.reduce((a, b) => a + b, 0) / ctrlStorico.length;
-  const mk = (lineup, gol, ctrl, forze, xgTot) => {
+  const mk = (lineup, gol, ctrl, forze, xgTot, volumeTiri = 1) => {
     // La conversione per tiro cresce col dominio offensivo: chi produce molto xG
     // lo produce con occasioni migliori, non solo piu' numerose. Vedi il commento
     // su XG_RIFERIMENTO_TIRI in config.js.
     const qualita = Math.pow(Math.max(xgTot, 0.15) / CFG.XG_RIFERIMENTO_TIRI, CFG.ESPONENTE_QUALITA_TIRO);
     const conv = clamp(gauss(CFG.CONVERSIONE_MEDIA, CFG.CONVERSIONE_SIGMA) * qualita, 0.06, 0.32);
-    const tiri = Math.max(gol, Math.round(xgTot / conv));
+    const tiri = Math.max(gol, Math.round(xgTot / conv * volumeTiri));
     const inPorta = Math.max(gol, Math.round(tiri * clamp(gauss(CFG.TIRI_PORTA_MEDIA, CFG.TIRI_PORTA_SIGMA), 0.15, 0.65)));
     const pTent = Math.round(CFG.PASSAGGI_BASE * ctrl * 2);
     // Precisione passaggi: prima dipendeva solo dalla forza del centrocampo,
@@ -655,8 +666,11 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     };
   };
 
-  const sC = mk(lc, golC, ctrlMedio, forzeLinee(lc), xgTotC);
-  const sO = mk(lo, golO, 1 - ctrlMedio, forzeLinee(lo), xgTotO);
+  // Il possesso mostrato (e con lui passaggi, contrasti, dribbling) segue
+  // anche lo stile: chi gioca il possesso tiene palla, chi aspetta la lascia.
+  const possessoC = clamp(ctrlMedio + idC.possesso - idO.possesso, 0.22, 0.78);
+  const sC = mk(lc, golC, possessoC, forzeLinee(lc), xgTotC, idC.volumeTiri);
+  const sO = mk(lo, golO, 1 - possessoC, forzeLinee(lo), xgTotO, idO.volumeTiri);
   // Le conclusioni da palla inattiva entrano nel conteggio: un colpo di testa
   // su angolo e' un tiro come gli altri, e senza questo le statistiche
   // raccontavano meno conclusioni di quante ne erano avvenute.

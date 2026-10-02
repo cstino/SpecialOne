@@ -1173,3 +1173,47 @@ ha frasi proprie per angolo, punizione diretta e punizione messa in mezzo.
 del predefinito −1,0 punti per chi smanetta a caso. Banco della cronaca su
 1.800 partite: gol in cronaca = risultato, parziale dei 90' = motore,
 supplementari solo da un pari vero.
+
+## 34. Lo stile decide come si gioca, non solo chi è più forte — 2 ottobre 2026
+
+**Il problema** (segnalato dal committente: «se metto difesa a oltranza devo
+fare pochi tiri»). Lo stile spostava solo 1-2 punti di forza fra i reparti, e
+tutte le statistiche ne derivavano: fra gli stili 1-2 tiri e 2-4 punti di
+possesso di differenza, invisibili in una partita.
+
+**La scelta** (B, dentro il task 4): lo stile cambia davvero la partita, con
+tre leve nuove (`STILI_PARTITA` in `config.js`, `identitaStile` nel motore):
+
+- **ritmo** della partita, media dei due stili, moltiplica gli xG di entrambe le
+  squadre (blocco basso 0,80, possesso 0,90, contropiede 0,95, fasce 1,04,
+  diretto 1,06, recupero veloce 1,10). Simmetrico: non regala niente in media,
+  cambia la varianza;
+- **possesso** mostrato (e passaggi, contrasti, dribbling) spostato dallo stile;
+- **volume dei tiri** a parità di xG: cambia il conteggio dei tiri, mai i gol.
+
+`RITMO_NORMA` e `TIRI_NORMA` riportano a 1 la media sul mix di stili misurato
+nelle leghe. Senza stile (suite storica) nessun effetto.
+
+**Il diretto era già il più forte** (+2,9 punti su 38 contro equilibrato, prima
+di questa modifica): un punto d'attacco vale circa tre punti di centrocampo
+(xG +9% contro ctrl ~2,8% per parte), quindi la somma zero in punti non è
+neutra. Bilanciato sull'effetto: da {0, −1,5, +1,5} a {0, −1,5, +0,9}.
+
+**Numeri** (stagioni vere, stesso avversario equilibrato, 6.600 partite per stile):
+
+| stile | tiri | possesso | passaggi | punti/38 vs equilibrato, pari forza | squadra più debole di 4 |
+|---|---|---|---|---|---|
+| equilibrato | 12,0 | 53% | 507 | — | — |
+| contropiede | 10,2 | 43% | 410 | +1,2 | +0,6 |
+| possesso palla | 10,2 | 64% | 613 | −0,2 | −0,4 |
+| fasce | 13,9 | 52% | 500 | +1,4 | −0,3 |
+| recupero veloce | 13,8 | 57% | 546 | +0,1 | −1,2 |
+| diretto | 15,3 | 46% | 438 | +0,5 | −0,6 |
+| blocco basso | 8,2 | 41% | 397 | −0,4 | **+2,0** |
+
+Nessuno stile domina a pari forza (tutti entro ±1,4, il rumore è ~0,6); chi è
+più debole guadagna a chiudere la partita (blocco basso +2,0) e perde ad
+aprirla. PRODUZIONE: 2,85 gol · 13,37 tiri · 23,7% pareggi · 45,8% casa, tutto
+nei target; nello scenario intermedio «+ stili reali» le vittorie casa escono
+di 0,1 (47,1%, era 46,9%). Predefinito: −1,0 per chi smanetta a caso. Scarto
+fra tutto giusto e tutto sbagliato: 8,9 punti su 38.

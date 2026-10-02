@@ -540,9 +540,40 @@ export const STILI = {
   possesso_palla:  { DEF: -0.75, MID: 1.5,   ATT: -0.75 },
   fasce:           { DEF: -0.75, MID: -0.5,  ATT: 1.25 },
   recupero_veloce: { DEF: -1.5,  MID: 0.75,  ATT: 0.75 },
-  diretto:         { DEF: 0,     MID: -1.5,  ATT: 1.5 },
+  // Era {0, -1.5, 1.5}: il piu' forte di tutti (+2,9 punti su 38 contro
+  // equilibrato). Un punto d'attacco vale ~3 di centrocampo (xG +9% contro
+  // ctrl ~2,8% per parte): la somma zero in PUNTI non e' neutra. Bilanciato
+  // sull'effetto il 2 ottobre 2026 (registro, punto 34).
+  diretto:         { DEF: 0,     MID: -1.5,  ATT: 0.9 },
   blocco_basso:    { DEF: 2.0,   MID: -1.0,  ATT: -1.0 },
 };
+
+// ============================================================
+//  IDENTITA' DEGLI STILI IN PARTITA (docs/decisioni-tattiche.md, punto 34)
+//  Oltre allo spostamento di forza qui sopra, lo stile decide COME si gioca:
+//  ritmo    quanto la partita e' aperta, per ENTRAMBE le squadre: il motore
+//           usa la media dei due stili e moltiplica gli xG di tutti e due.
+//           Simmetrico, quindi non regala niente in media: cambia la varianza
+//           (una partita chiusa aiuta chi e' piu' debole).
+//  possesso quanta palla si tiene in piu' o in meno (statistica, passaggi).
+//  volumeTiri quanti tiri a parita' di xG: tanti e da lontano o pochi e buoni.
+//             Cambia solo il conteggio dei tiri, mai i gol.
+//  RITMO_NORMA e TIRI_NORMA riportano a 1 la media sul mix di stili misurato
+//  nelle leghe (fasce 28%, equilibrato 27%, diretto 19%, contropiede 13%,
+//  recupero veloce 6%, possesso 6%, blocco basso 1%), cosi' i totali del gioco
+//  restano nei target. Senza stile (suite storica) nessun effetto.
+// ============================================================
+export const STILI_PARTITA = {
+  equilibrato:     { ritmo: 1.00, possesso: 0,     volumeTiri: 1.00 },
+  contropiede:     { ritmo: 0.95, possesso: -0.08, volumeTiri: 0.85 },
+  possesso_palla:  { ritmo: 0.90, possesso: 0.09,  volumeTiri: 0.85 },
+  fasce:           { ritmo: 1.04, possesso: 0,     volumeTiri: 1.10 },
+  recupero_veloce: { ritmo: 1.10, possesso: 0.03,  volumeTiri: 1.08 },
+  diretto:         { ritmo: 1.06, possesso: -0.05, volumeTiri: 1.25 },
+  blocco_basso:    { ritmo: 0.80, possesso: -0.10, volumeTiri: 0.70 },
+};
+export const RITMO_NORMA = 1 / 1.0184;
+export const TIRI_NORMA = 1 / 1.0514;
 
 // ============================================================
 //  PESI STATISTICHE PER RUOLO
