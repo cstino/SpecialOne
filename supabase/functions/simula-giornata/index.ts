@@ -20,7 +20,10 @@ const CHIAVE_SEGRETA = Deno.env.get('CHIAVE_SEGRETA_PROGETTO') ?? ''
 type JsonMap = Record<string, unknown>
 type GolBlocco = { blocco: number; casa: number; ospite: number }
 type Lato = 'casa' | 'ospite'
-type EventoGol = { tipo: 'gol'; minuto: number; blocco: number; lato: Lato; team_id: number; marcatore: number; assist: number | null }
+// `piazzato`: il gol nasce da un calcio d'angolo o da una punizione (tipo del
+// motore: angolo_dx, angolo_sx, punizione_corta, punizione_lunga).
+type EventoGol = { tipo: 'gol'; minuto: number; blocco: number; lato: Lato; team_id: number; marcatore: number; assist: number | null; piazzato?: string }
+type PiazzatoMotore = { lato: Lato; blocco: number; marcatore: number; tipo: string; battitore: number | null }
 type EventoTiro = { tipo: 'tiro_parato' | 'tiro_fuori'; minuto: number; blocco: number; lato: Lato; team_id: number; giocatore: number }
 type EventoSostituzione = { tipo: 'sostituzione'; minuto: number; blocco: number; lato: Lato; team_id: number; esce: number; entra: number }
 type EventoInfortunio = { tipo: 'infortunio'; minuto: number; blocco: number; lato: Lato; team_id: number; esce: number; entra: number }
@@ -1203,6 +1206,22 @@ export default {
           { lato: 'casa', teamId: fixture.home_team_id, lineup: homeLineup, marcatori: result.perGiocatore.casa.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.casa },
           { lato: 'ospite', teamId: fixture.away_team_id, lineup: awayLineup, marcatori: result.perGiocatore.ospite.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.ospite },
         ], seed)
+        // I gol da calcio piazzato arrivano dal motore gia' col loro blocco, il
+        // marcatore e chi ha battuto (l'assist): diventano gol della cronaca
+        // come gli altri, e il minuto lo sistema adattaAiMinutiInCampo.
+        const rndPiazzati = creaRng(seed ^ 0x2545f491)
+        for (const piazzato of (result.piazzatiInPartita ?? []) as PiazzatoMotore[]) {
+          eventi.push({
+            tipo: 'gol',
+            minuto: (piazzato.blocco - 1) * MINUTI_PER_BLOCCO + 1 + Math.floor(rndPiazzati() * MINUTI_PER_BLOCCO),
+            blocco: piazzato.blocco,
+            lato: piazzato.lato,
+            team_id: piazzato.lato === 'casa' ? fixture.home_team_id : fixture.away_team_id,
+            marcatore: piazzato.marcatore,
+            assist: piazzato.battitore !== null && piazzato.battitore !== piazzato.marcatore ? piazzato.battitore : null,
+            piazzato: piazzato.tipo,
+          })
+        }
         // Minuti veri dei cambi e dei cartellini, e chi e' in campo minuto per
         // minuto: i gol (e i loro assist) si adattano PRIMA di contare gli
         // assist, cosi' un assist tolto perche' l'uomo assist era gia' uscito

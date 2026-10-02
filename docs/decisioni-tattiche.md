@@ -1144,8 +1144,32 @@ suite; su sei semi la media è 23,2% col motore nuovo e 23,1% col vecchio, che
 scende a 22,9% su due semi: è rumore attorno al bordo, non un effetto dei cambi.
 Segnalato al committente.
 
-**Aperto, non legato ai cambi**: nel ramo i gol da calcio piazzato
+**Risolto al punto 33.** ~~Aperto, non legato ai cambi~~: nel ramo i gol da calcio piazzato
 (`engine/piazzati.js`) si aggiungono a `golC/golO` dopo il ciclo dei blocchi e
 non entrano in `golPerBlocco`: la cronaca non li racconta e il parziale dei 90'
 li esclude. Su `main` i piazzati non ci sono e i conti tornano (238 partite su
 238). Va risolto prima di distribuire l'Edge Function del ramo.
+
+## 33. Calci piazzati dentro i blocchi — 2 ottobre 2026
+
+**Prima**: `calcolaPiazzati` girava una volta a fine partita e i suoi gol si
+sommavano a `golC/golO`. Tre difetti: la cronaca non li raccontava (nella live
+il punteggio sarebbe stato sbagliato), nessun giocatore ne risultava marcatore,
+e i supplementari si decidevano su un pari al 90' calcolato senza quei gol.
+
+**Ora** (`engine/engine.js`, `engine/piazzati.js`): i piazzati si calcolano
+blocco per blocco, dopo i gol su azione, sulla formazione in campo in quel
+momento. Pressione = xG del blocco / (`XG_RIFERIMENTO_PIAZZATI` / 6); le
+frequenze sono scalate di 1/6 col nuovo parametro `quota` di `calcolaPiazzati`
+(conversioni e scelte invariate; senza `quota` si comporta come prima). Il
+motore restituisce `piazzatiInPartita` (blocco, marcatore, tipo, `battitore`);
+`marcatori()` sceglie solo i marcatori dei gol su azione. Nei supplementari
+ora ci sono anche i piazzati (prima no). La cronaca (`simula-giornata`) li
+trasforma in gol con `piazzato` e l'assist di chi ha battuto; la telecronaca
+ha frasi proprie per angolo, punizione diretta e punizione messa in mezzo.
+
+**Numeri**: piazzati 0,97 gol a partita prima e dopo (sei semi); PRODUZIONE
+2,87 gol · 13,42 tiri · 23,0% pareggi · 45,8% casa, tutto nei target; prova
+del predefinito −1,0 punti per chi smanetta a caso. Banco della cronaca su
+1.800 partite: gol in cronaca = risultato, parziale dei 90' = motore,
+supplementari solo da un pari vero.

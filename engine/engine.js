@@ -433,7 +433,7 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   let golC = 0, golO = 0, xgTotC = 0, xgTotO = 0;
   const ctrlStorico = [];
   const inCampo = new Map(); // id -> blocchi giocati
-  const golPerBlocco = []; // solo bookkeeping: quanti gol cadono in quale blocco
+  const golPerBlocco = []; // solo bookkeeping: quanti gol SU AZIONE cadono in quale blocco (i piazzati sono in piazzatiInPartita)
   // Chi era davvero in campo in ciascun blocco, squadra per squadra: serve a
   // chi presenta la partita (Edge Function) per non attribuire un gol a un
   // giocatore che a quel blocco non era ancora entrato. Non influenza nessun
@@ -454,6 +454,9 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   // Senza opt.supplementariSeParita il limite resta CFG.BLOCCHI_PARTITA e ogni
   // chiamata esistente si comporta esattamente come prima.
   let blocchiDaGiocare = CFG.BLOCCHI_PARTITA;
+  // Calci piazzati, blocco per blocco (vedi sotto, dopo i gol su azione).
+  const piazzC = { gol: 0, tiri: 0, inPorta: 0 }, piazzO = { gol: 0, tiri: 0, inPorta: 0 };
+  const piazzatiInPartita = [];
   let golRegolamentari = null;
   let supplementariGiocati = false;
 
@@ -498,6 +501,27 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     golC += nGolC;
     golO += nGolO;
     golPerBlocco.push({ blocco: b + 1, casa: nGolC, ospite: nGolO });
+
+    // ---------- calci piazzati ----------
+    // Angoli e punizioni, blocco per blocco sulla formazione in campo in quel
+    // momento: la frequenza segue quanto la squadra ha attaccato nel blocco
+    // (xG del blocco diviso il riferimento per blocco). Prima si calcolavano
+    // una volta a fine partita: la cronaca non li raccontava, nessuno ne era
+    // marcatore e i supplementari si decidevano su un pari che non teneva
+    // conto di questi gol (2 ottobre 2026, docs/decisioni-tattiche.md p. 33).
+    //
+    // Non sono gol IN PIU': XG_BASE_BLOCCO e' stato ridotto della stessa quota,
+    // quindi il totale resta nella forbice validata e cambia solo da dove
+    // arrivano i gol. Vedi engine/piazzati.js.
+    if (opt.piazzati !== false) {
+      const rifBlocco = CFG.XG_RIFERIMENTO_PIAZZATI / CFG.BLOCCHI_PARTITA;
+      for (const [lato, L, D, xg, acc] of [['casa', lc, lo, xgC, piazzC], ['ospite', lo, lc, xgO, piazzO]]) {
+        const pz = calcolaPiazzati(L, D, xg / rifBlocco, 1 / CFG.BLOCCHI_PARTITA);
+        acc.gol += pz.gol; acc.tiri += pz.tiri; acc.inPorta += pz.inPorta;
+        if (lato === 'casa') golC += pz.gol; else golO += pz.gol;
+        for (const m of pz.marcatori) piazzatiInPartita.push({ lato, blocco: b + 1, marcatore: m.id, tipo: m.tipo, battitore: m.battitore ?? null });
+      }
+    }
 
     // consumo condizione + conteggio blocchi. Il portiere non consuma
     // condizione: nel calcio vero non si stanca come un giocatore di movimento,
@@ -604,20 +628,6 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     }
   }
 
-  // ---------- calci piazzati ----------
-  // Angoli e punizioni si calcolano a fine partita sulla formazione che e'
-  // rimasta in campo, e la loro frequenza segue quanto una squadra ha
-  // attaccato: xgTot diviso il valore medio di riferimento. Chi ha dominato
-  // batte piu' corner, com'e' giusto.
-  //
-  // Non sono gol IN PIU': XG_BASE_BLOCCO e' stato ridotto della stessa quota,
-  // quindi il totale resta nella forbice validata e cambia solo da dove
-  // arrivano i gol. Vedi engine/piazzati.js.
-  const piazzC = opt.piazzati === false ? null : calcolaPiazzati(lc, lo, xgTotC / CFG.XG_RIFERIMENTO_PIAZZATI);
-  const piazzO = opt.piazzati === false ? null : calcolaPiazzati(lo, lc, xgTotO / CFG.XG_RIFERIMENTO_PIAZZATI);
-  if (piazzC) golC += piazzC.gol;
-  if (piazzO) golO += piazzO.gol;
-
   // ---------- statistiche ----------
   const ctrlMedio = ctrlStorico.reduce((a, b) => a + b, 0) / ctrlStorico.length;
   const mk = (lineup, gol, ctrl, forze, xgTot) => {
@@ -644,12 +654,14 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   // Le conclusioni da palla inattiva entrano nel conteggio: un colpo di testa
   // su angolo e' un tiro come gli altri, e senza questo le statistiche
   // raccontavano meno conclusioni di quante ne erano avvenute.
-  if (piazzC) { sC.tiri += piazzC.tiri; sC.inPorta += piazzC.inPorta; }
-  if (piazzO) { sO.tiri += piazzO.tiri; sO.inPorta += piazzO.inPorta; }
+  sC.tiri += piazzC.tiri; sC.inPorta += piazzC.inPorta;
+  sO.tiri += piazzO.tiri; sO.inPorta += piazzO.inPorta;
 
   const perGiocatore = opt.statsGiocatori ? (() => {
-    const marcatoriCasa = marcatori(rosaCasa, slotStoricoCasa, golC);
-    const marcatoriOspite = marcatori(rosaOspite, slotStoricoOspite, golO);
+    // Solo i gol su azione: quelli da piazzato hanno gia' il loro marcatore
+    // (piazzatiInPartita).
+    const marcatoriCasa = marcatori(rosaCasa, slotStoricoCasa, golC - piazzC.gol);
+    const marcatoriOspite = marcatori(rosaOspite, slotStoricoOspite, golO - piazzO.gol);
     const minuti = rosa => new Map(rosa.giocatori
       .map(g => [g.id, Math.round((inCampo.get(g.id) || 0) * 90 / CFG.BLOCCHI_PARTITA)])
       .filter(([, valore]) => valore > 0));
@@ -720,6 +732,9 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     // Ogni cambio col blocco al cui termine e' avvenuto e la sosta di gioco
     // (0 = intervallo o pausa prima dei supplementari, 1-3 a gara in corso).
     cambiInPartita,
+    // I gol da calcio piazzato col blocco, il marcatore, il tipo e chi ha
+    // battuto (l'assist, per angoli e punizioni messe in mezzo).
+    piazzatiInPartita,
     // golC/golO sono il risultato FINALE (supplementari inclusi). Chi presenta
     // la partita ha qui anche il parziale dei 90', e se i supplementari sono
     // stati davvero giocati.

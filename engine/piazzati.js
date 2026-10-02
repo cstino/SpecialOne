@@ -158,7 +158,9 @@ function scegliFinalizzatore(lineup) {
  * @param lineupDif     chi difende
  * @param pressione     quanto ha attaccato, 1 = pressione media
  */
-export function calcolaPiazzati(lineup, lineupDif, pressione = 1) {
+// `quota`: la frazione di partita su cui si calcola (1 = tutta, 1/6 = un
+// blocco da 15'). Scala solo le frequenze; conversioni e scelte restano quelle.
+export function calcolaPiazzati(lineup, lineupDif, pressione = 1, quota = 1) {
   const p = clamp(pressione, 0.35, 2.2);
 
   // --- angoli, uno per lato ---
@@ -172,7 +174,7 @@ export function calcolaPiazzati(lineup, lineupDif, pressione = 1) {
   const marcatori = [];
 
   for (const lato of ['dx', 'sx']) {
-    const quanti = Math.max(0, poisson(CFG_PIAZZATI.CORNER_BASE * p / 2));
+    const quanti = Math.max(0, poisson(CFG_PIAZZATI.CORNER_BASE * p / 2 * quota));
     corner += quanti;
     if (!quanti) continue;
 
@@ -196,7 +198,7 @@ export function calcolaPiazzati(lineup, lineupDif, pressione = 1) {
       if (rnd() < conv) {
         golCorner++; tiri++; inPorta++;
         const f = scegliFinalizzatore(lineup);
-        if (f) marcatori.push({ id: f.id, nome: f.nome, tipo: `angolo_${lato}` });
+        if (f) marcatori.push({ id: f.id, nome: f.nome, tipo: `angolo_${lato}`, battitore: chi?.id ?? null });
       } else if (rnd() < CFG_PIAZZATI.CORNER_CON_TIRO) {
         tiri++;
         if (rnd() < 0.35) inPorta++;
@@ -205,7 +207,7 @@ export function calcolaPiazzati(lineup, lineupDif, pressione = 1) {
   }
 
   // --- punizioni corte: si calcia in porta ---
-  const corte = Math.max(0, poisson(CFG_PIAZZATI.PUNIZIONI_CORTE_BASE * p));
+  const corte = Math.max(0, poisson(CFG_PIAZZATI.PUNIZIONI_CORTE_BASE * p * quota));
   const specialista = incaricato(lineup, 'punizione', 'punizione_corta');
   const forzaPunizione = specialista?.piazzati?.punizione ?? 45;
   const convCorta = clamp(
@@ -216,7 +218,7 @@ export function calcolaPiazzati(lineup, lineupDif, pressione = 1) {
   for (let i = 0; i < corte; i++) {
     if (rnd() < convCorta) {
       golPunizione++; tiri++; inPorta++;
-      if (specialista) marcatori.push({ id: specialista.id, nome: specialista.nome, tipo: 'punizione_corta' });
+      if (specialista) marcatori.push({ id: specialista.id, nome: specialista.nome, tipo: 'punizione_corta', battitore: null });
     } else if (rnd() < CFG_PIAZZATI.PUNIZIONE_CORTA_CON_TIRO) {
       tiri++;
       if (rnd() < 0.42) inPorta++;
@@ -224,7 +226,7 @@ export function calcolaPiazzati(lineup, lineupDif, pressione = 1) {
   }
 
   // --- punizioni lunghe: si mette dentro e si attacca di testa ---
-  const lunghe = Math.max(0, poisson(CFG_PIAZZATI.PUNIZIONI_LUNGHE_BASE * p));
+  const lunghe = Math.max(0, poisson(CFG_PIAZZATI.PUNIZIONI_LUNGHE_BASE * p * quota));
   const crossatore = incaricato(lineup, 'battuta', 'punizione_lunga');
   const forzaCross = attaccoAereo * 0.7 + (crossatore?.piazzati?.battuta ?? 50) * 0.3;
   const convLunga = clamp(
@@ -235,7 +237,7 @@ export function calcolaPiazzati(lineup, lineupDif, pressione = 1) {
     if (rnd() < convLunga) {
       golPunizione++; tiri++; inPorta++;
       const f = scegliFinalizzatore(lineup);
-      if (f) marcatori.push({ id: f.id, nome: f.nome, tipo: 'punizione_lunga' });
+      if (f) marcatori.push({ id: f.id, nome: f.nome, tipo: 'punizione_lunga', battitore: crossatore?.id ?? null });
     } else if (rnd() < CFG_PIAZZATI.PUNIZIONE_LUNGA_CON_TIRO) {
       tiri++;
       if (rnd() < 0.35) inPorta++;

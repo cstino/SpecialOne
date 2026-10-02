@@ -92,9 +92,31 @@ const GOL_SOLO_DISTANZA = [
   'Botta di collo pieno di {A} dal limite: {P} tocca ma non basta!',
 ]
 const GOL_SOLO_DIFENSORE = [
-  'Mischia sugli sviluppi di un piazzato, svetta {A} più in alto di tutti: gol!',
   'Il difensore {A} si sgancia in avanti e trova il gol: che sorpresa!',
-  'Corner, palla in area, {A} incorna di potenza: {P} battuto!',
+  '{A} si inserisce a sorpresa in area e la mette dentro!',
+  'Mischia furibonda in area, {A} è il più lesto di tutti: gol!',
+]
+// Gol da calcio piazzato (arrivano dal motore col tipo e con chi ha battuto).
+const GOL_ANGOLO = [
+  'Calcio d\'angolo di {B}, stacco imperioso di {A}: gol!',
+  'Corner a rientrare di {B}, {A} svetta più in alto di tutti e incorna: {P} battuto!',
+  'Dalla bandierina {B}, sul primo palo spunta {A} che la gira in rete!',
+  'Angolo battuto da {B}, mischia in area e {A} la spinge dentro!',
+]
+const GOL_ANGOLO_SOLO = [
+  'Sugli sviluppi di un calcio d\'angolo, {A} è il più lesto di tutti: gol!',
+  'Corner, palla che spiove in area, {A} incorna: rete!',
+]
+const GOL_PUNIZIONE_CORTA = [
+  'Punizione dal limite: {A} la calcia sopra la barriera… gol! {P} non può arrivarci!',
+  '{A} sistema il pallone, rincorsa… punizione perfetta all\'incrocio!',
+  'Calcio piazzato di {A}: la palla aggira la barriera e si infila sul palo di {P}!',
+  'Che punizione di {A}! Una parabola imprendibile!',
+]
+const GOL_PUNIZIONE_LUNGA = [
+  'Punizione messa in mezzo da {B}, {A} di testa la mette dentro!',
+  '{B} pennella la punizione in area, {A} anticipa tutti: gol!',
+  'Calcio piazzato di {B} dalla trequarti, sponda e {A} insacca da due passi!',
 ]
 
 const CODA_GOL: Record<string, string[]> = {
@@ -337,7 +359,11 @@ export function costruisciTelecronaca(d: DatiTelecronaca): Riga[] {
       const dopo = prima + 1
       const P = portiere(altro(lato), e.minuto)
       let modello: string
-      if (e.assist != null) {
+      if (e.piazzato) {
+        modello = pesca(e.piazzato.startsWith('angolo') ? (e.assist != null ? GOL_ANGOLO : GOL_ANGOLO_SOLO)
+          : e.piazzato === 'punizione_corta' ? GOL_PUNIZIONE_CORTA
+          : e.assist != null ? GOL_PUNIZIONE_LUNGA : GOL_ANGOLO_SOLO)
+      } else if (e.assist != null) {
         const r = reparto(e.assist)
         modello = pesca(suFascia(e.assist) ? GOL_CROSS : r === 'ATT' ? (rnd() < 0.5 ? GOL_SPONDA : GOL_FILTRANTE) : rnd() < 0.6 ? GOL_FILTRANTE : GOL_RIMORCHIO)
       } else {

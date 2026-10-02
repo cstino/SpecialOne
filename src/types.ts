@@ -160,6 +160,8 @@ export type EventoGol = EventoBase & {
   tipo?: 'gol'
   marcatore: number
   assist: number | null
+  // Gol da calcio piazzato: angolo_dx, angolo_sx, punizione_corta, punizione_lunga.
+  piazzato?: string
 }
 
 export type EventoTiro = EventoBase & {
