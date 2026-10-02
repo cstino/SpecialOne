@@ -1,3 +1,4 @@
+import { TestoAdattato } from './TestoAdattato'
 import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { supabase } from '../lib/supabase'
 import { attributiCorrenti } from '../lib/attributiGiocatore'
@@ -186,7 +187,7 @@ function PlayerPortrait({ player, imageUrl, position, selected = false, onClick,
       {fit !== 'natural' && <i className={`position-warning position-warning--${fit}`} title={fit === 'adapted' ? 'Giocatore adattato in un ruolo vicino' : 'Giocatore completamente fuori posizione'} aria-label={fit === 'adapted' ? 'Fuori posizione di poco' : 'Completamente fuori posizione'}>!</i>}
     </span>
     <span className="lineup-player__plate">
-      <strong>{player ? cognome(player.nome) : 'Seleziona'}</strong>
+      <strong><TestoAdattato>{player ? cognome(player.nome) : 'Seleziona'}</TestoAdattato></strong>
       <span className="lineup-player__meta">
         <span className={`lineup-player__position lineup-player__position--${reparto(position)}`}>{position}</span>
         <b>{player?.overall_corrente ?? '—'}</b>
@@ -229,7 +230,7 @@ export function CartaCampo({ player, imageUrl, position, selected, onClick, ruol
       {fit !== 'natural' && <i className={`rosa-card__fuori rosa-card__fuori--${fit}`} title={fit === 'adapted' ? 'Adattato in un ruolo vicino' : 'Completamente fuori posizione'} aria-label={fit === 'adapted' ? 'Fuori posizione di poco' : 'Completamente fuori posizione'} >!</i>}
       {idoneo && <i className={`rosa-card__idoneo rosa-card__idoneo--${idoneo.tono}`} title={idoneo.tono === 'piu' ? 'Adatto al ruolo che gli hai dato nello schema' : 'Poco adatto al ruolo che gli hai dato nello schema'}>{idoneo.segno}</i>}
     </span>
-    <span className="rosa-card__nome">{cognome(player.nome)}</span>
+    <span className="rosa-card__nome"><TestoAdattato>{cognome(player.nome)}</TestoAdattato></span>
     <span className="rosa-card__riga"><i className={`rosa-card__ruolo--${reparto(position)}`}>{position}</i><b>{player.overall_corrente}</b></span>
   </button>
 }
@@ -914,7 +915,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
                   <span className="scelta-titolare__foto">{imageUrls[c.id] ? <img src={imageUrls[c.id]} alt="" /> : <b>{c.player.nome.charAt(0)}</b>}</span>
                   <span className="scelta-titolare__nome">
                     <span className="scelta-titolare__testa">
-                      <strong>{cognome(c.player.nome)}</strong>
+                      <strong><TestoAdattato minimo={0.6}>{cognome(c.player.nome)}</TestoAdattato></strong>
                       {/* L'energia si vede sempre: pastiglia accanto al nome, mai troncata. */}
                       <em className={`scelta-titolare__energia energia--${livelloEnergia(c.player)}`}>
                         {c.player.infortunato_fino_a > 0 ? 'Infortunato' : c.player.squalificato_fino_a > 0 ? 'Squalificato' : `${c.player.condizione}%`}
