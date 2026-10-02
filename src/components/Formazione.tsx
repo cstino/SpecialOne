@@ -273,6 +273,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [openZone, setOpenZone] = useState<PlayerZone>('starter')
   const [detailPlayer, setDetailPlayer] = useState<Player | null>(null)
   const [playerAction, setPlayerAction] = useState<PlayerAction | null>(null)
+  // Il posto titolare vuoto per cui e' aperta la tendina di scelta.
+  const [sceltaPosto, setSceltaPosto] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -619,6 +621,18 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     setError(null)
   }
 
+  // Dalla tendina del posto vuoto: il giocatore scelto lascia panchina o
+  // tribuna e prende quel posto (stesso effetto di selezionarlo e poi
+  // toccare il posto, in un tocco solo).
+  function mettiTitolare(index: number, location: PlayerLocation) {
+    setSaved(false)
+    if (location.zone === 'bench') setPanchina((current) => current.filter((_value, i) => i !== location.index))
+    else if (location.zone === 'tribuna') setTribuna((current) => current.filter((_value, i) => i !== location.index))
+    setTitolari((current) => current.map((value, i) => i === index ? location.id : value))
+    setSceltaPosto(null)
+    setError(null)
+  }
+
   function handlePlayerClick(event: ReactMouseEvent<HTMLButtonElement>, location: PlayerLocation, player: Player | undefined) {
     if (selected) {
       setPlayerAction(null)
@@ -848,7 +862,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
                     const { x, y } = disposizioneCard?.posti[i] ?? { x: x0, y: y0 }
                     const player = players.find((item) => item.id === titolari[index])
                     const location = { zone: 'starter', index, id: titolari[index] ?? 0 } as PlayerLocation
-                    return <div className={`pitch-posto pitch-slot pitch-slot--${reparto(slot)}`} style={{ left: `${x}%`, top: `${100 - y}%` }} key={`${slot}-${index}`}><CartaCampo player={player} imageUrl={imageUrls[player?.id ?? 0]} position={slot} ruolo={ruoli?.[index] ?? null} selected={selected?.zone === 'starter' && selected.index === index} onClick={player ? (event) => handlePlayerClick(event, location, player) : () => selectEmptyStarter(index)} /></div>
+                    return <div className={`pitch-posto pitch-slot pitch-slot--${reparto(slot)}`} style={{ left: `${x}%`, top: `${100 - y}%` }} key={`${slot}-${index}`}><CartaCampo player={player} imageUrl={imageUrls[player?.id ?? 0]} position={slot} ruolo={ruoli?.[index] ?? null} selected={selected?.zone === 'starter' && selected.index === index} onClick={player ? (event) => handlePlayerClick(event, location, player) : () => selected ? selectEmptyStarter(index) : setSceltaPosto(index)} /></div>
                   })}
                 </div>
               </div>
@@ -874,6 +888,41 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           </div>
         </section>
       )}
+      {sceltaPosto !== null && (() => {
+        const posto = slots[sceltaPosto]
+        // Chi puo' entrare: panchina e tribuna. Ordine: prima l'affinita' col
+        // ruolo (naturale, adattato, fuori ruolo), poi l'overall che avrebbe
+        // in quel posto; gli indisponibili in fondo, non selezionabili.
+        const ordineFit: Record<PositionFit, number> = { natural: 0, adapted: 1, out: 2 }
+        const candidati = [
+          ...panchina.map((id, index) => ({ id, location: { zone: 'bench', index, id } as PlayerLocation, dove: 'Panchina' })),
+          ...tribuna.map((id, index) => ({ id, location: { zone: 'tribuna', index, id } as PlayerLocation, dove: 'Tribuna' })),
+        ].flatMap((c) => {
+          const player = players.find((item) => item.id === c.id)
+          return player ? [{ ...c, player, fit: positionFit(posto, player.posizioni), efficace: Math.round(overallEfficacePosizione(player, posto)), fuori: indisponibile(player) }] : []
+        }).sort((a, b) => Number(a.fuori) - Number(b.fuori) || ordineFit[a.fit] - ordineFit[b.fit] || b.efficace - a.efficace || b.player.overall_corrente - a.player.overall_corrente)
+        const etichettaFit: Record<PositionFit, string> = { natural: 'Nel suo ruolo', adapted: 'Adattato', out: 'Fuori ruolo' }
+        return <div className={`scelta-titolare-layer formazione-broadcast formazione-broadcast--${fase}`} role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setSceltaPosto(null) }}>
+          <section className="scelta-titolare" role="dialog" aria-label={`Scegli il titolare per ${posto}`}>
+            <header>
+              <div><small>Posto libero</small><strong>Chi gioca <i className={`rosa-card__ruolo--${reparto(posto)}`}>{posto}</i>?</strong></div>
+              <button className="button-icona" type="button" onClick={() => setSceltaPosto(null)} aria-label="Chiudi"><Icona nome="chiudi" /></button>
+            </header>
+            {candidati.length === 0 ? <p className="scelta-titolare__vuoto">Nessun giocatore in panchina o in tribuna.</p>
+              : <ul>{candidati.map((c) => <li key={c.id}>
+                <button type="button" disabled={c.fuori} onClick={() => mettiTitolare(sceltaPosto, c.location)}>
+                  <span className="scelta-titolare__foto">{imageUrls[c.id] ? <img src={imageUrls[c.id]} alt="" /> : <b>{c.player.nome.charAt(0)}</b>}</span>
+                  <span className="scelta-titolare__nome">
+                    <strong>{cognome(c.player.nome)}</strong>
+                    <small>{c.player.posizioni.join(' · ')} · {c.dove}{c.fuori ? (c.player.infortunato_fino_a > 0 ? ' · infortunato' : ' · squalificato') : ` · energia ${c.player.condizione}%`}</small>
+                  </span>
+                  <span className={`scelta-titolare__fit scelta-titolare__fit--${c.fit}`}>{etichettaFit[c.fit]}</span>
+                  <span className="scelta-titolare__ovr"><b>{c.efficace}</b>{c.efficace !== c.player.overall_corrente && <small>{c.player.overall_corrente}</small>}</span>
+                </button>
+              </li>)}</ul>}
+          </section>
+        </div>
+      })()}
       {playerAction && <div className="player-action-layer" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setPlayerAction(null) }}>
         <section className="player-action-menu" role="dialog" aria-label={`Azioni per ${playerAction.player.nome}`} style={{ left: playerAction.x, top: playerAction.y }}>
           <div className="player-action-menu__player">
