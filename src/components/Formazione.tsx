@@ -895,8 +895,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         // in quel posto; gli indisponibili in fondo, non selezionabili.
         const ordineFit: Record<PositionFit, number> = { natural: 0, adapted: 1, out: 2 }
         const candidati = [
-          ...panchina.map((id, index) => ({ id, location: { zone: 'bench', index, id } as PlayerLocation, dove: 'Panchina' })),
-          ...tribuna.map((id, index) => ({ id, location: { zone: 'tribuna', index, id } as PlayerLocation, dove: 'Tribuna' })),
+          ...panchina.map((id, index) => ({ id, location: { zone: 'bench', index, id } as PlayerLocation })),
+          ...tribuna.map((id, index) => ({ id, location: { zone: 'tribuna', index, id } as PlayerLocation })),
         ].flatMap((c) => {
           const player = players.find((item) => item.id === c.id)
           return player ? [{ ...c, player, fit: positionFit(posto, player.posizioni), efficace: Math.round(overallEfficacePosizione(player, posto)), fuori: indisponibile(player) }] : []
@@ -913,8 +913,18 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
                 <button type="button" disabled={c.fuori} onClick={() => mettiTitolare(sceltaPosto, c.location)}>
                   <span className="scelta-titolare__foto">{imageUrls[c.id] ? <img src={imageUrls[c.id]} alt="" /> : <b>{c.player.nome.charAt(0)}</b>}</span>
                   <span className="scelta-titolare__nome">
-                    <strong>{cognome(c.player.nome)}</strong>
-                    <small>{c.player.posizioni.join(' · ')} · {c.dove}{c.fuori ? (c.player.infortunato_fino_a > 0 ? ' · infortunato' : ' · squalificato') : ` · energia ${c.player.condizione}%`}</small>
+                    <span className="scelta-titolare__testa">
+                      <strong>{cognome(c.player.nome)}</strong>
+                      {/* L'energia si vede sempre: pastiglia accanto al nome, mai troncata. */}
+                      <em className={`scelta-titolare__energia energia--${livelloEnergia(c.player)}`}>
+                        {c.player.infortunato_fino_a > 0 ? 'Infortunato' : c.player.squalificato_fino_a > 0 ? 'Squalificato' : `${c.player.condizione}%`}
+                      </em>
+                    </span>
+                    {/* Ruolo primario in evidenza nel colore del reparto, poi i secondari. */}
+                    <small>
+                      <i className={`scelta-titolare__primario scelta-titolare__primario--${reparto(c.player.posizioni[0] ?? posto)}`}>{c.player.posizioni[0]}</i>
+                      {c.player.posizioni.slice(1).map((pos) => <span key={pos}> · {pos}</span>)}
+                    </small>
                   </span>
                   <span className={`scelta-titolare__fit scelta-titolare__fit--${c.fit}`}>{etichettaFit[c.fit]}</span>
                   <span className="scelta-titolare__ovr"><b>{c.efficace}</b>{c.efficace !== c.player.overall_corrente && <small>{c.player.overall_corrente}</small>}</span>
