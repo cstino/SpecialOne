@@ -255,7 +255,7 @@ export function CartaCampo({ player, imageUrl, position, selected, onClick, ruol
     </span>
     <span className="rosa-card__nome"><TestoAdattato>{cognome(player.nome)}</TestoAdattato></span>
     <span className="rosa-card__barra" title={`Energia ${player.condizione}%`} aria-label={`Energia ${player.condizione}%`}><i className={`energia--${livello}`} style={{ width: `${Math.max(4, Math.min(100, player.condizione))}%` }} /></span>
-    <span className="rosa-card__riga"><i className={`rosa-card__ruolo--${reparto(position)}`}>{position}</i><b>{efficace}</b></span>
+    <span className="rosa-card__riga"><i className={`rosa-card__ruolo--${reparto(position)}`}>{position}</i><b className={efficace < player.overall_corrente ? 'is-ridotto' : undefined}>{efficace}</b></span>
   </button>
 }
 
@@ -968,7 +968,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
                     </small>
                   </span>
                   <span className={`scelta-titolare__fit scelta-titolare__fit--${c.fit}`}>{etichettaFit[c.fit]}</span>
-                  <span className="scelta-titolare__ovr"><b>{c.efficace}</b>{c.efficace !== c.player.overall_corrente && <small>{c.player.overall_corrente}</small>}</span>
+                  <span className="scelta-titolare__ovr"><b className={c.efficace < c.player.overall_corrente ? 'is-ridotto' : undefined}>{c.efficace}</b>{c.efficace !== c.player.overall_corrente && <small>{c.player.overall_corrente}</small>}</span>
                 </button>
               </li>)}</ul>}
           </section>
