@@ -239,6 +239,10 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId, onN
   if (!finestra.avviata_il) {
     if (finestra.risolta_il || !finestra.estrazione_il) return null
     const mancano = Math.max(0, new Date(finestra.estrazione_il).getTime() - adesso)
+    // In dashboard l'annuncio compare solo nelle ultime 24 ore (deciso col
+    // committente il 2 ottobre 2026): prima e' rumore, le preferenze si
+    // preparano dalla pagina delle scelte.
+    if (mancano > 24 * 60 * 60 * 1000) return null
     // Le liste si congelano un'ora prima: e' il momento in cui la card smette
     // di essere un invito e diventa un annuncio.
     const congelate = mancano <= 60 * 60 * 1000
