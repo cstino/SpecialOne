@@ -340,7 +340,11 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
               const eQuestaSfida = tie.id === fixture.bracket_tie_id
               const alta = tie.alta_team_id ? data.teamById.get(tie.alta_team_id) : undefined
               const bassa = tie.bassa_team_id ? data.teamById.get(tie.bassa_team_id) : undefined
-              const concluso = !eQuestaSfida && tie.stato === 'concluso'
+              // Le altre sfide del turno giocate nella stessa giornata si sono
+              // appena risolte: evidenziare chi ha perso svelerebbe l'esito prima
+              // che l'utente lo veda. Valgono solo quelle chiuse in giornate precedenti.
+              const ultimaGiornata = Math.max(0, ...data.fixtures.filter((riga) => riga.bracket_tie_id === tie.id).map((riga) => riga.giornata))
+              const concluso = !eQuestaSfida && tie.stato === 'concluso' && ultimaGiornata < fixture.giornata
               const esito = (squadra: Team | undefined) => !concluso || !squadra ? '' : tie.vincitore_team_id === squadra.id ? 'is-vincitrice' : 'is-eliminata'
               return (
                 <div className={`match-intro__strada-sfida ${eQuestaSfida ? 'is-in-corso' : ''}`} style={{ animationDelay: `${0.35 + indice * 0.14}s` }} key={tie.id}>
