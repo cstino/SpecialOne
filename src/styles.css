@@ -3524,7 +3524,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .pressione__zero { stroke: rgba(255,255,255,.35); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .pressione__tempo { stroke: rgba(255,255,255,.22); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
 .pressione__linea { fill: none; stroke: rgba(255,255,255,.85); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
-.pressione__cursore { stroke: #fff; stroke-width: 1.5; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 4px rgba(255,255,255,.8)); }
+.pressione__traccia { position: absolute; inset: 0; transition: clip-path .7s linear; }
+.pressione__cursore { position: absolute; top: 2px; bottom: 2px; width: 1.5px; margin-left: -.75px; background: #fff; box-shadow: 0 0 6px rgba(255,255,255,.8); transition: left .7s linear; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .pressione__traccia, .pressione__cursore { transition: none; } }
 .pressione__segni { position: absolute; left: 0; right: 0; bottom: -10px; height: 10px; }
 .pressione__segno { position: absolute; top: 0; width: 9px; height: 9px; border-radius: 50%; transform: translateX(-50%); animation: tc-entra .4s ease-out both; }
 .pressione__segno.is-gol { border: 2px solid var(--tc-colore); background: #0a0812; box-shadow: 0 0 6px var(--tc-colore); }

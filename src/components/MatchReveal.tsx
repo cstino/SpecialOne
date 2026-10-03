@@ -610,7 +610,11 @@ export function GraficoPressione({ curva, minuto, fine, eventi, colori, sigle, s
 }) {
   const W = 1000, H = 120
   const id = useId().replace(/:/g, '')
-  const { linea, area } = percorsoCurva(curva, minuto, W, H, fine)
+  // La curva si disegna intera una volta sola e si scopre da sinistra con una
+  // transizione lineare lunga quanto un minuto della live (700 ms): cosi'
+  // scorre in modo continuo invece di saltare un minuto alla volta.
+  const { linea, area } = useMemo(() => percorsoCurva(curva, fine, W, H, fine), [curva, fine])
+  const scoperto = Math.max(0, Math.min(100, (minuto / fine) * 100))
   const segni = eventi.filter((e) => e.minuto <= minuto && (isEventoGol(e) || (e.tipo === 'cartellino' && e.colore !== 'giallo')))
   const pct = (m: number) => `${(m / fine) * 100}%`
   return <section className="pressione" aria-label="Pressione offensiva">
@@ -628,21 +632,25 @@ export function GraficoPressione({ curva, minuto, fine, eventi, colori, sigle, s
     </div>}
     <div className="pressione__area">
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+        <line x1="0" y1={H / 2} x2={W} y2={H / 2} className="pressione__zero" />
+        {[45, ...(fine > 90 ? [90] : [])].map((m) => <line key={m} x1={(m / fine) * W} y1="4" x2={(m / fine) * W} y2={H - 4} className="pressione__tempo" />)}
+      </svg>
+      <div className="pressione__traccia" style={{ clipPath: `inset(-4px ${(100 - scoperto).toFixed(3)}% -4px 0)` }}>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
         <defs>
           <clipPath id={`sopra-${id}`}><rect x="0" y="0" width={W} height={H / 2} /></clipPath>
           <clipPath id={`sotto-${id}`}><rect x="0" y={H / 2} width={W} height={H / 2} /></clipPath>
           <linearGradient id={`gc-${id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={colori.casa} stopOpacity=".95" /><stop offset=".5" stopColor={colori.casa} stopOpacity=".25" /></linearGradient>
           <linearGradient id={`go-${id}`} x1="0" y1="1" x2="0" y2="0"><stop offset="0" stopColor={colori.ospite} stopOpacity=".95" /><stop offset=".5" stopColor={colori.ospite} stopOpacity=".25" /></linearGradient>
         </defs>
-        <line x1="0" y1={H / 2} x2={W} y2={H / 2} className="pressione__zero" />
-        {[45, ...(fine > 90 ? [90] : [])].map((m) => <line key={m} x1={(m / fine) * W} y1="4" x2={(m / fine) * W} y2={H - 4} className="pressione__tempo" />)}
         {area && <>
           <path d={area} fill={`url(#gc-${id})`} clipPath={`url(#sopra-${id})`} />
           <path d={area} fill={`url(#go-${id})`} clipPath={`url(#sotto-${id})`} />
           <path d={linea} className="pressione__linea" />
         </>}
-        {minuto < fine && <line x1={(minuto / fine) * W} y1="2" x2={(minuto / fine) * W} y2={H - 2} className="pressione__cursore" />}
       </svg>
+      </div>
+      {minuto < fine && <span className="pressione__cursore" style={{ left: `${scoperto}%` }} aria-hidden="true" />}
       <div className="pressione__segni">
         {segni.map((e, k) => <span key={k} className={`pressione__segno ${isEventoGol(e) ? 'is-gol' : 'is-rosso'} is-${e.lato}`} style={{ left: `clamp(5px, ${pct(e.minuto)}, calc(100% - 5px))`, ['--tc-colore' as string]: colori[e.lato as 'casa' | 'ospite'] }} title={`${e.minuto}′`} />)}
       </div>
