@@ -1365,3 +1365,26 @@ partite, rose vere, linea e ampiezza con l'impronta del punto 35):
 
 Nessuno sotto −0,5, nessuno sopra +2,7; chi legge davvero la rosa fa +9,6. Il
 Catenaccio resta neutro a pari forza ed è la scelta di chi è più debole (punto 34).
+
+## 40. Il piano di sviluppo vale subito — 3 ottobre 2026
+
+Segnalato dal committente: col modello dei piani (il piano sceglie DOVE va la
+crescita che il giocatore fa comunque, non regala punti) l'attesa di circa 10
+giornate (ridotta dal livello Training, −4% per livello, minimo 3) non ha piu'
+senso. Migrazione `20261003100000`: `avvia_specializzazione` applica il piano
+subito, con la stessa contabilita' di `completa_specializzazioni` (quello che il
+piano uscente ha gia' spostato resta al giocatore), **solo nelle leghe con
+`tattiche_attive`** (il flag della season 2). Le altre leghe tengono l'attesa
+fino al lancio. Il cambio ruolo resta con la sua attesa.
+
+**Difetto trovato per strada, anche su `main`.** Un piano si completa quando
+`completa_giornata <= prossima giornata`, e se non ci sono partite programmate
+la prossima vale `giornate_totali + 1` (31). I piani avviati dopo circa la
+giornata 20 finiscono oltre la fine della stagione (le giornate dei playoff
+continuano la numerazione, 31-35+) e **non si completano mai**: alla stagione
+successiva la numerazione riparte da 1 e restano aperti, e il giocatore non puo'
+avviare altri allenamenti ("ha gia' un allenamento in corso"). Il 3 ottobre:
+8 piani a LegaBot (chiusi dalla migrazione), **177 a Serie F** (stagione 1, in
+playoff, finali alla giornata 35, completamento previsto 36-43: nessuno ce la
+fara'). Con la regola nuova il difetto sparisce; al lancio i piani aperti delle
+altre leghe si chiudono in blocco (checklist in `HANDOFF-TATTICHE.md`).

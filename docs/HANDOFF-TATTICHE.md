@@ -23,6 +23,27 @@ la mappa; il registro è il territorio.
   simulazione (es. v64-v65 del 1° ottobre: cartellini riletti prima del calcolo,
   marcatori abbinati ai gol) che una distribuzione dal branch annullerebbe.
 
+## Checklist del lancio della season 2
+
+Da fare **in quest'ordine**, chiedendo prima al committente:
+
+1. `git merge origin/main` nel ramo e controllare i conflitti (in
+   `simula-giornata` tenere la versione del ramo dove si sovrappongono).
+2. Distribuire `simula-giornata` dal ramo, togliere `simula-giornata-s2` da
+   `supabase/config.toml`, dal database delle funzioni (`supabase functions
+   delete simula-giornata-s2`) e il ramo `LEGA_PROVA_SEASON_2` in `Admin.tsx`.
+3. Accendere le tattiche sulle altre leghe: `update public.leagues set
+   tattiche_attive = true where stato <> 'archiviata'` (o lega per lega).
+4. **Chiudere i piani di sviluppo rimasti aperti** (vedi registro, punto 40):
+   i piani avviati nelle ultime giornate o ai playoff non si completano mai
+   (a Serie F erano 177 il 3 ottobre) e bloccano i giocatori:
+   `update public.specializzazioni_giocatore s set completa_giornata = 0 from
+   public.leagues l where s.league_id = l.id and l.tattiche_attive and
+   s.completato_il is null; select private.completa_specializzazioni();`
+   (la funzione completa solo le leghe in stato `stagione`: farlo a stagione 2
+   avviata).
+5. Pubblicare l'anteprima/produzione dal ramo.
+
 ## Come si applicano le migrazioni
 
 **Una per una**, con `supabase db query --linked --experimental --file <migrazione>`.
