@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { urlFotoGiocatore } from '../lib/fotoGiocatore'
+import { PREMI, caricaPremi, type Premio } from '../lib/premiAlbo'
 import type { League, Membership, Season, Standing, Team } from '../types'
 import { Crest } from './Crest'
 import { GameNav, type GameView } from './GameNav'
@@ -16,23 +16,6 @@ type Campione = {
   // per le leghe sotto le 8 squadre, dove i playoff non si giocano.
   daPlayoff: boolean
 }
-
-type Premio = {
-  stagioneId: number
-  fase: 'regular' | 'title'
-  premio: 'marcatore' | 'assistman' | 'portiere'
-  nome: string
-  foto?: string
-  squadra: Team | null
-  stemmaFirmato?: string
-  valore: number
-}
-
-const PREMI: Array<{ chiave: Premio['premio']; titolo: string; unita: [string, string] }> = [
-  { chiave: 'marcatore', titolo: 'Miglior marcatore', unita: ['gol', 'gol'] },
-  { chiave: 'assistman', titolo: 'Miglior assistman', unita: ['assist', 'assist'] },
-  { chiave: 'portiere', titolo: 'Miglior portiere', unita: ['porta inviolata', 'porte inviolate'] },
-]
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
@@ -135,28 +118,8 @@ export function AlboDOro({ membership, onNavigate }: Props) {
       }]
     }))
 
-    // Premi individuali: un solo giro di rete (funzione SQL che aggrega), poi
-    // squadre e stemmi di chi li ha vinti. Un errore qui non deve nascondere
-    // l'albo dei campioni.
-    const { data: righePremi } = await supabase.rpc('premi_individuali_lega', { p_league_id: league.id })
-    const grezzi = (righePremi ?? []) as Array<{ season_id: number; fase: Premio['fase']; premio: Premio['premio']; nome: string; foto_url: string | null; team_id: number; valore: number }>
-    const idsSquadrePremi = [...new Set(grezzi.map((riga) => riga.team_id))]
-    const { data: squadrePremi } = idsSquadrePremi.length
-      ? await supabase.from('teams').select('*').in('id', idsSquadrePremi)
-      : { data: [] }
-    const squadrePremiPerId = new Map(((squadrePremi ?? []) as Team[]).map((squadra) => [squadra.id, squadra]))
-    const stemmiPremi = new Map((await Promise.all(((squadrePremi ?? []) as Team[])
-      .filter((squadra) => squadra.stemma_url && !squadra.stemma_url.startsWith('preset:'))
-      .map(async (squadra) => {
-        const { data } = await supabase.storage.from('team-crests').createSignedUrl(squadra.stemma_url!, 3600)
-        return [squadra.id, data?.signedUrl] as const
-      }))).filter((voce): voce is readonly [number, string] => Boolean(voce[1])))
-    setPremi(grezzi.map((riga) => ({
-      stagioneId: riga.season_id, fase: riga.fase, premio: riga.premio, nome: riga.nome, valore: riga.valore,
-      foto: urlFotoGiocatore(riga.foto_url),
-      squadra: squadrePremiPerId.get(riga.team_id) ?? null,
-      stemmaFirmato: stemmiPremi.get(riga.team_id),
-    })))
+    // Un errore sui premi non deve nascondere l'albo dei campioni.
+    setPremi(await caricaPremi(league.id))
     setLoading(false)
   }, [league.id])
 
