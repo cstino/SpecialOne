@@ -445,6 +445,9 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
   const haTraining = Boolean(cambioRuolo || specializzazione)
   const [pagina, setPagina] = useState<'scheda' | 'training'>('scheda')
   const pagerRef = useRef<HTMLDivElement>(null)
+  const modaleRef = useRef<HTMLElement>(null)
+  // Altezza fissa: cambiando scheda il contenuto riparte dall'alto.
+  useEffect(() => { modaleRef.current?.scrollTo({ top: 0 }) }, [pagina])
   const touchStartX = useRef<number | null>(null)
 
   function onTouchStart(evento: React.TouchEvent) { touchStartX.current = evento.touches[0]?.clientX ?? null }
@@ -683,7 +686,7 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
   </div>
 
   return <div className="player-modal-backdrop" role="presentation" onPointerDown={(evento) => { if (evento.target === evento.currentTarget) onClose() }}>
-    <section className={`player-modal scheda-broadcast formazione-broadcast formazione-broadcast--${fase}`} role="dialog" aria-modal="true" aria-labelledby="player-modal-title">
+    <section ref={modaleRef} className={`player-modal scheda-broadcast formazione-broadcast formazione-broadcast--${fase}`} role="dialog" aria-modal="true" aria-labelledby="player-modal-title">
       <button className="player-modal__close" type="button" onClick={onClose} aria-label="Chiudi dettagli giocatore"><Icona nome="chiudi" /></button>
 
       {haTraining && <div className="player-modal__tabs formazione-schede" role="tablist" aria-label="Pagine della scheda">

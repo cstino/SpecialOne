@@ -841,6 +841,8 @@ input:disabled { opacity: 0.65; }
    Tutto sotto .scheda-broadcast: le regole della scheda restano com'erano.
    ============================================================ */
 .scheda-broadcast { border-color: color-mix(in srgb, var(--fz-luce) 30%, rgba(255,255,255,.1)); border-radius: 16px; background: radial-gradient(ellipse 110% 32% at 50% 0%, color-mix(in srgb, var(--fz-2) 24%, transparent), transparent 70%), linear-gradient(180deg, #0c0b14, #07070b); }
+/* Stessa altezza per Scheda e Training: la finestra non segue piu' il contenuto, che scorre dentro. */
+.scheda-broadcast { height: min(90dvh, 780px); }
 .scheda-broadcast .player-modal__close { color: var(--fz-luce); border-color: color-mix(in srgb, var(--fz-luce) 45%, transparent); background: rgba(255,255,255,.05); }
 .scheda-broadcast .player-modal__tabs { margin: 4px 44px 16px 0; }
 .scheda-broadcast .player-modal__hero { grid-template-columns: 96px minmax(0, 1fr) auto; gap: 14px; border-bottom: 0; padding: 6px 42px 14px 0; }
