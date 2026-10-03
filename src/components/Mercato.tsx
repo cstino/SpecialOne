@@ -639,8 +639,8 @@ export function Mercato({ membership, onNavigate }: Props) {
 
     {!caricamento && !errore && <div className="season-page season-page--narrow">
       <PopupSpiegazione userId={membership.user_id} hintKey="mercato-free-agent" titolo="Come funziona il Free Agent">
-        <p>Ogni giorno escono nuovi giocatori svincolati bilanciati per ruolo: portieri, difensori,
-          centrocampisti e attaccanti. È un'asta a busta chiusa dalle 23:30 alle 21:00: offri l'ingaggio
+        <p>Ogni giorno esce un nuovo giocatore per ruolo (portiere, difensore, centrocampista,
+          attaccante), più tutti i giocatori svincolati dalle squadre e non ancora ripresi da nessuno. È un'asta a busta chiusa dalle 23:30 alle 21:00: offri l'ingaggio
           annuale che sei disposto a pagare, ma <strong>nessuno vede le offerte altrui</strong>, e nemmeno tu
           vedi quanto chiede davvero il giocatore.</p>
         <p>Alle 21:00 vince l'offerta più alta che supera la richiesta nascosta. A parità vince chi ha
@@ -676,7 +676,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       {league.fase_carriera !== 'offseason' && <section className="mercato-blocco mercato-svincolati">
         <div className="sezione-testa">
           <div><p className="kicker">Asta a busta chiusa</p><h2>Mercato svincolati live</h2></div>
-          <span>5 per ruolo</span>
+          <span>1 per ruolo + svincolati</span>
         </div>
         <div className="free-agent-daily">
           <div className="free-agent-heading">

@@ -91,8 +91,8 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         stagione in corso — da un'asta sugli svincolati o da uno scambio — ha un contratto che
         scade comunque a fine della stagione in corso, non di quella successiva: alla prima
         off-season utile va rinnovato come tutti gli altri, o lascia la rosa. Svincolare un
-        giocatore, in qualsiasi momento, libera subito lo spazio che occupava, senza nessuna
-        penalità.</p>
+        giocatore libera subito il posto in rosa, ma <strong>il suo ingaggio resta sul tuo tetto</strong>
+        finché il contratto non scade o finché un'altra squadra non lo prende.</p>
       <p>Il sistema verifica la capienza <strong>prima</strong> di eseguire un acquisto, un'asta
         vinta o un rinnovo, quindi in condizioni normali non si supera mai il tetto. Alla
         chiusura dell'off-season c'è comunque un controllo finale di sicurezza: se una rosa

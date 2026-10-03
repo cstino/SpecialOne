@@ -9,7 +9,7 @@ import { SeasonState } from './SeasonUI'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 type Contratto = { ingaggio: number; contratto_scadenza: number; ritiro_annunciato: boolean }
-type Capienza = { stagione: number; tetto: number; monte: number; capienza: number; rosa: number; slot_liberi: number }
+type Capienza = { stagione: number; tetto: number; monte: number; capienza: number; rosa: number; slot_liberi: number; peso_svincolati?: number }
 
 // Sotto il tetto salariale (docs/decisioni-economia.md) solo questi tipi
 // rappresentano un vero movimento di spazio salariale. Il resto che compare
@@ -153,6 +153,7 @@ export function Finanza({ membership, onNavigate }: Props) {
           <dl className="finanza-contratti">
             <div><dt>Confermati per la stagione entrante</dt><dd>{confermati.length} giocatori · {money(ingaggioConfermati)}</dd></div>
             <div><dt>In scadenza a fine stagione corrente</dt><dd>{inScadenza.length} giocatori · {money(ingaggioInScadenza)}</dd></div>
+            {(capienza?.peso_svincolati ?? 0) > 0 && <div><dt>Svincolati ancora a tuo carico</dt><dd>{money(capienza!.peso_svincolati!)}</dd></div>}
           </dl>
         </section>
 

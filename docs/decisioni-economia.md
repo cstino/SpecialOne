@@ -138,11 +138,22 @@ ripetitività (25 decisioni a squadra ogni stagione) e toglie il gioco di prospe
 del contratto lungo firmato prima che il giovane cresca. In cambio l'insolvenza
 diventa impossibile per costruzione, non per controllo.
 
-### Lo svincolo libera lo spazio, senza penalità
+### Lo svincolo libera il posto, non lo stipendio (dal 4 ottobre 2026)
 
-Non serve alcun *dead cap*. La penalità per il taglio esisterebbe solo per impedire
-di firmare lungo e tagliare a piacere: con contratti annuali quell'impegno non
-esiste, quindi non c'è nulla da penalizzare.
+> **Superata la regola precedente** ("lo svincolo libera lo spazio, senza penalità").
+> Deciso col committente il 4 ottobre 2026 per spingere gli scambi
+> (`20261004020000_svincolati_uno_per_ruolo_e_peso_sul_tetto.sql`).
+
+Chi svincola libera subito il posto in rosa, ma l'ingaggio resta nel suo monte
+(`player_instances.peso_team_id`) finché il contratto non scade o finché un'altra
+squadra non prende il giocatore: in quel momento il peso sparisce. Il tetto si
+calcola stagione per stagione, quindi un contratto in scadenza a fine stagione X
+non pesa sulla X+1. Non pesa chi va via a fine off-season perché non rinnovato
+(contratto già scaduto) né chi aveva annunciato il ritiro. Non retroattiva.
+
+Gli svincolati ancora a carico di un club compaiono nel mercato ogni giorno, oltre
+all'estrazione (che passa da 5 a **1 giocatore per ruolo**), fino a firma o scadenza;
+poi tornano nel pool generico.
 
 Spariscono `svincolo_buonuscita` e `svincolo_ingaggio_residuo`.
 
@@ -156,7 +167,7 @@ Spariscono `svincolo_buonuscita` e `svincolo_ingaggio_residuo`.
 | **Aste svincolati** | offerta = ingaggio, con cassa impegnata a garanzia | offerta = ingaggio; l'unico vincolo è la capienza sotto il tetto |
 | **Scambi** | muovono contanti (visto a registro: `mercato_scambio` ±8.89 M€) | scambio di **spazio salariale**: cedi 8 M€ di ingaggio e ne prendi 5, liberi 3 di capienza |
 | **Rinnovi** | durata 1–5 anni, costo immediato zero | durata fissa 1 anno, verificati sul tetto della stagione entrante |
-| **Svincolo** | costava buonuscita + ingaggio residuo | libera lo spazio, nessun costo |
+| **Svincolo** | costava buonuscita + ingaggio residuo | libera il posto; l'ingaggio resta sul tetto fino a scadenza o firma altrove (dal 4/10/2026) |
 | **Insolvenza** (§5.5) | svincolo forzato dagli ingaggi più alti | **eliminata**: non può verificarsi |
 | **Tassa anti-spirale** (§5.6) | mai implementata | **non serve più** |
 
