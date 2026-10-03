@@ -3488,3 +3488,25 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 @keyframes caricamento-respiro { 0%, 100% { opacity: .6; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.04); } }
 @keyframes caricamento-scorre { from { background-position: -120% 0, 0 0; } to { background-position: 220% 0, 0 0; } }
 @media (prefers-reduced-motion: reduce) { .loading-logo__anello, .loading-logo::before, .loading-screen::after, .caricamento-barra { animation: none; } }
+
+.honors-premi { overflow:hidden; border:1px solid #39313e; border-radius:17px; background:#17151f; box-shadow:0 20px 55px rgba(0,0,0,.18); }
+.honors-premi__stagioni { display:flex; flex-wrap:wrap; gap:8px; padding:14px 20px 0; }
+.honors-premi__stagioni button { appearance:none; min-width:48px; padding:7px 12px; border:1px solid #3a3342; border-radius:9px; background:#1d1a26; color:#8f86a0; font:700 .78rem/1 "Oswald","Arial Narrow",sans-serif; letter-spacing:.08em; cursor:pointer; }
+.honors-premi__stagioni button.is-attiva { border-color:#c9a64b; background:linear-gradient(180deg,#3a2e17,#241d12); color:#f6dd8c; box-shadow:0 0 14px rgba(226,188,82,.22); }
+.honors-premi__fasi { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:14px; padding:16px 20px 20px; }
+.honors-premi__fase { --pr-acc:#9ff2c8; display:grid; align-content:start; gap:10px; min-width:0; }
+.honors-premi__fase--title { --pr-acc:#e9c46a; }
+.honors-premi__fase h3 { margin:0; padding-bottom:8px; border-bottom:2px solid var(--pr-acc); color:var(--pr-acc); font:700 .95rem/1 "Oswald","Arial Narrow",sans-serif; letter-spacing:.16em; text-transform:uppercase; }
+.honors-premio { position:relative; display:grid; grid-template-columns:56px minmax(0,1fr) auto; grid-template-areas:"titolo titolo titolo" "foto chi valore"; align-items:center; gap:6px 12px; padding:12px; border:1px solid color-mix(in srgb,var(--pr-acc) 35%,#2a2631); border-radius:12px; background:linear-gradient(135deg,color-mix(in srgb,var(--pr-acc) 14%,#1d1a26),#17151f 70%); }
+.honors-premio__titolo { grid-area:titolo; color:color-mix(in srgb,var(--pr-acc) 80%,#fff); font:600 .68rem/1 "Oswald","Arial Narrow",sans-serif; letter-spacing:.18em; text-transform:uppercase; }
+.honors-premio__foto { grid-area:foto; width:56px; height:56px; overflow:hidden; display:grid; place-items:end center; border-radius:50%; background:radial-gradient(circle at 50% 100%,color-mix(in srgb,var(--pr-acc) 70%,transparent),color-mix(in srgb,var(--pr-acc) 12%,transparent) 70%); box-shadow:0 0 0 2px color-mix(in srgb,var(--pr-acc) 55%,transparent); }
+.honors-premio__foto img { width:100%; height:100%; object-fit:cover; object-position:top center; }
+.honors-premio__foto b { align-self:center; color:rgba(255,255,255,.8); font:700 1.4rem/1 "Oswald","Arial Narrow",sans-serif; }
+.honors-premio__chi { grid-area:chi; display:grid; gap:4px; min-width:0; }
+.honors-premio__chi strong { overflow:hidden; color:#fff; font:700 1.05rem/1.05 "Oswald","Arial Narrow",sans-serif; letter-spacing:.02em; text-overflow:ellipsis; text-transform:uppercase; white-space:nowrap; }
+.honors-premio__chi span { display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden; color:#a79cb2; font-size:.7rem; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
+.honors-premio__chi .crest { width:18px; flex:none; }
+.honors-premio__valore { grid-area:valore; display:grid; justify-items:center; }
+.honors-premio__valore b { color:var(--pr-acc); font:700 2rem/1 "Oswald","Arial Narrow",sans-serif; }
+.honors-premio__valore small { color:#8f86a0; font-size:.5rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+.honors-premio__vuoto { grid-column:1 / -1; margin:0; color:#82798f; font-size:.75rem; }
