@@ -9,6 +9,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import type { Session } from '@supabase/supabase-js'
 import { Admin } from './components/Admin'
 import { AlboDOro } from './components/AlboDOro'
+import { AlboRivelazione } from './components/AlboRivelazione'
+import { useAlboRivelazione } from './lib/useAlboRivelazione'
 import { Avvisi } from './components/Avvisi'
 import { AuthScreen } from './components/AuthScreen'
 import { Draft } from './components/Draft'
@@ -77,6 +79,7 @@ export default function App() {
   const centroNotifiche = useNotifiche(session?.user.id)
   const novita = useNovitaBenvenuto(session?.user.id)
   const nomeAllenatore = useNomeAllenatoreObbligatorio(session?.user.id)
+  const albo = useAlboRivelazione(nelMenu ? null : (activeLeagueId ?? memberships[0]?.league_id), session?.user.id)
 
   const apriMenu = useCallback(() => setNelMenu(true), [])
 
@@ -305,7 +308,9 @@ export default function App() {
       { onConflict: 'user_id,match_id', ignoreDuplicates: true },
     )
     if (revealError) console.warn('Impossibile salvare il reveal della partita:', revealError.message)
-  }, [session])
+    // Chi ha giocato l'ultima giornata vede l'albo d'oro solo dopo il proprio risultato.
+    void albo.ricontrolla()
+  }, [session, albo.ricontrolla])
 
   async function completed(result: RpcResult) {
     setActiveLeagueId(result.league_id)
@@ -373,7 +378,17 @@ export default function App() {
   // lega: annidarli a mano in ognuna moltiplicherebbe solo il rumore.
   const conContesti = (nodo: ReactNode) => (
     <ContestoHome.Provider value={apriMenu}>
-      <ContestoNotifiche.Provider value={contestoNotifiche}>{nodo}</ContestoNotifiche.Provider>
+      <ContestoNotifiche.Provider value={contestoNotifiche}>
+        {nodo}
+        {albo.stagioneId != null && !revealMatch && <AlboRivelazione
+          membership={active}
+          stagioneId={albo.stagioneId}
+          onFine={(vaiAllAlbo) => {
+            void albo.segnaVista(albo.stagioneId!)
+            if (vaiAllAlbo) navigateGame('honors')
+          }}
+        />}
+      </ContestoNotifiche.Provider>
     </ContestoHome.Provider>
   )
 

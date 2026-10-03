@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { PREMI, caricaPremi, type Premio } from '../lib/premiAlbo'
 import type { League, Membership, Season, Standing, Team } from '../types'
 import { Crest } from './Crest'
 import { GameNav, type GameView } from './GameNav'
@@ -26,6 +27,8 @@ function dataItaliana(data: string | null) {
 export function AlboDOro({ membership, onNavigate }: Props) {
   const league = membership.league as League
   const [campioni, setCampioni] = useState<Campione[]>([])
+  const [premi, setPremi] = useState<Premio[]>([])
+  const [stagionePremi, setStagionePremi] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -114,12 +117,18 @@ export function AlboDOro({ membership, onNavigate }: Props) {
         stemmaFirmato: stemmiPerSquadra.get(riga.team_id),
       }]
     }))
+
+    // Un errore sui premi non deve nascondere l'albo dei campioni.
+    setPremi(await caricaPremi(league.id))
     setLoading(false)
   }, [league.id])
 
   useEffect(() => { void carica() }, [carica])
 
   const ultimoCampione = campioni[0]
+  const stagioneInVista = campioni.find((campione) => campione.stagione.id === stagionePremi) ?? campioni[0]
+  const premiInVista = stagioneInVista ? premi.filter((premio) => premio.stagioneId === stagioneInVista.stagione.id) : []
+  const fasiInVista = (['regular', 'title'] as const).filter((fase) => fase === 'regular' || premiInVista.some((premio) => premio.fase === fase))
   return <main className="app-shell season-shell honors-shell">
     <GameNav league={league} active="honors" onNavigate={onNavigate} />
     <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>Storia della lega</span></header>
@@ -166,6 +175,34 @@ export function AlboDOro({ membership, onNavigate }: Props) {
             {indice === 0 && <em>IN CARICA</em>}
           </li>)}
         </ol>
+      </section>}
+
+      {campioni.length > 0 && premi.length > 0 && <section className="honors-premi" aria-label="Premi individuali">
+        <div className="honors-list__heading"><p className="kicker">Premi individuali</p><span>Stagione {stagioneInVista?.stagione.numero}</span></div>
+        {campioni.length > 1 && <div className="honors-premi__stagioni" role="tablist" aria-label="Stagione">
+          {campioni.map((campione) => <button type="button" role="tab" aria-selected={campione.stagione.id === stagioneInVista?.stagione.id}
+            className={campione.stagione.id === stagioneInVista?.stagione.id ? 'is-attiva' : ''} key={campione.stagione.id}
+            onClick={() => setStagionePremi(campione.stagione.id)}>S{campione.stagione.numero}</button>)}
+        </div>}
+        <div className="honors-premi__fasi">
+          {fasiInVista.map((fase) => <div className={`honors-premi__fase honors-premi__fase--${fase}`} key={fase}>
+            <h3>{fase === 'regular' ? 'Regular Season' : 'Title Playoffs'}</h3>
+            {PREMI.map(({ chiave, titolo, unita }) => {
+              const premio = premiInVista.find((voce) => voce.fase === fase && voce.premio === chiave)
+              return <article className="honors-premio" key={chiave}>
+                <span className="honors-premio__titolo">{titolo}</span>
+                {premio ? <>
+                  <div className="honors-premio__foto">{premio.foto ? <img src={premio.foto} alt="" loading="lazy" /> : <b aria-hidden="true">{premio.nome.charAt(0)}</b>}</div>
+                  <div className="honors-premio__chi">
+                    <strong>{premio.nome}</strong>
+                    <span><Crest value={premio.squadra?.stemma_url ?? null} imageUrl={premio.stemmaFirmato} size="small" />{premio.squadra?.nome ?? '—'}</span>
+                  </div>
+                  <div className="honors-premio__valore"><b>{premio.valore}</b><small>{premio.valore === 1 ? unita[0] : unita[1]}</small></div>
+                </> : <p className="honors-premio__vuoto">Non assegnato</p>}
+              </article>
+            })}
+          </div>)}
+        </div>
       </section>}
     </div>}
   </main>

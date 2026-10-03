@@ -4323,3 +4323,114 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .loading-logo__anello::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, transparent 0deg, transparent 80deg, rgba(166,107,255,.45) 210deg, #a66bff 300deg, #46e3ff 356deg, transparent 360deg); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px)); }
 .loading-logo__anello::after { content: ''; position: absolute; top: -2.5px; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: #fff; box-shadow: 0 0 6px 2px #46e3ff, 0 0 18px 5px rgba(70,227,255,.55); }
 .loading-logo--compatto .loading-logo__anello::after { width: 6px; height: 6px; margin-left: -3px; top: -1.5px; }
+.honors-premi { overflow:hidden; border:1px solid #39313e; border-radius:17px; background:#17151f; box-shadow:0 20px 55px rgba(0,0,0,.18); }
+.honors-premi__stagioni { display:flex; flex-wrap:wrap; gap:8px; padding:14px 20px 0; }
+.honors-premi__stagioni button { appearance:none; min-width:48px; padding:7px 12px; border:1px solid #3a3342; border-radius:9px; background:#1d1a26; color:#8f86a0; font:700 .78rem/1 "Oswald","Arial Narrow",sans-serif; letter-spacing:.08em; cursor:pointer; }
+.honors-premi__stagioni button.is-attiva { border-color:#c9a64b; background:linear-gradient(180deg,#3a2e17,#241d12); color:#f6dd8c; box-shadow:0 0 14px rgba(226,188,82,.22); }
+.honors-premi__fasi { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:14px; padding:16px 20px 20px; }
+.honors-premi__fase { --pr-acc:#9ff2c8; display:grid; align-content:start; gap:10px; min-width:0; }
+.honors-premi__fase--title { --pr-acc:#e9c46a; }
+.honors-premi__fase h3 { margin:0; padding-bottom:8px; border-bottom:2px solid var(--pr-acc); color:var(--pr-acc); font:700 .95rem/1 "Oswald","Arial Narrow",sans-serif; letter-spacing:.16em; text-transform:uppercase; }
+.honors-premio { position:relative; display:grid; grid-template-columns:56px minmax(0,1fr) auto; grid-template-areas:"titolo titolo titolo" "foto chi valore"; align-items:center; gap:6px 12px; padding:12px; border:1px solid color-mix(in srgb,var(--pr-acc) 35%,#2a2631); border-radius:12px; background:linear-gradient(135deg,color-mix(in srgb,var(--pr-acc) 14%,#1d1a26),#17151f 70%); }
+.honors-premio__titolo { grid-area:titolo; color:color-mix(in srgb,var(--pr-acc) 80%,#fff); font:600 .68rem/1 "Oswald","Arial Narrow",sans-serif; letter-spacing:.18em; text-transform:uppercase; }
+.honors-premio__foto { grid-area:foto; width:56px; height:56px; overflow:hidden; display:grid; place-items:end center; border-radius:50%; background:radial-gradient(circle at 50% 100%,color-mix(in srgb,var(--pr-acc) 70%,transparent),color-mix(in srgb,var(--pr-acc) 12%,transparent) 70%); box-shadow:0 0 0 2px color-mix(in srgb,var(--pr-acc) 55%,transparent); }
+.honors-premio__foto img { width:100%; height:100%; object-fit:cover; object-position:top center; }
+.honors-premio__foto b { align-self:center; color:rgba(255,255,255,.8); font:700 1.4rem/1 "Oswald","Arial Narrow",sans-serif; }
+.honors-premio__chi { grid-area:chi; display:grid; gap:4px; min-width:0; }
+.honors-premio__chi strong { overflow:hidden; color:#fff; font:700 1.05rem/1.05 "Oswald","Arial Narrow",sans-serif; letter-spacing:.02em; text-overflow:ellipsis; text-transform:uppercase; white-space:nowrap; }
+.honors-premio__chi span { display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden; color:#a79cb2; font-size:.7rem; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
+.honors-premio__chi .crest { width:18px; flex:none; }
+.honors-premio__valore { grid-area:valore; display:grid; justify-items:center; }
+.honors-premio__valore b { color:var(--pr-acc); font:700 2rem/1 "Oswald","Arial Narrow",sans-serif; }
+.honors-premio__valore small { color:#8f86a0; font-size:.5rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+.honors-premio__vuoto { grid-column:1 / -1; margin:0; color:#82798f; font-size:.75rem; }
+
+/* ---- Rivelazione dell'albo d'oro a fine stagione ---- */
+.albo-riv { --oro: #ffd34d; --oro-scuro: #b88717; position: fixed; inset: 0; z-index: 2000; display: flex; flex-direction: column; overflow: hidden auto; padding: max(14px, env(safe-area-inset-top)) 18px max(20px, env(safe-area-inset-bottom)); background: #0a0910 center / cover no-repeat; color: #fff; animation: albo-riv-in .5s ease-out both; }
+.albo-riv__attesa { margin: auto; color: #c9bfa0; font: 600 .85rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .25em; text-transform: uppercase; }
+.albo-riv__testa { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; }
+.albo-riv__punti { display: flex; gap: 6px; }
+.albo-riv__punti i { width: 22px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.22); }
+.albo-riv__punti i.is-fatto { background: rgba(255,211,77,.6); }
+.albo-riv__punti i.is-attivo { background: var(--oro); box-shadow: 0 0 10px rgba(255,211,77,.7); }
+.albo-riv__salta { appearance: none; padding: 9px 16px; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; background: rgba(10,9,16,.55); color: #fff; font: 700 .78rem/1 Inter, Arial, sans-serif; cursor: pointer; }
+.albo-riv__scena { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; width: 100%; max-width: 440px; margin: 0 auto; padding: 12px 0; text-align: center; animation: albo-riv-scena .55s cubic-bezier(.2,.8,.2,1) both; }
+.albo-riv__logo { height: 42px; width: auto; max-width: 60vw; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,.6)); }
+.albo-riv__occhiello { margin: 0; color: var(--oro); font: 600 .8rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .32em; margin-right: -.32em; text-transform: uppercase; }
+.albo-riv__titolo { margin: 0; color: #fff; font: 700 clamp(2.4rem, 12vw, 3.8rem)/.95 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .02em; text-transform: uppercase; text-shadow: 0 6px 28px rgba(0,0,0,.6); text-wrap: balance; }
+.albo-riv__titolo--frase { font-size: clamp(1.5rem, 7.2vw, 2.3rem); line-height: 1.05; }
+.albo-riv__campione { display: grid; justify-items: center; gap: 8px; width: 100%; }
+.albo-riv__stemma { display: grid; place-items: center; width: clamp(130px, 40vw, 170px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(255,211,77,.34), rgba(255,211,77,0) 68%); filter: drop-shadow(0 12px 30px rgba(0,0,0,.55)); animation: albo-riv-stemma 1s cubic-bezier(.2,.8,.2,1) both; }
+.albo-riv__stemma .crest { width: 78%; height: 78%; object-fit: contain; }
+.albo-riv__campione strong { max-width: 100%; color: #fff; font: 700 clamp(1.7rem, 8vw, 2.5rem)/1.05 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .02em; text-transform: uppercase; text-wrap: balance; }
+.albo-riv__campione span { color: var(--oro); font: 600 .95rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .2em; text-transform: uppercase; }
+.albo-riv__campione small { color: rgba(255,255,255,.72); font-size: .78rem; font-weight: 600; }
+.albo-riv__carta { width: min(74vw, 290px); aspect-ratio: 3 / 4.3; perspective: 1200px; }
+.albo-riv__carta-giro { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .95s cubic-bezier(.3,.7,.2,1); }
+.albo-riv__carta.is-svelata .albo-riv__carta-giro { transform: rotateY(180deg); }
+.albo-riv__faccia { --sagoma: polygon(50% 0, 88% 2.2%, 100% 8%, 100% 90%, 92% 96%, 50% 100%, 8% 96%, 0 90%, 0 8%, 12% 2.2%); position: absolute; inset: 0; display: grid; backface-visibility: hidden; -webkit-backface-visibility: hidden; clip-path: var(--sagoma); }
+.albo-riv__bottone { appearance: none; min-width: 210px; min-height: 52px; padding: 0 28px; border: 0; border-radius: 12px; background: linear-gradient(180deg, #ffe58a, #e3a91f); color: #2a1d05; font: 700 1.05rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .2em; text-transform: uppercase; cursor: pointer; box-shadow: 0 10px 28px rgba(0,0,0,.45), 0 0 24px rgba(255,211,77,.35); }
+.albo-riv__bottone:active { transform: translateY(1px); }
+.albo-riv button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.coriandoli-ori { position: fixed; inset: 0; z-index: 2100; width: 100vw; height: 100vh; pointer-events: none; }
+@keyframes albo-riv-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes albo-riv-scena { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes albo-riv-stemma { from { opacity: 0; transform: scale(.6) rotate(-6deg); } to { opacity: 1; transform: none; } }
+@keyframes albo-riv-lampo { 0%, 55% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+@keyframes albo-riv-lampo-unico { to { transform: translateX(120%); } }
+@media (prefers-reduced-motion: reduce) {
+  .albo-riv, .albo-riv__scena, .albo-riv__stemma { animation: none; }
+  .albo-riv__carta-giro { transition: none; }
+  .albo-retro::after { animation: none; display: none; }
+}
+
+/* Carta del premio: sagoma da carta speciale, base scura e oro */
+.albo-riv__carta { filter: drop-shadow(0 0 26px rgba(255,200,70,.35)) drop-shadow(0 18px 30px rgba(0,0,0,.6)); }
+.albo-riv__faccia--fronte { transform: rotateY(180deg); padding: 3px; background: linear-gradient(155deg, #fff4c2 0%, #e6b440 22%, #8a5d12 48%, #f3cc5c 70%, #7a520f 100%); }
+.albo-carta { position: relative; isolation: isolate; display: grid; grid-template-columns: 26% 1fr; grid-template-rows: 1fr auto; height: 100%; overflow: hidden; clip-path: var(--sagoma); background:
+  radial-gradient(ellipse 70% 45% at 62% 40%, rgba(255,205,90,.42), transparent 70%),
+  repeating-linear-gradient(118deg, rgba(255,220,140,.05) 0 2px, transparent 2px 9px),
+  linear-gradient(170deg, #3a2a0d 0%, #171108 46%, #0e0a05 72%, #2b1e08 100%); }
+.albo-carta::before { content: ""; position: absolute; z-index: 3; inset: 7px; clip-path: var(--sagoma); border: 1px solid rgba(255,214,120,.45); pointer-events: none; }
+.albo-carta__raggi { position: absolute; z-index: 0; inset: -20% -40%; background: conic-gradient(from 200deg at 62% 38%, transparent 0 8deg, rgba(255,214,110,.13) 10deg 14deg, transparent 16deg 40deg, rgba(255,214,110,.1) 42deg 45deg, transparent 47deg 80deg, rgba(255,214,110,.12) 82deg 86deg, transparent 88deg); }
+.albo-riv__carta.is-svelata .albo-carta::after { content: ""; position: absolute; z-index: 4; inset: 0; background: linear-gradient(110deg, transparent 38%, rgba(255,246,210,.55) 50%, transparent 62%); transform: translateX(-120%); animation: albo-riv-lampo-unico 1.3s .85s ease-out forwards; pointer-events: none; }
+.albo-carta__lato { position: relative; z-index: 2; grid-row: 1; grid-column: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 22px 0 0 12px; }
+.albo-carta__valore { font: 700 clamp(2.6rem, 13vw, 3.3rem)/.85 "Oswald", "Arial Narrow", sans-serif; background: linear-gradient(180deg, #fff6cf, #f0c44a 55%, #b9821a); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
+.albo-carta__unita { color: #f1d27a; font: 600 .56rem/1.15 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .16em; text-align: center; text-transform: uppercase; }
+.albo-carta__filo { width: 70%; height: 1px; margin: 6px 0 4px; background: linear-gradient(90deg, transparent, rgba(255,214,120,.8), transparent); }
+.albo-carta__icona { width: 24px; height: 24px; color: #f3cf6a; filter: drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+.albo-carta__icona svg { width: 100%; height: 100%; display: block; }
+.albo-carta__stemma { display: grid; place-items: center; width: clamp(42px, 13vw, 52px); aspect-ratio: 1; margin-top: 6px; filter: drop-shadow(0 4px 8px rgba(0,0,0,.65)); }
+.albo-carta__stemma .crest { width: 100%; height: 100%; object-fit: contain; }
+.albo-carta__foto { position: relative; z-index: 1; grid-row: 1; grid-column: 1 / -1; align-self: end; justify-self: end; width: 80%; height: 82%; display: grid; place-items: end center; margin-right: -2%; -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent 100%); mask-image: linear-gradient(to bottom, #000 72%, transparent 100%); }
+.albo-carta__foto img { width: 100%; height: 100%; object-fit: contain; object-position: bottom center; filter: drop-shadow(0 6px 14px rgba(0,0,0,.55)); }
+.albo-carta__foto b { align-self: center; color: rgba(255,214,120,.5); font: 700 5rem/1 "Oswald", "Arial Narrow", sans-serif; }
+.albo-carta__fondo { position: relative; z-index: 2; grid-row: 2; grid-column: 1 / -1; display: grid; justify-items: center; gap: 6px; padding: 0 16px 24px; margin-top: -6px; }
+.albo-carta__nome { position: relative; max-width: 100%; overflow: hidden; padding: 0 22px; color: #fff7dc; font: 700 clamp(1.35rem, 6.6vw, 1.75rem)/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .05em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; text-shadow: 0 2px 6px rgba(0,0,0,.7); }
+.albo-carta__nome::before, .albo-carta__nome::after { content: ""; position: absolute; top: 50%; width: 16px; height: 1px; background: #e5b84a; }
+.albo-carta__nome::before { left: 0; }
+.albo-carta__nome::after { right: 0; }
+.albo-carta__squadra { display: flex; align-items: center; gap: 7px; max-width: 100%; padding: 4px 12px 4px 5px; border: 1px solid rgba(255,214,120,.35); border-radius: 999px; background: rgba(0,0,0,.45); color: #f6e7bd; font: 600 .8rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+.albo-carta__squadra .crest { width: 24px; height: 24px; flex: none; object-fit: contain; }
+.albo-carta__squadra span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.albo-carta__premio { color: #c9a24c; font: 600 .56rem/1 "Oswald", "Arial Narrow", sans-serif; font-style: normal; letter-spacing: .2em; text-transform: uppercase; }
+.albo-carta__premio i { margin: 0 6px; font-style: normal; opacity: .7; }
+@media (prefers-reduced-motion: reduce) { .albo-riv__carta.is-svelata .albo-carta::after { display: none; } }
+
+/* Retro della carta: stessa costruzione del fronte (bordo oro come sfondo dietro la sagoma) */
+.albo-riv__faccia--dietro { padding: 3px; background: linear-gradient(155deg, #fff4c2 0%, #e6b440 22%, #8a5d12 48%, #f3cc5c 70%, #7a520f 100%); }
+.albo-retro { position: relative; isolation: isolate; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; height: 100%; overflow: hidden; clip-path: var(--sagoma); text-align: center; background:
+  radial-gradient(circle at 50% 46%, rgba(255,205,90,.32), transparent 55%),
+  repeating-linear-gradient(118deg, rgba(255,220,140,.05) 0 2px, transparent 2px 9px),
+  linear-gradient(170deg, #3a2a0d 0%, #171108 46%, #0e0a05 72%, #2b1e08 100%); }
+.albo-retro::before { content: ""; position: absolute; z-index: 3; inset: 7px; clip-path: var(--sagoma); border: 1px solid rgba(255,214,120,.45); pointer-events: none; }
+.albo-retro::after { content: ""; position: absolute; z-index: 4; inset: 0; background: linear-gradient(110deg, transparent 38%, rgba(255,235,160,.22) 50%, transparent 62%); transform: translateX(-100%); animation: albo-riv-lampo 2.6s ease-in-out infinite; pointer-events: none; }
+.albo-retro > :not(.albo-carta__raggi) { position: relative; z-index: 2; }
+.albo-retro__icona { width: 30px; height: 30px; color: #f3cf6a; filter: drop-shadow(0 0 8px rgba(255,211,77,.5)); }
+.albo-retro__icona svg { width: 100%; height: 100%; display: block; }
+.albo-retro__medaglia { display: grid; place-items: center; width: 46%; aspect-ratio: 1; border-radius: 50%; padding: 3px; background: linear-gradient(155deg, #fff4c2, #e6b440 30%, #8a5d12 60%, #f3cc5c); box-shadow: 0 0 30px rgba(255,200,70,.45); animation: albo-retro-respiro 2.2s ease-in-out infinite; }
+.albo-retro__medaglia b { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle at 50% 35%, #3d2c0e, #120d06 75%); box-shadow: inset 0 0 0 2px #1a1309, inset 0 0 0 3px rgba(255,220,130,.5); font: 700 clamp(3.4rem, 17vw, 4.4rem)/1 "Oswald", "Arial Narrow", sans-serif; background-clip: padding-box; color: #f6d26a; text-shadow: 0 0 18px rgba(255,211,77,.65); }
+.albo-retro__titolo { color: #fff1c4; font: 700 1.05rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .2em; margin-right: -.2em; text-transform: uppercase; }
+.albo-retro__fase { color: #c9a24c; font: 600 .58rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .24em; text-transform: uppercase; }
+@keyframes albo-retro-respiro { 0%, 100% { transform: scale(1); box-shadow: 0 0 22px rgba(255,200,70,.35); } 50% { transform: scale(1.04); box-shadow: 0 0 38px rgba(255,200,70,.6); } }
+@media (prefers-reduced-motion: reduce) { .albo-retro__medaglia { animation: none; } }
