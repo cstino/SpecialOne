@@ -590,8 +590,8 @@ export function Mercato({ membership, onNavigate }: Props) {
         />
         <div className="free-agent-card__bid-azioni">
           <button className={`button button--secondary${azioneInCorso && azioneInCorso !== 'ritira' ? ' offerta-in-corso' : ''}`} type="button"
-            disabled={inCorso || !aperto} onClick={() => void (a.stato === 'aperta' ? offri(a) : offriArchivio(a))}>
-            {azioneInCorso && azioneInCorso !== 'ritira' ? <><span className="offerta-spinner" role="status" aria-label="Operazione sull'offerta in corso" />{azioneInCorso === 'modifica' ? 'Aggiorno…' : 'Invio…'}</> : !aperto ? 'Chiuso' : mia ? 'Modifica' : a.stato === 'aperta' ? 'Offri' : 'Rioffri'}
+            disabled={inCorso || !aperto || a.stato !== 'aperta'} onClick={() => void offri(a)}>
+            {azioneInCorso && azioneInCorso !== 'ritira' ? <><span className="offerta-spinner" role="status" aria-label="Operazione sull'offerta in corso" />{azioneInCorso === 'modifica' ? 'Aggiorno…' : 'Invio…'}</> : !aperto ? 'Chiuso' : a.stato !== 'aperta' ? 'Non disponibile' : mia ? 'Modifica' : 'Offri'}
           </button>
           {mia !== undefined && a.stato === 'aperta' && <button className={`button button--danger-ghost${azioneInCorso === 'ritira' ? ' offerta-in-corso' : ''}`} type="button"
             disabled={inCorso || !aperto} onClick={() => void ritiraOfferta(a)}>
