@@ -639,14 +639,10 @@ export function Mercato({ membership, onNavigate }: Props) {
     {errore && <div className="season-page"><p className="season-empty">{errore}</p></div>}
 
     {!caricamento && !errore && <div className="season-page season-page--narrow">
-      <PopupSpiegazione userId={membership.user_id} hintKey="mercato-free-agent" titolo="Come funziona il Free Agent">
-        <p>Ogni giorno esce un nuovo giocatore per ruolo (portiere, difensore, centrocampista,
-          attaccante), più tutti i giocatori svincolati dalle squadre e non ancora ripresi da nessuno. È un'asta a busta chiusa dalle 23:30 alle 21:00: offri l'ingaggio
-          annuale che sei disposto a pagare, ma <strong>nessuno vede le offerte altrui</strong>, e nemmeno tu
-          vedi quanto chiede davvero il giocatore.</p>
-        <p>Alle 21:00 vince l'offerta più alta che supera la richiesta nascosta. A parità vince chi ha
-          offerto prima. Offrire <strong>impegna la capienza salariale</strong> finché l'asta non si chiude:
-          se perdi o ritiri l'offerta, torna libera.</p>
+      <PopupSpiegazione userId={membership.user_id} hintKey="mercato-free-agent-v2" titolo="Come funziona il Free Agent">
+        <p>Ogni sera alle 23:30 esce <strong>un giocatore per ruolo</strong> (portiere, difensore, centrocampista, attaccante), più tutti i giocatori svincolati dalle squadre che nessuno ha ancora preso: restano in vetrina ogni giorno finché non firmano o finché il loro contratto non scade.</p>
+        <p>È un'asta a busta chiusa dalle 23:30 alle 21:00: offri l'ingaggio annuale che sei disposto a pagare, ma <strong>nessuno vede le offerte altrui</strong> e nemmeno tu vedi quanto chiede davvero il giocatore. Alle 21:00 vince l'offerta più alta sopra la richiesta nascosta; a parità vince chi ha offerto prima. Un'asta andata deserta non si riapre.</p>
+        <p>Offrire <strong>impegna la capienza salariale</strong> finché l'asta non si chiude: se perdi o ritiri l'offerta torna libera. Attenzione allo svincolo: il giocatore che tagli libera il posto in rosa, ma <strong>il suo ingaggio resta sul tuo tetto</strong> fino alla fine del contratto, a meno che un'altra squadra non lo prenda. In off-season questo mercato è chiuso.</p>
       </PopupSpiegazione>
       <section className="season-title-row">
         <div>

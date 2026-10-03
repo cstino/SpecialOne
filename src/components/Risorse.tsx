@@ -143,7 +143,7 @@ export function Risorse({ membership, onNavigate }: Props) {
     </header>
 
     <div className="season-page season-page--narrow risorse-page">
-      <PopupSpiegazione userId={membership.user_id} hintKey="gestione-risorse" titolo="Come funziona Gestione risorse">
+      <PopupSpiegazione userId={membership.user_id} hintKey="gestione-risorse-v2" titolo="Come funziona Gestione risorse">
         <p>
           Ogni quarto di stagione ricevi {tabella.punti_per_checkpoint} punti abilità, fino a un
           massimo di {tabella.punti_massimi} in tutta la vita della lega. I rami hanno{' '}

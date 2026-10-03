@@ -944,7 +944,24 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         onEliminaModulo={eliminaModuloPersonalizzato}
         onClose={() => setSchemaAperto(false)}
       />}
-      <PopupSpiegazione userId={membership.user_id} hintKey="formazione" titolo="Come funziona la Formazione">
+      {/* Chiavi nuove (-v2): con la Season 2 il popup torna a tutti, aggiornato. */}
+      {league.tattiche_attive
+        ? <PopupSpiegazione userId={membership.user_id} hintKey="formazione-v2" titolo="Come funziona la Formazione">
+          <p>Scegli il modulo e metti un giocatore in ogni posto: titolari, panchina e tribuna. Chi gioca fuori
+            ruolo rende meno, e la Rosa ti mostra subito il suo <strong>overall effettivo</strong>: in giallo quando è
+            più basso del normale, per il ruolo o per la stanchezza.</p>
+          <p>Dalla card dello stile decidi <strong>come gioca la squadra</strong>: stile di gioco, dove attacca, linea
+            difensiva, ampiezza e portiere. A ogni giocatore puoi dare un <strong>ruolo</strong> (un ruolo adatto a lui dà
+            un bonus, uno sbagliato una penalità) e un <strong>compito</strong>: più difesa, equilibrio o più attacco. Se non
+            vuoi perderci tempo, i <strong>preset tattici</strong> sistemano tutto con un tocco.</p>
+          <p>La squadra rende meglio con ciò che conosce. La <strong>familiarità</strong> ha due barre: la disposizione in
+            campo e le indicazioni. Si riempiono in 5 partite. Cambiare modulo non fa perdere quello già imparato:
+            tornando al vecchio lo ritrovi.</p>
+          <p>Hai <strong>due schemi</strong>. Quello segnato "Attivo" va in partita; l'altro lo prepari, e il suo modulo
+            si impara un po' a ogni partita anche senza schierarlo. Selezionalo e salva per farlo diventare attivo.
+            Se non schieri entro le <strong>23:00</strong>, il sistema mette una formazione automatica.</p>
+        </PopupSpiegazione>
+        : <PopupSpiegazione userId={membership.user_id} hintKey="formazione" titolo="Come funziona la Formazione">
         <p>Scegli uno dei moduli disponibili e assegna un giocatore a ogni slot: titolari, panchina e il
           resto in tribuna. Un giocatore fuori dal suo ruolo naturale gioca comunque, ma con un
           <strong> malus di rendimento</strong> — più marcato quanto più il ruolo è lontano dal suo.</p>
@@ -959,7 +976,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           infortunarsi. Recupera da sola fra una partita e l'altra, più in fretta se investi nel Reparto
           medico in Gestione risorse. Un giocatore infortunato o squalificato non può scendere in campo: va
           spostato in tribuna finché non torna disponibile.</p>
-      </PopupSpiegazione>
+        </PopupSpiegazione>}
       <section className="formation-hero"><p className="kicker">La tua distinta · {league.nome}</p><h1>Schiera la squadra.</h1></section>
       {error && <p className="notice notice--error" role="alert">{error}</p>}
       {players.length < 11 ? <section className="formation-panel"><h2>Rosa incompleta</h2><p>Servono almeno 11 giocatori prima di poter salvare una formazione.</p></section> : (

@@ -107,14 +107,10 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
   return <main className="app-shell offseason-shell">
     <GameNav league={league} active="offseason" onNavigate={onNavigate} />
     <section className="season-page offseason-page">
-      <PopupSpiegazione userId={membership.user_id} hintKey="offseason" titolo="Come funziona l'Off-season">
-        <p>Prima l'admin conferma quali squadre proseguono: i giocatori di quelle escluse finiscono fra gli
-          svincolati. Poi si apre una finestra a tempo per i <strong>rinnovi dei contratti</strong> — ogni
-          contratto dura una stagione, chi non rinnova entro la scadenza lascia la squadra ed entra nel
-          mercato svincolati — insieme a un giorno di mercato e all'ingresso di eventuali nuove squadre con
-          un mini-draft.</p>
-        <p>Se una rosa scende sotto il minimo di 21 giocatori, il sistema la completa da solo pescando
-          svincolati sostenibili sotto il tetto: meglio non arrivarci, ma non si resta mai bloccati.</p>
+      <PopupSpiegazione userId={membership.user_id} hintKey="offseason-v2" titolo="Come funziona l'Off-season">
+        <p>L'off-season si apre dopo l'ultima giornata, quando tutti hanno avuto il tempo di rivedere i risultati, e dura quanto decide la lega (il conto alla rovescia è in questa pagina). Prima l'admin conferma quali squadre proseguono: i giocatori di quelle escluse finiscono fra gli svincolati, e le eventuali nuove squadre entrano con un mini-draft.</p>
+        <p>Fino alla scadenza puoi <strong>rinnovare i contratti</strong> e <strong>fare scambi</strong>; il mercato UNDER resta aperto, quello degli svincolati invece è <strong>chiuso</strong> e riapre con la nuova stagione. Si apre anche il draft OFF-Season: ordine delle scelte ed eleggibili sono già visibili, l'estrazione avviene alla fine dell'off-season.</p>
+        <p>Alla scadenza chi non è stato rinnovato lascia la squadra. Se una rosa scende sotto il minimo di 21 giocatori, il sistema la completa da solo con svincolati sostenibili sotto il tetto: meglio non arrivarci, ma non si resta mai bloccati.</p>
       </PopupSpiegazione>
       <header className="offseason-hero">
         <div>

@@ -129,14 +129,10 @@ export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
       <span>Tabellone</span>
     </header>
     <div className="season-page season-page--narrow tabellone-page">
-      <PopupSpiegazione userId={membership.user_id} hintKey="tabellone-playoff" titolo="Come funzionano i playoff">
-        <p>A fine stagione regolare la classifica si divide in due tabelloni a eliminazione diretta,
-          disputati in parallelo. Il <strong>Title Playoff</strong> prende sempre le prime 8 in classifica e
-          assegna il titolo di campione. Il <strong>Draft Playoff</strong> prende tutte le altre squadre,
-          qualunque sia il numero totale di partecipanti.</p>
-        <p>Il Draft Playoff non è un ripiego: come va lì incide sull'ordine di scelta nel prossimo mercato a
-          scelte, quindi vale la pena giocarselo fino in fondo. La classifica finale della lega nasce
-          combinando l'esito di entrambi i tabelloni, non solo del Title Playoff.</p>
+      <PopupSpiegazione userId={membership.user_id} hintKey="tabellone-playoff-v2" titolo="Come funzionano i playoff">
+        <p>A fine stagione regolare la classifica si divide in due tabelloni a eliminazione diretta, giocati in parallelo. Il <strong>Title Playoff</strong> prende le prime 8 e assegna il titolo; il <strong>Draft Playoff</strong> prende tutte le altre squadre.</p>
+        <p>Ogni sfida mostra andata, ritorno e totale. Passa chi segna di più nella somma delle due partite (i gol in trasferta non valgono doppio); in caso di parità il ritorno va ai <strong>supplementari</strong> e poi ai <strong>rigori</strong>. La <strong>finale</strong> invece è una gara secca in campo neutro.</p>
+        <p>Il Draft Playoff non è un ripiego: come va lì, e chi ti elimina, decide l'ordine di scelta nel prossimo mercato a scelte. Vale la pena giocarselo fino in fondo.</p>
       </PopupSpiegazione>
       {bracketsStagione.length === 0 && <section className="offseason-card">
         <p className="kicker">Non ancora</p>

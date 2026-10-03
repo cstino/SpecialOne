@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { TestoAdattato } from './TestoAdattato'
 import { supabase } from '../lib/supabase'
 
 // Stesso meccanismo di PopupSpiegazione (tabella hint_visti), ma senza
@@ -6,7 +7,7 @@ import { supabase } from '../lib/supabase'
 // serve una scelta esplicita per un annuncio una tantum. La chiave e'
 // versionata: la prossima ondata di novita' ne usera' una nuova, e tornera'
 // visibile a tutti anche a chi ha gia' chiuso questa.
-export const HINT_NOVITA = 'novita-2026-09-gestione-risorse'
+export const HINT_NOVITA = 'novita-2026-10-season-2'
 
 export function useNovitaBenvenuto(userId: string | undefined) {
   const [pronto, setPronto] = useState(false)
@@ -35,215 +36,173 @@ export function useNovitaBenvenuto(userId: string | undefined) {
   return { pronto, daMostrare, segnaVista }
 }
 
-function FrecciaDestra() {
-  return <svg className="novita-freccia" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M4 12h15M13 6l6 6-6 6" />
-  </svg>
+// ---- Ondata della Season 2 (lancio, ottobre 2026) ----
+// Un solo giro con tutte le novita' (deciso col committente il 4 ottobre):
+// quelle della Season 2 (tattiche, schemi, allenamento, partita) e quelle
+// arrivate su main nel frattempo (mercato svincolati, scelte, off-season,
+// albo d'oro). Stile broadcast come Rosa e dashboard: ogni pagina ha il
+// colore di una fase (--fz-*), titoli in Oswald, elenchi brevi.
+
+type Fase = 'regular' | 'title' | 'draft'
+type Pagina = { fase: Fase; sfondo: string; occhiello: string; titolo: string; punti: ReactNode[]; grafico?: ReactNode; marchio?: boolean }
+
+// Infografica: le due card degli schemi, con la riserva che impara.
+function GraficoSchemi() {
+  return <div className="nv-schemi">
+    <div className="nv-schema is-attivo"><small>Attivo</small><b><TestoAdattato minimo={0.6}>Schema 1</TestoAdattato></b><em>4-3-3</em></div>
+    <div className="nv-schema"><small>&nbsp;</small><b><TestoAdattato minimo={0.6}>Schema 2</TestoAdattato></b><em>3-5-2</em>
+      <span className="nv-barra"><i style={{ width: '60%' }} /></span><small className="nv-nota">Lo impari: 3/5 partite</small></div>
+  </div>
 }
 
-// Infografica 1: i tre rami di Gestione risorse come colonne a 10 tacche,
-// con un esempio di ripartizione a mostrare che i punti non bastano per
-// riempirli tutti — e' il punto centrale della meccanica, va visto subito.
-function GraficoRami() {
-  const rami: { nome: string; livello: number; colore: string }[] = [
-    { nome: 'Vivaio', livello: 7, colore: '#9b4cff' },
-    { nome: 'Training', livello: 4, colore: '#4cc9f0' },
-    { nome: 'Reparto medico', livello: 2, colore: '#ff5972' },
-  ]
-  return (
-    <div className="novita-barre">
-      {rami.map((r) => (
-        <div className="novita-barra" key={r.nome}>
-          <div className="novita-barra__pista">
-            {Array.from({ length: 10 }, (_, i) => (
-              <span key={i} className={i < r.livello ? 'is-pieno' : ''} style={i < r.livello ? { background: r.colore } : undefined} />
-            ))}
-          </div>
-          <b style={{ color: r.colore }}>Lv. {r.livello}</b>
-          <small>{r.nome}</small>
-        </div>
-      ))}
+// Infografica: l'overall effettivo, pieno e ridotto (giallino).
+function GraficoOverall() {
+  return <div className="nv-overall">
+    <div><span className="nv-ovr">84</span><small>Nel suo ruolo</small></div>
+    <div><span className="nv-ovr is-ridotto">78</span><small>Fuori ruolo o stanco</small></div>
+  </div>
+}
+
+// Infografica: la partita con i cambi, 3 soste piu' l'intervallo.
+function GraficoCambi() {
+  const soste = [{ min: 45, label: 'Int.' }, { min: 62, label: '1' }, { min: 76, label: '2' }, { min: 86, label: '3' }]
+  return <div className="nv-cambi">
+    <div className="nv-cambi__pista">
+      {soste.map((s) => <span key={s.min} className={s.label === 'Int.' ? 'is-intervallo' : ''} style={{ left: `${(s.min / 90) * 100}%` }}><b>{s.label}</b></span>)}
     </div>
-  )
+    <div className="nv-cambi__minuti"><small>0'</small><small>45'</small><small>90'</small></div>
+    <p className="nv-didascalia">Fino a 5 cambi in 3 soste, più l'intervallo.</p>
+  </div>
 }
 
-// Infografica 2: la fascia di potenziale che si stringe salendo di livello
-// nel ramo Vivaio. Stesso prospetto in entrambe le righe: 68-88 a livello
-// 0 (ampiezza reale, 20 punti), valore vero 74 a livello 10 — lontano
-// dalla media dei due estremi (78), apposta, per non suggerire il
-// contrario di quello che la fascia vuole spiegare.
-function GraficoPotenziale() {
-  return (
-    <div className="novita-fasce">
-      <div className="novita-fascia-riga">
-        <small>Vivaio Lv. 0</small>
-        <div className="novita-fascia-pista"><span className="novita-fascia-banda" style={{ left: '14%', width: '70%' }} /></div>
-        <b>68–88</b>
-      </div>
-      <div className="novita-fascia-riga">
-        <small>Vivaio Lv. 10</small>
-        <div className="novita-fascia-pista"><span className="novita-fascia-banda is-stretta" style={{ left: '26%', width: '8%' }} /></div>
-        <b>74</b>
-      </div>
-    </div>
-  )
+// Infografica: il tetto ingaggi con uno svincolato ancora a carico.
+function GraficoTetto() {
+  return <div className="nv-tetto">
+    <div className="nv-tetto__barra"><span className="nv-tetto__rosa" style={{ width: '72%' }} /><span className="nv-tetto__peso" style={{ width: '12%' }} /></div>
+    <div className="nv-tetto__legenda"><small><i className="nv-tetto__rosa" />Rosa</small><small><i className="nv-tetto__peso" />Svincolato ancora a carico</small></div>
+  </div>
 }
 
-// Infografica 3: quanto si accorcia una riqualificazione con il Training
-// (numeri reali della formula: base 14 giornate per uno specialista puro,
-// fino a -40% con Training al massimo).
-function GraficoCambioRuolo() {
-  return (
-    <div className="novita-cambio-ruolo">
-      <div className="novita-cambio-ruolo__pills">
-        <span className="role-pill role-pill--att">ATT</span>
-        <FrecciaDestra />
-        <span className="role-pill role-pill--mid">CC</span>
-      </div>
-      <div className="novita-tempi">
-        <div className="novita-tempo-riga">
-          <small>Training Lv. 0</small>
-          <div className="novita-tempo-pista"><span style={{ width: '100%' }} /></div>
-          <b>14 giornate</b>
-        </div>
-        <div className="novita-tempo-riga">
-          <small>Training Lv. 10</small>
-          <div className="novita-tempo-pista"><span style={{ width: '57%' }} /></div>
-          <b>8 giornate</b>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Infografica 4: l'altro fronte di TRAINING, la crescita dei giovani (numeri
-// reali: moltiplicatore x1,00 a livello 0, fino a x1,50 a livello 9 — si
-// applica solo alla crescita vera, mai al declino dei giocatori piu' anziani).
-function GraficoCrescita() {
-  return (
-    <div className="novita-tempi">
-      <div className="novita-tempo-riga">
-        <small>Training Lv. 0</small>
-        <div className="novita-tempo-pista"><span style={{ width: '20%' }} /></div>
-        <b>x1,00</b>
-      </div>
-      <div className="novita-tempo-riga">
-        <small>Training Lv. 9</small>
-        <div className="novita-tempo-pista"><span style={{ width: '100%' }} /></div>
-        <b>x1,50</b>
-      </div>
-    </div>
-  )
-}
-
-// Infografica 5: reparto medico, i due effetti (numeri reali: -30% di
-// rischio infortuni a livello 10, -40% sul calo di condizione non
-// riassorbito dal recupero post-partita — non tocca il consumo in gara).
-function GraficoMedico() {
-  return (
-    <div className="novita-tempi">
-      <div className="novita-tempo-riga">
-        <small>Rischio infortuni</small>
-        <div className="novita-tempo-pista"><span style={{ width: '70%' }} /></div>
-        <b>-30% a Lv. 10</b>
-      </div>
-      <div className="novita-tempo-riga">
-        <small>Recupero post-partita</small>
-        <div className="novita-tempo-pista"><span style={{ width: '60%' }} /></div>
-        <b>-40% a Lv. 10</b>
-      </div>
-      <p className="novita-didascalia">Esempio: un calo di condizione da 100 a 91 in partita, con Reparto medico
-        al massimo, recupera fino a 95 invece di 91.</p>
-    </div>
-  )
-}
-
-type Slide = { foto: string; fotoMarchio?: boolean; occhiello: string; titolo: string; corpo: ReactNode; grafico?: ReactNode }
-
-const SLIDE: Slide[] = [
+const PAGINE: Pagina[] = [
   {
-    foto: '/risorse/vivaio.jpg',
-    occhiello: 'Novità · Gestione risorse',
-    titolo: 'Punti abilità da investire.',
-    corpo: <p>Ogni quarto di stagione la squadra riceve punti da distribuire su tre rami — <strong>Vivaio</strong>,
-      {' '}<strong>Training</strong> e <strong>Reparto medico</strong> — fino al livello 10 ciascuno. Non bastano
-      per riempirli tutti: bisogna scegliere una direzione.</p>,
-    grafico: <GraficoRami />,
+    fase: 'regular', sfondo: '/sfondi-fase/regular_season.png', marchio: true,
+    occhiello: 'Benvenuto nella Season 2',
+    titolo: 'Si cambia gioco.',
+    punti: [
+      <>In queste pagine trovi <strong>tutto quello che è cambiato</strong>: tattiche, allenamento, partita, mercato e albo d'oro.</>,
+      <>Anche la grafica è nuova, nello stile dei videogiochi di calcio. I colori seguono la fase della tua squadra: verde in Regular Season, blu nei Title Playoff, arancio nei Draft Playoff.</>,
+    ],
   },
   {
-    foto: '/risorse/vivaio.jpg',
-    occhiello: 'Novità · Vivaio e mercato UNDER',
-    titolo: 'Prospetti con un volto vero.',
-    corpo: <p>Ogni giorno arrivano quindicenni da mettere in cantera con aste dedicate, fuori dal conteggio
-      rosa. Il potenziale è una fascia che si stringe salendo di livello nel ramo Vivaio, ma <strong>non è
-      centrata</strong> sul valore vero: fare la media dei due estremi non lo svela. E ora ogni prospetto ha
-      anche una foto.</p>,
-    grafico: <GraficoPotenziale />,
+    fase: 'regular', sfondo: '/sfondi-fase/regular_season.png',
+    occhiello: 'Novità · Tattiche',
+    titolo: 'La tua squadra ha un’identità.',
+    punti: [
+      <>Scegli lo <strong>stile di gioco</strong> fra 7, dove attaccare, l'altezza della linea, l'ampiezza e come gioca il portiere. Lo stile cambia davvero la partita: ritmo, possesso, quanti tiri fai.</>,
+      <>A ogni giocatore dai un <strong>ruolo</strong> (regista, terzino offensivo, finalizzatore…) e un <strong>compito</strong>: più difesa, equilibrio o più attacco. Un ruolo adatto a lui dà un bonus, uno sbagliato una penalità.</>,
+      <>Non vuoi perderci tempo? I <strong>preset tattici</strong> (Palleggio, Pressing alto, Contropiede, Catenaccio…) sistemano tutto con un tocco.</>,
+    ],
   },
   {
-    foto: '/risorse/training.jpg',
-    occhiello: 'Novità · Training · Crescita',
-    titolo: 'I giovani crescono più in fretta.',
-    corpo: <p>Il Training moltiplica la crescita vera nella progressione trimestrale — mai il declino dei
-      giocatori più anziani, quello resta invariato — fino a x1,50 al livello massimo: un ragazzo di talento
-      matura prima.</p>,
-    grafico: <GraficoCrescita />,
+    fase: 'regular', sfondo: '/sfondi-fase/regular_season.png',
+    occhiello: 'Novità · Schemi e familiarità',
+    titolo: 'Due schemi, uno pronto in panchina.',
+    punti: [
+      <>La <strong>familiarità</strong> si riempie in 5 partite, e tornando a un modulo già usato ritrovi quello che avevi imparato.</>,
+      <>Hai <strong>due schemi</strong>. Quello "Attivo" va in partita; l'altro lo prepari, e il suo modulo si impara un po' a ogni partita <strong>anche senza schierarlo</strong>. Selezionalo e salva per farlo diventare attivo.</>,
+    ],
+    grafico: <GraficoSchemi />,
   },
   {
-    foto: '/risorse/training.jpg',
-    occhiello: 'Novità · Training · Cambio ruolo',
-    titolo: 'Riqualifica un giocatore.',
-    corpo: <p>Dalla scheda di un giocatore in rosa puoi avviare il passaggio a un ruolo compatibile: il
-      Training riduce i tempi fino al 40%, e chi conosce già più ruoli impara più in fretta.</p>,
-    grafico: <GraficoCambioRuolo />,
+    fase: 'regular', sfondo: '/risorse/training.jpg',
+    occhiello: 'Novità · Rosa e allenamento',
+    titolo: 'Vedi quanto vale davvero.',
+    punti: [
+      <>Nella Rosa l'overall è quello <strong>effettivo</strong>: tiene conto del ruolo e della forma. Diventa giallo quando è più basso del normale. La barretta sotto il nome è l'energia.</>,
+      <>Il <strong>piano di sviluppo</strong> vale da subito e si può fare <strong>insieme al cambio ruolo</strong>. Anche i portieri hanno i loro piani.</>,
+    ],
+    grafico: <GraficoOverall />,
   },
   {
-    foto: '/risorse/medico.jpg',
-    occhiello: 'Novità · Reparto medico',
-    titolo: 'Meno infortuni, recupero più rapido.',
-    corpo: <p>Il Reparto medico abbassa il rischio di infortuni e attenua quanto della condizione persa in
-      partita non viene riassorbito dal recupero post-partita — non tocca il consumo durante i 90 minuti,
-      solo quanto ne resta dopo.</p>,
-    grafico: <GraficoMedico />,
+    fase: 'title', sfondo: '/sfondi-fase/title_playoffs.png',
+    occhiello: 'Novità · Partita',
+    titolo: 'La partita come in TV.',
+    punti: [
+      <>Prima del calcio d'inizio c'è l'<strong>intro</strong> con locandina e presentazione degli undici.</>,
+      <>Nella live c'è la <strong>telecronaca</strong> con il grafico della pressione, e i gol possono nascere da calci piazzati.</>,
+      <>Ogni giocatore ha il suo <strong>voto in pagella</strong>: anche un difensore può essere il migliore in campo.</>,
+    ],
+    grafico: <GraficoCambi />,
   },
   {
-    foto: '/specialone-icon-512.png',
-    fotoMarchio: true,
+    fase: 'draft', sfondo: '/sfondi-fase/draft_playoffs.png',
+    occhiello: 'Novità · Mercato svincolati',
+    titolo: 'Svincolare ora costa.',
+    punti: [
+      <>Ogni sera esce <strong>un solo giocatore per ruolo</strong>, più tutti quelli svincolati dalle squadre: restano in vetrina finché qualcuno non li prende.</>,
+      <>Se svincoli un giocatore liberi il posto in rosa, ma <strong>il suo ingaggio resta sul tuo tetto</strong> finché il contratto non scade o un'altra squadra non lo prende. In Finanza vedi quanto paghi ancora.</>,
+      <>Morale: per cambiare la rosa conviene <strong>scambiare</strong>.</>,
+    ],
+    grafico: <GraficoTetto />,
+  },
+  {
+    fase: 'draft', sfondo: '/sfondi-fase/draft_playoffs.png',
+    occhiello: 'Novità · Scambi, scelte e playoff',
+    titolo: 'Trattare è più semplice.',
+    punti: [
+      <>La pagina <strong>Scambi</strong> è stata rifatta: scegli la squadra, tocca chi chiedi e chi offri, e vedi subito il riepilogo.</>,
+      <>Se hai più scelte nella stessa finestra del draft, componi <strong>una lista sola</strong>: ogni scelta prende la prima preferenza ancora libera.</>,
+      <>Il <strong>tabellone</strong> è in stile UEFA, con andata, ritorno e totale per ogni sfida. L'ordine delle scelte dipende da chi ti elimina nei playoff.</>,
+    ],
+  },
+  {
+    fase: 'title', sfondo: '/sfondi-fase/title_playoffs.png',
+    occhiello: 'Novità · Off-season e albo d’oro',
+    titolo: 'Ogni stagione lascia il segno.',
+    punti: [
+      <>L'off-season si apre dopo l'ultima giornata e dura quanto decide la lega. Rinnovi, scambi e UNDER restano aperti per tutta la durata; il mercato svincolati è chiuso.</>,
+      <>L'<strong>Albo d'oro</strong> premia anche miglior marcatore, assistman e portiere, in Regular Season e nei Title Playoff.</>,
+      <>A fine stagione una <strong>presentazione a sorpresa</strong> svela campione e premi, con le carte da girare.</>,
+    ],
+  },
+  {
+    fase: 'regular', sfondo: '/sfondi-fase/regular_season.png', marchio: true,
     occhiello: 'Pronti via',
-    titolo: 'Buon proseguimento.',
-    corpo: <p>Questo era il giro di novità. Trovi sempre tutti i dettagli nella sezione Aiuto, o nei popup di
-      ogni pagina alla prima apertura.</p>,
+    titolo: 'Buona Season 2.',
+    punti: [
+      <>Le spiegazioni di ogni pagina sono state aggiornate e <strong>riappaiono alla prima apertura</strong>. Tutti i dettagli sono sempre nella sezione Aiuto.</>,
+    ],
   },
 ]
 
 export function NovitaBenvenuto({ onChiudi }: { onChiudi: () => void }) {
   const [indice, setIndice] = useState(0)
-  const ultima = indice === SLIDE.length - 1
-  const slide = SLIDE[indice]
+  const ultima = indice === PAGINE.length - 1
+  const pagina = PAGINE[indice]
 
   return (
-    <div className="novita-sfondo" role="dialog" aria-modal="true" aria-label="Novità dell'app">
-      <div className="novita-cassetta">
-        <button className="novita-salta" type="button" onClick={onChiudi}>Salta</button>
-        <div className={`novita-foto ${slide.fotoMarchio ? 'is-marchio' : ''}`}>
-          <img src={slide.foto} alt="" />
+    <div className={`nv-sfondo formazione-broadcast formazione-broadcast--${pagina.fase}`} role="dialog" aria-modal="true" aria-label="Novità della Season 2">
+      <div className="nv-cassetta">
+        <button className="nv-salta" type="button" onClick={onChiudi}>Salta</button>
+        <div className="nv-testata" style={{ backgroundImage: `url(${pagina.sfondo})` }}>
+          {pagina.marchio && <img className="nv-marchio" src="/specialone-icon-512.png" alt="" />}
+          <span className="nv-contatore">{indice + 1} / {PAGINE.length}</span>
         </div>
-        <div className="novita-corpo">
-          <p className="kicker">{slide.occhiello}</p>
-          <h2>{slide.titolo}</h2>
-          <div className="novita-testo">{slide.corpo}</div>
-          {slide.grafico && <div className="novita-grafico">{slide.grafico}</div>}
+        <div className="nv-corpo" key={indice}>
+          <p className="nv-occhiello">{pagina.occhiello}</p>
+          <h2>{pagina.titolo}</h2>
+          <ul className="nv-punti">{pagina.punti.map((p, i) => <li key={i}>{p}</li>)}</ul>
+          {pagina.grafico && <div className="nv-grafico">{pagina.grafico}</div>}
         </div>
-        <footer className="novita-piede">
-          <div className="novita-puntini">
-            {SLIDE.map((_, i) => (
-              <span className={`novita-puntino ${i === indice ? 'is-attivo' : ''}`} key={i} />
-            ))}
+        <footer className="nv-piede">
+          <div className="nv-puntini">
+            {PAGINE.map((_, i) => <button key={i} type="button" aria-label={`Pagina ${i + 1}`}
+              className={`nv-puntino ${i === indice ? 'is-attivo' : ''}`} onClick={() => setIndice(i)} />)}
           </div>
-          <div className="novita-azioni">
-            {indice > 0 && <button className="button button--secondary" type="button" onClick={() => setIndice((i) => i - 1)}>Indietro</button>}
-            <button className="button button--primary" type="button" onClick={() => ultima ? onChiudi() : setIndice((i) => i + 1)}>
-              {ultima ? 'Ho capito, si gioca' : 'Avanti'}
+          <div className="nv-azioni">
+            {indice > 0 && <button className="nv-bottone" type="button" onClick={() => setIndice((i) => i - 1)}>Indietro</button>}
+            <button className="nv-bottone is-primario" type="button" onClick={() => ultima ? onChiudi() : setIndice((i) => i + 1)}>
+              {ultima ? 'Si gioca' : 'Avanti'}
             </button>
           </div>
         </footer>

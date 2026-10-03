@@ -137,14 +137,9 @@ export function Under({ membership, onNavigate }: Props) {
     </header>
 
     <div className="season-page season-page--narrow">
-      <PopupSpiegazione userId={membership.user_id} hintKey="mercato-under" titolo="Come funziona il mercato UNDER">
-        <p>Giovani promesse di 15 anni per il vivaio, generate ogni giorno. L'overall che vedi è quello vero,
-          ma il potenziale è mostrato come una fascia — l'incertezza si stringe salendo di livello nel ramo
-          VIVAIO di Gestione risorse, fino a diventare un valore esatto.</p>
-        <p>È un'asta a busta chiusa come quella degli svincolati, ma un giovane preso qui va nel vivaio, non
-          nella rosa: <strong>non conta</strong> nel limite di 21-30 giocatori, e l'ingaggio minimo è di soli
-          0,1 M€. Quanti ne puoi tenere in cantera dipende dagli slot vivaio, anche quelli sbloccati salendo
-          di livello.</p>
+      <PopupSpiegazione userId={membership.user_id} hintKey="mercato-under-v2" titolo="Come funziona il mercato UNDER">
+        <p>Giovani promesse di 15 anni per il vivaio, generate ogni giorno. L'overall che vedi è quello vero, il potenziale invece è una fascia: l'incertezza si stringe salendo di livello nel ramo VIVAIO di Gestione risorse, fino a diventare un valore esatto.</p>
+        <p>È un'asta a busta chiusa come quella degli svincolati, ma un giovane preso qui va nel vivaio, non in rosa: <strong>non conta</strong> nel limite di 21-30 giocatori e l'ingaggio minimo è di soli 0,1 M€. Quanti ne puoi tenere dipende dagli slot vivaio. Questo mercato resta aperto anche in off-season.</p>
       </PopupSpiegazione>
       <section className="season-title-row">
         <div>

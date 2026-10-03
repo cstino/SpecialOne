@@ -455,7 +455,7 @@ export function Scambi({ membership, onNavigate }: Props) {
     {errore && <div className="season-page"><p className="season-empty">{errore}</p></div>}
 
     {!caricamento && !errore && <div className={`season-page season-page--narrow scambi-page scambi-broadcast formazione-broadcast formazione-broadcast--${fase}`}>
-      <PopupSpiegazione userId={membership.user_id} hintKey="scambi" titolo="Come funzionano gli Scambi">
+      <PopupSpiegazione userId={membership.user_id} hintKey="scambi-v2" titolo="Come funzionano gli Scambi">
         <p>Si scambiano giocatori e scelte di draft insieme, come in NBA: <strong>nessun conguaglio in denaro</strong>,
           si tratta alla pari sotto lo stesso tetto salariale per tutti.</p>
         <p>Dopo lo scambio entrambe le rose devono restare fra 21 e 30 giocatori e sotto il tetto ingaggi. Una
