@@ -28,6 +28,12 @@ const FRASE_PREMIO = {
   portiere: 'Il miglior portiere',
 } as const
 
+function IconaPremio({ tipo }: { tipo: Premio['premio'] }) {
+  if (tipo === 'marcatore') return <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M12 7.2l3.4 2.5-1.3 4h-4.2l-1.3-4z" fill="currentColor" /><path d="M12 2v5.2M15.4 9.7l5.3-1.6M14.1 13.7l3.2 4.6M9.9 13.7l-3.2 4.6M8.6 9.7L3.3 8.1" stroke="currentColor" strokeWidth="1.3" /></svg>
+  if (tipo === 'assistman') return <svg viewBox="0 0 24 24"><path d="M3 17c4-9 10-11 16-9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /><path d="M15.5 4.8L19.6 8l-4.4 2.8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /><circle cx="5" cy="19" r="2.4" fill="currentColor" /></svg>
+  return <svg viewBox="0 0 24 24"><path d="M7 21v-4.5L4.6 11a1.5 1.5 0 012.7-1.3L9 12.5V5a1.5 1.5 0 013 0v5.5V3.8a1.5 1.5 0 013 0v6.7V5.6a1.5 1.5 0 013 0V15c0 3-1.7 4.5-3.5 6z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><path d="M7 18h10" stroke="currentColor" strokeWidth="1.5" /></svg>
+}
+
 // Rivelazione a scoperta della stagione conclusa: prima il campione del Title
 // Playoff, poi i premi individuali uno alla volta (regular season, poi title
 // playoff), ognuno con la carta coperta da scoprire.
@@ -131,7 +137,7 @@ export function AlboRivelazione({ membership, stagioneId, onFine }: Props) {
       </>}
 
       {premio && info && <>
-        <p className="albo-riv__occhiello">{NOME_FASE[premio.fase]}</p>
+        <p className="albo-riv__occhiello">Stagione {numero ?? ''} · Premi</p>
         <h1 className="albo-riv__titolo albo-riv__titolo--frase">{FRASE_PREMIO[premio.premio]} è…</h1>
         <div className={`albo-riv__carta ${svelata ? 'is-svelata' : ''}`}>
           <div className="albo-riv__carta-giro">
@@ -140,11 +146,25 @@ export function AlboRivelazione({ membership, stagioneId, onFine }: Props) {
               <small>{info.titolo}</small>
             </div>
             <div className="albo-riv__faccia albo-riv__faccia--fronte" aria-hidden={!svelata}>
-              <div className="albo-riv__valore"><b>{premio.valore}</b><small>{premio.valore === 1 ? info.unita[0] : info.unita[1]}</small></div>
-              <div className="albo-riv__foto">{premio.foto ? <img src={premio.foto} alt="" /> : <b aria-hidden="true">{premio.nome.charAt(0)}</b>}</div>
-              <strong className="albo-riv__nome">{premio.nome}</strong>
-              <span className="albo-riv__squadra"><Crest value={premio.squadra?.stemma_url ?? null} imageUrl={premio.stemmaFirmato} size="small" />{premio.squadra?.nome ?? '—'}</span>
-              <em className="albo-riv__etichetta">{info.titolo} · {NOME_FASE[premio.fase]}</em>
+              <div className="albo-carta">
+                <i className="albo-carta__raggi" aria-hidden="true" />
+                <div className="albo-carta__lato">
+                  <b className="albo-carta__valore">{premio.valore}</b>
+                  <small className="albo-carta__unita">{premio.valore === 1 ? info.unita[0] : info.unita[1]}</small>
+                  <i className="albo-carta__filo" aria-hidden="true" />
+                  <span className="albo-carta__icona" aria-hidden="true"><IconaPremio tipo={premio.premio} /></span>
+                  <span className="albo-carta__stemma"><Crest value={premio.squadra?.stemma_url ?? null} imageUrl={premio.stemmaFirmato} size="small" /></span>
+                </div>
+                <div className="albo-carta__foto">{premio.foto ? <img src={premio.foto} alt="" /> : <b aria-hidden="true">{premio.nome.charAt(0)}</b>}</div>
+                <div className="albo-carta__fondo">
+                  <strong className="albo-carta__nome">{premio.nome}</strong>
+                  <span className="albo-carta__squadra">
+                    <Crest value={premio.squadra?.stemma_url ?? null} imageUrl={premio.stemmaFirmato} size="small" />
+                    <span>{premio.squadra?.nome ?? '—'}</span>
+                  </span>
+                  <em className="albo-carta__premio">{info.titolo}<i aria-hidden="true">·</i>{NOME_FASE[premio.fase]}</em>
+                </div>
+              </div>
             </div>
           </div>
         </div>
