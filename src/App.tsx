@@ -308,7 +308,9 @@ export default function App() {
       { onConflict: 'user_id,match_id', ignoreDuplicates: true },
     )
     if (revealError) console.warn('Impossibile salvare il reveal della partita:', revealError.message)
-  }, [session])
+    // Chi ha giocato l'ultima giornata vede l'albo d'oro solo dopo il proprio risultato.
+    void albo.ricontrolla()
+  }, [session, albo.ricontrolla])
 
   async function completed(result: RpcResult) {
     setActiveLeagueId(result.league_id)
