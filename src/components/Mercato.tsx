@@ -666,11 +666,17 @@ export function Mercato({ membership, onNavigate }: Props) {
 
       {esito && <p ref={esitoRef} className={`notice ${esitoErrore ? 'notice--error' : 'notice--success'}`}>{esito}</p>}
 
+      {/* In off-season gli svincolati non si trattano (le RPC rifiutano): niente aste, solo l'avviso. */}
+      {league.fase_carriera === 'offseason' && <section className="mercato-blocco">
+        <div className="sezione-testa"><div><p className="kicker">Asta a busta chiusa</p><h2>Mercato svincolati chiuso</h2></div></div>
+        <p className="season-empty">In off-season si muovono solo scambi e rinnovi. Il mercato degli svincolati riapre con la nuova stagione.</p>
+      </section>}
+
       {/* ---- Mercato svincolati: nuovi + archivio filtrabile ---- */}
-      <section className="mercato-blocco mercato-svincolati">
+      {league.fase_carriera !== 'offseason' && <section className="mercato-blocco mercato-svincolati">
         <div className="sezione-testa">
           <div><p className="kicker">Asta a busta chiusa</p><h2>Mercato svincolati live</h2></div>
-          <span>{league.fase_carriera === 'offseason' ? '10 per ruolo' : '5 per ruolo'}</span>
+          <span>5 per ruolo</span>
         </div>
         <div className="free-agent-daily">
           <div className="free-agent-heading">
@@ -714,7 +720,7 @@ export function Mercato({ membership, onNavigate }: Props) {
             ? <p className="season-empty">Nessun giocatore con questi filtri.</p>
             : <div className="free-agent-list">{archivioSvincolati.map((a) => cardSvincolato(a, true))}</div>}
         </div>}
-      </section>
+      </section>}
 
       {/* ---- Le mie proposte: solo le aste su cui ho gia' offerto, per
           ritirarle o modificarle senza dover ripescare la carta giusta nella

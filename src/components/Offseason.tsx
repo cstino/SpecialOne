@@ -174,7 +174,7 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
           <div><small>INVITO</small><strong>{league.codice_invito}</strong></div>
         </section>
         {entrant && <section className="offseason-card offseason-card--accent"><p className="kicker">Nuova squadra</p><h2>Completa il draft</h2><p>Hai il budget iniziale completo e puoi scegliere senza attendere gli altri.</p><button className="button button--primary" onClick={() => onNavigate('draft')}>Vai al draft</button></section>}
-        {!entrant && <section className="offseason-card"><p className="kicker">Contratti</p><h2>Chi è in scadenza</h2><p>I rinnovi si trattano durante la stagione, dalla scheda del giocatore. Chi arriva a fine off-season col contratto scaduto lascia la squadra ed entra nel pool degli svincolati.</p></section>}
+        {!entrant && <section className="offseason-card"><p className="kicker">Contratti</p><h2>Chi è in scadenza</h2><p>I rinnovi si trattano dalla scheda del giocatore, in stagione e per tutta l'off-season. Chi arriva a fine off-season col contratto scaduto lascia la squadra ed entra nel pool degli svincolati. In off-season il mercato degli svincolati è chiuso: restano aperti scambi e rinnovi.</p></section>}
         <section className="offseason-card">
           <div className="offseason-control__heading"><div><p className="kicker">Stato lega</p><h2>Squadre pronte</h2></div>
             {admin && !scaduta && !editing && <button className="button button--secondary" type="button" onClick={apriModificaSquadre}>Modifica squadre</button>}
