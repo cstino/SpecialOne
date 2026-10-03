@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from 'recharts'
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { Progress } from './ui/progress'
-import { UnderlineTabs } from './ui/underline-tabs'
 import { Icona } from './Icona'
+import type { FaseSquadra } from '../lib/faseSquadra'
 import { fasciaVoto, formatoVoto } from '../lib/voti'
 
 export type StatsStagione = {
@@ -76,6 +76,8 @@ export type EsitoRinnovo = {
 type AllenamentoInCorso = { etichettaPrima: string | null; etichettaDopo: string; avviatoGiornata: number; completaGiornata: number }
 
 type Props = {
+  /** Colore della scheda: la fase della squadra di chi la guarda (default: stagione regolare). */
+  fase?: FaseSquadra
   /** Solo per il popup di spiegazione della pagina Training (hint_visti). */
   userId?: string
   giocatore: DatiScheda
@@ -412,7 +414,7 @@ function PannelloAllenamento({
   </section>
 }
 
-export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePericolosa, rinnovo, listaMercato, cambioRuolo, specializzazione, onClose }: Props) {
+export function SchedaGiocatore({ fase = 'regular', userId, giocatore, fotoUrl, stagione, azionePericolosa, rinnovo, listaMercato, cambioRuolo, specializzazione, onClose }: Props) {
   const [confermaAperta, setConfermaAperta] = useState(false)
   const [vistaRinnovo, setVistaRinnovo] = useState(false)
   const [proposta, setProposta] = useState<PropostaRinnovo | null>(null)
@@ -668,15 +670,17 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
   </div>
 
   return <div className="player-modal-backdrop" role="presentation" onPointerDown={(evento) => { if (evento.target === evento.currentTarget) onClose() }}>
-    <section className="player-modal" role="dialog" aria-modal="true" aria-labelledby="player-modal-title">
+    <section className={`player-modal scheda-broadcast formazione-broadcast formazione-broadcast--${fase}`} role="dialog" aria-modal="true" aria-labelledby="player-modal-title">
       <button className="player-modal__close" type="button" onClick={onClose} aria-label="Chiudi dettagli giocatore"><Icona nome="chiudi" /></button>
 
-      {haTraining && <UnderlineTabs
-        className="player-modal__tabs"
-        tabs={[{ value: 'scheda', label: 'Scheda' }, { value: 'training', label: 'Training' }] as const}
-        value={pagina}
-        onChange={setPagina}
-      />}
+      {haTraining && <div className="player-modal__tabs formazione-schede" role="tablist" aria-label="Pagine della scheda">
+        {(['scheda', 'training'] as const).map((p) => (
+          <button type="button" role="tab" aria-selected={pagina === p} key={p}
+            className={`formazione-scheda${pagina === p ? ' is-attiva' : ''}`} onClick={() => setPagina(p)}>
+            <span>{p === 'scheda' ? 'Scheda' : 'Training'}</span>
+          </button>
+        ))}
+      </div>}
 
       <div className="player-modal__pager" ref={pagerRef} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <div className={`player-modal__page ${haTraining && pagina !== 'scheda' ? 'is-nascosta' : ''}`}>
@@ -845,7 +849,9 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
           </PopupSpiegazione>}
           <p className="player-training-intro">Allenamento di {giocatore.nome}: cambio di ruolo e piano di sviluppo, dal ramo TRAINING di Gestione risorse.</p>
 
-          {cambioRuolo && <PannelloAllenamento
+          {/* Un portiere non ha ruoli raggiungibili (il database ne restituisce zero):
+              il riquadro non ha senso, nemmeno per dire "non disponibile". */}
+          {cambioRuolo && giocatore.posizioni[0] !== 'GK' && <PannelloAllenamento
             titolo="Cambio ruolo"
             attuale={null}
             inCorso={cambioRuolo.inCorso ? {
@@ -869,7 +875,7 @@ export function SchedaGiocatore({ userId, giocatore, fotoUrl, stagione, azionePe
             titolo="Piano di sviluppo"
             attuale={specializzazione.attiva}
             inCorso={specializzazione.inCorso ? {
-              etichettaPrima: specializzazione.inCorso.specializzazionePrecedente, etichettaDopo: specializzazione.inCorso.specializzazioneTarget,
+              etichettaPrima: specializzazione.inCorso.specializzazionePrecedente ?? 'Crescita naturale', etichettaDopo: specializzazione.inCorso.specializzazioneTarget,
               avviatoGiornata: specializzazione.inCorso.avviatoGiornata, completaGiornata: specializzazione.inCorso.completaGiornata,
             } : null}
             prossimaGiornata={specializzazione.prossimaGiornata}

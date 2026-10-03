@@ -914,6 +914,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       </section>}
 
       {schedaAperta && <SchedaGiocatore
+        fase={fase}
         userId={membership.user_id}
         giocatore={{
           nome: schedaAperta.nome,

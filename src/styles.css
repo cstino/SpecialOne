@@ -835,6 +835,52 @@ input:disabled { opacity: 0.65; }
 .classifica-broadcast .match-intro__classifica-titolo { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #fff; }
 .classifica-broadcast .match-intro__classifica-titolo span { padding: 7px 22px 7px 18px; background: linear-gradient(90deg, var(--fz-1), var(--fz-2)); clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); box-shadow: inset 0 -2px 0 var(--fz-luce); font: 700 1.15rem/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .16em; }
 .classifica-broadcast .match-intro__classifica-titolo small { color: color-mix(in srgb, var(--fz-luce) 80%, #fff); font: 600 .62rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .24em; }
+/* ============================================================
+   SCHEDA DEL GIOCATORE E TRAINING nello stile broadcast (3 ottobre 2026).
+   Colore della fase (--fz-*), vetro scuro, Oswald, titoli a linguetta.
+   Tutto sotto .scheda-broadcast: le regole della scheda restano com'erano.
+   ============================================================ */
+.scheda-broadcast { border-color: color-mix(in srgb, var(--fz-luce) 30%, rgba(255,255,255,.1)); border-radius: 16px; background: radial-gradient(ellipse 110% 32% at 50% 0%, color-mix(in srgb, var(--fz-2) 24%, transparent), transparent 70%), linear-gradient(180deg, #0c0b14, #07070b); }
+.scheda-broadcast .player-modal__close { color: var(--fz-luce); border-color: color-mix(in srgb, var(--fz-luce) 45%, transparent); background: rgba(255,255,255,.05); }
+.scheda-broadcast .player-modal__tabs { margin: 4px 44px 16px 0; }
+.scheda-broadcast .player-modal__hero { grid-template-columns: 96px minmax(0, 1fr) auto; gap: 14px; border-bottom: 0; padding: 6px 42px 14px 0; }
+.scheda-broadcast .player-modal__hero .kicker { margin: 0; color: color-mix(in srgb, var(--fz-luce) 80%, #fff); font: 600 .6rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .22em; text-transform: uppercase; }
+.scheda-broadcast .player-modal__hero h2 { color: #fff; font: 700 clamp(1.4rem, 6vw, 2rem)/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .03em; text-transform: uppercase; }
+.scheda-broadcast .player-modal__hero p:last-child { color: rgba(255,255,255,.58); }
+.scheda-broadcast .player-modal__photo { width: 96px; border-width: 2px; border-radius: 12px; background: linear-gradient(to top, color-mix(in srgb, var(--fz-luce) 70%, transparent), color-mix(in srgb, var(--fz-luce) 22%, transparent) 55%, transparent); box-shadow: 0 10px 24px rgba(0,0,0,.5); }
+.scheda-broadcast .player-modal__photo img { object-fit: cover; object-position: top center; }
+.scheda-broadcast .player-modal__overall { min-width: 64px; padding: 10px 8px; border: 0; border-radius: 8px; background: linear-gradient(135deg, var(--fz-1), var(--fz-2)); box-shadow: inset 0 -3px 0 var(--fz-luce), 0 8px 20px rgba(0,0,0,.45); font: 700 2rem/1 "Oswald", "Arial Narrow", sans-serif; }
+.scheda-broadcast .player-modal__overall span { color: color-mix(in srgb, var(--fz-luce) 70%, #fff); font: 600 .55rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .2em; }
+.scheda-broadcast .role-pill { border-radius: 4px; font-family: "Oswald", "Arial Narrow", sans-serif; letter-spacing: .12em; }
+.scheda-broadcast .player-modal__ritiro { border-radius: 8px; }
+.scheda-broadcast .player-modal__facts div, .scheda-broadcast .player-modal__fitness, .scheda-broadcast .player-modal__morale, .scheda-broadcast .scheda-numeri > div, .scheda-broadcast .scheda-quote > div, .scheda-broadcast .scheda-voti > div { border: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: linear-gradient(180deg, rgba(14,12,24,.85), rgba(9,8,15,.88)); }
+.scheda-broadcast .player-modal__facts dt, .scheda-broadcast .player-modal__fitness span, .scheda-broadcast .player-modal__morale span, .scheda-broadcast .scheda-numeri span, .scheda-broadcast .scheda-quote span, .scheda-broadcast .scheda-voti span { color: color-mix(in srgb, var(--fz-luce) 70%, #fff); font-family: "Oswald", "Arial Narrow", sans-serif; letter-spacing: .14em; }
+.scheda-broadcast .player-modal__facts dd { color: #fff; font-family: "Oswald", "Arial Narrow", sans-serif; letter-spacing: .03em; }
+.scheda-broadcast .fatto-ingaggio dd { color: var(--fz-luce); }
+.scheda-broadcast .scheda-numeri b, .scheda-broadcast .scheda-quote b, .scheda-broadcast .player-modal__fitness strong, .scheda-broadcast .player-modal__morale strong { font-family: "Oswald", "Arial Narrow", sans-serif; }
+.scheda-broadcast .player-modal__fitness-bar, .scheda-broadcast .player-modal__morale-bar, .scheda-broadcast .player-training-barra { height: 6px; border-radius: 0; background: rgba(255,255,255,.1); }
+.scheda-broadcast .player-modal__fitness-bar i, .scheda-broadcast .player-training-barra i { background: linear-gradient(90deg, var(--fz-2), var(--fz-luce)); box-shadow: 0 0 10px color-mix(in srgb, var(--fz-luce) 50%, transparent); }
+/* Titoli di sezione: linguetta inclinata come nelle altre pagine. */
+.scheda-broadcast .player-modal__stats h3, .scheda-broadcast .player-training-sezione h3 { display: block; width: max-content; margin: 18px 0 10px -2px; padding: 6px 16px 6px 12px; color: #fff; background: linear-gradient(90deg, var(--fz-1), var(--fz-2)); clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); box-shadow: inset 0 -2px 0 var(--fz-luce); font: 700 .85rem/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .13em; text-transform: uppercase; }
+.scheda-broadcast .player-training-sezione { margin-top: 6px; padding-top: 0; border-top: 0; }
+.scheda-broadcast .player-training-intro { color: rgba(255,255,255,.58); }
+.scheda-broadcast .player-training-scelta > .season-empty, .scheda-broadcast .player-training-corso { padding: 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: linear-gradient(180deg, rgba(14,12,24,.85), rgba(9,8,15,.88)); }
+.scheda-broadcast .player-training-scelta > .season-empty { border-style: dashed; color: rgba(255,255,255,.62); text-align: center; }
+.scheda-broadcast .player-training-corso__frecce { font-family: "Oswald", "Arial Narrow", sans-serif; letter-spacing: .05em; text-transform: uppercase; }
+.scheda-broadcast .player-training-corso__frecce i { color: var(--fz-luce); }
+.scheda-broadcast .player-training-corso__frecce b { color: #fff; }
+.scheda-broadcast .player-training-opzioni__voce { border-radius: 8px; }
+.scheda-broadcast .player-training-opzioni__pallino { border-color: color-mix(in srgb, var(--fz-luce) 55%, transparent); }
+.scheda-broadcast .player-training-opzioni__voce.is-attiva .player-training-opzioni__pallino, .scheda-broadcast .player-training-opzioni__voce[aria-checked="true"] .player-training-opzioni__pallino { background: var(--fz-luce); }
+.scheda-broadcast .field-help { color: rgba(255,255,255,.62); }
+.scheda-broadcast .field-help b { color: #fff; font-family: "Oswald", "Arial Narrow", sans-serif; letter-spacing: .04em; }
+/* Bottoni dentro la scheda: colore della fase, Oswald maiuscolo. */
+.scheda-broadcast .button { border-radius: 8px; font: 700 .8rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .13em; text-transform: uppercase; }
+.scheda-broadcast .button--primary { border: 0; color: var(--fz-scuro); background: linear-gradient(135deg, var(--fz-luce), var(--fz-2)); box-shadow: 0 8px 20px color-mix(in srgb, var(--fz-2) 32%, transparent); }
+.scheda-broadcast .button--primary:hover:not(:disabled) { background: linear-gradient(135deg, var(--fz-luce), var(--fz-2)); }
+.scheda-broadcast .button--secondary { color: #fff; border: 1px solid color-mix(in srgb, var(--fz-luce) 40%, transparent); background: rgba(255,255,255,.05); }
+.scheda-broadcast .player-modal__danger { border-top-color: rgba(255,255,255,.1); }
+
 /* Preset tattici: bottone nello Schema e foglio con le sei identita'. */
 .schema__preset-apri { display: grid; gap: 3px; width: calc(100% - 32px); margin: 0 16px 12px; padding: 12px 14px; text-align: left; font: inherit; color: #fff; cursor: pointer; border: 1px solid color-mix(in srgb, var(--fz-luce) 55%, transparent); border-radius: 8px; background: linear-gradient(135deg, color-mix(in srgb, var(--fz-1) 55%, #0c0b14), color-mix(in srgb, var(--fz-scuro) 80%, #0c0b14)); box-shadow: inset 3px 0 0 var(--fz-luce); }
 .schema__preset-apri span { font: 700 .9rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .14em; text-transform: uppercase; }

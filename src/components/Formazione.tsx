@@ -1008,6 +1008,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         </section>
       </div>}
       {detailPlayer && <SchedaGiocatore
+        fase={fase}
         giocatore={{
           nome: detailPlayer.nome,
           club: detailPlayer.club,
