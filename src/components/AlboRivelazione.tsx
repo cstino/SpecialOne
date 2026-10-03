@@ -142,13 +142,8 @@ export function AlboRivelazione({ membership, stagioneId, onFine }: Props) {
         <div className={`albo-riv__carta ${svelata ? 'is-svelata' : ''}`}>
           <div className="albo-riv__carta-giro">
             <div className="albo-riv__faccia albo-riv__faccia--dietro" aria-hidden={svelata}>
-              <div className="albo-retro">
-                <i className="albo-carta__raggi" aria-hidden="true" />
-                <span className="albo-retro__icona"><IconaPremio tipo={premio.premio} /></span>
-                <span className="albo-retro__medaglia"><b>?</b></span>
-                <strong className="albo-retro__titolo">{info.titolo}</strong>
-                <small className="albo-retro__fase">{NOME_FASE[premio.fase]} · Stagione {numero ?? ''}</small>
-              </div>
+              <span>?</span>
+              <small>{info.titolo}</small>
             </div>
             <div className="albo-riv__faccia albo-riv__faccia--fronte" aria-hidden={!svelata}>
               <div className="albo-carta">
