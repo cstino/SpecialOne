@@ -217,26 +217,47 @@ export function Scelte({ membership, onNavigate }: Props) {
   }, [pool])
 
   // Inizializza le bozze dalle preferenze già salvate, una sola volta per
-  // scelta (non deve sovrascrivere cio' che l'utente sta ancora editando).
+  // finestra (non deve sovrascrivere cio' che l'utente sta ancora editando).
+  // Chi ha piu' scelte nella stessa finestra compone una lista sola: la bozza
+  // sta sotto la scelta con la posizione piu' bassa e parte dalla lista salvata
+  // piu' lunga (quella della scelta piu' alta, che la contiene tutta).
   useEffect(() => {
     setBozze((correnti) => {
       const nuove = { ...correnti }
-      for (const s of mieScelte) {
-        if (nuove[s.id] !== undefined) continue
-        nuove[s.id] = preferenze.filter((p) => p.scelta_id === s.id).sort((a, b) => a.ordine - b.ordine).map((p) => p.player_id)
+      const perFinestra = new Map<string, SceltaDraft[]>()
+      for (const sc of mieScelte) {
+        if (sc.stato !== 'determinata') continue
+        const k = `${sc.stagione}-${sc.finestra}`
+        perFinestra.set(k, [...(perFinestra.get(k) ?? []), sc])
+      }
+      for (const gruppo of perFinestra.values()) {
+        const ordinate = [...gruppo].sort((a, b) => (a.posizione ?? 0) - (b.posizione ?? 0))
+        const capo = ordinate[0]
+        if (nuove[capo.id] !== undefined) continue
+        const liste = ordinate.map((sc) => preferenze.filter((p) => p.scelta_id === sc.id).sort((a, b) => a.ordine - b.ordine).map((p) => p.player_id))
+        nuove[capo.id] = liste.reduce((lunga, lista) => lista.length > lunga.length ? lista : lunga, [] as number[])
       }
       return nuove
     })
   }, [mieScelte, preferenze])
 
-  async function salvaPreferenze(sceltaId: number) {
-    setSalvataggioInCorso(sceltaId)
+  async function salvaPreferenze(gruppo: SceltaDraft[]) {
+    const capo = gruppo[0]
+    const lista = bozze[capo.id] ?? []
+    setSalvataggioInCorso(capo.id)
     setEsito(null)
-    const { error } = await supabase.rpc('salva_preferenze_scelta', {
-      p_scelta_id: sceltaId, p_player_ids: bozze[sceltaId] ?? [],
-    })
-    setEsito(error ? error.message : 'Preferenze salvate.')
-    if (!error) await carica()
+    let errore: string | null = null
+    // Ogni scelta riceve la lista fino alla sua posizione (il massimo che il
+    // server accetta): all'estrazione la scelta piu' alta salta chi e' gia'
+    // stato preso da quella piu' bassa e scende lungo la stessa lista.
+    for (const sc of gruppo) {
+      const { error } = await supabase.rpc('salva_preferenze_scelta', {
+        p_scelta_id: sc.id, p_player_ids: lista.slice(0, sc.posizione ?? 0),
+      })
+      if (error) { errore = error.message; break }
+    }
+    setEsito(errore ?? 'Preferenze salvate.')
+    if (!errore) await carica()
     setSalvataggioInCorso(null)
   }
 
@@ -302,9 +323,14 @@ export function Scelte({ membership, onNavigate }: Props) {
 
           {mieScelteFinestra.length === 0
             ? <p className="season-empty">Non hai scelte pronte in questa finestra.</p>
-            : mieScelteFinestra.map((s) => {
+            : [[...mieScelteFinestra].sort((a, b) => (a.posizione ?? 0) - (b.posizione ?? 0))].map((gruppo) => {
+                const s = gruppo[0]
+                const massimo = Math.max(...gruppo.map((sc) => sc.posizione ?? 0))
+                const posizioni = gruppo.map((sc) => `${sc.posizione}ª`)
+                const etichetta = posizioni.length === 1 ? `${posizioni[0]} scelta` : `${posizioni.slice(0, -1).join(', ')} e ${posizioni[posizioni.length - 1]} scelta`
                 const bozza = bozze[s.id] ?? []
-                const salvate = preferenze.filter((p) => p.scelta_id === s.id).sort((a, b) => a.ordine - b.ordine).map((p) => p.player_id)
+                const salvateLista = gruppo.map((sc) => preferenze.filter((p) => p.scelta_id === sc.id).sort((a, b) => a.ordine - b.ordine).map((p) => p.player_id))
+                const salvate = salvateLista.reduce((lunga, lista) => lista.length > lunga.length ? lista : lunga, [] as number[])
                 const modificata = JSON.stringify(bozza) !== JSON.stringify(salvate)
                 function giocatore(id: number) { return poolFinestra.find((g) => g.id === id) }
                 function aggiungi(id: number) {
@@ -324,11 +350,12 @@ export function Scelte({ membership, onNavigate }: Props) {
                 }
                 return <div className="scelte-preferenze" key={s.id}>
                   <div className="scelte-preferenze__testa">
-                    <strong>{s.posizione}ª scelta</strong>
-                    <span className={`scelte-preferenze__conteggio ${bozza.length >= (s.posizione ?? 0) ? 'is-completo' : ''}`}>
-                      {bozza.length}<i>/{s.posizione}</i> {s.posizione === 1 ? 'preferenza' : 'preferenze'}
+                    <strong>{etichetta}</strong>
+                    <span className={`scelte-preferenze__conteggio ${bozza.length >= massimo ? 'is-completo' : ''}`}>
+                      {bozza.length}<i>/{massimo}</i> {massimo === 1 ? 'preferenza' : 'preferenze'}
                     </span>
                   </div>
+                  {gruppo.length > 1 && <p className="scelte-preferenze__nota">Una lista sola per tutte le tue scelte. La {posizioni[0]} prende la prima disponibile fra le prime {gruppo[0].posizione}; ogni scelta successiva prende la prima ancora libera della stessa lista.</p>}
 
                   <ol className="scelte-preferenze__lista">
                     {bozza.length === 0
@@ -374,7 +401,7 @@ export function Scelte({ membership, onNavigate }: Props) {
                         })}
                   </ol>
 
-                  {!congelate && bozza.length < (s.posizione ?? 0) && <details className="scelte-preferenze__aggiungi">
+                  {!congelate && bozza.length < massimo && <details className="scelte-preferenze__aggiungi">
                     <summary><span>Aggiungi dal pool</span><b>{poolFinestra.length - bozza.length} disponibili</b></summary>
                     <ul className="mt-2.5 flex max-h-[620px] list-none flex-col divide-y divide-white/10 overflow-y-auto p-0">
                       {poolFinestra.filter((g) => !bozza.includes(g.id)).map((g) => {
@@ -412,7 +439,7 @@ export function Scelte({ membership, onNavigate }: Props) {
 
                   <button className="button button--primary" type="button"
                     disabled={congelate || !modificata || salvataggioInCorso === s.id}
-                    onClick={() => void salvaPreferenze(s.id)}>
+                    onClick={() => void salvaPreferenze(gruppo)}>
                     {salvataggioInCorso === s.id ? 'Salvo…' : 'Salva preferenze'}
                   </button>
                 </div>

@@ -591,8 +591,8 @@ export function Mercato({ membership, onNavigate }: Props) {
         />
         <div className="free-agent-card__bid-azioni">
           <button className={`button button--secondary${azioneInCorso && azioneInCorso !== 'ritira' ? ' offerta-in-corso' : ''}`} type="button"
-            disabled={inCorso || !aperto} onClick={() => void (a.stato === 'aperta' ? offri(a) : offriArchivio(a))}>
-            {azioneInCorso && azioneInCorso !== 'ritira' ? <><span className="offerta-spinner" role="status" aria-label="Operazione sull'offerta in corso" />{azioneInCorso === 'modifica' ? 'Aggiorno…' : 'Invio…'}</> : !aperto ? 'Chiuso' : mia ? 'Modifica' : a.stato === 'aperta' ? 'Offri' : 'Rioffri'}
+            disabled={inCorso || !aperto || a.stato !== 'aperta'} onClick={() => void offri(a)}>
+            {azioneInCorso && azioneInCorso !== 'ritira' ? <><span className="offerta-spinner" role="status" aria-label="Operazione sull'offerta in corso" />{azioneInCorso === 'modifica' ? 'Aggiorno…' : 'Invio…'}</> : !aperto ? 'Chiuso' : a.stato !== 'aperta' ? 'Non disponibile' : mia ? 'Modifica' : 'Offri'}
           </button>
           {mia !== undefined && a.stato === 'aperta' && <button className={`button button--danger-ghost${azioneInCorso === 'ritira' ? ' offerta-in-corso' : ''}`} type="button"
             disabled={inCorso || !aperto} onClick={() => void ritiraOfferta(a)}>
@@ -640,8 +640,8 @@ export function Mercato({ membership, onNavigate }: Props) {
 
     {!caricamento && !errore && <div className="season-page season-page--narrow">
       <PopupSpiegazione userId={membership.user_id} hintKey="mercato-free-agent" titolo="Come funziona il Free Agent">
-        <p>Ogni giorno escono nuovi giocatori svincolati bilanciati per ruolo: portieri, difensori,
-          centrocampisti e attaccanti. È un'asta a busta chiusa dalle 23:30 alle 21:00: offri l'ingaggio
+        <p>Ogni giorno esce un nuovo giocatore per ruolo (portiere, difensore, centrocampista,
+          attaccante), più tutti i giocatori svincolati dalle squadre e non ancora ripresi da nessuno. È un'asta a busta chiusa dalle 23:30 alle 21:00: offri l'ingaggio
           annuale che sei disposto a pagare, ma <strong>nessuno vede le offerte altrui</strong>, e nemmeno tu
           vedi quanto chiede davvero il giocatore.</p>
         <p>Alle 21:00 vince l'offerta più alta che supera la richiesta nascosta. A parità vince chi ha
@@ -667,11 +667,17 @@ export function Mercato({ membership, onNavigate }: Props) {
 
       {esito && <p ref={esitoRef} className={`notice ${esitoErrore ? 'notice--error' : 'notice--success'}`}>{esito}</p>}
 
+      {/* In off-season gli svincolati non si trattano (le RPC rifiutano): niente aste, solo l'avviso. */}
+      {league.fase_carriera === 'offseason' && <section className="mercato-blocco">
+        <div className="sezione-testa"><div><p className="kicker">Asta a busta chiusa</p><h2>Mercato svincolati chiuso</h2></div></div>
+        <p className="season-empty">In off-season si muovono solo scambi e rinnovi. Il mercato degli svincolati riapre con la nuova stagione.</p>
+      </section>}
+
       {/* ---- Mercato svincolati: nuovi + archivio filtrabile ---- */}
-      <section className="mercato-blocco mercato-svincolati">
+      {league.fase_carriera !== 'offseason' && <section className="mercato-blocco mercato-svincolati">
         <div className="sezione-testa">
           <div><p className="kicker">Asta a busta chiusa</p><h2>Mercato svincolati live</h2></div>
-          <span>{league.fase_carriera === 'offseason' ? '10 per ruolo' : '5 per ruolo'}</span>
+          <span>1 per ruolo + svincolati</span>
         </div>
         <div className="free-agent-daily">
           <div className="free-agent-heading">
@@ -715,7 +721,7 @@ export function Mercato({ membership, onNavigate }: Props) {
             ? <p className="season-empty">Nessun giocatore con questi filtri.</p>
             : <div className="free-agent-list">{archivioSvincolati.map((a) => cardSvincolato(a, true))}</div>}
         </div>}
-      </section>
+      </section>}
 
       {/* ---- Le mie proposte: solo le aste su cui ho gia' offerto, per
           ritirarle o modificarle senza dover ripescare la carta giusta nella

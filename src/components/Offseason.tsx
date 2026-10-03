@@ -165,7 +165,7 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
 
       {league.fase_carriera === 'offseason' && <>
         <section className={`offseason-countdown ${scaduta ? 'is-expired' : ''}`}>
-          <div><p className="kicker">Finestra di preparazione</p><h2>{scaduta ? 'Tempo scaduto.' : 'Il mercato non aspetta.'}</h2><p>{scaduta ? 'Il server sta completando le rose corte e preparando il calendario.' : 'Hai 24 ore dall’apertura per mercato e sistemazione della rosa.'}</p></div>
+          <div><p className="kicker">Finestra di preparazione</p><h2>{scaduta ? 'Tempo scaduto.' : 'Il mercato non aspetta.'}</h2><p>{scaduta ? 'Il server sta completando le rose corte e preparando il calendario.' : 'Fino alla scadenza puoi rinnovare i contratti, fare scambi e sistemare la rosa. Il mercato svincolati riapre con la nuova stagione.'}</p></div>
           <time dateTime={status?.scade_il ?? undefined}><span>{scaduta ? 'CHIUSURA' : 'TEMPO RIMASTO'}</span><strong>{scaduta ? 'IN CORSO' : countdown}</strong></time>
         </section>
         <section className="offseason-summary">
@@ -174,7 +174,7 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
           <div><small>INVITO</small><strong>{league.codice_invito}</strong></div>
         </section>
         {entrant && <section className="offseason-card offseason-card--accent"><p className="kicker">Nuova squadra</p><h2>Completa il draft</h2><p>Hai il budget iniziale completo e puoi scegliere senza attendere gli altri.</p><button className="button button--primary" onClick={() => onNavigate('draft')}>Vai al draft</button></section>}
-        {!entrant && <section className="offseason-card"><p className="kicker">Contratti</p><h2>Chi è in scadenza</h2><p>I rinnovi si trattano durante la stagione, dalla scheda del giocatore. Chi arriva a fine off-season col contratto scaduto lascia la squadra ed entra nel pool degli svincolati.</p></section>}
+        {!entrant && <section className="offseason-card"><p className="kicker">Contratti</p><h2>Chi è in scadenza</h2><p>I rinnovi si trattano dalla scheda del giocatore, in stagione e per tutta l'off-season. Chi arriva a fine off-season col contratto scaduto lascia la squadra ed entra nel pool degli svincolati. In off-season il mercato degli svincolati è chiuso: restano aperti scambi e rinnovi.</p></section>}
         <section className="offseason-card">
           <div className="offseason-control__heading"><div><p className="kicker">Stato lega</p><h2>Squadre pronte</h2></div>
             {admin && !scaduta && !editing && <button className="button button--secondary" type="button" onClick={apriModificaSquadre}>Modifica squadre</button>}
