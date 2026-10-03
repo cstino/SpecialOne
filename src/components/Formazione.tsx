@@ -986,7 +986,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
               <FtsgGauge moduloPct={ftsgModuloPct} stilePct={ftsgStilePct} onClick={() => setFtsgInfoOpen(true)} />
               <span>Familiarità</span>
             </div>
-            {tatticheAttive && <SchemiCard
+            <div className="formation-tattica">
+              {tatticheAttive && <SchemiCard
               nomeAttivo={nomeAttivo}
               nomeRiserva={haRiserva ? nomeRiserva : null}
               selezionato={schemaSel}
@@ -999,7 +1000,6 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
               onUsaRiserva={usaRiservaInPartita}
               onEliminaRiserva={() => { if (window.confirm(`Eliminare lo schema riserva «${nomeRiserva}»?`)) eliminaRiserva() }}
             />}
-            <div className="formation-tattica">
               <div className="formation-tattica__voce formation-module-selector">
                 <button className="formation-tattica__trigger" type="button" aria-haspopup="listbox" aria-expanded={moduleMenuOpen} onClick={() => { setModuleMenuOpen((open) => !open) }}>
                   <span className="formation-tattica__testo"><small>{moduloPersonalizzatoAttivo ? `Modulo personalizzato · da ${modulo}` : 'Modulo tattico'}</small><strong>{moduloPersonalizzatoAttivo?.nome ?? modulo}</strong></span>

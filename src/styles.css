@@ -910,7 +910,7 @@ input:disabled { opacity: 0.65; }
 .scheda-broadcast .player-modal__danger { border-top-color: rgba(255,255,255,.1); }
 
 /* Schemi attivo e riserva (card sopra moduli e stile, season 2). */
-.schemi-card { display: grid; gap: 8px; margin: 0 0 10px; }
+.schemi-card { grid-column: 1 / -1; display: grid; gap: 8px; min-width: 0; }
 .schemi-card__slot-riga { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .schemi-card__slot { position: relative; min-width: 0; }
 .schemi-card__corpo, .schemi-card__vuoto { display: grid; align-content: center; gap: 4px; width: 100%; min-height: 84px; padding: 12px 42px 12px 14px; text-align: left; font: inherit; color: #fff; cursor: pointer; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: linear-gradient(180deg, rgba(12,10,22,.85), rgba(9,8,15,.9)); }
