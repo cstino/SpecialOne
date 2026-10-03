@@ -329,7 +329,7 @@ function GruppoAbilita({ gruppo, attributi }: { gruppo: GruppoAttributi; attribu
 // Riquadro comune a cambio ruolo e specializzazione: stato in corso con
 // barra di avanzamento, o picker a schede quando non c'e' nulla in corso.
 function PannelloAllenamento({
-  titolo, attuale, inCorso, prossimaGiornata, opzioni, opzioniCaricamento, scelta, onScegli, onAvvia, onAnnulla, inviando, errore, descrizioneScelta, confrontoScelta, bloccatoDa,
+  titolo, attuale, inCorso, prossimaGiornata, opzioni, opzioniCaricamento, scelta, onScegli, onAvvia, onRimuovi, onAnnulla, inviando, errore, descrizioneScelta, confrontoScelta, bloccatoDa,
 }: {
   titolo: string
   attuale: string | null
@@ -340,6 +340,8 @@ function PannelloAllenamento({
   scelta: string
   onScegli: (chiave: string) => void
   onAvvia: () => void
+  /** Con un piano attivo il bottone diventa "Annulla allenamento": toglie il piano e torna alla crescita naturale. */
+  onRimuovi?: () => void
   onAnnulla: () => void
   inviando: boolean
   errore: string | null
@@ -354,13 +356,20 @@ function PannelloAllenamento({
   // scelta e' gia' quella attiva (si avvia solo qualcosa di nuovo).
   const opzioneScelta = opzioni?.find((o) => o.chiave === scelta)
   const giaAttivo = Boolean(opzioneScelta?.attuale)
+  // Con un piano attivo e nessun altro piano scelto, il bottone toglie il piano.
+  const modoAnnulla = Boolean(onRimuovi) && Boolean(opzioni?.some((o) => o.attuale)) && (!opzioneScelta || giaAttivo)
   const puoScegliere = !inCorso && !bloccatoDa && !opzioniCaricamento && Boolean(opzioni?.length)
   return <section className="player-training-sezione">
     <header className="player-training-testa">
       <h3>{titolo}</h3>
-      {puoScegliere && <button className="button button--primary player-training-avvia" type="button" disabled={inviando || !scelta || giaAttivo} onClick={onAvvia}>
-        {inviando ? 'Avvio…' : giaAttivo ? 'Già attivo' : 'Avvia allenamento'}
-      </button>}
+      {puoScegliere && (modoAnnulla
+        ? <button className="button player-training-avvia is-annulla" type="button" disabled={inviando} onClick={onRimuovi}
+          title="Toglie il piano: il giocatore torna alla crescita naturale">
+          {inviando ? 'Attendi…' : 'Annulla allenamento'}
+        </button>
+        : <button className="button button--primary player-training-avvia" type="button" disabled={inviando || !scelta || giaAttivo} onClick={onAvvia}>
+          {inviando ? 'Avvio…' : 'Avvia allenamento'}
+        </button>)}
     </header>
 
     {inCorso ? <div className="player-training-corso">
@@ -409,7 +418,7 @@ function PannelloAllenamento({
                   disabled={opzione.attuale}
                   onClick={() => onScegli(opzione.chiave)}
                 >
-                  <i className="player-training-opzioni__pallino" aria-hidden="true">{scelta === opzione.chiave && '✓'}</i>
+                  <i className="player-training-opzioni__pallino" aria-hidden="true">{(scelta === opzione.chiave || opzione.attuale) && '✓'}</i>
                   <span>
                     <strong>{opzione.etichetta}{opzione.attuale && <em className="player-training-opzioni__badge">Attuale</em>}</strong>
                     {opzione.sottotesto && <small>{opzione.sottotesto}</small>}
@@ -520,12 +529,13 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
     setCambioInCorso(false)
   }
 
-  async function avviaSpecializzazione() {
-    if (!specializzazione || !specScelta) return
+  // `chiave` e' il piano da avviare; "bilanciato" toglie il piano (crescita naturale).
+  async function avviaSpecializzazione(chiave: string = specScelta) {
+    if (!specializzazione || !chiave) return
     setSpecInCorso(true)
     setSpecErrore(null)
     try {
-      await specializzazione.onAvvia(specScelta)
+      await specializzazione.onAvvia(chiave)
       // Il piano e' cambiato: le opzioni si ricaricano, cosi' quella appena
       // avviata risulta "Attuale" e il bottone resta spento.
       setSpecOpzioni(null)
@@ -895,9 +905,11 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
               avviatoGiornata: specializzazione.inCorso.avviatoGiornata, completaGiornata: specializzazione.inCorso.completaGiornata,
             } : null}
             prossimaGiornata={specializzazione.prossimaGiornata}
-            opzioni={specOpzioni?.map((o) => ({
+            // "Torna alla crescita naturale" non e' piu' una voce: si toglie il
+            // piano col bottone "Annulla allenamento" (onRimuovi).
+            opzioni={specOpzioni?.filter((o) => o.chiave !== 'bilanciato').map((o) => ({
               chiave: o.chiave,
-              etichetta: o.chiave === 'bilanciato' ? 'Torna alla crescita naturale' : o.etichetta,
+              etichetta: o.etichetta,
               attuale: o.attivo,
               // Le quattro abilita' che il piano spinge di piu': l'elenco
               // completo sta nell'anteprima qui sotto.
@@ -908,7 +920,8 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
             opzioniCaricamento={specCaricamento}
             scelta={specScelta}
             onScegli={setSpecScelta}
-            onAvvia={avviaSpecializzazione}
+            onAvvia={() => void avviaSpecializzazione()}
+            onRimuovi={() => void avviaSpecializzazione('bilanciato')}
             onAnnulla={annullaSpecializzazione}
             inviando={specInCorso}
             errore={specErrore}

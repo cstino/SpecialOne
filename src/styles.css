@@ -892,6 +892,13 @@ input:disabled { opacity: 0.65; }
 .scheda-broadcast .player-training-corso__frecce b { color: #fff; }
 .scheda-broadcast .player-training-opzioni__voce { border-radius: 8px; }
 .scheda-broadcast .player-training-opzioni__pallino { border-color: color-mix(in srgb, var(--fz-luce) 55%, transparent); }
+/* Piano attivo: pallino pieno nel colore della fase, con la spunta. */
+.scheda-broadcast .player-training-opzioni__voce.is-attuale { opacity: 1; }
+.scheda-broadcast .player-training-opzioni__voce.is-attuale .player-training-opzioni__pallino { color: var(--fz-scuro); border-color: var(--fz-luce); background: var(--fz-luce); box-shadow: 0 0 10px color-mix(in srgb, var(--fz-luce) 50%, transparent); }
+.scheda-broadcast .player-training-opzioni__voce.is-attuale strong { color: #fff; }
+/* "Annulla allenamento" al posto di "Avvia" quando c'e' un piano attivo. */
+.scheda-broadcast .player-training-avvia.is-annulla { color: #ff9aa6; border: 1px solid rgba(239,79,95,.55); background: rgba(239,79,95,.1); box-shadow: none; }
+.scheda-broadcast .player-training-avvia.is-annulla:hover:not(:disabled) { background: rgba(239,79,95,.2); }
 .scheda-broadcast .player-training-opzioni__voce.is-attiva .player-training-opzioni__pallino, .scheda-broadcast .player-training-opzioni__voce[aria-checked="true"] .player-training-opzioni__pallino { background: var(--fz-luce); }
 .scheda-broadcast .field-help { color: rgba(255,255,255,.62); }
 .scheda-broadcast .field-help b { color: #fff; font-family: "Oswald", "Arial Narrow", sans-serif; letter-spacing: .04em; }
