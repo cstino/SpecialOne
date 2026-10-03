@@ -165,7 +165,7 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
 
       {league.fase_carriera === 'offseason' && <>
         <section className={`offseason-countdown ${scaduta ? 'is-expired' : ''}`}>
-          <div><p className="kicker">Finestra di preparazione</p><h2>{scaduta ? 'Tempo scaduto.' : 'Il mercato non aspetta.'}</h2><p>{scaduta ? 'Il server sta completando le rose corte e preparando il calendario.' : 'Hai 24 ore dall’apertura per mercato e sistemazione della rosa.'}</p></div>
+          <div><p className="kicker">Finestra di preparazione</p><h2>{scaduta ? 'Tempo scaduto.' : 'Il mercato non aspetta.'}</h2><p>{scaduta ? 'Il server sta completando le rose corte e preparando il calendario.' : 'Fino alla scadenza puoi rinnovare i contratti, fare scambi e sistemare la rosa. Il mercato svincolati riapre con la nuova stagione.'}</p></div>
           <time dateTime={status?.scade_il ?? undefined}><span>{scaduta ? 'CHIUSURA' : 'TEMPO RIMASTO'}</span><strong>{scaduta ? 'IN CORSO' : countdown}</strong></time>
         </section>
         <section className="offseason-summary">
