@@ -1436,3 +1436,15 @@ principale. Poi, dopo la prima versione (un menu nei moduli), la forma voluta e'
   52 a 55; giocato, +1 una volta sola; eliminazione.
 - **Effetto sull'equilibrio da misurare**: il costo di un cambio di modulo (−2 punti su
   38, punto 38) per chi pianifica diventa zero con 5 partite di anticipo.
+
+Revisione del punto 41 (3 ottobre 2026, sera): **va in partita lo schema selezionato
+quando si salva.** Via la riga con «Usa in partita» ed «Elimina»: i due schemi sono due
+slot con un'etichetta, «In partita» e «Riserva», alla stessa altezza. Se al momento di
+Salva e' selezionata la riserva, diventa lo schema in partita e quello di prima passa a
+riserva (continua a imparare); i nomi seguono gli schemi e lo scambio avviene nel
+salvataggio (`salva_formazione` con lo schema selezionato, poi `salva_schemi` con i
+ruoli invertiti). Per questo il bottone Salva si accende anche solo selezionando la
+riserva, e una nota lo dice. Chi vuole solo prepararla torna sullo schema in partita
+prima di salvare. La riserva ha una «×» per essere eliminata e la barra dei progressi
+dentro il suo riquadro. La card sta come primo figlio del contenitore di moduli e stile
+(la barra superiore e' una griglia ad aree con nome: fuori da quell'area spostava Salva).

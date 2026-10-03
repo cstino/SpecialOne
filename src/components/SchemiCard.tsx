@@ -13,7 +13,7 @@ type Quale = 'attivo' | 'riserva'
 
 export function SchemiCard({
   nomeAttivo, nomeRiserva, selezionato, descrizioneAttivo, descrizioneRiserva, partite, partitePiene,
-  onSeleziona, onRinomina, onUsaRiserva, onEliminaRiserva,
+  onSeleziona, onRinomina, onEliminaRiserva,
 }: {
   nomeAttivo: string
   /** null = nessuna riserva: lo slot e' vuoto. */
@@ -26,7 +26,6 @@ export function SchemiCard({
   partitePiene: number
   onSeleziona: (quale: Quale) => void
   onRinomina: (quale: Quale, nome: string) => void
-  onUsaRiserva: () => void
   onEliminaRiserva: () => void
 }) {
   const [modifica, setModifica] = useState<Quale | null>(null)
@@ -47,16 +46,22 @@ export function SchemiCard({
   const imparato = partite >= partitePiene
   const segmento = (quale: Quale, nome: string, descrizione: string) => {
     const attivo = selezionato === quale
-    return <div className={`schemi-card__slot${attivo ? ' is-selezionato' : ''}${quale === 'attivo' ? ' is-giocante' : ''}`}>
+    return <div className={`schemi-card__slot${attivo ? ' is-selezionato' : ''}`}>
       <button className="schemi-card__corpo" type="button" aria-pressed={attivo} onClick={() => onSeleziona(quale)}>
-        <small>{quale === 'attivo' ? 'Schema attivo' : 'Schema riserva'}</small>
+        <small>{quale === 'attivo' ? 'In partita' : 'Riserva'}</small>
         {modifica === quale
           ? <input ref={campo} className="schemi-card__nome-campo" value={bozza} maxLength={24} aria-label="Nome dello schema"
             onClick={(e) => e.stopPropagation()} onChange={(e) => setBozza(e.target.value)} onBlur={conferma}
             onKeyDown={(e) => { if (e.key === 'Enter') conferma(); if (e.key === 'Escape') setModifica(null) }} />
           : <strong><TestoAdattato minimo={0.6}>{nome}</TestoAdattato></strong>}
         <em>{descrizione}</em>
+        {quale === 'riserva' && <span className="schemi-card__apprendimento">
+          <small>{imparato ? 'Conosciuto come lo schema in partita' : `Lo impari: ${partite}/${partitePiene} partite`}</small>
+          <i aria-hidden="true"><b style={{ width: `${Math.min(100, partite / partitePiene * 100)}%` }} /></i>
+        </span>}
       </button>
+      {quale === 'riserva' && <button className="schemi-card__matita schemi-card__elimina" type="button" aria-label={`Elimina lo schema ${nome}`}
+        onClick={onEliminaRiserva}><Icona nome="chiudi" /></button>}
       <button className="schemi-card__matita" type="button" aria-label={`Rinomina ${nome}`}
         onMouseDown={(e) => e.preventDefault()} onClick={() => inizia(quale)}><Icona nome="modifica" /></button>
     </div>
@@ -68,19 +73,12 @@ export function SchemiCard({
       {nomeRiserva !== null
         ? segmento('riserva', nomeRiserva, descrizioneRiserva)
         : <button className="schemi-card__vuoto" type="button" onClick={() => onSeleziona('riserva')}>
-          <small>Schema riserva</small>
+          <small>Riserva</small>
           <strong>+ Prepara uno schema</strong>
           <em>Lo impari anche senza schierarlo</em>
         </button>}
     </div>
-    {nomeRiserva !== null && <div className="schemi-card__riserva">
-      <span className="schemi-card__apprendimento">
-        <small>{imparato ? 'Conosciuta come lo schema attivo' : `Riserva: la stai imparando, ${partite}/${partitePiene} partite`}</small>
-        <i aria-hidden="true"><b style={{ width: `${Math.min(100, partite / partitePiene * 100)}%` }} /></i>
-      </span>
-      <button type="button" onClick={onUsaRiserva} title="La riserva diventa lo schema che gioca e quello attivo prende il suo posto: nessuno perde familiarità">Usa in partita</button>
-      <button type="button" className="is-elimina" onClick={onEliminaRiserva}>Elimina</button>
-    </div>}
+    {selezionato === 'riserva' && <p className="schemi-card__nota">Salvando, questo schema va in partita. Per solo prepararlo, torna sullo schema in partita prima di salvare.</p>}
   </section>
 }
 

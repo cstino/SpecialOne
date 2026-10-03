@@ -911,9 +911,9 @@ input:disabled { opacity: 0.65; }
 
 /* Schemi attivo e riserva (card sopra moduli e stile, season 2). */
 .schemi-card { grid-column: 1 / -1; display: grid; gap: 8px; min-width: 0; }
-.schemi-card__slot-riga { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.schemi-card__slot { position: relative; min-width: 0; }
-.schemi-card__corpo, .schemi-card__vuoto { display: grid; align-content: center; gap: 4px; width: 100%; min-height: 84px; padding: 12px 42px 12px 14px; text-align: left; font: inherit; color: #fff; cursor: pointer; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: linear-gradient(180deg, rgba(12,10,22,.85), rgba(9,8,15,.9)); }
+.schemi-card__slot-riga { display: grid; grid-template-columns: 1fr 1fr; align-items: stretch; gap: 10px; }
+.schemi-card__slot { position: relative; display: grid; min-width: 0; }
+.schemi-card__corpo, .schemi-card__vuoto { display: grid; align-content: center; gap: 4px; width: 100%; height: 100%; min-height: 96px; padding: 12px 42px 12px 14px; text-align: left; font: inherit; color: #fff; cursor: pointer; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: linear-gradient(180deg, rgba(12,10,22,.85), rgba(9,8,15,.9)); }
 .schemi-card__slot.is-selezionato .schemi-card__corpo { border-color: color-mix(in srgb, var(--fz-luce) 60%, transparent); background: linear-gradient(180deg, color-mix(in srgb, var(--fz-1) 55%, #0c0b14), color-mix(in srgb, var(--fz-scuro) 70%, #0c0b14)); box-shadow: inset 3px 0 0 var(--fz-luce), 0 0 16px color-mix(in srgb, var(--fz-luce) 22%, transparent); }
 .schemi-card__corpo small, .schemi-card__vuoto small { color: color-mix(in srgb, var(--fz-luce) 75%, #fff); font: 600 .56rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .2em; text-transform: uppercase; }
 .schemi-card__corpo strong, .schemi-card__vuoto strong { display: block; min-width: 0; overflow: hidden; color: #fff; font: 700 1.2rem/1.05 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .03em; text-transform: uppercase; white-space: nowrap; }
@@ -921,15 +921,13 @@ input:disabled { opacity: 0.65; }
 .schemi-card__vuoto { border-style: dashed; border-color: color-mix(in srgb, var(--fz-luce) 50%, transparent); background: rgba(255,255,255,.03); }
 .schemi-card__vuoto strong { color: var(--fz-luce); font-size: .95rem; letter-spacing: .08em; }
 .schemi-card__matita { position: absolute; top: 9px; right: 9px; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; color: #fff; border: 1px solid rgba(255,255,255,.2); border-radius: 50%; background: rgba(255,255,255,.07); font-size: .9rem; cursor: pointer; }
+.schemi-card__elimina { right: 43px; color: #ff9aa6; border-color: rgba(239,79,95,.45); }
+.schemi-card__nota { margin: 0; color: rgba(255,255,255,.66); font-size: .72rem; line-height: 1.35; }
 .schemi-card__nome-campo { width: 100%; padding: 2px 6px; color: #fff; border: 1px solid var(--fz-luce); border-radius: 4px; background: rgba(0,0,0,.45); font: 700 1.05rem/1.2 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .03em; text-transform: uppercase; }
-.schemi-card__riserva { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 9px 12px; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: linear-gradient(180deg, rgba(12,10,22,.8), rgba(9,8,15,.85)); }
 .schemi-card__apprendimento { display: grid; gap: 5px; min-width: 0; }
-.schemi-card__apprendimento small { color: rgba(255,255,255,.68); font-size: .7rem; line-height: 1.25; }
+.schemi-card__corpo .schemi-card__apprendimento small { color: rgba(255,255,255,.7); font: 500 .7rem/1.25 Inter, Arial, sans-serif; letter-spacing: 0; text-transform: none; }
 .schemi-card__apprendimento i { display: block; height: 4px; background: rgba(255,255,255,.1); }
 .schemi-card__apprendimento b { display: block; height: 100%; background: linear-gradient(90deg, var(--fz-2), var(--fz-luce)); box-shadow: 0 0 8px color-mix(in srgb, var(--fz-luce) 50%, transparent); }
-.schemi-card__riserva > button { padding: 8px 11px; color: #fff; border: 1px solid color-mix(in srgb, var(--fz-luce) 45%, transparent); border-radius: 6px; background: rgba(255,255,255,.05); font: 600 .62rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; cursor: pointer; }
-.schemi-card__riserva > button.is-elimina { color: #ff9aa6; border-color: rgba(239,79,95,.5); }
-@media (max-width: 380px) { .schemi-card__riserva { grid-template-columns: 1fr 1fr; } .schemi-card__apprendimento { grid-column: 1 / -1; } }
 .schemi-dialogo-layer { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 18px; background: rgba(3,3,8,.74); backdrop-filter: blur(3px); }
 .schemi-dialogo { display: grid; gap: 10px; width: min(100%, 360px); padding: 18px; border: 1px solid color-mix(in srgb, var(--fz-luce) 35%, rgba(255,255,255,.1)); border-radius: 12px; background: linear-gradient(180deg, color-mix(in srgb, var(--fz-1) 22%, #0b0a12), #08070e 45%); box-shadow: 0 24px 60px rgba(0,0,0,.6); }
 .schemi-dialogo small { color: color-mix(in srgb, var(--fz-luce) 75%, #fff); font: 600 .6rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .2em; text-transform: uppercase; }

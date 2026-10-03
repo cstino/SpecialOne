@@ -741,8 +741,12 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       setSaving(false)
       return
     }
-    // Si salva lo schema ATTIVO (quello che gioca), anche se si sta guardando la riserva.
-    const att = attivoCanonico
+    // Va in partita lo schema SELEZIONATO al momento del salvataggio: se e' la
+    // riserva, diventa lo schema attivo e quello di prima passa a riserva
+    // (continua a imparare); i nomi seguono gli schemi.
+    const invertire = tatticheAttive && haRiserva && schemaSel === 'riserva'
+    const nomeSel = nomeRiservaScelto ?? nomeRiserva
+    const att = invertire ? tatticaCorrente : attivoCanonico
     const { error: saveError } = await supabase.rpc('salva_formazione', {
       p_league_id: league.id, p_giornata: giornata, p_modulo: att.modulo,
       p_disposizione: att.disposizione, p_ruoli: att.ruoli, p_compiti: att.compiti, p_focus_corsia: att.focus,
@@ -753,12 +757,13 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     if (saveError) { setError(saveError.message); setSaving(false); return }
     // E, nelle leghe con le tattiche accese, i nomi e la riserva.
     if (tatticheAttive) {
-      const ris = riservaCanonica
-      const nome = nomeRiservaScelto ?? nomeRiserva
-      const firmaSchemi = JSON.stringify({ nomeAttivo, ris, nome })
+      const ris = !haRiserva ? null : invertire ? attivoFermo : riservaCanonica
+      const nomeA = invertire ? nomeSel : nomeAttivo
+      const nome = invertire ? nomeAttivo : nomeSel
+      const firmaSchemi = JSON.stringify({ nomeAttivo: nomeA, ris, nome })
       if (firmaSchemi !== schemiSalvati.current) {
         const { error: schemiError } = await supabase.rpc('salva_schemi', {
-          p_league_id: league.id, p_nome_attivo: nomeAttivo,
+          p_league_id: league.id, p_nome_attivo: nomeA,
           p_riserva_nome: ris ? nome : null, p_modulo: ris?.modulo ?? null,
           p_disposizione: ris ? (ris.disposizione ?? MODULI[ris.modulo]) : null,
           p_ruoli: ris?.ruoli ?? null, p_compiti: ris?.compiti ?? null, p_focus_corsia: ris?.focus ?? null,
@@ -767,7 +772,9 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         if (schemiError) { setError(`Formazione salvata, ma gli schemi no: ${schemiError.message}`); setSaving(false); return }
         schemiSalvati.current = firmaSchemi
         if (ris) { setNomeRiserva(nome); setNomeRiservaConfermato(true) }
+        setNomeAttivo(nomeA)
       }
+      if (invertire) { setRiservaFerma(attivoFermo); setAttivoFermo(null); setSchemaSel('attivo') }
     }
     setPanchina(cleanBench); setSaved(true); setSalvataIl(new Date().toISOString()); fissaFirma.current = true
     setSaving(false)
@@ -795,19 +802,6 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       setAttivoFermo(null)
       setSchemaSel('attivo')
     }
-  }
-
-  // La riserva diventa lo schema che gioca e quello attivo prende il suo posto:
-  // si scambiano anche i nomi. Nessuno dei due perde la familiarita'.
-  function usaRiservaInPartita() {
-    if (!haRiserva) return
-    const att = attivoCanonico
-    const ris = riservaCanonica
-    if (!ris) return
-    applicaTattica(ris)
-    setRiservaFerma(att); setAttivoFermo(null); setSchemaSel('attivo')
-    setNomeAttivo(nomeRiserva); setNomeRiserva(nomeAttivo); setNomeRiservaConfermato(true)
-    setSaved(false)
   }
 
   function eliminaRiserva() {
@@ -908,7 +902,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const tatticaCorrente: Tattica = { modulo, disposizione, ruoli, compiti, focus: focusCorsia, stile, linea, ampiezza, portiere }
   const attivoCanonico: Tattica = schemaSel === 'attivo' ? tatticaCorrente : (attivoFermo ?? tatticaCorrente)
   const riservaCanonica: Tattica | null = !haRiserva ? null : schemaSel === 'riserva' ? tatticaCorrente : riservaFerma
-  const firmaCorrente = JSON.stringify({ attivoCanonico, riservaCanonica, haRiserva, nomeAttivo, nomeRiserva, titolari, panchina, tribuna })
+  const firmaCorrente = JSON.stringify({ attivoCanonico, riservaCanonica, haRiserva, nomeAttivo, nomeRiserva, titolari, panchina, tribuna, schemaSel })
   const modificata = firmaSalvata === null || firmaSalvata !== firmaCorrente
   // Dopo il caricamento di una distinta salvata, o dopo un salvataggio
   // riuscito, la formazione in pagina diventa il nuovo riferimento.
@@ -997,7 +991,6 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
               partitePiene={FAM_PARTITE_PIENA}
               onSeleziona={selezionaSchema}
               onRinomina={(quale, nome) => { if (quale === 'attivo') setNomeAttivo(nome); else { setNomeRiserva(nome); setNomeRiservaConfermato(true) } setSaved(false) }}
-              onUsaRiserva={usaRiservaInPartita}
               onEliminaRiserva={() => { if (window.confirm(`Eliminare lo schema riserva «${nomeRiserva}»?`)) eliminaRiserva() }}
             />}
               <div className="formation-tattica__voce formation-module-selector">
