@@ -314,7 +314,14 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     for (const ref of [suonoGolRef, sottofondoRef]) {
       const audio = ref.current
       if (!audio) continue
-      void audio.play().then(() => { audio.pause(); audio.currentTime = 0 }).catch(() => {})
+      // Muto durante lo sblocco: il play() dura finche' la promessa non si
+      // risolve, e sull'iPhone quel frammento di boato si sentiva prima
+      // dell'intro (segnalato dal committente il 4 ottobre 2026).
+      audio.muted = true
+      void audio.play()
+        .then(() => { audio.pause(); audio.currentTime = 0 })
+        .catch(() => {})
+        .finally(() => { audio.muted = false })
     }
   }, [])
 
