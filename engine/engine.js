@@ -2,7 +2,7 @@
 //  MOTORE DI SIMULAZIONE — MODELLO A BLOCCHI
 // ============================================================
 
-import { CFG, MODULI, CONTEGGI, PESI_SLOT, REPARTO, STILI, STILI_PARTITA, RITMO_NORMA, TIRI_NORMA, penalitaRuolo, pesoStat, pesiConCompito, costoEnergiaCompito, puntiCompiti } from './config.js';
+import { CFG, MODULI, CONTEGGI, PESI_SLOT, REPARTO, STILI, STILI_PARTITA, INDICAZIONI_PARTITA, RITMO_NORMA, TIRI_NORMA, penalitaRuolo, pesoStat, pesiConCompito, costoEnergiaCompito, puntiCompiti } from './config.js';
 import { rnd, gauss, poisson, scegliPesato } from './random.js';
 import { deltaTattico } from './tattiche.js';
 import { avanzamentoRuolo } from './ruoli.js';
@@ -197,10 +197,19 @@ export function stileTattico(stile) {
 
 // Come lo stile fa giocare la partita (ritmo, possesso, volume dei tiri):
 // vedi STILI_PARTITA in config.js. Senza stile, nessun effetto (1, 0, 1).
-export function identitaStile(stile) {
+export function identitaStile(stile, indicazioni = null) {
   const s = STILI_PARTITA[stile];
-  if (!s) return { ritmo: 1, possesso: 0, volumeTiri: 1 };
-  return { ritmo: s.ritmo * RITMO_NORMA, possesso: s.possesso, volumeTiri: s.volumeTiri * TIRI_NORMA };
+  const id = s
+    ? { ritmo: s.ritmo * RITMO_NORMA, possesso: s.possesso, volumeTiri: s.volumeTiri * TIRI_NORMA, tiriConcessi: 1, contrasti: 1, dribbling: 1 }
+    : { ritmo: 1, possesso: 0, volumeTiri: 1, tiriConcessi: 1, contrasti: 1, dribbling: 1 };
+  // Linea e ampiezza (solo con le tattiche accese) si sommano allo stile.
+  for (const [chiave, valore] of [['linea', indicazioni?.linea], ['ampiezza', indicazioni?.ampiezza]]) {
+    const v = INDICAZIONI_PARTITA[chiave]?.[valore];
+    if (!v) continue;
+    id.ritmo *= v.ritmo ?? 1; id.possesso += v.possesso ?? 0; id.volumeTiri *= v.volumeTiri ?? 1;
+    id.tiriConcessi *= v.tiriConcessi ?? 1; id.contrasti *= v.contrasti ?? 1; id.dribbling *= v.dribbling ?? 1;
+  }
+  return id;
 }
 
 // ---------- Sostituzioni automatiche ----------
@@ -403,7 +412,7 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   const famO = familiarita(rosaOspite, modOspite, opt.stileOspite);
   const stC = stileTattico(opt.stileCasa);
   const stO = stileTattico(opt.stileOspite);
-  const idC = identitaStile(opt.stileCasa), idO = identitaStile(opt.stileOspite);
+  const idC = identitaStile(opt.stileCasa, opt.indicazioniCasa), idO = identitaStile(opt.stileOspite, opt.indicazioniOspite);
   // Il ritmo e' della partita, non di una squadra: media dei due stili.
   const ritmoPartita = (idC.ritmo + idO.ritmo) / 2;
   // Separato dal RNG dei gol: l'introduzione degli infortuni in partita non
@@ -641,7 +650,7 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
 
   // ---------- statistiche ----------
   const ctrlMedio = ctrlStorico.reduce((a, b) => a + b, 0) / ctrlStorico.length;
-  const mk = (lineup, gol, ctrl, forze, xgTot, volumeTiri = 1) => {
+  const mk = (lineup, gol, ctrl, forze, xgTot, volumeTiri = 1, contrastiX = 1, dribblingX = 1) => {
     // La conversione per tiro cresce col dominio offensivo: chi produce molto xG
     // lo produce con occasioni migliori, non solo piu' numerose. Vedi il commento
     // su XG_RIFERIMENTO_TIRI in config.js.
@@ -660,8 +669,8 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     return {
       gol, tiri, inPorta,
       passaggiT: pTent, passaggiR: Math.round(pTent * pPct), passaggiPct: pPct,
-      contrasti: Math.round(CFG.CONTRASTI_BASE * (1 - ctrl) * 2),
-      dribbling: Math.round(CFG.DRIBBLING_BASE * ctrl * 2),
+      contrasti: Math.round(CFG.CONTRASTI_BASE * (1 - ctrl) * 2 * contrastiX),
+      dribbling: Math.round(CFG.DRIBBLING_BASE * ctrl * 2 * dribblingX),
       possesso: ctrl,
     };
   };
@@ -669,8 +678,8 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   // Il possesso mostrato (e con lui passaggi, contrasti, dribbling) segue
   // anche lo stile: chi gioca il possesso tiene palla, chi aspetta la lascia.
   const possessoC = clamp(ctrlMedio + idC.possesso - idO.possesso, 0.22, 0.78);
-  const sC = mk(lc, golC, possessoC, forzeLinee(lc), xgTotC, idC.volumeTiri);
-  const sO = mk(lo, golO, 1 - possessoC, forzeLinee(lo), xgTotO, idO.volumeTiri);
+  const sC = mk(lc, golC, possessoC, forzeLinee(lc), xgTotC, idC.volumeTiri * idO.tiriConcessi, idC.contrasti, idC.dribbling);
+  const sO = mk(lo, golO, 1 - possessoC, forzeLinee(lo), xgTotO, idO.volumeTiri * idC.tiriConcessi, idO.contrasti, idO.dribbling);
   // Le conclusioni da palla inattiva entrano nel conteggio: un colpo di testa
   // su angolo e' un tiro come gli altri, e senza questo le statistiche
   // raccontavano meno conclusioni di quante ne erano avvenute.

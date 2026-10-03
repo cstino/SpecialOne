@@ -1143,6 +1143,7 @@ export default {
         // applica a chiunque — ogni giocatore ne ha uno — quindi senza
         // interruttore un deploy lo accenderebbe ovunque, e non e' una
         // decisione da prendere con un deploy.
+        let indicazioniPartita: { casa: { linea: string; ampiezza: string }; ospite: { linea: string; ampiezza: string } } | null = null
         if (tatticheAttive) {
           // Dove si attacca (engine/corsie.js) guarda la PROPRIA squadra: la
           // corsia dove si hanno i giocatori piu' forti. Le indicazioni di
@@ -1154,6 +1155,7 @@ export default {
           })
           const indCasa = indicazioni(homeDbLineup)
           const indOspite = indicazioni(awayDbLineup)
+          indicazioniPartita = { casa: indCasa, ospite: indOspite }
           homeLineup.tattica = sommaDelta(
             deltaMorale(homeLineup), deltaRuoli(homeLineup),
             deltaCorsie(homeLineup, homeDbLineup.focus_corsia ?? null),
@@ -1188,6 +1190,10 @@ export default {
           lineupOspite: awayLineup,
           stileCasa: homeDbLineup.stile_gioco,
           stileOspite: awayDbLineup.stile_gioco,
+          // Linea e ampiezza lasciano la loro impronta sulla partita solo con le
+          // tattiche accese (registro, punto 35).
+          indicazioniCasa: indicazioniPartita?.casa,
+          indicazioniOspite: indicazioniPartita?.ospite,
           campoNeutro: fixture.campo_neutro,
           seedInfortuni: seed ^ 0x6d2b79f5,
           supplementariSeParita: decisiva,

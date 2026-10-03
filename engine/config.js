@@ -572,6 +572,22 @@ export const STILI_PARTITA = {
   diretto:         { ritmo: 1.06, possesso: -0.05, volumeTiri: 1.25 },
   blocco_basso:    { ritmo: 0.80, possesso: -0.10, volumeTiri: 0.70 },
 };
+// Le indicazioni di squadra (linea, ampiezza) aggiungono la loro impronta a
+// quella dello stile (registro, punto 35). Solo con le tattiche accese: senza,
+// il chiamante non le passa e non hanno effetto.
+//   tiriConcessi  moltiplica i tiri dell'AVVERSARIO (linea alta: pochi ma
+//                 buoni alle spalle; bassa: tanti, da lontano). Mai i gol.
+//   contrasti, dribbling  moltiplicano le relative statistiche.
+export const INDICAZIONI_PARTITA = {
+  linea: {
+    alta:  { ritmo: 1.04, possesso: 0.03,  tiriConcessi: 0.90, contrasti: 1.15 },
+    bassa: { ritmo: 0.95, possesso: -0.03, tiriConcessi: 1.12, contrasti: 1.10 },
+  },
+  ampiezza: {
+    larga:   { ritmo: 1.02, volumeTiri: 1.05, dribbling: 1.15 },
+    stretta: { ritmo: 0.98, volumeTiri: 0.95, possesso: 0.01 },
+  },
+};
 export const RITMO_NORMA = 1 / 1.0184;
 export const TIRI_NORMA = 1 / 1.0514;
 

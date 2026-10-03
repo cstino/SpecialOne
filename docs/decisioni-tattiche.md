@@ -1217,3 +1217,26 @@ aprirla. PRODUZIONE: 2,85 gol · 13,37 tiri · 23,7% pareggi · 45,8% casa, tutt
 nei target; nello scenario intermedio «+ stili reali» le vittorie casa escono
 di 0,1 (47,1%, era 46,9%). Predefinito: −1,0 per chi smanetta a caso. Scarto
 fra tutto giusto e tutto sbagliato: 8,9 punti su 38.
+
+## 35. Linea e ampiezza lasciano un'impronta sulla partita — 3 ottobre 2026
+
+Stessa idea del punto 34, per le indicazioni di squadra: oltre allo spostamento
+di forza (`OPZIONI_SQUADRA`, gia' tarato sui profili), linea e ampiezza cambiano
+come si gioca (`INDICAZIONI_PARTITA` in `config.js`, sommate allo stile in
+`identitaStile`). Passate al motore da `simula-giornata` **solo con le tattiche
+accese** (`opt.indicazioniCasa/Ospite`).
+
+- linea alta: ritmo 1,04, +3% possesso, l'avversario tira il 10% in meno
+  (poche occasioni ma alle spalle), +15% contrasti;
+- linea bassa: ritmo 0,95, −3% possesso, l'avversario tira il 12% in piu'
+  (da lontano), +10% contrasti;
+- ampiezza larga: ritmo 1,02, +5% tiri, +15% dribbling;
+- ampiezza stretta: ritmo 0,98, −5% tiri, +1% possesso.
+
+Misurato contro una squadra predefinita di pari forza (tre serie di semi da
+6.000 partite): possesso 53% con linea alta e 47% con linea bassa, che subisce
+1,2 tiri in piu'. Punti su 38 rispetto al predefinito fra −0,3 e −1,5, dentro
+l'oscillazione fra serie (1-3 punti): il ritmo e' simmetrico, quindi non
+avvantaggia nessuno; abbassa i punti di entrambe solo perche' aumentano i
+pareggi. Il valore di linea e ampiezza resta quello dei profili dei giocatori.
+PRODUZIONE e prove tattiche invariate (non passano indicazioni).
