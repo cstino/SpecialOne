@@ -14,6 +14,7 @@ import { PopupSpiegazione } from './PopupSpiegazione'
 import { SchedaGiocatore } from './SchedaGiocatore'
 import { attributiIstanza, type Attributi } from '../lib/attributiGiocatore'
 import { UnderlineTabs } from './ui/underline-tabs'
+import { useFaseSquadra } from '../lib/faseSquadra'
 
 // Ordine di CALENDARIO, non alfabetico. Dentro una stagione l'ON-Season cade a
 // meta' campionato e l'OFF-Season alla fine, quindi viene prima la ON:
@@ -114,6 +115,8 @@ function etichettaScelta(s: Scelta) {
 export function Scambi({ membership, onNavigate }: Props) {
   const league = membership.league as League
   const dati = useSeasonData(membership)
+  // Colori della fase (verde regular, blu title, arancio draft), come Rosa e dashboard.
+  const fase = useFaseSquadra(league.id, membership.id, dati.season?.id)
   const adesso = useOraCorrente()
   const [rose, setRose] = useState<Giocatore[]>([])
   const [scelte, setScelte] = useState<Scelta[]>([])
@@ -451,7 +454,7 @@ export function Scambi({ membership, onNavigate }: Props) {
     {caricamento && <div className="season-page"><section className="season-state is-caricamento mercato-caricamento"><LoadingLogo compatto /><h2>Preparo il mercato scambi…</h2><p>Recupero rose, scelte e trattative.</p><span className="caricamento-barra" aria-hidden="true" /></section></div>}
     {errore && <div className="season-page"><p className="season-empty">{errore}</p></div>}
 
-    {!caricamento && !errore && <div className="season-page season-page--narrow scambi-page">
+    {!caricamento && !errore && <div className={`season-page season-page--narrow scambi-page scambi-broadcast formazione-broadcast formazione-broadcast--${fase}`}>
       <PopupSpiegazione userId={membership.user_id} hintKey="scambi" titolo="Come funzionano gli Scambi">
         <p>Si scambiano giocatori e scelte di draft insieme, come in NBA: <strong>nessun conguaglio in denaro</strong>,
           si tratta alla pari sotto lo stesso tetto salariale per tutti.</p>
@@ -560,12 +563,18 @@ export function Scambi({ membership, onNavigate }: Props) {
           {(nPacchettoOfferto > 0 || nPacchettoChiesto > 0) && <div className="scambi-anteprima">
             <div className="scambi-anteprima__lato">
               <span className="scambi-anteprima__conteggio">{nPacchettoOfferto}</span>
-              <div className="scambi-anteprima__chips">{offerti.map((id) => pacchettoChip(id, 'g'))}{scelteOfferte.map((id) => pacchettoChip(id, 's'))}</div>
+              <small>Offri</small>
+              <div className="scambi-anteprima__chips">{nPacchettoOfferto === 0
+                ? <span className="scambi-nessuno">niente</span>
+                : <>{offerti.map((id) => pacchettoChip(id, 'g'))}{scelteOfferte.map((id) => pacchettoChip(id, 's'))}</>}</div>
             </div>
             <i aria-hidden="true">⇄</i>
             <div className="scambi-anteprima__lato">
               <span className="scambi-anteprima__conteggio">{nPacchettoChiesto}</span>
-              <div className="scambi-anteprima__chips">{chiesti.map((id) => pacchettoChip(id, 'g'))}{scelteChieste.map((id) => pacchettoChip(id, 's'))}</div>
+              <small>Chiedi</small>
+              <div className="scambi-anteprima__chips">{nPacchettoChiesto === 0
+                ? <span className="scambi-nessuno">niente</span>
+                : <>{chiesti.map((id) => pacchettoChip(id, 'g'))}{scelteChieste.map((id) => pacchettoChip(id, 's'))}</>}</div>
             </div>
           </div>}
 
@@ -690,6 +699,7 @@ export function Scambi({ membership, onNavigate }: Props) {
           ritiroAnnunciato: schedaAperta.ritiroAnnunciato, attributi: attributiScheda,
         }}
         fotoUrl={schedaAperta.foto_firmata}
+        fase={fase}
         onClose={() => setSchedaApertaId(null)}
       />}
     </div>}

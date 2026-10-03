@@ -3797,6 +3797,99 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
   .scambi-rumor-riga > i { display: none; }
 }
 
+/* ---- Scambi nel nuovo stile broadcast (EA FC), 4 ottobre 2026 ----
+   Stessa grammatica di Rosa e dashboard: vetro scuro tinto dal colore della
+   fase (--fz-*, verde regular / blu title / arancio draft), titoli a
+   linguetta inclinata, Oswald maiuscolo per nomi e numeri, selezione nel
+   colore della fase invece del viola. */
+.scambi-shell { background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,255,255,.04), transparent 70%), #0b0a12; }
+.scambi-broadcast .kicker { color: color-mix(in srgb, var(--fz-luce) 80%, #fff); font: 600 .68rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .2em; text-transform: uppercase; }
+.scambi-broadcast .scambi-title { margin-top: 6px; color: #fff; background: none; -webkit-background-clip: border-box; background-clip: border-box; font: 700 2.4rem/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .04em; text-transform: uppercase; text-shadow: 0 0 24px color-mix(in srgb, var(--fz-2) 45%, transparent); }
+.scambi-broadcast .scambi-gauge { border: 1px solid rgba(255,255,255,.1); border-radius: 10px; background: radial-gradient(ellipse 90% 70% at 50% 0%, color-mix(in srgb, var(--fz-2) 16%, transparent), transparent 70%), linear-gradient(180deg, rgba(14,12,24,.88), rgba(9,8,15,.9)); }
+.scambi-broadcast .scambi-gauge__numeri strong { color: #fff; font: 700 1.9rem/1 "Oswald", "Arial Narrow", sans-serif; text-shadow: 0 0 16px color-mix(in srgb, var(--fz-luce) 40%, transparent); }
+.scambi-broadcast .scambi-gauge__numeri span, .scambi-broadcast .scambi-gauge small { color: rgba(255,255,255,.55); font-family: "Oswald", "Arial Narrow", sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+.scambi-broadcast .scambi-gauge small { font-size: .6rem; letter-spacing: .06em; }
+.scambi-broadcast .scambi-gauge__barra { height: 6px; background: rgba(255,255,255,.08); }
+.scambi-broadcast .scambi-gauge__riempimento { background: linear-gradient(90deg, var(--fz-2), var(--fz-luce)); box-shadow: 0 0 10px color-mix(in srgb, var(--fz-luce) 50%, transparent); }
+.scambi-broadcast .scambi-gauge.is-critica { border-color: rgba(255,107,107,.4); }
+.scambi-broadcast .scambi-gauge.is-critica .scambi-gauge__numeri strong { color: #ff8a80; }
+.scambi-broadcast .scambi-gauge.is-critica .scambi-gauge__riempimento { background: linear-gradient(90deg, #d64545, #ff6b6b); }
+
+/* Intestazioni di sezione: linguetta inclinata come in dashboard */
+.scambi-broadcast .scambi-blocco { margin-top: 18px; padding: 10px 0; border-top: 0; }
+.scambi-broadcast .sezione-testa { align-items: center; margin: 0; }
+.scambi-broadcast .sezione-testa > div:first-child { display: grid; gap: 8px; }
+.scambi-broadcast .sezione-testa h2 { justify-self: start; margin: 0 0 0 -2px; padding: 7px 18px 7px 13px; color: #fff; background: linear-gradient(90deg, var(--fz-1), var(--fz-2)); clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%); box-shadow: inset 0 -2px 0 var(--fz-luce); font: 700 .95rem/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .13em; text-transform: uppercase; }
+.scambi-broadcast .scambi-conteggio { min-width: 18px; height: 18px; margin-left: 8px; color: var(--fz-scuro); background: var(--fz-luce); font: 700 .66rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: 0; }
+.scambi-broadcast .scambi-badge-contatore { color: var(--fz-scuro); background: var(--fz-luce); box-shadow: 0 0 14px color-mix(in srgb, var(--fz-luce) 50%, transparent); font-family: "Oswald", "Arial Narrow", sans-serif; }
+.scambi-broadcast .season-empty, .scambi-broadcast .scambi-vuoto { color: rgba(255,255,255,.5); font-style: normal; }
+
+/* Card (proposte, compositore, voci di mercato, operazioni): vetro tinto */
+.scambi-broadcast .scambi-card, .scambi-broadcast .scambi-compositore, .scambi-broadcast .scambi-rumor-riga, .scambi-broadcast .scambi-operazione {
+  border: 1px solid rgba(255,255,255,.1); border-radius: 10px;
+  background: radial-gradient(ellipse 90% 70% at 50% 0%, color-mix(in srgb, var(--fz-2) 14%, transparent), transparent 70%), linear-gradient(180deg, rgba(14,12,24,.88), rgba(9,8,15,.9));
+  box-shadow: 0 10px 26px rgba(0,0,0,.4);
+}
+.scambi-broadcast .scambi-card { padding: 14px; }
+.scambi-broadcast .scambi-card > header strong { color: #fff; font: 600 .95rem/1.1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+.scambi-broadcast .scambi-card > footer.scambi-rifiuto-aperto { border-top-color: rgba(255,255,255,.1); }
+.scambi-broadcast .scambi-compositore { gap: 14px; margin-top: 18px; padding: 16px 14px; }
+.scambi-broadcast .scambi-blocco h3 { margin: 0 0 9px; color: color-mix(in srgb, var(--fz-luce) 80%, #fff); font: 600 .7rem/1.2 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .18em; }
+.scambi-broadcast .scambi-riepilogo__lato small { color: color-mix(in srgb, var(--fz-luce) 70%, #fff); font: 600 .6rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .18em; }
+.scambi-broadcast .scambi-riepilogo__freccia, .scambi-broadcast .scambi-anteprima > i, .scambi-broadcast .scambi-rumor-riga > i, .scambi-broadcast .scambi-operazione > i { color: var(--fz-luce); text-shadow: 0 0 10px color-mix(in srgb, var(--fz-luce) 60%, transparent); }
+.scambi-broadcast .scambi-messaggio { color: rgba(255,255,255,.6); }
+.scambi-broadcast .scambi-rumor-conteggio b { color: #fff; font: 700 1rem/1 "Oswald", "Arial Narrow", sans-serif; }
+.scambi-broadcast .scambi-rumor-conteggio small, .scambi-broadcast .scambi-operazione > em { color: rgba(255,255,255,.5); font-family: "Oswald", "Arial Narrow", sans-serif; letter-spacing: .12em; }
+
+/* Bottoni nel colore della fase */
+.scambi-broadcast .button--primary { border: 0; border-radius: 8px; color: var(--fz-scuro); background: linear-gradient(135deg, var(--fz-luce), var(--fz-2)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--fz-luce) 50%, transparent), 0 10px 24px color-mix(in srgb, var(--fz-2) 30%, transparent); font: 700 .9rem/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+.scambi-broadcast .button--primary:hover:not(:disabled) { background: linear-gradient(135deg, var(--fz-luce), var(--fz-2)); filter: brightness(1.08); }
+.scambi-broadcast .button--primary:disabled { opacity: 1; color: color-mix(in srgb, var(--fz-luce) 50%, transparent); background: color-mix(in srgb, var(--fz-1) 40%, #0c0b14); box-shadow: none; }
+.scambi-broadcast .button--secondary, .scambi-broadcast .button--danger-ghost { border-radius: 8px; font: 600 .82rem/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+.scambi-broadcast .scambi-invia { min-height: 50px; font-size: 1rem; letter-spacing: .16em; }
+
+/* Scelta della squadra: stemmi su vetro, quella scelta accesa */
+.scambi-broadcast .scambi-scelta-squadra { grid-template-columns: repeat(auto-fill, 64px); gap: 8px; }
+.scambi-broadcast .scambi-scelta-squadra button { padding: 11px; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; background: rgba(255,255,255,.04); }
+.scambi-broadcast .scambi-scelta-squadra button:hover { border-color: color-mix(in srgb, var(--fz-luce) 40%, transparent); }
+.scambi-broadcast .scambi-scelta-squadra button.is-scelto { border-color: var(--fz-luce); background: linear-gradient(180deg, color-mix(in srgb, var(--fz-1) 70%, #0c0b14), color-mix(in srgb, var(--fz-scuro) 80%, #0c0b14)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--fz-luce) 40%, transparent), 0 0 18px color-mix(in srgb, var(--fz-2) 35%, transparent); }
+.scambi-broadcast [role="tablist"] button { font: 600 .82rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+
+/* Carte giocatore e scelta */
+.scambi-broadcast .scambi-asset-grid { gap: 5px; }
+.scambi-broadcast .scambi-asset-card { position: relative; grid-template-columns: 38px minmax(0, 1fr) 20px; min-height: 52px; padding: 7px 10px 7px 8px; overflow: hidden; border: 1px solid rgba(255,255,255,.07); border-radius: 8px; background: linear-gradient(90deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); }
+.scambi-broadcast .scambi-asset-card:hover { border-color: color-mix(in srgb, var(--fz-luce) 35%, transparent); transform: none; }
+.scambi-broadcast .scambi-asset-card.is-scelto, .scambi-broadcast .scambi-asset-card--pick.is-scelto { border-color: color-mix(in srgb, var(--fz-luce) 70%, transparent); background: linear-gradient(90deg, color-mix(in srgb, var(--fz-1) 75%, #0c0b14), color-mix(in srgb, var(--fz-scuro) 85%, #0c0b14)); box-shadow: inset 3px 0 0 var(--fz-luce), 0 0 16px color-mix(in srgb, var(--fz-2) 25%, transparent); }
+.scambi-broadcast .scambi-asset-card__ovr, .scambi-broadcast .scambi-asset-card--pick .scambi-asset-card__pickbadge { height: 34px; border-radius: 6px; font: 700 1.05rem/1 "Oswald", "Arial Narrow", sans-serif; }
+.scambi-broadcast .scambi-asset-card--pick .scambi-asset-card__pickbadge { font-size: .78rem; letter-spacing: .06em; }
+.scambi-broadcast .scambi-asset-card__info { gap: 3px; }
+.scambi-broadcast .scambi-asset-card__info strong { color: #fff; font: 600 .98rem/1.05 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+.scambi-broadcast .scambi-asset-card__info small { color: rgba(255,255,255,.55); font-size: .66rem; font-variant-numeric: tabular-nums; }
+.scambi-broadcast .scambi-asset-card__squadra { color: color-mix(in srgb, var(--fz-luce) 65%, #fff); }
+.scambi-broadcast .scambi-asset-card__check, .scambi-broadcast .scambi-asset-card--pick.is-scelto .scambi-asset-card__check { color: var(--fz-luce); text-shadow: 0 0 10px var(--fz-luce); }
+
+/* Chip del pacchetto */
+.scambi-broadcast .scambi-chip--player { color: #fff; background: rgba(255,255,255,.08); box-shadow: inset 0 0 0 1px rgba(255,255,255,.1); font: 600 .74rem/1.3 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+.scambi-broadcast .scambi-chip--player:hover, .scambi-broadcast .scambi-chip--player:focus-visible { background: color-mix(in srgb, var(--fz-1) 60%, #0c0b14); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fz-luce) 50%, transparent); text-decoration-color: transparent; }
+.scambi-broadcast .scambi-chip--pick { font-family: "Oswald", "Arial Narrow", sans-serif; letter-spacing: .06em; }
+
+/* Riepilogo della proposta in composizione */
+.scambi-broadcast .scambi-anteprima { gap: 10px; margin-top: 0; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--fz-luce) 25%, transparent); border-radius: 10px; background: linear-gradient(180deg, color-mix(in srgb, var(--fz-1) 22%, rgba(9,8,15,.92)), rgba(9,8,15,.92)); }
+.scambi-broadcast .scambi-anteprima__lato { display: grid; grid-template-columns: 32px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; row-gap: 5px; align-items: center; }
+.scambi-broadcast .scambi-anteprima__conteggio { grid-row: 1 / 3; width: 32px; height: 32px; color: var(--fz-scuro); background: linear-gradient(135deg, var(--fz-luce), var(--fz-2)); font: 700 1rem/1 "Oswald", "Arial Narrow", sans-serif; }
+.scambi-broadcast .scambi-anteprima__lato > small { color: color-mix(in srgb, var(--fz-luce) 75%, #fff); font: 600 .6rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .2em; text-transform: uppercase; }
+.scambi-broadcast .scambi-nessuno { color: rgba(255,255,255,.4); font-style: normal; }
+
+/* Messaggio */
+.scambi-broadcast .scambi-messaggio-riga label { display: grid; gap: 7px; }
+.scambi-broadcast .scambi-messaggio-riga label > span { color: color-mix(in srgb, var(--fz-luce) 75%, #fff); font: 600 .62rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .2em; text-transform: uppercase; }
+.scambi-broadcast .scambi-messaggio-riga input { min-height: 44px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; color: #fff; background: rgba(0,0,0,.35); font-size: 16px; }
+.scambi-broadcast .scambi-messaggio-riga input:focus { outline: none; border-color: color-mix(in srgb, var(--fz-luce) 60%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fz-2) 20%, transparent); }
+.scambi-broadcast .scambi-messaggio-riga input::placeholder { color: rgba(255,255,255,.35); }
+@media (max-width: 860px) {
+  .scambi-broadcast .scambi-anteprima > i { transform: rotate(90deg); }
+}
+
 /* ------------------------------------------------------------------
    Gestione risorse: punti abilita' sui tre rami (vivaio/training/medico).
    La curva degli effetti vive nel database (private.effetti_ramo): qui
