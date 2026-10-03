@@ -206,7 +206,9 @@ export function corsiaConRuolo(wc, ruolo, giocatore) {
 
 // Quanto vale interpretare il ruolo, in punti di overall efficace, a idoneita'
 // piena: in piu' per l'interprete giusto, in meno per quello sbagliato.
-export const VALORE_IDONEITA = 2.0;
+// Era 2,0: i ruoli valevano +6,2 punti su 38 da soli, piu' di tutte le altre
+// leve insieme. Ridotto nel riequilibrio del task 4 (registro, punto 36).
+export const VALORE_IDONEITA = 1.5;
 
 /**
  * Lo scarto di overall efficace dovuto ai ruoli, nella forma che il motore si

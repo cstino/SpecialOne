@@ -39,10 +39,13 @@ export function forzeCorsia(lineup) {
 
 // Punti di overall, sugli attaccanti, a vantaggio pieno. Tarato nel sistema
 // intero (task 4).
-export const SCALA_CORSIA = 2.5;
+export const SCALA_CORSIA = 3.5;
 // Quanti punti di scarto fra la corsia scelta e la media delle tre valgono il
-// vantaggio pieno.
-export const SCARTO_PIENO = 4;
+// vantaggio pieno. Era 4: nelle rose vere la corsia migliore supera la media di
+// 0,8-1,4 punti in un caso tipico (raramente oltre 3), quindi nessuno arrivava
+// a piu' di un quarto dell'effetto e la leva valeva +0,2 punti su 38. 1,5 e'
+// lo scarto di una squadra con una corsia davvero piu' forte (registro, p. 36).
+export const SCARTO_PIENO = 1.5;
 export const CONCENTRAZIONE = 0.35;
 
 export function vantaggioCorsia(mio, focus) {

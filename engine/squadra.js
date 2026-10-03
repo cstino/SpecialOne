@@ -92,7 +92,7 @@ export function idoneitaSquadra(g, profilo) {
 //  piena (punti di overall, in piu' o in meno).
 //
 //  Numeri di partenza, da tarare sul sistema intero (task 4): stessa scala dei
-//  ruoli (VALORE_IDONEITA = 2) e degli stili (spostamenti da 0,75 a 2).
+//  ruoli (VALORE_IDONEITA = 1,5) e degli stili (spostamenti da 0,75 a 2).
 // ------------------------------------------------------------
 export const OPZIONI_SQUADRA = {
   linea: {

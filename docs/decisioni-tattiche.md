@@ -1240,3 +1240,42 @@ l'oscillazione fra serie (1-3 punti): il ritmo e' simmetrico, quindi non
 avvantaggia nessuno; abbassa i punti di entrambe solo perche' aumentano i
 pareggi. Il valore di linea e ampiezza resta quello dei profili dei giocatori.
 PRODUZIONE e prove tattiche invariate (non passano indicazioni).
+
+## 36. Riequilibrio delle leve: la corsia conta, i ruoli non schiacciano tutto — 3 ottobre 2026
+
+**"Dove attacchiamo" valeva +0,2 punti su 38.** La forza di una corsia è la
+media pesata di chi attacca lì, e nelle rose vere la corsia migliore supera la
+media delle tre di poco (3.000 rose da `pool-reale.json`):
+
+| modulo | mediana | 75% | 90% | massimo |
+|---|---|---|---|---|
+| 4-4-2 | 0,8 | 1,2 | 1,6 | 2,7 |
+| 4-3-3 | 1,4 | 2,1 | 2,8 | 4,7 |
+| 3-5-2 | 0,8 | 1,1 | 1,4 | 2,4 |
+| 4-2-3-1 | 1,4 | 2,1 | 2,8 | 4,7 |
+
+Con `SCARTO_PIENO = 4` nessuno arrivava oltre un quarto dell'effetto. Portato a
+**1,5**, e `SCALA_CORSIA` da 2,5 a **3,5**.
+
+**I ruoli valevano più di tutte le altre leve insieme** (+6,2 contro 1-1,4
+ciascuna). `VALORE_IDONEITA` da 2,0 a **1,5**: restano la leva più grande, perché
+sono l'identità dei giocatori, ma non cinque volte le altre.
+
+**Misura** (`prova-ruoli-reali.mjs`, 16.000 partite per riga, rose vere):
+
+| A, rispetto a chi non tocca niente | 4-4-2 prima | 4-4-2 dopo | 4-3-3 dopo |
+|---|---|---|---|
+| solo ruoli giusti | +6,2 | +4,0 | +3,9 |
+| solo stile giusto | +1,4 | +1,4 | +2,3 |
+| solo linea giusta | +1,0 | +1,0 | +0,4 |
+| solo ampiezza giusta | +1,2 | +1,2 | +1,2 |
+| solo corsia giusta | +0,2* | +1,4 | +1,3 |
+| linea alta + portiere libero | +0,6 | +0,6 | 0,0 |
+| tocca tutto a caso | −0,4 | −1,2 | −0,6 |
+| sa leggere la sua rosa | +10,8 | +9,3 | +10,7 |
+| sbaglia apposta | −11,8 | −10,8 | −11,4 |
+
+(*prima della soglia nuova: +1,0 dopo la sola soglia, +1,4 con la scala.)
+Totale nell'ordine di FM (10,2 fra migliore e peggiore, morale compreso).
+Predefinito sintetico: −1,0. Sistema sintetico: 7,4 punti fra tutto giusto e
+tutto sbagliato. `simulate-reale` non usa tattiche, invariato.
