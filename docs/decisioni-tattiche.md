@@ -1299,3 +1299,29 @@ normale, se non adatto −1,1. Punisce l'errore ma non premia la lettura. Portat
 | libero a caso | −1,0 |
 
 Insieme: sa leggere la sua rosa +8,6, sbaglia apposta −11,4, tocca a caso −0,7.
+
+## 38. Familiarità: il costo vero è sano. Voti: i difensori non sono più i peggiori — 3 ottobre 2026
+
+**Familiarità (punto F), nessuna modifica.** Il +16,7 punti su 38 confrontava
+familiarità sempre zero con familiarità sempre piena, che nel gioco non esiste:
+si riempie in `FAM_PARTITE_PIENA` (5) partite. Il costo vero, stessa forza, 30
+giornate riportate su 38:
+
+| A | punti/38 |
+|---|---|
+| conosce già il modulo | 61,9 |
+| cambia modulo una volta, a inizio stagione | 59,9 (−2,0) |
+| cambia modulo tre volte | 57,4 (−4,5) |
+
+Un cambio costa quanto una buona leva tattica, cambiare spesso costa davvero:
+premia l'identità di squadra, come voluto (punto 27). `FAM_MALUS_MAX` resta 3,5.
+
+**Voti.** Su 20.215 voti veri di LegaBot: portieri 6,65, **difensori 6,49**,
+centrocampisti 6,63, **attaccanti 6,81**; MVP 12% / 19% / 31% / 38% (SofaScore:
+medie vicine fra reparti, MVP circa 9 / 23 / 33 / 35). Nelle partite vere si segna
+molto (Serie F 4,3 gol a partita) e ogni gol subito pesava −0,14 sui difensori.
+`golSubito.DEF` a −0,11 e `basePerReparto` { DEF +0,04, ATT −0,08 }: un
+compromesso fra la prova sintetica (pochi gol: MVP difensori 39% su 36% di
+titolari, attaccanti 21% su 27%; medie GK 6,73 · DEF 6,78 · MID 6,82 · ATT 6,69)
+e le partite vere (stima: difensori ~6,60, attaccanti ~6,73). Da verificare sui
+voti nuovi di LegaBot.

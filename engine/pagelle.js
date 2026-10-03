@@ -55,7 +55,13 @@ export const PESI = {
   intervento: 0.11, interventoMancato: -0.12,
   dribblingRiuscito: 0.1, dribblingFallito: -0.06,
   parata: 0.17,
-  golSubito: { GK: -0.3, DEF: -0.14, MID: -0.03, ATT: 0 },
+  // DEF era -0,14: nelle partite vere si segna molto (Serie F 4,3 gol a
+  // partita) e i difensori avevano la media piu' bassa di tutti (6,49 contro
+  // 6,81 degli attaccanti su 20.000 voti di LegaBot). Registro, punto 38.
+  golSubito: { GK: -0.3, DEF: -0.11, MID: -0.03, ATT: 0 },
+  // Aggiustamento di base per reparto, tarato sui voti veri: medie vicine fra
+  // i reparti come su SofaScore, con gli attaccanti piu' estremi.
+  basePerReparto: { GK: 0, DEF: 0.04, MID: 0, ATT: -0.08 },
   portaInviolata: { GK: 0.4, DEF: 0.35, MID: 0.08, ATT: 0 },
   giallo: -0.3, rosso: -1.5,
   rumore: 0.15,
@@ -132,7 +138,7 @@ export function pagelle(lati, seme) {
       const delta = L.lineup.tattica ? L.lineup.tattica(g, slot) : 0;
       const spinta = PESI.tattica * delta;
       const contro = forzaAvv[AVVERSARIO[rep]] ?? 70;
-      let voto = PESI.base;
+      let voto = PESI.base + (PESI.basePerReparto[rep] ?? 0);
       const d = {};
 
       // passaggi
