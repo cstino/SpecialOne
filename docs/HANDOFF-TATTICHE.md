@@ -102,8 +102,17 @@ un bonus. Ordine concordato, un task alla volta:
    con profilo, mai collegato: riusarlo senza la parte di lettura dell'avversario.
 3. **Voti in pagella**: fatto il 1° ottobre (registro, punto 31), tabella `pagelle`
    applicata. ← il prossimo è il 4.
-4. **Ritaratura del sistema intero** con la prova del predefinito;
-   **`FAM_MALUS_MAX`** (punto F) va rivisto qui.
+4. **Ritaratura del sistema intero**: fatta il 2-3 ottobre 2026 (registro,
+   punti 34-38). Lo stile decide come si gioca (ritmo, possesso, volume tiri),
+   linea e ampiezza lasciano un'impronta, "dove attacchiamo" e portiere libero
+   ora contano, ruoli riequilibrati (+4 invece di +6,2), familiarità lasciata
+   com'è (costo vero di un cambio di modulo: −2 punti), voti dei difensori
+   riallineati. Prima ancora (punti 32-33): cambi a 3 soste più l'intervallo,
+   piazzati dentro i blocchi; telecronaca e grafico della pressione nella live.
+   **LegaBot (id 62) ha `tattiche_attive = true`** e il tasto admin chiama la
+   funzione **`simula-giornata-s2`** (codice del ramo). Al lancio: unire main,
+   distribuire `simula-giornata` dal ramo, togliere `simula-giornata-s2` e il
+   ramo in `Admin.tsx`.
 5. **Preset**: combinazioni pronte delle due pagine.
 
 **Da sistemare dopo il merge del 28 settembre** (piani di sviluppo su `main`):
