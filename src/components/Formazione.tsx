@@ -7,6 +7,7 @@ import SchemaTattico, { type XpDisposizione } from './SchemaTattico'
 import { STILE_LABEL } from '../lib/stili'
 import { idoneitaRuolo, segnoIdoneita } from '../lib/tattica'
 import { PRESET, applicaPreset } from '../lib/preset'
+import { DialogoNomeRiserva, SchemiCard } from './SchemiCard'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { cognome } from '../lib/nomi'
 import { ROSA_MASSIMA } from '../lib/league'
@@ -65,7 +66,11 @@ type Player = { id: number; fc_id: number; nome: string; club: string; nazionali
 // chi li ha salvati.
 type ModuloPersonalizzato = { id: number; nome: string; modulo: string; disposizione: string[]; ruoli: (string | null)[] | null; compiti: (string | null)[] | null; focus_corsia: string | null; stile: string | null; linea_difensiva: string | null; ampiezza: string | null; ruolo_portiere: string | null }
 const MODULI_PERSONALIZZATI_MAX = 3
-type Secondario = { modulo: string; disposizione: string[] }
+// Uno schema tattico: tutto cio' che lo Schema Tattico e la pagina Squadra decidono.
+type Tattica = {
+  modulo: string; disposizione: string[] | null; ruoli: (string | null)[] | null; compiti: (string | null)[] | null
+  focus: string | null; stile: string; linea: string | null; ampiezza: string | null; portiere: string | null
+}
 const stessiValori = (a: (string | null)[] | null | undefined, b: (string | null)[] | null | undefined) =>
   JSON.stringify((a ?? []).map((v) => v ?? null)) === JSON.stringify((b ?? []).map((v) => v ?? null))
   || (!(a ?? []).some(Boolean) && !(b ?? []).some(Boolean))
@@ -224,39 +229,6 @@ function PlayerPortrait({ player, imageUrl, position, selected = false, onClick,
 // l'intro non ha sta dove non copre il volto (indicazioni della chat di main,
 // 1° ottobre 2026): energia in alto al centro, fuori posizione in alto a
 // destra, idoneita' al ruolo in basso a destra.
-// La sezione "Modulo secondario" in cima al menu dei moduli (season 2): il
-// modulo che si sta preparando, con la barra delle partite imparate; scambiarlo
-// col principale, eliminarlo o sceglierne uno nuovo.
-export function SezioneSecondario({ secondario, partite, partitePiene, scegliendo, onNuovo, onAnnulla, onScambia, onElimina }: {
-  secondario: { modulo: string; disposizione: string[] } | null; partite: number; partitePiene: number; scegliendo: boolean
-  onNuovo: () => void; onAnnulla: () => void; onScambia: () => void; onElimina: () => void
-}) {
-  const imparato = partite >= partitePiene
-  return <div className="formation-module-menu__secondario">
-    <p className="formation-module-menu__sezione">Modulo secondario</p>
-    {scegliendo
-      ? <div className="formation-module-menu__secondario-scelta">
-        <small>Scegli il modulo da preparare: lo impari una partita alla volta anche se non lo schieri.</small>
-        <button type="button" onClick={onAnnulla}>Annulla</button>
-      </div>
-      : secondario
-        ? <div className="formation-module-menu__secondario-card">
-          <MiniModulo slots={secondario.disposizione} />
-          <span className="formation-module-menu__secondario-testo">
-            <strong>{secondario.modulo}</strong>
-            <small>{imparato ? 'Conosciuto come il principale' : `Lo stai imparando: ${partite}/${partitePiene} partite`}</small>
-            <i className="formation-module-menu__secondario-barra" aria-hidden="true"><b style={{ width: `${Math.min(100, partite / partitePiene * 100)}%` }} /></i>
-          </span>
-          <button type="button" onClick={onScambia} title="Il secondario diventa il modulo da giocare e il principale prende il suo posto: nessuno perde familiarità">Scambia</button>
-          <button type="button" className="is-elimina" onClick={onElimina}>Elimina</button>
-        </div>
-        : <button className="formation-module-menu__secondario-nuovo" type="button" onClick={onNuovo}>
-          <strong>+ Prepara un secondo modulo</strong>
-          <small>Si impara anche senza schierarlo: dopo {partitePiene} partite lo conosci come il principale.</small>
-        </button>}
-  </div>
-}
-
 export function CartaCampo({ player, imageUrl, position, selected, onClick, ruolo }: { player?: Player; imageUrl?: string; position: string; selected: boolean; onClick: (event: ReactMouseEvent<HTMLButtonElement>) => void; ruolo: string | null }) {
   if (!player) {
     return <button className="rosa-card rosa-card--vuota" type="button" onClick={onClick} aria-label={`Posizione ${position} libera: tocca per assegnare un giocatore`}>
@@ -301,14 +273,21 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [imageUrls, setImageUrls] = useState<Record<number, string>>({})
   const [modulo, setModulo] = useState('4-3-3')
   const [moduleMenuOpen, setModuleMenuOpen] = useState(false)
-  // Modulo secondario (season 2): il modulo che si sta preparando. Accumula
-  // familiarita' a ogni partita anche se non lo si schiera; si salva con la
-  // formazione. `sceltaSecondario`: il menu dei moduli sta scegliendo quello.
-  const [secondario, setSecondario] = useState<Secondario | null>(null)
-  const [sceltaSecondario, setSceltaSecondario] = useState(false)
-  const secondarioSalvato = useRef('null')
-  // Chiuso il menu, la modalita' "scegli il secondario" finisce.
-  useEffect(() => { if (!moduleMenuOpen) setSceltaSecondario(false) }, [moduleMenuOpen])
+  // Due schemi tattici con un nome (season 2, stile EA FC): l'ATTIVO gioca (e'
+  // la formazione salvata), la RISERVA si prepara e impara il suo modulo a ogni
+  // partita anche se non e' schierata. Le variabili di sotto (modulo, ruoli,
+  // stile...) mostrano sempre lo schema SELEZIONATO; l'altro sta messo da parte
+  // in `attivoFermo` / `riservaFerma`. Salvando, vanno entrambi.
+  const [schemaSel, setSchemaSel] = useState<'attivo' | 'riserva'>('attivo')
+  const [nomeAttivo, setNomeAttivo] = useState('Schema 1')
+  const [haRiserva, setHaRiserva] = useState(false)
+  const [nomeRiserva, setNomeRiserva] = useState('Schema 2')
+  const [attivoFermo, setAttivoFermo] = useState<Tattica | null>(null)
+  const [riservaFerma, setRiservaFerma] = useState<Tattica | null>(null)
+  // La riserva e' gia' stata salvata col suo nome? Se no, la prima volta lo chiede.
+  const [nomeRiservaConfermato, setNomeRiservaConfermato] = useState(false)
+  const [chiediNomeRiserva, setChiediNomeRiserva] = useState(false)
+  const schemiSalvati = useRef('')
   const [stile, setStile] = useState('equilibrato')
   const [salvataIl, setSalvataIl] = useState<string | null>(null)
   const [titolari, setTitolari] = useState<number[]>([])
@@ -422,12 +401,29 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           .map((riga) => ({ disposizione: riga.disposizione as string[], partite: riga.partite_giocate })))
         setXpIndicazioni(indicazioniXp?.partite_giocate ?? 0)
       }
-      let secondarioCaricato: Secondario | null = null
       if (league.tattiche_attive) {
-        const { data: sec } = await supabase.from('modulo_secondario').select('modulo, disposizione').eq('team_id', membership.id).maybeSingle()
-        if (sec && Array.isArray(sec.disposizione)) secondarioCaricato = { modulo: sec.modulo as string, disposizione: sec.disposizione as string[] }
+        const { data: sc } = await supabase.from('schemi_squadra').select('*').eq('team_id', membership.id).maybeSingle()
+        if (active) {
+          const nomeA = (sc?.nome_attivo as string | undefined) ?? 'Schema 1'
+          setNomeAttivo(nomeA)
+          let riservaCaricata: Tattica | null = null
+          if (sc?.riserva_modulo && Array.isArray(sc.riserva_disposizione)) {
+            const standard = MODULI[sc.riserva_modulo as string] ?? []
+            riservaCaricata = {
+              modulo: sc.riserva_modulo as string,
+              disposizione: stessiValori(sc.riserva_disposizione as string[], standard) ? null : sc.riserva_disposizione as string[],
+              ruoli: (sc.riserva_ruoli as (string | null)[] | null) ?? null, compiti: (sc.riserva_compiti as (string | null)[] | null) ?? null,
+              focus: (sc.riserva_focus_corsia as string | null) ?? null, stile: (sc.riserva_stile as string | null) ?? 'equilibrato',
+              linea: (sc.riserva_linea as string | null) ?? null, ampiezza: (sc.riserva_ampiezza as string | null) ?? null,
+              portiere: (sc.riserva_portiere as string | null) ?? null,
+            }
+            setHaRiserva(true); setNomeRiserva(sc.riserva_nome as string); setNomeRiservaConfermato(true)
+            setRiservaFerma(riservaCaricata)
+          }
+          // La stessa firma che calcola save(): niente chiamata se non cambia nulla.
+          schemiSalvati.current = JSON.stringify({ nomeAttivo: nomeA, ris: riservaCaricata, nome: riservaCaricata ? sc?.riserva_nome : 'Schema 2' })
+        }
       }
-      if (active) { setSecondario(secondarioCaricato); secondarioSalvato.current = JSON.stringify(secondarioCaricato) }
       const { data: nextFixture, error: fixtureError } = await supabase.from('fixtures').select('giornata')
         .eq('league_id', league.id).in('stato', ['programmata', 'in_corso']).order('giornata').limit(1).maybeSingle()
       if (fixtureError) { setError(fixtureError.message); setLoading(false); return }
@@ -729,7 +725,9 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     setPlayerAction({ player, location, x, y })
   }
 
-  async function save() {
+  async function save(nomeRiservaScelto?: string) {
+    // La prima volta che si salva uno schema riserva se ne chiede il nome.
+    if (tatticheAttive && haRiserva && !nomeRiservaConfermato && nomeRiservaScelto === undefined) { setChiediNomeRiserva(true); return }
     setSaving(true); setSaved(false); setError(null)
     if (titolari.length !== slots.length || titolari.some((id) => !id)) {
       setError('Completa tutti e undici i titolari prima di salvare.')
@@ -743,26 +741,81 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       setSaving(false)
       return
     }
+    // Si salva lo schema ATTIVO (quello che gioca), anche se si sta guardando la riserva.
+    const att = attivoCanonico
     const { error: saveError } = await supabase.rpc('salva_formazione', {
-      p_league_id: league.id, p_giornata: giornata, p_modulo: modulo,
-      p_disposizione: disposizione, p_ruoli: ruoli, p_compiti: compiti, p_focus_corsia: focusCorsia,
+      p_league_id: league.id, p_giornata: giornata, p_modulo: att.modulo,
+      p_disposizione: att.disposizione, p_ruoli: att.ruoli, p_compiti: att.compiti, p_focus_corsia: att.focus,
       p_titolari: titolari, p_panchina: cleanBench, p_tribuna: tribuna,
-      p_stile_gioco: stile,
-      p_linea: linea, p_ampiezza: ampiezza, p_portiere: portiere,
+      p_stile_gioco: att.stile,
+      p_linea: att.linea, p_ampiezza: att.ampiezza, p_portiere: att.portiere,
     })
-    if (saveError) setError(saveError.message)
-    else {
-      // Il modulo secondario si salva insieme alla formazione, solo se e' cambiato.
-      if (tatticheAttive && JSON.stringify(secondario) !== secondarioSalvato.current) {
-        const { error: secondarioError } = await supabase.rpc('imposta_modulo_secondario', {
-          p_league_id: league.id, p_modulo: secondario?.modulo ?? null, p_disposizione: secondario?.disposizione ?? null,
+    if (saveError) { setError(saveError.message); setSaving(false); return }
+    // E, nelle leghe con le tattiche accese, i nomi e la riserva.
+    if (tatticheAttive) {
+      const ris = riservaCanonica
+      const nome = nomeRiservaScelto ?? nomeRiserva
+      const firmaSchemi = JSON.stringify({ nomeAttivo, ris, nome })
+      if (firmaSchemi !== schemiSalvati.current) {
+        const { error: schemiError } = await supabase.rpc('salva_schemi', {
+          p_league_id: league.id, p_nome_attivo: nomeAttivo,
+          p_riserva_nome: ris ? nome : null, p_modulo: ris?.modulo ?? null,
+          p_disposizione: ris ? (ris.disposizione ?? MODULI[ris.modulo]) : null,
+          p_ruoli: ris?.ruoli ?? null, p_compiti: ris?.compiti ?? null, p_focus_corsia: ris?.focus ?? null,
+          p_stile: ris?.stile ?? null, p_linea: ris?.linea ?? null, p_ampiezza: ris?.ampiezza ?? null, p_portiere: ris?.portiere ?? null,
         })
-        if (secondarioError) { setError(`Formazione salvata, ma il modulo secondario no: ${secondarioError.message}`); setSaving(false); return }
-        secondarioSalvato.current = JSON.stringify(secondario)
+        if (schemiError) { setError(`Formazione salvata, ma gli schemi no: ${schemiError.message}`); setSaving(false); return }
+        schemiSalvati.current = firmaSchemi
+        if (ris) { setNomeRiserva(nome); setNomeRiservaConfermato(true) }
       }
-      setPanchina(cleanBench); setSaved(true); setSalvataIl(new Date().toISOString()); fissaFirma.current = true
     }
+    setPanchina(cleanBench); setSaved(true); setSalvataIl(new Date().toISOString()); fissaFirma.current = true
     setSaving(false)
+  }
+
+  function applicaTattica(t: Tattica) {
+    setModulo(t.modulo); setDisposizione(t.disposizione); setRuoli(t.ruoli); setCompiti(t.compiti)
+    setFocusCorsia(t.focus); setStile(t.stile); setLinea(t.linea); setAmpiezza(t.ampiezza); setPortiere(t.portiere)
+    setSelected(null); setPlayerAction(null)
+  }
+
+  // Si guarda (e si modifica) uno dei due schemi: quello non selezionato resta
+  // da parte. La riserva vuota si crea come COPIA dell'attivo, da ritoccare.
+  function selezionaSchema(quale: 'attivo' | 'riserva') {
+    if (quale === schemaSel) return
+    if (quale === 'riserva') {
+      setAttivoFermo(tatticaCorrente)
+      if (haRiserva && riservaFerma) applicaTattica(riservaFerma)
+      else { setHaRiserva(true); setNomeRiserva('Schema 2'); setNomeRiservaConfermato(false) }
+      setRiservaFerma(null)
+      setSchemaSel('riserva')
+    } else {
+      setRiservaFerma(tatticaCorrente)
+      if (attivoFermo) applicaTattica(attivoFermo)
+      setAttivoFermo(null)
+      setSchemaSel('attivo')
+    }
+  }
+
+  // La riserva diventa lo schema che gioca e quello attivo prende il suo posto:
+  // si scambiano anche i nomi. Nessuno dei due perde la familiarita'.
+  function usaRiservaInPartita() {
+    if (!haRiserva) return
+    const att = attivoCanonico
+    const ris = riservaCanonica
+    if (!ris) return
+    applicaTattica(ris)
+    setRiservaFerma(att); setAttivoFermo(null); setSchemaSel('attivo')
+    setNomeAttivo(nomeRiserva); setNomeRiserva(nomeAttivo); setNomeRiservaConfermato(true)
+    setSaved(false)
+  }
+
+  function eliminaRiserva() {
+    if (!haRiserva) return
+    if (schemaSel === 'riserva' && attivoFermo) applicaTattica(attivoFermo)
+    setAttivoFermo(null); setRiservaFerma(null); setHaRiserva(false); setSchemaSel('attivo')
+    setNomeRiserva('Schema 2'); setNomeRiservaConfermato(false)
+    setSaved(false)
   }
 
   // Un preset tattico: stile, linea, ampiezza, compiti e solo i ruoli per cui il
@@ -783,13 +836,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     return `${preset.nome} applicato: ${r.ruoliAssegnati} ruoli assegnati dove i giocatori sono adatti, gli altri ${nGiocatori - r.ruoliAssegnati} senza indicazione. Ricordati di salvare.`
   }
 
-  function chooseModule(nextModule: string, disposizioneNuova: string[] = MODULI[nextModule]) {
-    // Scegliere il modulo secondario come modulo da giocare e' uno SCAMBIO: il
-    // principale di prima diventa il secondario, e nessuno dei due perde la sua
-    // familiarita' (i contatori non calano mai).
-    if (tatticheAttive && secondario && secondario.modulo === nextModule && stessiValori(secondario.disposizione, disposizioneNuova)) {
-      setSecondario({ modulo, disposizione: [...slots] })
-    }
+  function chooseModule(nextModule: string) {
     setModulo(nextModule)
     // Lo schema personalizzato appartiene al modulo da cui nasce: le posizioni
     // spostate sono spostamenti DI QUELLE posizioni, e portarsele su un modulo
@@ -805,25 +852,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     setModuleMenuOpen(false)
   }
 
-  // Dal menu in modo "scegli il secondario": quel modulo (con le sue posizioni)
-  // diventa il secondario. Il modulo che si sta giocando non puo' esserlo.
-  function impostaSecondario(m: string, disposizioneScelta: string[]) {
-    if (m === modulo && stessiValori(disposizioneScelta, slots)) return
-    setSecondario({ modulo: m, disposizione: [...disposizioneScelta] })
-    setSceltaSecondario(false)
-    setModuleMenuOpen(false)
-    setSaved(false)
-  }
-
-  function scambiaSecondario() {
-    if (!secondario) return
-    const s = secondario
-    chooseModule(s.modulo, s.disposizione)
-    if (!stessiValori(s.disposizione, MODULI[s.modulo])) setDisposizione(s.disposizione)
-  }
-
   function scegliModuloPersonalizzato(m: ModuloPersonalizzato) {
-    chooseModule(m.modulo, m.disposizione)
+    chooseModule(m.modulo)
     const standard = MODULI[m.modulo] ?? []
     setDisposizione(stessiValori(m.disposizione, standard) ? null : m.disposizione)
     setRuoli(m.ruoli?.some(Boolean) ? m.ruoli : null)
@@ -873,7 +903,12 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     && (m.linea_difensiva ?? null) === linea && (m.ampiezza ?? null) === ampiezza && (m.ruolo_portiere ?? null) === portiere) ?? null
 
 
-  const firmaCorrente = JSON.stringify({ modulo, disposizione, ruoli, compiti, focusCorsia, linea, ampiezza, portiere, stile, titolari, panchina, tribuna, secondario })
+  // Gli schemi "canonici": quello che gioca e la riserva, indipendentemente da
+  // quale dei due si sta guardando.
+  const tatticaCorrente: Tattica = { modulo, disposizione, ruoli, compiti, focus: focusCorsia, stile, linea, ampiezza, portiere }
+  const attivoCanonico: Tattica = schemaSel === 'attivo' ? tatticaCorrente : (attivoFermo ?? tatticaCorrente)
+  const riservaCanonica: Tattica | null = !haRiserva ? null : schemaSel === 'riserva' ? tatticaCorrente : riservaFerma
+  const firmaCorrente = JSON.stringify({ attivoCanonico, riservaCanonica, haRiserva, nomeAttivo, nomeRiserva, titolari, panchina, tribuna })
   const modificata = firmaSalvata === null || firmaSalvata !== firmaCorrente
   // Dopo il caricamento di una distinta salvata, o dopo un salvataggio
   // riuscito, la formazione in pagina diventa il nuovo riferimento.
@@ -937,7 +972,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         <section className={`formation-panel formation-panel--tactical formazione-broadcast formazione-broadcast--${fase}`}>
           <div className="formation-toolbar">
             <div className="formation-save-row">
-              <button className={`formation-save-button button button--primary${modificata ? '' : ' is-salvata'}`} type="button" disabled={saving || !modificata} onClick={save}>{saving ? 'Salvo…' : modificata ? 'Salva' : 'Salvata'}</button>
+              <button className={`formation-save-button button button--primary${modificata ? '' : ' is-salvata'}`} type="button" disabled={saving || !modificata} onClick={() => void save()}>{saving ? 'Salvo…' : modificata ? 'Salva' : 'Salvata'}</button>
               {(saved || salvataIl) && <div className="formation-save-stato">
                 {saved && <span>Formazione salvata</span>}
                 {salvataIl && <small>Salvata il {formatSalvataIl(salvataIl)}</small>}
@@ -951,27 +986,30 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
               <FtsgGauge moduloPct={ftsgModuloPct} stilePct={ftsgStilePct} onClick={() => setFtsgInfoOpen(true)} />
               <span>Familiarità</span>
             </div>
+            {tatticheAttive && <SchemiCard
+              nomeAttivo={nomeAttivo}
+              nomeRiserva={haRiserva ? nomeRiserva : null}
+              selezionato={schemaSel}
+              descrizioneAttivo={`${attivoCanonico.modulo} · ${(STILE_LABEL[attivoCanonico.stile] ?? attivoCanonico.stile).toLowerCase()}`}
+              descrizioneRiserva={riservaCanonica ? `${riservaCanonica.modulo} · ${(STILE_LABEL[riservaCanonica.stile] ?? riservaCanonica.stile).toLowerCase()}` : ''}
+              partite={riservaCanonica ? xpDisposizione.find((r) => stessiValori(r.disposizione, riservaCanonica.disposizione ?? MODULI[riservaCanonica.modulo]))?.partite ?? 0 : 0}
+              partitePiene={FAM_PARTITE_PIENA}
+              onSeleziona={selezionaSchema}
+              onRinomina={(quale, nome) => { if (quale === 'attivo') setNomeAttivo(nome); else { setNomeRiserva(nome); setNomeRiservaConfermato(true) } setSaved(false) }}
+              onUsaRiserva={usaRiservaInPartita}
+              onEliminaRiserva={() => { if (window.confirm(`Eliminare lo schema riserva «${nomeRiserva}»?`)) eliminaRiserva() }}
+            />}
             <div className="formation-tattica">
               <div className="formation-tattica__voce formation-module-selector">
                 <button className="formation-tattica__trigger" type="button" aria-haspopup="listbox" aria-expanded={moduleMenuOpen} onClick={() => { setModuleMenuOpen((open) => !open) }}>
-                  <span className="formation-tattica__testo"><small>{moduloPersonalizzatoAttivo ? `Modulo personalizzato · da ${modulo}` : 'Modulo tattico'}{tatticheAttive && secondario ? ` · 2º ${secondario.modulo}` : ''}</small><strong>{moduloPersonalizzatoAttivo?.nome ?? modulo}</strong></span>
+                  <span className="formation-tattica__testo"><small>{moduloPersonalizzatoAttivo ? `Modulo personalizzato · da ${modulo}` : 'Modulo tattico'}</small><strong>{moduloPersonalizzatoAttivo?.nome ?? modulo}</strong></span>
                   <i aria-hidden="true"><Icona nome={moduleMenuOpen ? 'chiudi' : 'giu'} /></i>
                 </button>
-                {moduleMenuOpen && <><button className="formation-module-scrim" type="button" aria-label="Chiudi selezione modulo" onClick={() => setModuleMenuOpen(false)} /><div className="formation-module-menu" role="listbox" aria-label="Scegli il modulo">{tatticheAttive && <SezioneSecondario
-                    secondario={secondario}
-                    partite={secondario ? xpDisposizione.find((r) => stessiValori(r.disposizione, secondario.disposizione))?.partite ?? 0 : 0}
-                    partitePiene={FAM_PARTITE_PIENA}
-                    scegliendo={sceltaSecondario}
-                    onNuovo={() => setSceltaSecondario(true)}
-                    onAnnulla={() => setSceltaSecondario(false)}
-                    onScambia={scambiaSecondario}
-                    onElimina={() => { setSecondario(null); setSaved(false) }}
-                  />}
-                  {Object.keys(MODULI).map((name) => { const attivo = name === modulo && !moduloPersonalizzatoAttivo; const nonScegliibile = sceltaSecondario && attivo; return <button className={attivo ? 'is-active' : ''} type="button" role="option" aria-selected={attivo} key={name} disabled={nonScegliibile} onClick={() => sceltaSecondario ? impostaSecondario(name, MODULI[name]) : chooseModule(name)}><MiniModulo slots={MODULI[name]} /><strong>{name}</strong><small>{MODULO_DESCRIZIONI[name]}</small><span>{attivo ? '✓' : '›'}</span></button> })}
+                {moduleMenuOpen && <><button className="formation-module-scrim" type="button" aria-label="Chiudi selezione modulo" onClick={() => setModuleMenuOpen(false)} /><div className="formation-module-menu" role="listbox" aria-label="Scegli il modulo">{Object.keys(MODULI).map((name) => { const attivo = name === modulo && !moduloPersonalizzatoAttivo; return <button className={attivo ? 'is-active' : ''} type="button" role="option" aria-selected={attivo} key={name} onClick={() => chooseModule(name)}><MiniModulo slots={MODULI[name]} /><strong>{name}</strong><small>{MODULO_DESCRIZIONI[name]}</small><span>{attivo ? '✓' : '›'}</span></button> })}
                   {moduliPersonalizzati.length > 0 && <>
                     <p className="formation-module-menu__sezione">I tuoi moduli · {moduliPersonalizzati.length}/{MODULI_PERSONALIZZATI_MAX}</p>
                     {moduliPersonalizzati.map((m) => { const attivo = moduloPersonalizzatoAttivo?.id === m.id; return <div className="formation-module-menu__personale" key={`p-${m.id}`}>
-                      <button className={attivo ? 'is-active' : ''} type="button" role="option" aria-selected={attivo} onClick={() => sceltaSecondario ? impostaSecondario(m.modulo, m.disposizione) : scegliModuloPersonalizzato(m)}><MiniModulo slots={m.disposizione} /><strong>{m.nome}</strong><small>da {m.modulo} · {nomeSchieramento(m.disposizione, MODULI)}</small><span>{attivo ? '✓' : '›'}</span></button>
+                      <button className={attivo ? 'is-active' : ''} type="button" role="option" aria-selected={attivo} onClick={() => scegliModuloPersonalizzato(m)}><MiniModulo slots={m.disposizione} /><strong>{m.nome}</strong><small>da {m.modulo} · {nomeSchieramento(m.disposizione, MODULI)}</small><span>{attivo ? '✓' : '›'}</span></button>
                       <button className="formation-module-menu__elimina" type="button" aria-label={`Elimina il modulo ${m.nome}`} onClick={() => { if (window.confirm(`Eliminare il modulo "${m.nome}"?`)) void eliminaModuloPersonalizzato(m.id).then((e) => { if (e) setError(e) }) }}><Icona nome="chiudi" /></button>
                     </div> })}
                   </>}
@@ -1086,6 +1124,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           </section>
         </div>
       })()}
+      {chiediNomeRiserva && <DialogoNomeRiserva nomeIniziale={nomeRiserva} classe={`formazione-broadcast formazione-broadcast--${fase}`} onAnnulla={() => setChiediNomeRiserva(false)}
+        onConferma={(nome) => { setChiediNomeRiserva(false); setNomeRiserva(nome); void save(nome) }} />}
       {playerAction && <div className="player-action-layer" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setPlayerAction(null) }}>
         <section className="player-action-menu" role="dialog" aria-label={`Azioni per ${playerAction.player.nome}`} style={{ left: playerAction.x, top: playerAction.y }}>
           <div className="player-action-menu__player">

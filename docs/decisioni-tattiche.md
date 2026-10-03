@@ -1401,30 +1401,38 @@ scheda tiene l'esclusione solo senza flag. Il difetto dell'esclusione resta
 com'era nelle altre leghe fino al lancio; il caso «piano attivo e cambio ruolo
 che completa» esiste gia' oggi su `main` senza pulizia.
 
-## 41. Modulo secondario — 3 ottobre 2026
+## 41. Due schemi, attivo e riserva — 3 ottobre 2026
 
-Richiesta del committente: una squadra puo' preparare un secondo modulo, che
+Richiesta del committente: una squadra puo' preparare un secondo modulo che
 accumula familiarita' anche se non lo schiera; dopo 5 partite e' conosciuto come il
-principale. Si puo' scambiare col principale senza perdere nulla, o eliminare e
-prepararne un altro. Solo nelle leghe con `tattiche_attive`.
+principale. Poi, dopo la prima versione (un menu nei moduli), la forma voluta e'
+**stile EA FC**: sopra le card di modulo e stile, una card larga quanto le due con
+**due schemi tattici con un nome**. Solo nelle leghe con `tattiche_attive`.
 
-- **Modello**: tabella `modulo_secondario` (una riga per squadra: modulo e
-  schieramento risolto a 11 posizioni, la stessa chiave di `formation_xp`; visibile
-  solo al proprietario), RPC `imposta_modulo_secondario` (null elimina; rifiuta le
-  leghe senza flag e i moduli non validi). Si salva insieme alla formazione.
-- **Familiarita'**: `private.avanza_familiarita` chiama `private.avanza_secondario`
-  (subito dopo la barra disposizione, prima del return anticipato delle indicazioni):
-  se il secondario non e' lo schieramento giocato, guadagna una partita. Se non ha
-  ancora una riga, `private.assicura_riga_xp` la crea con la quota ereditata dal piu'
-  simile (stessa regola del primo utilizzo). I contatori non calano mai, quindi
-  scambiare e riscambiare non perde nulla. `registra_risultato_partita` la chiama per
-  entrambe le squadre a ogni partita.
-- **Non tocca** la barra INDICAZIONI (stile, ruoli, compiti, linea, ampiezza,
-  portiere): il secondario prepara il modulo, non le istruzioni.
-- **Scambio**: scegliere nel menu il modulo che e' il secondario come modulo da giocare
-  fa diventare il vecchio principale il nuovo secondario (anche col bottone «Scambia»).
-- **Prova** (transazione annullata, utente di LegaBot): rifiuto su lega senza flag e
-  su modulo inesistente; dopo 5 partite col 4-3-3 il secondario 4-4-2 passa da 52 a 57;
-  giocato il 4-4-2, +1 una volta sola.
+- **Schema attivo**: quello che gioca, coincide con la formazione salvata; nome di
+  default «Schema 1», rinominabile con la matita. **Schema riserva**: uno schema
+  tattico completo (modulo, schieramento, ruoli, compiti, dove si attacca, stile,
+  linea, ampiezza, portiere), all'inizio vuoto. Si tocca uno dei due per vederlo e
+  modificarlo (lo Schema Tattico, il menu dei moduli e i ruoli editano quello
+  selezionato); toccando la riserva vuota si crea come COPIA dell'attivo da ritoccare.
+  «Usa in partita» li scambia (anche i nomi), «Elimina» libera la riserva e se ne
+  prepara un'altra. Il pulsante Salva salva entrambi; la **prima volta** che si salva
+  una riserva ne chiede il nome (default «Schema 2»).
+- **Database** (migrazione `20261003130000`, sostituisce `20261003120000`, la cui tabella
+  era vuota): `schemi_squadra` (una riga per squadra: `nome_attivo` e la riserva in
+  colonne, tutto o niente; visibile solo al proprietario) e `salva_schemi` (stessi
+  controlli di `salva_formazione`; rifiuta le leghe senza flag). La formazione resta
+  in `lineups` e rappresenta l'attivo.
+- **Familiarita'**: `private.avanza_familiarita` chiama `private.avanza_secondario`, che
+  legge la riserva e, se il suo schieramento non e' quello appena giocato, gli da' una
+  partita (`private.assicura_riga_xp` crea la riga con la quota ereditata dal piu'
+  simile). I contatori non calano mai: scambiare e riscambiare non perde nulla.
+  `registra_risultato_partita` la chiama per entrambe le squadre a ogni partita.
+- **Non tocca** la barra INDICAZIONI (stile, ruoli, compiti, ...): la riserva prepara il
+  MODULO, le sue istruzioni sono salvate con lei ma la barra indicazioni resta una sola
+  e scende se si cambiano, come oggi.
+- **Prova** (transazione annullata, utente di LegaBot): rifiuto su lega senza flag, stile
+  inesistente, nome vuoto; con la riserva 4-4-2 e tre partite col 4-3-3 il 4-4-2 passa da
+  52 a 55; giocato, +1 una volta sola; eliminazione.
 - **Effetto sull'equilibrio da misurare**: il costo di un cambio di modulo (−2 punti su
   38, punto 38) per chi pianifica diventa zero con 5 partite di anticipo.
