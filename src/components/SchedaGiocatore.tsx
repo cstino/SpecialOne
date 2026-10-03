@@ -868,10 +868,12 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
             <p>Puoi scegliere i piani del suo ruolo e dei ruoli vicini (un terzino può puntare su terzino offensivo,
               ala di fascia, marcatore...). Rende molto su un giovane che crescerà tanto, poco su chi è già arrivato;
               su un veterano che cala protegge le abilità del piano. Cambiare piano non toglie quello che ha già
-              maturato, e "Torna alla crescita naturale" lo rimette senza piano.</p>
+              maturato, e {tatticheAttive ? '"Annulla allenamento" lo rimette senza piano' : '"Torna alla crescita naturale" lo rimette senza piano'}.</p>
             <p><strong>Cambio ruolo</strong> non cambia: sostituisce il ruolo primario con uno vicino (un CB può
-              diventare terzino o mediano, non ala). Piano e cambio ruolo restano alternativi: un allenamento alla
-              volta per giocatore.</p>
+              diventare terzino o mediano, non ala).
+              {tatticheAttive
+                ? ' Il piano vale subito e può andare insieme al cambio ruolo: se a fine cambio il piano non vale per il nuovo ruolo, il giocatore torna alla crescita naturale (tenendo quello che ha già maturato) e ti avvisiamo.'
+                : ' Piano e cambio ruolo restano alternativi: un allenamento alla volta per giocatore.'}</p>
           </PopupSpiegazione>}
           <p className="player-training-intro">Allenamento di {giocatore.nome}: cambio di ruolo e piano di sviluppo, dal ramo TRAINING di Gestione risorse.</p>
 
@@ -925,7 +927,8 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
             onAnnulla={annullaSpecializzazione}
             inviando={specInCorso}
             errore={specErrore}
-            bloccatoDa={cambioRuolo?.inCorso ? 'un cambio ruolo' : null}
+            // Con le tattiche accese il piano vale subito e convive con il cambio ruolo.
+            bloccatoDa={!tatticheAttive && cambioRuolo?.inCorso ? 'un cambio ruolo' : null}
             confrontoScelta={(() => {
               const opzione = specOpzioni?.find((o) => o.chiave === specScelta)
               if (!opzione) return null

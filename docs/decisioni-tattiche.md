@@ -1388,3 +1388,15 @@ avviare altri allenamenti ("ha gia' un allenamento in corso"). Il 3 ottobre:
 playoff, finali alla giornata 35, completamento previsto 36-43: nessuno ce la
 fara'). Con la regola nuova il difetto sparisce; al lancio i piani aperti delle
 altre leghe si chiudono in blocco (checklist in `HANDOFF-TATTICHE.md`).
+
+Aggiunta (3 ottobre 2026, migrazione `20261003110000`): **piano e cambio ruolo
+possono andare insieme** nelle leghe con il flag. `avvia_specializzazione` non
+guarda piu' il cambio ruolo in corso. Il catalogo dei piani e' per ruolo primario
+(un CM ha `mezzala_inserimento`, un CDM no): a fine cambio ruolo,
+`completa_cambi_ruolo` riporta a `bilanciato` il piano attivo che non vale per il
+nuovo ruolo, tenendo al giocatore quello che ha gia' spostato (contabilita' col
+reparto di prima) e mandando la notifica «Piano di sviluppo interrotto». Provato
+in transazione annullata (CB -> RB con il piano «Libero»). Nell'interfaccia la
+scheda tiene l'esclusione solo senza flag. Il difetto dell'esclusione resta
+com'era nelle altre leghe fino al lancio; il caso «piano attivo e cambio ruolo
+che completa» esiste gia' oggi su `main` senza pulizia.
