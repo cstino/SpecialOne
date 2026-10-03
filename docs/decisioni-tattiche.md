@@ -1279,3 +1279,23 @@ sono l'identità dei giocatori, ma non cinque volte le altre.
 Totale nell'ordine di FM (10,2 fra migliore e peggiore, morale compreso).
 Predefinito sintetico: −1,0. Sistema sintetico: 7,4 punti fra tutto giusto e
 tutto sbagliato. `simulate-reale` non usa tattiche, invariato.
+
+## 37. Il portiere libero si sceglie leggendo il portiere — 3 ottobre 2026
+
+"Valeva poco" (punto 30) perché la prova lo sceglieva sempre, con portieri
+pescati a caso: metà adatti, metà no, effetto medio nullo. Come le altre leve è
+una scelta da profilo, e va misurata leggendo il proprio portiere. Nuove righe in
+`prova-ruoli-reali.mjs`, tutte con la linea alta, così la differenza è solo il
+portiere.
+
+Con `COPERTURA_LIBERO = 1,0`: libero se adatto +0,1 rispetto al portiere
+normale, se non adatto −1,1. Punisce l'errore ma non premia la lettura. Portata a
+**2,5** (resta la metà del ruolo giusto di un singolo):
+
+| linea alta, 30.000 partite, 4-4-2 | rispetto al portiere normale |
+|---|---|
+| libero con portiere adatto | +0,9 |
+| libero con portiere non adatto | −1,7 |
+| libero a caso | −1,0 |
+
+Insieme: sa leggere la sua rosa +8,6, sbaglia apposta −11,4, tocca a caso −0,7.

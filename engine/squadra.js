@@ -131,7 +131,9 @@ export const OPZIONI_SQUADRA = {
 
 // Con la linea alta un portiere-libero copre lo spazio alle spalle: i
 // difensori ricevono questo, per quanto lui sia adatto (anche in meno).
-export const COPERTURA_LIBERO = 1.0;
+// Era 1,0: scelto leggendo il portiere valeva +0,1 punti su 38, scelto male
+// -1,1 (registro, punto 37).
+export const COPERTURA_LIBERO = 2.5;
 
 export const PREDEFINITE = { stile: 'equilibrato', linea: 'media', ampiezza: 'normale', portiere: 'normale' };
 

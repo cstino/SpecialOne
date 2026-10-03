@@ -19,7 +19,7 @@ import { MODULI, COMPITI, STILI } from '../../engine/config.js';
 import { deltaMorale } from '../../engine/morale.js';
 import { deltaRuoli, sommaDelta, ruoliPerSlot, idoneitaRuolo } from '../../engine/ruoli.js';
 import { deltaCorsie, vantaggioCorsia } from '../../engine/corsie.js';
-import { deltaSquadra, deltaCoperturaLibero, OPZIONI_SQUADRA, PREDEFINITE } from '../../engine/squadra.js';
+import { deltaSquadra, deltaCoperturaLibero, OPZIONI_SQUADRA, PREDEFINITE, idoneitaSquadra } from '../../engine/squadra.js';
 
 const N = Number(process.argv[2] ?? 8000);
 const MODULO = process.argv[3] ?? '4-4-2';
@@ -91,6 +91,18 @@ const STRATEGIE = {
   'solo ampiezza giusta': (A) => { A.squadra = squadraMirata(A, 1, 'ampiezza'); },
   'solo corsia giusta': (A) => { A.focus = corsiaMirata(A, 1); },
   'linea alta + portiere-libero': (A) => { A.squadra = { ...PREDEFINITE, linea: 'alta', portiere: 'libero' }; },
+  // Il portiere-libero e' una scelta da profilo, come le altre: si misura
+  // leggendo il proprio portiere (registro, punto 37). Stessa linea alta in
+  // entrambe le righe, cosi' la differenza e' solo il portiere.
+  'solo linea alta, portiere normale': (A) => { A.squadra = { ...PREDEFINITE, linea: 'alta' }; },
+  'linea alta + libero se adatto': (A) => {
+    const gk = A.titolari[A.slots.indexOf('GK')];
+    A.squadra = { ...PREDEFINITE, linea: 'alta', portiere: idoneitaSquadra(gk, 'portiere_libero') > 0 ? 'libero' : 'normale' };
+  },
+  'linea alta + libero se NON adatto': (A) => {
+    const gk = A.titolari[A.slots.indexOf('GK')];
+    A.squadra = { ...PREDEFINITE, linea: 'alta', portiere: idoneitaSquadra(gk, 'portiere_libero') < 0 ? 'libero' : 'normale' };
+  },
   'tocca tutto a caso': (A) => {
     A.ruoli = A.slots.map((s) => { const l = ruoliPerSlot(s); return l.length ? caso(l) : null; });
     A.compiti = A.slots.map(() => caso(COMPITI));
