@@ -3597,6 +3597,6 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .albo-retro__medaglia { display: grid; place-items: center; width: 46%; aspect-ratio: 1; border-radius: 50%; padding: 3px; background: linear-gradient(155deg, #fff4c2, #e6b440 30%, #8a5d12 60%, #f3cc5c); box-shadow: 0 0 30px rgba(255,200,70,.45); animation: albo-retro-respiro 2.2s ease-in-out infinite; }
 .albo-retro__medaglia b { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle at 50% 35%, #3d2c0e, #120d06 75%); box-shadow: inset 0 0 0 2px #1a1309, inset 0 0 0 3px rgba(255,220,130,.5); font: 700 clamp(3.4rem, 17vw, 4.4rem)/1 "Oswald", "Arial Narrow", sans-serif; background-clip: padding-box; color: #f6d26a; text-shadow: 0 0 18px rgba(255,211,77,.65); }
 .albo-retro__titolo { color: #fff1c4; font: 700 1.05rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .2em; margin-right: -.2em; text-transform: uppercase; }
-.albo-retro__fase { color: #c9a24c; font: 600 .58rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .22em; text-transform: uppercase; }
+.albo-retro__fase { color: #c9a24c; font: 600 .58rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .24em; text-transform: uppercase; }
 @keyframes albo-retro-respiro { 0%, 100% { transform: scale(1); box-shadow: 0 0 22px rgba(255,200,70,.35); } 50% { transform: scale(1.04); box-shadow: 0 0 38px rgba(255,200,70,.6); } }
 @media (prefers-reduced-motion: reduce) { .albo-retro__medaglia { animation: none; } }
