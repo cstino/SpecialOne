@@ -1400,3 +1400,31 @@ in transazione annullata (CB -> RB con il piano «Libero»). Nell'interfaccia la
 scheda tiene l'esclusione solo senza flag. Il difetto dell'esclusione resta
 com'era nelle altre leghe fino al lancio; il caso «piano attivo e cambio ruolo
 che completa» esiste gia' oggi su `main` senza pulizia.
+
+## 41. Modulo secondario — 3 ottobre 2026
+
+Richiesta del committente: una squadra puo' preparare un secondo modulo, che
+accumula familiarita' anche se non lo schiera; dopo 5 partite e' conosciuto come il
+principale. Si puo' scambiare col principale senza perdere nulla, o eliminare e
+prepararne un altro. Solo nelle leghe con `tattiche_attive`.
+
+- **Modello**: tabella `modulo_secondario` (una riga per squadra: modulo e
+  schieramento risolto a 11 posizioni, la stessa chiave di `formation_xp`; visibile
+  solo al proprietario), RPC `imposta_modulo_secondario` (null elimina; rifiuta le
+  leghe senza flag e i moduli non validi). Si salva insieme alla formazione.
+- **Familiarita'**: `private.avanza_familiarita` chiama `private.avanza_secondario`
+  (subito dopo la barra disposizione, prima del return anticipato delle indicazioni):
+  se il secondario non e' lo schieramento giocato, guadagna una partita. Se non ha
+  ancora una riga, `private.assicura_riga_xp` la crea con la quota ereditata dal piu'
+  simile (stessa regola del primo utilizzo). I contatori non calano mai, quindi
+  scambiare e riscambiare non perde nulla. `registra_risultato_partita` la chiama per
+  entrambe le squadre a ogni partita.
+- **Non tocca** la barra INDICAZIONI (stile, ruoli, compiti, linea, ampiezza,
+  portiere): il secondario prepara il modulo, non le istruzioni.
+- **Scambio**: scegliere nel menu il modulo che e' il secondario come modulo da giocare
+  fa diventare il vecchio principale il nuovo secondario (anche col bottone «Scambia»).
+- **Prova** (transazione annullata, utente di LegaBot): rifiuto su lega senza flag e
+  su modulo inesistente; dopo 5 partite col 4-3-3 il secondario 4-4-2 passa da 52 a 57;
+  giocato il 4-4-2, +1 una volta sola.
+- **Effetto sull'equilibrio da misurare**: il costo di un cambio di modulo (−2 punti su
+  38, punto 38) per chi pianifica diventa zero con 5 partite di anticipo.

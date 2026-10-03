@@ -65,6 +65,7 @@ type Player = { id: number; fc_id: number; nome: string; club: string; nazionali
 // chi li ha salvati.
 type ModuloPersonalizzato = { id: number; nome: string; modulo: string; disposizione: string[]; ruoli: (string | null)[] | null; compiti: (string | null)[] | null; focus_corsia: string | null; stile: string | null; linea_difensiva: string | null; ampiezza: string | null; ruolo_portiere: string | null }
 const MODULI_PERSONALIZZATI_MAX = 3
+type Secondario = { modulo: string; disposizione: string[] }
 const stessiValori = (a: (string | null)[] | null | undefined, b: (string | null)[] | null | undefined) =>
   JSON.stringify((a ?? []).map((v) => v ?? null)) === JSON.stringify((b ?? []).map((v) => v ?? null))
   || (!(a ?? []).some(Boolean) && !(b ?? []).some(Boolean))
@@ -223,6 +224,39 @@ function PlayerPortrait({ player, imageUrl, position, selected = false, onClick,
 // l'intro non ha sta dove non copre il volto (indicazioni della chat di main,
 // 1° ottobre 2026): energia in alto al centro, fuori posizione in alto a
 // destra, idoneita' al ruolo in basso a destra.
+// La sezione "Modulo secondario" in cima al menu dei moduli (season 2): il
+// modulo che si sta preparando, con la barra delle partite imparate; scambiarlo
+// col principale, eliminarlo o sceglierne uno nuovo.
+export function SezioneSecondario({ secondario, partite, partitePiene, scegliendo, onNuovo, onAnnulla, onScambia, onElimina }: {
+  secondario: { modulo: string; disposizione: string[] } | null; partite: number; partitePiene: number; scegliendo: boolean
+  onNuovo: () => void; onAnnulla: () => void; onScambia: () => void; onElimina: () => void
+}) {
+  const imparato = partite >= partitePiene
+  return <div className="formation-module-menu__secondario">
+    <p className="formation-module-menu__sezione">Modulo secondario</p>
+    {scegliendo
+      ? <div className="formation-module-menu__secondario-scelta">
+        <small>Scegli il modulo da preparare: lo impari una partita alla volta anche se non lo schieri.</small>
+        <button type="button" onClick={onAnnulla}>Annulla</button>
+      </div>
+      : secondario
+        ? <div className="formation-module-menu__secondario-card">
+          <MiniModulo slots={secondario.disposizione} />
+          <span className="formation-module-menu__secondario-testo">
+            <strong>{secondario.modulo}</strong>
+            <small>{imparato ? 'Conosciuto come il principale' : `Lo stai imparando: ${partite}/${partitePiene} partite`}</small>
+            <i className="formation-module-menu__secondario-barra" aria-hidden="true"><b style={{ width: `${Math.min(100, partite / partitePiene * 100)}%` }} /></i>
+          </span>
+          <button type="button" onClick={onScambia} title="Il secondario diventa il modulo da giocare e il principale prende il suo posto: nessuno perde familiarità">Scambia</button>
+          <button type="button" className="is-elimina" onClick={onElimina}>Elimina</button>
+        </div>
+        : <button className="formation-module-menu__secondario-nuovo" type="button" onClick={onNuovo}>
+          <strong>+ Prepara un secondo modulo</strong>
+          <small>Si impara anche senza schierarlo: dopo {partitePiene} partite lo conosci come il principale.</small>
+        </button>}
+  </div>
+}
+
 export function CartaCampo({ player, imageUrl, position, selected, onClick, ruolo }: { player?: Player; imageUrl?: string; position: string; selected: boolean; onClick: (event: ReactMouseEvent<HTMLButtonElement>) => void; ruolo: string | null }) {
   if (!player) {
     return <button className="rosa-card rosa-card--vuota" type="button" onClick={onClick} aria-label={`Posizione ${position} libera: tocca per assegnare un giocatore`}>
@@ -262,10 +296,19 @@ export function CartaCampo({ player, imageUrl, position, selected, onClick, ruol
 
 export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const league = membership.league as League
+  const tatticheAttive = Boolean(league.tattiche_attive)
   const [players, setPlayers] = useState<Player[]>([])
   const [imageUrls, setImageUrls] = useState<Record<number, string>>({})
   const [modulo, setModulo] = useState('4-3-3')
   const [moduleMenuOpen, setModuleMenuOpen] = useState(false)
+  // Modulo secondario (season 2): il modulo che si sta preparando. Accumula
+  // familiarita' a ogni partita anche se non lo si schiera; si salva con la
+  // formazione. `sceltaSecondario`: il menu dei moduli sta scegliendo quello.
+  const [secondario, setSecondario] = useState<Secondario | null>(null)
+  const [sceltaSecondario, setSceltaSecondario] = useState(false)
+  const secondarioSalvato = useRef('null')
+  // Chiuso il menu, la modalita' "scegli il secondario" finisce.
+  useEffect(() => { if (!moduleMenuOpen) setSceltaSecondario(false) }, [moduleMenuOpen])
   const [stile, setStile] = useState('equilibrato')
   const [salvataIl, setSalvataIl] = useState<string | null>(null)
   const [titolari, setTitolari] = useState<number[]>([])
@@ -379,6 +422,12 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           .map((riga) => ({ disposizione: riga.disposizione as string[], partite: riga.partite_giocate })))
         setXpIndicazioni(indicazioniXp?.partite_giocate ?? 0)
       }
+      let secondarioCaricato: Secondario | null = null
+      if (league.tattiche_attive) {
+        const { data: sec } = await supabase.from('modulo_secondario').select('modulo, disposizione').eq('team_id', membership.id).maybeSingle()
+        if (sec && Array.isArray(sec.disposizione)) secondarioCaricato = { modulo: sec.modulo as string, disposizione: sec.disposizione as string[] }
+      }
+      if (active) { setSecondario(secondarioCaricato); secondarioSalvato.current = JSON.stringify(secondarioCaricato) }
       const { data: nextFixture, error: fixtureError } = await supabase.from('fixtures').select('giornata')
         .eq('league_id', league.id).in('stato', ['programmata', 'in_corso']).order('giornata').limit(1).maybeSingle()
       if (fixtureError) { setError(fixtureError.message); setLoading(false); return }
@@ -702,7 +751,17 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       p_linea: linea, p_ampiezza: ampiezza, p_portiere: portiere,
     })
     if (saveError) setError(saveError.message)
-    else { setPanchina(cleanBench); setSaved(true); setSalvataIl(new Date().toISOString()); fissaFirma.current = true }
+    else {
+      // Il modulo secondario si salva insieme alla formazione, solo se e' cambiato.
+      if (tatticheAttive && JSON.stringify(secondario) !== secondarioSalvato.current) {
+        const { error: secondarioError } = await supabase.rpc('imposta_modulo_secondario', {
+          p_league_id: league.id, p_modulo: secondario?.modulo ?? null, p_disposizione: secondario?.disposizione ?? null,
+        })
+        if (secondarioError) { setError(`Formazione salvata, ma il modulo secondario no: ${secondarioError.message}`); setSaving(false); return }
+        secondarioSalvato.current = JSON.stringify(secondario)
+      }
+      setPanchina(cleanBench); setSaved(true); setSalvataIl(new Date().toISOString()); fissaFirma.current = true
+    }
     setSaving(false)
   }
 
@@ -724,7 +783,13 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     return `${preset.nome} applicato: ${r.ruoliAssegnati} ruoli assegnati dove i giocatori sono adatti, gli altri ${nGiocatori - r.ruoliAssegnati} senza indicazione. Ricordati di salvare.`
   }
 
-  function chooseModule(nextModule: string) {
+  function chooseModule(nextModule: string, disposizioneNuova: string[] = MODULI[nextModule]) {
+    // Scegliere il modulo secondario come modulo da giocare e' uno SCAMBIO: il
+    // principale di prima diventa il secondario, e nessuno dei due perde la sua
+    // familiarita' (i contatori non calano mai).
+    if (tatticheAttive && secondario && secondario.modulo === nextModule && stessiValori(secondario.disposizione, disposizioneNuova)) {
+      setSecondario({ modulo, disposizione: [...slots] })
+    }
     setModulo(nextModule)
     // Lo schema personalizzato appartiene al modulo da cui nasce: le posizioni
     // spostate sono spostamenti DI QUELLE posizioni, e portarsele su un modulo
@@ -740,8 +805,25 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     setModuleMenuOpen(false)
   }
 
+  // Dal menu in modo "scegli il secondario": quel modulo (con le sue posizioni)
+  // diventa il secondario. Il modulo che si sta giocando non puo' esserlo.
+  function impostaSecondario(m: string, disposizioneScelta: string[]) {
+    if (m === modulo && stessiValori(disposizioneScelta, slots)) return
+    setSecondario({ modulo: m, disposizione: [...disposizioneScelta] })
+    setSceltaSecondario(false)
+    setModuleMenuOpen(false)
+    setSaved(false)
+  }
+
+  function scambiaSecondario() {
+    if (!secondario) return
+    const s = secondario
+    chooseModule(s.modulo, s.disposizione)
+    if (!stessiValori(s.disposizione, MODULI[s.modulo])) setDisposizione(s.disposizione)
+  }
+
   function scegliModuloPersonalizzato(m: ModuloPersonalizzato) {
-    chooseModule(m.modulo)
+    chooseModule(m.modulo, m.disposizione)
     const standard = MODULI[m.modulo] ?? []
     setDisposizione(stessiValori(m.disposizione, standard) ? null : m.disposizione)
     setRuoli(m.ruoli?.some(Boolean) ? m.ruoli : null)
@@ -791,7 +873,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     && (m.linea_difensiva ?? null) === linea && (m.ampiezza ?? null) === ampiezza && (m.ruolo_portiere ?? null) === portiere) ?? null
 
 
-  const firmaCorrente = JSON.stringify({ modulo, disposizione, ruoli, compiti, focusCorsia, linea, ampiezza, portiere, stile, titolari, panchina, tribuna })
+  const firmaCorrente = JSON.stringify({ modulo, disposizione, ruoli, compiti, focusCorsia, linea, ampiezza, portiere, stile, titolari, panchina, tribuna, secondario })
   const modificata = firmaSalvata === null || firmaSalvata !== firmaCorrente
   // Dopo il caricamento di una distinta salvata, o dopo un salvataggio
   // riuscito, la formazione in pagina diventa il nuovo riferimento.
@@ -872,14 +954,24 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
             <div className="formation-tattica">
               <div className="formation-tattica__voce formation-module-selector">
                 <button className="formation-tattica__trigger" type="button" aria-haspopup="listbox" aria-expanded={moduleMenuOpen} onClick={() => { setModuleMenuOpen((open) => !open) }}>
-                  <span className="formation-tattica__testo"><small>{moduloPersonalizzatoAttivo ? `Modulo personalizzato · da ${modulo}` : 'Modulo tattico'}</small><strong>{moduloPersonalizzatoAttivo?.nome ?? modulo}</strong></span>
+                  <span className="formation-tattica__testo"><small>{moduloPersonalizzatoAttivo ? `Modulo personalizzato · da ${modulo}` : 'Modulo tattico'}{tatticheAttive && secondario ? ` · 2º ${secondario.modulo}` : ''}</small><strong>{moduloPersonalizzatoAttivo?.nome ?? modulo}</strong></span>
                   <i aria-hidden="true"><Icona nome={moduleMenuOpen ? 'chiudi' : 'giu'} /></i>
                 </button>
-                {moduleMenuOpen && <><button className="formation-module-scrim" type="button" aria-label="Chiudi selezione modulo" onClick={() => setModuleMenuOpen(false)} /><div className="formation-module-menu" role="listbox" aria-label="Scegli il modulo">{Object.keys(MODULI).map((name) => { const attivo = name === modulo && !moduloPersonalizzatoAttivo; return <button className={attivo ? 'is-active' : ''} type="button" role="option" aria-selected={attivo} key={name} onClick={() => chooseModule(name)}><MiniModulo slots={MODULI[name]} /><strong>{name}</strong><small>{MODULO_DESCRIZIONI[name]}</small><span>{attivo ? '✓' : '›'}</span></button> })}
+                {moduleMenuOpen && <><button className="formation-module-scrim" type="button" aria-label="Chiudi selezione modulo" onClick={() => setModuleMenuOpen(false)} /><div className="formation-module-menu" role="listbox" aria-label="Scegli il modulo">{tatticheAttive && <SezioneSecondario
+                    secondario={secondario}
+                    partite={secondario ? xpDisposizione.find((r) => stessiValori(r.disposizione, secondario.disposizione))?.partite ?? 0 : 0}
+                    partitePiene={FAM_PARTITE_PIENA}
+                    scegliendo={sceltaSecondario}
+                    onNuovo={() => setSceltaSecondario(true)}
+                    onAnnulla={() => setSceltaSecondario(false)}
+                    onScambia={scambiaSecondario}
+                    onElimina={() => { setSecondario(null); setSaved(false) }}
+                  />}
+                  {Object.keys(MODULI).map((name) => { const attivo = name === modulo && !moduloPersonalizzatoAttivo; const nonScegliibile = sceltaSecondario && attivo; return <button className={attivo ? 'is-active' : ''} type="button" role="option" aria-selected={attivo} key={name} disabled={nonScegliibile} onClick={() => sceltaSecondario ? impostaSecondario(name, MODULI[name]) : chooseModule(name)}><MiniModulo slots={MODULI[name]} /><strong>{name}</strong><small>{MODULO_DESCRIZIONI[name]}</small><span>{attivo ? '✓' : '›'}</span></button> })}
                   {moduliPersonalizzati.length > 0 && <>
                     <p className="formation-module-menu__sezione">I tuoi moduli · {moduliPersonalizzati.length}/{MODULI_PERSONALIZZATI_MAX}</p>
                     {moduliPersonalizzati.map((m) => { const attivo = moduloPersonalizzatoAttivo?.id === m.id; return <div className="formation-module-menu__personale" key={`p-${m.id}`}>
-                      <button className={attivo ? 'is-active' : ''} type="button" role="option" aria-selected={attivo} onClick={() => scegliModuloPersonalizzato(m)}><MiniModulo slots={m.disposizione} /><strong>{m.nome}</strong><small>da {m.modulo} · {nomeSchieramento(m.disposizione, MODULI)}</small><span>{attivo ? '✓' : '›'}</span></button>
+                      <button className={attivo ? 'is-active' : ''} type="button" role="option" aria-selected={attivo} onClick={() => sceltaSecondario ? impostaSecondario(m.modulo, m.disposizione) : scegliModuloPersonalizzato(m)}><MiniModulo slots={m.disposizione} /><strong>{m.nome}</strong><small>da {m.modulo} · {nomeSchieramento(m.disposizione, MODULI)}</small><span>{attivo ? '✓' : '›'}</span></button>
                       <button className="formation-module-menu__elimina" type="button" aria-label={`Elimina il modulo ${m.nome}`} onClick={() => { if (window.confirm(`Eliminare il modulo "${m.nome}"?`)) void eliminaModuloPersonalizzato(m.id).then((e) => { if (e) setError(e) }) }}><Icona nome="chiudi" /></button>
                     </div> })}
                   </>}
