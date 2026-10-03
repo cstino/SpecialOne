@@ -20,6 +20,8 @@ import { deltaMorale } from '../../engine/morale.js';
 import { deltaRuoli, sommaDelta, ruoliPerSlot, idoneitaRuolo } from '../../engine/ruoli.js';
 import { deltaCorsie, vantaggioCorsia } from '../../engine/corsie.js';
 import { deltaSquadra, deltaCoperturaLibero, OPZIONI_SQUADRA, PREDEFINITE, idoneitaSquadra } from '../../engine/squadra.js';
+// I preset dell'app, letti cosi' come sono (Node 24 legge TypeScript senza compilarlo).
+import { PRESET, applicaPreset } from '../../src/lib/preset.ts';
 
 const N = Number(process.argv[2] ?? 8000);
 const MODULO = process.argv[3] ?? '4-4-2';
@@ -113,6 +115,18 @@ const STRATEGIE = {
   'sbaglia apposta (tutto)': (A) => { A.ruoli = ruoliMirati(A, -1); A.squadra = squadraMirata(A, -1); A.focus = corsiaMirata(A, -1); },
 };
 
+// Un tocco sul preset, come nell'app: stile, linea, ampiezza, compiti e solo i
+// ruoli per cui il giocatore e' adatto.
+for (const p of PRESET) {
+  STRATEGIE[`preset: ${p.nome}`] = (A) => {
+    const r = applicaPreset(p, A.slots, (i, ruolo) => (A.titolari[i] ? idoneitaRuolo(A.titolari[i], ruolo) : 0));
+    // PRESET_SENZA=ruoli|compiti|squadra: toglie un pezzo, per capire da dove viene l'effetto.
+    const senza = process.env.PRESET_SENZA ?? '';
+    A.ruoli = senza === 'ruoli' ? null : r.ruoli; A.compiti = senza === 'compiti' ? null : r.compiti;
+    A.squadra = senza === 'squadra' ? { ...PREDEFINITE } : { ...PREDEFINITE, stile: r.stile, linea: r.linea ?? 'media', ampiezza: r.ampiezza ?? 'normale' };
+  };
+}
+
 function prova(nome, scegli) {
   setSeed(4242); prossimoId = 1;
   let v = 0, p = 0, gf = 0, gs = 0;
@@ -125,6 +139,8 @@ function prova(nome, scegli) {
     B.tattica = sommaDelta(deltaMorale(B), deltaRuoli(B));
     const r = simulaPartita(ra, rb, MODULO, MODULO, {
       usaCondizione: true, lineupCasa: A, lineupOspite: B, stileCasa: ind.stile, stileOspite: 'equilibrato',
+      // Come in produzione con le tattiche accese: linea e ampiezza lasciano la loro impronta (punto 35).
+      indicazioniCasa: ind,
     });
     if (r.golC > r.golO) v++; else if (r.golC === r.golO) p++;
     gf += r.golC; gs += r.golO;

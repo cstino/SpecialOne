@@ -1325,3 +1325,43 @@ compromesso fra la prova sintetica (pochi gol: MVP difensori 39% su 36% di
 titolari, attaccanti 21% su 27%; medie GK 6,73 · DEF 6,78 · MID 6,82 · ATT 6,69)
 e le partite vere (stima: difensori ~6,60, attaccanti ~6,73). Da verificare sui
 voti nuovi di LegaBot.
+
+## 39. Preset tattici — 3 ottobre 2026 (task 5)
+
+La specifica era una riga («combinazioni pronte delle due pagine»), quindi la
+forma l'ho scelta con questi criteri, in coerenza col punto 26 (chi non studia
+non deve essere punito) e coi Tactical Preset di EA FC (per chi non vuole
+spendere tempo):
+
+- **sei identità**, in `src/lib/preset.ts` (solo dati e logica pura: lo leggono
+  sia l'app sia `prova-ruoli-reali.mjs`, quindi i numeri misurati sono quelli
+  dell'app): Palleggio, Pressing alto, Contropiede, Catenaccio, Gioco sulle
+  fasce, Verticale. Ognuno imposta stile, linea, ampiezza, qualche compito e i
+  ruoli;
+- **i ruoli solo dove il giocatore è adatto** (idoneità > 0): un preset non può
+  mai mettere un giocatore in un ruolo che non sa fare; gli altri posti restano
+  «nessuna indicazione»;
+- **non toccano** posizioni, «dove attacchiamo» e portiere: il portiere libero
+  conviene solo con un portiere adatto (punto 37) e si sceglie a mano;
+- **si applicano con un tocco** dallo Schema Tattico («Preset tattici»), poi si
+  ritocca tutto e si salva: non salvano da soli.
+
+**Taratura.** Il primo giro era sbilanciato (fasce +4,3, verticale e contropiede
++3, catenaccio −1,6): tutti avrebbero scelto le fasce. Scomposto l'effetto per
+pezzo (`PRESET_SENZA=ruoli|compiti|squadra`) ho tolto dove si accumulava (ruoli
+di ala in contropiede e fasce, ampiezza larga nelle fasce, compiti dove
+costavano o regalavano senza motivo, quasi tutti) e rimesso la linea alta nel
+palleggio. Risultato, punti su 38 rispetto a chi non tocca niente (16.000
+partite, rose vere, linea e ampiezza con l'impronta del punto 35):
+
+| preset | 4-4-2 | 4-3-3 |
+|---|---|---|
+| Palleggio | +0,3 | −0,2 |
+| Pressing alto | −0,5 | +0,6 |
+| Contropiede | +1,0 | +2,7 |
+| Catenaccio | −0,1 | −0,1 |
+| Gioco sulle fasce | +2,0 | +2,4 |
+| Verticale | +1,4 | +0,7 |
+
+Nessuno sotto −0,5, nessuno sopra +2,7; chi legge davvero la rosa fa +9,6. Il
+Catenaccio resta neutro a pari forza ed è la scelta di chi è più debole (punto 34).

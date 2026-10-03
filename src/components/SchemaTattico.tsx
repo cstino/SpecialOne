@@ -26,6 +26,7 @@ import { ANCORE, nomeSchieramento, schieramentoInCampo, type Ancora } from '../l
 import { Icona } from './Icona'
 import { STILI, STILE_LABEL, STILE_DESCRIZIONI } from '../lib/stili'
 import { SFONDO_FASE_VERTICALE, type FaseSquadra } from '../lib/faseSquadra'
+import { PRESET } from '../lib/preset'
 
 const ruoliPerSlot = (slot: string): string[] => RUOLI_SLOT[slot] ?? []
 
@@ -44,6 +45,8 @@ type Props = {
   xpIndicazioni: number
   onChange: (d: string[] | null, r: (string | null)[] | null, c: (string | null)[] | null) => void
   onFocus: (f: string | null) => void
+  // Applica un preset tattico e dice cosa e' successo (null: niente da dire).
+  onPreset: (id: string) => string | null
   onClose: () => void
   // Moduli personalizzati (max 3): salvare lo schema con un nome, sovrascriverne
   // uno o eliminarne uno. Le funzioni rispondono con un messaggio d'errore o null.
@@ -156,12 +159,14 @@ const RAGGIO_CALAMITA = 13
 const SOGLIA_TRASCINAMENTO = 3
 
 export default function SchemaTattico({
-  fase, modulo, disposizione, ruoli, compiti, focus, xpDisposizione, xpIndicazioni, onChange, onFocus, onClose,
+  fase, modulo, disposizione, ruoli, compiti, focus, xpDisposizione, xpIndicazioni, onChange, onFocus, onPreset, onClose,
   moduliSalvati, moduloSalvatoAttivo, onSalvaModulo, onEliminaModulo, squadra, onSquadra,
 }: Props) {
   const standard = MODULI[modulo] ?? []
   const schema = disposizione ?? standard
   const [aperto, setAperto] = useState<number | null>(null)
+  const [presetAperto, setPresetAperto] = useState(false)
+  const [esitoPreset, setEsitoPreset] = useState<string | null>(null)
   const [pagina, setPagina] = useState<'giocatori' | 'squadra'>('giocatori')
   const [salvataggio, setSalvataggio] = useState<{ nome: string; errore: string | null; inCorso: boolean } | null>(null)
   const [trascino, setTrascino] = useState<{ index: number; x: number; y: number; mosso: boolean } | null>(null)
@@ -352,6 +357,11 @@ export default function SchemaTattico({
           Salva come modulo personalizzato
         </button>)}
 
+      <button className="schema__preset-apri" type="button" onClick={() => setPresetAperto(true)}>
+        <span>Preset tattici</span><small>Un tocco e la squadra prende un'identità</small>
+      </button>
+      {esitoPreset && <p className="schema__salvato" role="status">{esitoPreset}</p>}
+
       <div className="schema__pagine formazione-schede" role="tablist" aria-label="Pagine dello schema">
         <button type="button" role="tab" aria-selected={pagina === 'giocatori'} className={`formazione-scheda${pagina === 'giocatori' ? ' is-attiva' : ''}`} onClick={() => setPagina('giocatori')}><span>Giocatori</span></button>
         <button type="button" role="tab" aria-selected={pagina === 'squadra'} className={`formazione-scheda${pagina === 'squadra' ? ' is-attiva' : ''}`} onClick={() => setPagina('squadra')}><span>Squadra</span></button>
@@ -510,6 +520,25 @@ export default function SchemaTattico({
           </section>
         </>
       )}
+
+      {presetAperto && <>
+        <button className="schema__scrim" type="button" aria-label="Chiudi" onClick={() => setPresetAperto(false)} />
+        <section className="schema__foglio" role="dialog" aria-label="Preset tattici">
+          <header>
+            <button className="schema__fatto" type="button" onClick={() => setPresetAperto(false)}>Chiudi</button>
+            <strong>Preset tattici</strong>
+            <small>Stile, linea, ampiezza e compiti, e i ruoli solo dove i tuoi giocatori sono adatti. Poi puoi ritoccare tutto.</small>
+          </header>
+          <div className="schema__scelte">
+            {PRESET.map((preset) => <button type="button" key={preset.id}
+              onClick={() => { setEsitoPreset(onPreset(preset.id)); setPresetAperto(false) }}>
+              <strong>{preset.nome}</strong>
+              <small>{preset.descrizione}</small>
+              <small className="schema__preset-chiede">{preset.chiede}</small>
+            </button>)}
+          </div>
+        </section>
+      </>}
 
       {salvataggio && (() => {
         const pieni = moduliSalvati.length >= MODULI_SALVABILI

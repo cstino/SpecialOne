@@ -6,6 +6,7 @@ import { disponiCard, nomeSchieramento, schieramentoInCampo } from '../lib/schie
 import SchemaTattico, { type XpDisposizione } from './SchemaTattico'
 import { STILE_LABEL } from '../lib/stili'
 import { idoneitaRuolo, segnoIdoneita } from '../lib/tattica'
+import { PRESET, applicaPreset } from '../lib/preset'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { cognome } from '../lib/nomi'
 import { ROSA_MASSIMA } from '../lib/league'
@@ -705,6 +706,24 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     setSaving(false)
   }
 
+  // Un preset tattico: stile, linea, ampiezza, compiti e solo i ruoli per cui il
+  // giocatore del posto e' adatto. Non tocca le posizioni, dove si attacca ne'
+  // il portiere. Restituisce una frase per dire cosa e' successo.
+  function usaPreset(id: string): string | null {
+    const preset = PRESET.find((p) => p.id === id)
+    if (!preset) return null
+    const r = applicaPreset(preset, slots, (i, ruolo) => {
+      const giocatore = players.find((p) => p.id === titolari[i])
+      return giocatore ? idoneitaRuolo(giocatore.attributi, giocatore.overall_corrente, ruolo) : 0
+    })
+    setStile(r.stile); setLinea(r.linea); setAmpiezza(r.ampiezza); setPortiere(r.portiere)
+    setRuoli(r.ruoli.some(Boolean) ? r.ruoli : null)
+    setCompiti(r.compiti.some(Boolean) ? r.compiti : null)
+    setSaved(false)
+    const nGiocatori = slots.filter((s) => s !== 'GK').length
+    return `${preset.nome} applicato: ${r.ruoliAssegnati} ruoli assegnati dove i giocatori sono adatti, gli altri ${nGiocatori - r.ruoliAssegnati} senza indicazione. Ricordati di salvare.`
+  }
+
   function chooseModule(nextModule: string) {
     setModulo(nextModule)
     // Lo schema personalizzato appartiene al modulo da cui nasce: le posizioni
@@ -799,6 +818,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         xpIndicazioni={xpIndicazioni}
         onChange={(d, r, c) => { setDisposizione(d); setRuoli(r); setCompiti(c); setSaved(false) }}
         onFocus={(f) => { setFocusCorsia(f); setSaved(false) }}
+        onPreset={usaPreset}
         squadra={{ stile, linea, ampiezza, portiere }}
         onSquadra={(q) => {
           if (q.stile !== undefined) setStile(q.stile ?? 'equilibrato')
@@ -823,7 +843,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           modulo e quello stile; cambiarne anche solo uno per una giornata fa scendere l'indice. Se non
           schieri entro le <strong>23:00</strong>, il sistema genera una formazione automatica di riserva
           per non farti saltare la giornata.</p>
-        <p>La percentuale sulla foto di ogni giocatore è la sua <strong>energia</strong>: più è bassa, meno
+        <p>La barretta sotto il nome di ogni giocatore è la sua <strong>energia</strong>: più è bassa, meno
           rende in campo (il suo overall effettivo scende, fino a −18% sotto il 40%) e più rischia di
           infortunarsi. Recupera da sola fra una partita e l'altra, più in fretta se investi nel Reparto
           medico in Gestione risorse. Un giocatore infortunato o squalificato non può scendere in campo: va
