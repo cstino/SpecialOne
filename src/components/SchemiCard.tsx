@@ -48,7 +48,7 @@ export function SchemiCard({
     const attivo = selezionato === quale
     return <div className={`schemi-card__slot${attivo ? ' is-selezionato' : ''}`}>
       <button className="schemi-card__corpo" type="button" aria-pressed={attivo} onClick={() => onSeleziona(quale)}>
-        <small>{quale === 'attivo' ? 'In partita' : 'Riserva'}</small>
+        <small className={quale === 'attivo' ? 'is-attivo' : 'is-vuota'}>{quale === 'attivo' ? 'Attivo' : '\u00a0'}</small>
         {modifica === quale
           ? <input ref={campo} className="schemi-card__nome-campo" value={bozza} maxLength={24} aria-label="Nome dello schema"
             onClick={(e) => e.stopPropagation()} onChange={(e) => setBozza(e.target.value)} onBlur={conferma}
@@ -56,7 +56,7 @@ export function SchemiCard({
           : <strong><TestoAdattato minimo={0.6}>{nome}</TestoAdattato></strong>}
         <em>{descrizione}</em>
         {quale === 'riserva' && <span className="schemi-card__apprendimento">
-          <small>{imparato ? 'Conosciuto come lo schema in partita' : `Lo impari: ${partite}/${partitePiene} partite`}</small>
+          <small>{imparato ? 'Già imparato del tutto' : `Lo impari: ${partite}/${partitePiene} partite`}</small>
           <i aria-hidden="true"><b style={{ width: `${Math.min(100, partite / partitePiene * 100)}%` }} /></i>
         </span>}
       </button>
@@ -73,12 +73,12 @@ export function SchemiCard({
       {nomeRiserva !== null
         ? segmento('riserva', nomeRiserva, descrizioneRiserva)
         : <button className="schemi-card__vuoto" type="button" onClick={() => onSeleziona('riserva')}>
-          <small>Riserva</small>
-          <strong>+ Prepara uno schema</strong>
+          <small className="is-vuota">{'\u00a0'}</small>
+          <strong>+ Nuovo schema</strong>
           <em>Lo impari anche senza schierarlo</em>
         </button>}
     </div>
-    {selezionato === 'riserva' && <p className="schemi-card__nota">Salvando, questo schema va in partita. Per solo prepararlo, torna sullo schema in partita prima di salvare.</p>}
+    {selezionato === 'riserva' && <p className="schemi-card__nota">Salvando, questo schema diventa quello attivo. Per solo prepararlo, torna sullo schema attivo prima di salvare.</p>}
   </section>
 }
 
@@ -95,8 +95,8 @@ export function DialogoNomeRiserva({ nomeIniziale, classe = '', onConferma, onAn
   useEffect(() => { campo.current?.select() }, [])
   const valido = nome.trim().length > 0
   return <div className={`schemi-dialogo-layer ${classe}`} role="presentation" onPointerDown={(e) => { if (e.target === e.currentTarget) onAnnulla() }}>
-    <section className="schemi-dialogo" role="dialog" aria-modal="true" aria-label="Nome dello schema riserva">
-      <small>Nuovo schema riserva</small>
+    <section className="schemi-dialogo" role="dialog" aria-modal="true" aria-label="Nome del nuovo schema">
+      <small>Nuovo schema</small>
       <strong>Come lo chiami?</strong>
       <input ref={campo} value={nome} maxLength={24} onChange={(e) => setNome(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter' && valido) onConferma(nome.trim()) }} aria-label="Nome" />
