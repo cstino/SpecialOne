@@ -853,8 +853,8 @@ input:disabled { opacity: 0.65; }
 .scheda-broadcast .player-modal__overall span { color: color-mix(in srgb, var(--fz-luce) 70%, #fff); font: 600 .55rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .2em; }
 .scheda-broadcast .role-pill { border-radius: 4px; font-family: "Oswald", "Arial Narrow", sans-serif; letter-spacing: .12em; }
 .scheda-broadcast .player-modal__ritiro { border-radius: 8px; }
-.scheda-broadcast .player-modal__facts div, .scheda-broadcast .player-modal__fitness, .scheda-broadcast .player-modal__morale, .scheda-broadcast .scheda-numeri > div, .scheda-broadcast .scheda-quote > div, .scheda-broadcast .scheda-voti > div { border: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: linear-gradient(180deg, rgba(14,12,24,.85), rgba(9,8,15,.88)); }
-.scheda-broadcast .player-modal__facts dt, .scheda-broadcast .player-modal__fitness span, .scheda-broadcast .player-modal__morale span, .scheda-broadcast .scheda-numeri span, .scheda-broadcast .scheda-quote span, .scheda-broadcast .scheda-voti span { color: color-mix(in srgb, var(--fz-luce) 70%, #fff); font-family: "Oswald", "Arial Narrow", sans-serif; letter-spacing: .14em; }
+.scheda-broadcast .player-modal__facts div, .scheda-broadcast .player-modal__fitness, .scheda-broadcast .player-modal__morale, .scheda-broadcast .scheda-numeri > div, .scheda-broadcast .scheda-quote > div { border: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: linear-gradient(180deg, rgba(14,12,24,.85), rgba(9,8,15,.88)); }
+.scheda-broadcast .player-modal__facts dt, .scheda-broadcast .player-modal__fitness span, .scheda-broadcast .player-modal__morale span, .scheda-broadcast .scheda-numeri span, .scheda-broadcast .scheda-quote span { color: color-mix(in srgb, var(--fz-luce) 70%, #fff); font-family: "Oswald", "Arial Narrow", sans-serif; letter-spacing: .14em; }
 .scheda-broadcast .player-modal__facts dd { color: #fff; font-family: "Oswald", "Arial Narrow", sans-serif; letter-spacing: .03em; }
 .scheda-broadcast .fatto-ingaggio dd { color: var(--fz-luce); }
 .scheda-broadcast .scheda-numeri b, .scheda-broadcast .scheda-quote b, .scheda-broadcast .player-modal__fitness strong, .scheda-broadcast .player-modal__morale strong { font-family: "Oswald", "Arial Narrow", sans-serif; }
@@ -863,6 +863,25 @@ input:disabled { opacity: 0.65; }
 /* Titoli di sezione: linguetta inclinata come nelle altre pagine. */
 .scheda-broadcast .player-modal__stats h3, .scheda-broadcast .player-training-sezione h3 { display: block; width: max-content; margin: 18px 0 10px -2px; padding: 6px 16px 6px 12px; color: #fff; background: linear-gradient(90deg, var(--fz-1), var(--fz-2)); clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); box-shadow: inset 0 -2px 0 var(--fz-luce); font: 700 .85rem/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .13em; text-transform: uppercase; }
 .scheda-broadcast .player-training-sezione { margin-top: 6px; padding-top: 0; border-top: 0; }
+/* Titolo e bottone "Avvia allenamento" sulla stessa riga. */
+.scheda-broadcast .player-training-testa { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 18px 0 10px; }
+.scheda-broadcast .player-training-testa h3 { margin: 0 0 0 -2px; }
+.scheda-broadcast .player-training-avvia { flex: none; min-height: 36px; padding: 0 14px; font-size: .72rem; }
+.scheda-broadcast .player-training-avvia:disabled { color: color-mix(in srgb, var(--fz-luce) 55%, transparent); background: color-mix(in srgb, var(--fz-1) 45%, #0c0b14); box-shadow: none; opacity: 1; cursor: default; }
+/* Voti, rifatti (un solo riquadro: media a sinistra, ultime partite a destra). */
+.scheda-broadcast .scheda-voti { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 16px; align-items: center; margin: 12px 0; padding: 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: linear-gradient(180deg, rgba(14,12,24,.85), rgba(9,8,15,.88)); }
+.scheda-broadcast .scheda-voti > div { padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.scheda-broadcast .scheda-voti > div > span { display: block; margin: 0 0 8px; color: color-mix(in srgb, var(--fz-luce) 70%, #fff); font: 600 .58rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .16em; text-transform: uppercase; white-space: nowrap; }
+.scheda-broadcast .scheda-voti__media { display: grid; justify-items: start; }
+.scheda-broadcast .scheda-voti__media .voto { min-width: 64px; height: 46px; border-radius: 8px; font: 700 1.7rem/1 "Oswald", "Arial Narrow", sans-serif; }
+.scheda-broadcast .scheda-voti__media small { max-width: 92px; margin-top: 8px; color: #ffd34d; font: 600 .62rem/1.2 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.scheda-broadcast .scheda-voti__ultimi { padding-left: 16px !important; border-left: 1px solid rgba(255,255,255,.1) !important; }
+.scheda-broadcast .scheda-voti__ultimi > div { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; overflow: visible; }
+.scheda-broadcast .scheda-voti__ultimi .voto { min-width: 0; height: 34px; border-radius: 6px; font: 700 .95rem/1 "Oswald", "Arial Narrow", sans-serif; }
+.scheda-broadcast .scheda-voti__ultimi .voto:last-child { box-shadow: 0 0 0 2px #0c0b14, 0 0 0 3.5px rgba(255,255,255,.7); }
+.scheda-broadcast .scheda-voti .voto { color: #0b0a10; }
+.scheda-broadcast .scheda-voti .voto--top, .scheda-broadcast .scheda-voti .voto--insufficiente { color: #fff; }
+@media (max-width: 380px) { .scheda-broadcast .scheda-voti { gap: 12px; padding: 12px; } .scheda-broadcast .scheda-voti__ultimi { padding-left: 12px !important; } .scheda-broadcast .scheda-voti__media .voto { min-width: 56px; } }
 .scheda-broadcast .player-training-intro { color: rgba(255,255,255,.58); }
 .scheda-broadcast .player-training-scelta > .season-empty, .scheda-broadcast .player-training-corso { padding: 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: linear-gradient(180deg, rgba(14,12,24,.85), rgba(9,8,15,.88)); }
 .scheda-broadcast .player-training-scelta > .season-empty { border-style: dashed; color: rgba(255,255,255,.62); text-align: center; }

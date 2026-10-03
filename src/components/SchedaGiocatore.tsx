@@ -347,8 +347,19 @@ function PannelloAllenamento({
   /** Nome dell'altro allenamento gia' in corso: sono mutuamente esclusivi, un giocatore ne fa uno alla volta. */
   bloccatoDa?: string | null
 }) {
+  // Il bottone sta accanto al titolo, cosi' non si perde in fondo a una lista
+  // lunga di abilita'. Spento se non c'e' niente di scelto o se l'opzione
+  // scelta e' gia' quella attiva (si avvia solo qualcosa di nuovo).
+  const opzioneScelta = opzioni?.find((o) => o.chiave === scelta)
+  const giaAttivo = Boolean(opzioneScelta?.attuale)
+  const puoScegliere = !inCorso && !bloccatoDa && !opzioniCaricamento && Boolean(opzioni?.length)
   return <section className="player-training-sezione">
-    <h3>{titolo}</h3>
+    <header className="player-training-testa">
+      <h3>{titolo}</h3>
+      {puoScegliere && <button className="button button--primary player-training-avvia" type="button" disabled={inviando || !scelta || giaAttivo} onClick={onAvvia}>
+        {inviando ? 'Avvio…' : giaAttivo ? 'Già attivo' : 'Avvia allenamento'}
+      </button>}
+    </header>
 
     {inCorso ? <div className="player-training-corso">
       <div className="player-training-corso__frecce">
@@ -406,9 +417,6 @@ function PannelloAllenamento({
             </div>
             {descrizioneScelta && <p className="field-help">{descrizioneScelta}</p>}
             {confrontoScelta}
-            <button className="button button--primary" type="button" disabled={inviando || !scelta} onClick={onAvvia}>
-              {inviando ? 'Avvio…' : 'Avvia allenamento'}
-            </button>
           </>}
     </div>}
   </section>
@@ -513,6 +521,9 @@ export function SchedaGiocatore({ fase = 'regular', userId, giocatore, fotoUrl, 
     setSpecErrore(null)
     try {
       await specializzazione.onAvvia(specScelta)
+      // Il piano e' cambiato: le opzioni si ricaricano, cosi' quella appena
+      // avviata risulta "Attuale" e il bottone resta spento.
+      setSpecOpzioni(null)
     } catch (errore) {
       setSpecErrore(errore instanceof Error ? errore.message : 'Allenamento non riuscito.')
     }
