@@ -1009,6 +1009,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       </div>}
       {detailPlayer && <SchedaGiocatore
         fase={fase}
+        tatticheAttive={Boolean(league.tattiche_attive)}
         giocatore={{
           nome: detailPlayer.nome,
           club: detailPlayer.club,

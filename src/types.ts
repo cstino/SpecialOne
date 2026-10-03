@@ -1,5 +1,7 @@
 export type League = {
   id: number
+  // Il flag della season 2: tattiche (ruoli, linea, portiere libero...) attive nella simulazione.
+  tattiche_attive?: boolean
   nome: string
   admin_id: string
   codice_invito: string

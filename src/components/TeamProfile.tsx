@@ -915,6 +915,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
 
       {schedaAperta && <SchedaGiocatore
         fase={fase}
+        tatticheAttive={Boolean(league.tattiche_attive)}
         userId={membership.user_id}
         giocatore={{
           nome: schedaAperta.nome,

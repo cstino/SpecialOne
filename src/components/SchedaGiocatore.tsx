@@ -78,6 +78,8 @@ type AllenamentoInCorso = { etichettaPrima: string | null; etichettaDopo: string
 type Props = {
   /** Colore della scheda: la fase della squadra di chi la guarda (default: stagione regolare). */
   fase?: FaseSquadra
+  /** La lega simula con le tattiche della season 2 (portiere libero compreso). */
+  tatticheAttive?: boolean
   /** Solo per il popup di spiegazione della pagina Training (hint_visti). */
   userId?: string
   giocatore: DatiScheda
@@ -422,7 +424,7 @@ function PannelloAllenamento({
   </section>
 }
 
-export function SchedaGiocatore({ fase = 'regular', userId, giocatore, fotoUrl, stagione, azionePericolosa, rinnovo, listaMercato, cambioRuolo, specializzazione, onClose }: Props) {
+export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, userId, giocatore, fotoUrl, stagione, azionePericolosa, rinnovo, listaMercato, cambioRuolo, specializzazione, onClose }: Props) {
   const [confermaAperta, setConfermaAperta] = useState(false)
   const [vistaRinnovo, setVistaRinnovo] = useState(false)
   const [proposta, setProposta] = useState<PropostaRinnovo | null>(null)
@@ -916,10 +918,15 @@ export function SchedaGiocatore({ fase = 'regular', userId, giocatore, fotoUrl, 
                     non cambia: oggi "Fuori dai pali" sposta solo le abilita'
                     in scheda. Contera' col ruolo portiere-libero dello schema
                     tattico (deciso con l'utente il 28 settembre 2026). */}
-                {opzione.chiave === 'fuori_dai_pali' && <p className="field-help">
-                  <strong>Attenzione:</strong> per ora cambia solo le abilità del portiere, non il rendimento in partita: conterà quando saranno
-                  attive le tattiche, con il ruolo di portiere-libero e la difesa alta.
-                </p>}
+                {opzione.chiave === 'fuori_dai_pali' && (tatticheAttive
+                  ? <p className="field-help">
+                    <strong>Per il portiere libero:</strong> alza velocità, posizionamento e rinvio, le abilità che servono a uscire dall'area.
+                    Conta in partita se in Schema tattico → Squadra imposti il portiere libero con la linea difensiva alta.
+                  </p>
+                  : <p className="field-help">
+                    <strong>Attenzione:</strong> per ora cambia solo le abilità del portiere, non il rendimento in partita: conterà quando saranno
+                    attive le tattiche, con il ruolo di portiere-libero e la difesa alta.
+                  </p>)}
                 <AnteprimaPiano crescita={opzione.crescita} attributi={giocatore.attributi} soloGk={rep === 'GK'} haPiano={Boolean(specializzazione?.attiva)} />
               </>
             })()}
