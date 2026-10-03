@@ -3600,3 +3600,4 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .albo-retro__fase { color: #c9a24c; font: 600 .58rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .24em; text-transform: uppercase; }
 @keyframes albo-retro-respiro { 0%, 100% { transform: scale(1); box-shadow: 0 0 22px rgba(255,200,70,.35); } 50% { transform: scale(1.04); box-shadow: 0 0 38px rgba(255,200,70,.6); } }
 @media (prefers-reduced-motion: reduce) { .albo-retro__medaglia { animation: none; } }
+.scelte-preferenze__nota { margin: 6px 0 10px; color: #b8acd0; font-size: .78rem; line-height: 1.45; }
