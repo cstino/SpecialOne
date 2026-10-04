@@ -21,6 +21,7 @@
 //  in SQL e di quoteFamiliarita nell'Edge Function — tre posti, una formula.
 // ============================================================
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { erroreSimmetriaSchema } from '../lib/simmetriaSchema'
 import { COMPITI, COMPITI_REPARTO, FAM_PARTITE_PIENA, MODULI, REPARTO, RUOLI_SLOT, SPOSTAMENTI_SLOT } from '../lib/tattica'
 import { RUOLO_LABEL } from '../lib/ruoliTattici'
 import { ANCORE, nomeSchieramento, schieramentoInCampo, type Ancora } from '../lib/schieramento'
@@ -180,6 +181,7 @@ export default function SchemaTattico({
       * resaFamiliarita(conIndicazioni / 27) * FAM_PARTITE_PIENA) / FAM_PARTITE_PIENA)
 
   const cambiati = 11 - uguali(standard, schema)
+  const erroreSimmetria = erroreSimmetriaSchema(schema)
   const nome = useMemo(() => nomeSchieramento(schema, MODULI), [schema])
 
   // --- dove si puo' andare ---
@@ -320,6 +322,8 @@ export default function SchemaTattico({
           <button className="schema__reset" type="button" onClick={ripristina}>Ripristina</button>
         )}
       </header>
+
+      {erroreSimmetria && <p className="schema__errore" role="alert">{erroreSimmetria} Finché non è a posto non si può salvare.</p>}
 
       <div className="schema__barre">
         <Barra nome="Disposizione" quota={quotaDisposizione}

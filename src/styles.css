@@ -4659,3 +4659,5 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .scelte-apri-scheda { appearance: none; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .scelte-apri-scheda:hover strong, .scelte-apri-scheda:focus-visible strong { text-decoration: underline; text-underline-offset: 3px; }
 .scelte-apri-scheda:focus-visible { outline: 2px solid #c59be8; outline-offset: 3px; border-radius: 6px; }
+
+.schema__errore { margin: 10px 0 0; padding: 10px 12px; border: 1px solid rgba(255,107,107,.55); border-radius: 10px; background: rgba(255,107,107,.1); color: #ffb3b3; font-size: .82rem; font-weight: 600; line-height: 1.4; }

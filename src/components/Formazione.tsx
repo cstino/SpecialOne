@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { attributiCorrenti } from '../lib/attributiGiocatore'
 import { disponiCard, nomeSchieramento, schieramentoInCampo } from '../lib/schieramento'
 import SchemaTattico, { type XpDisposizione } from './SchemaTattico'
+import { erroreSimmetriaSchema } from '../lib/simmetriaSchema'
 import { STILE_LABEL } from '../lib/stili'
 import { idoneitaRuolo, segnoIdoneita } from '../lib/tattica'
 import { PRESET, applicaPreset } from '../lib/preset'
@@ -508,6 +509,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   // Lo schieramento davvero in campo: quello personalizzato se c'e', altrimenti
   // lo standard del modulo.
   const slots = disposizione ?? MODULI[modulo]
+  const erroreSchema = erroreSimmetriaSchema(slots)
   // Le righe si DERIVANO dalle posizioni (src/lib/schieramento.ts). Prima qui
   // c'era una catena di casi per nome di modulo, con due bug gia' corretti a
   // mano dentro — il 4-2-4 che scambiava le ali e il CAM del 4-3-3 offensivo
@@ -736,6 +738,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   }
 
   async function save(nomeRiservaScelto?: string) {
+    if (erroreSchema) { setError(erroreSchema); return }
     // La prima volta che si salva uno schema riserva se ne chiede il nome.
     if (tatticheAttive && haRiserva && !nomeRiservaConfermato && nomeRiservaScelto === undefined) { setChiediNomeRiserva(true); return }
     setSaving(true); setSaved(false); setError(null)
@@ -885,6 +888,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   }
 
   async function salvaModuloPersonalizzato(nome: string, sostituisci: number | null): Promise<string | null> {
+    if (erroreSchema) return erroreSchema
     const { error } = await supabase.rpc('salva_modulo_personalizzato', {
       p_league_id: league.id, p_nome: nome, p_modulo: modulo,
       p_disposizione: disposizione ?? MODULI[modulo], p_ruoli: ruoli, p_compiti: compiti,
@@ -1001,7 +1005,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         <section className={`formation-panel formation-panel--tactical formazione-broadcast formazione-broadcast--${fase}`}>
           <div className="formation-toolbar">
             <div className="formation-save-row">
-              <button className={`formation-save-button button button--primary${modificata ? '' : ' is-salvata'}`} type="button" disabled={saving || !modificata} onClick={() => void save()}>{saving ? 'Salvo…' : modificata ? 'Salva' : 'Salvata'}</button>
+              <button className={`formation-save-button button button--primary${modificata ? '' : ' is-salvata'}`} type="button" disabled={saving || !modificata || Boolean(erroreSchema)} onClick={() => void save()}>{saving ? 'Salvo…' : modificata ? 'Salva' : 'Salvata'}</button>
               {(saved || salvataIl) && <div className="formation-save-stato">
                 {saved && <span>Formazione salvata</span>}
                 {salvataIl && <small>Salvata il {formatSalvataIl(salvataIl)}</small>}
