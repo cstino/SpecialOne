@@ -4614,3 +4614,20 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .player-ruoli .is-medio { color: rgba(255,255,255,.45); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.18); }
 .player-ruoli__legenda { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 2px 0 0; color: rgba(255,255,255,.55); font-size: .66rem; }
 .player-ruoli__legenda b { min-width: 22px; height: 18px; font-size: .68rem; }
+
+/* Minutaggio promesso (docs/decisioni-minutaggio.md): scelta del gradino nella trattativa, avvisi in scheda. */
+.rinnovo-gradini { display: grid; gap: 8px; margin-top: 14px; }
+.rinnovo-gradini__scelte { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rinnovo-gradino { display: grid; align-content: start; gap: 3px; min-height: 74px; padding: 10px 11px; border: 1px solid rgba(255,255,255,.12); border-radius: 10px; color: #fff; background: rgba(255,255,255,.04); font: inherit; text-align: left; cursor: pointer; }
+.rinnovo-gradino strong { font: 700 .86rem/1.1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .05em; text-transform: uppercase; }
+.rinnovo-gradino small { color: rgba(255,255,255,.6); font-size: .68rem; line-height: 1.35; }
+.rinnovo-gradino b { margin-top: 2px; color: #c58cff; font: 700 .9rem/1 "Oswald", "Arial Narrow", sans-serif; }
+.rinnovo-gradino.is-scelto { border-color: #9b4cff; background: linear-gradient(160deg, rgba(155,76,255,.28), rgba(103,38,196,.12)); box-shadow: 0 0 0 1px rgba(155,76,255,.35); }
+.rinnovo-gradino.is-rifiutato { cursor: default; opacity: .5; }
+.rinnovo-gradino.is-rifiutato small { color: #ffb4a3; }
+.rinnovo-risposta small { display: block; margin-top: 4px; font-style: normal; opacity: .75; }
+.player-minutaggio-avviso { margin: 12px 0 0; padding: 10px 12px; border: 1px solid rgba(255,200,87,.4); border-radius: 10px; color: rgba(255,255,255,.82); background: rgba(255,200,87,.08); font-size: .78rem; line-height: 1.45; }
+.player-minutaggio-avviso b { color: #ffd84d; }
+.player-minutaggio-avviso.is-cessione { border-color: rgba(255,107,107,.5); background: rgba(255,107,107,.1); }
+.player-minutaggio-avviso.is-cessione b { color: #ff8a80; }
+.fatto-minutaggio dd small { display: block; color: rgba(255,255,255,.55); font-size: .66rem; }

@@ -11,7 +11,7 @@ import type { CrestChoice, Fixture, League, MatchPlayerStat, Membership, Team } 
 import { Crest } from './Crest'
 import { CrestPicker } from './CrestPicker'
 import { GameNav, type GameView } from './GameNav'
-import { SchedaGiocatore, type EsitoRinnovo, type PropostaRinnovo, type StatsStagione } from './SchedaGiocatore'
+import { SchedaGiocatore, type EsitoRinnovo, type GradinoMinutaggio, type PropostaRinnovo, type StatsStagione } from './SchedaGiocatore'
 import { FixtureScore, SeasonState, TeamLabel } from './SeasonUI'
 import { UnderlineTabs } from './ui/underline-tabs'
 import { Icona } from './Icona'
@@ -52,6 +52,8 @@ type RosterPlayer = {
   rinnovoTentativi: number
   sulMercato: boolean
   mentalita: { bandiera: number; economia: number; vittorie: number }
+  /** Minutaggio promesso (docs/decisioni-minutaggio.md): solo nelle leghe con le tattiche. */
+  minutaggio?: { gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean; cessione: boolean }
   minuti: number
   gol: number
   assist: number
@@ -132,6 +134,7 @@ function money(value: number) { return `${(value / 1_000_000).toFixed(1)} M€` 
 // giocatore: ultima stagione utile, o ritiro annunciato.
 function contratto(player: RosterPlayer, stagioneCorrente: number) {
   if (player.ritiroAnnunciato) return { testo: 'ritiro a termine stag.', urgente: true }
+  if (player.minutaggio?.cessione) return { testo: 'Chiede la cessione.', urgente: true }
   if (player.rinnovoTentativi >= 3) return { testo: 'Non intende rinnovare.', urgente: true }
   const residue = player.contrattoScadenza - stagioneCorrente
   if (residue <= 0) return { testo: 'ultima stagione', urgente: true }
@@ -327,9 +330,16 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           return [p.id, urlFotoGiocatore(p.foto_url)] as const
         })
       ))
-      setPlayers(loaded.map((p) => ({ ...p, fotoFirmata: fotoPerId.get(p.id) })))
+      // Gradini di minutaggio: calcolati dal database (quello automatico dipende
+      // dalla gerarchia della rosa). Se la chiamata fallisce la rosa si vede lo stesso.
+      const { data: righeGradini } = league.tattiche_attive
+        ? await supabase.rpc('gradini_squadra', { p_team_id: teamId })
+        : { data: null }
+      const gradini = new Map(((righeGradini ?? []) as { player_instance_id: number; gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean | null; cessione: boolean }[])
+        .map((g) => [g.player_instance_id, { gradino: g.gradino, trattato: g.trattato, richiamo: Boolean(g.richiamo), cessione: g.cessione }]))
+      setPlayers(loaded.map((p) => ({ ...p, fotoFirmata: fotoPerId.get(p.id), minutaggio: gradini.get(p.id) })))
       setStatRows((statsResult.data ?? []) as MatchPlayerStat[]); setRosterLoading(false)
-  }, [league.id, teamId])
+  }, [league.id, league.tattiche_attive, teamId])
 
   useEffect(() => { void caricaRoster() }, [caricaRoster])
 
@@ -934,6 +944,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           contrattoScadenza: ownTeam ? schedaAperta.contrattoScadenza : undefined,
           stagioneCorrente: ownTeam ? league.stagione_corrente : undefined,
           mentalita: ownTeam ? schedaAperta.mentalita : undefined,
+          minutaggio: schedaAperta.minutaggio,
           attributi: schedaAperta.attributi,
         }}
         fotoUrl={fotoScheda}
@@ -953,7 +964,9 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         } : undefined}
         rinnovo={ownTeam && league.stato === 'stagione' && !schedaAperta.ritiroAnnunciato ? {
           nomeAllenatore: allenatore,
-          bloccato: schedaAperta.rinnovoTentativi >= 3
+          bloccato: schedaAperta.minutaggio?.cessione
+            ? 'Ha chiesto la cessione: non rinnoverà il contratto.'
+            : schedaAperta.rinnovoTentativi >= 3
             ? 'Non intende rinnovare: andrà a scadenza a fine stagione.'
             : schedaAperta.rinnovoStagione === league.stagione_corrente
               ? 'Ha già rinnovato in questa stagione: se ne riparla dalla prossima.'
@@ -963,15 +976,17 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
             if (error) throw new Error(error.message)
             return data as PropostaRinnovo
           },
-          onOffri: async (ingaggio) => {
+          onOffri: async (ingaggio, minutaggio) => {
             const { data, error } = await supabase.rpc('offri_rinnovo', {
               p_instance_id: schedaAperta.id, p_ingaggio: ingaggio, p_durata: 1,
+              ...(minutaggio ? { p_minutaggio: minutaggio } : {}),
             })
             if (error) throw new Error(error.message)
             const risposta = data as EsitoRinnovo
             if (risposta.esito === 'accettato') {
               setPlayers((current) => current.map((item) => item.id === schedaAperta.id
-                ? { ...item, ingaggio, contrattoScadenza: risposta.contratto_scadenza ?? item.contrattoScadenza, rinnovoStagione: league.stagione_corrente }
+                ? { ...item, ingaggio, contrattoScadenza: risposta.contratto_scadenza ?? item.contrattoScadenza, rinnovoStagione: league.stagione_corrente,
+                    minutaggio: item.minutaggio && risposta.minutaggio ? { ...item.minutaggio, gradino: risposta.minutaggio, trattato: true, richiamo: false } : item.minutaggio }
                 : item))
             }
             return risposta

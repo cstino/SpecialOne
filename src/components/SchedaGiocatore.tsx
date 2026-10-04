@@ -50,7 +50,19 @@ export type DatiScheda = {
   morale?: number
   /** Mentalita': i tre rami sommano sempre 100, dicono cosa viene prima. */
   mentalita?: { bandiera: number; economia: number; vittorie: number }
+  /** Minutaggio promesso (docs/decisioni-minutaggio.md): gradino, se trattato al rinnovo, richiamo e cessione. */
+  minutaggio?: { gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean; cessione: boolean }
   attributi: Record<string, number | null>
+}
+
+export type GradinoMinutaggio = 'titolare' | 'turnover' | 'sporadico' | 'promessa'
+
+// Nomi e significato dei quattro gradini (docs/decisioni-minutaggio.md §1).
+export const GRADINI_MINUTAGGIO: Record<GradinoMinutaggio, { nome: string; detto: string }> = {
+  titolare: { nome: 'Titolare fisso', detto: 'Gioca la maggior parte delle partite.' },
+  turnover: { nome: 'Turnover', detto: 'Entra quando i titolari sono stanchi.' },
+  sporadico: { nome: 'Sporadico', detto: 'Gioca poche partite.' },
+  promessa: { nome: 'Promessa futura', detto: 'Under 21: avrà spazio nei prossimi anni.' },
 }
 
 /** Proposta di rinnovo a stagione in corso, come la restituisce la RPC. */
@@ -63,12 +75,19 @@ export type PropostaRinnovo = {
   tentativi_totali: number
   trattativa_chiusa: boolean
   gia_rinnovato: boolean
+  /** Minutaggio: assente nelle leghe senza tattiche. */
+  gradino_attuale?: GradinoMinutaggio | null
+  gradino_trattato?: boolean
+  gradini?: { chiave: GradinoMinutaggio; richiesta: number; rifiuto: string | null }[] | null
 }
 
 /** Risposta del giocatore a un'offerta: mai la cifra esatta, solo quanto si è lontani. */
 export type EsitoRinnovo = {
-  esito: 'accettato' | 'rifiutato' | 'chiusa'
+  esito: 'accettato' | 'rifiutato' | 'chiusa' | 'gradino_rifiutato'
   messaggio: string
+  /** Perche' ha rifiutato il gradino (solo con esito gradino_rifiutato). */
+  motivo?: string
+  minutaggio?: GradinoMinutaggio
   tentativi_usati: number
   contratto_scadenza?: number
   ingaggio?: number
@@ -99,7 +118,7 @@ type Props = {
     /** Legge la proposta dal server: e' il giocatore a fare la prima cifra. */
     onCarica: () => Promise<PropostaRinnovo>
     /** Manda una controproposta. La soglia la valuta il server, mai il browser. Durata sempre di una stagione: non si negozia. */
-    onOffri: (ingaggio: number) => Promise<EsitoRinnovo>
+    onOffri: (ingaggio: number, minutaggio: GradinoMinutaggio | null) => Promise<EsitoRinnovo>
     /** Se valorizzato, il bottone e' disabilitato e questo e' il motivo. */
     bloccato?: string
   }
@@ -485,6 +504,7 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
   // Offerta in M€ come stringa: l'utente digita "3,4" e non deve combattere
   // con l'arrotondamento mentre scrive.
   const [offertaM, setOffertaM] = useState('')
+  const [gradinoOfferto, setGradinoOfferto] = useState<GradinoMinutaggio | null>(null)
   const [inLista, setInLista] = useState(listaMercato?.inLista ?? false)
   const [listaInCorso, setListaInCorso] = useState(false)
   const [listaEsito, setListaEsito] = useState<string | null>(null)
@@ -634,7 +654,11 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
     try {
       const dati = await rinnovo.onCarica()
       setProposta(dati)
-      setOffertaM((dati.richiesta / 1_000_000).toFixed(1).replace('.', ','))
+      // Si parte dal gradino che ha gia', se non lo rifiuta; altrimenti dal primo accettabile.
+      const accettabili = (dati.gradini ?? []).filter((g) => !g.rifiuto)
+      const iniziale = accettabili.find((g) => g.chiave === dati.gradino_attuale) ?? accettabili[0] ?? null
+      setGradinoOfferto(iniziale?.chiave ?? null)
+      setOffertaM(((iniziale?.richiesta ?? dati.richiesta) / 1_000_000).toFixed(1).replace('.', ','))
     } catch (errore) {
       setRinnovoErrore(errore instanceof Error ? errore.message : 'Proposta non disponibile.')
     }
@@ -649,7 +673,7 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
     setRinnovoInCorso(true)
     setRinnovoErrore(null)
     try {
-      const risposta = await rinnovo.onOffri(offertaEuro)
+      const risposta = await rinnovo.onOffri(offertaEuro, gradinoOfferto)
       setEsito(risposta)
       setProposta({ ...proposta, tentativi_usati: risposta.tentativi_usati, trattativa_chiusa: risposta.esito === 'chiusa' })
     } catch (errore) {
@@ -688,11 +712,11 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
           <p className="rinnovo-lettera__firma">— {giocatore.nome}, {giocatore.eta} anni</p>
         </blockquote>
         <div className="rinnovo-cifre">
-          <div><span>Ingaggio richiesto</span><strong>{milioni(proposta.richiesta)}</strong><small>a stagione</small></div>
+          <div><span>Ingaggio richiesto</span><strong>{milioni(proposta.gradini?.find((g) => g.chiave === gradinoOfferto)?.richiesta ?? proposta.richiesta)}</strong><small>{gradinoOfferto ? `da ${GRADINI_MINUTAGGIO[gradinoOfferto].nome.toLowerCase()}` : 'a stagione'}</small></div>
           <div><span>Durata</span><strong>{stagioni(proposta.durata)}</strong><small>fino alla stagione {proposta.nuova_scadenza}</small></div>
         </div>
 
-        {esito && <p className={`rinnovo-risposta rinnovo-risposta--${esito.esito}`}>«{esito.messaggio}»</p>}
+        {esito && <p className={`rinnovo-risposta rinnovo-risposta--${esito.esito}`}>«{esito.messaggio}»{esito.motivo && <small> {esito.motivo}</small>}</p>}
 
         {proposta.gia_rinnovato ? <>
           <p className="rinnovo-nota">Ha rinnovato in questa stagione: se ne potrà ritrattare dalla prossima.</p>
@@ -701,6 +725,20 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
           <p className="rinnovo-nota">La trattativa è chiusa: andrà a scadenza e lascerà la squadra a fine stagione.</p>
           <div className="rinnovo-azioni"><button className="button button--secondary" type="button" onClick={() => setVistaRinnovo(false)}>Torna alla scheda</button></div>
         </> : <>
+          {proposta.gradini && proposta.gradini.length > 0 && <div className="rinnovo-gradini">
+            <p className="kicker">Minutaggio promesso</p>
+            <div className="rinnovo-gradini__scelte" role="radiogroup" aria-label="Minutaggio promesso">
+              {proposta.gradini.map((g) => <button key={g.chiave} type="button" role="radio" aria-checked={gradinoOfferto === g.chiave}
+                className={`rinnovo-gradino${gradinoOfferto === g.chiave ? ' is-scelto' : ''}${g.rifiuto ? ' is-rifiutato' : ''}`}
+                disabled={Boolean(g.rifiuto) || rinnovoInCorso}
+                onClick={() => { setGradinoOfferto(g.chiave); setOffertaM((g.richiesta / 1_000_000).toFixed(1).replace('.', ',')) }}>
+                <strong>{GRADINI_MINUTAGGIO[g.chiave].nome}</strong>
+                <small>{g.rifiuto ?? GRADINI_MINUTAGGIO[g.chiave].detto}</small>
+                {!g.rifiuto && <b>{milioni(g.richiesta)}</b>}
+              </button>)}
+            </div>
+            <p className="rinnovo-nota">Più minuti prometti, meno chiede. Se poi non lo fai giocare come promesso, prima ti richiama, poi chiede la cessione e non rinnova più.</p>
+          </div>}
           <div className="rinnovo-offerta">
             <p className="kicker">La tua offerta</p>
             <div>
@@ -731,7 +769,7 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
           <p>{esito.messaggio}</p>
           <p className="rinnovo-lettera__firma">— {giocatore.nome}</p>
         </blockquote>
-        <p className="rinnovo-nota">Contratto rinnovato: {milioni(esito.ingaggio ?? 0)} a stagione fino alla stagione {esito.contratto_scadenza}.</p>
+        <p className="rinnovo-nota">Contratto rinnovato: {milioni(esito.ingaggio ?? 0)} a stagione fino alla stagione {esito.contratto_scadenza}{esito.minutaggio ? `, da ${GRADINI_MINUTAGGIO[esito.minutaggio].nome.toLowerCase()}` : ''}.</p>
         <div className="rinnovo-azioni"><button className="button button--primary" type="button" onClick={onClose}>Chiudi</button></div>
       </>}
     </section>
@@ -775,6 +813,13 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
             <div><dt>Ruoli secondari</dt><dd>{giocatore.posizioni.slice(1).join(' · ') || 'Nessuno'}</dd></div>
             <div><dt>Piede</dt><dd>{giocatore.piede ?? '—'}</dd></div>
             <div><dt>Altezza</dt><dd>{giocatore.altezza ? `${giocatore.altezza} cm` : '—'}</dd></div>
+            {giocatore.minutaggio && <div className="fatto-minutaggio">
+              <dt>Minutaggio</dt>
+              <dd>
+                {GRADINI_MINUTAGGIO[giocatore.minutaggio.gradino].nome}
+                <small>{giocatore.minutaggio.trattato ? 'Promesso al rinnovo' : 'Dalla gerarchia della rosa · si tratta al rinnovo'}</small>
+              </dd>
+            </div>}
             {typeof giocatore.ingaggio === 'number' && <div className="fatto-ingaggio">
               <dt>Ingaggio</dt>
               <dd>
@@ -790,6 +835,10 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
               </dd>
             </div>}
           </dl>
+
+          {giocatore.minutaggio?.cessione
+            ? <p className="player-minutaggio-avviso is-cessione"><b>Ha chiesto la cessione.</b> Non ha avuto lo spazio promesso: non rinnoverà il contratto.</p>
+            : giocatore.minutaggio?.richiamo && <p className="player-minutaggio-avviso"><b>Chiede più spazio.</b> Non sta giocando quanto promesso: se non cambia, al prossimo controllo chiederà la cessione.</p>}
 
           {typeof giocatore.condizione === 'number' && <section className={`player-modal__fitness ${(giocatore.infortunatoFinoA ?? 0) > 0 ? 'is-injured' : (giocatore.squalificatoFinoA ?? 0) > 0 ? 'is-suspended' : ''}`}>
             <div>

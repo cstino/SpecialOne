@@ -404,6 +404,15 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         una sua richiesta di ingaggio, e da lì <strong>tratti solo su quello</strong>: la
         durata non si negozia mai, un rinnovo estende il contratto di
         <strong> esattamente una stagione</strong>.</p>
+      <p>Insieme all'ingaggio tratti il <strong>minutaggio promesso</strong>: titolare fisso
+        (gioca la maggior parte delle partite), turnover (entra quando i titolari sono stanchi),
+        sporadico (poche partite) o promessa futura (solo sotto i 21 anni). Più minuti prometti,
+        meno chiede; un giocatore tra i migliori della rosa non accetta di fare panchina.
+        Finché non lo tratti, il gradino lo decide la gerarchia della rosa.</p>
+      <p>Una promessa va mantenuta. Ogni 5 giornate (dalla 8ª) chi ha un minutaggio promesso e
+        gioca molto meno del pattuito ti scrive un <strong>richiamo</strong>; se al controllo dopo
+        la situazione non è cambiata, <strong>chiede la cessione</strong> e non rinnova più il
+        contratto.</p>
       <p>Ogni giocatore ha una tolleranza personale — quanto è disposto a scendere sotto la sua
         richiesta iniziale — che dipende dal suo umore del momento e dalla sua personalità (vedi
         la voce "Mentalità e morale"): non è mai mostrata esplicitamente, va intuita
@@ -428,15 +437,14 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         ingaggio possibile) e <strong>vittorie</strong> (prima i risultati). È fissa per quel
         giocatore, in ogni lega, per sempre.</p>
       <p>Il <strong>morale</strong> è invece una cifra da 0 a 100 che cambia nel tempo, ricalcolata
-        più volte a stagione. Sale se il giocatore gioca quanto si aspetta di giocare (in base
-        al suo overall rispetto alla media della rosa), se è pagato in linea con quanto vale e
+        più volte a stagione. Sale se il giocatore gioca quanto si aspetta di giocare (il suo
+        minutaggio promesso, vedi "Contratti e rinnovi"), se è pagato in linea con quanto vale e
         se la squadra vince; scende nei casi opposti. Un giocatore con la mentalità "bandiera"
         alta si lamenta meno delle altre due cose, non perché sia sempre più felice, ma perché
         gli interessano meno.</p>
-      <p><strong>Mentalità e morale non influenzano mai le prestazioni in campo.</strong> Contano
-        solo per le trattative economiche: quanto chiede in un rinnovo, quanto è disposto a
-        scendere, se accetta un'offerta sugli svincolati. Un giocatore scontento gioca esattamente
-        come uno contento — semplicemente costa di più tenerlo, o rischia di andarsene.</p>
+      <p>Il morale conta soprattutto nelle trattative: quanto chiede in un rinnovo, quanto è
+        disposto a scendere, se accetta un'offerta sugli svincolati. In campo pesa poco: un
+        giocatore molto scontento rende un filo meno, uno entusiasta un filo di più.</p>
     </>,
   },
   {

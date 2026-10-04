@@ -107,6 +107,11 @@ al rinnovo:
 Niente casi peggiori, niente entrate garantite da indovinare, niente proiezioni.
 La funzione `private.entrata_minima_garantita` diventa inutile e va rimossa.
 
+> **Minutaggio promesso (dal 4 ottobre 2026).** Al rinnovo si tratta anche il gradino di
+> minutaggio (titolare fisso, turnover, sporadico, promessa futura), che sposta la richiesta
+> d'ingaggio e che il giocatore fa valere con richiami e richiesta di cessione. Regole e numeri
+> in `docs/decisioni-minutaggio.md`.
+
 ### Chi arriva a stagione in corso scade a fine stagione corrente
 
 Un giocatore preso durante la stagione — asta sugli svincolati o scambio —
