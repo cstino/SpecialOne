@@ -6,19 +6,22 @@ import { TestoAdattato } from './TestoAdattato'
 // tattici con un nome. Lo schema ATTIVO e' quello che gioca; lo schema RISERVA
 // si prepara: il suo modulo impara una partita alla volta anche se non lo si
 // schiera. Si tocca uno schema per vederlo e modificarlo, la matita lo
-// rinomina, "Usa in partita" li scambia, "Elimina" libera la riserva.
+// rinomina, la × libera la riserva; salvando con la riserva selezionata
+// diventa lei l'attiva. Le card restano ferme: si sposta l'etichetta "Attivo".
 // Registro tattico, punto 41.
 
 type Quale = 'attivo' | 'riserva'
 
 export function SchemiCard({
-  nomeAttivo, nomeRiserva, selezionato, descrizioneAttivo, descrizioneRiserva, partite, partitePiene,
+  nomeAttivo, nomeRiserva, selezionato, attivoADestra = false, descrizioneAttivo, descrizioneRiserva, partite, partitePiene,
   onSeleziona, onRinomina, onEliminaRiserva,
 }: {
   nomeAttivo: string
   /** null = nessuna riserva: lo slot e' vuoto. */
   nomeRiserva: string | null
   selezionato: Quale
+  /** Lo schema attivo sta nella card di destra: le card non si scambiano di posto. */
+  attivoADestra?: boolean
   descrizioneAttivo: string
   descrizioneRiserva: string
   /** Partite imparate dal modulo della riserva (0 se non c'e' ancora una riga). */
@@ -68,7 +71,7 @@ export function SchemiCard({
   }
 
   return <section className="schemi-card" aria-label="Schemi tattici">
-    <div className="schemi-card__slot-riga">
+    <div className={`schemi-card__slot-riga${attivoADestra ? ' is-invertita' : ''}`}>
       {segmento('attivo', nomeAttivo, descrizioneAttivo)}
       {nomeRiserva !== null
         ? segmento('riserva', nomeRiserva, descrizioneRiserva)

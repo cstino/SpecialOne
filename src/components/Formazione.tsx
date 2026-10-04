@@ -279,6 +279,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   // stile...) mostrano sempre lo schema SELEZIONATO; l'altro sta messo da parte
   // in `attivoFermo` / `riservaFerma`. Salvando, vanno entrambi.
   const [schemaSel, setSchemaSel] = useState<'attivo' | 'riserva'>('attivo')
+  // Lato della card dello schema attivo: le card restano ferme, si sposta solo "Attivo".
+  const [attivoADestra, setAttivoADestra] = useState(false)
   const [nomeAttivo, setNomeAttivo] = useState('Schema 1')
   const [haRiserva, setHaRiserva] = useState(false)
   const [nomeRiserva, setNomeRiserva] = useState('Schema 2')
@@ -406,6 +408,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         if (active) {
           const nomeA = (sc?.nome_attivo as string | undefined) ?? 'Schema 1'
           setNomeAttivo(nomeA)
+          setAttivoADestra(sc?.attivo_a_destra === true)
           let riservaCaricata: Tattica | null = null
           if (sc?.riserva_modulo && Array.isArray(sc.riserva_disposizione)) {
             const standard = MODULI[sc.riserva_modulo as string] ?? []
@@ -774,7 +777,14 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         if (ris) { setNomeRiserva(nome); setNomeRiservaConfermato(true) }
         setNomeAttivo(nomeA)
       }
-      if (invertire) { setRiservaFerma(attivoFermo); setAttivoFermo(null); setSchemaSel('attivo') }
+      if (invertire) {
+        setRiservaFerma(attivoFermo); setAttivoFermo(null); setSchemaSel('attivo')
+        // Lo schema attivo ora e' l'altra card: si sposta l'etichetta, non le card.
+        const lato = !attivoADestra
+        setAttivoADestra(lato)
+        const { error: latoError } = await supabase.rpc('imposta_lato_schemi', { p_league_id: league.id, p_attivo_a_destra: lato })
+        if (latoError) console.warn('Lato degli schemi non salvato:', latoError.message)
+      }
     }
     setPanchina(cleanBench); setSaved(true); setSalvataIl(new Date().toISOString()); fissaFirma.current = true
     setSaving(false)
@@ -1002,6 +1012,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
               nomeAttivo={nomeAttivo}
               nomeRiserva={haRiserva ? nomeRiserva : null}
               selezionato={schemaSel}
+              attivoADestra={attivoADestra}
               descrizioneAttivo={`${attivoCanonico.modulo} · ${(STILE_LABEL[attivoCanonico.stile] ?? attivoCanonico.stile).toLowerCase()}`}
               descrizioneRiserva={riservaCanonica ? `${riservaCanonica.modulo} · ${(STILE_LABEL[riservaCanonica.stile] ?? riservaCanonica.stile).toLowerCase()}` : ''}
               partite={riservaCanonica ? xpDisposizione.find((r) => stessiValori(r.disposizione, riservaCanonica.disposizione ?? MODULI[riservaCanonica.modulo]))?.partite ?? 0 : 0}

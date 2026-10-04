@@ -55,6 +55,24 @@ function GraficoSchemi() {
   </div>
 }
 
+// Infografica: i segnalini sulle magliette (ritaglio di una formazione vera)
+// con la legenda. Il segno misura quanto il giocatore e' adatto al RUOLO che
+// gli si da' (segnoIdoneita in lib/tattica.ts), non allo stile di gioco.
+function GraficoSegnalini() {
+  const voci: { segno: string; tono: 'piu' | 'meno'; testo: string }[] = [
+    { segno: '++', tono: 'piu', testo: 'Perfetto' },
+    { segno: '+', tono: 'piu', testo: 'Adatto' },
+    { segno: '−', tono: 'meno', testo: 'Poco adatto' },
+    { segno: '−−', tono: 'meno', testo: 'Inadatto' },
+  ]
+  return <div className="nv-segnalini">
+    <img src="/novita/segnalini.jpg" alt="Giocatori in formazione con i segnalini ++ e − accanto alla foto" />
+    <div className="nv-segnalini__legenda">
+      {voci.map((v) => <span key={v.segno}><b className={`is-${v.tono}`}>{v.segno}</b>{v.testo}</span>)}
+    </div>
+  </div>
+}
+
 // Infografica: l'overall effettivo, pieno e ridotto (giallino).
 function GraficoOverall() {
   return <div className="nv-overall">
@@ -99,9 +117,18 @@ const PAGINE: Pagina[] = [
     titolo: 'La tua squadra ha un’identità.',
     punti: [
       <>Scegli lo <strong>stile di gioco</strong> fra 7, dove attaccare, l'altezza della linea, l'ampiezza e come gioca il portiere. Lo stile cambia davvero la partita: ritmo, possesso, quanti tiri fai.</>,
-      <>A ogni giocatore dai un <strong>ruolo</strong> (regista, terzino offensivo, finalizzatore…) e un <strong>compito</strong>: più difesa, equilibrio o più attacco. Un ruolo adatto a lui dà un bonus, uno sbagliato una penalità.</>,
       <>Non vuoi perderci tempo? I <strong>preset tattici</strong> (Palleggio, Pressing alto, Contropiede, Catenaccio…) sistemano tutto con un tocco.</>,
     ],
+  },
+  {
+    fase: 'regular', sfondo: '/sfondi-fase/regular_season.png',
+    occhiello: 'Novità · Ruoli e compiti',
+    titolo: 'Ogni giocatore al suo posto.',
+    punti: [
+      <>A ogni giocatore dai un <strong>ruolo</strong> (regista, finalizzatore…) e un <strong>compito</strong>: difesa, equilibrio o attacco.</>,
+      <>Il <strong>segnalino</strong> accanto alla foto dice quanto è adatto al ruolo che gli hai dato: con <strong>++</strong> e <strong>+</strong> rende di più, con <strong>−</strong> e <strong>−−</strong> rende di meno.</>,
+    ],
+    grafico: <GraficoSegnalini />,
   },
   {
     fase: 'regular', sfondo: '/sfondi-fase/regular_season.png',
