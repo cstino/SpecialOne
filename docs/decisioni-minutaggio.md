@@ -64,13 +64,17 @@ di più; un veterano che cala abbassa le pretese.
   sopra la media della rosa e «Turnover» se è almeno 6 sopra. «Promessa futura» si offre solo
   sotto i 21 anni (la promessa sta al livello dello sporadico).
 
-## 3b. Chi non ha ancora una promessa
+## 3b. Chi è già in squadra al lancio
 
-I contratti in corso al lancio non hanno una promessa: `player_instances.minutaggio_promesso`
-vuoto vuol dire **gradino automatico**, dalla posizione nel proprio reparto dentro la rosa
-(portieri 1 titolare; difesa e centrocampo 4 titolari e 2 turnover; attacco 2 e 2; un under 21
-non titolare è una promessa futura). Serve solo al morale, non fa partire richiami: è una stima
-della gerarchia, non una promessa. Al primo rinnovo si tratta come tutti.
+Chi è già in una squadra riceve **come promessa quello che chiederebbe oggi** (§2), così ogni
+giocatore ha il suo gradino fin dall'inizio (richiesta del committente, 4 ottobre 2026): vale
+per morale e richiami come ogni altra promessa. Il minutaggio si conta dall'inizio della
+stagione corrente, quindi i primi richiami arrivano alla verifica della giornata 8.
+
+`player_instances.minutaggio_promesso` vuoto resta possibile solo dopo uno scambio verso una
+squadra di una lega senza tattiche; vuol dire **gradino automatico**, dalla gerarchia della
+rosa (portieri 1 titolare; difesa e centrocampo 4 e 2; attacco 2 e 2; un under 21 non titolare
+è una promessa futura). Serve solo al morale, non fa partire richiami.
 
 ## 4. Il morale
 
@@ -89,19 +93,39 @@ La prova sulla stagione 1 di Serie F, contando anche gli automatici, dava 148 ri
 gradino trattato, di una squadra umana, arrivato da almeno 5 giornate e non infortunato in
 quel momento:
 
-- **non rispettato** se gioca meno del 60% della quota del suo gradino, e almeno 10 punti
-  sotto (es. titolare fisso con meno del 45% dei minuti);
-- primo controllo non rispettato: **richiamo**. Il giocatore scrive al mister: «Mister, mi
+- **molto al di sotto** se gioca meno del 70% della soglia minima (cioè meno del 42% della
+  quota del gradino) e almeno 10 punti sotto la quota (es. titolare fisso con meno del 31,5%
+  dei minuti);
+- primo controllo «molto al di sotto»: **richiamo**. Il giocatore scrive al mister: «Mister, mi
   era stato promesso più spazio e al momento non lo sto avendo. Le chiedo di migliorare la
   mia situazione, altrimenti sarò costretto a chiedere la cessione.»
-- controllo successivo ancora non rispettato: **richiesta di cessione**. Il giocatore non
+- controllo successivo ancora «molto al di sotto»: **richiesta di cessione**. Il giocatore non
   rinnoverà più il contratto: alla scadenza lascia la squadra. Arriva un secondo messaggio.
 - se al controllo dopo il richiamo la situazione è rientrata, il richiamo si cancella.
 
 La richiesta di cessione non si ritira nella stessa squadra; uno scambio la azzera. Non mette
 il giocatore in lista di vendita da sola: decidere se e come cederlo resta al mister.
 
-## 6. Dove sta il codice
+## 6. Soglia minima e colori
+
+La **soglia minima** di un gradino è il 60% della sua quota: titolare fisso 45%, turnover 24%,
+sporadico 3%, promessa futura 3%. Si vede accanto al nome del gradino in scheda, nella
+trattativa e nei mercati («Titolare fisso (min. 45%)»).
+
+I minuti in rosa, accanto alla **percentuale** (minuti ÷ 90 × partite di stagione regolare
+dall'arrivo; stessa misura del controllo), si colorano come i richiami:
+
+| Colore | Quando |
+|---|---|
+| verde | raggiunge la soglia minima: la promessa è rispettata |
+| giallo | sotto la soglia ma non molto (anche uno sporadico che non gioca mai: non si lamenterebbe) |
+| rosso | molto sotto (§5): è il caso in cui il giocatore si fa sentire |
+
+Stessa regola in `src/lib/minutaggio.ts` (`statoMinuti`) e in `private.controlla_minutaggio`: se
+si cambia una, va cambiata l'altra. Le statistiche della rosa (minuti, gol, assist, voti) ora
+contano la sola stagione corrente: prima sommavano tutte le stagioni della lega.
+
+## 7. Dove sta il codice
 
 - Migrazione `20261004140000_minutaggio_promesso.sql`: colonne su `player_instances`
   (`minutaggio_promesso`, `richiamo_stagione`, `richiamo_giornata`,

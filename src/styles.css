@@ -4637,3 +4637,11 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .free-agent-card__chiede.is-titolare { color: #ffd84d; box-shadow: inset 0 0 0 1px rgba(255,216,77,.45); background: rgba(255,216,77,.08); }
 .free-agent-card__chiede.is-turnover { color: #9fd8ff; box-shadow: inset 0 0 0 1px rgba(159,216,255,.4); }
 .free-agent-card__chiede.is-promessa { color: #6dffc3; box-shadow: inset 0 0 0 1px rgba(109,255,195,.4); }
+
+/* Minuti rispetto alla promessa: verde rispettata, giallo poco sotto, rosso molto sotto. */
+.min-valore { font-style: normal; white-space: nowrap; }
+.min-valore em { margin-left: 3px; font-style: normal; font-size: .85em; font-weight: 700; opacity: .9; }
+.minuti-ok { color: #6dffc3 !important; }
+.minuti-sotto { color: #ffd84d !important; }
+.minuti-molto { color: #ff8a80 !important; }
+.rinnovo-gradino strong em { font-style: normal; font-weight: 600; font-size: .85em; opacity: .75; letter-spacing: 0; }

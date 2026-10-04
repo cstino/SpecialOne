@@ -9,7 +9,7 @@ import { SeasonState } from './SeasonUI'
 import { Crest } from './Crest'
 import { firmaFoto } from './RosaElenco'
 import { macroRuolo } from '../lib/ruoli'
-import { GRADINI_MINUTAGGIO, gradinoRichiesto, useSoglieMinutaggio } from '../lib/minutaggio'
+import { GRADINI_MINUTAGGIO, gradinoRichiesto, nomeConSoglia, useSoglieMinutaggio } from '../lib/minutaggio'
 import { useSeasonData } from '../lib/useSeasonData'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
@@ -428,7 +428,7 @@ export function Scelte({ membership, onNavigate }: Props) {
                               {secondari.length > 0 && <span className="text-[.68rem] font-semibold text-white/35">{secondari.join(' / ')}</span>}
                               {(() => {
                                 const chiede = gradinoRichiesto(soglieMinutaggio, g.overall, g.eta, primario ?? undefined)
-                                return chiede && <span className={`free-agent-card__chiede is-${chiede}`} title={GRADINI_MINUTAGGIO[chiede].detto}>Chiede: {GRADINI_MINUTAGGIO[chiede].nome}</span>
+                                return chiede && <span className={`free-agent-card__chiede is-${chiede}`} title={GRADINI_MINUTAGGIO[chiede].detto}>Chiede: {nomeConSoglia(chiede)}</span>
                               })()}
                             </div>
                             <span className="text-[.72rem] font-semibold text-white/45">{g.eta} anni</span>

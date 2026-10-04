@@ -8,7 +8,7 @@ import { SchedaGiocatore } from './SchedaGiocatore'
 import { attributiInLega, type Attributi } from '../lib/attributiGiocatore'
 import { useSeasonData } from '../lib/useSeasonData'
 import { useFaseSquadra } from '../lib/faseSquadra'
-import { GRADINI_MINUTAGGIO, gradinoRichiesto, useSoglieMinutaggio } from '../lib/minutaggio'
+import { GRADINI_MINUTAGGIO, gradinoRichiesto, nomeConSoglia, useSoglieMinutaggio } from '../lib/minutaggio'
 import { formatCountdown, oraServerAdesso, useOraCorrente } from '../lib/countdown'
 import type { League, Membership } from '../types'
 import { Crest } from './Crest'
@@ -582,7 +582,7 @@ export function Mercato({ membership, onNavigate }: Props) {
             Infortunato · {g.infortunatoFinoA} {g.infortunatoFinoA === 1 ? 'giornata' : 'giornate'}
           </span>
         )}
-        {chiede && <span className={`free-agent-card__chiede is-${chiede}`} title={GRADINI_MINUTAGGIO[chiede].detto}>Chiede: {GRADINI_MINUTAGGIO[chiede].nome}</span>}
+        {chiede && <span className={`free-agent-card__chiede is-${chiede}`} title={GRADINI_MINUTAGGIO[chiede].detto}>Chiede: {nomeConSoglia(chiede)}</span>}
         <footer>
           <em>Ingaggio minimo {milioni(a.ingaggio_teorico)}</em>
           {a.origine === 'spin_offseason' && <i>Spin</i>}

@@ -636,11 +636,46 @@ $function$;
 revoke all on function public.offri_rinnovo(bigint, bigint, smallint, text) from public, anon;
 grant execute on function public.offri_rinnovo(bigint, bigint, smallint, text) to authenticated;
 
+-- Minuti e partite della stagione regolare corrente di un giocatore, dal suo
+-- arrivo in squadra: la stessa misura del controllo dei richiami. Serve per
+-- mostrare la percentuale di minuti accanto ai minuti (docs/decisioni-minutaggio.md §7).
+create or replace function private.minuti_stagione(p_instance_id bigint)
+returns table(partite integer, minuti numeric)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with g as (
+    select pi.id, pi.team_id, pi.league_id,
+           case when pi.arrivo_stagione = l.stagione_corrente then coalesce(pi.giornata_acquisizione, 1) else 1 end as inizio,
+           l.giornate_totali, l.stagione_corrente
+    from public.player_instances pi
+    join public.leagues l on l.id = pi.league_id
+    where pi.id = p_instance_id
+  ), f as (
+    select fx.id as fixture_id
+    from g
+    join public.seasons s on s.league_id = g.league_id and s.numero = g.stagione_corrente
+    join public.fixtures fx on fx.season_id = s.id and fx.stato = 'simulata'
+      and fx.giornata between g.inizio and g.giornate_totali
+      and (fx.home_team_id = g.team_id or fx.away_team_id = g.team_id)
+  )
+  select (select count(*) from f)::integer,
+         coalesce((select sum(ms.minuti) from public.match_stats ms
+                   join public.matches m on m.id = ms.match_id
+                   join f on f.fixture_id = m.fixture_id
+                   join g on true
+                   where ms.player_instance_id = g.id and ms.team_id = g.team_id), 0)::numeric;
+$$;
+
+revoke all on function private.minuti_stagione(bigint) from public, anon, authenticated;
+
 -- Il gradino di ogni giocatore di una rosa, per la scheda: lo vede tutta la
 -- lega (come in FM lo status in rosa non e' un segreto) e cosi' la richiesta
 -- di cessione; il richiamo, che e' un messaggio al mister, solo il proprietario.
 create or replace function public.gradini_squadra(p_team_id bigint)
-returns table(player_instance_id bigint, gradino text, trattato boolean, richiamo boolean, cessione boolean, richiesto text)
+returns table(player_instance_id bigint, gradino text, trattato boolean, richiamo boolean, cessione boolean, richiesto text, minuti_pct numeric, partite integer)
 language sql
 stable
 security definer
@@ -651,7 +686,9 @@ as $$
          pi.minutaggio_promesso is not null,
          t.user_id = (select auth.uid()) and pi.richiamo_stagione = l.stagione_corrente,
          pi.richiesta_cessione_stagione is not null,
-         private.gradino_richiesto_istanza(pi.id)
+         private.gradino_richiesto_istanza(pi.id),
+         (select case when ms.partite > 0 then round(ms.minuti / (90.0 * ms.partite), 3) end from private.minuti_stagione(pi.id) ms),
+         (select ms.partite from private.minuti_stagione(pi.id) ms)
   from public.player_instances pi
   join public.teams t on t.id = pi.team_id
   join public.leagues l on l.id = pi.league_id
@@ -754,7 +791,9 @@ begin
       when 'titolare' then 'titolare fisso' when 'turnover' then 'turnover'
       when 'sporadico' then 'sporadico' else 'promessa futura' end;
 
-    if v_reale < 0.6 * v_attesa and v_attesa - v_reale >= 0.10 then
+    -- Molto al di sotto: meno del 70% della soglia minima (60% della quota) e
+    -- almeno 10 punti sotto la quota. E' il rosso dei minuti in rosa.
+    if v_reale < 0.42 * v_attesa and v_attesa - v_reale >= 0.10 then
       if v_g.richiamo_stagione = v_lega.stagione_corrente then
         update public.player_instances
         set richiesta_cessione_stagione = v_lega.stagione_corrente
@@ -816,6 +855,16 @@ where s.stato = 'in_corso'
   and g <= coalesce((select max(f.giornata) from public.fixtures f
                      where f.season_id = s.id and f.stato = 'simulata' and f.giornata <= l.giornate_totali), 0)
 on conflict do nothing;
+
+-- Chi e' gia' in una squadra al lancio riceve come promessa quello che
+-- chiederebbe oggi (docs/decisioni-minutaggio.md §3b, richiesta del
+-- committente del 4 ottobre). Il minutaggio si conta dall'inizio della
+-- stagione corrente: i richiami partono dalla prima verifica (giornata 8).
+update public.player_instances pi
+set minutaggio_promesso = private.gradino_richiesto_istanza(pi.id)
+from public.leagues l
+where l.id = pi.league_id and l.tattiche_attive
+  and pi.team_id is not null and not pi.ritirato and pi.minutaggio_promesso is null;
 
 select cron.schedule(
   'controlla-minutaggio', '*/10 * * * *',

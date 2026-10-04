@@ -7,7 +7,7 @@ import type { FaseSquadra } from '../lib/faseSquadra'
 import { fasciaVoto, formatoVoto } from '../lib/voti'
 import { idoneitaRuolo, PROFILI_RUOLI, RUOLI_SLOT, segnoIdoneita } from '../lib/tattica'
 import { RUOLO_LABEL } from '../lib/ruoliTattici'
-import { GRADINI_MINUTAGGIO, type GradinoMinutaggio } from '../lib/minutaggio'
+import { GRADINI_MINUTAGGIO, nomeConSoglia, percentuale as percentualeMinuti, statoMinuti, type GradinoMinutaggio } from '../lib/minutaggio'
 
 export type StatsStagione = {
   presenze: number
@@ -52,7 +52,7 @@ export type DatiScheda = {
   /** Mentalita': i tre rami sommano sempre 100, dicono cosa viene prima. */
   mentalita?: { bandiera: number; economia: number; vittorie: number }
   /** Minutaggio promesso (docs/decisioni-minutaggio.md): gradino, se trattato al rinnovo, richiamo e cessione. */
-  minutaggio?: { gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean; cessione: boolean; richiesto?: GradinoMinutaggio | null }
+  minutaggio?: { gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean; cessione: boolean; richiesto?: GradinoMinutaggio | null; minutiPct?: number | null }
   /** Per chi non e' in rosa (mercato): il minutaggio che chiede per firmare. */
   minutaggioRichiesto?: GradinoMinutaggio | null
   attributi: Record<string, number | null>
@@ -703,7 +703,7 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
       {proposta && esito?.esito !== 'accettato' && <>
         <blockquote className="rinnovo-lettera">
           <p>Buongiorno mister{rinnovo?.nomeAllenatore ? ` ${rinnovo.nomeAllenatore}` : ''},</p>
-          <p>questa è la mia proposta per il mio nuovo ingaggio{proposta.gradino_richiesto ? <>, e vorrei avere lo spazio di un <strong>{GRADINI_MINUTAGGIO[proposta.gradino_richiesto].nome.toLowerCase()}</strong></> : null}.</p>
+          <p>questa è la mia proposta per il mio nuovo ingaggio{proposta.gradino_richiesto ? <>, e vorrei avere lo spazio di un <strong>{nomeConSoglia(proposta.gradino_richiesto).toLowerCase()}</strong></> : null}.</p>
           <p className="rinnovo-lettera__firma">— {giocatore.nome}, {giocatore.eta} anni</p>
         </blockquote>
         <div className="rinnovo-cifre">
@@ -727,7 +727,7 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
                 className={`rinnovo-gradino${gradinoOfferto === g.chiave ? ' is-scelto' : ''}${g.rifiuto ? ' is-rifiutato' : ''}`}
                 disabled={Boolean(g.rifiuto) || rinnovoInCorso}
                 onClick={() => { setGradinoOfferto(g.chiave); setOffertaM((g.richiesta / 1_000_000).toFixed(1).replace('.', ',')) }}>
-                <strong>{GRADINI_MINUTAGGIO[g.chiave].nome}</strong>
+                <strong>{GRADINI_MINUTAGGIO[g.chiave].nome} <em>(min. {GRADINI_MINUTAGGIO[g.chiave].soglia}%)</em></strong>
                 <small>{g.rifiuto ?? GRADINI_MINUTAGGIO[g.chiave].detto}</small>
                 {!g.rifiuto && <b>{milioni(g.richiesta)}</b>}
               </button>)}
@@ -811,16 +811,17 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
             {!giocatore.minutaggio && giocatore.minutaggioRichiesto && <div className="fatto-minutaggio">
               <dt>Chiede</dt>
               <dd>
-                {GRADINI_MINUTAGGIO[giocatore.minutaggioRichiesto].nome}
+                {nomeConSoglia(giocatore.minutaggioRichiesto)}
                 <small>Chi lo prende firma con questa promessa</small>
               </dd>
             </div>}
             {giocatore.minutaggio && <div className="fatto-minutaggio">
               <dt>Minutaggio</dt>
               <dd>
-                {GRADINI_MINUTAGGIO[giocatore.minutaggio.gradino].nome}
+                {nomeConSoglia(giocatore.minutaggio.gradino)}
                 <small>{giocatore.minutaggio.trattato ? 'Promesso nel contratto' : 'Dalla gerarchia della rosa · si tratta al rinnovo'}</small>
-                {giocatore.minutaggio.richiesto && giocatore.minutaggio.richiesto !== giocatore.minutaggio.gradino && <small>Al rinnovo chiederà: {GRADINI_MINUTAGGIO[giocatore.minutaggio.richiesto].nome.toLowerCase()}</small>}
+                {giocatore.minutaggio.minutiPct != null && <small className={`minuti-${statoMinuti(giocatore.minutaggio.minutiPct, giocatore.minutaggio.gradino)}`}>Minuti finora: {percentualeMinuti(giocatore.minutaggio.minutiPct)}</small>}
+                {giocatore.minutaggio.richiesto && giocatore.minutaggio.richiesto !== giocatore.minutaggio.gradino && <small>Al rinnovo chiederà: {nomeConSoglia(giocatore.minutaggio.richiesto).toLowerCase()}</small>}
               </dd>
             </div>}
             {typeof giocatore.ingaggio === 'number' && <div className="fatto-ingaggio">

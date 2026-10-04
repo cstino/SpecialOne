@@ -12,7 +12,7 @@ import { Crest } from './Crest'
 import { CrestPicker } from './CrestPicker'
 import { GameNav, type GameView } from './GameNav'
 import { SchedaGiocatore, type EsitoRinnovo, type PropostaRinnovo, type StatsStagione } from './SchedaGiocatore'
-import type { GradinoMinutaggio } from '../lib/minutaggio'
+import { percentuale, statoMinuti, type GradinoMinutaggio } from '../lib/minutaggio'
 import { FixtureScore, SeasonState, TeamLabel } from './SeasonUI'
 import { UnderlineTabs } from './ui/underline-tabs'
 import { Icona } from './Icona'
@@ -54,7 +54,7 @@ type RosterPlayer = {
   sulMercato: boolean
   mentalita: { bandiera: number; economia: number; vittorie: number }
   /** Minutaggio promesso (docs/decisioni-minutaggio.md): solo nelle leghe con le tattiche. */
-  minutaggio?: { gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean; cessione: boolean; richiesto: GradinoMinutaggio | null }
+  minutaggio?: { gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean; cessione: boolean; richiesto: GradinoMinutaggio | null; minutiPct: number | null }
   minuti: number
   gol: number
   assist: number
@@ -336,8 +336,8 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       const { data: righeGradini } = league.tattiche_attive
         ? await supabase.rpc('gradini_squadra', { p_team_id: teamId })
         : { data: null }
-      const gradini = new Map(((righeGradini ?? []) as { player_instance_id: number; gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean | null; cessione: boolean; richiesto: GradinoMinutaggio | null }[])
-        .map((g) => [g.player_instance_id, { gradino: g.gradino, trattato: g.trattato, richiamo: Boolean(g.richiamo), cessione: g.cessione, richiesto: g.richiesto }]))
+      const gradini = new Map(((righeGradini ?? []) as { player_instance_id: number; gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean | null; cessione: boolean; richiesto: GradinoMinutaggio | null; minuti_pct: number | string | null }[])
+        .map((g) => [g.player_instance_id, { gradino: g.gradino, trattato: g.trattato, richiamo: Boolean(g.richiamo), cessione: g.cessione, richiesto: g.richiesto, minutiPct: g.minuti_pct == null ? null : Number(g.minuti_pct) }]))
       setPlayers(loaded.map((p) => ({ ...p, fotoFirmata: fotoPerId.get(p.id), minutaggio: gradini.get(p.id) })))
       setStatRows((statsResult.data ?? []) as MatchPlayerStat[]); setRosterLoading(false)
   }, [league.id, league.tattiche_attive, teamId])
@@ -540,7 +540,11 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
 
   const statsPerGiocatore = useMemo(() => {
     const mappa = new Map<number, StatsStagione>()
+    // Solo la stagione corrente: sono «le statistiche di stagione», e la
+    // percentuale di minuti accanto ai minuti e' misurata sulla stessa stagione.
+    const partiteStagione = new Set(seasonData.matches.map((partita) => partita.id))
     for (const riga of statRows) {
+      if (partiteStagione.size > 0 && !partiteStagione.has(riga.match_id)) continue
       const corrente = mappa.get(riga.player_instance_id) ?? {
         presenze: 0, minuti: 0, gol: 0, assist: 0, porteInviolate: 0,
         tiri: 0, tiriPorta: 0, passaggiTentati: 0, passaggiRiusciti: 0, contrastiVinti: 0, dribbling: 0,
@@ -804,7 +808,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       >{player.deltaOverall > 0 ? '+' : '−'}{Math.abs(player.deltaOverall)}</i>}
                     </span>
                   </b>
-                  <dl><span>{player.minuti}<small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span><span>{(() => { const mv = statsPerGiocatore.get(player.id)?.mediaVoto; return mv == null ? '—' : <b className={`voto voto--${fasciaVoto(mv)}`}>{formatoVoto(mv)}</b> })()}<small>MV</small></span></dl>
+                  <dl><span className={player.minutaggio?.minutiPct != null ? `minuti-${statoMinuti(player.minutaggio.minutiPct, player.minutaggio.gradino)}` : undefined}><i className="min-valore">{statsPerGiocatore.get(player.id)?.minuti ?? 0}{player.minutaggio?.minutiPct != null && <em>({percentuale(player.minutaggio.minutiPct)})</em>}</i><small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span><span>{(() => { const mv = statsPerGiocatore.get(player.id)?.mediaVoto; return mv == null ? '—' : <b className={`voto voto--${fasciaVoto(mv)}`}>{formatoVoto(mv)}</b> })()}<small>MV</small></span></dl>
                 </button>)}</div>}
       </section>}
 
