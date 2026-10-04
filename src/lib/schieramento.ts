@@ -110,7 +110,44 @@ export function schieramentoInCampo(slots: string[]): PostoInCampo[] {
         : { index, slot, ancora: `${slot}-${i}`, x: 50, y: 50 })
     })
   }
+  ritoccaPerForma(slots, out)
   return out.sort((a, b) => a.index - b.index)
+}
+
+/**
+ * Due ritocchi legati alla FORMA, non al nome del modulo (cosi' valgono anche
+ * per uno schieramento personalizzato che ha la stessa forma). Richiesti dal
+ * committente il 4 ottobre 2026 guardando il 3-5-2:
+ *  - tre centrali senza terzini (3-5-2, 3-4-3): piu' larghi fra loro, e quello
+ *    di mezzo un poco piu' in basso dei due laterali;
+ *  - un mediano davanti alla difesa con la linea di centrocampo a quattro
+ *    (LM, due CM, RM): i due CM scendono ai lati del mediano.
+ */
+function ritoccaPerForma(slots: string[], posti: PostoInCampo[]) {
+  const n = (s: string) => slots.filter((x) => x === s).length
+  if (n('CB') === 3 && n('LB') + n('RB') + n('LWB') + n('RWB') === 0) {
+    const cb = posti.filter((p) => p.slot === 'CB').sort((a, b) => a.x - b.x)
+    if (cb.length === 3) {
+      ;[cb[0].x, cb[0].y] = [26, 33]
+      ;[cb[1].x, cb[1].y] = [50, 29]
+      ;[cb[2].x, cb[2].y] = [74, 33]
+    }
+  }
+  // Mediano: i due CM stanno ai suoi lati, appena sopra di lui, abbastanza
+  // larghi da non toccarlo, e gli esterni sopra di loro. Prima la linea a
+  // quattro restava alta e il solutore la allontanava dal mediano di
+  // un'intera card. Le quote sono gia' quelle finali: al solutore resta poco
+  // da spostare, e non ricade nel rimpicciolire le card.
+  if (n('CDM') === 1 && n('LM') === 1 && n('RM') === 1 && n('CM') === 2) {
+    const cm = posti.filter((p) => p.slot === 'CM').sort((a, b) => a.x - b.x)
+    const mediano = posti.find((p) => p.slot === 'CDM')!
+    mediano.y = 47
+    if (cm.length === 2) {
+      ;[cm[0].x, cm[0].y] = [26, 52]
+      ;[cm[1].x, cm[1].y] = [74, 52]
+    }
+    for (const p of posti) if (p.slot === 'LM' || p.slot === 'RM') p.y = 71
+  }
 }
 
 // ============================================================
