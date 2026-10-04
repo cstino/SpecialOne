@@ -57,6 +57,7 @@ type Asta = {
 type Anagrafica = {
   nome: string
   nomeCompleto: string
+  nomeEsteso?: string | null
   club: string
   ruolo: string
   posizioni: string[]
@@ -222,7 +223,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       ...asteRighe.map((a) => a.player_id),
     ])]
     const { data: anagrafica, error: erroreAnagrafica } = daCercare.length
-      ? await supabase.from('players').select('id, nome, club, nazionalita, posizioni, piede, altezza, overall, eta, foto_url').in('id', daCercare)
+      ? await supabase.from('players').select('id, nome, nome_completo, club, nazionalita, posizioni, piede, altezza, overall, eta, foto_url').in('id', daCercare)
       : { data: [], error: null }
     if (erroreAnagrafica) { setErrore(erroreAnagrafica.message); setCaricamento(false); return }
 
@@ -234,7 +235,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       }))
     const fotoPerId = new Map(fotoFirmate.filter((entry): entry is readonly [number, string] => Boolean(entry[1])))
     const perId = new Map((anagrafica ?? []).map((p) => [p.id, p as {
-      id: number; nome: string; club: string; nazionalita: string | null; posizioni: string[]
+      id: number; nome: string; nome_completo: string | null; club: string; nazionalita: string | null; posizioni: string[]
       piede: string | null; altezza: number | null
       overall: number; eta: number; foto_url: string | null
     }]))
@@ -271,6 +272,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       // rosa (free_agent_progression) non ha mai giocato e non si e' mai rotto.
       infortunatoFinoA: istanzeSvincolate.get(a.player_id)?.infortunato_fino_a ?? 0,
       nomeCompleto: perId.get(a.player_id)?.nome ?? '—',
+      nomeEsteso: perId.get(a.player_id)?.nome_completo ?? null,
       nazionalita: perId.get(a.player_id)?.nazionalita ?? null,
       piede: perId.get(a.player_id)?.piede ?? null,
       altezza: perId.get(a.player_id)?.altezza ?? null,
@@ -864,7 +866,7 @@ export function Mercato({ membership, onNavigate }: Props) {
     </div>}
     {scheda && <SchedaGiocatore
       giocatore={{
-        nome: scheda.nomeCompleto, club: scheda.club, nazionalita: scheda.nazionalita,
+        nome: scheda.nomeCompleto, nomeEsteso: scheda.nomeEsteso, club: scheda.club, nazionalita: scheda.nazionalita,
         posizioni: scheda.posizioni, overall: scheda.overall, eta: scheda.eta,
         piede: scheda.piede, altezza: scheda.altezza,
         infortunatoFinoA: scheda.infortunatoFinoA,

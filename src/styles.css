@@ -4652,3 +4652,6 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .nv-minuti small { color: rgba(255,255,255,.5); }
 .nv-minuti b { font: 700 1rem/1 "Oswald", "Arial Narrow", sans-serif; white-space: nowrap; }
 .nv-minuti em { font-style: normal; font-size: .82em; }
+
+/* Scheda giocatore: nome di battesimo piccolo sopra il cognome. */
+.scheda-broadcast .player-modal__nome-proprio { display: block; margin: 6px 0 -2px; color: rgba(255,255,255,.72); font: 500 .8rem/1.1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .14em; text-transform: uppercase; }

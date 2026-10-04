@@ -54,6 +54,7 @@ type Giocatore = {
   eta: number
   ingaggio: number
   nome: string
+  nomeEsteso?: string | null
   ruolo: string
   club?: string
   nazionalita?: string | null
@@ -177,7 +178,7 @@ export function Scambi({ membership, onNavigate }: Props) {
     const istanze = istanzeRes.data ?? []
     const daCercare = [...new Set(istanze.map((i) => i.player_id))]
     const { data: anagrafica, error: erroreAnagrafica } = daCercare.length
-      ? await supabase.from('players').select('id, nome, club, nazionalita, posizioni, piede, altezza, overall, eta, foto_url').in('id', daCercare)
+      ? await supabase.from('players').select('id, nome, nome_completo, club, nazionalita, posizioni, piede, altezza, overall, eta, foto_url').in('id', daCercare)
       : { data: [], error: null }
     if (erroreAnagrafica) { setErrore(erroreAnagrafica.message); setCaricamento(false); return }
 
@@ -202,6 +203,7 @@ export function Scambi({ membership, onNavigate }: Props) {
       id: i.id, player_id: i.player_id, team_id: i.team_id as number,
       overall: i.overall_corrente, eta: i.eta_corrente, ingaggio: i.ingaggio,
       nome: cognome(perId.get(i.player_id)?.nome ?? '—'),
+      nomeEsteso: (perId.get(i.player_id) as { nome_completo?: string | null } | undefined)?.nome_completo ?? null,
       ruolo: perId.get(i.player_id)?.posizioni?.[0] ?? '—',
       club: perId.get(i.player_id)?.club,
       nazionalita: perId.get(i.player_id)?.nazionalita,
@@ -693,7 +695,7 @@ export function Scambi({ membership, onNavigate }: Props) {
 
       {schedaAperta && <SchedaGiocatore
         giocatore={{
-          nome: schedaAperta.nome, club: schedaAperta.club, nazionalita: schedaAperta.nazionalita,
+          nome: schedaAperta.nome, nomeEsteso: schedaAperta.nomeEsteso, club: schedaAperta.club, nazionalita: schedaAperta.nazionalita,
           posizioni: schedaAperta.posizioni ?? [schedaAperta.ruolo], overall: schedaAperta.overall, eta: schedaAperta.eta,
           piede: schedaAperta.piede, altezza: schedaAperta.altezza, ingaggio: schedaAperta.ingaggio,
           condizione: schedaAperta.condizione, infortunatoFinoA: schedaAperta.infortunatoFinoA,

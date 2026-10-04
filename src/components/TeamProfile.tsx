@@ -56,6 +56,7 @@ type RosterPlayer = {
   mentalita: { bandiera: number; economia: number; vittorie: number }
   /** Minutaggio promesso (docs/decisioni-minutaggio.md): solo nelle leghe con le tattiche. */
   minutaggio?: { gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean; cessione: boolean; richiesto: GradinoMinutaggio | null; minutiPct: number | null }
+  nomeEsteso: string | null
   minuti: number
   gol: number
   assist: number
@@ -283,7 +284,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       const playerIds = instances.map((item) => item.player_id)
       const [{ data: catalog, error: catalogError }, attributiVeri] = await Promise.all([
         playerIds.length
-          ? supabase.from('players').select('id, nome, club, nazionalita, posizioni, piede, altezza, attributi, foto_url, mentalita_bandiera, mentalita_economia, mentalita_vittorie').in('id', playerIds)
+          ? supabase.from('players').select('id, nome, nome_completo, club, nazionalita, posizioni, piede, altezza, attributi, foto_url, mentalita_bandiera, mentalita_economia, mentalita_vittorie').in('id', playerIds)
           : Promise.resolve({ data: [], error: null }),
         attributiCorrenti(instances.map((item) => item.id)),
       ])
@@ -299,7 +300,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         const info = catalogById.get(instance.player_id)
         const total = totals.get(instance.id) ?? { minuti: 0, gol: 0, assist: 0 }
         return {
-          id: instance.id, nome: info?.nome ?? `Giocatore ${instance.id}`, club: info?.club ?? '—',
+          id: instance.id, nome: info?.nome ?? `Giocatore ${instance.id}`, nomeEsteso: info?.nome_completo ?? null, club: info?.club ?? '—',
           nazionalita: info?.nazionalita ?? null, posizioni: instance.posizioni_override ?? info?.posizioni ?? [],
           overall: instance.overall_corrente, eta: instance.eta_corrente, ingaggio: instance.ingaggio,
           // Quanto e' cresciuto o calato da inizio stagione. Il riferimento e'
@@ -940,6 +941,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         userId={membership.user_id}
         giocatore={{
           nome: schedaAperta.nome,
+          nomeEsteso: schedaAperta.nomeEsteso,
           nazionalita: schedaAperta.nazionalita,
           posizioni: schedaAperta.posizioni,
           overall: schedaAperta.overall,

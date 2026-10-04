@@ -7,6 +7,7 @@ import type { FaseSquadra } from '../lib/faseSquadra'
 import { fasciaVoto, formatoVoto } from '../lib/voti'
 import { idoneitaRuolo, PROFILI_RUOLI, RUOLI_SLOT, segnoIdoneita } from '../lib/tattica'
 import { RUOLO_LABEL } from '../lib/ruoliTattici'
+import { nomeSuDueRighe } from '../lib/nomi'
 import { GRADINI_MINUTAGGIO, nomeConSoglia, percentuale as percentualeMinuti, statoMinuti, type GradinoMinutaggio } from '../lib/minutaggio'
 
 export type StatsStagione = {
@@ -30,6 +31,8 @@ export type StatsStagione = {
 
 export type DatiScheda = {
   nome: string
+  /** Nome completo dal dataset (long_name), se c'e': si mostra piccolo sopra il cognome. */
+  nomeEsteso?: string | null
   club?: string | null
   nazionalita?: string | null
   posizioni: string[]
@@ -795,8 +798,9 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
             </div>
             <div>
               <p className="kicker">Scheda giocatore</p>
+              {nomeSuDueRighe(giocatore.nome, giocatore.nomeEsteso).nome && <span className="player-modal__nome-proprio">{nomeSuDueRighe(giocatore.nome, giocatore.nomeEsteso).nome}</span>}
               <div className="player-modal__nome-riga">
-                <h2 id="player-modal-title">{giocatore.nome}</h2>
+                <h2 id="player-modal-title">{nomeSuDueRighe(giocatore.nome, giocatore.nomeEsteso).cognome}</h2>
                 {giocatore.posizioni[0] && <span className={`role-pill role-pill--${rep.toLowerCase()}`}>{giocatore.posizioni[0]}</span>}
               </div>
               <p>{giocatore.nazionalita || '—'}</p>

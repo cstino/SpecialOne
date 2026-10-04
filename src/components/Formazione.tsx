@@ -60,7 +60,7 @@ const MODULO_DESCRIZIONI: Record<string, string> = {
 
 
 type PlayerStats = Record<string, number | null>
-type Player = { id: number; fc_id: number; nome: string; club: string; nazionalita: string | null; overall_corrente: number; eta_corrente: number; posizioni: string[]; piede: string | null; altezza: number | null; condizione: number; infortunato_fino_a: number; squalificato_fino_a: number; ritiro_annunciato: boolean; attributi: PlayerStats; foto_url: string | null }
+type Player = { id: number; fc_id: number; nome: string; nomeEsteso?: string | null; club: string; nazionalita: string | null; overall_corrente: number; eta_corrente: number; posizioni: string[]; piede: string | null; altezza: number | null; condizione: number; infortunato_fino_a: number; squalificato_fino_a: number; ritiro_annunciato: boolean; attributi: PlayerStats; foto_url: string | null }
 // Uno schema salvato con un nome (tabella moduli_personalizzati): posizioni,
 // ruoli, compiti e dove si attacca. Al massimo 3 per squadra, visibili solo a
 // chi li ha salvati.
@@ -373,12 +373,12 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       // Gli attributi veri (crescita + piano di sviluppo) arrivano a parte:
       // vedi lib/attributiGiocatore. Quelli del catalogo restano di riserva.
       const [{ data: catalog, error: playerError }, attributiVeri] = await Promise.all([
-        supabase.from('players').select('id, fc_id, nome, club, nazionalita, posizioni, piede, altezza, attributi, foto_url').in('id', roster.map((item) => item.player_id)),
+        supabase.from('players').select('id, fc_id, nome, nome_completo, club, nazionalita, posizioni, piede, altezza, attributi, foto_url').in('id', roster.map((item) => item.player_id)),
         attributiCorrenti(roster.map((item) => item.id)),
       ])
       if (playerError) { setError(playerError.message); setLoading(false); return }
       const catalogById = new Map((catalog ?? []).map((player) => [player.id, player]))
-      const loaded = roster.map((item) => ({ ...item, fc_id: catalogById.get(item.player_id)?.fc_id, nome: catalogById.get(item.player_id)?.nome ?? `Giocatore ${item.player_id}`, club: catalogById.get(item.player_id)?.club ?? '—', nazionalita: catalogById.get(item.player_id)?.nazionalita ?? null, posizioni: item.posizioni_override ?? catalogById.get(item.player_id)?.posizioni ?? [], piede: catalogById.get(item.player_id)?.piede ?? null, altezza: catalogById.get(item.player_id)?.altezza ?? null, attributi: attributiVeri.get(item.id) ?? catalogById.get(item.player_id)?.attributi ?? {}, foto_url: catalogById.get(item.player_id)?.foto_url ?? null })) as Player[]
+      const loaded = roster.map((item) => ({ ...item, fc_id: catalogById.get(item.player_id)?.fc_id, nome: catalogById.get(item.player_id)?.nome ?? `Giocatore ${item.player_id}`, nomeEsteso: (catalogById.get(item.player_id)?.nome_completo as string | null | undefined) ?? null, club: catalogById.get(item.player_id)?.club ?? '—', nazionalita: catalogById.get(item.player_id)?.nazionalita ?? null, posizioni: item.posizioni_override ?? catalogById.get(item.player_id)?.posizioni ?? [], piede: catalogById.get(item.player_id)?.piede ?? null, altezza: catalogById.get(item.player_id)?.altezza ?? null, attributi: attributiVeri.get(item.id) ?? catalogById.get(item.player_id)?.attributi ?? {}, foto_url: catalogById.get(item.player_id)?.foto_url ?? null })) as Player[]
       if (!active) return
       setPlayers(loaded)
       const signed = await Promise.all(loaded.filter((player) => player.foto_url).map(async (player) => {
@@ -1173,6 +1173,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         tatticheAttive={Boolean(league.tattiche_attive)}
         giocatore={{
           nome: detailPlayer.nome,
+          nomeEsteso: detailPlayer.nomeEsteso,
           club: detailPlayer.club,
           nazionalita: detailPlayer.nazionalita,
           posizioni: detailPlayer.posizioni,
