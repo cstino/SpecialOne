@@ -1479,3 +1479,19 @@ personalizzati e schemi riserva. I ruoli degli esterni tornano vuoti, perche' i 
 terzino non valgono per un esterno di centrocampo. Fino ad allora, nella LegaBot, un
 3-5-2 con posizioni spostate a mano viene rifiutato al salvataggio; quello standard si
 salva.
+
+
+## 43. La familiarità la legge solo il proprietario — 4 ottobre 2026
+
+Le tabelle `formation_xp` e `indicazioni_xp` erano leggibili da tutti i membri della lega:
+da lì si capiva quali moduli e quali indicazioni un avversario stava imparando, **compreso
+lo schema riserva** che si prepara senza schierarlo (punto 41). Dato tattico, quindi
+riservato. Migrazione `20261004130000`: le policy di lettura passano da «membro della
+lega» a «proprietario della squadra». La Edge Function legge con la chiave di servizio e
+l'app legge solo la riga della propria squadra: nulla cambia per chi gioca. Provata in
+transazione annullata come utente LegaBot (3 squadre sue visibili, 0 altrui).
+
+Lancio della season 2 (4 ottobre 2026, ore 11): `tattiche_attive` acceso su tutte le leghe
+non archiviate; chiusi tutti i piani di sviluppo aperti **annullandoli** (non
+completandoli): nessuno riceve crescita dal piano a metà e tutti possono sceglierne uno
+nuovo. Erano 177, tutti a Serie F.
