@@ -4655,3 +4655,7 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 
 /* Scheda giocatore: nome di battesimo piccolo sopra il cognome. */
 .scheda-broadcast .player-modal__nome-proprio { display: block; margin: 6px 0 -2px; color: rgba(255,255,255,.72); font: 500 .8rem/1.1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+/* Eleggibili del draft: nome e foto aprono la scheda (preflight spento: reset del pulsante) */
+.scelte-apri-scheda { appearance: none; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.scelte-apri-scheda:hover strong, .scelte-apri-scheda:focus-visible strong { text-decoration: underline; text-underline-offset: 3px; }
+.scelte-apri-scheda:focus-visible { outline: 2px solid #c59be8; outline-offset: 3px; border-radius: 6px; }

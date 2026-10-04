@@ -11,6 +11,9 @@ import { firmaFoto } from './RosaElenco'
 import { macroRuolo } from '../lib/ruoli'
 import { GRADINI_MINUTAGGIO, gradinoRichiesto, nomeConSoglia, useSoglieMinutaggio } from '../lib/minutaggio'
 import { useSeasonData } from '../lib/useSeasonData'
+import { attributiInLega, type Attributi } from '../lib/attributiGiocatore'
+import { useFaseSquadra } from '../lib/faseSquadra'
+import { SchedaGiocatore } from './SchedaGiocatore'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
@@ -29,12 +32,18 @@ type FinestraScelte = {
   svelata_il: string; estrazione_il: string | null; risolta_il: string | null
 }
 type Preferenza = { scelta_id: number; ordine: number; player_id: number }
+type SchedaPool = {
+  g: GiocatorePool
+  anagrafica: { club: string; nazionalita: string | null; nome_completo: string | null; piede: string | null; altezza: number | null } | null
+  attributi: Attributi
+}
 
 export function Scelte({ membership, onNavigate }: Props) {
   const league = membership.league as League
   // Cosa chiede ogni eleggibile: chi lo sceglie firma con quel minutaggio (docs/decisioni-minutaggio.md).
   const soglieMinutaggio = useSoglieMinutaggio(league.id, Boolean(league.tattiche_attive))
   const dati = useSeasonData(membership)
+  const fase = useFaseSquadra(league.id, membership.id, dati.season?.id)
   const adesso = useOraCorrente()
   const [scelte, setScelte] = useState<SceltaDraft[]>([])
   const [finestre, setFinestre] = useState<FinestraScelte[]>([])
@@ -50,6 +59,7 @@ export function Scelte({ membership, onNavigate }: Props) {
   // dalle preferenze già salvate e poi editate liberamente finché non si
   // preme "Salva" (che sostituisce integralmente la lista sul server).
   const [bozze, setBozze] = useState<Record<number, number[]>>({})
+  const [schedaPool, setSchedaPool] = useState<SchedaPool | null>(null)
 
   const carica = async () => {
     setLoading(true)
@@ -245,6 +255,16 @@ export function Scelte({ membership, onNavigate }: Props) {
     })
   }, [mieScelte, preferenze])
 
+  // Scheda di un eleggibile: stesso pannello di mercato e rosa, senza azioni.
+  // Anagrafica e attributi (quelli veri in questa lega) arrivano solo ora.
+  async function apriSchedaPool(g: GiocatorePool) {
+    const [anagraficaRes, attributi] = await Promise.all([
+      supabase.from('players').select('club, nazionalita, nome_completo, piede, altezza').eq('id', g.id).maybeSingle(),
+      attributiInLega(league.id, g.id),
+    ])
+    setSchedaPool({ g, anagrafica: (anagraficaRes.data as SchedaPool['anagrafica']) ?? null, attributi })
+  }
+
   async function salvaPreferenze(gruppo: SceltaDraft[]) {
     const capo = gruppo[0]
     const lista = bozze[capo.id] ?? []
@@ -383,7 +403,7 @@ export function Scelte({ membership, onNavigate }: Props) {
                                     </span>
                                   </b>
                                   <div className="scelte-preferenze__dettagli">
-                                    <strong>{cognome(g.nome)}</strong>
+                                    <button type="button" className="scelte-apri-scheda" onClick={() => void apriSchedaPool(g)} aria-label={`Scheda di ${g.nome}`}><strong>{cognome(g.nome)}</strong></button>
                                     <div className="scelte-preferenze__ruoli">
                                       <span className={`role-pill role-pill--${macro.toLowerCase()}`}>{primario ?? '—'}</span>
                                       {secondari.length > 0 && <small>{secondari.join(' / ')}</small>}
@@ -408,6 +428,7 @@ export function Scelte({ membership, onNavigate }: Props) {
                         const [primario, ...secondari] = g.posizioni ?? []
                         const macro = macroRuolo(g.posizioni ?? [])
                         return <li className="flex items-center gap-3 py-3.5 pr-1.5" key={g.id}>
+                          <button type="button" className="scelte-apri-scheda flex min-w-0 flex-1 items-center gap-3" onClick={() => void apriSchedaPool(g)} aria-label={`Scheda di ${g.nome}`}>
                           <div className="h-14 w-12 flex-none">
                             {foto.get(g.id)
                               ? <img className="h-full w-full object-contain object-bottom" src={foto.get(g.id)} alt="" loading="lazy" />
@@ -435,6 +456,7 @@ export function Scelte({ membership, onNavigate }: Props) {
                             <span className="text-[.72rem] font-semibold text-white/45">{g.eta} anni</span>
                             <span className="text-[.74rem] font-extrabold text-purple-300">{(g.ingaggio_teorico / 1_000_000).toFixed(1)} M€</span>
                           </div>
+                          </button>
                           <button type="button" className="scelte-pool__add" aria-label={`Aggiungi ${cognome(g.nome)} alla lista`} onClick={() => aggiungi(g.id)}>+</button>
                         </li>
                       })}
@@ -524,5 +546,20 @@ export function Scelte({ membership, onNavigate }: Props) {
       </section>}
       </>}
     </div>
+    {schedaPool && <SchedaGiocatore
+      giocatore={{
+        nome: schedaPool.g.nome, nomeEsteso: schedaPool.anagrafica?.nome_completo ?? null,
+        club: schedaPool.anagrafica?.club ?? '—', nazionalita: schedaPool.anagrafica?.nazionalita ?? null,
+        posizioni: schedaPool.g.posizioni, overall: schedaPool.g.overall, eta: schedaPool.g.eta,
+        piede: schedaPool.anagrafica?.piede ?? null, altezza: schedaPool.anagrafica?.altezza ?? null,
+        infortunatoFinoA: 0,
+        minutaggioRichiesto: gradinoRichiesto(soglieMinutaggio, schedaPool.g.overall, schedaPool.g.eta, schedaPool.g.posizioni?.[0]),
+        attributi: schedaPool.attributi,
+      }}
+      fotoUrl={foto.get(schedaPool.g.id)}
+      fase={fase}
+      tatticheAttive={Boolean(league.tattiche_attive)}
+      onClose={() => setSchedaPool(null)}
+    />}
   </main>
 }
