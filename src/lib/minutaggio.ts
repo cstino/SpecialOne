@@ -8,11 +8,11 @@ import { supabase } from './supabase'
 
 export type GradinoMinutaggio = 'titolare' | 'turnover' | 'sporadico' | 'promessa'
 
-// quota = minuti attesi sul totale delle partite; soglia = minimo per dire che la
-// promessa e' rispettata (60% della quota), in percentuale (docs/decisioni-minutaggio.md).
+// quota = minuti attesi (usata dal morale); soglia = minimo per dire che la promessa
+// e' rispettata, in percentuale sulle partite giocabili (docs/decisioni-minutaggio.md §6).
 export const GRADINI_MINUTAGGIO: Record<GradinoMinutaggio, { nome: string; detto: string; quota: number; soglia: number }> = {
-  titolare: { nome: 'Titolare fisso', detto: 'Gioca la maggior parte delle partite.', quota: 0.75, soglia: 45 },
-  turnover: { nome: 'Turnover', detto: 'Entra quando i titolari sono stanchi.', quota: 0.40, soglia: 24 },
+  titolare: { nome: 'Titolare fisso', detto: 'Gioca la maggior parte delle partite.', quota: 0.75, soglia: 55 },
+  turnover: { nome: 'Turnover', detto: 'Entra quando i titolari sono stanchi.', quota: 0.40, soglia: 30 },
   sporadico: { nome: 'Sporadico', detto: 'Gioca poche partite.', quota: 0.05, soglia: 3 },
   promessa: { nome: 'Promessa futura', detto: 'Under 21: avrà spazio nei prossimi anni.', quota: 0.05, soglia: 3 },
 }
@@ -28,12 +28,13 @@ export function nomeConSoglia(gradino: GradinoMinutaggio): string {
  * richiami (private.controlla_minutaggio): verde se raggiunge la soglia minima,
  * rosso se e' molto sotto (meno del 70% della soglia e almeno 10 punti sotto
  * la quota: e' il caso in cui il giocatore si fa sentire), giallo in mezzo.
+ * Le soglie vanno tenute uguali a private.soglia_minutaggio.
  */
 export function statoMinuti(pct: number | null | undefined, gradino: GradinoMinutaggio): 'ok' | 'sotto' | 'molto' | null {
   if (pct == null) return null
-  const { quota } = GRADINI_MINUTAGGIO[gradino]
-  if (pct >= 0.6 * quota) return 'ok'
-  if (pct < 0.42 * quota && quota - pct >= 0.10) return 'molto'
+  const { quota, soglia } = GRADINI_MINUTAGGIO[gradino]
+  if (pct >= soglia / 100) return 'ok'
+  if (pct < 0.7 * soglia / 100 && quota - pct >= 0.10) return 'molto'
   return 'sotto'
 }
 

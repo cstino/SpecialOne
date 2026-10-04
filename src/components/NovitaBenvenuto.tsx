@@ -81,7 +81,7 @@ function GraficoMinuti() {
     { nome: 'Titolare fisso', min: 300, pct: 10, classe: 'molto' },
   ]
   return <div className="nv-minuti">
-    {righe.map((r, i) => <div key={i}><span>{r.nome} <small>(min. 45%)</small></span><b className={`minuti-${r.classe}`}>{r.min} <em>({r.pct}%)</em></b></div>)}
+    {righe.map((r, i) => <div key={i}><span>{r.nome} <small>(min. 55%)</small></span><b className={`minuti-${r.classe}`}>{r.min} <em>({r.pct}%)</em></b></div>)}
   </div>
 }
 
@@ -169,7 +169,7 @@ const PAGINE: Pagina[] = [
     punti: [
       <>Ogni giocatore ha un <strong>minutaggio promesso</strong>: titolare fisso, turnover, sporadico o promessa futura (sotto i 21 anni). Chi arriva dal mercato o dalle scelte firma con quello che <strong>chiede</strong>, uguale per tutte le squadre, e lo vedi prima di prenderlo.</>,
       <>Al <strong>rinnovo</strong> lo tratti insieme all'ingaggio: più minuti prometti, meno chiede. Negli scambi la promessa <strong>viaggia col giocatore</strong>.</>,
-      <>Accanto a ogni gradino c'è la <strong>soglia minima</strong> di minuti, ad esempio «Titolare fisso (min. 45%)».</>,
+      <>Accanto a ogni gradino c'è la <strong>soglia minima</strong> di minuti, ad esempio «Titolare fisso (min. 55%)».</>,
     ],
   },
   {

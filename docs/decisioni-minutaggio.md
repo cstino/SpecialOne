@@ -93,9 +93,8 @@ La prova sulla stagione 1 di Serie F, contando anche gli automatici, dava 148 ri
 gradino trattato, di una squadra umana, arrivato da almeno 5 giornate e non infortunato in
 quel momento:
 
-- **molto al di sotto** se gioca meno del 70% della soglia minima (cioè meno del 42% della
-  quota del gradino) e almeno 10 punti sotto la quota (es. titolare fisso con meno del 31,5%
-  dei minuti);
+- **molto al di sotto** (il rosso del §6) se gioca meno del 70% della soglia minima (es.
+  titolare fisso con meno del 38,5% dei minuti giocabili) e almeno 10 punti sotto la quota;
 - primo controllo «molto al di sotto»: **richiamo**. Il giocatore scrive al mister: «Mister, mi
   era stato promesso più spazio e al momento non lo sto avendo. Le chiedo di migliorare la
   mia situazione, altrimenti sarò costretto a chiedere la cessione.»
@@ -106,24 +105,37 @@ quel momento:
 La richiesta di cessione non si ritira nella stessa squadra; uno scambio la azzera. Non mette
 il giocatore in lista di vendita da sola: decidere se e come cederlo resta al mister.
 
-## 6. Soglia minima e colori
+## 6. Soglia minima, colori e assenti
 
-La **soglia minima** di un gradino è il 60% della sua quota: titolare fisso 45%, turnover 24%,
-sporadico 3%, promessa futura 3%. Si vede accanto al nome del gradino in scheda, nella
-trattativa e nei mercati («Titolare fisso (min. 45%)»).
+La **soglia minima** di un gradino è la quota di minuti sotto la quale la promessa non è più
+rispettata: titolare fisso **55%**, turnover **30%**, sporadico 3%, promessa futura 3%. Si
+vede accanto al nome del gradino in scheda, nella trattativa e nei mercati («Titolare fisso
+(min. 55%)»). La **quota** promessa (75%, 40%, 5%, 5%) resta quella che il morale si aspetta.
 
-I minuti in rosa, accanto alla **percentuale** (minuti ÷ 90 × partite di stagione regolare
-dall'arrivo; stessa misura del controllo), si colorano come i richiami:
+Il 4 ottobre la soglia del titolare era 45% (60% della quota): troppo bassa, il committente
+l'ha giudicata poco da titolare. Sui titolari della stagione 1 di Serie F la mediana dei minuti
+reali è 63%, e il 29% di loro stava sotto il 45%; i «titolari» per soglia di lega sono circa 13
+per squadra e in campo ne vanno 11.
+
+I minuti in rosa, accanto alla **percentuale**, si colorano come i richiami:
 
 | Colore | Quando |
 |---|---|
 | verde | raggiunge la soglia minima: la promessa è rispettata |
 | giallo | sotto la soglia ma non molto (anche uno sporadico che non gioca mai: non si lamenterebbe) |
-| rosso | molto sotto (§5): è il caso in cui il giocatore si fa sentire |
+| rosso | molto sotto: meno del 70% della soglia (38,5% per un titolare, 21% per un turnover) e almeno 10 punti sotto la quota. È il caso in cui il giocatore si fa sentire (§5) |
 
-Stessa regola in `src/lib/minutaggio.ts` (`statoMinuti`) e in `private.controlla_minutaggio`: se
-si cambia una, va cambiata l'altra. Le statistiche della rosa (minuti, gol, assist, voti) ora
-contano la sola stagione corrente: prima sommavano tutte le stagioni della lega.
+Stessa regola in `src/lib/minutaggio.ts` (`statoMinuti`, `GRADINI_MINUTAGGIO`) e in SQL
+(`private.soglia_minutaggio`, `private.controlla_minutaggio`): se si cambia una, va cambiata
+l'altra. Le statistiche della rosa (minuti, gol, assist, voti) contano la sola stagione corrente.
+
+**Gli assenti non contano.** La percentuale si calcola sulle sole partite in cui il giocatore
+poteva giocare: quelle in cui era infortunato o squalificato non entrano né nei minuti attesi né
+nel denominatore. Prima non esisteva uno storico: ora il trigger `matches_registra_assenze`
+(`private.assenze_partita`) registra chi era indisponibile a ogni partita, leggendo lo stato
+prima che la simulazione lo aggiorni (infortuni e cartellini si aggiornano dopo il salvataggio
+delle partite). Le partite giocate prima del 4 ottobre non hanno storico e contano come
+«disponibile». Con meno di 5 partite giocabili un giocatore non viene controllato.
 
 ## 7. Dove sta il codice
 
