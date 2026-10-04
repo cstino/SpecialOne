@@ -1448,3 +1448,34 @@ riserva, e una nota lo dice. Chi vuole solo prepararla torna sullo schema in par
 prima di salvare. La riserva ha una «×» per essere eliminata e la barra dei progressi
 dentro il suo riquadro. La card sta come primo figlio del contenitore di moduli e stile
 (la barra superiore e' una griglia ad aree con nome: fuori da quell'area spostava Salva).
+
+
+## 42. Il 3-5-2 ha esterni di centrocampo e un mediano — 4 ottobre 2026
+
+**Problema** (segnalato dal committente): sul campo il 3-5-2 e il 5-3-2 erano identici,
+perche' i due esterni del 3-5-2 erano quinti LWB/RWB, disegnati all'altezza dei terzini.
+
+**Decisione**: 3-5-2 = `GK CB CB CB LM CM CDM CM RM ST ST`. Esterni di centrocampo alti,
+un mediano davanti alla difesa e due centrocampisti ai suoi lati. Il 5-3-2 resta con LB
+e RB. Stesso ordine degli slot: i titolari restano allo stesso indice (slot 4 LWB -> LM,
+slot 6 il CM centrale -> CDM, slot 8 RWB -> RM, contando da zero).
+
+**Motore** (`engine/config.js`, MODULI): validato con `simulate.js` e `simulate-reale.js`.
+Nessuna metrica uscita dal target; le metriche gia' fuori lo erano anche prima (suite
+storica, punto E). Il profilo strutturale del 3-5-2 passa da ATT −1,10 / MID −0,33 / DEF
++1,32 a ATT −0,88 / MID +0,66 / DEF +0,33: piu' centrocampo, meno difesa, come chiesto.
+Nel torneo fra moduli resta equilibrato: 1,379 punti/partita, prima 1,383; lo scarto
+massimo fra i moduli e' 0,086, con un target fino a 0,22. Riga di produzione: 2,72
+gol, 13,4 tiri, 23,5% pareggi, 46,0% vittorie in casa.
+
+**App**: `src/lib/formazioni.ts`, `Formazione.tsx`, `src/lib/tattica.ts` (copia a mano
+della sola voce, senza rigenerare le tarature). Le posizioni sul campo arrivano da sole
+dalle ancore di `schieramento.ts`. LWB/RWB restano come spostamento possibile di un
+terzino nei moduli a quattro.
+
+**Database**: migrazione `20261004110000_352_esterni_e_mediano.sql`, **da applicare al
+lancio** (checklist dell'handoff). Converte familiarita', formazioni, moduli
+personalizzati e schemi riserva. I ruoli degli esterni tornano vuoti, perche' i ruoli da
+terzino non valgono per un esterno di centrocampo. Fino ad allora, nella LegaBot, un
+3-5-2 con posizioni spostate a mano viene rifiutato al salvataggio; quello standard si
+salva.

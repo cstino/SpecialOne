@@ -32,6 +32,10 @@ Da fare **in quest'ordine**, chiedendo prima al committente:
 2. Distribuire `simula-giornata` dal ramo, togliere `simula-giornata-s2` da
    `supabase/config.toml`, dal database delle funzioni (`supabase functions
    delete simula-giornata-s2`) e il ramo `LEGA_PROVA_SEASON_2` in `Admin.tsx`.
+   **Subito dopo** applicare `20261004110000_352_esterni_e_mediano.sql` (nuovo
+   3-5-2, registro punto 42): il motore distribuito e l'app del ramo hanno gia'
+   il 3-5-2 nuovo, il database e main ancora il vecchio. Provata il 4 ottobre
+   in una transazione annullata.
 3. Accendere le tattiche sulle altre leghe: `update public.leagues set
    tattiche_attive = true where stato <> 'archiviata'` (o lega per lega).
 4. **Chiudere i piani di sviluppo rimasti aperti** (vedi registro, punto 40):
