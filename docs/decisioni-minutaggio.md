@@ -60,8 +60,10 @@ di più; un veterano che cala abbassa le pretese.
 - **Svincolo**: la promessa si azzera.
 - **Rinnovo**: il giocatore apre chiedendo il suo gradino, insieme all'ingaggio. Puoi
   promettergli di più (ogni gradino in più toglie l'8% alla richiesta) o un gradino in meno
-  (+12%); due gradini in meno li rifiuta. Rifiuta comunque «Sporadico» se è almeno 3 punti
-  sopra la media della rosa e «Turnover» se è almeno 6 sopra. «Promessa futura» si offre solo
+  (+12%); due gradini in meno li rifiuta. Il confronto con la rosa conta solo per un gradino **sotto** quello che chiede: rifiuta «Sporadico»
+  se è almeno 3 punti sopra la media della rosa e «Turnover» se è almeno 6 sopra. Il gradino che
+  chiede lo accetta sempre (un utente aveva segnalato un giocatore che chiedeva «sporadico» e poi
+  lo rifiutava, 4 ottobre). «Promessa futura» si offre solo
   sotto i 21 anni (la promessa sta al livello dello sporadico).
 
 ## 3b. Chi è già in squadra al lancio

@@ -60,6 +60,9 @@ export type DatiScheda = {
 
 
 /** Proposta di rinnovo a stagione in corso, come la restituisce la RPC. */
+// «lo spazio di un titolare fisso / un turnover / uno sporadico / una promessa futura»
+const ARTICOLO_GRADINO: Record<GradinoMinutaggio, string> = { titolare: 'un', turnover: 'un', sporadico: 'uno', promessa: 'una' }
+
 export type PropostaRinnovo = {
   richiesta: number
   durata: number
@@ -703,7 +706,7 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
       {proposta && esito?.esito !== 'accettato' && <>
         <blockquote className="rinnovo-lettera">
           <p>Buongiorno mister{rinnovo?.nomeAllenatore ? ` ${rinnovo.nomeAllenatore}` : ''},</p>
-          <p>questa è la mia proposta per il mio nuovo ingaggio{proposta.gradino_richiesto ? <>, e vorrei avere lo spazio di un <strong>{nomeConSoglia(proposta.gradino_richiesto).toLowerCase()}</strong></> : null}.</p>
+          <p>questa è la mia proposta per il mio nuovo ingaggio{proposta.gradino_richiesto ? <>, e vorrei avere lo spazio di {ARTICOLO_GRADINO[proposta.gradino_richiesto]} <strong>{nomeConSoglia(proposta.gradino_richiesto).toLowerCase()}</strong></> : null}.</p>
           <p className="rinnovo-lettera__firma">— {giocatore.nome}, {giocatore.eta} anni</p>
         </blockquote>
         <div className="rinnovo-cifre">
