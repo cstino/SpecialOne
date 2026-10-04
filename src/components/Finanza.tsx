@@ -114,7 +114,7 @@ export function Finanza({ membership, onNavigate }: Props) {
       <PopupSpiegazione userId={membership.user_id} hintKey="finanza-v2" titolo="Come funziona la Finanza">
         <p>Il tetto ingaggi è uguale per tutte le squadre della lega e <strong>non cambia mai</strong> fra le stagioni. Non è cassa da spendere: è spazio salariale, che uno stipendio occupa finché il contratto è attivo.</p>
         <p>Ogni contratto dura <strong>una sola stagione</strong>. I rinnovi si fanno dalla scheda del giocatore, in stagione e per tutta l'off-season: chi non viene rinnovato entro la fine dell'off-season lascia la squadra ed entra tra gli svincolati.</p>
-        <p>Svincolare un giocatore libera il posto in rosa ma <strong>non lo stipendio</strong>: l'ingaggio resta sul tuo tetto finché il contratto non scade o finché un'altra squadra non lo prende. Lo trovi alla voce "Svincolati ancora a tuo carico".</p>
+        <p>Svincolare un giocatore libera il posto in rosa ma <strong>non lo stipendio</strong>: l'ingaggio resta sul tuo tetto finché il contratto non scade o finché un'altra squadra non lo prende. Lo trovi alla voce "Svincolati ancora a tuo carico". Vale dalla stagione nuova: in off-season si svincola come prima, liberando subito anche lo stipendio.</p>
       </PopupSpiegazione>
       <section className="season-title-row">
         <div>

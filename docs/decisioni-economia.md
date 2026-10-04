@@ -151,7 +151,12 @@ diventa impossibile per costruzione, non per controllo.
 
 Chi svincola libera subito il posto in rosa, ma l'ingaggio resta nel suo monte
 (`player_instances.peso_team_id`) finché il contratto non scade o finché un'altra
-squadra non prende il giocatore: in quel momento il peso sparisce. Il tetto si
+squadra non prende il giocatore: in quel momento il peso sparisce. **Vale solo da
+stagione avviata** (aggiornamento del 4 ottobre 2026, migrazione
+`20261004190000_peso_svincolo_solo_in_stagione.sql`): in off-season
+(`fase_carriera = 'offseason'`) si svincola come prima, senza peso; dalla chiusura
+dell'off-season, con la stagione nuova, la regola entra in vigore. Chi era stato
+svincolato in off-season dopo il 4 mattina è stato alleggerito. Il tetto si
 calcola stagione per stagione, quindi un contratto in scadenza a fine stagione X
 non pesa sulla X+1. Non pesa chi va via a fine off-season perché non rinnovato
 (contratto già scaduto) né chi aveva annunciato il ritiro. Non retroattiva.

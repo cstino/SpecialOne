@@ -199,7 +199,7 @@ const PAGINE: Pagina[] = [
     titolo: 'Svincolare ora costa.',
     punti: [
       <>Ogni sera esce <strong>un solo giocatore per ruolo</strong>, più tutti quelli svincolati dalle squadre: restano in vetrina finché qualcuno non li prende.</>,
-      <>Se svincoli un giocatore liberi il posto in rosa, ma <strong>il suo ingaggio resta sul tuo tetto</strong> finché il contratto non scade o un'altra squadra non lo prende. In Finanza vedi quanto paghi ancora.</>,
+      <>Se svincoli un giocatore liberi il posto in rosa, ma <strong>il suo ingaggio resta sul tuo tetto</strong> finché il contratto non scade o un'altra squadra non lo prende. Vale dalla stagione nuova: in off-season si svincola come prima.</>,
       <>Morale: per cambiare la rosa conviene <strong>scambiare</strong>.</>,
     ],
     grafico: <GraficoTetto />,

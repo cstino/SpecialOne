@@ -968,7 +968,9 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           etichetta: 'Svincola giocatore',
           descrizione: schedaAperta.ritiroAnnunciato
             ? `${schedaAperta.nome} ha già annunciato il ritiro: lo svincolo è definitivo, non tornerà disponibile per nessuna squadra. Non riceverai alcun rimborso e le formazioni future che lo contengono dovranno essere salvate di nuovo.`
-            : `${schedaAperta.nome} uscirà subito dalla rosa e libererà il posto, ma il suo ingaggio di ${money(schedaAperta.ingaggio)} resterà sul tuo tetto fino alla fine del contratto (stagione ${schedaAperta.contrattoScadenza}), a meno che un'altra squadra non lo prenda prima. Devi mantenere almeno ${ROSA_MINIMA} giocatori. Le formazioni future che lo contengono dovranno essere salvate di nuovo.`,
+            : league.fase_carriera === 'offseason'
+              ? `${schedaAperta.nome} uscirà subito dalla rosa e libererà il posto e il suo ingaggio di ${money(schedaAperta.ingaggio)}: in off-season si svincola senza conseguenze sul tetto (dalla stagione nuova l'ingaggio di chi svincoli resterà sul tuo tetto). Devi mantenere almeno ${ROSA_MINIMA} giocatori. Le formazioni future che lo contengono dovranno essere salvate di nuovo.`
+              : `${schedaAperta.nome} uscirà subito dalla rosa e libererà il posto, ma il suo ingaggio di ${money(schedaAperta.ingaggio)} resterà sul tuo tetto fino alla fine del contratto (stagione ${schedaAperta.contrattoScadenza}), a meno che un'altra squadra non lo prenda prima. Devi mantenere almeno ${ROSA_MINIMA} giocatori. Le formazioni future che lo contengono dovranno essere salvate di nuovo.`,
           inCorso: releasePending,
           errore: releaseError,
           onConferma: releasePlayer,
