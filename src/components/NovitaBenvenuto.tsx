@@ -136,7 +136,7 @@ const PAGINE: Pagina[] = [
     titolo: 'Due schemi, uno pronto in panchina.',
     punti: [
       <>La <strong>familiarità</strong> si riempie in 5 partite, e tornando a un modulo già usato ritrovi quello che avevi imparato.</>,
-      <>Hai <strong>due schemi</strong>. Quello "Attivo" va in partita; l'altro lo prepari, e il suo modulo si impara un po' a ogni partita <strong>anche senza schierarlo</strong>. Selezionalo e premi «Attiva» per metterlo in partita.</>,
+      <>Hai <strong>due schemi</strong>. Quello "Attivo" va in partita; l'altro lo prepari, e il suo modulo si impara un po' a ogni partita <strong>anche senza schierarlo</strong>. Selezionalo e salva per metterlo in partita.</>,
     ],
     grafico: <GraficoSchemi />,
   },

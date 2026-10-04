@@ -973,7 +973,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
             campo e le indicazioni. Si riempiono in 5 partite. Cambiare modulo non fa perdere quello già imparato:
             tornando al vecchio lo ritrovi.</p>
           <p>Hai <strong>due schemi</strong>. Quello segnato "Attivo" va in partita; l'altro lo prepari, e il suo modulo
-            si impara un po' a ogni partita anche senza schierarlo. Selezionalo e premi «Attiva» per metterlo in partita.
+            si impara un po' a ogni partita anche senza schierarlo. Selezionalo e salva per metterlo in partita.
             Se non schieri entro le <strong>23:00</strong>, il sistema mette una formazione automatica.</p>
         </PopupSpiegazione>
         : <PopupSpiegazione userId={membership.user_id} hintKey="formazione" titolo="Come funziona la Formazione">
@@ -999,11 +999,6 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           <div className="formation-toolbar">
             <div className="formation-save-row">
               <button className={`formation-save-button button button--primary${modificata ? '' : ' is-salvata'}`} type="button" disabled={saving || !modificata} onClick={() => void save()}>{saving ? 'Salvo…' : modificata ? 'Salva' : 'Salvata'}</button>
-              {tatticheAttive && haRiserva && <button className="formation-attiva-button" type="button"
-                disabled={saving || schemaSel === 'attivo'} onClick={() => void save()}
-                title={schemaSel === 'attivo' ? 'Questo schema è già quello attivo' : 'Salva e metti in partita questo schema'}>
-                {saving ? 'Attivo…' : schemaSel === 'attivo' ? 'Già attivo' : 'Attiva'}
-              </button>}
               {(saved || salvataIl) && <div className="formation-save-stato">
                 {saved && <span>Formazione salvata</span>}
                 {salvataIl && <small>Salvata il {formatSalvataIl(salvataIl)}</small>}

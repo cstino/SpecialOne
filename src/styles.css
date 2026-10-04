@@ -1113,10 +1113,6 @@ li.is-mia .dash-vetta__pos { color: var(--fz-luce); }
 .formazione-broadcast .formation-overall span, .formazione-broadcast .formation-ftsg span { font-size: .52rem; letter-spacing: .14em; }
 .formazione-broadcast .formation-toolbar { padding: 4px 4px 0; }
 .formazione-broadcast .formation-save-row { display: grid; justify-items: stretch; gap: 4px; justify-content: stretch; min-width: 0; }
-/* "Attiva": mette in partita lo schema selezionato senza dover modificare nulla. */
-.formazione-broadcast .formation-attiva-button { min-height: 38px; padding: 0 16px; border: 1px solid color-mix(in srgb, var(--fz-luce) 55%, transparent); border-radius: 8px; color: var(--fz-luce); background: color-mix(in srgb, var(--fz-1) 35%, rgba(12,10,22,.8)); font: 700 .86rem/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .16em; text-transform: uppercase; cursor: pointer; }
-.formazione-broadcast .formation-attiva-button:hover:not(:disabled) { color: #fff; border-color: var(--fz-luce); background: color-mix(in srgb, var(--fz-1) 60%, rgba(12,10,22,.8)); box-shadow: 0 0 14px color-mix(in srgb, var(--fz-2) 35%, transparent); }
-.formazione-broadcast .formation-attiva-button:disabled { cursor: default; color: color-mix(in srgb, var(--fz-luce) 38%, transparent); border-color: rgba(255,255,255,.1); background: rgba(255,255,255,.03); }
 .formazione-broadcast .formation-save-button { display: grid; place-items: center; width: 100%; min-width: 0; min-height: 46px; padding: 0 14px; text-align: center; }
 .formazione-broadcast .formation-save-stato { text-align: center; }
 .formazione-broadcast .formation-save-stato small { font-size: .6rem; }
