@@ -799,7 +799,7 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
                 <h2 id="player-modal-title">{giocatore.nome}</h2>
                 {giocatore.posizioni[0] && <span className={`role-pill role-pill--${rep.toLowerCase()}`}>{giocatore.posizioni[0]}</span>}
               </div>
-              <p>{[giocatore.club, giocatore.nazionalita].filter(Boolean).join(' · ') || '—'}</p>
+              <p>{giocatore.nazionalita || '—'}</p>
             </div>
             <strong className="player-modal__overall"><span>OVR</span>{giocatore.overall}</strong>
           </div>
