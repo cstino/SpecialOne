@@ -128,9 +128,9 @@ function ritoccaPerForma(slots: string[], posti: PostoInCampo[]) {
   if (n('CB') === 3 && n('LB') + n('RB') + n('LWB') + n('RWB') === 0) {
     const cb = posti.filter((p) => p.slot === 'CB').sort((a, b) => a.x - b.x)
     if (cb.length === 3) {
-      ;[cb[0].x, cb[0].y] = [26, 33]
-      ;[cb[1].x, cb[1].y] = [50, 29]
-      ;[cb[2].x, cb[2].y] = [74, 33]
+      ;[cb[0].x, cb[0].y] = [26, 31]
+      ;[cb[1].x, cb[1].y] = [50, 27]
+      ;[cb[2].x, cb[2].y] = [74, 31]
     }
   }
   // Mediano: i due CM stanno ai suoi lati, appena sopra di lui, abbastanza
@@ -141,12 +141,12 @@ function ritoccaPerForma(slots: string[], posti: PostoInCampo[]) {
   if (n('CDM') === 1 && n('LM') === 1 && n('RM') === 1 && n('CM') === 2) {
     const cm = posti.filter((p) => p.slot === 'CM').sort((a, b) => a.x - b.x)
     const mediano = posti.find((p) => p.slot === 'CDM')!
-    mediano.y = 47
+    mediano.y = 45
     if (cm.length === 2) {
-      ;[cm[0].x, cm[0].y] = [26, 52]
-      ;[cm[1].x, cm[1].y] = [74, 52]
+      ;[cm[0].x, cm[0].y] = [26, 49]
+      ;[cm[1].x, cm[1].y] = [74, 49]
     }
-    for (const p of posti) if (p.slot === 'LM' || p.slot === 'RM') p.y = 71
+    for (const p of posti) if (p.slot === 'LM' || p.slot === 'RM') p.y = 67
   }
 }
 
