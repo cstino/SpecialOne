@@ -85,6 +85,15 @@ quota attesa non viene più dall'overall (`private.quota_partite_attesa`) ma dal
 il gradino è stato **trattato** e non viene rispettato, il malcontento pesa il 50% in più: è
 una promessa tradita, non un'aspettativa delusa.
 
+**Da quando si conta (4 ottobre 2026).** I minuti, la percentuale, il morale e i richiami si
+misurano **dall'arrivo in squadra**, non dall'inizio della stagione: contano solo le partite
+della squadra da `giornata_acquisizione` in poi (draft di metà stagione, scambi, free agent). Il
+campo si azzera a ogni inizio stagione, quindi se è valorizzato riguarda sempre la stagione
+corrente. Il morale sommava invece i minuti di *tutte* le stagioni e li divideva per le partite
+della sola stagione corrente: chi arrivava in corso risultava sempre sotto, e dalla stagione 2
+tutti avrebbero avuto i minuti della 1 in più. Ora usa la stessa misura (`private.minuti_stagione`)
+e con meno di 3 partite giocabili la voce minuti non pesa.
+
 ## 5. I richiami e la richiesta di cessione
 
 Un controllo ogni 5 giornate di stagione regolare, dalla giornata 8 (8, 13, 18, 23, 28):
