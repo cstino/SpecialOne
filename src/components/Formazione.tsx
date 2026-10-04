@@ -333,6 +333,10 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   // e' diversa. null = mai salvata, quindi c'e' sempre qualcosa da salvare.
   const [firmaSalvata, setFirmaSalvata] = useState<string | null>(null)
   const fissaFirma = useRef(false)
+  // Conta i salvataggi riusciti: senza, se un salvataggio non cambiava la firma l'effetto
+  // non ripartiva e il PROSSIMO cambiamento (anche scegliere l'altro schema) diventava il
+  // nuovo riferimento, lasciando Salva spento.
+  const [salvataggi, setSalvataggi] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [giornata, setGiornata] = useState(1)
   const [esperienzaModulo, setEsperienzaModulo] = useState<Record<string, number>>({})
@@ -787,6 +791,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       }
     }
     setPanchina(cleanBench); setSaved(true); setSalvataIl(new Date().toISOString()); fissaFirma.current = true
+    setSalvataggi((n) => n + 1)
     setSaving(false)
   }
 
@@ -920,7 +925,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     if (loading || !fissaFirma.current) return
     fissaFirma.current = false
     setFirmaSalvata(firmaCorrente)
-  }, [loading, firmaCorrente])
+  }, [loading, firmaCorrente, salvataggi])
 
   if (loading) return <main className="loading-screen"><LoadingLogo /><p>Preparo la formazione…</p></main>
 
@@ -968,7 +973,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
             campo e le indicazioni. Si riempiono in 5 partite. Cambiare modulo non fa perdere quello già imparato:
             tornando al vecchio lo ritrovi.</p>
           <p>Hai <strong>due schemi</strong>. Quello segnato "Attivo" va in partita; l'altro lo prepari, e il suo modulo
-            si impara un po' a ogni partita anche senza schierarlo. Selezionalo e salva per farlo diventare attivo.
+            si impara un po' a ogni partita anche senza schierarlo. Selezionalo e premi «Attiva» per metterlo in partita.
             Se non schieri entro le <strong>23:00</strong>, il sistema mette una formazione automatica.</p>
         </PopupSpiegazione>
         : <PopupSpiegazione userId={membership.user_id} hintKey="formazione" titolo="Come funziona la Formazione">
@@ -994,6 +999,11 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           <div className="formation-toolbar">
             <div className="formation-save-row">
               <button className={`formation-save-button button button--primary${modificata ? '' : ' is-salvata'}`} type="button" disabled={saving || !modificata} onClick={() => void save()}>{saving ? 'Salvo…' : modificata ? 'Salva' : 'Salvata'}</button>
+              {tatticheAttive && haRiserva && <button className="formation-attiva-button" type="button"
+                disabled={saving || schemaSel === 'attivo'} onClick={() => void save()}
+                title={schemaSel === 'attivo' ? 'Questo schema è già quello attivo' : 'Salva e metti in partita questo schema'}>
+                {saving ? 'Attivo…' : schemaSel === 'attivo' ? 'Già attivo' : 'Attiva'}
+              </button>}
               {(saved || salvataIl) && <div className="formation-save-stato">
                 {saved && <span>Formazione salvata</span>}
                 {salvataIl && <small>Salvata il {formatSalvataIl(salvataIl)}</small>}

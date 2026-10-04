@@ -81,7 +81,7 @@ export function SchemiCard({
           <em>Lo impari anche senza schierarlo</em>
         </button>}
     </div>
-    {selezionato === 'riserva' && <p className="schemi-card__nota">Salvando, questo schema diventa quello attivo. Per solo prepararlo, torna sullo schema attivo prima di salvare.</p>}
+    {selezionato === 'riserva' && <p className="schemi-card__nota">Con «Attiva» (o salvando) questo schema va in partita. Per solo prepararlo, torna sullo schema attivo prima di salvare.</p>}
   </section>
 }
 
