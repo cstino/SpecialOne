@@ -138,7 +138,7 @@ export function AlboDOro({ membership, onNavigate }: Props) {
         <div>
           <p className="kicker">{league.nome}</p>
           <h1>Albo d'oro.</h1>
-          <p>Le squadre che hanno scritto la storia della lega, stagione dopo stagione. Dalla stagione 2 il titolo si assegna al Title Playoff, non in classifica.</p>
+          <p>Le squadre che hanno scritto la storia della lega, stagione dopo stagione.</p>
         </div>
         <div className="honors-cup" aria-hidden="true"><span>★</span><small>{campioni.length}</small><b>titoli assegnati</b></div>
       </section>
