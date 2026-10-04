@@ -700,6 +700,7 @@ export function Scambi({ membership, onNavigate }: Props) {
         }}
         fotoUrl={schedaAperta.foto_firmata}
         fase={fase}
+        tatticheAttive={Boolean(league.tattiche_attive)}
         onClose={() => setSchedaApertaId(null)}
       />}
     </div>}

@@ -5,6 +5,8 @@ import { Progress } from './ui/progress'
 import { Icona } from './Icona'
 import type { FaseSquadra } from '../lib/faseSquadra'
 import { fasciaVoto, formatoVoto } from '../lib/voti'
+import { idoneitaRuolo, PROFILI_RUOLI, RUOLI_SLOT, segnoIdoneita } from '../lib/tattica'
+import { RUOLO_LABEL } from '../lib/ruoliTattici'
 
 export type StatsStagione = {
   presenze: number
@@ -295,6 +297,46 @@ function AnteprimaPiano({ crescita, attributi, soloGk, haPiano }: { crescita: Ar
 }
 
 // Radar delle 6 macro-categorie FIFA, stile card FIFA/Football Manager.
+// Per quali ruoli e' adatto: gli stessi segnalini delle magliette in
+// Formazione (segnoIdoneita), calcolati dalle abilita' e dall'overall, quindi
+// validi anche per chi non e' ancora in rosa (mercato, scambi, vetrina).
+// Deciso col committente il 4 ottobre 2026: chi compra deve poter capire se
+// il giocatore va bene per la sua tattica. I ruoli "base" (centrale, terzino,
+// mediano, esterno, punta) non hanno un profilo: sono l'assenza di indicazione.
+function RuoliAdatti({ posizioni, attributi, overall }: { posizioni: string[]; attributi: Record<string, number | null>; overall: number }) {
+  const gruppi: { posizioni: string[]; ruoli: string[] }[] = []
+  for (const posizione of posizioni) {
+    const ruoli = (RUOLI_SLOT[posizione] ?? []).filter((ruolo) => PROFILI_RUOLI[ruolo])
+    if (!ruoli.length) continue
+    const uguale = gruppi.find((g) => g.ruoli.join() === ruoli.join())
+    if (uguale) uguale.posizioni.push(posizione)
+    else gruppi.push({ posizioni: [posizione], ruoli })
+  }
+  if (!gruppi.length) return null
+  return <div className="player-ruoli">
+    <h3>Ruoli in campo</h3>
+    <p className="player-ruoli__nota">Quanto rende in ogni ruolo, come i segnalini della formazione.</p>
+    {gruppi.map((gruppo) => {
+      const voci = gruppo.ruoli
+        .map((ruolo) => ({ ruolo, valore: idoneitaRuolo(attributi, overall, ruolo) }))
+        .sort((a, b) => b.valore - a.valore)
+      return <div className="player-ruoli__gruppo" key={gruppo.posizioni.join()}>
+        {gruppi.length > 1 && <small className="player-ruoli__posizioni">{gruppo.posizioni.join(' · ')}</small>}
+        <ul>
+          {voci.map(({ ruolo, valore }) => {
+            const segno = segnoIdoneita(valore)
+            return <li key={ruolo}>
+              <span><strong>{RUOLO_LABEL[ruolo]?.nome ?? ruolo}</strong><small>{RUOLO_LABEL[ruolo]?.detto}</small></span>
+              <b className={`player-ruoli__segno ${segno ? `is-${segno.tono}` : 'is-medio'}`}>{segno?.segno ?? '='}</b>
+            </li>
+          })}
+        </ul>
+      </div>
+    })}
+    <p className="player-ruoli__legenda"><b className="is-piu">++</b><b className="is-piu">+</b> rende di più · <b className="is-medio">=</b> nella media · <b className="is-meno">−</b><b className="is-meno">−−</b> rende di meno</p>
+  </div>
+}
+
 function RadarAbilita({ attributi }: { attributi: Record<string, number | null> }) {
   const dati = MACRO_RADAR.map(([chiave, etichetta]) => ({ etichetta, valore: typeof attributi[chiave] === 'number' ? attributi[chiave] as number : 0 }))
   return <ResponsiveContainer width="100%" height={210}>
@@ -819,6 +861,9 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
                 </div>
               </>}
           </div>}
+
+          {tatticheAttive && rep !== 'GK' && Object.keys(giocatore.attributi).length > 0 &&
+            <RuoliAdatti posizioni={giocatore.posizioni} attributi={giocatore.attributi} overall={giocatore.overall} />}
 
           <div className="player-modal__stats">
             <h3>Abilità</h3>

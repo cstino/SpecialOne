@@ -7,6 +7,7 @@ import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { SchedaGiocatore } from './SchedaGiocatore'
 import { attributiInLega, type Attributi } from '../lib/attributiGiocatore'
 import { useSeasonData } from '../lib/useSeasonData'
+import { useFaseSquadra } from '../lib/faseSquadra'
 import { formatCountdown, oraServerAdesso, useOraCorrente } from '../lib/countdown'
 import type { League, Membership } from '../types'
 import { Crest } from './Crest'
@@ -125,6 +126,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   // Squadre e stemmi arrivano da qui: firmare le URL degli stemmi e' gia'
   // risolto, e rifarlo a mano avrebbe prodotto una seconda verita'.
   const dati = useSeasonData(membership)
+  const fase = useFaseSquadra(league.id, membership.id, dati.season?.id)
   const adesso = useOraCorrente()
   const [rose, setRose] = useState<Giocatore[]>([])
   const [aste, setAste] = useState<Asta[]>([])
@@ -863,6 +865,8 @@ export function Mercato({ membership, onNavigate }: Props) {
         attributi: attributiScheda,
       }}
       fotoUrl={scheda.foto_firmata}
+      fase={fase}
+      tatticheAttive={Boolean(league.tattiche_attive)}
       onClose={() => setSchedaApertaId(null)}
     />}
   </main>

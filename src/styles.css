@@ -863,7 +863,7 @@ input:disabled { opacity: 0.65; }
 .scheda-broadcast .player-modal__fitness-bar, .scheda-broadcast .player-modal__morale-bar, .scheda-broadcast .player-training-barra { height: 6px; border-radius: 0; background: rgba(255,255,255,.1); }
 .scheda-broadcast .player-modal__fitness-bar i, .scheda-broadcast .player-training-barra i { background: linear-gradient(90deg, var(--fz-2), var(--fz-luce)); box-shadow: 0 0 10px color-mix(in srgb, var(--fz-luce) 50%, transparent); }
 /* Titoli di sezione: linguetta inclinata come nelle altre pagine. */
-.scheda-broadcast .player-modal__stats h3, .scheda-broadcast .player-training-sezione h3 { display: block; width: max-content; margin: 18px 0 10px -2px; padding: 6px 16px 6px 12px; color: #fff; background: linear-gradient(90deg, var(--fz-1), var(--fz-2)); clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); box-shadow: inset 0 -2px 0 var(--fz-luce); font: 700 .85rem/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .13em; text-transform: uppercase; }
+.scheda-broadcast .player-modal__stats h3, .scheda-broadcast .player-training-sezione h3, .scheda-broadcast .player-ruoli h3 { display: block; width: max-content; margin: 18px 0 10px -2px; padding: 6px 16px 6px 12px; color: #fff; background: linear-gradient(90deg, var(--fz-1), var(--fz-2)); clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); box-shadow: inset 0 -2px 0 var(--fz-luce); font: 700 .85rem/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .13em; text-transform: uppercase; }
 .scheda-broadcast .player-training-sezione { margin-top: 6px; padding-top: 0; border-top: 0; }
 /* Titolo e bottone "Avvia allenamento" sulla stessa riga. */
 .scheda-broadcast .player-training-testa { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 18px 0 10px; }
@@ -4596,3 +4596,21 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .nv-segnalini__legenda b { display: grid; place-items: center; min-width: 22px; height: 18px; padding: 0 3px; border-radius: 4px; font: 700 .7rem/1 "Oswald", "Arial Narrow", sans-serif; }
 .nv-segnalini__legenda b.is-piu { color: #6dffc3; box-shadow: inset 0 0 0 1.5px #6dffc3; }
 .nv-segnalini__legenda b.is-meno { color: #ff8a6b; box-shadow: inset 0 0 0 1.5px #ff8a6b; }
+
+/* Ruoli in campo (scheda giocatore): per quali ruoli e' adatto, coi segnalini della formazione. */
+.player-ruoli { display: grid; gap: 8px; }
+.player-ruoli h3 { margin: 18px 0 0; }
+.player-ruoli__nota { margin: 0; color: rgba(255,255,255,.55); font-size: .74rem; }
+.player-ruoli__gruppo { display: grid; gap: 6px; }
+.player-ruoli__posizioni { color: color-mix(in srgb, var(--fz-luce, #6dffc3) 75%, #fff); font: 600 .64rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .18em; text-transform: uppercase; }
+.player-ruoli ul { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.player-ruoli li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; background: linear-gradient(90deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); }
+.player-ruoli li > span { display: grid; gap: 2px; min-width: 0; }
+.player-ruoli li strong { color: #fff; font: 600 .92rem/1.1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+.player-ruoli li small { color: rgba(255,255,255,.55); font-size: .68rem; line-height: 1.35; }
+.player-ruoli__segno, .player-ruoli__legenda b { display: inline-grid; place-items: center; min-width: 30px; height: 24px; padding: 0 5px; border-radius: 5px; font: 700 .85rem/1 "Oswald", "Arial Narrow", sans-serif; }
+.player-ruoli .is-piu { color: #6dffc3; box-shadow: inset 0 0 0 1.5px #6dffc3; }
+.player-ruoli .is-meno { color: #ff8a6b; box-shadow: inset 0 0 0 1.5px #ff8a6b; }
+.player-ruoli .is-medio { color: rgba(255,255,255,.45); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.18); }
+.player-ruoli__legenda { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 2px 0 0; color: rgba(255,255,255,.55); font-size: .66rem; }
+.player-ruoli__legenda b { min-width: 22px; height: 18px; font-size: .68rem; }
