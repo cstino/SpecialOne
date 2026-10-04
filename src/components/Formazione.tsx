@@ -434,7 +434,10 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       const { data: nextFixture, error: fixtureError } = await supabase.from('fixtures').select('giornata')
         .eq('league_id', league.id).in('stato', ['programmata', 'in_corso']).order('giornata').limit(1).maybeSingle()
       if (fixtureError) { setError(fixtureError.message); setLoading(false); return }
-      const targetGiornata = nextFixture?.giornata ?? league.giornate_totali
+      // In off-season non c'e' nessuna partita in programma: la formazione che si
+      // prepara e' quella della prima giornata della stagione nuova. Fuori
+      // dall'off-season, senza partite, resta l'ultima giornata (stagione finita).
+      const targetGiornata = nextFixture?.giornata ?? (league.fase_carriera === 'offseason' ? 1 : league.giornate_totali)
       if (active) setGiornata(targetGiornata)
       const { data: lineup, error: lineupError } = await supabase.from('lineups')
         .select('modulo, stile_gioco, titolari, panchina, tribuna, salvata_il, disposizione, ruoli, compiti, focus_corsia, linea_difensiva, ampiezza, ruolo_portiere')

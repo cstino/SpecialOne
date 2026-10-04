@@ -80,6 +80,7 @@ const seasonItems: readonly NavEntry[] = [
 
 const offseasonItems: readonly NavEntry[] = [
   { view: 'offseason', label: 'Off-season' },
+  { view: 'squad', label: 'Rosa' },
   { view: 'team', label: 'Squadra' },
   { view: 'finanza', label: 'Finanza' },
   { view: 'risorse', label: 'Risorse' },
