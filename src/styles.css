@@ -4645,3 +4645,10 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .minuti-sotto { color: #ffd84d !important; }
 .minuti-molto { color: #ff8a80 !important; }
 .rinnovo-gradino strong em { font-style: normal; font-weight: 600; font-size: .85em; opacity: .75; letter-spacing: 0; }
+
+/* Popup novita': minuti in rosa e richiamo. */
+.nv-minuti { display: grid; gap: 6px; }
+.nv-minuti > div { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,.04); font-size: .8rem; }
+.nv-minuti small { color: rgba(255,255,255,.5); }
+.nv-minuti b { font: 700 1rem/1 "Oswald", "Arial Narrow", sans-serif; white-space: nowrap; }
+.nv-minuti em { font-style: normal; font-size: .82em; }

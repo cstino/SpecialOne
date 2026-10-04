@@ -11,6 +11,7 @@ import type { CrestChoice, Fixture, League, MatchPlayerStat, Membership, Team } 
 import { Crest } from './Crest'
 import { CrestPicker } from './CrestPicker'
 import { GameNav, type GameView } from './GameNav'
+import { PopupSpiegazione } from './PopupSpiegazione'
 import { SchedaGiocatore, type EsitoRinnovo, type PropostaRinnovo, type StatsStagione } from './SchedaGiocatore'
 import { percentuale, statoMinuti, type GradinoMinutaggio } from '../lib/minutaggio'
 import { FixtureScore, SeasonState, TeamLabel } from './SeasonUI'
@@ -672,6 +673,11 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     <GameNav league={league} active="team" onNavigate={onNavigate} />
     <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>{ownTeam ? 'La tua squadra' : 'Profilo avversario'}</span></header>
     <SeasonState loading={seasonData.loading} error={seasonData.error} onRetry={seasonData.reload} />
+    {ownTeam && league.tattiche_attive && <PopupSpiegazione userId={membership.user_id} hintKey="rosa-minutaggio" titolo="Il minutaggio promesso">
+      <p>Ogni giocatore ha un <strong>minutaggio promesso</strong>: titolare fisso, turnover, sporadico o promessa futura (solo sotto i 21 anni). Lo vedi nella sua scheda, con tra parentesi la <strong>percentuale minima</strong> di minuti per dire che la promessa è rispettata.</p>
+      <p>Nella rosa, accanto ai minuti, c'è la percentuale giocata: <strong>verde</strong> se rispetta la promessa, <strong>giallo</strong> se è un po' sotto, <strong>rosso</strong> se è molto sotto. Con il rosso il giocatore si fa sentire: prima ti scrive per chiedere più spazio, se non cambia chiede la cessione e non rinnova più il contratto.</p>
+      <p>La promessa si decide al rinnovo, insieme all'ingaggio: più minuti prometti, meno chiede. Quanto spazio chiede ognuno dipende dal suo livello rispetto agli altri giocatori della lega. Nella scheda trovi anche i <strong>ruoli in campo</strong> per cui è più adatto.</p>
+    </PopupSpiegazione>}
     {!seasonData.loading && !seasonData.error && team && <>
       {/* Sfondo a piena larghezza come in Overview (fuori da season-page
           apposta, cosi' tocca i bordi), ma qui e' il logo della squadra

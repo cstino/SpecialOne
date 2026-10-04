@@ -272,10 +272,11 @@ export function Scelte({ membership, onNavigate }: Props) {
       <span>Draft</span>
     </header>
     <div className="season-page season-page--narrow">
-      <PopupSpiegazione userId={membership.user_id} hintKey="scelte-draft-v2" titolo="Come funziona il mercato a scelte">
+      <PopupSpiegazione userId={membership.user_id} hintKey="scelte-draft-v3" titolo="Come funziona il mercato a scelte">
         <p>Ogni ticket è una scelta in un mercato ON-Season o OFF-Season futuro. Lo stemma è sempre quello della squadra che l'ha guadagnata con il proprio percorso nei playoff: non cambia se la scelta viene scambiata, cambia solo il proprietario.</p>
         <p>Quando la finestra si apre vedi la tua posizione e il pool degli eleggibili. Componi una lista di preferenze: se hai più scelte nella stessa finestra, <strong>la lista è una sola</strong> per tutte. All'estrazione le scelte vengono esercitate in ordine di posizione e ciascuna prende la prima preferenza ancora libera che entra sotto il tuo tetto ingaggi; con più scelte, la seconda scorre la stessa lista saltando chi hai già preso.</p>
         <p>Le preferenze si possono cambiare fino a <strong>un'ora prima dell'estrazione</strong>. Se nessuna è più disponibile o sostenibile la scelta resta vuota per quella finestra: non si perde, stavolta non assegna nessuno.</p>
+        <p>Accanto a ogni eleggibile vedi che <strong>minutaggio chiede</strong> (titolare fisso, turnover, sporadico o promessa futura, con la percentuale minima di minuti): chi lo sceglie firma con quella promessa e dovrà mantenerla, altrimenti prima ti richiama e poi chiede la cessione.</p>
       </PopupSpiegazione>
       <section className="season-title-row">
         <div>

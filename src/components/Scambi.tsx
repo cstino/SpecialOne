@@ -455,7 +455,7 @@ export function Scambi({ membership, onNavigate }: Props) {
     {errore && <div className="season-page"><p className="season-empty">{errore}</p></div>}
 
     {!caricamento && !errore && <div className={`season-page season-page--narrow scambi-page scambi-broadcast formazione-broadcast formazione-broadcast--${fase}`}>
-      <PopupSpiegazione userId={membership.user_id} hintKey="scambi-v2" titolo="Come funzionano gli Scambi">
+      <PopupSpiegazione userId={membership.user_id} hintKey="scambi-v3" titolo="Come funzionano gli Scambi">
         <p>Si scambiano giocatori e scelte di draft insieme, come in NBA: <strong>nessun conguaglio in denaro</strong>,
           si tratta alla pari sotto lo stesso tetto salariale per tutti.</p>
         <p>Dopo lo scambio entrambe le rose devono restare fra 21 e 30 giocatori e sotto il tetto ingaggi. Una
@@ -463,6 +463,7 @@ export function Scambi({ membership, onNavigate }: Props) {
           finestre consecutive (regola Stepien) — evita di svendere tutto il futuro in un colpo solo. Un
           giocatore appena scambiato è comunque scambiabile di nuovo subito: il vincolo delle 10 giornate prima
           di poter essere svincolato riguarda solo lo svincolo, non un nuovo scambio.</p>
+        <p>Il <strong>minutaggio promesso</strong> viaggia col giocatore, come l'ingaggio: chi prende un titolare fisso si prende anche la promessa di farlo giocare. I richiami e le richieste di cessione invece si azzerano, perché erano rivolti all'allenatore di prima.</p>
       </PopupSpiegazione>
       <section className="season-title-row">
         <div>

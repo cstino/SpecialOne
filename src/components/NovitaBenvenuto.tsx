@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase'
 // serve una scelta esplicita per un annuncio una tantum. La chiave e'
 // versionata: la prossima ondata di novita' ne usera' una nuova, e tornera'
 // visibile a tutti anche a chi ha gia' chiuso questa.
-export const HINT_NOVITA = 'novita-2026-10-season-2'
+export const HINT_NOVITA = 'novita-2026-10-season-2-b'
 
 export function useNovitaBenvenuto(userId: string | undefined) {
   const [pronto, setPronto] = useState(false)
@@ -73,6 +73,18 @@ function GraficoSegnalini() {
   </div>
 }
 
+// Infografica: i minuti in rosa con la percentuale e i tre colori.
+function GraficoMinuti() {
+  const righe: { nome: string; min: number; pct: number; classe: string }[] = [
+    { nome: 'Titolare fisso', min: 2070, pct: 66, classe: 'ok' },
+    { nome: 'Titolare fisso', min: 900, pct: 40, classe: 'sotto' },
+    { nome: 'Titolare fisso', min: 300, pct: 10, classe: 'molto' },
+  ]
+  return <div className="nv-minuti">
+    {righe.map((r, i) => <div key={i}><span>{r.nome} <small>(min. 45%)</small></span><b className={`minuti-${r.classe}`}>{r.min} <em>({r.pct}%)</em></b></div>)}
+  </div>
+}
+
 // Infografica: l'overall effettivo, pieno e ridotto (giallino).
 function GraficoOverall() {
   return <div className="nv-overall">
@@ -125,7 +137,7 @@ const PAGINE: Pagina[] = [
     occhiello: 'Novità · Ruoli e compiti',
     titolo: 'Ogni giocatore al suo posto.',
     punti: [
-      <>A ogni giocatore dai un <strong>ruolo</strong> (regista, finalizzatore…) e un <strong>compito</strong>: difesa, equilibrio o attacco.</>,
+      <>A ogni giocatore dai un <strong>ruolo</strong> e un <strong>compito</strong>. Nella scheda trovi i suoi <strong>ruoli in campo</strong> più adatti.</>,
       <>Il <strong>segnalino</strong> accanto alla foto dice quanto è adatto al ruolo che gli hai dato: con <strong>++</strong> e <strong>+</strong> rende di più, con <strong>−</strong> e <strong>−−</strong> rende di meno.</>,
     ],
     grafico: <GraficoSegnalini />,
@@ -149,6 +161,26 @@ const PAGINE: Pagina[] = [
       <>Il <strong>piano di sviluppo</strong> vale da subito e si può fare <strong>insieme al cambio ruolo</strong>. Anche i portieri hanno i loro piani.</>,
     ],
     grafico: <GraficoOverall />,
+  },
+  {
+    fase: 'draft', sfondo: '/sfondi-fase/draft_playoffs.png',
+    occhiello: 'Novità · Minutaggio',
+    titolo: 'Il minutaggio è una promessa.',
+    punti: [
+      <>Ogni giocatore ha un <strong>minutaggio promesso</strong>: titolare fisso, turnover, sporadico o promessa futura (sotto i 21 anni). Chi arriva dal mercato o dalle scelte firma con quello che <strong>chiede</strong>, uguale per tutte le squadre, e lo vedi prima di prenderlo.</>,
+      <>Al <strong>rinnovo</strong> lo tratti insieme all'ingaggio: più minuti prometti, meno chiede. Negli scambi la promessa <strong>viaggia col giocatore</strong>.</>,
+      <>Accanto a ogni gradino c'è la <strong>soglia minima</strong> di minuti, ad esempio «Titolare fisso (min. 45%)».</>,
+    ],
+  },
+  {
+    fase: 'draft', sfondo: '/sfondi-fase/draft_playoffs.png',
+    occhiello: 'Novità · Minutaggio',
+    titolo: 'Le promesse vanno mantenute.',
+    punti: [
+      <>In rosa, accanto ai minuti, c'è la <strong>percentuale</strong> giocata: verde se la promessa è rispettata, giallo se si è un po' sotto, <strong>rosso</strong> se si è molto sotto.</>,
+      <>Con il rosso il giocatore <strong>si fa sentire</strong>: prima ti scrive, poi chiede la cessione e non rinnova più. Si controlla ogni 5 giornate.</>,
+    ],
+    grafico: <GraficoMinuti />,
   },
   {
     fase: 'title', sfondo: '/sfondi-fase/title_playoffs.png',
