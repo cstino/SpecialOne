@@ -7,6 +7,7 @@ import type { FaseSquadra } from '../lib/faseSquadra'
 import { fasciaVoto, formatoVoto } from '../lib/voti'
 import { idoneitaRuolo, PROFILI_RUOLI, RUOLI_SLOT, segnoIdoneita } from '../lib/tattica'
 import { RUOLO_LABEL } from '../lib/ruoliTattici'
+import { GRADINI_MINUTAGGIO, type GradinoMinutaggio } from '../lib/minutaggio'
 
 export type StatsStagione = {
   presenze: number
@@ -51,19 +52,12 @@ export type DatiScheda = {
   /** Mentalita': i tre rami sommano sempre 100, dicono cosa viene prima. */
   mentalita?: { bandiera: number; economia: number; vittorie: number }
   /** Minutaggio promesso (docs/decisioni-minutaggio.md): gradino, se trattato al rinnovo, richiamo e cessione. */
-  minutaggio?: { gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean; cessione: boolean }
+  minutaggio?: { gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean; cessione: boolean; richiesto?: GradinoMinutaggio | null }
+  /** Per chi non e' in rosa (mercato): il minutaggio che chiede per firmare. */
+  minutaggioRichiesto?: GradinoMinutaggio | null
   attributi: Record<string, number | null>
 }
 
-export type GradinoMinutaggio = 'titolare' | 'turnover' | 'sporadico' | 'promessa'
-
-// Nomi e significato dei quattro gradini (docs/decisioni-minutaggio.md §1).
-export const GRADINI_MINUTAGGIO: Record<GradinoMinutaggio, { nome: string; detto: string }> = {
-  titolare: { nome: 'Titolare fisso', detto: 'Gioca la maggior parte delle partite.' },
-  turnover: { nome: 'Turnover', detto: 'Entra quando i titolari sono stanchi.' },
-  sporadico: { nome: 'Sporadico', detto: 'Gioca poche partite.' },
-  promessa: { nome: 'Promessa futura', detto: 'Under 21: avrà spazio nei prossimi anni.' },
-}
 
 /** Proposta di rinnovo a stagione in corso, come la restituisce la RPC. */
 export type PropostaRinnovo = {
@@ -77,6 +71,7 @@ export type PropostaRinnovo = {
   gia_rinnovato: boolean
   /** Minutaggio: assente nelle leghe senza tattiche. */
   gradino_attuale?: GradinoMinutaggio | null
+  gradino_richiesto?: GradinoMinutaggio | null
   gradino_trattato?: boolean
   gradini?: { chiave: GradinoMinutaggio; richiesta: number; rifiuto: string | null }[] | null
 }
@@ -656,7 +651,7 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
       setProposta(dati)
       // Si parte dal gradino che ha gia', se non lo rifiuta; altrimenti dal primo accettabile.
       const accettabili = (dati.gradini ?? []).filter((g) => !g.rifiuto)
-      const iniziale = accettabili.find((g) => g.chiave === dati.gradino_attuale) ?? accettabili[0] ?? null
+      const iniziale = accettabili.find((g) => g.chiave === dati.gradino_richiesto) ?? accettabili.find((g) => g.chiave === dati.gradino_attuale) ?? accettabili[0] ?? null
       setGradinoOfferto(iniziale?.chiave ?? null)
       setOffertaM(((iniziale?.richiesta ?? dati.richiesta) / 1_000_000).toFixed(1).replace('.', ','))
     } catch (errore) {
@@ -708,7 +703,7 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
       {proposta && esito?.esito !== 'accettato' && <>
         <blockquote className="rinnovo-lettera">
           <p>Buongiorno mister{rinnovo?.nomeAllenatore ? ` ${rinnovo.nomeAllenatore}` : ''},</p>
-          <p>questa è la mia proposta per il mio nuovo ingaggio.</p>
+          <p>questa è la mia proposta per il mio nuovo ingaggio{proposta.gradino_richiesto ? <>, e vorrei avere lo spazio di un <strong>{GRADINI_MINUTAGGIO[proposta.gradino_richiesto].nome.toLowerCase()}</strong></> : null}.</p>
           <p className="rinnovo-lettera__firma">— {giocatore.nome}, {giocatore.eta} anni</p>
         </blockquote>
         <div className="rinnovo-cifre">
@@ -737,7 +732,7 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
                 {!g.rifiuto && <b>{milioni(g.richiesta)}</b>}
               </button>)}
             </div>
-            <p className="rinnovo-nota">Più minuti prometti, meno chiede. Se poi non lo fai giocare come promesso, prima ti richiama, poi chiede la cessione e non rinnova più.</p>
+            <p className="rinnovo-nota">Più minuti prometti, meno chiede; un gradino sotto la sua richiesta costa di più, due non li accetta. Se poi non lo fai giocare come promesso, prima ti richiama, poi chiede la cessione e non rinnova più.</p>
           </div>}
           <div className="rinnovo-offerta">
             <p className="kicker">La tua offerta</p>
@@ -813,11 +808,19 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
             <div><dt>Ruoli secondari</dt><dd>{giocatore.posizioni.slice(1).join(' · ') || 'Nessuno'}</dd></div>
             <div><dt>Piede</dt><dd>{giocatore.piede ?? '—'}</dd></div>
             <div><dt>Altezza</dt><dd>{giocatore.altezza ? `${giocatore.altezza} cm` : '—'}</dd></div>
+            {!giocatore.minutaggio && giocatore.minutaggioRichiesto && <div className="fatto-minutaggio">
+              <dt>Chiede</dt>
+              <dd>
+                {GRADINI_MINUTAGGIO[giocatore.minutaggioRichiesto].nome}
+                <small>Chi lo prende firma con questa promessa</small>
+              </dd>
+            </div>}
             {giocatore.minutaggio && <div className="fatto-minutaggio">
               <dt>Minutaggio</dt>
               <dd>
                 {GRADINI_MINUTAGGIO[giocatore.minutaggio.gradino].nome}
-                <small>{giocatore.minutaggio.trattato ? 'Promesso al rinnovo' : 'Dalla gerarchia della rosa · si tratta al rinnovo'}</small>
+                <small>{giocatore.minutaggio.trattato ? 'Promesso nel contratto' : 'Dalla gerarchia della rosa · si tratta al rinnovo'}</small>
+                {giocatore.minutaggio.richiesto && giocatore.minutaggio.richiesto !== giocatore.minutaggio.gradino && <small>Al rinnovo chiederà: {GRADINI_MINUTAGGIO[giocatore.minutaggio.richiesto].nome.toLowerCase()}</small>}
               </dd>
             </div>}
             {typeof giocatore.ingaggio === 'number' && <div className="fatto-ingaggio">

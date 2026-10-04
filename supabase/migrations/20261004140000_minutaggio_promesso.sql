@@ -112,9 +112,86 @@ as $$
   where pi.id = p_instance_id;
 $$;
 
--- Un gradino puo' non essere alla sua altezza: null = accettabile, altrimenti
--- il motivo del rifiuto (docs/decisioni-minutaggio.md §2).
-create or replace function private.gradino_rifiutato(p_gradino text, p_eta smallint, p_overall smallint, p_media_rosa numeric)
+-- Cosa CHIEDE un giocatore (docs/decisioni-minutaggio.md §2): uguale per
+-- tutte le squadre, quindi misurato sulla lega e non sulla rosa. Per ogni
+-- reparto si mettono in fila, per overall, i giocatori in rosa nella lega: i
+-- primi (squadre x titolari del reparto) fanno da metro del titolare, i
+-- successivi (squadre x turnover) del turnover. Un solo portiere titolare per
+-- squadra e nessun turnover fra i pali.
+create or replace function private.soglie_minutaggio(p_league_id bigint)
+returns table(reparto text, soglia_titolare smallint, soglia_turnover smallint)
+language sql
+stable
+set search_path = ''
+as $$
+  with n as (
+    select greatest(1, count(*))::integer as squadre
+    from public.teams where league_id = p_league_id and attiva
+  ), posti(reparto, titolari, turnover) as (
+    values ('GK', 1, 0), ('DEF', 4, 2), ('MID', 4, 2), ('ATT', 2, 2)
+  ), fila as (
+    select private.reparto_minutaggio((coalesce(pi.posizioni_override, p.posizioni))[1]) as reparto,
+           pi.overall_corrente,
+           row_number() over (partition by private.reparto_minutaggio((coalesce(pi.posizioni_override, p.posizioni))[1])
+                              order by pi.overall_corrente desc) as posto
+    from public.player_instances pi
+    join public.players p on p.id = pi.player_id
+    join public.teams t on t.id = pi.team_id and t.attiva
+    where pi.league_id = p_league_id and not pi.ritirato
+  )
+  select posti.reparto,
+         coalesce((select f.overall_corrente from fila f where f.reparto = posti.reparto and f.posto = n.squadre * posti.titolari),
+                  (select min(f.overall_corrente) from fila f where f.reparto = posti.reparto), 0)::smallint,
+         coalesce((select f.overall_corrente from fila f where f.reparto = posti.reparto and f.posto = n.squadre * (posti.titolari + posti.turnover)),
+                  (select min(f.overall_corrente) from fila f where f.reparto = posti.reparto), 0)::smallint
+  from posti, n;
+$$;
+
+create or replace function private.gradino_richiesto(p_league_id bigint, p_overall smallint, p_eta smallint, p_posizione text)
+returns text
+language sql
+stable
+set search_path = ''
+as $$
+  select case
+    when p_overall >= s.soglia_titolare then 'titolare'
+    when p_eta < 21 then 'promessa'
+    when s.reparto <> 'GK' and p_overall >= s.soglia_turnover then 'turnover'
+    else 'sporadico'
+  end
+  from private.soglie_minutaggio(p_league_id) s
+  where s.reparto = private.reparto_minutaggio(p_posizione);
+$$;
+
+create or replace function private.gradino_richiesto_istanza(p_instance_id bigint)
+returns text
+language sql
+stable
+set search_path = ''
+as $$
+  select private.gradino_richiesto(pi.league_id, pi.overall_corrente, pi.eta_corrente, (coalesce(pi.posizioni_override, p.posizioni))[1])
+  from public.player_instances pi
+  join public.players p on p.id = pi.player_id
+  where pi.id = p_instance_id;
+$$;
+
+-- Livello di un gradino, per confrontare l'offerta con la richiesta. La
+-- promessa futura sta al livello dello sporadico: e' un'altra promessa, non
+-- meno minuti.
+create or replace function private.livello_gradino(p_gradino text)
+returns integer
+language sql
+immutable parallel safe
+set search_path = ''
+as $$
+  select case p_gradino when 'titolare' then 3 when 'turnover' then 2 else 1 end;
+$$;
+
+-- Un gradino puo' non essere accettabile: null = va bene, altrimenti il
+-- motivo del rifiuto (docs/decisioni-minutaggio.md §2). Due gradini sotto la
+-- sua richiesta li rifiuta; uno sotto si', ma non se e' fra i migliori della
+-- rosa.
+create or replace function private.gradino_rifiutato(p_gradino text, p_richiesto text, p_eta smallint, p_overall smallint, p_media_rosa numeric)
 returns text
 language sql
 immutable parallel safe
@@ -122,35 +199,95 @@ set search_path = ''
 as $$
   select case
     when p_gradino = 'promessa' and p_eta >= 21 then 'Ha già compiuto 21 anni: non è più una promessa.'
+    when private.livello_gradino(p_richiesto) - private.livello_gradino(p_gradino) >= 2 then 'Chiede molto più spazio: così non firma.'
     when p_gradino = 'sporadico' and p_overall - coalesce(p_media_rosa, p_overall) >= 3 then 'È tra i migliori della rosa: non accetta di giocare così poco.'
     when p_gradino = 'turnover' and p_overall - coalesce(p_media_rosa, p_overall) >= 6 then 'È uno dei leader della squadra: vuole il posto da titolare.'
     else null
   end;
 $$;
 
--- Promettere piu' minuti fa accettare meno soldi (docs/decisioni-minutaggio.md §2).
-create or replace function private.richiesta_per_gradino(p_richiesta bigint, p_gradino text)
+-- Prezzo del gradino rispetto alla richiesta: ogni gradino in piu' promesso
+-- toglie l'8%, uno in meno aggiunge il 12% (docs/decisioni-minutaggio.md §2).
+create or replace function private.richiesta_per_gradino(p_richiesta bigint, p_gradino text, p_richiesto text)
 returns bigint
 language sql
 immutable parallel safe
 set search_path = ''
 as $$
-  select greatest(500000::bigint, (round(p_richiesta * case p_gradino
-    when 'titolare' then 0.92
-    when 'sporadico' then 1.12
-    when 'promessa' then 0.90
+  select greatest(500000::bigint, (round(p_richiesta * case
+    when private.livello_gradino(p_gradino) > private.livello_gradino(p_richiesto)
+      then 1 - 0.08 * (private.livello_gradino(p_gradino) - private.livello_gradino(p_richiesto))
+    when private.livello_gradino(p_gradino) < private.livello_gradino(p_richiesto) then 1.12
     else 1.00
   end / 100000) * 100000)::bigint);
 $$;
 
 revoke all on function private.quota_minutaggio(text), private.reparto_minutaggio(text),
   private.gradino_automatico(bigint), private.gradino_effettivo(bigint),
-  private.gradino_rifiutato(text, smallint, smallint, numeric), private.richiesta_per_gradino(bigint, text)
+  private.soglie_minutaggio(bigint), private.gradino_richiesto(bigint, smallint, smallint, text),
+  private.gradino_richiesto_istanza(bigint), private.livello_gradino(text),
+  private.gradino_rifiutato(text, text, smallint, smallint, numeric), private.richiesta_per_gradino(bigint, text, text)
   from public, anon, authenticated;
+
+-- Le soglie per l'app: con overall, eta' e ruolo di un giocatore (anche uno
+-- svincolato o un eleggibile del mercato a scelte) l'app sa cosa chiede.
+create or replace function public.soglie_minutaggio(p_league_id bigint)
+returns table(reparto text, soglia_titolare smallint, soglia_turnover smallint)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select s.reparto, s.soglia_titolare, s.soglia_turnover
+  from private.soglie_minutaggio(p_league_id) s
+  where (select private.e_membro(p_league_id))
+    and exists (select 1 from public.leagues l where l.id = p_league_id and l.tattiche_attive);
+$$;
+
+revoke all on function public.soglie_minutaggio(bigint) from public, anon;
+grant execute on function public.soglie_minutaggio(bigint) to authenticated;
 
 -- ------------------------------------------------------------
 -- 3. Trasferimento: la promessa era della squadra di prima
 -- ------------------------------------------------------------
+-- Alla firma: la richiesta del giocatore, solo nelle leghe con le tattiche e a
+-- stagione avviata (al draft iniziale nessuno ha ancora promesso niente).
+create or replace function private.minutaggio_alla_firma(p_league_id bigint, p_overall smallint, p_eta smallint, p_player_id bigint, p_override text[])
+returns text
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select case when l.tattiche_attive and l.stato = 'stagione'
+    then private.gradino_richiesto(p_league_id, p_overall, p_eta,
+           (coalesce(p_override, (select p.posizioni from public.players p where p.id = p_player_id)))[1])
+  end
+  from public.leagues l where l.id = p_league_id;
+$$;
+
+revoke all on function private.minutaggio_alla_firma(bigint, smallint, smallint, bigint, text[]) from public, anon, authenticated;
+
+create or replace function private.minutaggio_al_nuovo_contratto()
+ returns trigger
+ language plpgsql
+ security definer
+ set search_path to ''
+as $function$
+begin
+  if new.team_id is not null and new.minutaggio_promesso is null then
+    new.minutaggio_promesso := private.minutaggio_alla_firma(new.league_id, new.overall_corrente, new.eta_corrente, new.player_id, new.posizioni_override);
+    new.arrivo_stagione := (select l.stagione_corrente from public.leagues l where l.id = new.league_id);
+  end if;
+  return new;
+end;
+$function$;
+
+drop trigger if exists player_instances_minutaggio_alla_firma on public.player_instances;
+create trigger player_instances_minutaggio_alla_firma
+  before insert on public.player_instances
+  for each row execute function private.minutaggio_al_nuovo_contratto();
+
 create or replace function private.reset_rinnovo_al_trasferimento()
  returns trigger
  language plpgsql
@@ -164,15 +301,25 @@ begin
     new.rinnovo_tentativi := 0;
   end if;
 
-  -- Minutaggio (docs/decisioni-minutaggio.md §3, §5): gradino, richiami e
-  -- richiesta di cessione restano alla squadra che li ha vissuti.
+  -- Minutaggio (docs/decisioni-minutaggio.md §3, §5). Richiami e richiesta
+  -- di cessione restano alla squadra che li ha vissuti. La promessa invece:
+  --  - in uno scambio viaggia col contratto, come l'ingaggio;
+  --  - allo svincolo si azzera;
+  --  - alla firma (da svincolato o dal mercato a scelte) e' quella che il
+  --    giocatore chiede, uguale per tutte le squadre.
   if old.team_id is distinct from new.team_id then
-    new.minutaggio_promesso := null;
     new.richiamo_stagione := null;
     new.richiamo_giornata := null;
     new.richiesta_cessione_stagione := null;
-    new.arrivo_stagione := case when new.team_id is null then null
-      else (select l.stagione_corrente from public.leagues l where l.id = new.league_id) end;
+    if new.team_id is null then
+      new.minutaggio_promesso := null;
+      new.arrivo_stagione := null;
+    else
+      new.arrivo_stagione := (select l.stagione_corrente from public.leagues l where l.id = new.league_id);
+      if old.team_id is null then
+        new.minutaggio_promesso := private.minutaggio_alla_firma(new.league_id, new.overall_corrente, new.eta_corrente, new.player_id, new.posizioni_override);
+      end if;
+    end if;
   end if;
 
   return new;
@@ -230,6 +377,7 @@ declare
   v_media numeric;
   v_gradini jsonb := '[]'::jsonb;
   v_g text;
+  v_richiesto text;
 begin
   if v_user_id is null then
     raise exception using errcode = '42501', message = 'Devi accedere prima di trattare un rinnovo.';
@@ -268,11 +416,12 @@ begin
   if v_league.tattiche_attive then
     select avg(x.overall_corrente) into v_media
     from public.player_instances x where x.team_id = v_inst.team_id and not x.ritirato;
+    v_richiesto := private.gradino_richiesto_istanza(v_inst.id);
     foreach v_g in array array['titolare', 'turnover', 'sporadico', 'promessa'] loop
       v_gradini := v_gradini || jsonb_build_object(
         'chiave', v_g,
-        'richiesta', private.richiesta_per_gradino(v_proposta.richiesta, v_g),
-        'rifiuto', private.gradino_rifiutato(v_g, v_inst.eta_corrente, v_inst.overall_corrente, v_media)
+        'richiesta', private.richiesta_per_gradino(v_proposta.richiesta, v_g, v_richiesto),
+        'rifiuto', private.gradino_rifiutato(v_g, v_richiesto, v_inst.eta_corrente, v_inst.overall_corrente, v_media)
       );
     end loop;
   end if;
@@ -297,6 +446,7 @@ begin
     ),
     -- Minutaggio (docs/decisioni-minutaggio.md): vuoto nelle leghe senza tattiche.
     'gradino_attuale', case when v_league.tattiche_attive then private.gradino_effettivo(v_inst.id) end,
+    'gradino_richiesto', v_richiesto,
     'gradino_trattato', v_inst.minutaggio_promesso is not null,
     'gradini', case when v_league.tattiche_attive then v_gradini end
   );
@@ -329,6 +479,7 @@ declare
   v_media numeric;
   v_rifiuto text;
   v_richiesta bigint;
+  v_richiesto text;
 begin
   if v_user_id is null then
     raise exception using errcode = '42501', message = 'Devi accedere prima di trattare un rinnovo.';
@@ -385,24 +536,25 @@ begin
   -- gradino non alla sua altezza lo rifiuta senza consumare un tentativo.
   v_richiesta := v_proposta.richiesta;
   if v_league.tattiche_attive then
+    v_richiesto := private.gradino_richiesto_istanza(v_inst.id);
     v_gradino := coalesce(p_minutaggio, private.gradino_effettivo(v_inst.id));
     if p_minutaggio is not null then
       select avg(x.overall_corrente) into v_media
       from public.player_instances x where x.team_id = v_inst.team_id and not x.ritirato;
-      v_rifiuto := private.gradino_rifiutato(p_minutaggio, v_inst.eta_corrente, v_inst.overall_corrente, v_media);
+      v_rifiuto := private.gradino_rifiutato(p_minutaggio, v_richiesto, v_inst.eta_corrente, v_inst.overall_corrente, v_media);
       if v_rifiuto is not null then
         return jsonb_build_object(
           'esito', 'gradino_rifiutato',
           'tentativi_usati', v_inst.rinnovo_tentativi,
           'tentativi_totali', 3,
-          'messaggio', case p_minutaggio
-            when 'promessa' then 'Mister, non sono più un ragazzino.'
+          'messaggio', case
+            when p_minutaggio = 'promessa' and v_inst.eta_corrente >= 21 then 'Mister, non sono più un ragazzino.'
             else 'Con tutto il rispetto, mister: non sono venuto qui per fare panchina.' end,
           'motivo', v_rifiuto
         );
       end if;
     end if;
-    v_richiesta := private.richiesta_per_gradino(v_proposta.richiesta, v_gradino);
+    v_richiesta := private.richiesta_per_gradino(v_proposta.richiesta, v_gradino, v_richiesto);
   end if;
 
   select coalesce(st.posizione, 1) into v_posizione
@@ -488,7 +640,7 @@ grant execute on function public.offri_rinnovo(bigint, bigint, smallint, text) t
 -- lega (come in FM lo status in rosa non e' un segreto) e cosi' la richiesta
 -- di cessione; il richiamo, che e' un messaggio al mister, solo il proprietario.
 create or replace function public.gradini_squadra(p_team_id bigint)
-returns table(player_instance_id bigint, gradino text, trattato boolean, richiamo boolean, cessione boolean)
+returns table(player_instance_id bigint, gradino text, trattato boolean, richiamo boolean, cessione boolean, richiesto text)
 language sql
 stable
 security definer
@@ -498,7 +650,8 @@ as $$
          private.gradino_effettivo(pi.id),
          pi.minutaggio_promesso is not null,
          t.user_id = (select auth.uid()) and pi.richiamo_stagione = l.stagione_corrente,
-         pi.richiesta_cessione_stagione is not null
+         pi.richiesta_cessione_stagione is not null,
+         private.gradino_richiesto_istanza(pi.id)
   from public.player_instances pi
   join public.teams t on t.id = pi.team_id
   join public.leagues l on l.id = pi.league_id

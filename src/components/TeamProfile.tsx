@@ -11,7 +11,8 @@ import type { CrestChoice, Fixture, League, MatchPlayerStat, Membership, Team } 
 import { Crest } from './Crest'
 import { CrestPicker } from './CrestPicker'
 import { GameNav, type GameView } from './GameNav'
-import { SchedaGiocatore, type EsitoRinnovo, type GradinoMinutaggio, type PropostaRinnovo, type StatsStagione } from './SchedaGiocatore'
+import { SchedaGiocatore, type EsitoRinnovo, type PropostaRinnovo, type StatsStagione } from './SchedaGiocatore'
+import type { GradinoMinutaggio } from '../lib/minutaggio'
 import { FixtureScore, SeasonState, TeamLabel } from './SeasonUI'
 import { UnderlineTabs } from './ui/underline-tabs'
 import { Icona } from './Icona'
@@ -53,7 +54,7 @@ type RosterPlayer = {
   sulMercato: boolean
   mentalita: { bandiera: number; economia: number; vittorie: number }
   /** Minutaggio promesso (docs/decisioni-minutaggio.md): solo nelle leghe con le tattiche. */
-  minutaggio?: { gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean; cessione: boolean }
+  minutaggio?: { gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean; cessione: boolean; richiesto: GradinoMinutaggio | null }
   minuti: number
   gol: number
   assist: number
@@ -335,8 +336,8 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       const { data: righeGradini } = league.tattiche_attive
         ? await supabase.rpc('gradini_squadra', { p_team_id: teamId })
         : { data: null }
-      const gradini = new Map(((righeGradini ?? []) as { player_instance_id: number; gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean | null; cessione: boolean }[])
-        .map((g) => [g.player_instance_id, { gradino: g.gradino, trattato: g.trattato, richiamo: Boolean(g.richiamo), cessione: g.cessione }]))
+      const gradini = new Map(((righeGradini ?? []) as { player_instance_id: number; gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean | null; cessione: boolean; richiesto: GradinoMinutaggio | null }[])
+        .map((g) => [g.player_instance_id, { gradino: g.gradino, trattato: g.trattato, richiamo: Boolean(g.richiamo), cessione: g.cessione, richiesto: g.richiesto }]))
       setPlayers(loaded.map((p) => ({ ...p, fotoFirmata: fotoPerId.get(p.id), minutaggio: gradini.get(p.id) })))
       setStatRows((statsResult.data ?? []) as MatchPlayerStat[]); setRosterLoading(false)
   }, [league.id, league.tattiche_attive, teamId])

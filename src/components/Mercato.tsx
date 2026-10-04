@@ -8,6 +8,7 @@ import { SchedaGiocatore } from './SchedaGiocatore'
 import { attributiInLega, type Attributi } from '../lib/attributiGiocatore'
 import { useSeasonData } from '../lib/useSeasonData'
 import { useFaseSquadra } from '../lib/faseSquadra'
+import { GRADINI_MINUTAGGIO, gradinoRichiesto, useSoglieMinutaggio } from '../lib/minutaggio'
 import { formatCountdown, oraServerAdesso, useOraCorrente } from '../lib/countdown'
 import type { League, Membership } from '../types'
 import { Crest } from './Crest'
@@ -127,6 +128,8 @@ export function Mercato({ membership, onNavigate }: Props) {
   // risolto, e rifarlo a mano avrebbe prodotto una seconda verita'.
   const dati = useSeasonData(membership)
   const fase = useFaseSquadra(league.id, membership.id, dati.season?.id)
+  // Cosa chiede ogni svincolato: chi lo prende firma con quel minutaggio (docs/decisioni-minutaggio.md).
+  const soglieMinutaggio = useSoglieMinutaggio(league.id, Boolean(league.tattiche_attive))
   const adesso = useOraCorrente()
   const [rose, setRose] = useState<Giocatore[]>([])
   const [aste, setAste] = useState<Asta[]>([])
@@ -546,6 +549,7 @@ export function Mercato({ membership, onNavigate }: Props) {
     const mia = a.stato === 'aperta' ? mieOfferte.get(a.id) : undefined
     const azioneInCorso = offertaInCorso?.id === a.id ? offertaInCorso.tipo : null
     const macro = macroRuolo(g?.posizioni ?? [])
+    const chiede = g ? gradinoRichiesto(soglieMinutaggio, g.overall, g.eta, g.posizioni?.[0]) : null
     return <article key={a.id} className={`free-agent-card ${compatta ? 'is-compact' : ''} ${a.stato !== 'aperta' ? 'is-closed' : ''}`}>
       <div className="free-agent-card__portrait">
         {g?.foto_firmata ? <img src={g.foto_firmata} alt="" loading="lazy" /> : <span aria-hidden="true">?</span>}
@@ -578,6 +582,7 @@ export function Mercato({ membership, onNavigate }: Props) {
             Infortunato · {g.infortunatoFinoA} {g.infortunatoFinoA === 1 ? 'giornata' : 'giornate'}
           </span>
         )}
+        {chiede && <span className={`free-agent-card__chiede is-${chiede}`} title={GRADINI_MINUTAGGIO[chiede].detto}>Chiede: {GRADINI_MINUTAGGIO[chiede].nome}</span>}
         <footer>
           <em>Ingaggio minimo {milioni(a.ingaggio_teorico)}</em>
           {a.origine === 'spin_offseason' && <i>Spin</i>}
@@ -862,6 +867,7 @@ export function Mercato({ membership, onNavigate }: Props) {
         posizioni: scheda.posizioni, overall: scheda.overall, eta: scheda.eta,
         piede: scheda.piede, altezza: scheda.altezza,
         infortunatoFinoA: scheda.infortunatoFinoA,
+        minutaggioRichiesto: gradinoRichiesto(soglieMinutaggio, scheda.overall, scheda.eta, scheda.posizioni?.[0]),
         attributi: attributiScheda,
       }}
       fotoUrl={scheda.foto_firmata}

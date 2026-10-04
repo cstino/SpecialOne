@@ -26,47 +26,51 @@ Serie F ha detto che con rose da 25-30 giocatori ne giocano 14-16: chi sta in pa
 pattuito non deve deprimersi. Al 5% non si lamentano mai davvero; i richiami restano per
 titolari fissi e turnover traditi.
 
-## 2. Il gradino si tratta al rinnovo
+## 2. Cosa chiede un giocatore
 
-Nella trattativa si scelgono **ingaggio e gradino**. Il gradino cambia la richiesta:
-promettere più minuti fa accettare meno soldi, come in FM.
+Ogni giocatore **chiede** un gradino, uguale per tutte le squadre (deciso il 4 ottobre 2026):
+si misura sul suo **reparto nella lega**, non sulla rosa di chi lo vuole. Per ogni reparto si
+mettono in fila per overall i giocatori in rosa nella lega:
 
-| Gradino | Richiesta |
-|---|---|
-| Titolare fisso | −8% |
-| Turnover | invariata |
-| Sporadico | +12% |
-| Promessa futura | −10% |
+| Reparto | Metro del titolare | Metro del turnover |
+|---|---|---|
+| Portieri | i primi (squadre × 1) | — (fra i pali non c'è turnover) |
+| Difensori | i primi (squadre × 4) | i successivi (squadre × 2) |
+| Centrocampisti | i primi (squadre × 4) | i successivi (squadre × 2) |
+| Attaccanti | i primi (squadre × 2) | i successivi (squadre × 2) |
 
-Un giocatore **rifiuta** un gradino che non è alla sua altezza, misurata sull'overall rispetto
-alla media della rosa: chi è almeno 3 punti sopra la media non accetta «Sporadico», chi è
-almeno 6 sopra non accetta neppure «Turnover». «Promessa futura» si può offrire solo sotto i
-21 anni: chi li ha compiuti passa a uno degli altri tre al primo rinnovo.
+Chi ha l'overall del titolare chiede «Titolare fisso», chi quello del turnover «Turnover»,
+gli altri «Sporadico»; un under 21 che non chiede di essere titolare chiede «Promessa
+futura». In Serie F il 4 ottobre: portieri titolari da 77, difensori e centrocampisti da
+75, attaccanti da 77. C. Mandas (76) chiede «Sporadico», Ederson (85) «Titolare fisso».
 
-## 3. Chi non ha ancora un gradino trattato
+La richiesta si ricalcola sempre dal livello attuale: un giovane che cresce, al rinnovo chiede
+di più; un veterano che cala abbassa le pretese.
 
-`player_instances.minutaggio_promesso` vuoto vuol dire **gradino automatico**: lo decide la
-posizione del giocatore nel suo reparto, per overall, dentro la propria rosa. Vale per i
-contratti in corso al lancio e per chi arriva dal mercato, dagli scambi o dal draft, finché
-non rinnova.
+## 3. Dove vale la richiesta
 
-| Reparto | Titolari fissi | Turnover | Gli altri |
-|---|---|---|---|
-| Portieri | il primo | — | sporadico |
-| Difensori | i primi 4 | i 2 dopo | sporadico |
-| Centrocampisti | i primi 4 | i 2 dopo | sporadico |
-| Attaccanti | i primi 2 | i 2 dopo | sporadico |
+- **Mercato svincolati e mercato a scelte**: ogni giocatore mostra «Chiede: …». Chi lo
+  prende **firma con quella promessa**, già trattata: valgono subito richiami e cessione. Il
+  gradino non cambia il prezzo dell'asta, è una condizione da accettare. Lo scrive il
+  database alla firma (`private.minutaggio_alla_firma`, sul cambio di squadra da svincolato e
+  sull'inserimento di una nuova istanza), qualunque sia la strada: asta, scelta, completamento
+  della rosa a fine off-season.
+- **Scambi**: la promessa **viaggia col giocatore**, come l'ingaggio. Richiami e richiesta di
+  cessione invece si azzerano: erano verso il mister di prima.
+- **Svincolo**: la promessa si azzera.
+- **Rinnovo**: il giocatore apre chiedendo il suo gradino, insieme all'ingaggio. Puoi
+  promettergli di più (ogni gradino in più toglie l'8% alla richiesta) o un gradino in meno
+  (+12%); due gradini in meno li rifiuta. Rifiuta comunque «Sporadico» se è almeno 3 punti
+  sopra la media della rosa e «Turnover» se è almeno 6 sopra. «Promessa futura» si offre solo
+  sotto i 21 anni (la promessa sta al livello dello sporadico).
 
-Un under 21 che non è titolare fisso diventa «Promessa futura». Così il vice di Ederson è
-«Sporadico» senza che nessuno l'abbia trattato, ed è sereno.
+## 3b. Chi non ha ancora una promessa
 
-Piccola differenza rispetto a quanto detto in chat («calcolato da quanto ha giocato»): il
-gradino automatico guarda la gerarchia della rosa e non i minuti. Coi minuti un titolare
-infortunato a lungo diventerebbe «Sporadico» e un ripiego in campo per necessità «Titolare»:
-la gerarchia è più vicina a quello che un allenatore avrebbe promesso.
-
-Un trasferimento (scambio, svincolo) azzera il gradino trattato: la promessa era della
-squadra di prima.
+I contratti in corso al lancio non hanno una promessa: `player_instances.minutaggio_promesso`
+vuoto vuol dire **gradino automatico**, dalla posizione nel proprio reparto dentro la rosa
+(portieri 1 titolare; difesa e centrocampo 4 titolari e 2 turnover; attacco 2 e 2; un under 21
+non titolare è una promessa futura). Serve solo al morale, non fa partire richiami: è una stima
+della gerarchia, non una promessa. Al primo rinnovo si tratta come tutti.
 
 ## 4. Il morale
 

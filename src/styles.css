@@ -4631,3 +4631,9 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .player-minutaggio-avviso.is-cessione { border-color: rgba(255,107,107,.5); background: rgba(255,107,107,.1); }
 .player-minutaggio-avviso.is-cessione b { color: #ff8a80; }
 .fatto-minutaggio dd small { display: block; color: rgba(255,255,255,.55); font-size: .66rem; }
+
+/* Cosa chiede un giocatore per firmare (mercato svincolati e a scelte). */
+.free-agent-card__chiede { justify-self: start; display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; color: rgba(255,255,255,.8); background: rgba(255,255,255,.07); box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); font: 600 .64rem/1.2 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+.free-agent-card__chiede.is-titolare { color: #ffd84d; box-shadow: inset 0 0 0 1px rgba(255,216,77,.45); background: rgba(255,216,77,.08); }
+.free-agent-card__chiede.is-turnover { color: #9fd8ff; box-shadow: inset 0 0 0 1px rgba(159,216,255,.4); }
+.free-agent-card__chiede.is-promessa { color: #6dffc3; box-shadow: inset 0 0 0 1px rgba(109,255,195,.4); }

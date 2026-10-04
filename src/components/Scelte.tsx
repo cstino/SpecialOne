@@ -9,6 +9,7 @@ import { SeasonState } from './SeasonUI'
 import { Crest } from './Crest'
 import { firmaFoto } from './RosaElenco'
 import { macroRuolo } from '../lib/ruoli'
+import { GRADINI_MINUTAGGIO, gradinoRichiesto, useSoglieMinutaggio } from '../lib/minutaggio'
 import { useSeasonData } from '../lib/useSeasonData'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
@@ -31,6 +32,8 @@ type Preferenza = { scelta_id: number; ordine: number; player_id: number }
 
 export function Scelte({ membership, onNavigate }: Props) {
   const league = membership.league as League
+  // Cosa chiede ogni eleggibile: chi lo sceglie firma con quel minutaggio (docs/decisioni-minutaggio.md).
+  const soglieMinutaggio = useSoglieMinutaggio(league.id, Boolean(league.tattiche_attive))
   const dati = useSeasonData(membership)
   const adesso = useOraCorrente()
   const [scelte, setScelte] = useState<SceltaDraft[]>([])
@@ -175,14 +178,14 @@ export function Scelte({ membership, onNavigate }: Props) {
         const [progressione, orfane] = ids.length
           ? await Promise.all([
               supabase.from('free_agent_progression')
-                .select('player_id, overall_corrente, overall_inizio_stagione')
+                .select('player_id, overall_corrente, overall_inizio_stagione, eta_corrente')
                 .eq('league_id', league.id).in('player_id', ids),
               supabase.from('player_instances')
-                .select('player_id, overall_corrente, overall_inizio_stagione')
+                .select('player_id, overall_corrente, overall_inizio_stagione, eta_corrente')
                 .eq('league_id', league.id).is('team_id', null).in('player_id', ids),
             ])
           : [{ data: [] }, { data: [] }]
-        const perId = new Map<number, { overall_corrente: number; overall_inizio_stagione: number }>()
+        const perId = new Map<number, { overall_corrente: number; overall_inizio_stagione: number; eta_corrente: number }>()
         for (const r of progressione.data ?? []) perId.set(r.player_id, r)
         for (const r of orfane.data ?? []) perId.set(r.player_id, r)  // l'istanza orfana ha la precedenza
 
@@ -192,6 +195,7 @@ export function Scelte({ membership, onNavigate }: Props) {
             return {
               ...g,
               overall: vero?.overall_corrente ?? g.overall,
+              eta: vero?.eta_corrente ?? g.eta,
               deltaOverall: vero ? vero.overall_corrente - vero.overall_inizio_stagione : 0,
             }
           })
@@ -422,6 +426,10 @@ export function Scelte({ membership, onNavigate }: Props) {
                             <div className="flex flex-wrap items-center gap-1.5">
                               <span className={`role-pill role-pill--${macro.toLowerCase()}`}>{primario ?? '—'}</span>
                               {secondari.length > 0 && <span className="text-[.68rem] font-semibold text-white/35">{secondari.join(' / ')}</span>}
+                              {(() => {
+                                const chiede = gradinoRichiesto(soglieMinutaggio, g.overall, g.eta, primario ?? undefined)
+                                return chiede && <span className={`free-agent-card__chiede is-${chiede}`} title={GRADINI_MINUTAGGIO[chiede].detto}>Chiede: {GRADINI_MINUTAGGIO[chiede].nome}</span>
+                              })()}
                             </div>
                             <span className="text-[.72rem] font-semibold text-white/45">{g.eta} anni</span>
                             <span className="text-[.74rem] font-extrabold text-purple-300">{(g.ingaggio_teorico / 1_000_000).toFixed(1)} M€</span>
