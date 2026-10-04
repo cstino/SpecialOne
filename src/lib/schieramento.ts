@@ -233,6 +233,9 @@ export function senzaSovrapposizioni(
  * La disposizione finale per un campo vero: la scala piu' grande (fino a 1) a
  * cui le card stanno tutte senza toccarsi, e le postazioni a quella scala.
  */
+const SCALA_MASSIMA = 0.9
+const DISTANZA_CARD = 7
+
 export function disponiCard(posti: Punto[], campo: { w: number; h: number }, card: { w: number; h: number }, bordo = 0): { posti: Punto[]; scala: number } {
   if (!campo.w || !campo.h || !card.w || !card.h) return { posti, scala: 1 }
   // Una linea troppo affollata per la larghezza (cinque difensori su un
@@ -242,21 +245,24 @@ export function disponiCard(posti: Punto[], campo: { w: number; h: number }, car
   posti = sfalsaLineeAffollate(posti, campo, card)
   // Punto di partenza: abbastanza piccole da far stare tutte le linee in altezza.
   const linee = Math.max(1, lineeDistinte(posti))
-  let scala = Math.min(1, campo.h / (linee * (card.h + 4)))
+  // Mai piu' grandi del 90% e con un po' d'aria fra una card e l'altra: a
+  // scala piena, nei moduli affollati, i nomi si toccavano (segnalato dal
+  // committente il 4 ottobre 2026 sul 3-5-2).
+  let scala = Math.min(SCALA_MASSIMA, campo.h / (linee * (card.h + 4)))
   for (let tentativo = 0; tentativo < 12; tentativo++) {
     const misura = { w: card.w * scala, h: card.h * scala }
-    const r = senzaSovrapposizioni(posti, campo, misura, 4, bordo)
+    const r = senzaSovrapposizioni(posti, campo, misura, DISTANZA_CARD, bordo)
     if (r.riuscito) {
       // Allineati gli esterni alla propria linea, si ricontrolla: spostarli
       // puo' farli toccare con chi sta sopra o sotto.
-      const a = senzaSovrapposizioni(allineaEsterni(posti, r.posti, campo, misura.h), campo, misura, 4, bordo)
+      const a = senzaSovrapposizioni(allineaEsterni(posti, r.posti, campo, misura.h), campo, misura, DISTANZA_CARD, bordo)
       if (a.riuscito) return { posti: a.posti, scala }
     }
     scala *= 0.92
   }
   const misura = { w: card.w * scala, h: card.h * scala }
-  const ultima = senzaSovrapposizioni(posti, campo, misura, 4, bordo)
-  return { posti: senzaSovrapposizioni(allineaEsterni(posti, ultima.posti, campo, misura.h), campo, misura, 4, bordo).posti, scala }
+  const ultima = senzaSovrapposizioni(posti, campo, misura, DISTANZA_CARD, bordo)
+  return { posti: senzaSovrapposizioni(allineaEsterni(posti, ultima.posti, campo, misura.h), campo, misura, DISTANZA_CARD, bordo).posti, scala }
 }
 
 function sfalsaLineeAffollate(posti: Punto[], campo: { w: number; h: number }, card: { w: number; h: number }, tolleranza = 6): Punto[] {
