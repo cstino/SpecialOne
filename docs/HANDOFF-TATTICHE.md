@@ -25,6 +25,11 @@ la mappa; il registro è il territorio.
 
 ## Checklist del lancio della season 2
 
+> **Stato al 4 ottobre 2026 (ore 11):** punti 1 e 2 fatti: main = ramo, `simula-giornata`
+> distribuita dal ramo, migrazione del 3-5-2 applicata, `simula-giornata-s2` e
+> `LEGA_PROVA_SEASON_2` tolti dal codice. Restano il punto 3 (tattiche sulle altre leghe) e il 4
+> (piani aperti), che decide il committente.
+
 Da fare **in quest'ordine**, chiedendo prima al committente:
 
 1. `git merge origin/main` nel ramo e controllare i conflitti (in
