@@ -480,7 +480,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
                       </div>
                       <div className="draft-carta__info">
                         <strong>{byRolePayload.carta.nome}</strong>
-                        <small>{byRolePayload.carta.club} · {byRolePayload.carta.eta} anni</small>
+                        <small>{byRolePayload.carta.eta} anni</small>
                         <small className="draft-carta__posizioni">{byRolePayload.carta.posizioni.join(' · ')}</small>
                       </div>
                       <b className="draft-carta__ovr">{byRolePayload.carta.overall}</b>
@@ -546,7 +546,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
                       </div>
                       <div className="draft-carta__info">
                         <strong>{carta.nome}</strong>
-                        <small>{carta.club} · {carta.eta} anni</small>
+                        <small>{carta.eta} anni</small>
                         <small className="draft-carta__posizioni">{carta.posizioni.join(' · ')}</small>
                       </div>
                       <b className="draft-carta__ovr">{carta.overall}</b>

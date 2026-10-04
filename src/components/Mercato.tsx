@@ -572,7 +572,7 @@ export function Mercato({ membership, onNavigate }: Props) {
           onClick={() => void apriScheda(a.player_id)}
           aria-label={`Scheda di ${g?.nome ?? 'giocatore'}`}>
           <strong>{g?.nome ?? `#${a.player_id}`}</strong>
-          <p>{g?.club ?? '—'} · {g?.eta ?? '—'} anni · {g?.posizioni?.join(' / ') ?? '—'}</p>
+          <p>{g?.eta ?? '—'} anni · {g?.posizioni?.join(' / ') ?? '—'}</p>
         </button>
         {/* L'infortunio viaggia con l'istanza: chi viene svincolato rotto resta
             rotto, e chi offre deve saperlo PRIMA di offrire. Prima non si

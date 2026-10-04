@@ -140,6 +140,11 @@ Stessa regola in `src/lib/minutaggio.ts` (`statoMinuti`, `GRADINI_MINUTAGGIO`) e
 (`private.soglia_minutaggio`, `private.controlla_minutaggio`): se si cambia una, va cambiata
 l'altra. Le statistiche della rosa (minuti, gol, assist, voti) contano la sola stagione corrente.
 
+**Playoff.** La percentuale mostrata conta tutte le partite della stagione, playoff compresi,
+dall'arrivo (4 ottobre: C. Nkunku, arrivato all'ultima giornata regolare e usato nei playoff, con
+225 minuti risultava allo 0% perché si contava solo la regolare). I richiami e il morale girano
+solo in stagione regolare, per loro non cambia nulla.
+
 **Gli assenti non contano.** La percentuale si calcola sulle sole partite in cui il giocatore
 poteva giocare: quelle in cui era infortunato o squalificato non entrano né nei minuti attesi né
 nel denominatore. Prima non esisteva uno storico: ora il trigger `matches_registra_assenze`
