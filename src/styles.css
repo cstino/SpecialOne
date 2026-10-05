@@ -4755,12 +4755,13 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .standings-zona__chip.is-europa { background: #ff8a2b; box-shadow: 0 0 10px rgba(255,138,43,.4); }
 .standings-zona__chip.is-draftpo { background: #9b8cc9; box-shadow: 0 0 10px rgba(155,140,201,.35); }
 
-/* Campione in carica: cornice dorata esatta del logo (segue l'alfa dell'immagine con una fila di ombre senza sfocatura) */
-.crest-stellato--small { --spessore: 1px; --bagliore: 3px; }
-.crest-stellato--large { --spessore: 2px; --bagliore: 7px; }
-.crest-stellato--campione {
-  filter:
-    drop-shadow(var(--spessore) 0 0 #ffd24a) drop-shadow(calc(var(--spessore) * -1) 0 0 #ffd24a)
-    drop-shadow(0 var(--spessore) 0 #ffd24a) drop-shadow(0 calc(var(--spessore) * -1) 0 #ffd24a)
-    drop-shadow(0 0 var(--bagliore) rgba(255, 200, 64, .7));
+/* Campione in carica: cornice dorata netta che segue il contorno del logo (solo l'immagine, non la stella).
+   Spostamenti interi di pixel senza sfocatura: spessore uniforme, bordi nitidi. */
+.crest-cornice { display: grid; place-items: center; width: 100%; height: 100%; }
+.crest-stellato--small .crest-cornice {
+  filter: drop-shadow(1px 0 0 #ffd24a) drop-shadow(-1px 0 0 #ffd24a) drop-shadow(0 1px 0 #ffd24a) drop-shadow(0 -1px 0 #ffd24a);
+}
+.crest-stellato--large .crest-cornice {
+  filter: drop-shadow(2px 0 0 #ffd24a) drop-shadow(-2px 0 0 #ffd24a) drop-shadow(0 2px 0 #ffd24a) drop-shadow(0 -2px 0 #ffd24a)
+    drop-shadow(1px 1px 0 #ffd24a) drop-shadow(-1px 1px 0 #ffd24a) drop-shadow(1px -1px 0 #ffd24a) drop-shadow(-1px -1px 0 #ffd24a);
 }
