@@ -10,6 +10,7 @@ import type { Session } from '@supabase/supabase-js'
 import { Admin } from './components/Admin'
 import { AlboDOro } from './components/AlboDOro'
 import { AlboRivelazione } from './components/AlboRivelazione'
+import { SorteggioConferenze } from './components/SorteggioConferenze'
 import { useAlboRivelazione } from './lib/useAlboRivelazione'
 import { Avvisi } from './components/Avvisi'
 import { AuthScreen } from './components/AuthScreen'
@@ -426,6 +427,12 @@ export default function App() {
         onRefresh={loadMemberships}
       />,
     )
+  }
+
+  // Dopo la chiusura dell'off-season, nelle leghe con conferenze: sorteggio East/West in
+  // diretta. Finisce da solo (il database rimette la lega in 'normale' e crea il calendario).
+  if (active.league?.fase_carriera === 'sorteggio') {
+    return conContesti(<SorteggioConferenze membership={active} onFine={loadMemberships} />)
   }
 
   if (active.league?.stato === 'draft') {

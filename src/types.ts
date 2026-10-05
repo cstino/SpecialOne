@@ -7,6 +7,7 @@ export type League = {
   codice_invito: string
   n_squadre: number
   n_gironi: number
+  conferenze_attive?: boolean
   budget_iniziale: number
   budget_draft: number
   tetto_ingaggi: number
@@ -20,7 +21,7 @@ export type League = {
   stato: 'setup' | 'draft' | 'stagione' | 'conclusa'
   stagione_corrente: number
   reveal_dalla_giornata: number
-  fase_carriera: 'normale' | 'offseason' | 'terminata'
+  fase_carriera: 'normale' | 'offseason' | 'sorteggio' | 'terminata'
   offseason_fine: string | null
 }
 
@@ -240,6 +241,8 @@ export type Standing = {
   differenza_reti: number
   giocate: number
   posizione: number | null
+  // East/West: assegnata dal sorteggio a inizio stagione (null nelle leghe senza conferenze).
+  conferenza?: 'est' | 'ovest' | null
 }
 
 export type RpcResult = {

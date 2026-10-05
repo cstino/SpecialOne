@@ -4676,3 +4676,81 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .crest-stellato > .crest { margin: 0; }
 
 .team-identity__nota { display: block; margin-top: 4px; color: #8f86a0; font-size: .74rem; font-weight: 600; line-height: 1.35; }
+
+/* ---- Conferenze East / West e sorteggio in diretta ---- */
+.conf-badge { --c: #4db3ff; display: inline-grid; place-items: center; flex: none; }
+.conf-badge--ovest { --c: #ff6b4a; }
+.conf-badge img { height: 34px; width: auto; display: block; filter: drop-shadow(0 3px 8px rgba(0,0,0,.5)); }
+.conf-badge--grande img { height: 64px; }
+.conf-badge__segnaposto { display: grid; place-items: center; min-width: 54px; padding: 4px 10px 5px; border: 1.5px solid var(--c); border-radius: 8px; clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%); background: linear-gradient(160deg, color-mix(in srgb, var(--c) 30%, #0c0f1c), #0c0f1c); color: #fff; line-height: 1; text-align: center; }
+.conf-badge__segnaposto b { font: 700 1.05rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .12em; color: var(--c); }
+.conf-badge__segnaposto small { margin-top: 2px; font: 600 .42rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .26em; color: #cdd5e6; }
+.conf-badge--grande .conf-badge__segnaposto { min-width: 96px; padding: 8px 16px 9px; }
+.conf-badge--grande .conf-badge__segnaposto b { font-size: 1.9rem; }
+.conf-badge--grande .conf-badge__segnaposto small { font-size: .62rem; }
+
+.sorteggio { --est: #4db3ff; --ovest: #ff6b4a; min-height: 100dvh; display: flex; flex-direction: column; gap: 18px; padding: max(14px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)); background: radial-gradient(ellipse 80% 40% at 25% 0%, rgba(77,179,255,.22), transparent 70%), radial-gradient(ellipse 80% 40% at 80% 5%, rgba(255,107,74,.2), transparent 70%), #080a14; color: #fff; }
+.sorteggio__testa { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #9aa3bd; font-size: .78rem; font-weight: 700; }
+.sorteggio__scena { display: grid; justify-items: center; gap: 16px; padding: 4px 0 6px; text-align: center; min-height: 430px; align-content: start; }
+.sorteggio__occhiello { margin: 0; color: #c9d3ee; font: 600 .78rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .34em; margin-right: -.34em; text-transform: uppercase; }
+.sorteggio__versus { display: flex; align-items: center; gap: 16px; }
+.sorteggio__versus > b { color: #5b6485; font: 700 1.1rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .2em; }
+.sorteggio__attesa { color: #9aa3bd; font: 600 .85rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .25em; text-transform: uppercase; }
+.sorteggio__suspense, .sorteggio__fine { display: grid; justify-items: center; gap: 14px; width: 100%; }
+.sorteggio__suspense h1, .sorteggio__fine h1 { margin: 0; max-width: 20ch; font: 700 clamp(1.6rem, 7.4vw, 2.3rem)/1.1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .02em; text-transform: uppercase; text-wrap: balance; text-shadow: 0 4px 24px rgba(0,0,0,.6); }
+.sorteggio__suspense h1 em { font-style: normal; }
+.sorteggio__suspense--est h1 em { color: var(--est); text-shadow: 0 0 22px rgba(77,179,255,.55); }
+.sorteggio__suspense--ovest h1 em { color: var(--ovest); text-shadow: 0 0 22px rgba(255,107,74,.55); }
+.sorteggio__fine p { margin: 0; max-width: 34ch; color: #b6bfd8; font-size: .92rem; line-height: 1.5; }
+.sorteggio__roulette { width: min(46vw, 190px); aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.1), rgba(255,255,255,0) 68%); box-shadow: inset 0 0 0 2px rgba(255,255,255,.12), 0 0 40px rgba(0,0,0,.5); }
+.sorteggio__suspense--est .sorteggio__roulette { box-shadow: inset 0 0 0 2px rgba(77,179,255,.55), 0 0 44px rgba(77,179,255,.3); }
+.sorteggio__suspense--ovest .sorteggio__roulette { box-shadow: inset 0 0 0 2px rgba(255,107,74,.55), 0 0 44px rgba(255,107,74,.3); }
+.sorteggio__roulette-carta { width: 64%; aspect-ratio: 1; display: grid; place-items: center; animation: sorteggio-flash .12s ease-out; }
+.sorteggio__roulette-carta .crest { width: 100%; height: 100%; object-fit: contain; filter: blur(1.2px) saturate(1.2); }
+.sorteggio__roulette-carta b { font: 700 4.5rem/1 "Oswald", "Arial Narrow", sans-serif; color: #fff; }
+.sorteggio__conto { --p: 0%; width: 64px; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; background: conic-gradient(#fff var(--p), rgba(255,255,255,.14) 0); -webkit-mask: radial-gradient(circle, transparent 0 22px, #000 23px); mask: radial-gradient(circle, transparent 0 22px, #000 23px); position: relative; }
+.sorteggio__conto b { position: absolute; inset: 0; display: grid; place-items: center; font: 700 1.6rem/1 "Oswald", "Arial Narrow", sans-serif; color: #fff; -webkit-mask: none; mask: none; }
+.sorteggio__estratta { --c: var(--est); display: grid; justify-items: center; gap: 8px; width: 100%; padding: 6px 0 0; animation: sorteggio-rivela .7s cubic-bezier(.2,.9,.2,1) both; }
+.sorteggio__estratta--ovest { --c: var(--ovest); }
+.sorteggio__estratta small { color: var(--c); font: 700 .8rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .26em; margin-right: -.26em; text-transform: uppercase; text-shadow: 0 0 16px color-mix(in srgb, var(--c) 60%, transparent); }
+.sorteggio__estratta-stemma { width: min(52vw, 210px); aspect-ratio: 1; display: grid; place-items: center; margin-top: 18px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--c) 40%, transparent), transparent 68%); filter: drop-shadow(0 12px 28px rgba(0,0,0,.6)); }
+.sorteggio__estratta-stemma > .crest-stellato, .sorteggio__estratta-stemma > .crest { width: 78%; height: 78%; }
+.sorteggio__estratta-stemma .crest { width: 100%; height: 100%; object-fit: contain; }
+.sorteggio__estratta strong { font: 700 clamp(1.7rem, 8vw, 2.5rem)/1.05 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .03em; text-transform: uppercase; text-shadow: 0 4px 22px rgba(0,0,0,.6); }
+.sorteggio__estratta span { color: #b6bfd8; font: 600 .86rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .22em; }
+.sorteggio__colonne { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.sorteggio__colonna { --c: var(--est); min-width: 0; border: 1px solid color-mix(in srgb, var(--c) 40%, #1b2036); border-radius: 12px; background: linear-gradient(170deg, color-mix(in srgb, var(--c) 12%, #0e1222), #0b0e1b 60%); overflow: hidden; }
+.sorteggio__colonna--ovest { --c: var(--ovest); }
+.sorteggio__colonna > header { display: flex; align-items: center; gap: 8px; padding: 10px; border-bottom: 1px solid color-mix(in srgb, var(--c) 28%, #1b2036); }
+.sorteggio__colonna > header .conf-badge img { height: 24px; }
+.sorteggio__colonna > header .conf-badge__segnaposto { min-width: 40px; padding: 3px 7px 4px; }
+.sorteggio__colonna > header .conf-badge__segnaposto b { font-size: .8rem; }
+.sorteggio__colonna > header .conf-badge__segnaposto small { display: none; }
+.sorteggio__colonna > header strong { flex: 1; min-width: 0; overflow: hidden; color: #e8ecf8; font: 700 .72rem/1.1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .1em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.sorteggio__colonna > header span { color: var(--c); font: 700 1.1rem/1 "Oswald", "Arial Narrow", sans-serif; }
+.sorteggio__colonna > header span i { color: #6b7596; font-style: normal; font-size: .75rem; }
+.sorteggio__colonna ol { margin: 0; padding: 4px 6px 8px; list-style: none; display: grid; grid-template-columns: minmax(0, 1fr); gap: 3px; min-width: 0; }
+.sorteggio__colonna li { min-width: 0; display: flex; align-items: center; gap: 7px; min-height: 30px; padding: 3px 6px; border-radius: 7px; border: 1px dashed rgba(255,255,255,.1); color: #5b6485; transition: background .4s, border-color .4s; }
+.sorteggio__colonna li.is-piena { border-style: solid; border-color: color-mix(in srgb, var(--c) 35%, transparent); background: color-mix(in srgb, var(--c) 10%, transparent); color: #fff; }
+.sorteggio__colonna li.is-mia { border-color: #ffd34d; box-shadow: inset 0 0 0 1px #ffd34d; }
+.sorteggio__colonna li.is-nuova { animation: sorteggio-nuova 1.4s ease-out both; }
+.sorteggio__colonna li .crest { width: 20px; height: 20px; object-fit: contain; flex: none; }
+.sorteggio__colonna li strong { min-width: 0; overflow: hidden; font: 600 .74rem/1.1 Inter, Arial, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.sorteggio__colonna li em { font-style: normal; }
+.sorteggio__n { flex: none; width: 14px; color: #6b7596; font: 600 .66rem/1 "Oswald", "Arial Narrow", sans-serif; text-align: center; }
+@keyframes sorteggio-flash { from { opacity: .35; transform: scale(.92); } to { opacity: 1; transform: none; } }
+@keyframes sorteggio-rivela { 0% { opacity: 0; transform: scale(.7) translateY(14px); filter: blur(8px); } 60% { opacity: 1; filter: blur(0); } 100% { opacity: 1; transform: none; } }
+@keyframes sorteggio-nuova { 0% { background: color-mix(in srgb, var(--c) 55%, transparent); transform: scale(1.04); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sorteggio__roulette-carta, .sorteggio__estratta, .sorteggio__colonna li.is-nuova { animation: none; } }
+
+/* Classifica con conferenze */
+.standings-conferenze { display: flex; gap: 8px; margin: 0 0 12px; }
+.standings-conferenze button { appearance: none; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 10px; border: 1px solid #2b2f46; border-radius: 10px; background: #14172a; color: #8d96b3; font: 700 .76rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.standings-conferenze button.is-attiva { color: #fff; border-color: var(--c, #4db3ff); background: linear-gradient(170deg, color-mix(in srgb, var(--c, #4db3ff) 22%, #14172a), #14172a); box-shadow: 0 0 16px color-mix(in srgb, var(--c, #4db3ff) 28%, transparent); }
+.standings-conferenze .conf-badge img { height: 20px; }
+.standings-conferenze .conf-badge__segnaposto { min-width: 36px; padding: 2px 6px 3px; }
+.standings-conferenze .conf-badge__segnaposto b { font-size: .72rem; }
+.standings-conferenze .conf-badge__segnaposto small { display: none; }
+.standings-zona__chip.is-champions { background: #2f6bff; box-shadow: 0 0 10px rgba(47,107,255,.5); }
+.standings-zona__chip.is-europa { background: #ff8a2b; box-shadow: 0 0 10px rgba(255,138,43,.4); }
+.standings-zona__chip.is-draftpo { background: #9b8cc9; box-shadow: 0 0 10px rgba(155,140,201,.35); }
