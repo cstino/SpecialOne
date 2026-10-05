@@ -17,7 +17,11 @@ Le altre leghe funzionano come prima.
   - **Champions League** (ex Title Playoff): prime 4 di ogni conferenza. Loghi della Champions.
   - **Europa League**: dalla 5a all'8a di ogni conferenza. Usa sfondo, musica e grafica dell'attuale
     Draft Playoff (stile Europa League).
-  - **Draft Playoffs** (nuovo): dalla 9a alla 12a di ogni conferenza. Asset (sfondo, canzone) da inviare.
+  - **Draft Playoffs** (nuovo): dalla 9a alla 12a di ogni conferenza. Asset ricevuti il 5 ottobre 2026 e
+    gia' nel progetto (non ancora collegati, si collegano nel blocco 2): sfondo viola
+    `public/sfondi-fase-verticali/draft_playoffs_nuovo_vert.webp` (941x1672) e canzone di 38 s
+    `public/musica-fase/draftplayoffs_nuovo.m4a`. Nel blocco 2 i vecchi `draft_playoffs_*` e
+    `draftplayoffs.mp3` diventano quelli dell'Europa League.
   - Quarti incrociati Est-Ovest: 1E-4W, 2E-3W, 1W-4E, 2W-3E. Andata e ritorno; finale secca in campo
     neutro. Stessa cosa per tutti e tre i tabelloni.
 - **Ordine di scelta nel mercato a scelte** (BLOCCO 2): stessa idea del Draft Playoff di oggi
