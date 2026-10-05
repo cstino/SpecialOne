@@ -10,6 +10,9 @@ import { firmaFoto, RosaElenco, type RosterPlayer } from './RosaElenco'
 import { LoadingLogo } from './LoadingLogo'
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { Icona } from './Icona'
+import { SchedaGiocatore } from './SchedaGiocatore'
+import { attributiInLega, type Attributi } from '../lib/attributiGiocatore'
+import { GRADINI_MINUTAGGIO, gradinoRichiesto, nomeConSoglia, useSoglieMinutaggio } from '../lib/minutaggio'
 
 type DraftTeamState = {
   pick_numero: number
@@ -106,6 +109,23 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
   const [payload, setPayload] = useState<DraftPacchetto | null>(null)
   const [byRolePayload, setByRolePayload] = useState<DraftByRolePayload | null>(null)
   const [fotoCarte, setFotoCarte] = useState<Map<number, string>>(new Map())
+  // Scheda del giocatore aperta toccando la sua foto (anagrafica e attributi arrivano solo ora).
+  const [schedaCarta, setSchedaCarta] = useState<{ carta: DraftCard; anagrafica: { club: string; nazionalita: string | null; nome_completo: string | null; piede: string | null; altezza: number | null } | null; attributi: Attributi } | null>(null)
+  // Quanto minutaggio chiede ognuno (stesse soglie di mercato e rinnovi): solo con le tattiche accese.
+  const soglieMinutaggio = useSoglieMinutaggio(league.id, Boolean(league.tattiche_attive))
+  async function apriSchedaCarta(carta: DraftCard) {
+    const [anagraficaRes, attributi] = await Promise.all([
+      supabase.from('players').select('club, nazionalita, nome_completo, piede, altezza').eq('id', carta.id).maybeSingle(),
+      attributiInLega(league.id, carta.id),
+    ])
+    setSchedaCarta({ carta, anagrafica: (anagraficaRes.data as { club: string; nazionalita: string | null; nome_completo: string | null; piede: string | null; altezza: number | null } | null) ?? null, attributi })
+  }
+  const chiede = (carta: DraftCard) => {
+    const gradino = gradinoRichiesto(soglieMinutaggio, carta.overall, carta.eta, carta.posizioni[0])
+    return gradino
+      ? <span className={`free-agent-card__chiede draft-carta__chiede is-${gradino}`} title={`${nomeConSoglia(gradino)}: ${GRADINI_MINUTAGGIO[gradino].detto}`}>Chiede: {GRADINI_MINUTAGGIO[gradino].nome}</span>
+      : null
+  }
   const [selezionati, setSelezionati] = useState<number[]>([])
   const [fase, setFase] = useState<'vuoto' | 'girando' | 'rivelato'>('vuoto')
   const [spesoDraft, setSpesoDraft] = useState<number>(0)
@@ -470,7 +490,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
                   )}
                   {fase === 'rivelato' && byRolePayload?.carta && (
                     <motion.div
-                      className="draft-carta draft-carta--by-role"
+                      className="draft-carta draft-carta--by-role draft-carta--con-scheda"
                       initial={{ opacity: 0, scale: 0.88, y: 8 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       transition={{ type: 'spring', stiffness: 340, damping: 22 }}
@@ -482,12 +502,14 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
                         <strong>{byRolePayload.carta.nome}</strong>
                         <small>{byRolePayload.carta.eta} anni</small>
                         <small className="draft-carta__posizioni">{byRolePayload.carta.posizioni.join(' · ')}</small>
+                        {chiede(byRolePayload.carta)}
                       </div>
                       <b className="draft-carta__ovr">{byRolePayload.carta.overall}</b>
                       <div className="draft-carta__wage">
                         {(byRolePayload.carta.ingaggio / 1_000_000).toFixed(1)} M€
                         <small>{byRolePayload.carta.ingaggiabile ? 'Sostenibile' : 'Non sostenibile'}</small>
                       </div>
+                      <button type="button" className="draft-carta__apri-scheda" onClick={() => void apriSchedaCarta(byRolePayload.carta!)} aria-label={`Apri la scheda di ${byRolePayload.carta.nome}`}><i aria-hidden="true">i</i></button>
                     </motion.div>
                   )}
                 </div>
@@ -532,6 +554,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
                     </div>
                   )}
                   {fase === 'rivelato' && carta && (
+                    <div className="draft-carta-wrap">
                     <motion.button
                       type="button"
                       className={`draft-carta${selezionati.includes(carta.id) ? ' draft-carta--selezionata' : ''}`}
@@ -548,6 +571,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
                         <strong>{carta.nome}</strong>
                         <small>{carta.eta} anni</small>
                         <small className="draft-carta__posizioni">{carta.posizioni.join(' · ')}</small>
+                        {chiede(carta)}
                       </div>
                       <b className="draft-carta__ovr">{carta.overall}</b>
                       <div className="draft-carta__wage">
@@ -555,6 +579,8 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
                         <small>{!carta.ingaggiabile ? 'Non sostenibile' : selezionati.includes(carta.id) ? 'Selezionata ✓' : 'Tocca per scegliere'}</small>
                       </div>
                     </motion.button>
+                    <button type="button" className="draft-carta__apri-scheda" onClick={() => void apriSchedaCarta(carta)} aria-label={`Apri la scheda di ${carta.nome}`}><i aria-hidden="true">i</i></button>
+                    </div>
                   )}
                 </div>
               )
@@ -572,6 +598,21 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
       {state?.stato !== 'concluso' && fase === 'vuoto' && <button className="text-button draft-refresh" type="button" onClick={() => setRefresh((value) => value + 1)}>Aggiorna stato</button>}
       {rosaAperta && <RosaModale league={league} teamId={membership.id} nome={membership.nome} onClose={() => setRosaAperta(false)} />}
       {squadraVista && <RosaModale league={league} teamId={squadraVista.id} nome={squadraVista.nome} onClose={() => setSquadraVista(null)} />}
+      {schedaCarta && <SchedaGiocatore
+        giocatore={{
+          nome: schedaCarta.carta.nome, nomeEsteso: schedaCarta.anagrafica?.nome_completo ?? null,
+          club: schedaCarta.anagrafica?.club ?? schedaCarta.carta.club, nazionalita: schedaCarta.anagrafica?.nazionalita ?? null,
+          posizioni: schedaCarta.carta.posizioni, overall: schedaCarta.carta.overall, eta: schedaCarta.carta.eta,
+          piede: schedaCarta.anagrafica?.piede ?? null, altezza: schedaCarta.anagrafica?.altezza ?? null,
+          infortunatoFinoA: 0,
+          minutaggioRichiesto: gradinoRichiesto(soglieMinutaggio, schedaCarta.carta.overall, schedaCarta.carta.eta, schedaCarta.carta.posizioni[0]),
+          attributi: schedaCarta.attributi,
+        }}
+        fotoUrl={fotoCarte.get(schedaCarta.carta.id)}
+        tatticheAttive={Boolean(league.tattiche_attive)}
+        onClose={() => setSchedaCarta(null)}
+      />}
+
     </main>
   )
 }

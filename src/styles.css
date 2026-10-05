@@ -4759,3 +4759,11 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 /* Campione in carica: coppa dorata accanto al nome, solo in classifica */
 .season-team__coppa { display: inline-grid; place-items: center; flex: none; width: 17px; height: 17px; margin-left: 5px; border-radius: 50%; background: linear-gradient(160deg, #ffe38a, #e0a416); color: #3b2600; box-shadow: 0 1px 3px rgba(0,0,0,.45); }
 .season-team__coppa svg { width: 11px; height: 11px; display: block; fill: currentColor; }
+
+/* Draft: toccando la foto si apre la scheda (pulsante sopra la foto, accanto alla carta: niente pulsanti dentro pulsanti) */
+.draft-carta-wrap { position: relative; }
+.draft-carta--con-scheda { position: relative; }
+.draft-carta__apri-scheda { appearance: none; position: absolute; z-index: 2; left: 14px; top: 12px; width: 68px; height: 82px; margin: 0; padding: 0; border: 0; border-radius: 12px; background: transparent; cursor: zoom-in; }
+.draft-carta__apri-scheda i { position: absolute; right: 3px; bottom: 3px; width: 17px; height: 17px; display: grid; place-items: center; border-radius: 50%; background: rgba(12,10,20,.78); color: #e8d9ff; box-shadow: inset 0 0 0 1px rgba(184,140,255,.6); font: italic 700 .7rem/1 Georgia, serif; }
+.draft-carta__apri-scheda:focus-visible { outline: 2px solid #c59be8; outline-offset: 2px; }
+.draft-carta__chiede { max-width: 100%; overflow: hidden; text-overflow: ellipsis; padding: 2px 8px; font-size: .58rem; }
