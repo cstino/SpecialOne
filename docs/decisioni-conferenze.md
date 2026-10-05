@@ -68,3 +68,13 @@ Le altre leghe funzionano come prima.
 Transazione annullata: accendere il flag, forzare `offseasons.scade_il` nel passato, chiamare
 `private.finalizza_offseason(<lega>)`, anticipare `sorteggi_conferenze.avviato_il`, chiamare
 `private.completa_sorteggi_scaduti()` e controllare calendario (solo dentro la conferenza) e posizioni.
+
+## Loghi UEFA (5 ottobre 2026)
+
+Scaricati da Wikimedia Commons (file SVG marcati "public domain, trademarked": sono marchi UEFA, usati
+qui solo per il gioco privato fra amici). Gli originali sono scuri (blu notte e nero), quindi illeggibili
+sul nostro sfondo: ne ho fatto versioni **chiare** (nero e blu diventano bianco-argento sfumato; l'arancione
+dell'Europa League resta). In `public/loghi-fase/uefa/`:
+`champions-league.png` (scritta + pallone a stelle), `champions-league-compatto.png`,
+`champions-league-pallone.png` (solo pallone), `europa-league.png` (versione 2024), `europa-league-2021.png`,
+`europa-league-classico.png`. Non ancora collegati: si usano nel blocco 2 (tre tabelloni).
