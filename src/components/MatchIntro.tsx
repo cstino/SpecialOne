@@ -293,12 +293,12 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
           </div>
           <div className="match-intro__locandina-card">
             <div className="match-intro__locandina-squadra">
-              <Crest value={homeTeam?.stemma_url ?? null} imageUrl={homeCrestUrl} size="large" />
+              <Crest value={homeTeam?.stemma_url ?? null} stelle={homeTeam?.titoli_title} imageUrl={homeCrestUrl} size="large" />
               <strong>{homeTeam?.nome ?? 'Casa'}</strong>
             </div>
             <span className="match-intro__locandina-vs">VS</span>
             <div className="match-intro__locandina-squadra">
-              <Crest value={awayTeam?.stemma_url ?? null} imageUrl={awayCrestUrl} size="large" />
+              <Crest value={awayTeam?.stemma_url ?? null} stelle={awayTeam?.titoli_title} imageUrl={awayCrestUrl} size="large" />
               <strong>{awayTeam?.nome ?? 'Ospite'}</strong>
             </div>
           </div>
@@ -320,7 +320,7 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
               return (
                 <li className={evidenziata ? 'is-evidenziata' : ''} key={riga.teamId} style={{ '--i': riga.posizione } as React.CSSProperties}>
                   <span className="match-intro__classifica-pos">{riga.posizione}</span>
-                  <Crest value={squadra?.stemma_url ?? null} imageUrl={data.crestUrlByTeamId.get(riga.teamId)} size="small" />
+                  <Crest value={squadra?.stemma_url ?? null} stelle={squadra?.titoli_title} imageUrl={data.crestUrlByTeamId.get(riga.teamId)} size="small" />
                   <strong>{squadra?.nome ?? 'Squadra'}</strong>
                   <em>{riga.differenzaReti > 0 ? `+${riga.differenzaReti}` : riga.differenzaReti}</em>
                   <b>{riga.punti}</b>
@@ -354,9 +354,9 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
                   <i className="match-intro__strada-pezzo match-intro__strada-pezzo--sx" aria-hidden="true" />
                   <i className="match-intro__strada-pezzo match-intro__strada-pezzo--dx" aria-hidden="true" />
                   <span className={`match-intro__strada-nome ${esito(alta)}`}>{alta?.nome ?? 'Da definire'}</span>
-                  <span className={`match-intro__strada-stemma ${esito(alta)}`}><Crest value={alta?.stemma_url ?? null} imageUrl={alta ? data.crestUrlByTeamId.get(alta.id) : undefined} size="small" /></span>
+                  <span className={`match-intro__strada-stemma ${esito(alta)}`}><Crest value={alta?.stemma_url ?? null} stelle={alta?.titoli_title} imageUrl={alta ? data.crestUrlByTeamId.get(alta.id) : undefined} size="small" /></span>
                   <b className="match-intro__strada-v">V</b>
-                  <span className={`match-intro__strada-stemma ${esito(bassa)}`}><Crest value={bassa?.stemma_url ?? null} imageUrl={bassa ? data.crestUrlByTeamId.get(bassa.id) : undefined} size="small" /></span>
+                  <span className={`match-intro__strada-stemma ${esito(bassa)}`}><Crest value={bassa?.stemma_url ?? null} stelle={bassa?.titoli_title} imageUrl={bassa ? data.crestUrlByTeamId.get(bassa.id) : undefined} size="small" /></span>
                   <span className={`match-intro__strada-nome match-intro__strada-nome--destra ${esito(bassa)}`}>{bassa?.nome ?? 'Da definire'}</span>
                 </div>
               )
@@ -373,7 +373,7 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
       {beat.tipo === 'formazione' && squadraInScena && (
         <div className={`match-intro__undici match-intro__undici--${fase}`} key={beat.lato}>
           <header className="match-intro__undici-testa">
-            <span className="match-intro__undici-stemma"><Crest value={squadraInScena.stemma_url ?? null} imageUrl={crestInScena} size="large" /></span>
+            <span className="match-intro__undici-stemma"><Crest value={squadraInScena.stemma_url ?? null} stelle={squadraInScena?.titoli_title} imageUrl={crestInScena} size="large" /></span>
             <strong>{squadraInScena.nome}</strong>
             {lineupInScena && <small>{lineupInScena.modulo}</small>}
           </header>

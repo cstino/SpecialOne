@@ -233,7 +233,7 @@ export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, 
             {memberships.map((squadra) => {
               const lega = squadra.league!
               return <button className="menu-lega" type="button" key={squadra.id} onClick={() => onEntraNellaLega(lega.id)}>
-                <Crest value={squadra.stemma_url} imageUrl={stemmi[squadra.id]} size="small" />
+                <Crest value={squadra.stemma_url} stelle={squadra?.titoli_title} imageUrl={stemmi[squadra.id]} size="small" />
                 <span className="menu-lega__testo">
                   <b>{squadra.nome}</b>
                   <small>{lega.nome} · {lega.n_squadre} squadre</small>

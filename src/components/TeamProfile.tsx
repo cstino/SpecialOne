@@ -687,7 +687,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       <section className={`team-profile-hero team-profile-hero--${fase}`}>
         {crestBgUrl && <div className="team-profile-hero__vetro" style={{ backgroundImage: `url(${crestBgUrl})` }} aria-hidden="true" />}
         <div className="team-profile-hero__inner">
-          <div className="team-profile-crest"><Crest value={team.stemma_url} imageUrl={crestUrl} size="large" /></div>
+          <div className="team-profile-crest"><Crest value={team.stemma_url} stelle={team?.titoli_title} imageUrl={crestUrl} size="large" /></div>
           <div className="team-profile-hero__testo">
             <p className="kicker">{league.nome} · Stagione {league.stagione_corrente}</p>
             <h1>{team.nome}</h1>
@@ -769,7 +769,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                   </div>
                   <div className="scelta-ticket__corpo">
                     <div className="scelta-ticket__origine">
-                      <Crest value={origine?.stemma_url ?? null} imageUrl={origine ? seasonData.crestUrlByTeamId.get(origine.id) : undefined} />
+                      <Crest value={origine?.stemma_url ?? null} stelle={origine?.titoli_title} imageUrl={origine ? seasonData.crestUrlByTeamId.get(origine.id) : undefined} />
                       <small>{origine?.nome ?? 'Squadra sconosciuta'}</small>
                     </div>
                     <div className="scelta-ticket__dettagli">

@@ -435,7 +435,7 @@ export function LeagueNews({ leagueId, fixtures, matches, standings, teamById, c
       <button className="league-news__story" type="button" onClick={attiva.action} disabled={!attiva.action}>
         <div className="league-news__copy"><small>{attiva.occhiello}</small><strong>{attiva.titolo}</strong><p>{attiva.testo}</p>{attiva.action && <em>Leggi la storia →</em>}</div>
         <div className="league-news__visual" aria-hidden="true">
-          {attiva.image ? <img src={attiva.image} alt="" /> : attiva.home && attiva.away ? <div className="league-news__duel"><Crest value={attiva.home.stemma_url} imageUrl={attiva.homeCrest} size="large" /><b>VS</b><Crest value={attiva.away.stemma_url} imageUrl={attiva.awayCrest} size="large" /></div> : <img src="/specialone-mark.svg" alt="" className="league-news__mark" />}
+          {attiva.image ? <img src={attiva.image} alt="" /> : attiva.home && attiva.away ? <div className="league-news__duel"><Crest value={attiva.home.stemma_url} stelle={attiva.home?.titoli_title} imageUrl={attiva.homeCrest} size="large" /><b>VS</b><Crest value={attiva.away.stemma_url} stelle={attiva.away?.titoli_title} imageUrl={attiva.awayCrest} size="large" /></div> : <img src="/specialone-mark.svg" alt="" className="league-news__mark" />}
         </div>
       </button>
     </div>

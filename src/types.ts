@@ -40,6 +40,8 @@ export type Team = {
   controllata_da_pc: boolean
   entrata_stagione: number
   uscita_stagione: number | null
+  // Title Playoff vinti, assegnati all'ingresso in off-season: una stella sullo stemma ciascuno.
+  titoli_title?: number
 }
 
 export type Membership = Team & { league?: League }

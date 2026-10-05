@@ -489,7 +489,7 @@ export function Scelte({ membership, onNavigate }: Props) {
                   </div>
                   <div className="scelta-ticket__corpo">
                     <div className="scelta-ticket__origine">
-                      <Crest value={origine?.stemma_url ?? null} imageUrl={origine ? dati.crestUrlByTeamId.get(origine.id) : undefined} />
+                      <Crest value={origine?.stemma_url ?? null} stelle={origine?.titoli_title} imageUrl={origine ? dati.crestUrlByTeamId.get(origine.id) : undefined} />
                       <small>{origine?.nome ?? 'Squadra sconosciuta'}</small>
                     </div>
                     <div className="scelta-ticket__dettagli">
@@ -517,7 +517,7 @@ export function Scelte({ membership, onNavigate }: Props) {
             return <li className="riepilogo-scelte__riga" key={s.id}>
               <span className="riepilogo-scelte__posizione">{s.posizione}ª</span>
               <div className="riepilogo-scelte__squadra">
-                <Crest value={squadra?.stemma_url ?? null} imageUrl={squadra ? dati.crestUrlByTeamId.get(squadra.id) : undefined} />
+                <Crest value={squadra?.stemma_url ?? null} stelle={squadra?.titoli_title} imageUrl={squadra ? dati.crestUrlByTeamId.get(squadra.id) : undefined} />
                 <small>{squadra?.nome ?? 'Squadra sconosciuta'}</small>
               </div>
               {g

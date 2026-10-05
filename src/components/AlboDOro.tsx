@@ -147,7 +147,7 @@ export function AlboDOro({ membership, onNavigate }: Props) {
         <div className="honors-champion__glow" aria-hidden="true" />
         <p>Campione in carica</p>
         <div className="honors-champion__team">
-          <Crest value={ultimoCampione.squadra?.stemma_url ?? null} imageUrl={ultimoCampione.stemmaFirmato} size="large" />
+          <Crest value={ultimoCampione.squadra?.stemma_url ?? null} stelle={ultimoCampione.squadra?.titoli_title} imageUrl={ultimoCampione.stemmaFirmato} size="large" />
           <div>
             <small>STAGIONE {ultimoCampione.stagione.numero}</small>
             <h2>{ultimoCampione.squadra?.nome ?? 'Squadra non disponibile'}</h2>
@@ -195,7 +195,7 @@ export function AlboDOro({ membership, onNavigate }: Props) {
                   <div className="honors-premio__foto">{premio.foto ? <img src={premio.foto} alt="" loading="lazy" /> : <b aria-hidden="true">{premio.nome.charAt(0)}</b>}</div>
                   <div className="honors-premio__chi">
                     <strong>{premio.nome}</strong>
-                    <span><Crest value={premio.squadra?.stemma_url ?? null} imageUrl={premio.stemmaFirmato} size="small" />{premio.squadra?.nome ?? '—'}</span>
+                    <span><Crest value={premio.squadra?.stemma_url ?? null} stelle={premio.squadra?.titoli_title} imageUrl={premio.stemmaFirmato} size="small" />{premio.squadra?.nome ?? '—'}</span>
                   </div>
                   <div className="honors-premio__valore"><b>{premio.valore}</b><small>{premio.valore === 1 ? unita[0] : unita[1]}</small></div>
                 </> : <p className="honors-premio__vuoto">Non assegnato</p>}

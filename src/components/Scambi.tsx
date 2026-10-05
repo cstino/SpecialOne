@@ -244,6 +244,7 @@ export function Scambi({ membership, onNavigate }: Props) {
   const nomeSquadra = useCallback((id: number) => dati.teamById.get(id)?.nome ?? 'Squadra', [dati.teamById])
   const stemma = useCallback((id: number) => <Crest
     value={dati.teamById.get(id)?.stemma_url ?? null}
+    stelle={dati.teamById.get(id)?.titoli_title}
     imageUrl={dati.crestUrlByTeamId.get(id) ?? null}
   />, [dati.teamById, dati.crestUrlByTeamId])
   const giocatore = useCallback((id: number) => rose.find((g) => g.id === id), [rose])
