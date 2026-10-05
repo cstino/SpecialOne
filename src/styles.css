@@ -4757,6 +4757,11 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 
 /* Campione in carica: cornice dorata netta che segue il contorno del logo (solo l'immagine, non la stella).
    Spostamenti interi di pixel senza sfocatura: spessore uniforme, bordi nitidi. */
+/* L'ombra scura che molti contesti mettono sull'immagine va tolta qui dentro: la cornice si
+   ricalcola sull'immagine COMPRESA la sua ombra e diventerebbe un grande alone giallo. Un'ombra
+   leggera torna fuori dalla cornice. */
+.crest-cornice > .crest { filter: none !important; }
+.crest-stellato--campione { filter: drop-shadow(0 4px 7px rgba(0, 0, 0, .5)); }
 .crest-cornice { display: grid; place-items: center; width: 100%; height: 100%; }
 .crest-stellato--small .crest-cornice {
   filter: drop-shadow(1px 0 0 #ffd24a) drop-shadow(-1px 0 0 #ffd24a) drop-shadow(0 1px 0 #ffd24a) drop-shadow(0 -1px 0 #ffd24a);
