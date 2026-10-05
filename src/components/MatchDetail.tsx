@@ -270,7 +270,7 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
       const stato = match.rigori_home !== null ? 'Finale d.c.r.' : match.gol_home_90 !== null ? 'Finale d.t.s.' : 'Finale'
       const squadraEroe = (teamId: number, team: typeof casa, lato: 'casa' | 'ospite') =>
         <button className={`riepilogo-eroe__squadra riepilogo-eroe__squadra--${lato}`} type="button" onClick={() => onOpenTeam(teamId)}>
-          <span className="riepilogo-eroe__stemma"><Crest value={team?.stemma_url ?? null} stelle={team?.titoli_title} campione={team?.campione_in_carica} imageUrl={data.crestUrlByTeamId.get(teamId)} size="large" /></span>
+          <span className="riepilogo-eroe__stemma"><Crest value={team?.stemma_url ?? null} stelle={team?.titoli_title} imageUrl={data.crestUrlByTeamId.get(teamId)} size="large" /></span>
           <b>{team?.sigla ?? team?.nome?.slice(0, 3).toUpperCase()}</b>
           <small>{team?.nome ?? 'Squadra'}</small>
         </button>
@@ -361,7 +361,7 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
           <h2 className="riepilogo-titolo">Calci di rigore</h2>
           <div className="riepilogo-rigori">
             {(['casa', 'ospite'] as const).map((lato) => <div key={lato} className="riepilogo-rigori__riga">
-              <span className="riepilogo-rigori__stemma"><Crest value={(lato === 'casa' ? casa : ospite)?.stemma_url ?? null} stelle={(lato === 'casa' ? casa : ospite)?.titoli_title} campione={(lato === 'casa' ? casa : ospite)?.campione_in_carica} imageUrl={data.crestUrlByTeamId.get(lato === 'casa' ? fixture.home_team_id : fixture.away_team_id)} size="small" /></span>
+              <span className="riepilogo-rigori__stemma"><Crest value={(lato === 'casa' ? casa : ospite)?.stemma_url ?? null} stelle={(lato === 'casa' ? casa : ospite)?.titoli_title} imageUrl={data.crestUrlByTeamId.get(lato === 'casa' ? fixture.home_team_id : fixture.away_team_id)} size="small" /></span>
               <b>{(lato === 'casa' ? casa : ospite)?.sigla}</b>
               <ol>{(match.rigori_serie ?? []).filter((t) => t.lato === lato).map((t, k) =>
                 <li key={t.numero} className={t.segnato ? 'is-gol' : 'is-errore'} style={{ ['--i' as string]: k }} title={`${t.tiratore}: ${t.segnato ? 'gol' : 'errore'}`} aria-label={`${t.tiratore}: ${t.segnato ? 'gol' : 'errore'}`}>{t.segnato ? '✓' : '✕'}</li>)}</ol>
@@ -374,8 +374,8 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
         <section className="riepilogo-pannello">
           <h2 className="riepilogo-titolo">Statistiche</h2>
           <div className="riepilogo-stat__sigle">
-            <span className="riepilogo-stat__squadra riepilogo-stat__squadra--casa"><span className="riepilogo-squadra__stemma"><Crest value={casa?.stemma_url ?? null} stelle={casa?.titoli_title} campione={casa?.campione_in_carica} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /></span>{casa?.sigla}</span>
-            <span className="riepilogo-stat__squadra riepilogo-stat__squadra--ospite">{ospite?.sigla}<span className="riepilogo-squadra__stemma"><Crest value={ospite?.stemma_url ?? null} stelle={ospite?.titoli_title} campione={ospite?.campione_in_carica} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" /></span></span>
+            <span className="riepilogo-stat__squadra riepilogo-stat__squadra--casa"><span className="riepilogo-squadra__stemma"><Crest value={casa?.stemma_url ?? null} stelle={casa?.titoli_title} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /></span>{casa?.sigla}</span>
+            <span className="riepilogo-stat__squadra riepilogo-stat__squadra--ospite">{ospite?.sigla}<span className="riepilogo-squadra__stemma"><Crest value={ospite?.stemma_url ?? null} stelle={ospite?.titoli_title} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" /></span></span>
           </div>
           <div className="riepilogo-stat">
             {STAT_ROWS.map(([label, key, format]) => {
@@ -399,7 +399,7 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
               const modulo = teamId === fixture.home_team_id ? match.modulo_home : match.modulo_away
               const team = data.teamById.get(teamId)
               return <div className="match-player-team" key={teamId}>
-                <h3><span className="riepilogo-squadra"><span className="riepilogo-squadra__stemma"><Crest value={team?.stemma_url ?? null} stelle={team?.titoli_title} campione={team?.campione_in_carica} imageUrl={data.crestUrlByTeamId.get(teamId)} size="small" /></span>{team?.nome ?? 'Squadra'}</span><small>{modulo}</small></h3>
+                <h3><span className="riepilogo-squadra"><span className="riepilogo-squadra__stemma"><Crest value={team?.stemma_url ?? null} stelle={team?.titoli_title} imageUrl={data.crestUrlByTeamId.get(teamId)} size="small" /></span>{team?.nome ?? 'Squadra'}</span><small>{modulo}</small></h3>
                 <div className="pagella-tabella">
                   <div className="pagella-tabella__testa"><span>Giocatore</span><span>Voto</span><span>Min</span></div>
                   {gruppi && gruppi.titolari.length > 0 && <>

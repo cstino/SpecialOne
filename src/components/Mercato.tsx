@@ -321,7 +321,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   )
   const stemma = useCallback((id: number) => <Crest
     value={dati.teamById.get(id)?.stemma_url ?? null}
-    stelle={dati.teamById.get(id)?.titoli_title} campione={dati.teamById.get(id)?.campione_in_carica}
+    stelle={dati.teamById.get(id)?.titoli_title}
     imageUrl={dati.crestUrlByTeamId.get(id) ?? null}
   />, [dati.teamById, dati.crestUrlByTeamId])
 

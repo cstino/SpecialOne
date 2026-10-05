@@ -51,7 +51,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
           <div className="min-w-0">
             <img src={LOGO_FASE[fase]} alt={LABEL_FASE[fase]} className="mt-4 h-9 w-auto md:h-11" />
             <div className="mt-2 flex min-w-0 items-center gap-5">
-              <Crest value={miaSquadra?.stemma_url ?? null} stelle={miaSquadra?.titoli_title} campione={miaSquadra?.campione_in_carica} imageUrl={data.crestUrlByTeamId.get(membership.id)} size="large" />
+              <Crest value={miaSquadra?.stemma_url ?? null} stelle={miaSquadra?.titoli_title} imageUrl={data.crestUrlByTeamId.get(membership.id)} size="large" />
               <div className="min-w-0 flex-1">
                 <TitoloAdattivo
                   testo={miaSquadra?.nome ?? 'La tua squadra'}

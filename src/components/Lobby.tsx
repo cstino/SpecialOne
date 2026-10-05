@@ -136,7 +136,7 @@ export function Lobby({ user, membership, memberships, onSelectLeague, onNewLeag
               {teams.map((team, index) => (
                 <li key={team.id}>
                   <span className="roster-number">{String(index + 1).padStart(2, '0')}</span>
-                  <Crest value={team.stemma_url} stelle={team?.titoli_title} campione={team?.campione_in_carica} imageUrl={team.stemma_url ? imageUrls[team.stemma_url] : null} />
+                  <Crest value={team.stemma_url} stelle={team?.titoli_title} imageUrl={team.stemma_url ? imageUrls[team.stemma_url] : null} />
                   {team.controllata_da_pc && <span className="status-chip">PC</span>}
                   <div><strong>{team.nome}</strong><span>{allenatori[team.user_id] ? `${allenatori[team.user_id]} · ` : ''}{team.user_id === league.admin_id ? 'Admin' : 'Partecipante'}</span></div>
                   {team.user_id === user.id && <span className="status-chip">La tua</span>}

@@ -176,7 +176,7 @@ export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
               {campione ? <>
                 <small>{bracket.tipo === 'title' ? `Campione · Season ${league.stagione_corrente}` : 'Vince il Draft Playoff'}</small>
                 <b>{campione.nome}</b>
-                <span className="tabellone-eroe__stemma"><Crest value={campione.stemma_url} stelle={campione?.titoli_title} campione={campione?.campione_in_carica} imageUrl={dati.crestUrlByTeamId.get(campione.id)} size="large" /></span>
+                <span className="tabellone-eroe__stemma"><Crest value={campione.stemma_url} stelle={campione?.titoli_title} imageUrl={dati.crestUrlByTeamId.get(campione.id)} size="large" /></span>
               </> : <>
                 <small>Season {league.stagione_corrente}</small>
                 <b>{bracket.tipo === 'title' ? 'Chi vince il titolo?' : 'In palio la prima scelta'}</b>
@@ -274,7 +274,7 @@ function CartaSfida({ tie, turno, turniTotali, dati }: {
         : <span className={`carta__num ${forte ? 'is-forte' : ''}`}>{testo}</span>
     }
     return <div className={`carta__riga ${esito}`} key={chiave}>
-      <span className="carta__stemma"><Crest value={team.stemma_url} stelle={team?.titoli_title} campione={team?.campione_in_carica} imageUrl={crestUrls.get(team.id)} size="small" /></span>
+      <span className="carta__stemma"><Crest value={team.stemma_url} stelle={team?.titoli_title} imageUrl={crestUrls.get(team.id)} size="small" /></span>
       <span className="carta__nome"><span>{team.nome}</span>{seed != null && <i>{seed}</i>}</span>
       {secca
         ? <>{cella(a, andata, true)}</>

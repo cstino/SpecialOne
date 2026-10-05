@@ -128,7 +128,7 @@ export function AlboRivelazione({ membership, stagioneId, onFine }: Props) {
         <p className="albo-riv__occhiello">Stagione {numero ?? ''} · Albo d'oro</p>
         <h1 className="albo-riv__titolo">Congratulazioni!</h1>
         <div className="albo-riv__campione">
-          <div className="albo-riv__stemma"><Crest value={campione.squadra?.stemma_url ?? null} stelle={campione.squadra?.titoli_title} campione={campione.squadra?.campione_in_carica} imageUrl={campione.stemma} size="large" /></div>
+          <div className="albo-riv__stemma"><Crest value={campione.squadra?.stemma_url ?? null} stelle={campione.squadra?.titoli_title} imageUrl={campione.stemma} size="large" /></div>
           <strong>{campione.squadra?.nome ?? 'Squadra non disponibile'}</strong>
           <span>{campione.daPlayoff ? 'Campioni del Title Playoff' : 'Campioni della stagione'}</span>
           {campione.daPlayoff && campione.posizione != null && <small>{campione.posizione}ª in stagione regolare</small>}
@@ -158,13 +158,13 @@ export function AlboRivelazione({ membership, stagioneId, onFine }: Props) {
                   <small className="albo-carta__unita">{premio.valore === 1 ? info.unita[0] : info.unita[1]}</small>
                   <i className="albo-carta__filo" aria-hidden="true" />
                   <span className="albo-carta__icona" aria-hidden="true"><IconaPremio tipo={premio.premio} /></span>
-                  <span className="albo-carta__stemma"><Crest value={premio.squadra?.stemma_url ?? null} stelle={premio.squadra?.titoli_title} campione={premio.squadra?.campione_in_carica} imageUrl={premio.stemmaFirmato} size="small" /></span>
+                  <span className="albo-carta__stemma"><Crest value={premio.squadra?.stemma_url ?? null} stelle={premio.squadra?.titoli_title} imageUrl={premio.stemmaFirmato} size="small" /></span>
                 </div>
                 <div className="albo-carta__foto">{premio.foto ? <img src={premio.foto} alt="" /> : <b aria-hidden="true">{premio.nome.charAt(0)}</b>}</div>
                 <div className="albo-carta__fondo">
                   <strong className="albo-carta__nome">{premio.nome}</strong>
                   <span className="albo-carta__squadra">
-                    <Crest value={premio.squadra?.stemma_url ?? null} stelle={premio.squadra?.titoli_title} campione={premio.squadra?.campione_in_carica} imageUrl={premio.stemmaFirmato} size="small" />
+                    <Crest value={premio.squadra?.stemma_url ?? null} stelle={premio.squadra?.titoli_title} imageUrl={premio.stemmaFirmato} size="small" />
                     <span>{premio.squadra?.nome ?? '—'}</span>
                   </span>
                   <em className="albo-carta__premio">{info.titolo}<i aria-hidden="true">·</i>{NOME_FASE[premio.fase]}</em>

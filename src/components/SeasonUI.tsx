@@ -56,8 +56,15 @@ export function formatMatchDate(value: string, withTime = true) {
   }).format(new Date(value))
 }
 
-export function TeamLabel({ team, imageUrl, reversed = false, onClick }: { team?: Team; imageUrl?: string | null; reversed?: boolean; onClick?: () => void }) {
-  const content = <><Crest value={team?.stemma_url ?? null} stelle={team?.titoli_title} campione={team?.campione_in_carica} imageUrl={imageUrl} size="small" /><strong>{team?.nome ?? 'Squadra'}</strong></>
+// Piccola coppa dorata accanto al nome: il campione in carica, solo dove la si chiede (classifica).
+function CoppaCampione() {
+  return <span className="season-team__coppa" title="Campione in carica" role="img" aria-label="Campione in carica">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 14.9V17h3v2H8v-2h3v-2.1A5 5 0 0 1 8.3 12H8a4 4 0 0 1-4-4V5h3V3zm-1 4v1a2 2 0 0 0 2 2V7H6zm10 0v3a2 2 0 0 0 2-2V7h-2z" /></svg>
+  </span>
+}
+
+export function TeamLabel({ team, imageUrl, reversed = false, onClick, mostraCampione = false }: { team?: Team; imageUrl?: string | null; reversed?: boolean; onClick?: () => void; mostraCampione?: boolean }) {
+  const content = <><Crest value={team?.stemma_url ?? null} stelle={team?.titoli_title} imageUrl={imageUrl} size="small" /><strong>{team?.nome ?? 'Squadra'}</strong>{mostraCampione && team?.campione_in_carica && <CoppaCampione />}</>
   if (onClick) return <button className={`season-team season-team-button ${reversed ? 'season-team--reversed' : ''}`} type="button" onClick={(event) => { event.stopPropagation(); onClick() }}>{content}</button>
   return <span className={`season-team ${reversed ? 'season-team--reversed' : ''}`}>{content}</span>
 }

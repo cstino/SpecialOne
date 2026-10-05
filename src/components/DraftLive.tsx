@@ -343,7 +343,7 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId, onN
                 </p>
               )}
             </div>
-            <Crest value={teamById.get(ultima.teamId)?.stemma_url ?? null} stelle={teamById.get(ultima.teamId)?.titoli_title} campione={teamById.get(ultima.teamId)?.campione_in_carica} imageUrl={crestUrlByTeamId.get(ultima.teamId)} />
+            <Crest value={teamById.get(ultima.teamId)?.stemma_url ?? null} stelle={teamById.get(ultima.teamId)?.titoli_title} imageUrl={crestUrlByTeamId.get(ultima.teamId)} />
           </div>
         </div>
       )}

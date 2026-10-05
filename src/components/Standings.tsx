@@ -128,7 +128,7 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
         <span className="players-standings-foto">{riga.foto ? <img src={riga.foto} alt="" /> : null}</span>
         <span>
           <strong>{riga.nome}</strong>
-          <small><Crest value={data.teamById.get(riga.teamId)?.stemma_url ?? null} stelle={data.teamById.get(riga.teamId)?.titoli_title} campione={data.teamById.get(riga.teamId)?.campione_in_carica} imageUrl={data.crestUrlByTeamId.get(riga.teamId)} />{data.teamById.get(riga.teamId)?.nome ?? 'Squadra'}</small>
+          <small><Crest value={data.teamById.get(riga.teamId)?.stemma_url ?? null} stelle={data.teamById.get(riga.teamId)?.titoli_title} imageUrl={data.crestUrlByTeamId.get(riga.teamId)} />{data.teamById.get(riga.teamId)?.nome ?? 'Squadra'}</small>
         </span>
       </div>
       <strong className="players-standings-valore">{riga[chiave]}</strong>
@@ -177,7 +177,7 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
               return <div className={`standings-row ${standing.team_id === membership.id ? 'is-mine' : ''}`} key={standing.team_id}>
                 <span className="standings-position">{posizione}</span>
                 <div className="standings-squadra">
-                  <TeamLabel team={data.teamById.get(standing.team_id)} imageUrl={data.crestUrlByTeamId.get(standing.team_id)} onClick={() => onOpenTeam(standing.team_id)} />
+                  <TeamLabel team={data.teamById.get(standing.team_id)} imageUrl={data.crestUrlByTeamId.get(standing.team_id)} onClick={() => onOpenTeam(standing.team_id)} mostraCampione />
                   <Forma esiti={forma.get(standing.team_id)} />
                 </div>
                 <span>{standing.giocate}</span><span>{standing.vittorie}</span><span>{standing.pareggi}</span><span>{standing.sconfitte}</span><span>{standing.gol_fatti}</span><span>{standing.gol_subiti}</span><span>{standing.differenza_reti > 0 ? `+${standing.differenza_reti}` : standing.differenza_reti}</span><strong>{standing.punti}</strong>

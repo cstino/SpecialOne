@@ -148,7 +148,7 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
             const locked = team.user_id === league.admin_id
             return <label className={`${selected ? 'is-selected' : 'is-removed'} ${locked ? 'is-locked' : ''}`} key={team.id}>
               <input className="sr-only" type="checkbox" checked={selected} disabled={locked} onChange={() => setRemoved(value => value.includes(team.id) ? value.filter(id => id !== team.id) : [...value, team.id])} />
-              <Crest value={team.stemma_url} stelle={team?.titoli_title} campione={team?.campione_in_carica} imageUrl={crestUrls[team.id]} />
+              <Crest value={team.stemma_url} stelle={team?.titoli_title} imageUrl={crestUrls[team.id]} />
               <span><strong>{team.nome}</strong><small>{locked ? 'La tua squadra · Admin' : selected ? 'Confermata' : 'Esclusa dalla prossima stagione'}</small></span>
               <i aria-hidden="true">{locked ? '◆' : selected ? '✓' : '×'}</i>
             </label>})}
@@ -188,7 +188,7 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
               const locked = team.user_id === league.admin_id
               return <label className={`${selected ? 'is-selected' : 'is-removed'} ${locked ? 'is-locked' : ''}`} key={team.id}>
                 <input className="sr-only" type="checkbox" checked={selected} disabled={locked} onChange={() => setEditRemoved(value => value.includes(team.id) ? value.filter(id => id !== team.id) : [...value, team.id])} />
-                <Crest value={team.stemma_url} stelle={team?.titoli_title} campione={team?.campione_in_carica} imageUrl={crestUrls[team.id]} />
+                <Crest value={team.stemma_url} stelle={team?.titoli_title} imageUrl={crestUrls[team.id]} />
                 <span><strong>{team.nome}</strong><small>{locked ? 'La tua squadra · Admin' : selected ? 'Confermata' : 'Esclusa'}</small></span>
                 <i aria-hidden="true">{locked ? '◆' : selected ? '✓' : '×'}</i>
               </label>})}
