@@ -12,6 +12,7 @@ import {
 import { supabase } from '../lib/supabase'
 import { STEMMA_SQUADRA_DEFAULT, STEMMI_SQUADRA } from '../lib/teamCrests'
 import type { CrestChoice, RpcResult } from '../types'
+import { NOME_SQUADRA_MAX, SUGGERIMENTO_NOME_SQUADRA, pulisciNomeSquadra } from '../lib/nomeSquadra'
 import { CrestPicker } from './CrestPicker'
 
 type OnboardingProps = {
@@ -50,13 +51,14 @@ function TeamIdentity({ fields, onChange, disabled, disabledCrests = [] }: {
         <input
           type="text"
           minLength={2}
-          maxLength={40}
+          maxLength={NOME_SQUADRA_MAX}
           required
           placeholder="es. Atletico Bar Sport"
           value={fields.teamName}
-          onChange={(event) => onChange({ ...fields, teamName: event.target.value })}
+          onChange={(event) => onChange({ ...fields, teamName: pulisciNomeSquadra(event.target.value) })}
           disabled={disabled}
         />
+        <small className="team-identity__nota">{SUGGERIMENTO_NOME_SQUADRA}</small>
       </label>
       <CrestPicker value={fields.crest} onChange={(crest) => onChange({ ...fields, crest })} disabled={disabled} disabledValues={disabledCrests} />
     </div>

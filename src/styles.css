@@ -4674,3 +4674,5 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 :is(.riepilogo-eroe__stemma, .riepilogo-rigori__stemma, .riepilogo-squadra__stemma, .mercato-scelta-squadra, .mercato-operazione__volto, .scambi-scelta-squadra, .rig__stemma, .scoreboard__stemma, .match-intro__undici-stemma, .match-intro__strada-stemma, .carta__stemma, .albo-riv__stemma, .albo-carta__stemma) > .crest-stellato { width: 100%; height: 100%; }
 .scambi-rumor-stemma > .crest-stellato { width: 100%; }
 .crest-stellato > .crest { margin: 0; }
+
+.team-identity__nota { display: block; margin-top: 4px; color: #8f86a0; font-size: .74rem; font-weight: 600; line-height: 1.35; }

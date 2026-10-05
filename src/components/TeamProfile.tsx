@@ -1,3 +1,4 @@
+import { NOME_SQUADRA_MAX, SUGGERIMENTO_NOME_SQUADRA, pulisciNomeSquadra } from '../lib/nomeSquadra'
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { formatoStemma, generaUuidV4, preparaStemma } from '../lib/crest'
 import { ROSA_MASSIMA, ROSA_MINIMA } from '../lib/league'
@@ -705,7 +706,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       <div className="season-page team-profile-page">
 
       {ownTeam && editing && <form className="team-settings-panel" onSubmit={saveProfile}>
-        <div><p className="kicker">Impostazioni squadra</p><h2>Nome, sigla e logo</h2><label>Nome squadra<input type="text" minLength={2} maxLength={40} required value={teamName} onChange={(event) => setTeamName(event.target.value)} /></label>
+        <div><p className="kicker">Impostazioni squadra</p><h2>Nome, sigla e logo</h2><label>Nome squadra<input type="text" minLength={2} maxLength={NOME_SQUADRA_MAX} required value={teamName} onChange={(event) => setTeamName(pulisciNomeSquadra(event.target.value))} /><small className="team-identity__nota">{SUGGERIMENTO_NOME_SQUADRA}</small></label>
           <label className="team-sigla-campo">Sigla<input type="text" inputMode="text" autoCapitalize="characters" autoComplete="off" spellCheck={false} minLength={3} maxLength={3} required value={sigla} onChange={(event) => setSigla(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3))} /></label>
           <p className={`field-help ${siglaOccupataDa || (sigla && !siglaValida) ? 'is-errore' : ''}`}>
             {siglaOccupataDa ? `${sigla} è già usata da ${siglaOccupataDa.nome}.`
