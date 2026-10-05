@@ -63,7 +63,7 @@ Le altre leghe funzionano come prima.
    tipo di tabellone (`brackets.tipo`: oggi 'title'/'draft') vanno adattati a tre tabelloni con le posizioni
    per conferenza. **Va fatto entro la fine della regular season (22 giornate)**: `crea_tabelloni` oggi
    assumerebbe una classifica unica e produrrebbe tabelloni sbagliati.
-3. Grafica e nomi: Champions League (loghi), Europa League, Draft Playoffs; loghi East/West; stelle e albo
+3. Grafica e nomi: Champions League (loghi), Europa League, Draft Playoffs; loghi East/West (arrivati il 5 ottobre 2026: `public/loghi-conferenza/east.svg`, `west.svg` e le versioni `-emblema.svg` per gli spazi stretti, gia' in uso nel sorteggio e nella classifica); stelle e albo
    (il titolo diventa la Champions League).
 4. Ingresso degli 8 nuovi e budget 48 M.
 

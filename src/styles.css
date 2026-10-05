@@ -4681,7 +4681,7 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .conf-badge { --c: #4db3ff; display: inline-grid; place-items: center; flex: none; }
 .conf-badge--ovest { --c: #ff6b4a; }
 .conf-badge img { height: 34px; width: auto; display: block; filter: drop-shadow(0 3px 8px rgba(0,0,0,.5)); }
-.conf-badge--grande img { height: 64px; }
+.conf-badge--grande img { height: 118px; }
 .conf-badge__segnaposto { display: grid; place-items: center; min-width: 54px; padding: 4px 10px 5px; border: 1.5px solid var(--c); border-radius: 8px; clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%); background: linear-gradient(160deg, color-mix(in srgb, var(--c) 30%, #0c0f1c), #0c0f1c); color: #fff; line-height: 1; text-align: center; }
 .conf-badge__segnaposto b { font: 700 1.05rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .12em; color: var(--c); }
 .conf-badge__segnaposto small { margin-top: 2px; font: 600 .42rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .26em; color: #cdd5e6; }
