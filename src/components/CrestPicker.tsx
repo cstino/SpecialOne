@@ -1,5 +1,3 @@
-import { useEffect, useId, useRef, useState } from 'react'
-import { rimuoviSfondoStemma } from '../lib/crest'
 import { STEMMI_SQUADRA } from '../lib/teamCrests'
 import type { CrestChoice } from '../types'
 import { Crest } from './Crest'
@@ -11,44 +9,20 @@ type CrestPickerProps = {
   disabledValues?: string[]
 }
 
+// Gli stemmi si scelgono solo fra quelli predefiniti: il caricamento di
+// immagini personali e' stato tolto il 5 ottobre 2026. Chi ne aveva gia' uno
+// lo conserva (compare come prima voce, "Il tuo stemma") finche' non sceglie
+// un predefinito.
 export function CrestPicker({ value, onChange, disabled, disabledValues = [] }: CrestPickerProps) {
-  const inputId = useId()
-  const previousPreview = useRef<string | null>(null)
-  const [processing, setProcessing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => () => { if (previousPreview.current) URL.revokeObjectURL(previousPreview.current) }, [])
-
-  function scegliFile(file?: File) {
-    if (!file) return
-    setError(null)
-    if (previousPreview.current) URL.revokeObjectURL(previousPreview.current)
-    const previewUrl = URL.createObjectURL(file)
-    previousPreview.current = previewUrl
-    onChange({ type: 'upload', file, previewUrl })
-  }
-
-  async function removeBackground() {
-    if (value.type !== 'upload') return
-    setProcessing(true)
-    setError(null)
-    try { scegliFile(await rimuoviSfondoStemma(value.file)) }
-    catch (caught) { setError(caught instanceof Error ? caught.message : 'Rimozione dello sfondo non riuscita.') }
-    setProcessing(false)
-  }
-
   return (
     <fieldset className="crest-picker" disabled={disabled}>
       <legend>Stemma squadra</legend>
       <div className="crest-grid">
-        <label className="crest-upload" htmlFor={inputId}>
-          {value.type === 'upload' || value.type === 'existing' ? (
-            <img src={value.previewUrl} alt="Anteprima stemma caricato" />
-          ) : (
-            <span aria-hidden="true">＋</span>
-          )}
-          <span className="sr-only">Carica uno stemma personalizzato</span>
-        </label>
+        {value.type === 'existing' && (
+          <button className="crest-option" type="button" aria-pressed aria-label="Il tuo stemma attuale" disabled>
+            <img className="crest crest--small" src={value.previewUrl} alt="" />
+          </button>
+        )}
         {STEMMI_SQUADRA.map((stemma) => {
           const presetValue = `preset:${stemma.id}`
           const selected = value.type === 'preset' && value.value === presetValue
@@ -67,17 +41,8 @@ export function CrestPicker({ value, onChange, disabled, disabledValues = [] }: 
             </button>
           )
         })}
-        <input
-          className="sr-only"
-          id={inputId}
-          type="file"
-          accept="image/png,image/jpeg"
-          onChange={(event) => scegliFile(event.target.files?.[0])}
-        />
       </div>
-      {value.type === 'upload' && <button className="crest-background-tool" type="button" disabled={disabled || processing} onClick={removeBackground}>{processing ? 'Rimozione…' : '✦ Rimuovi sfondo'}</button>}
-      <p className="field-help">Scegli uno stemma oppure caricane uno PNG/JPEG, massimo 2 MB. L’immagine personale viene ritagliata automaticamente in formato quadrato.</p>
-      {error && <p className="crest-tool-error" role="alert">{error}</p>}
+      <p className="field-help">{value.type === 'existing' ? 'Hai uno stemma personalizzato: puoi tenerlo o passare a uno di questi, ma non si possono più caricare nuove immagini.' : 'Scegli lo stemma della tua squadra fra questi.'}</p>
     </fieldset>
   )
 }

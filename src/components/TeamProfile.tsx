@@ -1,6 +1,5 @@
 import { NOME_SQUADRA_MAX, SUGGERIMENTO_NOME_SQUADRA, pulisciNomeSquadra } from '../lib/nomeSquadra'
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { formatoStemma, generaUuidV4, preparaStemma } from '../lib/crest'
 import { ROSA_MASSIMA, ROSA_MINIMA } from '../lib/league'
 import { supabase } from '../lib/supabase'
 import { attributiCorrenti } from '../lib/attributiGiocatore'
@@ -622,17 +621,10 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     event.preventDefault()
     if (!team) return
     setSaving(true); setSaveError(null)
-    let uploadedPath: string | null = null
     try {
-      let crestPath = crest.type === 'upload' ? '' : crest.value
-      if (crest.type === 'upload') {
-        const blob = await preparaStemma(crest.file)
-        const formato = formatoStemma(blob)
-        uploadedPath = `${membership.user_id}/${generaUuidV4()}.${formato.extension}`
-        const { error } = await supabase.storage.from('team-crests').upload(uploadedPath, blob, { contentType: formato.contentType, cacheControl: '31536000', upsert: false })
-        if (error) throw error
-        crestPath = uploadedPath
-      }
+      // Solo predefiniti (o lo stemma che la squadra ha gia'): non si caricano piu' immagini.
+      if (crest.type === 'upload') throw new Error('Gli stemmi personalizzati non si possono piu\' caricare: scegline uno della lista.')
+      const crestPath = crest.value
       const { data, error } = await supabase.rpc('aggiorna_profilo_squadra', { p_team_id: team.id, p_nome: teamName, p_stemma_url: crestPath, p_sigla: sigla })
       if (error) throw error
       const updated = data as Team
@@ -641,7 +633,6 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       await onTeamUpdated()
       setEditing(false)
     } catch (caught) {
-      if (uploadedPath) await supabase.storage.from('team-crests').remove([uploadedPath])
       setSaveError(caught instanceof Error ? caught.message : 'Modifica della squadra non riuscita.')
     }
     setSaving(false)

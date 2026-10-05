@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { formatoStemma, generaUuidV4, preparaStemma } from '../lib/crest'
 import {
   CAMPIONATI,
   calcolaGiornateTotali,
@@ -65,27 +64,10 @@ function TeamIdentity({ fields, onChange, disabled, disabledCrests = [] }: {
   )
 }
 
-async function salvaStemma(user: User, crest: CrestChoice) {
-  if (crest.type === 'preset' || crest.type === 'existing') return { path: crest.value, uploaded: false }
-  const blob = await preparaStemma(crest.file)
-  const formato = formatoStemma(blob)
-  const path = `${user.id}/${generaUuidV4()}.${formato.extension}`
-  const { error } = await supabase.storage.from('team-crests').upload(path, blob, {
-    contentType: formato.contentType,
-    cacheControl: '31536000',
-    upsert: false,
-  })
-  if (error) throw error
-  return { path, uploaded: true }
-}
-
-async function eliminaStemmaSeOrfano(path: string) {
-  const { data, error } = await supabase
-    .from('teams')
-    .select('id')
-    .eq('stemma_url', path)
-    .maybeSingle()
-  if (!error && !data) await supabase.storage.from('team-crests').remove([path])
+function percorsoStemma(crest: CrestChoice) {
+  // Solo predefiniti (o lo stemma gia' della squadra): non si caricano piu' immagini.
+  if (crest.type === 'upload') throw new Error('Gli stemmi personalizzati non si possono piu\' caricare: scegline uno della lista.')
+  return crest.value
 }
 
 // Su mobile il sistema puo' scaricare la pagina dalla memoria quando si
@@ -202,15 +184,13 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
     }
     setPending(true)
     setError(null)
-    let uploadedPath: string | null = null
 
     try {
-      const crest = await salvaStemma(user, identity.crest)
-      if (crest.uploaded) uploadedPath = crest.path
+      const crestPath = percorsoStemma(identity.crest)
       const { data, error: rpcError } = await supabase.rpc('crea_lega', {
         p_nome_lega: leagueName,
         p_nome_squadra: identity.teamName,
-        p_stemma_url: crest.path,
+        p_stemma_url: crestPath,
         p_n_squadre: teams,
         p_n_gironi: rounds,
         p_budget_iniziale: budget * 1_000_000,
@@ -225,7 +205,6 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
       if (rpcError) throw rpcError
       onComplete(data as RpcResult)
     } catch (caught) {
-      if (uploadedPath) await eliminaStemmaSeOrfano(uploadedPath)
       setError(caught instanceof Error ? caught.message : 'Non è stato possibile creare la lega.')
       setPending(false)
     }
@@ -404,20 +383,17 @@ function JoinLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCance
     event.preventDefault()
     setPending(true)
     setError(null)
-    let uploadedPath: string | null = null
     try {
-      const crest = await salvaStemma(user, identity.crest)
-      if (crest.uploaded) uploadedPath = crest.path
+      const crestPath = percorsoStemma(identity.crest)
       const { data, error: rpcError } = await supabase.rpc('entra_in_lega', {
         p_codice: code,
         p_nome_squadra: identity.teamName,
-        p_stemma_url: crest.path,
+        p_stemma_url: crestPath,
       })
       if (rpcError) throw rpcError
       try { sessionStorage.removeItem(CHIAVE_SESSIONE_JOIN) } catch { /* noop */ }
       onComplete(data as RpcResult)
     } catch (caught) {
-      if (uploadedPath) await eliminaStemmaSeOrfano(uploadedPath)
       setError(caught instanceof Error ? caught.message : 'Non è stato possibile entrare nella lega.')
       setPending(false)
     }
