@@ -4662,14 +4662,14 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 
 .schema__errore { margin: 10px 0 0; padding: 10px 12px; border: 1px solid rgba(255,107,107,.55); border-radius: 10px; background: rgba(255,107,107,.1); color: #ffb3b3; font-size: .82rem; font-weight: 600; line-height: 1.4; }
 
-/* Stelle dei Title Playoff vinti: sopra lo stemma, una per titolo */
+/* Stelle dei Title Playoff vinti: sopra lo stemma, una per titolo. L'altezza segue lo stemma
+   (20%) con un minimo e un massimo, cosi' in classifica o nel tabellone non pesa e nelle schermate grandi si vede. */
 .crest-stellato { position: relative; display: inline-grid; place-items: center; flex: none; vertical-align: middle; }
-.crest-stelle { position: absolute; left: 50%; bottom: calc(100% - .12em); display: flex; align-items: flex-end; justify-content: center; gap: .08em; transform: translateX(-50%); pointer-events: none; white-space: nowrap; filter: drop-shadow(0 1px 2px rgba(0,0,0,.65)); }
-.crest-stellato--large .crest-stelle { font-size: 1rem; }
-.crest-stellato--small .crest-stelle { font-size: .62rem; }
-.crest-stelle svg { width: 1em; height: 1em; display: block; fill: #ffcf40; stroke: #b9821a; stroke-width: 1.2; stroke-linejoin: round; }
-.crest-stelle svg:nth-child(2):nth-last-child(2) { transform: translateY(-.18em); }
-.crest-stelle b { margin-left: .12em; color: #ffe08a; font: 700 .9em/1 "Oswald", "Arial Narrow", sans-serif; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
+.crest-stelle { position: absolute; left: 50%; bottom: calc(100% - 1px); height: clamp(6px, 20%, 16px); display: flex; align-items: flex-end; justify-content: center; gap: 1px; transform: translateX(-50%); pointer-events: none; white-space: nowrap; filter: drop-shadow(0 1px 1px rgba(0,0,0,.6)); }
+.crest-stelle svg { height: 100%; width: auto; aspect-ratio: 1; display: block; fill: #ffcf40; stroke: #b9821a; stroke-width: 1; stroke-linejoin: round; }
+.crest-stelle svg:nth-child(2):nth-last-child(2) { transform: translateY(-12%); }
+.crest-stelle b { margin-left: 2px; color: #ffe08a; font: 700 8px/1 "Oswald", "Arial Narrow", sans-serif; text-shadow: 0 1px 1px rgba(0,0,0,.7); }
+.crest-stellato--large .crest-stelle b { font-size: 11px; }
 /* Dove lo stemma riempie un riquadro di dimensione fissata, il contenitore delle stelle lo riempie uguale */
 :is(.riepilogo-eroe__stemma, .riepilogo-rigori__stemma, .riepilogo-squadra__stemma, .mercato-scelta-squadra, .mercato-operazione__volto, .scambi-scelta-squadra, .rig__stemma, .scoreboard__stemma, .match-intro__undici-stemma, .match-intro__strada-stemma, .carta__stemma, .albo-riv__stemma, .albo-carta__stemma) > .crest-stellato { width: 100%; height: 100%; }
 .scambi-rumor-stemma > .crest-stellato { width: 100%; }
