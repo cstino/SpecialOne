@@ -484,7 +484,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
             <span className={popupGol.lato === 'ospite' ? 'is-segna' : ''}>{ospite?.sigla}</span>
           </div>
           <div className="rig__squadra-tiro">
-            <span className="rig__stemma"><Crest value={squadraGol?.stemma_url ?? null} stelle={squadraGol?.titoli_title} imageUrl={crestGolUrl ?? undefined} size="small" /></span>
+            <span className="rig__stemma"><Crest value={squadraGol?.stemma_url ?? null} stelle={squadraGol?.titoli_title} campione={squadraGol?.campione_in_carica} imageUrl={crestGolUrl ?? undefined} size="small" /></span>
             <span>{squadraGol?.nome ?? 'Squadra'}</span>
             <em>{popupGol.minuto}’ · {popupGol.minuto > 105 ? '2º supplementare' : popupGol.minuto > 90 ? '1º supplementare' : popupGol.minuto > 45 ? '2º tempo' : '1º tempo'}</em>
           </div>
@@ -495,9 +495,9 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
         <div className="match-reveal__stacco-lame" aria-hidden="true" />
         <p className="match-reveal__stacco-kicker">{annuncio === 'supplementari' ? 'Fine dei tempi regolamentari' : supplementari ? 'Dopo i supplementari' : 'Dopo i 90′'}</p>
         <div className="match-reveal__stacco-squadre">
-          <div><Crest value={casa?.stemma_url ?? null} stelle={casa?.titoli_title} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="large" /><span>{casa?.nome}</span></div>
+          <div><Crest value={casa?.stemma_url ?? null} stelle={casa?.titoli_title} campione={casa?.campione_in_carica} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="large" /><span>{casa?.nome}</span></div>
           <b>{punteggio.casa}<i>–</i>{punteggio.ospite}</b>
-          <div><Crest value={ospite?.stemma_url ?? null} stelle={ospite?.titoli_title} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="large" /><span>{ospite?.nome}</span></div>
+          <div><Crest value={ospite?.stemma_url ?? null} stelle={ospite?.titoli_title} campione={ospite?.campione_in_carica} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="large" /><span>{ospite?.nome}</span></div>
         </div>
         <h2 className="match-reveal__stacco-titolo">{annuncio === 'supplementari' ? 'Supplementari' : 'Calci di rigore'}</h2>
         {andata && <p className="match-reveal__stacco-totale">Andata {andata.casa}–{andata.ospite} · totale <b>{andata.casa + punteggio.casa}–{andata.ospite + punteggio.ospite}</b></p>}
@@ -508,7 +508,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
         <div className="scoreboard__comp"><img src={LOGO_FASE[fase]} alt={NOME_FASE[fase]} /></div>
         <div className="scoreboard__bar">
           <div className="scoreboard__team">
-            <span className="scoreboard__stemma"><Crest value={casa?.stemma_url ?? null} stelle={casa?.titoli_title} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /></span>
+            <span className="scoreboard__stemma"><Crest value={casa?.stemma_url ?? null} stelle={casa?.titoli_title} campione={casa?.campione_in_carica} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" /></span>
             <b title={casa?.nome}>{casa?.sigla}</b>
           </div>
           <div className="scoreboard__score" aria-label={`${punteggio.casa} a ${punteggio.ospite}`}>
@@ -516,7 +516,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
           </div>
           <div className="scoreboard__team scoreboard__team--ospite">
             <b title={ospite?.nome}>{ospite?.sigla}</b>
-            <span className="scoreboard__stemma"><Crest value={ospite?.stemma_url ?? null} stelle={ospite?.titoli_title} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" /></span>
+            <span className="scoreboard__stemma"><Crest value={ospite?.stemma_url ?? null} stelle={ospite?.titoli_title} campione={ospite?.campione_in_carica} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" /></span>
           </div>
           <span className="scoreboard__stato">
             {completata ? (haRigori ? 'FINALE D.C.R.' : supplementari ? 'FINALE D.T.S.' : 'FINALE')
@@ -551,7 +551,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
                   style={riga.lato && colori ? { ['--tc-colore' as string]: colori[riga.lato] } : undefined}>
                   <span className="tc-riga__quando">
                     <time>{riga.minuto}’</time>
-                    {stemma && <span className="tc-riga__stemma" title={squadra?.nome}><Crest value={squadra?.stemma_url ?? null} stelle={squadra?.titoli_title} imageUrl={data.crestUrlByTeamId.get(stemma)} size="small" /></span>}
+                    {stemma && <span className="tc-riga__stemma" title={squadra?.nome}><Crest value={squadra?.stemma_url ?? null} stelle={squadra?.titoli_title} campione={squadra?.campione_in_carica} imageUrl={data.crestUrlByTeamId.get(stemma)} size="small" /></span>}
                   </span>
                   <span className="tc-riga__icona" aria-hidden="true"><IconaTelecronaca tipo={riga.tipo} /></span>
                   <div className="tc-riga__corpo">
@@ -564,8 +564,8 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
             <GraficoPressione curva={curva} minuto={minuto} fine={oraFinale} eventi={eventi} colori={colori ?? { casa: COLORE_FASE[fase], ospite: COLORE_OSPITE }}
               sigle={{ casa: casa?.sigla ?? 'CASA', ospite: ospite?.sigla ?? 'OSP' }}
               stemmi={{
-                casa: <Crest value={casa?.stemma_url ?? null} stelle={casa?.titoli_title} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" />,
-                ospite: <Crest value={ospite?.stemma_url ?? null} stelle={ospite?.titoli_title} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" />,
+                casa: <Crest value={casa?.stemma_url ?? null} stelle={casa?.titoli_title} campione={casa?.campione_in_carica} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" />,
+                ospite: <Crest value={ospite?.stemma_url ?? null} stelle={ospite?.titoli_title} campione={ospite?.campione_in_carica} imageUrl={data.crestUrlByTeamId.get(fixture.away_team_id)} size="small" />,
               }} />
           </div>}
         <footer className="match-reveal__footer">

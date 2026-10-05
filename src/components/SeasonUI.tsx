@@ -57,7 +57,7 @@ export function formatMatchDate(value: string, withTime = true) {
 }
 
 export function TeamLabel({ team, imageUrl, reversed = false, onClick }: { team?: Team; imageUrl?: string | null; reversed?: boolean; onClick?: () => void }) {
-  const content = <><Crest value={team?.stemma_url ?? null} stelle={team?.titoli_title} imageUrl={imageUrl} size="small" /><strong>{team?.nome ?? 'Squadra'}</strong></>
+  const content = <><Crest value={team?.stemma_url ?? null} stelle={team?.titoli_title} campione={team?.campione_in_carica} imageUrl={imageUrl} size="small" /><strong>{team?.nome ?? 'Squadra'}</strong></>
   if (onClick) return <button className={`season-team season-team-button ${reversed ? 'season-team--reversed' : ''}`} type="button" onClick={(event) => { event.stopPropagation(); onClick() }}>{content}</button>
   return <span className={`season-team ${reversed ? 'season-team--reversed' : ''}`}>{content}</span>
 }

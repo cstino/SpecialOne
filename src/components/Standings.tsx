@@ -128,7 +128,7 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
         <span className="players-standings-foto">{riga.foto ? <img src={riga.foto} alt="" /> : null}</span>
         <span>
           <strong>{riga.nome}</strong>
-          <small><Crest value={data.teamById.get(riga.teamId)?.stemma_url ?? null} stelle={data.teamById.get(riga.teamId)?.titoli_title} imageUrl={data.crestUrlByTeamId.get(riga.teamId)} />{data.teamById.get(riga.teamId)?.nome ?? 'Squadra'}</small>
+          <small><Crest value={data.teamById.get(riga.teamId)?.stemma_url ?? null} stelle={data.teamById.get(riga.teamId)?.titoli_title} campione={data.teamById.get(riga.teamId)?.campione_in_carica} imageUrl={data.crestUrlByTeamId.get(riga.teamId)} />{data.teamById.get(riga.teamId)?.nome ?? 'Squadra'}</small>
         </span>
       </div>
       <strong className="players-standings-valore">{riga[chiave]}</strong>
