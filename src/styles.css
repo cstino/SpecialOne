@@ -4902,9 +4902,19 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 @keyframes carica-onda { 0% { transform: scale(.55); opacity: .95; } 100% { transform: scale(1.75); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .sorteggio__carica::before, .sorteggio__carica-nucleo, .sorteggio__carica-tacche, .sorteggio__onda { animation: none; } }
 
-/* Formazione: svuota formazione (secondo tocco di conferma) */
-.formation-svuota { appearance: none; margin: 0; min-height: 44px; padding: 0 16px; border: 1px solid rgba(255,255,255,.22); border-radius: 8px; background: rgba(255,255,255,.06); color: #dfe5f6; font: 700 .78rem/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+/* Formazione: svuota formazione, a sinistra di Salva, con finestra di conferma */
+.formation-save-azioni { display: flex; align-items: stretch; gap: 10px; min-width: 0; }
+.formation-save-azioni .formation-save-button { flex: 1 1 auto; min-width: 84px; padding-left: 16px; padding-right: 16px; }
+.formation-svuota { appearance: none; margin: 0; min-height: 44px; padding: 0 14px; flex: none; border: 1px solid #ff6b6b; border-radius: 8px; background: rgba(255,80,80,.16); color: #ffb4b4; font: 700 .78rem/1.1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.formation-svuota:hover:not(:disabled) { background: rgba(255,80,80,.28); color: #fff; }
 .formation-svuota:disabled { opacity: .4; cursor: default; }
-.formation-svuota.is-conferma { border-color: #ff6b6b; background: rgba(255,107,107,.18); color: #ffd6d6; }
 .formation-svuota:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-.formazione-broadcast .formation-svuota { min-height: 36px; }
+.formation-conferma__scrim { appearance: none; position: fixed; inset: 0; z-index: 80; margin: 0; padding: 0; border: 0; background: rgba(4,6,14,.72); cursor: default; }
+.formation-conferma { position: fixed; z-index: 81; left: 50%; top: 50%; width: min(92vw, 380px); transform: translate(-50%, -50%); display: grid; gap: 12px; padding: 20px 18px 16px; border: 1px solid rgba(255,107,107,.55); border-radius: 14px; background: linear-gradient(165deg, #2a1620, #130f1c 70%); color: #fff; box-shadow: 0 24px 60px rgba(0,0,0,.6), 0 0 36px rgba(255,80,80,.18); }
+.formation-conferma h2 { margin: 0; font: 700 1.35rem/1.15 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .02em; text-transform: uppercase; text-wrap: balance; }
+.formation-conferma p { margin: 0; color: #c9bfd0; font-size: .88rem; line-height: 1.45; }
+.formation-conferma > div { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+.formation-conferma button { appearance: none; margin: 0; min-height: 42px; padding: 0 18px; border-radius: 9px; font: 700 .85rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.formation-conferma__annulla { border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.07); color: #e6ebf7; }
+.formation-conferma__ok { border: 0; background: linear-gradient(180deg, #ff7b7b, #e23b3b); color: #fff; box-shadow: 0 8px 22px rgba(226,59,59,.4); }
+.formation-conferma button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }

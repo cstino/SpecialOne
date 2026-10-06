@@ -296,13 +296,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [titolari, setTitolari] = useState<number[]>([])
   const [panchina, setPanchina] = useState<number[]>([])
   const [tribuna, setTribuna] = useState<number[]>([])
-  // «Svuota formazione» chiede una conferma al secondo tocco (scade da sola).
-  const [confermaSvuota, setConfermaSvuota] = useState(false)
-  useEffect(() => {
-    if (!confermaSvuota) return
-    const timer = window.setTimeout(() => setConfermaSvuota(false), 4000)
-    return () => window.clearTimeout(timer)
-  }, [confermaSvuota])
+  // «Svuota formazione» chiede conferma in una finestra.
+  const [chiediSvuota, setChiediSvuota] = useState(false)
   // Schema personalizzato (engine/ruoli.js, migrazione 20260917020000). NULL su
   // tutti e tre = lo schieramento standard del modulo, cioe' il gioco di prima.
   const [disposizione, setDisposizione] = useState<string[] | null>(null)
@@ -749,8 +744,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   // Toglie tutti dal campo e dalla panchina: tutta la rosa in tribuna, undici posti vuoti.
   // Modulo, schema, ruoli e indicazioni restano; non salva finche' non lo fai tu.
   function svuotaFormazione() {
-    if (!confermaSvuota) { setConfermaSvuota(true); return }
-    setConfermaSvuota(false)
+    setChiediSvuota(false)
     setTitolari(Array(slots.length).fill(0))
     setPanchina([])
     setTribuna(players.map((player) => player.id))
@@ -1042,8 +1036,10 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         <section className={`formation-panel formation-panel--tactical formazione-broadcast formazione-broadcast--${fase}`}>
           <div className="formation-toolbar">
             <div className="formation-save-row">
+              <div className="formation-save-azioni">
+              <button className="formation-svuota" type="button" disabled={saving || titolari.every((id) => !id)} onClick={() => setChiediSvuota(true)} title="Svuota formazione" aria-label="Svuota formazione">Svuota</button>
               <button className={`formation-save-button button button--primary${modificata ? '' : ' is-salvata'}`} type="button" disabled={saving || !modificata || Boolean(erroreSchema)} onClick={() => void save()}>{saving ? 'Salvo…' : modificata ? 'Salva' : 'Salvata'}</button>
-              <button className={`formation-svuota${confermaSvuota ? ' is-conferma' : ''}`} type="button" disabled={saving || titolari.every((id) => !id)} onClick={svuotaFormazione}>{confermaSvuota ? 'Tocca ancora per svuotare' : 'Svuota formazione'}</button>
+              </div>
               {(saved || salvataIl) && <div className="formation-save-stato">
                 {saved && <span>Formazione salvata</span>}
                 {salvataIl && <small>Salvata il {formatSalvataIl(salvataIl)}</small>}
@@ -1150,6 +1146,17 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           </div>
         </section>
       )}
+      {chiediSvuota && <>
+        <button className="formation-conferma__scrim" type="button" aria-label="Annulla" onClick={() => setChiediSvuota(false)} />
+        <div className="formation-conferma" role="alertdialog" aria-modal="true" aria-labelledby="formation-conferma-titolo">
+          <h2 id="formation-conferma-titolo">Sicuro di voler svuotare la formazione?</h2>
+          <p>Tutti i giocatori vanno in tribuna. Modulo, ruoli e indicazioni restano, e non cambia nulla finché non salvi.</p>
+          <div>
+            <button type="button" className="formation-conferma__annulla" onClick={() => setChiediSvuota(false)}>Annulla</button>
+            <button type="button" className="formation-conferma__ok" onClick={svuotaFormazione}>Sì, svuota</button>
+          </div>
+        </div>
+      </>}
       {sceltaPosto !== null && (() => {
         const posto = slots[sceltaPosto]
         // Chi puo' entrare: panchina e tribuna. Ordine: prima l'affinita' col
