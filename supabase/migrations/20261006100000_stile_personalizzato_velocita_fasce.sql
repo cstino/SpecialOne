@@ -3,8 +3,8 @@
 --  * Sotto uno stile preimpostato linea, ampiezza, velocita' e dove si attacca
 --    sono bloccate (valgono solo quelle dello stile). Con 'personalizzato' si
 --    sbloccano. Il blocco e' applicato dal motore (simula-giornata): qui si
---    accettano e si conservano i valori, cosi' passando a Personalizzato si
---    ritrovano quelli scelti.
+--    accettano e si conservano i valori; l'app li azzera scegliendo uno stile
+--    preimpostato e parte da quelli dello stile passando a Personalizzato.
 --  * Nuova leva: velocita_manovra (ragionata | veloce; NULL = normale).
 --  * Dove si attacca: nuovo valore FASCE (entrambe le fasce).
 --  * Le formazioni, i moduli e gli schemi riserva che avevano indicazioni di
