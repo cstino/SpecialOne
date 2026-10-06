@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
 import { fasciaVoto, formatoVoto } from '../lib/voti'
+import { firmaStemmi } from '../lib/premiAlbo'
 import { useFaseSquadra } from '../lib/faseSquadra'
 import { useSeasonData } from '../lib/useSeasonData'
 import type { League, Membership, Team } from '../types'
@@ -51,6 +52,9 @@ export function Amichevoli({ membership, onNavigate }: Props) {
   const fase = useFaseSquadra(league.id, membership.id, dati.season?.id)
   const offseason = league.fase_carriera === 'offseason'
   const [squadre, setSquadre] = useState<Team[]>([])
+  // Gli stemmi caricati a mano (non predefiniti) stanno in uno spazio privato: servono indirizzi firmati.
+  const [stemmi, setStemmi] = useState<Map<number, string>>(new Map())
+  const stemmiFirmati = useRef(false)
   const [righe, setRighe] = useState<Riga[]>([])
   const [caricamento, setCaricamento] = useState(true)
   const [errore, setErrore] = useState<string | null>(null)
@@ -63,7 +67,9 @@ export function Amichevoli({ membership, onNavigate }: Props) {
       supabase.from('amichevoli').select('id, da_team_id, a_team_id, stato, creata_il, giocata_il, gol_da, gol_a').eq('league_id', league.id).order('id', { ascending: false }),
     ])
     if (t.error || a.error) { setErrore((t.error ?? a.error)!.message); setCaricamento(false); return }
-    setSquadre((t.data ?? []) as Team[])
+    const elenco = (t.data ?? []) as Team[]
+    setSquadre(elenco)
+    if (!stemmiFirmati.current) { stemmiFirmati.current = true; void firmaStemmi(elenco).then(setStemmi) }
     setRighe((a.data ?? []) as Riga[])
     setCaricamento(false)
   }, [league.id])
@@ -109,7 +115,7 @@ export function Amichevoli({ membership, onNavigate }: Props) {
     else { await carica(); setOccupato(null) }
   }
 
-  const squadraRiga = (id: number) => <span className="amichevoli__squadra"><Crest value={perId.get(id)?.stemma_url ?? null} stelle={perId.get(id)?.titoli_title} /><strong>{nome(id)}</strong></span>
+  const squadraRiga = (id: number) => <span className="amichevoli__squadra"><Crest value={perId.get(id)?.stemma_url ?? null} imageUrl={stemmi.get(id)} stelle={perId.get(id)?.titoli_title} /><strong>{nome(id)}</strong></span>
 
   return <main className="app-shell season-shell scambi-shell">
     <GameNav league={league} active="amichevoli" onNavigate={onNavigate} />
@@ -175,13 +181,13 @@ export function Amichevoli({ membership, onNavigate }: Props) {
     </div>}
 
     {!caricamento && aperta !== null && <div className={`season-page season-page--narrow scambi-page scambi-broadcast formazione-broadcast formazione-broadcast--${fase}`}>
-      <ReffertoAmichevole id={aperta} squadre={perId} onIndietro={() => setAperta(null)} />
+      <ReffertoAmichevole id={aperta} squadre={perId} stemmi={stemmi} onIndietro={() => setAperta(null)} />
     </div>}
   </main>
 }
 
 // Il referto di un'amichevole: punteggio, marcatori, cronaca, statistiche e formazioni con i voti.
-function ReffertoAmichevole({ id, squadre, onIndietro }: { id: number; squadre: Map<number, Team>; onIndietro: () => void }) {
+function ReffertoAmichevole({ id, squadre, stemmi, onIndietro }: { id: number; squadre: Map<number, Team>; stemmi: Map<number, string>; onIndietro: () => void }) {
   const [riga, setRiga] = useState<(Riga & { risultato: Referto | null }) | null>(null)
   const [errore, setErrore] = useState<string | null>(null)
   useEffect(() => {
@@ -227,9 +233,9 @@ function ReffertoAmichevole({ id, squadre, onIndietro }: { id: number; squadre: 
     <button type="button" className="button button--ghost" onClick={onIndietro}>‹ Amichevoli</button>
     <p className="amichevoli__etichetta">Amichevole · non conta per classifica e statistiche{riga.giocata_il ? ` · ${dataBreve(riga.giocata_il)}` : ''}</p>
     <div className="amichevoli__testata">
-      <div><Crest value={casa?.stemma_url ?? null} stelle={casa?.titoli_title} size="large" /><strong>{casa?.nome ?? 'Squadra'}</strong><small>{r.modulo_casa} · {NOME_STILE[r.stile_casa] ?? r.stile_casa}</small></div>
+      <div><Crest value={casa?.stemma_url ?? null} imageUrl={stemmi.get(riga.da_team_id)} stelle={casa?.titoli_title} size="large" /><strong>{casa?.nome ?? 'Squadra'}</strong><small>{r.modulo_casa} · {NOME_STILE[r.stile_casa] ?? r.stile_casa}</small></div>
       <span className="amichevoli__risultato"><b>{riga.gol_da}</b><i>-</i><b>{riga.gol_a}</b></span>
-      <div><Crest value={ospite?.stemma_url ?? null} stelle={ospite?.titoli_title} size="large" /><strong>{ospite?.nome ?? 'Squadra'}</strong><small>{r.modulo_ospite} · {NOME_STILE[r.stile_ospite] ?? r.stile_ospite}</small></div>
+      <div><Crest value={ospite?.stemma_url ?? null} imageUrl={stemmi.get(riga.a_team_id)} stelle={ospite?.titoli_title} size="large" /><strong>{ospite?.nome ?? 'Squadra'}</strong><small>{r.modulo_ospite} · {NOME_STILE[r.stile_ospite] ?? r.stile_ospite}</small></div>
     </div>
 
     <section className="scambi-blocco">
