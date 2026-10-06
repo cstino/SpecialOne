@@ -1250,57 +1250,28 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         </div>
       })()}
       {sostituisci && (() => {
-        const idBase = playerAt(sostituisci)
-        const base = players.find((item) => item.id === idBase)
+        // Solo per un titolare: la lista di chi puo' entrare al suo posto (panchina e tribuna). Per chi sta in
+        // panchina o in tribuna «Sostituzione» arma lo scambio: si tocca poi l'altro giocatore (selectPlayer).
+        const base = players.find((item) => item.id === playerAt(sostituisci))
         if (!base) return null
+        const posto = slots[sostituisci.index]
         const ordineFit: Record<PositionFit, number> = { natural: 0, adapted: 1, out: 2 }
-        const daTitolare = sostituisci.zone === 'starter'
-        const posto = daTitolare ? slots[sostituisci.index] : null
-        // Un titolare viene sostituito da panchina e tribuna; uno di panchina o tribuna sceglie quale titolare rilevare.
-        const candidati = daTitolare
-          ? [
-            ...panchina.map((id, index) => ({ id, location: { zone: 'bench', index, id } as PlayerLocation })),
-            ...tribuna.map((id, index) => ({ id, location: { zone: 'tribuna', index, id } as PlayerLocation })),
-          ].flatMap((c) => {
-            const player = players.find((item) => item.id === c.id)
-            if (!player) return []
-            const fit = positionFit(posto as string, player.posizioni), efficace = overallInCampo(player, posto as string)
-            return [{ ...c, player, posto: posto as string, fit, efficace, fuori: indisponibile(player), vuoto: false, fitBase: fit, efficaceBase: efficace }]
-          })
-          : titolari.map((id, index) => ({ id, location: { zone: 'starter', index, id } as PlayerLocation, index })).flatMap((c) => {
-            const posizione = slots[c.index]
-            const attuale = c.id ? players.find((item) => item.id === c.id) : undefined
-            // La riga mostra chi occupa il posto (o il posto libero), l'ordine dice dove starebbe meglio il giocatore scelto.
-            const chi = attuale ?? base
-            return [{ ...c, player: chi, posto: posizione, fit: positionFit(posizione, chi.posizioni), efficace: overallInCampo(chi, posizione), fuori: indisponibile(base), vuoto: !c.id,
-              fitBase: positionFit(posizione, base.posizioni), efficaceBase: overallInCampo(base, posizione) }]
-          })
-        candidati.sort((a, b) => {
-          return Number(a.fuori) - Number(b.fuori) || ordineFit[a.fitBase] - ordineFit[b.fitBase] || b.efficaceBase - a.efficaceBase || b.player.overall_corrente - a.player.overall_corrente
-        })
+        const candidati = [
+          ...panchina.map((id, index) => ({ id, location: { zone: 'bench', index, id } as PlayerLocation })),
+          ...tribuna.map((id, index) => ({ id, location: { zone: 'tribuna', index, id } as PlayerLocation })),
+        ].flatMap((c) => {
+          const player = players.find((item) => item.id === c.id)
+          return player ? [{ ...c, player, fit: positionFit(posto, player.posizioni), efficace: overallInCampo(player, posto), fuori: indisponibile(player) }] : []
+        }).sort((a, b) => Number(a.fuori) - Number(b.fuori) || ordineFit[a.fit] - ordineFit[b.fit] || b.efficace - a.efficace || b.player.overall_corrente - a.player.overall_corrente)
         const chiudi = () => setSostituisci(null)
-        const scegli = (c: (typeof candidati)[number]) => {
-          setSaved(false)
-          if (daTitolare) scambia(sostituisci, c.location)
-          else if (c.vuoto) mettiTitolare(c.location.index, sostituisci)
-          else scambia(sostituisci, c.location)
-          chiudi()
-        }
         return <div className={`scelta-titolare-layer formazione-broadcast formazione-broadcast--${fase}`} role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) chiudi() }}>
-          <section className="scelta-titolare" role="dialog" aria-label={daTitolare ? `Chi entra al posto di ${base.nome}` : `Al posto di chi entra ${base.nome}`}>
+          <section className="scelta-titolare" role="dialog" aria-label={`Chi entra al posto di ${base.nome}`}>
             <header>
-              <div><small>Sostituzione</small><strong>{daTitolare
-                ? <>Chi entra al posto di {cognome(base.nome)}{posto && <> in <i className={`rosa-card__ruolo--${reparto(posto)}`}>{posto}</i></>}?</>
-                : <>Al posto di chi entra {cognome(base.nome)}?</>}</strong></div>
+              <div><small>Sostituzione</small><strong>Chi entra al posto di {cognome(base.nome)} in <i className={`rosa-card__ruolo--${reparto(posto)}`}>{posto}</i>?</strong></div>
               <button className="button-icona" type="button" onClick={chiudi} aria-label="Chiudi"><Icona nome="chiudi" /></button>
             </header>
-            {candidati.length === 0 ? <p className="scelta-titolare__vuoto">Nessun giocatore disponibile per la sostituzione.</p>
-              : <ul>{candidati.map((c) => {
-                const vuoto = c.vuoto
-                // Chi sceglie un titolare da rilevare vede il posto e, se c'e', il giocatore che lo occupa.
-                const etichetta = daTitolare ? undefined : vuoto ? `${c.posto} · libero` : `${c.posto} · ${etichettaFit[c.fit]}`
-                return rigaScelta({ id: c.id, player: vuoto ? base : c.player, fit: c.fit, efficace: c.efficace, fuori: c.fuori }, `${c.location.zone}-${c.location.index}`, () => scegli(c), etichetta)
-              })}</ul>}
+            {candidati.length === 0 ? <p className="scelta-titolare__vuoto">Nessun giocatore in panchina o in tribuna.</p>
+              : <ul>{candidati.map((c) => rigaScelta(c, `${c.location.zone}-${c.location.index}`, () => { setSaved(false); scambia(sostituisci, c.location); chiudi() }))}</ul>}
           </section>
         </div>
       })()}
@@ -1314,7 +1285,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
             <button type="button" onClick={() => setPlayerAction(null)} aria-label="Chiudi menu"><Icona nome="chiudi" /></button>
           </div>
           <div className="player-action-menu__choices">
-            <button type="button" onClick={() => { const location = playerAction.location; setPlayerAction(null); setSostituisci(location) }}><span>⇄</span><strong>Sostituzione</strong></button>
+            <button type="button" onClick={() => { const location = playerAction.location; setPlayerAction(null); if (location.zone === 'starter') setSostituisci(location); else selectPlayer(location) }}><span>⇄</span><strong>Sostituzione</strong></button>
             <button type="button" onClick={() => { const player = playerAction.player; setPlayerAction(null); setDetailPlayer(player) }}><span>ⓘ</span><strong>Dettagli</strong></button>
           </div>
         </section>

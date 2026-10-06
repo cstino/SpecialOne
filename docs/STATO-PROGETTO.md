@@ -2000,8 +2000,8 @@ metà" con la rimozione). Applicata prima in transazione con rollback, poi per d
 - **Sostituzione con i suggeriti**: nella pagina Formazione, toccando un giocatore e poi «Sostituzione» si apre la
   stessa lista dei suggeriti che c'era per i posti vuoti. Per un titolare: chi entra al suo posto (panchina e
   tribuna, prima chi e' nel suo ruolo, poi per overall nel posto; gli indisponibili in fondo, non selezionabili).
-  Per un giocatore di panchina o tribuna: al posto di quale titolare entra (i titolari ordinati da dove giocherebbe
-  meglio lui). Lo scambio usa le stesse regole del doppio tocco (`scambia`), con quelle sugli infortunati.
+  Per un giocatore di panchina o tribuna «Sostituzione» NON apre la lista (6 ottobre, su richiesta): arma lo scambio
+  come prima e si tocca poi l'altro giocatore. Lo scambio usa le stesse regole del doppio tocco (`scambia`), con quelle sugli infortunati.
 - **Scambio di due titolari trascinando**: nella Formazione si tiene premuto su un titolare (circa un terzo di secondo;
   col mouse basta muoversi), la card si solleva e segue il dito, viene attirata dai titolari vicini (calamita) e quello
   sotto si illumina; rilasciando i due si scambiano con un movimento unico. Rilasciando altrove torna al suo posto;
