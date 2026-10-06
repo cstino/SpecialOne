@@ -8,6 +8,10 @@
 --  * public.scelte_live_stato: per ogni scelta, il giocatore solo da quando e' rivelato.
 --  * Con le conferenze la prima giornata e' alle 23:00 di almeno 20 ore dopo la fine
 --    del sorteggio: chi scopre la propria conferenza ha un giorno per schierarsi.
+--  * ON-Season: l'ordine delle scelte dipende dal MONTE INGAGGI, dal minore al maggiore,
+--    misurato alla chiusura dell'off-season (dopo il draft e il completamento delle rose).
+--    Le scelte mancanti delle squadre entrate dopo la generazione si creano allora.
+--    OFF-Season resta dai tornei. Le posizioni ON non nascono piu' alla fine dei playoff.
 --  Funzioni ricostruite dalla definizione live (pg_get_functiondef).
 
 create table if not exists public.scelte_live (
@@ -30,6 +34,52 @@ create policy scelte_live_membri on public.scelte_live for select to authenticat
 revoke all on public.scelte_live from public, anon;
 grant select on public.scelte_live to authenticated;
 -- Le righe le scrive solo il database.
+
+-- ON-Season: ordine di scelta dal monte ingaggi, dal minore al maggiore.
+-- A parita' sorteggio casuale (deciso qui, si puo' cambiare). Non tocca una
+-- finestra ON gia' svelata. Crea anche le scelte mancanti delle squadre arrivate
+-- dopo la generazione (finestre da p_stagione a p_stagione + 4).
+create or replace function private.assegna_posizioni_on_per_monte_ingaggi(p_league_id bigint, p_stagione smallint)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_assegnate integer;
+begin
+  insert into public.scelte_draft (league_id, team_origine_id, team_proprietario_id, stagione, finestra)
+  select p_league_id, t.id, t.id, s.stagione, f.finestra
+  from public.teams t
+  cross join generate_series(p_stagione::integer, p_stagione + 4) as s(stagione)
+  cross join (values ('on'), ('off')) as f(finestra)
+  where t.league_id = p_league_id and t.attiva
+  on conflict (league_id, team_origine_id, stagione, finestra) do nothing;
+
+  if exists (
+    select 1 from public.finestre_scelte
+    where league_id = p_league_id and stagione = p_stagione and finestra = 'on'
+  ) then
+    return 0;
+  end if;
+
+  with ordine as (
+    select t.id as team_id,
+           row_number() over (order by private.monte_ingaggi(t.id, p_stagione) asc, random())::smallint as posizione
+    from public.teams t
+    where t.league_id = p_league_id and t.attiva
+  )
+  update public.scelte_draft sd
+  set posizione = o.posizione, stato = 'determinata', aggiornata_il = now()
+  from ordine o
+  where sd.league_id = p_league_id and sd.stagione = p_stagione and sd.finestra = 'on'
+    and sd.team_origine_id = o.team_id and sd.stato in ('futura', 'determinata');
+
+  get diagnostics v_assegnate = row_count;
+  return v_assegnate;
+end;
+$$;
+revoke all on function private.assegna_posizioni_on_per_monte_ingaggi(bigint, smallint) from public, anon, authenticated;
 
 CREATE OR REPLACE FUNCTION private.risolvi_una_scelta(p_scelta_id bigint)
  RETURNS boolean
@@ -366,6 +416,10 @@ begin
   -- rovescia in giornate dal momento dell'acquisto, decrementato ogni
   -- giornata simulata da public.decrementa_vivaio_giornate — qui non
   -- resta piu' nulla da fare.
+
+  -- ON-Season della nuova stagione: l'ordine dal monte ingaggi (minore -> maggiore),
+  -- misurato ora che draft e rose sono completi.
+  perform private.assegna_posizioni_on_per_monte_ingaggi(p_league_id, v_off.stagione_a);
 
   update public.offseasons
   set stato = 'conclusa', conclusa_il = clock_timestamp()
@@ -815,3 +869,123 @@ end;
 $$;
 revoke all on function public.scelte_live_stato(bigint) from public, anon;
 grant execute on function public.scelte_live_stato(bigint) to authenticated;
+
+-- Alla fine dei playoff si assegna solo la OFF-Season della stagione giocata: la ON-Season
+-- della successiva dipende dal monte ingaggi (private.assegna_posizioni_on_per_monte_ingaggi).
+CREATE OR REPLACE FUNCTION private.assegna_posizioni_playoff(p_league_id bigint, p_stagione_giocata smallint)
+ RETURNS integer
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_season_id bigint;
+  v_gia integer;
+  v_da_assegnare integer;
+  v_non_concluso integer;
+  v_assegnate integer;
+  v_bracket record;
+  v_turno smallint;
+  v_taglia_draft integer;
+  v_taglia_title integer;
+begin
+  -- Quante fra le due righe bersaglio (OFF di questa stagione, ON della
+  -- prossima) sono ancora libere. Zero significa che il lavoro e' gia'
+  -- stato fatto (o non c'e' nulla da fare): esce senza errori, e'
+  -- legittimo — una lega puo' avere OFF-Season N gia' assegnata da
+  -- assegna_posizioni_transizione (§2.1) quando i suoi playoff si
+  -- concludono.
+  select count(*) into v_da_assegnare
+  from public.scelte_draft
+  where league_id = p_league_id
+    and stagione = p_stagione_giocata and finestra = 'off'
+    and stato = 'futura';
+  if v_da_assegnare = 0 then
+    return 0;
+  end if;
+
+  select id into v_season_id from public.seasons
+  where league_id = p_league_id and numero = p_stagione_giocata;
+  if not found then
+    raise exception using errcode = 'P0002', message = 'Stagione ' || p_stagione_giocata || ' non trovata.';
+  end if;
+
+  select count(*) into v_non_concluso
+  from public.brackets where season_id = v_season_id and stato <> 'concluso';
+  if v_non_concluso > 0 then
+    raise exception using errcode = '55000',
+      message = 'I tabelloni della stagione ' || p_stagione_giocata || ' non sono ancora tutti conclusi.';
+  end if;
+  if not exists (select 1 from public.brackets where season_id = v_season_id) then
+    raise exception using errcode = '55000',
+      message = 'Nessun tabellone per la stagione ' || p_stagione_giocata || ': niente da cui derivare l''ordine.';
+  end if;
+
+  -- ORDINE DI SCELTA: IL PERCORSO DI CHI TI HA BATTUTO
+  --
+  -- Deciso con l'utente il 24 settembre 2026, sostituisce "vittorie nel
+  -- tabellone + spareggio di classifica". Si parte dal campione e si scende
+  -- turno per turno: ogni eliminato si mette SUBITO DIETRO a chi l'ha battuto,
+  -- nell'ordine in cui quei vincitori sono gia' classificati. Perdere contro
+  -- chi poi arriva lontano vale di piu'.
+  --
+  -- Draft Playoff, 8 squadre:
+  --   1 campione · 2 finalista
+  --   3 semifinalista battuto dal campione · 4 battuto dal finalista
+  --   5 quarti, battuto dal campione · 6 battuto dal finalista
+  --   7 battuto dal 3° · 8 battuto dal 4°
+  -- Title Playoff: lo specchio esatto, il campione sceglie per ultimo.
+  --
+  -- Prima c'era lo spareggio per classifica anche sulle scelte 3-4, e questo
+  -- contraddiceva decisioni-draft-picks.md §2 ("perdente di semifinale, lato
+  -- del campione"). Il percorso lo risolve da se', e i bye si gestiscono senza
+  -- casi speciali: una squadra che salta un turno compare nel turno dopo.
+  create temp table if not exists _rango_playoff (
+    bracket_id bigint, tipo text, team_id bigint, rango integer
+  ) on commit drop;
+  delete from _rango_playoff;
+
+  for v_bracket in
+    select b.id, b.tipo from public.brackets b where b.season_id = v_season_id
+  loop
+    select max(turno) into v_turno from public.bracket_ties where bracket_id = v_bracket.id;
+
+    -- il campione, cioe' il vincitore della finale
+    insert into _rango_playoff
+    select v_bracket.id, v_bracket.tipo, bt.vincitore_team_id, 1
+    from public.bracket_ties bt
+    where bt.bracket_id = v_bracket.id and bt.turno = v_turno;
+
+    -- dalla finale al primo turno: ogni perdente sta dietro al suo vincitore
+    while v_turno >= 1 loop
+      insert into _rango_playoff
+      select v_bracket.id, v_bracket.tipo,
+             case when bt.vincitore_team_id = bt.alta_team_id then bt.bassa_team_id else bt.alta_team_id end,
+             (select coalesce(max(rango), 0) from _rango_playoff where bracket_id = v_bracket.id)
+               + row_number() over (order by r.rango)
+      from public.bracket_ties bt
+      join _rango_playoff r on r.bracket_id = v_bracket.id and r.team_id = bt.vincitore_team_id
+      where bt.bracket_id = v_bracket.id and bt.turno = v_turno
+        and bt.alta_team_id is not null and bt.bassa_team_id is not null;
+      v_turno := v_turno - 1;
+    end loop;
+  end loop;
+
+  select count(*) into v_taglia_draft from _rango_playoff where tipo = 'draft';
+  select count(*) into v_taglia_title from _rango_playoff where tipo = 'title';
+
+  update public.scelte_draft sd
+  set posizione = case when r.tipo = 'draft' then r.rango
+                       else v_taglia_draft + (v_taglia_title + 1 - r.rango) end,
+      stato = 'determinata',
+      aggiornata_il = now()
+  from _rango_playoff r
+  where sd.league_id = p_league_id
+    and sd.team_origine_id = r.team_id
+    and sd.stato = 'futura'
+    and sd.stagione = p_stagione_giocata and sd.finestra = 'off';
+
+  get diagnostics v_assegnate = row_count;
+  return v_assegnate;
+end;
+$function$;

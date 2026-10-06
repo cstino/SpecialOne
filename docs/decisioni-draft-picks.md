@@ -346,3 +346,33 @@ le leghe in corso: dove una finestra è già stata assegnata dalla vecchia regol
 2 di LegaBot, già `determinata` dalla transizione di §2.1), la nuova `assegna_posizioni_playoff`
 la lascia stare e assegna solo ciò che è ancora `futura` — nessun doppio assegnamento, nessun
 errore.
+
+
+## 12. ON-Season: l'ordine dipende dal monte ingaggi — 6 ottobre 2026
+
+**Sostituisce la regola dei playoff per le sole ON-Season** (§2, §8). Detto dal committente il
+6 ottobre 2026. Le **OFF-Season restano dai tornei** (§2): campione dell'ultimo tabellone in fondo,
+con i tre tabelloni delle conference (Draft Playoffs per primi, poi Europa League, poi Champions
+League: `docs/decisioni-conferenze.md`).
+
+- **Regola.** L'ordine delle scelte di una ON-Season si assegna **alla chiusura dell'off-season**
+  che la precede, dal **monte ingaggi minore al maggiore**: chi ha il monte ingaggi più basso
+  sceglie prima. Il monte ingaggi è quello di `private.monte_ingaggi(squadra, stagione)` (rosa, prospetti
+  del vivaio e giocatori con peso), misurato **dopo** il draft OFF-Season e il completamento
+  automatico delle rose.
+- **Parità.** Sorteggio casuale al momento dell'assegnazione (scelta mia, non era stata discussa:
+  si cambia in una riga). Ex aequo reali già visti: due squadre a 54,8 M€ e due a 53,4 M€.
+- **Chi ha una scelta.** Tutte le squadre attive. Le **nuove squadre non hanno scelte** nel draft
+  OFF-Season 1, ma dall'**ON-Season 2** ce n'è una per squadra: con 24 squadre, 24 scelte.
+  `private.assegna_posizioni_on_per_monte_ingaggi` crea anche le scelte mancanti (finestre da quella
+  stagione a +4) per le squadre arrivate dopo la generazione.
+- **Playoff.** `assegna_posizioni_playoff` assegna ora **solo la OFF-Season della stagione giocata**:
+  la ON della successiva non nasce più alla fine dei playoff.
+- **Scambi.** Una scelta ON resta `futura` fino alla chiusura dell'off-season, quindi si può scambiare
+  più a lungo; la posizione dipende dal monte ingaggi della squadra di **origine**, come prima
+  dipendeva dal suo percorso. Lo stemma resta quello della squadra di origine.
+- **Una finestra ON già svelata non si tocca.** L'ON-Season 2 non lo è ancora: le 16 posizioni assegnate
+  dai tornei della stagione 1 vengono rifatte alla chiusura, per tutte le 24 squadre (provato in
+  transazione annullata con 18 squadre: posizioni 1..18 in ordine di monte ingaggi, scelte presenti per
+  tutte le finestre dalla 2 alla 6).
+- Migrazione `20261006110000` (insieme al draft in diretta).
