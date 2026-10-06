@@ -128,3 +128,8 @@ disegnato: anelli concentrici che girano nel colore della conference che ricever
 arancio West), con un anello che si riempie negli ultimi 6 secondi, l'emblema della conference al centro e il
 conto alla rovescia. Al termine la squadra si rivela con un'onda luminosa attorno allo stemma. Prima del
 conto finale (primo turno) gli anelli girano piano e la scritta dice «Preparo l'estrazione».
+
+**Primo turno del sorteggio (6 ottobre 2026).** Aspettava 20 secondi invece dei 6 del caricamento. Ora l'«avvio»
+che si vede (conto alla rovescia, menu) e' quando comincia il caricamento della prima squadra, cioe' 14 secondi
+dopo `sorteggi_conferenze.avviato_il` (`ANTICIPO_PRIMA_ESTRAZIONE` in `lib/conferenze.ts`): anche la prima
+squadra aspetta 6 secondi. Nessun cambio nel database.

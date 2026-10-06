@@ -4901,3 +4901,10 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 @keyframes carica-respiro { 0%, 100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.06); opacity: 1; } }
 @keyframes carica-onda { 0% { transform: scale(.55); opacity: .95; } 100% { transform: scale(1.75); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .sorteggio__carica::before, .sorteggio__carica-nucleo, .sorteggio__carica-tacche, .sorteggio__onda { animation: none; } }
+
+/* Formazione: svuota formazione (secondo tocco di conferma) */
+.formation-svuota { appearance: none; margin: 0; min-height: 44px; padding: 0 16px; border: 1px solid rgba(255,255,255,.22); border-radius: 8px; background: rgba(255,255,255,.06); color: #dfe5f6; font: 700 .78rem/1 "Oswald", "Aptos Narrow", "Arial Narrow", sans-serif; letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+.formation-svuota:disabled { opacity: .4; cursor: default; }
+.formation-svuota.is-conferma { border-color: #ff6b6b; background: rgba(255,107,107,.18); color: #ffd6d6; }
+.formation-svuota:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.formazione-broadcast .formation-svuota { min-height: 36px; }

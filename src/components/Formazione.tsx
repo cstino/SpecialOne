@@ -296,6 +296,13 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [titolari, setTitolari] = useState<number[]>([])
   const [panchina, setPanchina] = useState<number[]>([])
   const [tribuna, setTribuna] = useState<number[]>([])
+  // «Svuota formazione» chiede una conferma al secondo tocco (scade da sola).
+  const [confermaSvuota, setConfermaSvuota] = useState(false)
+  useEffect(() => {
+    if (!confermaSvuota) return
+    const timer = window.setTimeout(() => setConfermaSvuota(false), 4000)
+    return () => window.clearTimeout(timer)
+  }, [confermaSvuota])
   // Schema personalizzato (engine/ruoli.js, migrazione 20260917020000). NULL su
   // tutti e tre = lo schieramento standard del modulo, cioe' il gioco di prima.
   const [disposizione, setDisposizione] = useState<string[] | null>(null)
@@ -739,6 +746,17 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     setPlayerAction({ player, location, x, y })
   }
 
+  // Toglie tutti dal campo e dalla panchina: tutta la rosa in tribuna, undici posti vuoti.
+  // Modulo, schema, ruoli e indicazioni restano; non salva finche' non lo fai tu.
+  function svuotaFormazione() {
+    if (!confermaSvuota) { setConfermaSvuota(true); return }
+    setConfermaSvuota(false)
+    setTitolari(Array(slots.length).fill(0))
+    setPanchina([])
+    setTribuna(players.map((player) => player.id))
+    setSelected(null); setPlayerAction(null); setSaved(false); setError(null)
+  }
+
   async function save(nomeRiservaScelto?: string) {
     if (erroreSchema) { setError(erroreSchema); return }
     // La prima volta che si salva uno schema riserva se ne chiede il nome.
@@ -1025,6 +1043,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           <div className="formation-toolbar">
             <div className="formation-save-row">
               <button className={`formation-save-button button button--primary${modificata ? '' : ' is-salvata'}`} type="button" disabled={saving || !modificata || Boolean(erroreSchema)} onClick={() => void save()}>{saving ? 'Salvo…' : modificata ? 'Salva' : 'Salvata'}</button>
+              <button className={`formation-svuota${confermaSvuota ? ' is-conferma' : ''}`} type="button" disabled={saving || titolari.every((id) => !id)} onClick={svuotaFormazione}>{confermaSvuota ? 'Tocca ancora per svuotare' : 'Svuota formazione'}</button>
               {(saved || salvataIl) && <div className="formation-save-stato">
                 {saved && <span>Formazione salvata</span>}
                 {salvataIl && <small>Salvata il {formatSalvataIl(salvataIl)}</small>}

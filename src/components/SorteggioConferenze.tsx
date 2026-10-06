@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { firmaStemmi } from '../lib/premiAlbo'
-import { NOME_CONFERENZA, NOME_CONFERENZA_BREVE, type Conferenza } from '../lib/conferenze'
+import { ANTICIPO_PRIMA_ESTRAZIONE, NOME_CONFERENZA, NOME_CONFERENZA_BREVE, SECONDI_ROULETTE, type Conferenza } from '../lib/conferenze'
 import type { League, Membership, Team } from '../types'
 import { Crest } from './Crest'
 import { ConferenceBadge } from './ConferenceBadge'
@@ -15,8 +15,6 @@ type Stato = {
 }
 type Estrazione = { ordine: number; team_id: number; conferenza: Conferenza }
 
-// L'estratta resta in scena per quasi tutto il turno; la roulette gira solo negli ultimi secondi.
-const SECONDI_ROULETTE = 6
 
 // Caricamento dell'estrazione: anelli che girano nel colore della conference che sta per
 // ricevere la squadra, un anello che si riempie negli ultimi secondi e, al termine, la
@@ -96,7 +94,7 @@ export function SorteggioConferenze({ membership, onFine, onMenu, demo }: Props)
   const passoMs = (stato?.passo_secondi ?? 20) * 1000
   const avviatoMs = stato ? Date.parse(stato.avviato_il) : 0
   // Dopo il draft in diretta il sorteggio parte piu' tardi: finche' non e' l'ora, conto alla rovescia.
-  const secondiAllAvvio = stato ? Math.max(0, (avviatoMs - adesso) / 1000) : 0
+  const secondiAllAvvio = stato ? Math.max(0, (avviatoMs + ANTICIPO_PRIMA_ESTRAZIONE * 1000 - adesso) / 1000) : 0
   const prima = Boolean(stato) && secondiAllAvvio > 0
   const trascorso = stato ? Math.max(0, adesso - avviatoMs) : 0
   const dovute = stato ? Math.min(stato.totale, Math.floor(trascorso / passoMs)) : 0

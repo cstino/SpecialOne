@@ -9,7 +9,7 @@ import { OffseasonLiveView } from './OffseasonLive'
 const MEMBERSHIP_DEMO = { id: MIA_DEMO, league: { id: 0, nome: 'Serie F · anteprima', stagione_corrente: 2 } } as unknown as Membership
 const SALTI: [string, number][] = [
   ['Inizio', 0], ['Draft: scelta 1', 10], ['Draft: metà', 10 + 8 * 30], ['Fine draft', DEMO_FINE_DRAFT - 3],
-  ['Sorteggio: inizio', DEMO_AVVIO_SORTEGGIO - 5], ['Sorteggio: metà', DEMO_AVVIO_SORTEGGIO + 12 * 20], ['Fine', DEMO_FINE - 25],
+  ['Sorteggio: inizio', DEMO_AVVIO_SORTEGGIO + 9], ['Sorteggio: metà', DEMO_AVVIO_SORTEGGIO + 12 * 20], ['Fine', DEMO_FINE - 25],
 ]
 const VELOCITA = [1, 5, 15]
 

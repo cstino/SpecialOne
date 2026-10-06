@@ -9,6 +9,7 @@ export type TipoNotifica =
   | 'mercato_proposta'
   | 'mercato_esito'
   | 'mercato_asta'
+  | 'scambio_ufficiale'
   | 'sistema'
 
 export type Notifica = {

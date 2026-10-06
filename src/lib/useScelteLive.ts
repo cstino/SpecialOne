@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './supabase'
+import { ANTICIPO_PRIMA_ESTRAZIONE } from './conferenze'
 
 // Il draft OFF-Season in diretta (migrazione 20261006110000): il server ha gia'
 // risolto le scelte, ma ogni giocatore si legge solo da quando viene rivelato
@@ -65,6 +66,8 @@ export function useScelteLive(leagueId: number) {
       if (!data) { setStato(null); return }
       const nuovo = data as ScelteLiveStato
       offset.current = Date.parse(nuovo.ora_server) - (prima + Date.now()) / 2
+      // L'avvio visibile del sorteggio e' quando comincia il caricamento della prima squadra.
+      if (nuovo.sorteggio_il) nuovo.sorteggio_il = new Date(Date.parse(nuovo.sorteggio_il) + ANTICIPO_PRIMA_ESTRAZIONE * 1000).toISOString()
       setStato(nuovo)
     } finally {
       inCorso.current = false

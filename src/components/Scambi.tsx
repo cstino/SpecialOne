@@ -26,7 +26,9 @@ const ORDINE_FINESTRA: Record<'on' | 'off', number> = { on: 0, off: 1 }
 const perCalendario = (a: { stagione: number; finestra: 'on' | 'off' }, b: { stagione: number; finestra: 'on' | 'off' }) =>
   a.stagione - b.stagione || ORDINE_FINESTRA[a.finestra] - ORDINE_FINESTRA[b.finestra]
 
-type Props = { membership: Membership; onNavigate: (view: GameView) => void }
+// scorriAConclusi: un numero che cresce quando si arriva da una notifica «scambio ufficiale»;
+// a pagina caricata si scorre al riepilogo degli scambi della stagione.
+type Props = { membership: Membership; onNavigate: (view: GameView) => void; scorriAConclusi?: number }
 
 type StatoProposta = 'in_attesa' | 'accettata' | 'rifiutata' | 'ritirata' | 'scaduta'
 
@@ -113,7 +115,7 @@ function etichettaScelta(s: Scelta) {
   return `${s.finestra === 'on' ? 'ON' : 'OFF'}-Season ${s.stagione}`
 }
 
-export function Scambi({ membership, onNavigate }: Props) {
+export function Scambi({ membership, onNavigate, scorriAConclusi = 0 }: Props) {
   const league = membership.league as League
   const dati = useSeasonData(membership)
   // Colori della fase (verde regular, blu title, arancio draft), come Rosa e dashboard.
@@ -125,6 +127,12 @@ export function Scambi({ membership, onNavigate }: Props) {
   const [trattativePubbliche, setTrattativePubbliche] = useState<TrattativaPubblica[]>([])
   const [capienza, setCapienza] = useState<Capienza | null>(null)
   const [caricamento, setCaricamento] = useState(true)
+  // Arrivando da una notifica «scambio ufficiale» si scorre al riepilogo, appena la pagina e' pronta.
+  useEffect(() => {
+    if (!scorriAConclusi || caricamento) return
+    const timer = window.setTimeout(() => document.getElementById('scambi-stagione')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
+    return () => window.clearTimeout(timer)
+  }, [scorriAConclusi, caricamento])
   const [errore, setErrore] = useState<string | null>(null)
 
   const [avversaria, setAvversaria] = useState<number | null>(null)
@@ -665,7 +673,7 @@ export function Scambi({ membership, onNavigate }: Props) {
       </section>
 
       {/* ---- Trasparenza ---- */}
-      <section className="scambi-blocco">
+      <section className="scambi-blocco" id="scambi-stagione">
         <div className="sezione-testa"><div><p className="kicker">Trasparenza</p>
           <h2>Scambi della stagione{concluseStagione.length > 0 && <span className="scambi-conteggio"> {concluseStagione.length}</span>}</h2></div></div>
         {concluseStagione.length === 0

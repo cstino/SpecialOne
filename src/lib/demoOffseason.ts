@@ -1,4 +1,5 @@
 import { STEMMI_SQUADRA } from './teamCrests'
+import { ANTICIPO_PRIMA_ESTRAZIONE } from './conferenze'
 import type { ScelteLiveStato, ScelteLivePick } from './useScelteLive'
 import type { Team } from '../types'
 
@@ -215,7 +216,8 @@ export function statoDraftDemo(origine: number, adesso: number): ScelteLiveStato
     ora_server: new Date(adesso).toISOString(), stagione: 1, finestra: 'off',
     avviato_il: new Date(avvio).toISOString(), passo_secondi: DEMO.passo, intro_secondi: DEMO.intro, totale: DEMO.scelte,
     fine_il: new Date(avvio + DEMO.scelte * DEMO.passo * 1000).toISOString(),
-    sorteggio_il: new Date(origine + DEMO_AVVIO_SORTEGGIO * 1000).toISOString(), picks,
+    // Avvio visibile = avviato_il del sorteggio + anticipo (come fa l'hook con i dati veri).
+    sorteggio_il: new Date(origine + DEMO_AVVIO_SORTEGGIO * 1000 + ANTICIPO_PRIMA_ESTRAZIONE * 1000).toISOString(), picks,
   }
 }
 

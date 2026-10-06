@@ -1987,3 +1987,13 @@ verso la tabella rimossa), e restano visibili come aste normali.
 Verificato prima dell'esecuzione reale: solo Real Fampionato aveva spin legati a un'off-season
 ancora aperta (10 righe, delle due squadre entranti, tutte già risolte — nessuno restava "a
 metà" con la rimozione). Applicata prima in transazione con rollback, poi per davvero.
+
+
+## 6 ottobre 2026 — piccole aggiunte
+
+- **«HERE WE GO»**: quando uno scambio diventa ufficiale (accettato da una persona o da una squadra PC) tutti i
+  partecipanti della lega ricevono la notifica «‼️ HERE WE GO ‼️ — Adesso e' ufficiale lo scambio tra X e Y.»
+  (tipo `scambio_ufficiale`, push compresa). Toccandola si apre Mercato > Scambi, scorrendo al riepilogo
+  «Scambi della stagione» (`dati.view = 'scambi'`). Migrazione `20261006130000`.
+- **Svuota formazione**: tasto nella pagina Formazione (secondo tocco di conferma): undici posti vuoti, tutta la rosa
+  in tribuna; modulo, schema, ruoli e indicazioni restano; non salva finche' non si preme Salva.
