@@ -2044,3 +2044,9 @@ non cresce**; le **giocate sono visibili a tutta la lega** (inviti e partite non
 > pagina, notifiche) e chiusa nel database (`20261006200000`: tolto `execute` a `invia_amichevole` e `rispondi_amichevole`).
 > Restano i dati (15 giocate, 19 inviti in attesa, 2 rifiutati al momento dello stop) e il ramo dormiente di `simula-giornata`.
 > Per riaprirla: commit `eabc8e0` + `17170e0` e rimettere i `grant execute`.
+
+- **Punti abilita' alle nuove squadre** (6 ottobre 2026): le originali della Serie F avevano ricevuto 10 punti nella stagione 1; le
+  squadre entrate dalla stagione 2 partivano da 0. Ora ogni squadra che entra a lega avviata (`entrata_stagione >= 2`, non PC)
+  riceve **10 punti da distribuire** all'ingresso (`private.punti_ingresso_a_lega_avviata`, trigger `crea_risorse_squadra`), poi i 2
+  punti a ogni quarto di stagione come tutti. Applicato alle 8 gia' entrate, con notifica «Punti abilita' da distribuire» → Risorse.
+  Migrazione `20261006210000`.
