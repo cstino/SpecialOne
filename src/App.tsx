@@ -11,7 +11,6 @@ import { Admin } from './components/Admin'
 import { AlboDOro } from './components/AlboDOro'
 import { AlboRivelazione } from './components/AlboRivelazione'
 import { OffseasonLive } from './components/OffseasonLive'
-import { Amichevoli } from './components/Amichevoli'
 import { AnteprimaOffseason } from './components/AnteprimaOffseason'
 import { useAlboRivelazione } from './lib/useAlboRivelazione'
 import { Avvisi } from './components/Avvisi'
@@ -143,7 +142,7 @@ export default function App() {
     setNelMenu(false)
     setViewedTeamId(null)
     // «HERE WE GO»: scambio ufficiale, si apre Mercato > Scambi e si scorre al riepilogo degli scambi.
-    setGameView(notifica.dati?.view === 'squad' ? 'squad' : notifica.dati?.view === 'scambi' ? 'scambi' : notifica.dati?.view === 'amichevoli' ? 'amichevoli' : 'overview')
+    setGameView(notifica.dati?.view === 'squad' ? 'squad' : notifica.dati?.view === 'scambi' ? 'scambi' : 'overview')
     if (notifica.dati?.view === 'scambi') setScorriScambi((n) => n + 1)
     const partita = notifica.dati?.match_id
     setOpenMatch(null)
@@ -477,7 +476,6 @@ export default function App() {
       : gameView === 'squad' ? <Formazione membership={active} onNavigate={navigateGame} />
       : gameView === 'team' ? <TeamProfile membership={active} teamId={viewedTeamId ?? active.id} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'team' })} onTeamUpdated={loadMemberships} />
       : gameView === 'mercato' ? <Mercato membership={active} onNavigate={navigateGame} />
-      : gameView === 'amichevoli' ? <Amichevoli membership={active} onNavigate={navigateGame} />
       : gameView === 'scambi' ? <Scambi membership={active} onNavigate={navigateGame} scorriAConclusi={scorriScambi} />
       : gameView === 'scelte' ? <Scelte membership={active} onNavigate={navigateGame} />
       : gameView === 'under' ? <Under membership={active} onNavigate={navigateGame} />

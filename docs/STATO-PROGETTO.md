@@ -2039,3 +2039,8 @@ non cresce**; le **giocate sono visibili a tutta la lega** (inviti e partite non
 - **App**: `Amichevoli.tsx` (inviti ricevuti, da giocare, invita, giocate) e il referto (punteggio, cronaca con gol/cambi/
   cartellini, statistiche di squadra, formazioni con voti e migliore in campo). Prima tappa: niente intro/reveal come
   le partite vere (eventuale seconda tappa).
+
+> **Amichevoli sospese (6 ottobre 2026, sera).** Su richiesta del committente la funzione e' stata tolta dall'app (voce di menu,
+> pagina, notifiche) e chiusa nel database (`20261006200000`: tolto `execute` a `invia_amichevole` e `rispondi_amichevole`).
+> Restano i dati (15 giocate, 19 inviti in attesa, 2 rifiutati al momento dello stop) e il ramo dormiente di `simula-giornata`.
+> Per riaprirla: commit `eabc8e0` + `17170e0` e rimettere i `grant execute`.
