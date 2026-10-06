@@ -82,3 +82,35 @@ dell'Europa League resta). In `public/loghi-fase/uefa/`:
 `champions-league.png` (scritta + pallone a stelle), `champions-league-compatto.png`,
 `champions-league-pallone.png` (solo pallone), `europa-league.png` (versione 2024), `europa-league-2021.png`,
 `europa-league-classico.png`. Non ancora collegati: si usano nel blocco 2 (tre tabelloni).
+
+
+## Draft OFF-Season e sorteggio in diretta, uno dopo l'altro (6 ottobre 2026)
+
+Richiesta del committente: alla chiusura dell'off-season due dirette per tutti insieme, prima il
+draft dei giocatori e poi il sorteggio delle conference, con un pulsante ciascuna (il secondo
+compare a draft finito) e la possibilita' di uscire e rientrare.
+
+- **Sequenza.** Alla scadenza (`finalizza_offseason`) le scelte OFF-Season si risolvono come sempre,
+  subito, ma si **rivelano** una alla volta: **30 secondi a scelta, 15 di annuncio** («con la scelta
+  n la squadra X seleziona…») **e 15 di reveal** del giocatore; in basso il recap delle scelte gia'
+  rivelate. La diretta parte al minuto pieno successivo alla chiusura. Il **sorteggio parte 3 minuti
+  dopo l'ultima scelta** (16 scelte = 8 minuti, poi 3 di pausa, poi 24 x 20 s = 8 minuti).
+- **Prima giornata.** Con le conferenze e' alle 23:00 di almeno **20 ore** dopo la fine del sorteggio
+  (`inizializza_stagione`): chi scopre la conference ha un giorno per schierarsi. Provato: finita la
+  diretta alle 10:14, prima giornata il giorno dopo alle 23:00.
+- **Cosa e' segreto.** `scelte_live_stato(lega)` restituisce il giocatore di una scelta solo da quando
+  scatta il suo reveal (ora del server). Le **notifiche** ai proprietari partono alla rivelazione
+  (`private.notifica_scelte_rivelate`, sul cron di `completa_sorteggi_scaduti`), non alla risoluzione.
+  **Limite noto:** le rose cambiano alla chiusura, quindi chi guardasse la rosa di un'altra squadra
+  durante gli 8 minuti potrebbe vedere in anticipo il giocatore. Non da' vantaggio competitivo, solo
+  spoiler, e tutti stanno guardando la diretta.
+- **Tabella** `scelte_live` (una riga per lega, stagione e finestra: avvio, passo, secondi di annuncio,
+  totale, notificate). Nomi scelti per non scontrarsi col draft iniziale in diretta
+  (`private.avanza_draft_live` esiste gia'). Alle leghe senza conferenze non cambia nulla.
+- **App.** `OffseasonLive.tsx` (menu con i due pulsanti), `DraftScelteLive.tsx` (la diretta),
+  `lib/useScelteLive.ts` (sincronizzazione con l'orologio del server); `SorteggioConferenze` ha il
+  conto alla rovescia prima dell'avvio e il tasto Menu. Senza `scelte_live` la lega vede solo il sorteggio.
+- **Scelte vuote.** Una scelta e' «vuota» se nella lista non c'e' nessun giocatore libero che entri nel
+  tetto: la diretta lo dice («Nessuna scelta»). Nel test 5 scelte su 16 erano vuote.
+- **Aperto:** gli 8 nuovi non hanno scelte in OFF-Season 1 e ON-Season 2 (16 scelte, una per squadra
+  originale); da decidere se e dove ne hanno dall'ON-Season 2.

@@ -6,7 +6,7 @@ import type { League, Membership, Team } from '../types'
 import { Crest } from './Crest'
 import { ConferenceBadge } from './ConferenceBadge'
 
-type Props = { membership: Membership; onFine: () => void }
+type Props = { membership: Membership; onFine: () => void; onMenu?: () => void }
 
 type Stato = {
   sorteggio_id: number; stagione: number; avviato_il: string; passo_secondi: number
@@ -44,7 +44,7 @@ function Roulette({ candidati, stemmi, secondiRimasti }: { candidati: Team[]; st
 // Sorteggio East / West in diretta. Il server ha gia' deciso l'ordine, ma ogni
 // estrazione si puo' leggere solo da quando viene rivelata (RLS): questa
 // schermata si limita a mostrare, in sincronia per tutti, quello che e' uscito.
-export function SorteggioConferenze({ membership, onFine }: Props) {
+export function SorteggioConferenze({ membership, onFine, onMenu }: Props) {
   const league = membership.league as League
   const [stato, setStato] = useState<Stato | null>(null)
   const [estrazioni, setEstrazioni] = useState<Estrazione[]>([])
@@ -93,6 +93,9 @@ export function SorteggioConferenze({ membership, onFine }: Props) {
 
   const passoMs = (stato?.passo_secondi ?? 20) * 1000
   const avviatoMs = stato ? Date.parse(stato.avviato_il) : 0
+  // Dopo il draft in diretta il sorteggio parte piu' tardi: finche' non e' l'ora, conto alla rovescia.
+  const secondiAllAvvio = stato ? Math.max(0, (avviatoMs - adesso) / 1000) : 0
+  const prima = Boolean(stato) && secondiAllAvvio > 0
   const trascorso = stato ? Math.max(0, adesso - avviatoMs) : 0
   const dovute = stato ? Math.min(stato.totale, Math.floor(trascorso / passoMs)) : 0
   const finito = Boolean(stato) && dovute >= (stato?.totale ?? 0)
@@ -133,7 +136,7 @@ export function SorteggioConferenze({ membership, onFine }: Props) {
   return <main className="sorteggio">
     <header className="sorteggio__testa">
       <div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div>
-      <span>{league.nome} · Stagione {stato?.stagione ?? league.stagione_corrente}</span>
+      {onMenu ? <button type="button" className="dlive__menu" onClick={onMenu}>‹ Menu</button> : <span>{league.nome} · Stagione {stato?.stagione ?? league.stagione_corrente}</span>}
     </header>
 
     <section className="sorteggio__scena">
@@ -142,19 +145,25 @@ export function SorteggioConferenze({ membership, onFine }: Props) {
 
       {!stato && <p className="sorteggio__attesa">Preparo il sorteggio…</p>}
 
+      {stato && prima && <div className="dlive__attesa">
+        <h1>Il sorteggio parte tra</h1>
+        <div className="dlive__conto-grande">{String(Math.floor(Math.ceil(secondiAllAvvio) / 60)).padStart(2, '0')}:{String(Math.ceil(secondiAllAvvio) % 60).padStart(2, '0')}</div>
+        <p>Si estrae una squadra alla volta, alternando East e West.</p>
+      </div>}
+
       {stato && finito && <div className="sorteggio__fine">
         <h1>Sorteggio completato.</h1>
         <p>Le conferenze sono pronte. Sto preparando il calendario: tra pochissimo parte la stagione.</p>
       </div>}
 
-      {stato && !finito && mostraCarta && squadraUltima && ultima && <div className={`sorteggio__estratta sorteggio__estratta--${ultima.conferenza}`} key={ultima.ordine}>
+      {stato && !finito && !prima && mostraCarta && squadraUltima && ultima && <div className={`sorteggio__estratta sorteggio__estratta--${ultima.conferenza}`} key={ultima.ordine}>
         <small>Estratta per la {NOME_CONFERENZA[ultima.conferenza]}</small>
         <div className="sorteggio__estratta-stemma"><Crest value={squadraUltima.stemma_url} imageUrl={stemmi.get(squadraUltima.id)} size="large" stelle={squadraUltima.titoli_title} /></div>
         <strong>{squadraUltima.nome}</strong>
         <span>{squadraUltima.sigla}{squadraUltima.id === membership.id ? ' · La tua squadra' : ''}</span>
       </div>}
 
-      {stato && !finito && !mostraCarta && <div className={`sorteggio__suspense sorteggio__suspense--${prossimaConferenza}`}>
+      {stato && !finito && !prima && !mostraCarta && <div className={`sorteggio__suspense sorteggio__suspense--${prossimaConferenza}`}>
         <h1>{estrazioni.length === 0 ? 'La prima squadra estratta per la' : 'La prossima squadra per la'} <em>{NOME_CONFERENZA[prossimaConferenza]}</em> è…</h1>
         <Roulette candidati={candidati} stemmi={stemmi} secondiRimasti={secondiRimasti} />
         <div className="sorteggio__conto" style={{ ['--p' as string]: `${Math.min(100, (secondiNelSlot / (stato.passo_secondi || 20)) * 100)}%` }}>
