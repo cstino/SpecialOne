@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { firmaStemmi } from '../lib/premiAlbo'
-import { NOME_CONFERENZA, type Conferenza } from '../lib/conferenze'
+import { NOME_CONFERENZA, NOME_CONFERENZA_BREVE, type Conferenza } from '../lib/conferenze'
+import { stemmaPresetDaValore } from '../lib/teamCrests'
 import type { League, Membership, Team } from '../types'
 import { Crest } from './Crest'
 import { ConferenceBadge } from './ConferenceBadge'
@@ -15,29 +16,46 @@ type Stato = {
 }
 type Estrazione = { ordine: number; team_id: number; conferenza: Conferenza }
 
-const SECONDI_CARTA = 8
+// L'estratta resta in scena per quasi tutto il turno; la roulette gira solo negli ultimi secondi.
+const SECONDI_ROULETTE = 6
+
+// Gli stemmi della roulette cambiano ogni decimo di secondo: se non sono gia' in
+// cache il caricamento li fa lampeggiare e la roulette va a scatti.
+function precaricaStemmi(squadre: Team[], firmati: Map<number, string>) {
+  for (const t of squadre) {
+    const src = firmati.get(t.id) ?? stemmaPresetDaValore(t.stemma_url)?.src
+    if (src) { const img = new Image(); img.src = src }
+  }
+}
 
 function Roulette({ candidati, stemmi, secondiRimasti }: { candidati: Team[]; stemmi: Map<number, string>; secondiRimasti: number }) {
   const [indice, setIndice] = useState(0)
   const ridotto = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const rimasti = useRef(secondiRimasti)
   rimasti.current = secondiRimasti
+  const gira = secondiRimasti <= SECONDI_ROULETTE
+  // Ordine mescolato una volta sola: gli stemmi scorrono senza ripetersi di fila.
+  const ordine = useMemo(() => {
+    const o = candidati.map((_, i) => i)
+    for (let i = o.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [o[i], o[j]] = [o[j], o[i]] }
+    return o
+  }, [candidati.length]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (ridotto || candidati.length === 0) return
+    if (ridotto || !gira || candidati.length === 0) return
     let timer = 0
     const passo = () => {
-      setIndice((i) => (i + 1 + Math.floor(Math.random() * Math.max(1, candidati.length - 1))) % candidati.length)
-      // Gira veloce e rallenta negli ultimi secondi: e' solo scena, l'estratta non e' ancora nota a nessuno.
-      const r = rimasti.current
-      timer = window.setTimeout(passo, r > 5 ? 90 : 90 + (5 - Math.max(0, r)) * 150)
+      setIndice((i) => (i + 1) % Math.max(1, ordine.length))
+      // Veloce all'inizio, poi rallenta piano fino a fermarsi: e' solo scena, l'estratta non e' ancora nota a nessuno.
+      const avanzamento = 1 - Math.min(1, Math.max(0, rimasti.current / SECONDI_ROULETTE))
+      timer = window.setTimeout(passo, 80 + 300 * avanzamento * avanzamento)
     }
-    timer = window.setTimeout(passo, 90)
+    timer = window.setTimeout(passo, 80)
     return () => window.clearTimeout(timer)
-  }, [candidati.length, ridotto])
-  const squadra = candidati[indice % Math.max(1, candidati.length)]
-  return <div className="sorteggio__roulette" aria-hidden="true">
-    <div className="sorteggio__roulette-carta" key={squadra?.id ?? 0}>
-      {ridotto || !squadra ? <b>?</b> : <Crest value={squadra.stemma_url} imageUrl={stemmi.get(squadra.id)} size="large" />}
+  }, [candidati.length, ridotto, gira, ordine.length])
+  const squadra = gira && !ridotto ? candidati[ordine[indice % Math.max(1, ordine.length)] ?? 0] : undefined
+  return <div className={`sorteggio__roulette${gira ? ' is-gira' : ''}`} aria-hidden="true">
+    <div className="sorteggio__roulette-carta">
+      {squadra ? <Crest value={squadra.stemma_url} imageUrl={stemmi.get(squadra.id)} size="large" eager /> : <b>?</b>}
     </div>
   </div>
 }
@@ -70,6 +88,7 @@ export function SorteggioConferenze({ membership, onFine, onMenu, demo }: Props)
       if (!vivo) return
       setSquadre(elenco)
       setStemmi(firmati)
+      precaricaStemmi(elenco, firmati)
     })()
     return () => { vivo = false }
   }, [league.id, demo])
@@ -109,6 +128,7 @@ export function SorteggioConferenze({ membership, onFine, onMenu, demo }: Props)
   const finito = Boolean(stato) && dovute >= (stato?.totale ?? 0)
   const secondiNelSlot = stato ? (trascorso % passoMs) / 1000 : 0
   const secondiRimasti = Math.max(0, (stato?.passo_secondi ?? 20) - secondiNelSlot)
+  const secondiCarta = (stato?.passo_secondi ?? 20) - SECONDI_ROULETTE
 
   // Se manca una estrazione che il tempo dice gia' rivelata la si chiede ogni secondo;
   // altrimenti si risincronizza ogni 5. A sorteggio finito si guarda quando la lega riparte.
@@ -136,7 +156,7 @@ export function SorteggioConferenze({ membership, onFine, onMenu, demo }: Props)
   const meta = Math.max(1, Math.floor((stato?.totale ?? squadre.length) / 2))
 
   const ultima = estrazioni.length > 0 ? estrazioni[estrazioni.length - 1] : null
-  const mostraCarta = Boolean(ultima) && dovute >= 1 && ultima!.ordine === dovute && secondiNelSlot < SECONDI_CARTA && !finito
+  const mostraCarta = Boolean(ultima) && dovute >= 1 && ultima!.ordine === dovute && secondiNelSlot < secondiCarta && !finito
   const prossimo = dovute + 1
   const prossimaConferenza: Conferenza = prossimo % 2 === 1 ? 'est' : 'ovest'
   const squadraUltima = ultima ? squadrePerId.get(ultima.team_id) : undefined
@@ -156,7 +176,7 @@ export function SorteggioConferenze({ membership, onFine, onMenu, demo }: Props)
       {stato && prima && <div className="dlive__attesa">
         <h1>Il sorteggio parte tra</h1>
         <div className="dlive__conto-grande">{String(Math.floor(Math.ceil(secondiAllAvvio) / 60)).padStart(2, '0')}:{String(Math.ceil(secondiAllAvvio) % 60).padStart(2, '0')}</div>
-        <p>Si estrae una squadra alla volta, alternando East e West.</p>
+        <p>Si estrae una squadra alla volta, alternando Eastern e Western.</p>
       </div>}
 
       {stato && finito && <div className="sorteggio__fine">
@@ -174,7 +194,7 @@ export function SorteggioConferenze({ membership, onFine, onMenu, demo }: Props)
       {stato && !finito && !prima && !mostraCarta && <div className={`sorteggio__suspense sorteggio__suspense--${prossimaConferenza}`}>
         <h1>{estrazioni.length === 0 ? 'La prima squadra estratta per la' : 'La prossima squadra per la'} <em>{NOME_CONFERENZA[prossimaConferenza]}</em> è…</h1>
         <Roulette candidati={candidati} stemmi={stemmi} secondiRimasti={secondiRimasti} />
-        <div className="sorteggio__conto" style={{ ['--p' as string]: `${Math.min(100, (secondiNelSlot / (stato.passo_secondi || 20)) * 100)}%` }}>
+        <div className="sorteggio__conto" style={{ ['--p' as string]: `${Math.min(100, Math.max(0, 1 - secondiRimasti / SECONDI_ROULETTE) * 100)}%` }}>
           <b>{Math.ceil(secondiRimasti)}</b>
         </div>
       </div>}
@@ -184,12 +204,12 @@ export function SorteggioConferenze({ membership, onFine, onMenu, demo }: Props)
       {(['est', 'ovest'] as const).map((c) => {
         const squadreConf = perConferenza(c)
         return <div className={`sorteggio__colonna sorteggio__colonna--${c}`} key={c}>
-          <header><ConferenceBadge conferenza={c} /><strong>{NOME_CONFERENZA[c]}</strong><span>{squadreConf.length}<i>/{meta}</i></span></header>
+          <header><ConferenceBadge conferenza={c} /><strong>{NOME_CONFERENZA_BREVE[c]}</strong><span>{squadreConf.length}<i>/{meta}</i></span></header>
           <ol>
             {Array.from({ length: meta }, (_, i) => {
               const e = squadreConf[i]
               const t = e ? squadrePerId.get(e.team_id) : undefined
-              const nuova = Boolean(e) && e!.ordine === dovute && secondiNelSlot < SECONDI_CARTA && !finito
+              const nuova = Boolean(e) && e!.ordine === dovute && secondiNelSlot < secondiCarta && !finito
               return <li key={i} className={`${t ? 'is-piena' : ''} ${nuova ? 'is-nuova' : ''} ${t && t.id === membership.id ? 'is-mia' : ''}`}>
                 <span className="sorteggio__n">{i + 1}</span>
                 {t

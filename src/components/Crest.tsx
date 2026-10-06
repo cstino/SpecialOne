@@ -7,17 +7,19 @@ type CrestProps = {
   // Title Playoff vinti (teams.titoli_title): una stella dorata sopra lo stemma
   // per ognuno, oltre le cinque una sola con il numero.
   stelle?: number | null
+  // Immagine subito, senza caricamento pigro: per le scene dove lo stemma cambia di continuo (roulette).
+  eager?: boolean
 }
 
 function Stella() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6l3.1 6.6 7.2.9-5.3 5 1.4 7.2L12 17.6l-6.4 3.7L7 14.1 1.7 9.1l7.2-.9z" /></svg>
 }
 
-export function Crest({ value, imageUrl, size = 'small', stelle }: CrestProps) {
+export function Crest({ value, imageUrl, size = 'small', stelle, eager = false }: CrestProps) {
   const stemma = imageUrl ? null : stemmaPresetDaValore(value)
   const img = imageUrl
     ? <img className={`crest crest--${size}`} src={imageUrl} alt="" decoding="async" />
-    : <img className={`crest crest--${size}`} src={stemma?.src ?? '/stemmi-squadra/thumbs/1.png'} alt="" loading="lazy" decoding="async" />
+    : <img className={`crest crest--${size}`} src={stemma?.src ?? '/stemmi-squadra/thumbs/1.png'} alt="" loading={eager ? 'eager' : 'lazy'} decoding={eager ? 'sync' : 'async'} />
 
   const n = Math.max(0, Math.floor(stelle ?? 0))
   if (n === 0) return img

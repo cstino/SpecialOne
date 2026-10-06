@@ -6,11 +6,11 @@ Le altre leghe funzionano come prima.
 
 ## Regole decise
 
-- **Squadre**: 24 (16 attuali + 8 nuove), due conferenze da 12: **East Conference** e **West Conference**.
+- **Squadre**: 24 (16 attuali + 8 nuove), due conferenze da 12: **Eastern Conference** e **Western Conference** (nome ufficiale dal 6 ottobre 2026; nelle schede strette «Eastern» e «Western»).
 - **Regular season**: si gioca solo dentro la propria conferenza, 2 gironi (andata e ritorno):
   11 avversarie x 2 = **22 giornate** (prima 30). Le due conferenze giocano le stesse giornate.
 - **Sorteggio a ogni stagione**, in diretta dopo la chiusura dell'off-season: **una squadra ogni
-  20 secondi**, alternando East e West ("La prima squadra estratta per la East Conference e'...")
+  20 secondi**, alternando East e West ("La prima squadra estratta per la Eastern Conference e'...")
   fino a 12 e 12. 24 estrazioni = 8 minuti. Il sorteggio parte nel momento in cui si chiude
   l'off-season, quindi l'orario lo decide chi chiude l'off-season (il committente la posticipa a mano).
 - **Playoff a tre tabelloni da 8 squadre** (BLOCCO 2, NON ANCORA FATTO):
@@ -114,3 +114,11 @@ compare a draft finito) e la possibilita' di uscire e rientrare.
   tetto: la diretta lo dice («Nessuna scelta»). Nel test 5 scelte su 16 erano vuote.
 - **Aperto:** gli 8 nuovi non hanno scelte in OFF-Season 1 e ON-Season 2 (16 scelte, una per squadra
   originale); da decidere se e dove ne hanno dall'ON-Season 2.
+
+## Roulette del sorteggio (6 ottobre 2026)
+
+Prima l'estratta restava in scena 8 secondi e la roulette girava per i 12 restanti, con stemmi a caricamento
+pigro che lampeggiavano (andava a scatti). Ora: **l'estratta resta 14 secondi e la roulette gira solo gli
+ultimi 6**, stemmi precaricati e caricati subito, ordine mescolato senza ripetizioni, rallentamento
+progressivo (da un cambio ogni 80 ms fino a uno ogni 380 ms), anello del conto alla rovescia sui 6 secondi.
+Il primo turno, che non ha un'estratta prima, mostra un punto interrogativo fermo finche' non iniziano i 6 secondi.

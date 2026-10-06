@@ -12,7 +12,7 @@ type ViewProps = Props & { stato: ScelteLiveStato | null | undefined; adesso: nu
 type Vista = 'menu' | 'draft' | 'sorteggio'
 
 // Dopo la chiusura dell'off-season, con le conferenze: due dirette una dopo
-// l'altra. Prima il draft dei giocatori, poi il sorteggio East/West. Il menu ha
+// l'altra. Prima il draft dei giocatori, poi il sorteggio Eastern/Western. Il menu ha
 // un pulsante per ciascuna (il secondo compare quando il draft e' finito) e da
 // ognuna si esce e si rientra: tutto e' sincronizzato sull'orologio del server.
 export function OffseasonLive({ membership, onFine }: Props) {
@@ -91,7 +91,7 @@ export function OffseasonLiveView({ membership, onFine, stato, adesso, demo }: V
             {inDirettaSorteggio && <><i className="dlive-menu__punto" />In diretta</>}
           </span>
           <strong>Sorteggio conference</strong>
-          <small>East e West, una squadra ogni 20 secondi</small>
+          <small>Eastern e Western, una squadra ogni 20 secondi</small>
           <span className="dlive-menu__vai">Vai al sorteggio delle conference</span>
         </button>
         : <div className="dlive-menu__carta dlive-menu__carta--bloccata" aria-hidden="true">
