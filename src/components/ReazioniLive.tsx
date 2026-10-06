@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { REAZIONI, ATTESA_REAZIONE_S, useReazioniLive, type Contesto } from '../lib/reazioni'
+import { REAZIONI, ATTESA_REAZIONE_S, soloEmoji, useReazioniLive, type Contesto } from '../lib/reazioni'
 
 type Props = {
   leagueId: number
@@ -34,7 +34,7 @@ export function ReazioniLive({ leagueId, contesto, mioTeamId, sigla, fisso = tru
         const r = REAZIONI.find((x) => x.codice === b.codice)
         if (!r) return null
         return <span key={b.id} className={`reazioni__bolla${b.teamId === mioTeamId ? ' is-mia' : ''}`} style={{ left: `${b.x}%`, animationDelay: `${b.ritardo}s` }}>
-          <i>{r.emoji}</i><b>{r.testo}</b><small>{b.teamId === mioTeamId ? 'Tu' : sigla(b.teamId)}</small>
+          <b className={soloEmoji(r.testo) ? 'solo-emoji' : undefined}>{r.testo}</b><small>{b.teamId === mioTeamId ? 'Tu' : sigla(b.teamId)}</small>
         </span>
       })}
     </div>
@@ -47,8 +47,8 @@ export function ReazioniLive({ leagueId, contesto, mioTeamId, sigla, fisso = tru
           <small>{errore ?? (inAttesa ? `Puoi rimandarne una tra ${Math.ceil(attesa)} s` : 'Una ogni 5 secondi')}</small>
         </header>
         <div className="reazioni__griglia">
-          {REAZIONI.map((r) => <button key={r.codice} type="button" disabled={inAttesa} onClick={() => { void invia(r.codice); setAperto(false) }}>
-            <i aria-hidden="true">{r.emoji}</i><span>{r.testo}</span>
+          {REAZIONI.map((r) => <button key={r.codice} type="button" disabled={inAttesa} aria-label={r.testo} onClick={() => { void invia(r.codice); setAperto(false) }}>
+            <span className={soloEmoji(r.testo) ? 'solo-emoji' : undefined}>{r.testo}</span>
           </button>)}
         </div>
       </div>

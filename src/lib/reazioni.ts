@@ -1,26 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './supabase'
 
-// Reazioni in diretta: messaggi prefatti con emoji che galleggiano per tutti gli spettatori della
+// Reazioni in diretta: messaggi prefatti (testo ed emoji) che galleggiano per tutti gli spettatori della
 // stessa lega (migrazione 20261006170000). Un messaggio ogni 5 secondi per persona, anche nel database.
 
 export type Contesto = 'draft' | 'sorteggio' | 'on'
 
-// Stessi codici di public.invia_reazione (da tenere allineati a mano).
+// Stessi codici di public.invia_reazione (da tenere allineati a mano). Il testo e' il messaggio cosi' com'e'
+// (emoji comprese): lo scelgono i partecipanti.
 export const REAZIONI = [
-  { codice: 'fuoco', emoji: '🔥', testo: 'Che colpo!' },
-  { codice: 'wow', emoji: '😱', testo: 'Incredibile!' },
-  { codice: 'applauso', emoji: '👏', testo: 'Bravissimo!' },
-  { codice: 'ridere', emoji: '😂', testo: 'Ahahah!' },
-  { codice: 'esplode', emoji: '🤯', testo: 'Non ci credo!' },
-  { codice: 'festa', emoji: '🎉', testo: 'Si parte!' },
-  { codice: 'perfetto', emoji: '🤌', testo: 'Perfetto!' },
-  { codice: 'capra', emoji: '🐐', testo: 'Che mossa!' },
-  { codice: 'preghiera', emoji: '🙏', testo: 'Speriamo!' },
-  { codice: 'ahia', emoji: '😬', testo: 'Ahia!' },
-  { codice: 'nooo', emoji: '😭', testo: 'Noooo!' },
-  { codice: 'teschio', emoji: '💀', testo: 'Disastro…' },
+  { codice: 'fuoco', testo: '🔥🔥🔥' },
+  { codice: 'drafto', testo: 'Ora Drafto Io' },
+  { codice: 'eddai', testo: 'Eddai!!!' },
+  { codice: 'complimenti', testo: 'Complimenti 👏👏' },
+  { codice: 'pazzesco', testo: 'Pazzesco! 🤯' },
+  { codice: 'nooo', testo: 'Ohhh Noo! 😡' },
+  { codice: 'imbarazzo', testo: '🥺🥺🥺' },
+  { codice: 'occhi', testo: '😳😳😳' },
+  { codice: 'herewego', testo: 'HERE WE GO ❗' },
+  { codice: 'shalom', testo: 'Shalom ✡️' },
+  { codice: 'diavoli', testo: '👹👹👹' },
 ] as const
+/** Solo emoji (nessuna lettera): si mostra in grande. */
+export const soloEmoji = (testo: string) => !/[\p{L}\p{N}]/u.test(testo)
 export type CodiceReazione = (typeof REAZIONI)[number]['codice']
 
 export const ATTESA_REAZIONE_S = 5

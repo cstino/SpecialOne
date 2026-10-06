@@ -2010,11 +2010,11 @@ metà" con la rimozione). Applicata prima in transazione con rollback, poi per d
   potevano invertire due titolari (es. i due esterni). `lib/useScambioTrascinando.ts`: tutto sul DOM (proprieta' CSS
   `translate` e `scale`), lo stato React serve solo per le classi.
 - **Reazioni in diretta** (6 ottobre 2026): nelle tre dirette (draft ON-Season in home, draft OFF-Season, sorteggio
-  delle conference) chi guarda puo' mandare una reazione prefatta con emoji ("🔥 Che colpo!", "😱 Incredibile!", ...,
-  12 messaggi), che galleggia per tutti gli spettatori della lega. Una ogni 5 secondi per persona, controllato anche nel
+  delle conference) chi guarda puo' mandare una reazione prefatta con emoji (11 messaggi scelti dai partecipanti: 🔥🔥🔥, «Ora Drafto Io», «Eddai!!!», «Complimenti 👏👏», «Pazzesco! 🤯», «Ohhh Noo! 😡»,
+  🥺🥺🥺, 😳😳😳, «HERE WE GO ❗», «Shalom ✡️», 👹👹👹), che galleggia per tutti gli spettatori della lega. Una ogni 5 secondi per persona, controllato anche nel
   database (`public.invia_reazione`, tabella `reazioni_live` letta in tempo reale con Realtime; le righe si ripuliscono
   da sole). Le emoji salgono in una **fascia riservata** fra la scena e il resto (`ReazioniLive.tsx`): non coprono mai
   i dati del draft. Le reazioni si scelgono da un **pulsante tondo** (fisso in basso a destra nelle schermate delle dirette,
-  nell'angolo della fascia nella card in home) che apre una finestrella con la griglia dei 12 messaggi; dopo l'invio il
+  nell'angolo della fascia nella card in home) che apre una finestrella con la griglia degli 11 messaggi; dopo l'invio il
   pulsante mostra il conto alla rovescia dei 5 secondi. Nessun testo libero: l'elenco dei codici e' in `lib/reazioni.ts` e nella funzione SQL (da tenere
   allineati). Nell'anteprima (`?anteprima=offseason`) le reazioni degli altri sono inventate. Migrazione `20261006170000`.

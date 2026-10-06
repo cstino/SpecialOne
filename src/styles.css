@@ -4939,7 +4939,7 @@ body.sta-trascinando * { -webkit-user-select: none; user-select: none; }
 .reazioni__suggerimento { position: absolute; inset: auto 64px 10px 0; text-align: center; color: rgba(255,255,255,.28); font: 600 .68rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .16em; text-transform: uppercase; }
 .reazioni__bolla { position: absolute; bottom: -8px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 8px; border-radius: 999px; background: rgba(14,16,30,.82); box-shadow: inset 0 0 0 1px rgba(255,255,255,.16), 0 6px 16px rgba(0,0,0,.35); color: #fff; white-space: nowrap; opacity: 0; transform: translate(-50%, 0); animation: reazione-sale 3.4s cubic-bezier(.2,.7,.3,1) forwards; }
 .reazioni__bolla.is-mia { box-shadow: inset 0 0 0 1.5px #ffd34d, 0 6px 16px rgba(0,0,0,.35); }
-.reazioni__bolla i { font-style: normal; font-size: 1.35rem; line-height: 1; }
+.reazioni__bolla b.solo-emoji { font-size: 1.5rem; letter-spacing: .08em; text-transform: none; }
 .reazioni__bolla b { font: 700 .74rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .06em; text-transform: uppercase; }
 .reazioni__bolla small { color: rgba(255,255,255,.6); font: 700 .6rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .12em; }
 @keyframes reazione-sale {
@@ -4966,8 +4966,9 @@ body.sta-trascinando * { -webkit-user-select: none; user-select: none; }
 .reazioni__pannello header small { color: rgba(255,255,255,.55); font-size: .7rem; text-align: right; }
 .reazioni__griglia { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .reazioni__griglia button { appearance: none; margin: 0; padding: 10px 4px 8px; display: grid; justify-items: center; gap: 5px; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(255,255,255,.06); color: #e8ecf8; cursor: pointer; transition: transform .12s ease, background .15s ease; }
-.reazioni__griglia button i { font-style: normal; font-size: 1.7rem; line-height: 1; }
-.reazioni__griglia button span { font: 700 .62rem/1.1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .06em; text-transform: uppercase; text-align: center; }
+.reazioni__griglia button { min-height: 62px; align-content: center; }
+.reazioni__griglia button span { font: 700 .78rem/1.15 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .05em; text-transform: uppercase; text-align: center; text-wrap: balance; }
+.reazioni__griglia button span.solo-emoji { font-size: 1.55rem; letter-spacing: .04em; text-transform: none; line-height: 1; }
 .reazioni__griglia button:hover:not(:disabled) { background: rgba(183,140,255,.22); }
 .reazioni__griglia button:active:not(:disabled) { transform: scale(.94); }
 .reazioni__griglia button:disabled { opacity: .4; cursor: default; }
