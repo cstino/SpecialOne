@@ -394,3 +394,12 @@ Migrazione `20261006150000`. Misura (transazione annullata, 1.600 pescate dal ca
 **Caso Aubameyang.** Unico giocatore dei 23 del pool OFF-Season 1 finito in una rosa; nessuno lo aveva nella lista
 delle preferenze (0). Alla risoluzione le scelte saltano chi e' gia' in una rosa, quindi non rompe niente: il pool
 si riduce a 22 finche' non si decide se rimpiazzarlo.
+
+**Deciso dal committente:** Aubameyang resta a Juventu' Nazionale e il pool OFF-Season 1 torna a 23 con un attaccante
+libero simile: A. Lacazette (ST, overall 79, 35 anni, 1,3 M EUR come Aubameyang), migrazione `20261006160000`.
+Anche `estrai_pool_scelte` salta chi e' gia' in un pool aperto.
+
+**Perche' la pagina mostrava 81 e non 79.** Il pool legge l'overall vero da (1) la progressione degli svincolati,
+(2) le istanze senza squadra, (3) il catalogo. Aubameyang, preso da una squadra, non era piu' in nessuna delle prime
+due (la sua riga di progressione si cancella alla firma): cadeva sul catalogo, 81, mentre in rosa vale 79 e 37 anni.
+Con il pool riservato un giocatore del pool non puo' piu' stare in una rosa, quindi non succede piu'.
