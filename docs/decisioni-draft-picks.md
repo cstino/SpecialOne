@@ -376,3 +376,21 @@ League: `docs/decisioni-conferenze.md`).
   transazione annullata con 18 squadre: posizioni 1..18 in ordine di monte ingaggi, scelte presenti per
   tutte le finestre dalla 2 alla 6).
 - Migrazione `20261006110000` (insieme al draft in diretta).
+
+
+## 13. Il pool di una finestra aperta e' riservato — 6 ottobre 2026
+
+Segnalato dal committente: Aubameyang, nel pool dell'OFF-Season 1, e' stato scelto da una nuova squadra (Juventu'
+Nazionale) nel suo mini-draft. Il motivo: le estrazioni da catalogo escludevano solo chi stava gia' in una rosa
+(`player_instances`), non chi stava in un pool di scelte non ancora risolto.
+
+**Regola.** Un giocatore in `scelte_pool` di una finestra non ancora risolta (`finestre_scelte.risolta_il` nullo) non
+puo' uscire da nessuna estrazione: `private.giocatore_in_pool_aperto(lega, giocatore)`, usata da `draft_by_role_spin`,
+`draft_by_role_reroll`, `pesca_carta_ruolo` (draft a pacchetti), `completa_draft_squadra_pc` (squadre PC) ed
+`estrai_svincolati_lega` (svincolati del mercato). A finestra risolta i non scelti tornano normali svincolati.
+Migrazione `20261006150000`. Misura (transazione annullata, 1.600 pescate dal catalogo): 7 dal pool aperto prima,
+0 dopo.
+
+**Caso Aubameyang.** Unico giocatore dei 23 del pool OFF-Season 1 finito in una rosa; nessuno lo aveva nella lista
+delle preferenze (0). Alla risoluzione le scelte saltano chi e' gia' in una rosa, quindi non rompe niente: il pool
+si riduce a 22 finche' non si decide se rimpiazzarlo.
