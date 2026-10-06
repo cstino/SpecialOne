@@ -549,6 +549,10 @@ export const STILI = {
   // sull'effetto il 2 ottobre 2026 (registro, punto 34).
   diretto:         { DEF: 0,     MID: -1.5,  ATT: 0.9 },
   blocco_basso:    { DEF: 2.0,   MID: -1.0,  ATT: -1.0 },
+  // Personalizzato (6 ottobre 2026): lo stile e' neutro, come equilibrato; a
+  // contare sono le indicazioni di squadra (linea, ampiezza, velocita',
+  // dove si attacca), che sotto uno stile preimpostato restano bloccate.
+  personalizzato:  { DEF: 0,     MID: 0,     ATT: 0 },
 };
 
 // ============================================================
@@ -574,6 +578,7 @@ export const STILI_PARTITA = {
   recupero_veloce: { ritmo: 1.10, possesso: 0.03,  volumeTiri: 1.08 },
   diretto:         { ritmo: 1.06, possesso: -0.05, volumeTiri: 1.25 },
   blocco_basso:    { ritmo: 0.80, possesso: -0.10, volumeTiri: 0.70 },
+  personalizzato:  { ritmo: 1.00, possesso: 0,     volumeTiri: 1.00 },
 };
 // Le indicazioni di squadra (linea, ampiezza) aggiungono la loro impronta a
 // quella dello stile (registro, punto 35). Solo con le tattiche accese: senza,
@@ -589,6 +594,12 @@ export const INDICAZIONI_PARTITA = {
   ampiezza: {
     larga:   { ritmo: 1.02, volumeTiri: 1.05, dribbling: 1.15 },
     stretta: { ritmo: 0.98, volumeTiri: 0.95, possesso: 0.01 },
+  },
+  // Velocita' di manovra (6 ottobre 2026): ragionata tiene palla e tira meno
+  // ma meglio; veloce verticalizza subito e tira di piu'.
+  velocita: {
+    ragionata: { ritmo: 0.97, possesso: 0.04,  volumeTiri: 0.92 },
+    veloce:    { ritmo: 1.04, possesso: -0.03, volumeTiri: 1.08 },
   },
 };
 export const RITMO_NORMA = 1 / 1.0184;

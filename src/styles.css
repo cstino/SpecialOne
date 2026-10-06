@@ -4768,3 +4768,12 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .draft-carta__apri-scheda:focus-visible { outline: 2px solid #c59be8; outline-offset: 2px; }
 .draft-carta__chiede { max-width: 100%; overflow: hidden; text-overflow: ellipsis; padding: 2px 8px; font-size: .58rem; }
 .draft-carta-wrap > .draft-carta__apri-scheda { left: 15px; top: 13px; } /* il bordo della carta di 1px sposta la foto */
+
+/* Squadra: sotto uno stile preimpostato linea, ampiezza, velocita' e dove si attacca sono bloccate */
+.schema__blocco { margin: 12px 0 2px; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px rgba(255,255,255,.1); color: rgba(255,255,255,.78); font-size: .82rem; line-height: 1.35; }
+.schema__blocco strong { color: #fff; }
+.schema__da-stile { margin-left: 8px; padding: 2px 7px; border-radius: 99px; background: rgba(255,255,255,.1); color: rgba(255,255,255,.7); font-size: .6rem; font-weight: 600; font-style: normal; letter-spacing: .06em; vertical-align: middle; }
+.schema__gruppo.is-bloccato .schema__scelte button:disabled { cursor: default; color: inherit; opacity: .5; }
+.schema__gruppo.is-bloccato .schema__scelte button:disabled:not(.is-attiva) { opacity: .32; }
+.schema__gruppo.is-bloccato .schema__scelte button.is-attiva:disabled { opacity: .78; }
+.schema__gruppo.is-bloccato .schema__scelte button:disabled:hover { border-color: inherit; }

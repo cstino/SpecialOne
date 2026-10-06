@@ -48,10 +48,15 @@ export const SCALA_CORSIA = 3.5;
 export const SCARTO_PIENO = 1.5;
 export const CONCENTRAZIONE = 0.35;
 
+// "Entrambe le fasce" (FASCE): la forza e' la media delle due fasce. Rispetto
+// alla media delle tre corsie lo scarto e' la meta' di quello del centro a
+// parita' di squilibrio, quindi il vantaggio pieno arriva a meta' scarto.
+export const SCARTO_FASCE = SCARTO_PIENO / 2;
 export function vantaggioCorsia(mio, focus) {
   if (!focus) return 0;
   const f = forzeCorsia({ ...mio, compiti: null, ruoli: null });
   const media = (f.att.SX + f.att.CEN + f.att.DX) / 3;
+  if (focus === 'FASCE') return Math.max(-1, Math.min(1, ((f.att.SX + f.att.DX) / 2 - media) / SCARTO_FASCE));
   return Math.max(-1, Math.min(1, (f.att[focus] - media) / SCARTO_PIENO));
 }
 
@@ -63,7 +68,8 @@ export function deltaCorsie(mio, focus) {
   // stessa distribuzione di prima, con il vantaggio che nasce dalla propria
   // squadra invece che dall'avversario.
   const vant = { SX: 0, CEN: 0, DX: 0 };
-  for (const c of ['SX', 'CEN', 'DX']) vant[c] = (c === focus ? 1 : -CONCENTRAZIONE) * v;
+  const scelte = focus === 'FASCE' ? ['SX', 'DX'] : [focus];
+  for (const c of ['SX', 'CEN', 'DX']) vant[c] = (scelte.includes(c) ? 1 : -CONCENTRAZIONE) * v;
   return (g, slot) => {
     if (!g || slot === 'GK') return 0;
     const wl = PESI_SLOT[slot], wc = PESI_CORSIA[slot];

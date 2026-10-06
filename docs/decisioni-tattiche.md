@@ -1495,3 +1495,75 @@ Lancio della season 2 (4 ottobre 2026, ore 11): `tattiche_attive` acceso su tutt
 non archiviate; chiusi tutti i piani di sviluppo aperti **annullandoli** (non
 completandoli): nessuno riceve crescita dal piano a metà e tutti possono sceglierne uno
 nuovo. Erano 177, tutti a Serie F.
+
+
+## 44. Stile «Personalizzato», velocità di manovra, «Entrambe le fasce» — 6 ottobre 2026
+
+**Il problema.** Stile, linea, ampiezza e dove si attacca erano quattro scelte indipendenti
+che si sommavano: «recupero veloce» con «linea bassa» si annullavano in parte, «difesa a
+oltranza» con «linea alta» faceva il contrario del suo nome. Nessun errore, ma un effetto
+confuso senza che il giocatore se ne accorgesse.
+
+**La regola.** Sotto uno stile preimpostato linea, ampiezza, velocità di manovra e dove si
+attacca sono **bloccate**: le decide lo stile e l'app le mostra soltanto («dallo stile»).
+Il motore non cambia i numeri: sotto un preset vale solo l'effetto dello stile, com'è
+sempre stato. Con il nuovo stile **Personalizzato** (neutro, come equilibrato) le quattro
+sezioni si sbloccano e contano solo quelle scelte. Passando a Personalizzato si parte dai
+valori dello stile che si lascia; scegliendo uno stile preimpostato i valori si azzerano
+(niente valori nascosti, che peserebbero sulla familiarità senza che si vedano).
+Il blocco è applicato in `simula-giornata` (`assiLiberi` in `engine/squadra.js`).
+
+| Stile | Linea | Ampiezza | Velocità | Dove attacchiamo |
+|---|---|---|---|---|
+| Equilibrato | media | normale | normale | ovunque |
+| Contropiede | bassa | stretta | veloce | ovunque |
+| Possesso palla | alta | stretta | ragionata | ovunque |
+| Gioco sulle fasce | media | larga | normale | entrambe le fasce |
+| Recupero veloce | alta | normale | veloce | ovunque |
+| Gioco diretto | media | normale | veloce | ovunque |
+| Difesa a oltranza | bassa | stretta | ragionata | ovunque |
+
+(`ASSI_STILE` in `src/lib/stili.ts`: valori solo informativi.) I sei **Preset tattici**
+(punto 39) restano: applicano lo stile e azzerano le altre scelte; per ritoccare si passa a
+Personalizzato. Il portiere-libero resta libero sotto ogni stile, ma la copertura sulla
+linea alta vale solo in Personalizzato.
+
+**Velocità di manovra** (nuova leva, `normale` predefinita):
+- *ragionata*: MID +0,5, ATT −0,5; ritmo 0,97, possesso +0,04, tiri ×0,92; chiede centrocampisti
+  tecnici (stesso profilo dell'ampiezza stretta);
+- *veloce*: MID −0,5, ATT +0,5; ritmo 1,04, possesso −0,03, tiri ×1,08; chiede giocatori che
+  passano e scattano (`manovra_veloce`: passaggi corti + accelerazione, famiglia MANOVRA,
+  correlazione con l'overall −0,01 dopo la taratura).
+
+**Entrambe le fasce** (`focus_corsia = 'FASCE'`): rende se la media delle due fasce supera la
+media delle tre corsie, costa se è il lato debole; il centro prende il malus. Il vantaggio
+pieno arriva a metà scarto (`SCARTO_FASCE`), perché lo scarto delle fasce è la metà di quello
+del centro a parità di squilibrio.
+
+**Misura** (`prova-ruoli-reali.mjs`, 40.000 partite, 4-4-2, rose vere), rispetto a chi non tocca niente:
+
+| scelta | punti su 38 |
+|---|---|
+| solo ruoli giusti | +4,4 |
+| solo stile giusto (preset) | +1,5 |
+| i sei preset | da −0,6 a +1,9 |
+| Personalizzato: solo velocità giusta | +0,9 |
+| Personalizzato: solo corsia giusta (con le fasce) | +1,8 |
+| **Personalizzato: tutto giusto** | **+4,8** |
+| Personalizzato: tutto sbagliato | −5,4 |
+| tocca tutto a caso | −1,0 (vincolo rispettato) |
+
+Personalizzato vale quanto valeva prima la somma di stile, linea, ampiezza e corsia (+4,8
+contro circa +4,8): il tetto non cambia, cambia che per raggiungerlo si rinuncia al bonus
+dello stile. I preset restano la scelta sicura (da −0,6 a +1,9). Nota: la corsia «giusta» vale
++1,8 e non +0,2 come scritto al punto 30: quella cifra era precedente alla ritaratura del
+punto 36.
+
+**Database** (migrazione `20261006100000`, da applicare alla pubblicazione): `stili_validi`
+con `personalizzato`; colonne `velocita_manovra` (lineups, moduli_personalizzati,
+indicazioni_xp) e `riserva_velocita` (schemi_squadra); `focus_corsia` accetta `FASCE`;
+`salva_formazione`, `salva_modulo_personalizzato`, `salva_schemi` con `p_velocita`
+(ricostruite dalla definizione live, vecchie firme tolte); familiarità con le indicazioni a
+28 elementi. Le formazioni, i moduli e gli schemi riserva con indicazioni sopra uno stile
+passano a `personalizzato` (9 formazioni al momento della prova). Provata in transazione
+annullata.

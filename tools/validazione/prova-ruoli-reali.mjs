@@ -19,7 +19,7 @@ import { MODULI, COMPITI, STILI } from '../../engine/config.js';
 import { deltaMorale } from '../../engine/morale.js';
 import { deltaRuoli, sommaDelta, ruoliPerSlot, idoneitaRuolo } from '../../engine/ruoli.js';
 import { deltaCorsie, vantaggioCorsia } from '../../engine/corsie.js';
-import { deltaSquadra, deltaCoperturaLibero, OPZIONI_SQUADRA, PREDEFINITE, idoneitaSquadra } from '../../engine/squadra.js';
+import { deltaSquadra, deltaCoperturaLibero, OPZIONI_SQUADRA, PREDEFINITE, idoneitaSquadra, assiLiberi } from '../../engine/squadra.js';
 // I preset dell'app, letti cosi' come sono (Node 24 legge TypeScript senza compilarlo).
 import { PRESET, applicaPreset } from '../../src/lib/preset.ts';
 
@@ -63,12 +63,12 @@ const valoreSquadra = (A, ind) => {
   const f = sommaDelta(deltaSquadra(ind), deltaCoperturaLibero(A, ind));
   return f ? A.titolari.reduce((t, g, i) => t + (g ? f(g, A.slots[i]) : 0), 0) : 0;
 };
-const assi = { stile: Object.keys(OPZIONI_SQUADRA.stile), linea: Object.keys(OPZIONI_SQUADRA.linea), ampiezza: Object.keys(OPZIONI_SQUADRA.ampiezza), portiere: Object.keys(OPZIONI_SQUADRA.portiere) };
+const assi = { stile: Object.keys(OPZIONI_SQUADRA.stile), linea: Object.keys(OPZIONI_SQUADRA.linea), ampiezza: Object.keys(OPZIONI_SQUADRA.ampiezza), velocita: Object.keys(OPZIONI_SQUADRA.velocita), portiere: Object.keys(OPZIONI_SQUADRA.portiere) };
 
 // Sceglie, asse per asse, l'opzione migliore (o peggiore) per la propria rosa.
 function squadraMirata(A, verso, soloAsse = null) {
   const ind = { ...PREDEFINITE };
-  for (const asse of ['linea', 'ampiezza', 'stile', 'portiere']) {
+  for (const asse of ['linea', 'ampiezza', 'velocita', 'stile', 'portiere']) {
     if (soloAsse && asse !== soloAsse) continue;
     let migliore = ind[asse], v = verso * valoreSquadra(A, ind);
     for (const o of assi[asse]) {
@@ -79,7 +79,7 @@ function squadraMirata(A, verso, soloAsse = null) {
   }
   return ind;
 }
-const corsiaMirata = (A, verso) => ['CEN', 'DX'].reduce((m, c) => (verso * vantaggioCorsia(A, c) > verso * vantaggioCorsia(A, m) ? c : m), 'SX');
+const corsiaMirata = (A, verso) => ['CEN', 'DX', 'FASCE'].reduce((m, c) => (verso * vantaggioCorsia(A, c) > verso * vantaggioCorsia(A, m) ? c : m), 'SX');
 const ruoliMirati = (A, verso) => A.slots.map((s, i) => {
   const l = ruoliPerSlot(s); if (!l.length) return null;
   return l.reduce((a, b) => (verso * idoneitaRuolo(A.titolari[i], b) > verso * idoneitaRuolo(A.titolari[i], a) ? b : a));
@@ -92,6 +92,12 @@ const STRATEGIE = {
   'solo linea giusta': (A) => { A.squadra = squadraMirata(A, 1, 'linea'); },
   'solo ampiezza giusta': (A) => { A.squadra = squadraMirata(A, 1, 'ampiezza'); },
   'solo corsia giusta': (A) => { A.focus = corsiaMirata(A, 1); },
+  // Dal 6 ottobre 2026: sotto uno stile preimpostato linea, ampiezza, velocita' e
+  // corsia sono bloccate. Si sbloccano solo con 'personalizzato'.
+  'personalizzato: solo velocita giusta': (A) => { A.squadra = { ...squadraMirata(A, 1, 'velocita'), stile: 'personalizzato' }; },
+  'personalizzato: solo corsia giusta': (A) => { A.squadra = { ...PREDEFINITE, stile: 'personalizzato' }; A.focus = corsiaMirata(A, 1); },
+  'personalizzato: tutto giusto': (A) => { A.squadra = { ...squadraMirata(A, 1), stile: 'personalizzato' }; A.focus = corsiaMirata(A, 1); },
+  'personalizzato: tutto sbagliato': (A) => { A.squadra = { ...squadraMirata(A, -1), stile: 'personalizzato' }; A.focus = corsiaMirata(A, -1); },
   'linea alta + portiere-libero': (A) => { A.squadra = { ...PREDEFINITE, linea: 'alta', portiere: 'libero' }; },
   // Il portiere-libero e' una scelta da profilo, come le altre: si misura
   // leggendo il proprio portiere (registro, punto 37). Stessa linea alta in
@@ -108,8 +114,8 @@ const STRATEGIE = {
   'tocca tutto a caso': (A) => {
     A.ruoli = A.slots.map((s) => { const l = ruoliPerSlot(s); return l.length ? caso(l) : null; });
     A.compiti = A.slots.map(() => caso(COMPITI));
-    A.focus = caso([null, 'SX', 'CEN', 'DX']);
-    A.squadra = { stile: caso(assi.stile), linea: caso(assi.linea), ampiezza: caso(assi.ampiezza), portiere: caso(assi.portiere) };
+    A.focus = caso([null, 'SX', 'CEN', 'DX', 'FASCE']);
+    A.squadra = { stile: caso(assi.stile), linea: caso(assi.linea), ampiezza: caso(assi.ampiezza), velocita: caso(assi.velocita), portiere: caso(assi.portiere) };
   },
   'sa leggere la sua rosa (tutto)': (A) => { A.ruoli = ruoliMirati(A, 1); A.squadra = squadraMirata(A, 1); A.focus = corsiaMirata(A, 1); },
   'sbaglia apposta (tutto)': (A) => { A.ruoli = ruoliMirati(A, -1); A.squadra = squadraMirata(A, -1); A.focus = corsiaMirata(A, -1); },
@@ -124,6 +130,7 @@ for (const p of PRESET) {
     const senza = process.env.PRESET_SENZA ?? '';
     A.ruoli = senza === 'ruoli' ? null : r.ruoli; A.compiti = senza === 'compiti' ? null : r.compiti;
     A.squadra = senza === 'squadra' ? { ...PREDEFINITE } : { ...PREDEFINITE, stile: r.stile, linea: r.linea ?? 'media', ampiezza: r.ampiezza ?? 'normale' };
+    A.squadraSbloccata = Boolean(process.env.PRESET_VECCHIO); // vecchio modello: assi sommati allo stile
   };
 }
 
@@ -134,7 +141,12 @@ function prova(nome, scegli) {
     const ra = rosa('A'), rb = rosa('B');
     const A = schiera(ra, MODULO), B = schiera(rb, MODULO);
     scegli(A);
-    const ind = A.squadra ?? PREDEFINITE;
+    const scelta = A.squadra ?? PREDEFINITE;
+    // La regola del blocco, come in produzione (simula-giornata): sotto uno stile
+    // preimpostato contano solo le indicazioni dello stile.
+    const libero = assiLiberi(scelta.stile) || A.squadraSbloccata;
+    const ind = libero ? scelta : { ...PREDEFINITE, stile: scelta.stile };
+    if (!libero) A.focus = null;
     A.tattica = sommaDelta(deltaMorale(A), deltaRuoli(A), deltaCorsie(A, A.focus ?? null), deltaSquadra(ind), deltaCoperturaLibero(A, ind));
     B.tattica = sommaDelta(deltaMorale(B), deltaRuoli(B));
     const r = simulaPartita(ra, rb, MODULO, MODULO, {

@@ -26,7 +26,7 @@ import { COMPITI, COMPITI_REPARTO, FAM_PARTITE_PIENA, MODULI, REPARTO, RUOLI_SLO
 import { RUOLO_LABEL } from '../lib/ruoliTattici'
 import { ANCORE, nomeSchieramento, schieramentoInCampo, type Ancora } from '../lib/schieramento'
 import { Icona } from './Icona'
-import { STILI, STILE_LABEL, STILE_DESCRIZIONI } from '../lib/stili'
+import { STILI, STILE_LABEL, STILE_DESCRIZIONI, assiDelloStile } from '../lib/stili'
 import { SFONDO_FASE_VERTICALE, type FaseSquadra } from '../lib/faseSquadra'
 import { PRESET } from '../lib/preset'
 
@@ -62,7 +62,7 @@ type Props = {
   onSquadra: (q: Partial<IndicazioniSquadra>) => void
 }
 
-export type IndicazioniSquadra = { stile: string; linea: string | null; ampiezza: string | null; portiere: string | null }
+export type IndicazioniSquadra = { stile: string; linea: string | null; ampiezza: string | null; velocita: string | null; portiere: string | null }
 
 // Cosa fa ogni indicazione e che giocatori chiede. I numeri stanno in
 // engine/squadra.js: qui c'e' solo come si spiegano.
@@ -74,6 +74,7 @@ const CHIEDE_STILE: Record<string, string> = {
   recupero_veloce: 'Vuole giocatori aggressivi e bravi negli intercetti.',
   diretto: 'Vuole punte forti di testa e fisicamente.',
   blocco_basso: 'Vuole difensori forti e bravi a marcare.',
+  personalizzato: 'Sblocca le indicazioni qui sotto: contano solo quelle che scegli.',
 }
 const LINEE: [string | null, string, string][] = [
   ['bassa', 'Bassa', 'Si difende vicino all’area: dietro più solidi, il resto della squadra più lontano. Vuole difensori forti e bravi a marcare.'],
@@ -85,9 +86,14 @@ const AMPIEZZE: [string | null, string, string][] = [
   [null, 'Normale', 'Nessuna indicazione particolare.'],
   ['larga', 'Larga', 'Più gioco sulle fasce, centro più solo. Vuole esterni e terzini che crossano e corrono.'],
 ]
+const VELOCITA: [string | null, string, string][] = [
+  ['ragionata', 'Ragionata', 'La squadra passa il pallone senza forzare, con giocate pazienti: più possesso, tiri meno frequenti ma migliori. Vuole centrocampisti tecnici.'],
+  [null, 'Normale', 'Nessuna indicazione particolare.'],
+  ['veloce', 'Veloce', 'Serie di passaggi veloci per andare subito in attacco: meno possesso, più tiri. Vuole giocatori che passano e scattano.'],
+]
 const PORTIERI: [string | null, string, string][] = [
   [null, 'Normale', 'Resta tra i pali.'],
-  ['libero', 'Portiere-libero', 'Esce dai pali e gioca coi piedi. Con la linea alta copre lo spazio dietro i difensori. Lo allena il piano «Fuori dai pali».'],
+  ['libero', 'Portiere-libero', 'Esce dai pali e gioca coi piedi. Con la linea alta (in Personalizzato) copre lo spazio dietro i difensori. Lo allena il piano «Fuori dai pali».'],
 ]
 
 const MODULI_SALVABILI = 3
@@ -168,17 +174,23 @@ export default function SchemaTattico({
     return Math.min(1, Math.round(migliore * FAM_PARTITE_PIENA) / FAM_PARTITE_PIENA)
   }, [xpDisposizione, schema])
 
-  // Ventisette elementi come in SQL (private.avanza_familiarita): lo stile,
-  // gli undici ruoli, gli undici compiti, dove si attacca, linea, ampiezza e
-  // portiere.
+  // Ventotto elementi come in SQL (private.avanza_familiarita): lo stile,
+  // gli undici ruoli, gli undici compiti, dove si attacca, linea, ampiezza,
+  // portiere e velocita' di manovra.
   const conIndicazioni = (ruoli?.filter(Boolean).length ?? 0)
     + (compiti?.filter((c) => c && c !== 'equilibrio').length ?? 0)
     + (focus ? 1 : 0)
     + (squadra.stile !== 'equilibrato' ? 1 : 0)
-    + (squadra.linea ? 1 : 0) + (squadra.ampiezza ? 1 : 0) + (squadra.portiere ? 1 : 0)
+    + (squadra.linea ? 1 : 0) + (squadra.ampiezza ? 1 : 0) + (squadra.velocita ? 1 : 0) + (squadra.portiere ? 1 : 0)
+  // Sotto uno stile preimpostato le sezioni mostrano cosa implica lo stile.
+  const libero = squadra.stile === 'personalizzato'
+  const da = assiDelloStile(squadra.stile)
+  const mostra = libero
+    ? { linea: squadra.linea, ampiezza: squadra.ampiezza, velocita: squadra.velocita, focus }
+    : da
   const quotaIndicazioni = Math.min(1,
     Math.round(Math.min(1, xpIndicazioni / FAM_PARTITE_PIENA)
-      * resaFamiliarita(conIndicazioni / 27) * FAM_PARTITE_PIENA) / FAM_PARTITE_PIENA)
+      * resaFamiliarita(conIndicazioni / 28) * FAM_PARTITE_PIENA) / FAM_PARTITE_PIENA)
 
   const cambiati = 11 - uguali(standard, schema)
   const erroreSimmetria = erroreSimmetriaSchema(schema)
@@ -219,7 +231,7 @@ export default function SchemaTattico({
 
   const ripristina = () => {
     onChange(null, null, null); onFocus(null)
-    onSquadra({ stile: 'equilibrato', linea: null, ampiezza: null, portiere: null })
+    onSquadra({ stile: 'equilibrato', linea: null, ampiezza: null, velocita: null, portiere: null })
     setAperto(null)
   }
 
@@ -403,25 +415,33 @@ export default function SchemaTattico({
       </>}
 
       {pagina === 'squadra' && <div className="schema__squadra">
+        {/* Sotto uno stile preimpostato linea, ampiezza, velocita' e dove si
+            attacca sono bloccate: le decide lo stile e qui si mostrano soltanto.
+            Con Personalizzato si sbloccano (6 ottobre 2026). */}
         <Gruppo titolo="Stile di gioco">
           {STILI.map((k) => <Scelta key={k} attiva={squadra.stile === k} nome={STILE_LABEL[k].charAt(0) + STILE_LABEL[k].slice(1).toLowerCase()}
             detto={[STILE_DESCRIZIONI[k], CHIEDE_STILE[k]].filter(Boolean).join(' ')}
             onClick={() => onSquadra({ stile: k })} />)}
         </Gruppo>
+        {!libero && <p className="schema__blocco">Le indicazioni qui sotto seguono lo stile scelto. Per sceglierle tu, passa a <strong>Personalizzato</strong>.</p>}
         {/* Dove si attacca guarda la PROPRIA squadra (registro, punto 27): la
             corsia dove si hanno i giocatori piu' forti. */}
-        <Gruppo titolo="Dove attacchiamo">
+        <Gruppo titolo="Dove attacchiamo" bloccato={!libero}>
           {([[null, 'Ovunque', 'Nessuna concentrazione: si attacca dove capita.'],
             ['SX', 'A sinistra', 'Rende se a sinistra hai i giocatori migliori, costa se è il tuo lato debole.'],
             ['CEN', 'Al centro', 'Rende se al centro hai i giocatori migliori, costa se è il tuo lato debole.'],
-            ['DX', 'A destra', 'Rende se a destra hai i giocatori migliori, costa se è il tuo lato debole.']] as const).map(([v, n, d]) =>
-            <Scelta key={n} attiva={focus === v} nome={n} detto={d} onClick={() => onFocus(v)} />)}
+            ['DX', 'A destra', 'Rende se a destra hai i giocatori migliori, costa se è il tuo lato debole.'],
+            ['FASCE', 'Entrambe le fasce', 'Rende se le due fasce insieme sono la parte più forte della tua squadra, costa se non lo sono.']] as const).map(([v, n, d]) =>
+            <Scelta key={n} attiva={mostra.focus === v} nome={n} detto={d} bloccata={!libero} onClick={() => onFocus(v)} />)}
         </Gruppo>
-        <Gruppo titolo="Linea difensiva">
-          {LINEE.map(([v, n, d]) => <Scelta key={n} attiva={squadra.linea === v} nome={n} detto={d} predefinita={v === null} onClick={() => onSquadra({ linea: v })} />)}
+        <Gruppo titolo="Linea difensiva" bloccato={!libero}>
+          {LINEE.map(([v, n, d]) => <Scelta key={n} attiva={mostra.linea === v} nome={n} detto={d} predefinita={v === null} bloccata={!libero} onClick={() => onSquadra({ linea: v })} />)}
         </Gruppo>
-        <Gruppo titolo="Ampiezza">
-          {AMPIEZZE.map(([v, n, d]) => <Scelta key={n} attiva={squadra.ampiezza === v} nome={n} detto={d} predefinita={v === null} onClick={() => onSquadra({ ampiezza: v })} />)}
+        <Gruppo titolo="Ampiezza" bloccato={!libero}>
+          {AMPIEZZE.map(([v, n, d]) => <Scelta key={n} attiva={mostra.ampiezza === v} nome={n} detto={d} predefinita={v === null} bloccata={!libero} onClick={() => onSquadra({ ampiezza: v })} />)}
+        </Gruppo>
+        <Gruppo titolo="Velocità di manovra" bloccato={!libero}>
+          {VELOCITA.map(([v, n, d]) => <Scelta key={n} attiva={mostra.velocita === v} nome={n} detto={d} predefinita={v === null} bloccata={!libero} onClick={() => onSquadra({ velocita: v })} />)}
         </Gruppo>
         <Gruppo titolo="Portiere">
           {PORTIERI.map(([v, n, d]) => <Scelta key={n} attiva={squadra.portiere === v} nome={n} detto={d} predefinita={v === null} onClick={() => onSquadra({ portiere: v })} />)}
@@ -579,18 +599,18 @@ function Barra({ nome, quota, nota }: { nome: string; quota: number; nota: strin
   )
 }
 
-function Gruppo({ titolo, children }: { titolo: string; children: React.ReactNode }) {
+function Gruppo({ titolo, bloccato = false, children }: { titolo: string; bloccato?: boolean; children: React.ReactNode }) {
   return (
-    <section className="schema__gruppo">
-      <h3>{titolo}</h3>
+    <section className={`schema__gruppo${bloccato ? ' is-bloccato' : ''}`}>
+      <h3>{titolo}{bloccato && <em className="schema__da-stile">dallo stile</em>}</h3>
       <div className="schema__scelte">{children}</div>
     </section>
   )
 }
 
-function Scelta({ nome, detto, attiva, predefinita = false, onClick }: { nome: string; detto: string; attiva: boolean; predefinita?: boolean; onClick: () => void }) {
+function Scelta({ nome, detto, attiva, predefinita = false, bloccata = false, onClick }: { nome: string; detto: string; attiva: boolean; predefinita?: boolean; bloccata?: boolean; onClick: () => void }) {
   return (
-    <button type="button" className={attiva ? 'is-attiva' : ''} onClick={onClick}>
+    <button type="button" className={attiva ? 'is-attiva' : ''} disabled={bloccata} onClick={onClick}>
       <strong>{nome}{predefinita && <em className="schema__base">nessuna indicazione</em>}</strong>
       <small>{detto}</small>
     </button>

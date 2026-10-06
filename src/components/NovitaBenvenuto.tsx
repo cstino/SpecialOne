@@ -128,7 +128,7 @@ const PAGINE: Pagina[] = [
     occhiello: 'Novità · Tattiche',
     titolo: 'La tua squadra ha un’identità.',
     punti: [
-      <>Scegli lo <strong>stile di gioco</strong> fra 7, dove attaccare, l'altezza della linea, l'ampiezza e come gioca il portiere. Lo stile cambia davvero la partita: ritmo, possesso, quanti tiri fai.</>,
+      <>Scegli lo <strong>stile di gioco</strong> fra 7, oppure <strong>Personalizzato</strong> per decidere tu dove attaccare, l'altezza della linea, l'ampiezza e la velocità di manovra, più come gioca il portiere. Lo stile cambia davvero la partita: ritmo, possesso, quanti tiri fai.</>,
       <>Non vuoi perderci tempo? I <strong>preset tattici</strong> (Palleggio, Pressing alto, Contropiede, Catenaccio…) sistemano tutto con un tocco.</>,
     ],
   },

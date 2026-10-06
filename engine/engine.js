@@ -202,8 +202,8 @@ export function identitaStile(stile, indicazioni = null) {
   const id = s
     ? { ritmo: s.ritmo * RITMO_NORMA, possesso: s.possesso, volumeTiri: s.volumeTiri * TIRI_NORMA, tiriConcessi: 1, contrasti: 1, dribbling: 1 }
     : { ritmo: 1, possesso: 0, volumeTiri: 1, tiriConcessi: 1, contrasti: 1, dribbling: 1 };
-  // Linea e ampiezza (solo con le tattiche accese) si sommano allo stile.
-  for (const [chiave, valore] of [['linea', indicazioni?.linea], ['ampiezza', indicazioni?.ampiezza]]) {
+  // Linea, ampiezza e velocita' (solo con le tattiche accese) si sommano allo stile.
+  for (const [chiave, valore] of [['linea', indicazioni?.linea], ['ampiezza', indicazioni?.ampiezza], ['velocita', indicazioni?.velocita]]) {
     const v = INDICAZIONI_PARTITA[chiave]?.[valore];
     if (!v) continue;
     id.ritmo *= v.ritmo ?? 1; id.possesso += v.possesso ?? 0; id.volumeTiri *= v.volumeTiri ?? 1;

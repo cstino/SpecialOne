@@ -5,7 +5,7 @@ import { attributiCorrenti } from '../lib/attributiGiocatore'
 import { disponiCard, nomeSchieramento, schieramentoInCampo } from '../lib/schieramento'
 import SchemaTattico, { type XpDisposizione } from './SchemaTattico'
 import { erroreSimmetriaSchema } from '../lib/simmetriaSchema'
-import { STILE_LABEL } from '../lib/stili'
+import { STILE_LABEL, assiDelloStile } from '../lib/stili'
 import { idoneitaRuolo, segnoIdoneita } from '../lib/tattica'
 import { PRESET, applicaPreset } from '../lib/preset'
 import { DialogoNomeRiserva, SchemiCard } from './SchemiCard'
@@ -65,18 +65,18 @@ type Player = { id: number; fc_id: number; nome: string; nomeEsteso?: string | n
 // Uno schema salvato con un nome (tabella moduli_personalizzati): posizioni,
 // ruoli, compiti e dove si attacca. Al massimo 3 per squadra, visibili solo a
 // chi li ha salvati.
-type ModuloPersonalizzato = { id: number; nome: string; modulo: string; disposizione: string[]; ruoli: (string | null)[] | null; compiti: (string | null)[] | null; focus_corsia: string | null; stile: string | null; linea_difensiva: string | null; ampiezza: string | null; ruolo_portiere: string | null }
+type ModuloPersonalizzato = { id: number; nome: string; modulo: string; disposizione: string[]; ruoli: (string | null)[] | null; compiti: (string | null)[] | null; focus_corsia: string | null; stile: string | null; linea_difensiva: string | null; ampiezza: string | null; velocita_manovra: string | null; ruolo_portiere: string | null }
 const MODULI_PERSONALIZZATI_MAX = 3
 // Uno schema tattico: tutto cio' che lo Schema Tattico e la pagina Squadra decidono.
 type Tattica = {
   modulo: string; disposizione: string[] | null; ruoli: (string | null)[] | null; compiti: (string | null)[] | null
-  focus: string | null; stile: string; linea: string | null; ampiezza: string | null; portiere: string | null
+  focus: string | null; stile: string; linea: string | null; ampiezza: string | null; velocita: string | null; portiere: string | null
 }
 const stessiValori = (a: (string | null)[] | null | undefined, b: (string | null)[] | null | undefined) =>
   JSON.stringify((a ?? []).map((v) => v ?? null)) === JSON.stringify((b ?? []).map((v) => v ?? null))
   || (!(a ?? []).some(Boolean) && !(b ?? []).some(Boolean))
 
-type SavedLineup = { modulo: string; stile_gioco: string; titolari: number[]; panchina: number[]; tribuna: number[]; salvata_il: string; disposizione: string[] | null; ruoli: (string | null)[] | null; compiti: (string | null)[] | null; focus_corsia: string | null; linea_difensiva: string | null; ampiezza: string | null; ruolo_portiere: string | null }
+type SavedLineup = { modulo: string; stile_gioco: string; titolari: number[]; panchina: number[]; tribuna: number[]; salvata_il: string; disposizione: string[] | null; ruoli: (string | null)[] | null; compiti: (string | null)[] | null; focus_corsia: string | null; linea_difensiva: string | null; ampiezza: string | null; velocita_manovra: string | null; ruolo_portiere: string | null }
 
 const formatSalvataIl = (iso: string) => new Intl.DateTimeFormat('it-IT', {
   timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
@@ -316,6 +316,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   // Indicazioni di squadra (registro tattico, punto 30). null = predefinita.
   const [linea, setLinea] = useState<string | null>(null)
   const [ampiezza, setAmpiezza] = useState<string | null>(null)
+  const [velocita, setVelocita] = useState<string | null>(null)
   const [portiere, setPortiere] = useState<string | null>(null)
   const [schemaAperto, setSchemaAperto] = useState(false)
   const [xpDisposizione, setXpDisposizione] = useState<XpDisposizione[]>([])
@@ -395,7 +396,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       // I moduli salvati non sono indispensabili per schierare: se la lettura
       // fallisce la pagina funziona lo stesso, senza la sezione "I tuoi moduli".
       const { data: moduliSalvati } = await supabase.from('moduli_personalizzati')
-        .select('id, nome, modulo, disposizione, ruoli, compiti, focus_corsia, stile, linea_difensiva, ampiezza, ruolo_portiere')
+        .select('id, nome, modulo, disposizione, ruoli, compiti, focus_corsia, stile, linea_difensiva, ampiezza, velocita_manovra, ruolo_portiere')
         .eq('team_id', membership.id).order('creato_il')
       if (active) setModuliPersonalizzati((moduliSalvati ?? []) as ModuloPersonalizzato[])
       if (formationXpError) { setError(formationXpError.message); setLoading(false); return }
@@ -422,7 +423,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
               disposizione: stessiValori(sc.riserva_disposizione as string[], standard) ? null : sc.riserva_disposizione as string[],
               ruoli: (sc.riserva_ruoli as (string | null)[] | null) ?? null, compiti: (sc.riserva_compiti as (string | null)[] | null) ?? null,
               focus: (sc.riserva_focus_corsia as string | null) ?? null, stile: (sc.riserva_stile as string | null) ?? 'equilibrato',
-              linea: (sc.riserva_linea as string | null) ?? null, ampiezza: (sc.riserva_ampiezza as string | null) ?? null,
+              linea: (sc.riserva_linea as string | null) ?? null, ampiezza: (sc.riserva_ampiezza as string | null) ?? null, velocita: (sc.riserva_velocita as string | null) ?? null,
               portiere: (sc.riserva_portiere as string | null) ?? null,
             }
             setHaRiserva(true); setNomeRiserva(sc.riserva_nome as string); setNomeRiservaConfermato(true)
@@ -441,7 +442,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       const targetGiornata = nextFixture?.giornata ?? (league.fase_carriera === 'offseason' ? 1 : league.giornate_totali)
       if (active) setGiornata(targetGiornata)
       const { data: lineup, error: lineupError } = await supabase.from('lineups')
-        .select('modulo, stile_gioco, titolari, panchina, tribuna, salvata_il, disposizione, ruoli, compiti, focus_corsia, linea_difensiva, ampiezza, ruolo_portiere')
+        .select('modulo, stile_gioco, titolari, panchina, tribuna, salvata_il, disposizione, ruoli, compiti, focus_corsia, linea_difensiva, ampiezza, velocita_manovra, ruolo_portiere')
         .eq('league_id', league.id)
         .eq('team_id', membership.id)
         .lte('giornata', targetGiornata)
@@ -487,6 +488,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         setFocusCorsia(current.focus_corsia ?? null)
         setLinea(current.linea_difensiva ?? null)
         setAmpiezza(current.ampiezza ?? null)
+        setVelocita(current.velocita_manovra ?? null)
         setPortiere(current.ruolo_portiere ?? null)
         setStile(current.stile_gioco)
         setSalvataIl(current.salvata_il)
@@ -765,7 +767,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       p_disposizione: att.disposizione, p_ruoli: att.ruoli, p_compiti: att.compiti, p_focus_corsia: att.focus,
       p_titolari: titolari, p_panchina: cleanBench, p_tribuna: tribuna,
       p_stile_gioco: att.stile,
-      p_linea: att.linea, p_ampiezza: att.ampiezza, p_portiere: att.portiere,
+      p_linea: att.linea, p_ampiezza: att.ampiezza, p_velocita: att.velocita, p_portiere: att.portiere,
     })
     if (saveError) { setError(saveError.message); setSaving(false); return }
     // E, nelle leghe con le tattiche accese, i nomi e la riserva.
@@ -780,7 +782,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           p_riserva_nome: ris ? nome : null, p_modulo: ris?.modulo ?? null,
           p_disposizione: ris ? (ris.disposizione ?? MODULI[ris.modulo]) : null,
           p_ruoli: ris?.ruoli ?? null, p_compiti: ris?.compiti ?? null, p_focus_corsia: ris?.focus ?? null,
-          p_stile: ris?.stile ?? null, p_linea: ris?.linea ?? null, p_ampiezza: ris?.ampiezza ?? null, p_portiere: ris?.portiere ?? null,
+          p_stile: ris?.stile ?? null, p_linea: ris?.linea ?? null, p_ampiezza: ris?.ampiezza ?? null, p_velocita: ris?.velocita ?? null, p_portiere: ris?.portiere ?? null,
         })
         if (schemiError) { setError(`Formazione salvata, ma gli schemi no: ${schemiError.message}`); setSaving(false); return }
         schemiSalvati.current = firmaSchemi
@@ -803,7 +805,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
 
   function applicaTattica(t: Tattica) {
     setModulo(t.modulo); setDisposizione(t.disposizione); setRuoli(t.ruoli); setCompiti(t.compiti)
-    setFocusCorsia(t.focus); setStile(t.stile); setLinea(t.linea); setAmpiezza(t.ampiezza); setPortiere(t.portiere)
+    setFocusCorsia(t.focus); setStile(t.stile); setLinea(t.linea); setAmpiezza(t.ampiezza); setVelocita(t.velocita); setPortiere(t.portiere)
     setSelected(null); setPlayerAction(null)
   }
 
@@ -843,7 +845,9 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       const giocatore = players.find((p) => p.id === titolari[i])
       return giocatore ? idoneitaRuolo(giocatore.attributi, giocatore.overall_corrente, ruolo) : 0
     })
-    setStile(r.stile); setLinea(r.linea); setAmpiezza(r.ampiezza); setPortiere(r.portiere)
+    // Sotto uno stile preimpostato linea, ampiezza, velocita' e dove si attacca
+    // sono bloccate (le decide lo stile): si azzerano, niente valori nascosti.
+    setStile(r.stile); setLinea(null); setAmpiezza(null); setVelocita(null); setFocusCorsia(null); setPortiere(r.portiere)
     setRuoli(r.ruoli.some(Boolean) ? r.ruoli : null)
     setCompiti(r.compiti.some(Boolean) ? r.compiti : null)
     setSaved(false)
@@ -877,12 +881,13 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     if (m.stile) setStile(m.stile)
     setLinea(m.linea_difensiva)
     setAmpiezza(m.ampiezza)
+    setVelocita(m.velocita_manovra ?? null)
     setPortiere(m.ruolo_portiere)
   }
 
   async function ricaricaModuliPersonalizzati() {
     const { data } = await supabase.from('moduli_personalizzati')
-      .select('id, nome, modulo, disposizione, ruoli, compiti, focus_corsia, stile, linea_difensiva, ampiezza, ruolo_portiere')
+      .select('id, nome, modulo, disposizione, ruoli, compiti, focus_corsia, stile, linea_difensiva, ampiezza, velocita_manovra, ruolo_portiere')
       .eq('team_id', membership.id).order('creato_il')
     setModuliPersonalizzati((data ?? []) as ModuloPersonalizzato[])
   }
@@ -893,7 +898,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       p_league_id: league.id, p_nome: nome, p_modulo: modulo,
       p_disposizione: disposizione ?? MODULI[modulo], p_ruoli: ruoli, p_compiti: compiti,
       p_focus_corsia: focusCorsia, p_sostituisci: sostituisci,
-      p_stile: stile, p_linea: linea, p_ampiezza: ampiezza, p_portiere: portiere,
+      p_stile: stile, p_linea: linea, p_ampiezza: ampiezza, p_velocita: velocita, p_portiere: portiere,
     })
     if (error) return error.message
     await ricaricaModuliPersonalizzati()
@@ -916,12 +921,12 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     && stessiValori((m.compiti ?? []).map((c) => (c === 'equilibrio' ? null : c)), (compiti ?? []).map((c) => (c === 'equilibrio' ? null : c)))
     && (m.focus_corsia ?? null) === (focusCorsia ?? null)
     && (m.stile ?? 'equilibrato') === stile
-    && (m.linea_difensiva ?? null) === linea && (m.ampiezza ?? null) === ampiezza && (m.ruolo_portiere ?? null) === portiere) ?? null
+    && (m.linea_difensiva ?? null) === linea && (m.ampiezza ?? null) === ampiezza && (m.velocita_manovra ?? null) === velocita && (m.ruolo_portiere ?? null) === portiere) ?? null
 
 
   // Gli schemi "canonici": quello che gioca e la riserva, indipendentemente da
   // quale dei due si sta guardando.
-  const tatticaCorrente: Tattica = { modulo, disposizione, ruoli, compiti, focus: focusCorsia, stile, linea, ampiezza, portiere }
+  const tatticaCorrente: Tattica = { modulo, disposizione, ruoli, compiti, focus: focusCorsia, stile, linea, ampiezza, velocita, portiere }
   const attivoCanonico: Tattica = schemaSel === 'attivo' ? tatticaCorrente : (attivoFermo ?? tatticaCorrente)
   const riservaCanonica: Tattica | null = !haRiserva ? null : schemaSel === 'riserva' ? tatticaCorrente : riservaFerma
   const firmaCorrente = JSON.stringify({ attivoCanonico, riservaCanonica, haRiserva, nomeAttivo, nomeRiserva, titolari, panchina, tribuna, schemaSel })
@@ -952,11 +957,25 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         onChange={(d, r, c) => { setDisposizione(d); setRuoli(r); setCompiti(c); setSaved(false) }}
         onFocus={(f) => { setFocusCorsia(f); setSaved(false) }}
         onPreset={usaPreset}
-        squadra={{ stile, linea, ampiezza, portiere }}
+        squadra={{ stile, linea, ampiezza, velocita, portiere }}
         onSquadra={(q) => {
-          if (q.stile !== undefined) setStile(q.stile ?? 'equilibrato')
+          if (q.stile !== undefined) {
+            const nuovo = q.stile ?? 'equilibrato'
+            if (nuovo !== stile) {
+              if (nuovo === 'personalizzato') {
+                // Si parte dai valori dello stile che si lascia, poi si ritocca.
+                const da = assiDelloStile(stile)
+                setLinea(da.linea); setAmpiezza(da.ampiezza); setVelocita(da.velocita); setFocusCorsia(da.focus)
+              } else {
+                // Uno stile preimpostato decide da solo: niente valori nascosti.
+                setLinea(null); setAmpiezza(null); setVelocita(null); setFocusCorsia(null)
+              }
+            }
+            setStile(nuovo)
+          }
           if (q.linea !== undefined) setLinea(q.linea)
           if (q.ampiezza !== undefined) setAmpiezza(q.ampiezza)
+          if (q.velocita !== undefined) setVelocita(q.velocita)
           if (q.portiere !== undefined) setPortiere(q.portiere)
           setSaved(false)
         }}
@@ -972,8 +991,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           <p>Scegli il modulo e metti un giocatore in ogni posto: titolari, panchina e tribuna. Chi gioca fuori
             ruolo rende meno, e la Rosa ti mostra subito il suo <strong>overall effettivo</strong>: in giallo quando è
             più basso del normale, per il ruolo o per la stanchezza.</p>
-          <p>Dalla card dello stile decidi <strong>come gioca la squadra</strong>: stile di gioco, dove attacca, linea
-            difensiva, ampiezza e portiere. A ogni giocatore puoi dare un <strong>ruolo</strong> (un ruolo adatto a lui dà
+          <p>Dalla card dello stile decidi <strong>come gioca la squadra</strong>: stile di gioco (o Personalizzato, per
+            scegliere dove attacca, linea difensiva, ampiezza e velocità di manovra) e portiere. A ogni giocatore puoi dare un <strong>ruolo</strong> (un ruolo adatto a lui dà
             un bonus, uno sbagliato una penalità) e un <strong>compito</strong>: più difesa, equilibrio o più attacco. Se non
             vuoi perderci tempo, i <strong>preset tattici</strong> sistemano tutto con un tocco.</p>
           <p>La squadra rende meglio con ciò che conosce. La <strong>familiarità</strong> ha due barre: la disposizione in
@@ -1051,7 +1070,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
               <div className="formation-tattica__voce">
                 <button className="formation-tattica__trigger" type="button" onClick={() => { setSchemaAperto(true); setModuleMenuOpen(false) }}>
                   <span className="formation-tattica__testo">
-                    <small>Schema e stile{disposizione || ruoli || compiti || focusCorsia || linea || ampiezza || portiere ? <em className="formation-tattica__tag">personalizzato</em> : null}</small>
+                    <small>Schema e stile{disposizione || ruoli || compiti || focusCorsia || linea || ampiezza || velocita || portiere || stile === 'personalizzato' ? <em className="formation-tattica__tag">personalizzato</em> : null}</small>
                     <strong>{(STILE_LABEL[stile] ?? stile).toLowerCase()}</strong>
                   </span>
                   <i aria-hidden="true"><Icona nome="avanti" /></i>

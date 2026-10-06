@@ -46,6 +46,7 @@ export const FAMIGLIE = {
   ATTACCO: ['ST', 'CF', 'LW', 'RW'],
   PUNTE: ['ST', 'CF'],
   RECUPERO: ['CDM', 'CM', 'CAM', 'LM', 'RM', 'LW', 'RW', 'ST', 'CF'],
+  MANOVRA: ['CDM', 'CM', 'CAM', 'LM', 'RM', 'LW', 'RW', 'ST', 'CF'],
   PORTIERE: ['GK'],
 };
 
@@ -59,6 +60,7 @@ export const PROFILI_SQUADRA = {
   centro_tecnico:   { famiglia: 'CENTRO', attributi: [PASS_CORTO, CONTROLLO, VISIONE] },
   attacco_veloce:   { famiglia: 'ATTACCO', attributi: [VELOCITA, ACCELERAZIONE] },
   recupero:         { famiglia: 'RECUPERO', attributi: [AGGRESSIVITA, INTERCETTI] },
+  manovra_veloce:   { famiglia: 'MANOVRA', attributi: [PASS_CORTO, ACCELERAZIONE] },
   punte_fisiche:    { famiglia: 'PUNTE', attributi: [TESTA, FORZA] },
   portiere_libero:  { famiglia: 'PORTIERE', attributi: ['goalkeeping_speed', 'gk_positioning', 'gk_kicking'], generali: ATTRIBUTI_PORTIERE },
 };
@@ -71,6 +73,7 @@ export const TARATURA_SQUADRA = {
   centro_tecnico: { atteso: 5.61, pendenza: 0.229, deviazione: 2.72 },
   attacco_veloce: { atteso: 10.77, pendenza: -0.602, deviazione: 8.84 },
   recupero: { atteso: -9.43, pendenza: 0.070, deviazione: 11.64 },
+  manovra_veloce: { atteso: 5.86, pendenza: -0.223, deviazione: 5.51 },
   punte_fisiche: { atteso: 9.19, pendenza: 0.099, deviazione: 7.50 },
   portiere_libero: { atteso: -6.16, pendenza: -0.042, deviazione: 1.94 },
 };
@@ -120,6 +123,15 @@ export const OPZIONI_SQUADRA = {
     recupero_veloce: { chiede: { profilo: 'recupero', valore: 2.0 } },
     diretto:         { chiede: { profilo: 'punte_fisiche', valore: 2.0 } },
     blocco_basso:    { chiede: { profilo: 'difesa_fisica', valore: 2.0 } },
+    // Neutro: contano solo le indicazioni scelte a mano.
+    personalizzato: null,
+  },
+  // Velocita' di manovra: la ragionata chiede gli stessi centrocampisti tecnici
+  // dell'ampiezza stretta; la veloce, giocatori che passano e scattano.
+  velocita: {
+    normale: null,
+    ragionata: { sposta: { MID: 0.5, ATT: -0.5 }, chiede: { profilo: 'centro_tecnico', valore: 2.0 } },
+    veloce:    { sposta: { MID: -0.5, ATT: 0.5 }, chiede: { profilo: 'manovra_veloce', valore: 2.0 } },
   },
   portiere: {
     normale: null,
@@ -135,7 +147,7 @@ export const OPZIONI_SQUADRA = {
 // -1,1 (registro, punto 37).
 export const COPERTURA_LIBERO = 2.5;
 
-export const PREDEFINITE = { stile: 'equilibrato', linea: 'media', ampiezza: 'normale', portiere: 'normale' };
+export const PREDEFINITE = { stile: 'equilibrato', linea: 'media', ampiezza: 'normale', velocita: 'normale', portiere: 'normale' };
 
 const gruppiDi = (slot) => Object.entries(FAMIGLIE).filter(([, l]) => l.includes(slot)).map(([k]) => k);
 
@@ -149,7 +161,7 @@ const gruppiDi = (slot) => Object.entries(FAMIGLIE).filter(([, l]) => l.includes
  */
 export function deltaSquadra(indicazioni) {
   const scelte = [];
-  for (const asse of ['linea', 'ampiezza', 'stile', 'portiere']) {
+  for (const asse of ['linea', 'ampiezza', 'velocita', 'stile', 'portiere']) {
     const o = OPZIONI_SQUADRA[asse][indicazioni?.[asse] ?? PREDEFINITE[asse]];
     if (o) scelte.push(o);
   }
@@ -183,4 +195,14 @@ export function deltaCoperturaLibero(lineup, indicazioni) {
   const cop = COPERTURA_LIBERO * idoneitaSquadra(gk, 'portiere_libero');
   if (!cop) return null;
   return (g, slot) => (g && REPARTO[slot] === 'DEF' ? cop : 0);
+}
+
+/**
+ * Sotto uno stile preimpostato le indicazioni di squadra sono bloccate: valgono
+ * solo quelle dello stile. Solo con 'personalizzato' si sbloccano linea,
+ * ampiezza, velocita' di manovra e dove si attacca (6 ottobre 2026).
+ */
+export const STILE_LIBERO = 'personalizzato';
+export function assiLiberi(stile) {
+  return stile === STILE_LIBERO;
 }
