@@ -10,6 +10,7 @@ export type TipoNotifica =
   | 'mercato_esito'
   | 'mercato_asta'
   | 'scambio_ufficiale'
+  | 'amichevole'
   | 'sistema'
 
 export type Notifica = {

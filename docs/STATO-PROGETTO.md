@@ -2018,3 +2018,24 @@ metà" con la rimozione). Applicata prima in transazione con rollback, poi per d
   nell'angolo della fascia nella card in home) che apre una finestrella con la griglia degli 11 messaggi; dopo l'invio il
   pulsante mostra il conto alla rovescia dei 5 secondi. Nessun testo libero: l'elenco dei codici e' in `lib/reazioni.ts` e nella funzione SQL (da tenere
   allineati). Nell'anteprima (`?anteprima=offseason`) le reazioni degli altri sono inventate. Migrazione `20261006170000`.
+
+## Amichevoli (6 ottobre 2026, solo off-season)
+
+Decise col committente: voce «Amichevoli» nel menu dell'off-season; **invito che l'altro accetta**; solo fra squadre di
+persone (niente PC); **nessun limite** di numero; si gioca con la **formazione salvata** di ciascuno (quella della
+Formazione in off-season, giornata 1; se manca, la migliore disponibile in un 4-3-3, senza salvarla); la **familiarita'
+non cresce**; le **giocate sono visibili a tutta la lega** (inviti e partite non ancora giocate solo ai due).
+
+- **Niente viene salvato sui giocatori**: la partita si simula davvero (il motore muta in memoria condizione, infortuni
+  e cartellini e se ne vedono gli effetti nel referto), poi quegli oggetti si buttano via. L'unica scrittura e' il referto
+  in `public.amichevoli` (`registra_amichevole`, solo chiave di servizio). Nessuna statistica, squalifica, stanchezza,
+  familiarita', morale, classifica.
+- **Database** (migrazione `20261006190000`): tabella `amichevoli` (stato in_attesa / accettata / rifiutata / giocata,
+  gol, referto jsonb), RLS, `invia_amichevole`, `rispondi_amichevole`, `registra_amichevole`; tipo di notifica `amichevole`.
+- **Simulazione**: ramo `amichevole_id` in `simula-giornata` (`gestisciAmichevole` e `simulaAmichevoleCore`, stesso
+  corpo di una partita vera: va tenuto allineato al ciclo sulle partite). Dopo l'accettazione l'app chiama la funzione;
+  se fallisce, uno dei due preme «Gioca ora». Provata in locale con Deno su dati veri di due squadre
+  (3 partite, istanze in ingresso invariate, referto di ~18 KB); il percorso completo del gestore si vede solo a funzione ridispiegata.
+- **App**: `Amichevoli.tsx` (inviti ricevuti, da giocare, invita, giocate) e il referto (punteggio, cronaca con gol/cambi/
+  cartellini, statistiche di squadra, formazioni con voti e migliore in campo). Prima tappa: niente intro/reveal come
+  le partite vere (eventuale seconda tappa).

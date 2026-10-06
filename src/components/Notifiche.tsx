@@ -20,6 +20,7 @@ const ICONE: Record<TipoNotifica, string> = {
   mercato_esito: 'M4.5 12.5 9.5 17.5 19.5 6.5',
   mercato_asta: 'M6 20h8M9.5 16.5 16 10M4 9.5 9.5 4l4 4L8 13.5zM13.5 8 19 13.5',
   scambio_ufficiale: 'M4 8h13m0 0-3.2-3.2M17 8l-3.2 3.2M20 16H7m0 0 3.2-3.2M7 16l3.2 3.2',
+  amichevole: 'M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17m0 4.5 3.2 2.3-1.2 3.8h-4l-1.2-3.8z',
   sistema: 'M12 8.5v4.2m0 3.1v.2M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17',
 }
 

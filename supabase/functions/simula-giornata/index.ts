@@ -936,6 +936,266 @@ function playerStats(teamId: number, stats: JsonMap, teamStats: JsonMap, assist:
   })
 }
 
+// ============================================================
+//  AMICHEVOLI (solo in off-season)
+//
+//  La stessa simulazione di una partita vera, con le formazioni e le tattiche salvate di
+//  due squadre, ma NIENTE viene scritto sui giocatori: il motore muta in memoria condizione,
+//  infortuni e cartellini durante la partita (e se ne vedono gli effetti nel referto), poi
+//  quegli oggetti si buttano via. L'unica scrittura e' il referto in `amichevoli`
+//  (public.registra_amichevole). Nessuna statistica, nessuna squalifica, nessuna familiarita'.
+//
+//  Il corpo della simulazione ricalca quello del ciclo sulle partite piu' sotto: se si
+//  cambia l'uno va rivisto l'altro (src: tools/validazione non lo copre, e' la stessa logica).
+// ============================================================
+type SquadraAmichevole = { id: number; nome: string; capitano: number | null }
+export type DatiAmichevole = {
+  casa: SquadraAmichevole
+  ospite: SquadraAmichevole
+  instances: Instance[]
+  players: DbPlayer[]
+  attributi: Map<number, Record<string, number>>
+  xpModulo: Array<{ team_id: number; modulo: string; disposizione: string[]; partite_giocate: number }>
+  xpStile: Array<{ team_id: number; stile: string; partite_giocate: number }>
+  xpIndicazioni: Array<{ team_id: number; partite_giocate: number }>
+  moltiplicatoriInfortuni: Map<number, number>
+  // La formazione salvata di ciascuna squadra (null: se ne fa una automatica).
+  lineups: Map<number, DbLineup | null>
+  tatticheAttive: boolean
+}
+
+export function simulaAmichevoleCore(d: DatiAmichevole, seed: number) {
+  const catalog = new Map(d.players.map((player) => [player.id, player]))
+  const nomi = new Map([[d.casa.id, d.casa.nome], [d.ospite.id, d.ospite.nome]])
+  const rosters = new Map<number, EngineRoster>()
+  for (const teamId of [d.casa.id, d.ospite.id]) {
+    const esperienzaModulo: Record<string, number> = {}
+    for (const xp of d.xpModulo) if (xp.team_id === teamId) esperienzaModulo[xp.modulo] = xp.partite_giocate
+    const esperienzaStile: Record<string, number> = {}
+    for (const xp of d.xpStile) if (xp.team_id === teamId) esperienzaStile[xp.stile] = xp.partite_giocate
+    const xpDisposizione = d.xpModulo.filter((xp) => xp.team_id === teamId).map((xp) => ({ disposizione: xp.disposizione, partite: xp.partite_giocate }))
+    const xpIndicazioni = d.xpIndicazioni.find((xp) => xp.team_id === teamId)?.partite_giocate ?? 0
+    rosters.set(teamId, {
+      nome: nomi.get(teamId) ?? `Squadra ${teamId}`,
+      giocatori: d.instances.filter((instance) => instance.team_id === teamId).map((instance) => adaptPlayer(instance, catalog.get(instance.player_id)!, d.attributi.get(instance.id))),
+      esperienzaModulo, esperienzaStile, xpDisposizione, xpIndicazioni,
+      moltiplicatoreInfortuni: d.moltiplicatoriInfortuni.get(teamId),
+    })
+  }
+  const homeRoster = rosters.get(d.casa.id)!
+  const awayRoster = rosters.get(d.ospite.id)!
+
+  // Formazione: quella salvata; se manca, la migliore disponibile in un 4-3-3 (come il ripiego delle partite vere,
+  // ma senza salvarla).
+  const lineupDi = (teamId: number, roster: EngineRoster): DbLineup => {
+    const salvata = d.lineups.get(teamId)
+    if (salvata) return salvata
+    const disponibili = { ...roster, giocatori: roster.giocatori.filter((player) => player.squalificatoFinoA <= 0) }
+    const automatica = schiera(disponibili, '4-3-3')
+    const starters = automatica.titolari.map((player: EnginePlayer) => player.id)
+    const bench = automatica.panchina.map((player: EnginePlayer) => player.id)
+    const tribuna = roster.giocatori.filter((player) => !starters.includes(player.id) && !bench.includes(player.id)).map((player) => player.id)
+    return { team_id: teamId, modulo: '4-3-3', titolari: starters, panchina: bench, tribuna, stile_gioco: 'equilibrato', automatica: true }
+  }
+  const homeDbLineup = lineupDi(d.casa.id, homeRoster)
+  const awayDbLineup = lineupDi(d.ospite.id, awayRoster)
+  const homeLineup = buildLineup(homeDbLineup, homeRoster, d.casa.capitano, d.tatticheAttive)
+  const awayLineup = buildLineup(awayDbLineup, awayRoster, d.ospite.capitano, d.tatticheAttive)
+
+  let indicazioniPartita: { casa: { linea: string; ampiezza: string; velocita: string }; ospite: { linea: string; ampiezza: string; velocita: string } } | null = null
+  if (d.tatticheAttive) {
+    // Come nelle partite vere: sotto uno stile preimpostato le indicazioni sono bloccate, valgono quelle dello stile.
+    const indicazioni = (l: DbLineup) => assiLiberi(l.stile_gioco)
+      ? { stile: l.stile_gioco, linea: l.linea_difensiva ?? 'media', ampiezza: l.ampiezza ?? 'normale',
+          velocita: l.velocita_manovra ?? 'normale', portiere: l.ruolo_portiere ?? 'normale' }
+      : { stile: l.stile_gioco, linea: 'media', ampiezza: 'normale', velocita: 'normale', portiere: l.ruolo_portiere ?? 'normale' }
+    const corsia = (l: DbLineup) => (assiLiberi(l.stile_gioco) ? l.focus_corsia ?? null : null)
+    const indCasa = indicazioni(homeDbLineup)
+    const indOspite = indicazioni(awayDbLineup)
+    indicazioniPartita = { casa: indCasa, ospite: indOspite }
+    homeLineup.tattica = sommaDelta(
+      deltaMorale(homeLineup), deltaRuoli(homeLineup),
+      deltaCorsie(homeLineup, corsia(homeDbLineup)),
+      deltaSquadra(indCasa), deltaCoperturaLibero(homeLineup, indCasa))
+    awayLineup.tattica = sommaDelta(
+      deltaMorale(awayLineup), deltaRuoli(awayLineup),
+      deltaCorsie(awayLineup, corsia(awayDbLineup)),
+      deltaSquadra(indOspite), deltaCoperturaLibero(awayLineup, indOspite))
+  }
+  homeRoster.familiarita = quoteFamiliarita(homeRoster, homeDbLineup)
+  awayRoster.familiarita = quoteFamiliarita(awayRoster, awayDbLineup)
+
+  const titolariHomeIds = homeLineup.titolari.map((player: EnginePlayer) => player.id)
+  const titolariAwayIds = awayLineup.titolari.map((player: EnginePlayer) => player.id)
+  setSeed(seed)
+  const result = simulaPartita(homeRoster, awayRoster, homeDbLineup.modulo, awayDbLineup.modulo, {
+    usaCondizione: true,
+    statsGiocatori: true,
+    lineupCasa: homeLineup,
+    lineupOspite: awayLineup,
+    stileCasa: homeDbLineup.stile_gioco,
+    stileOspite: awayDbLineup.stile_gioco,
+    indicazioniCasa: indicazioniPartita?.casa,
+    indicazioniOspite: indicazioniPartita?.ospite,
+    campoNeutro: true,
+    seedInfortuni: seed ^ 0x6d2b79f5,
+    supplementariSeParita: false,
+    scartoAndata: 0,
+  })
+  const presenzePerBlocco = result.presenzePerBlocco as { casa: number[][]; ospite: number[][] }
+  const eventi = costruisciEventiGol(result.golPerBlocco as GolBlocco[], [
+    { lato: 'casa', teamId: d.casa.id, lineup: homeLineup, marcatori: result.perGiocatore.casa.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.casa },
+    { lato: 'ospite', teamId: d.ospite.id, lineup: awayLineup, marcatori: result.perGiocatore.ospite.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.ospite },
+  ], seed)
+  const rndPiazzati = creaRng(seed ^ 0x2545f491)
+  for (const piazzato of (result.piazzatiInPartita ?? []) as PiazzatoMotore[]) {
+    eventi.push({
+      tipo: 'gol',
+      minuto: (piazzato.blocco - 1) * MINUTI_PER_BLOCCO + 1 + Math.floor(rndPiazzati() * MINUTI_PER_BLOCCO),
+      blocco: piazzato.blocco,
+      lato: piazzato.lato,
+      team_id: piazzato.lato === 'casa' ? d.casa.id : d.ospite.id,
+      marcatore: piazzato.marcatore,
+      assist: piazzato.battitore !== null && piazzato.battitore !== piazzato.marcatore ? piazzato.battitore : null,
+      piazzato: piazzato.tipo,
+    })
+  }
+  const cambiCronaca = minutiCambi(result.cambiInPartita as CambioMotore[], seed)
+  const finestre = finestreInCampo([
+    { lato: 'casa', titolari: titolariHomeIds },
+    { lato: 'ospite', titolari: titolariAwayIds },
+  ], cambiCronaca, result.supplementari ? MINUTO_MASSIMO : BLOCCHI_REGOLAMENTARI * MINUTI_PER_BLOCCO)
+  const cartelliniPartita = result.cartelliniInPartita as CartellinoMotore[]
+  const cartelliniCronaca = minutiCartellini(cartelliniPartita, finestre, seed)
+  adattaAiMinutiInCampo(eventi, finestre, creaRng(seed ^ 0x165667b1))
+  eventi.sort((a, b) => a.minuto - b.minuto || a.blocco - b.blocco)
+  minutiGiocati(finestre.get('casa'), result.perGiocatore?.casa.minuti as Map<number, number> | undefined)
+  minutiGiocati(finestre.get('ospite'), result.perGiocatore?.ospite.minuti as Map<number, number> | undefined)
+  result.perGiocatore.casa.marcatoriIds = eventi.filter((evento) => evento.lato === 'casa').map((evento) => evento.marcatore)
+  result.perGiocatore.ospite.marcatoriIds = eventi.filter((evento) => evento.lato === 'ospite').map((evento) => evento.marcatore)
+  const assistPerGiocatore = new Map<number, number>()
+  for (const evento of eventi) {
+    if (evento.assist === null) continue
+    assistPerGiocatore.set(evento.assist, (assistPerGiocatore.get(evento.assist) ?? 0) + 1)
+  }
+  const stats = [
+    ...playerStats(d.casa.id, result.perGiocatore.casa, result.statsCasa, assistPerGiocatore),
+    ...playerStats(d.ospite.id, result.perGiocatore.ospite, result.statsOspite, assistPerGiocatore),
+  ]
+  const portieri = (slot: unknown) => new Set([...((slot as Map<number, string> | undefined) ?? new Map()).entries()].filter(([, s]) => s === 'GK').map(([id]) => id))
+  rendiTiriCoerenti(stats.filter((stat) => stat.team_id === d.casa.id), result.statsCasa, portieri(result.perGiocatore?.casa.slot))
+  rendiTiriCoerenti(stats.filter((stat) => stat.team_id === d.ospite.id), result.statsOspite, portieri(result.perGiocatore?.ospite.slot))
+
+  // Le pagelle, come nelle partite vere (nessuna scrittura: restano nel referto).
+  const lato = (nome: Lato, roster: EngineRoster, lineup: EngineLineup, gf: number, gs: number) => ({
+    giocatori: new Map(roster.giocatori.map((g) => [g.id, g])),
+    lineup,
+    stats: result.perGiocatore![nome],
+    squadra: nome === 'casa' ? result.statsCasa : result.statsOspite,
+    golFatti: gf, golSubiti: gs,
+    assist: assistPerGiocatore,
+    cartellini: cartelliniPartita.filter((c) => c.lato === nome).map((c) => ({ giocatore: c.giocatore, tipo: c.tipo })),
+  })
+  const voti = pagelle({
+    casa: lato('casa', homeRoster, homeLineup, result.golC, result.golO),
+    ospite: lato('ospite', awayRoster, awayLineup, result.golO, result.golC),
+  }, (seed ^ 0x5eed1a6e) >>> 0)
+  const migliore = migliorInCampo(voti)
+
+  return {
+    golCasa: result.golC as number,
+    golOspite: result.golO as number,
+    risultato: {
+      seed,
+      modulo_casa: homeDbLineup.modulo, modulo_ospite: awayDbLineup.modulo,
+      stile_casa: homeDbLineup.stile_gioco, stile_ospite: awayDbLineup.stile_gioco,
+      titolari_casa: titolariHomeIds, titolari_ospite: titolariAwayIds,
+      eventi, cambi: cambiCronaca, cartellini: cartelliniCronaca,
+      stats_squadra: { casa: result.statsCasa, ospite: result.statsOspite },
+      player_stats: stats,
+      voti: [...voti.entries()].map(([id, v]) => ({ id, lato: v.lato, voto: v.voto, migliore: id === migliore, dettaglio: v.dettaglio ?? null })),
+      giocatori: [...rosters.entries()].flatMap(([teamId, r]) => r.giocatori.map((g) => ({ id: g.id, nome: g.nome, team_id: teamId, posizioni: g.posizioni }))),
+    },
+  }
+}
+
+// Gestisce la richiesta {amichevole_id}: puo' arrivare da uno dei due interessati o dal sistema.
+async function gestisciAmichevole(
+  ctx: { supabaseAdmin: any; authMode: string; userClaims?: { id?: string } | null }, // eslint-disable-line @typescript-eslint/no-explicit-any
+  amichevoleId: number,
+): Promise<Response> {
+  const admin = ctx.supabaseAdmin
+  const { data: am, error: amError } = await admin.from('amichevoli').select('*').eq('id', amichevoleId).maybeSingle()
+  if (amError) throw amError
+  if (!am) return Response.json({ error: 'Amichevole non trovata.' }, { status: 404 })
+  if (am.stato === 'giocata') return Response.json({ amichevole_id: am.id, stato: 'giocata', gol_da: am.gol_da, gol_a: am.gol_a })
+  if (am.stato !== 'accettata') return Response.json({ error: 'L’amichevole non è stata accettata.' }, { status: 409 })
+
+  const { data: league, error: leagueError } = await admin.from('leagues')
+    .select('id, fase_carriera, tattiche_attive').eq('id', am.league_id).single()
+  if (leagueError || !league) return Response.json({ error: 'Lega non trovata.' }, { status: 404 })
+  if (league.fase_carriera !== 'offseason') return Response.json({ error: 'Le amichevoli si giocano solo in off-season.' }, { status: 409 })
+
+  if (ctx.authMode !== 'secret') {
+    const { data: mie, error: mieError } = await admin.from('teams').select('id')
+      .eq('league_id', am.league_id).eq('user_id', ctx.userClaims?.id ?? '').in('id', [am.da_team_id, am.a_team_id])
+    if (mieError) throw mieError
+    if (!mie?.length) return Response.json({ error: 'Non sei una delle due squadre.' }, { status: 403 })
+  }
+
+  const teamIds = [am.da_team_id, am.a_team_id] as number[]
+  const [teamsR, instancesR, linR, xpR, stileR, indR, medicoR] = await Promise.all([
+    admin.from('teams').select('id, nome, capitano').eq('league_id', am.league_id).in('id', teamIds),
+    admin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, specializzazione_attiva, morale').eq('league_id', am.league_id).in('team_id', teamIds),
+    admin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx, disposizione, ruoli, compiti, focus_corsia, linea_difensiva, ampiezza, velocita_manovra, ruolo_portiere').eq('league_id', am.league_id).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
+    admin.from('formation_xp').select('team_id, modulo, disposizione, partite_giocate').eq('league_id', am.league_id).in('team_id', teamIds),
+    admin.from('stile_xp').select('team_id, stile, partite_giocate').eq('league_id', am.league_id).in('team_id', teamIds),
+    admin.from('indicazioni_xp').select('team_id, partite_giocate').eq('league_id', am.league_id).in('team_id', teamIds),
+    admin.rpc('moltiplicatori_infortuni_squadre', { p_team_ids: teamIds }),
+  ])
+  const errore = teamsR.error ?? instancesR.error ?? linR.error ?? xpR.error ?? stileR.error ?? indR.error ?? medicoR.error
+  if (errore) throw errore
+  const instances = (instancesR.data ?? []) as Instance[]
+  const { data: playersData, error: playersError } = await admin.from('players')
+    .select('id, nome, posizioni, piede').in('id', [...new Set(instances.map((i) => i.player_id))])
+  if (playersError) throw playersError
+  const { data: attributiData, error: attributiError } = await admin.rpc('attributi_correnti', { p_instance_ids: instances.map((i) => i.id) })
+  if (attributiError) throw attributiError
+
+  // La formazione che l'allenatore vede e salva in off-season e' quella della prima giornata; altrimenti l'ultima salvata.
+  const righe = (linR.data ?? []) as DbLineup[]
+  const lineups = new Map<number, DbLineup | null>()
+  for (const teamId of teamIds) {
+    const sue = righe.filter((r) => r.team_id === teamId)
+    lineups.set(teamId, sue.find((r) => r.giornata === 1) ?? sue[0] ?? null)
+  }
+  const squadre = new Map((teamsR.data ?? []).map((t: { id: number; nome: string; capitano: number | null }) => [t.id, t]))
+  const casa = squadre.get(am.da_team_id)
+  const ospite = squadre.get(am.a_team_id)
+  if (!casa || !ospite) return Response.json({ error: 'Squadre non trovate.' }, { status: 404 })
+
+  const seed = Math.floor(Math.random() * 0x7fffffff)
+  const dati: DatiAmichevole = {
+    casa: { id: casa.id, nome: casa.nome, capitano: casa.capitano ?? null },
+    ospite: { id: ospite.id, nome: ospite.nome, capitano: ospite.capitano ?? null },
+    instances,
+    players: (playersData ?? []) as DbPlayer[],
+    attributi: new Map(((attributiData ?? []) as Array<{ instance_id: number; attributi: Record<string, number> }>).map((r) => [r.instance_id, r.attributi])),
+    xpModulo: (xpR.data ?? []) as DatiAmichevole['xpModulo'],
+    xpStile: (stileR.data ?? []) as DatiAmichevole['xpStile'],
+    xpIndicazioni: (indR.data ?? []) as DatiAmichevole['xpIndicazioni'],
+    moltiplicatoriInfortuni: new Map<number, number>((medicoR.data ?? []).map((r: { team_id: number; moltiplicatore: number }) => [r.team_id, r.moltiplicatore])),
+    lineups,
+    tatticheAttive: Boolean(league.tattiche_attive),
+  }
+  const esito = simulaAmichevoleCore(dati, seed)
+  const { error: salvaError } = await admin.rpc('registra_amichevole', {
+    p_id: am.id, p_gol_da: esito.golCasa, p_gol_a: esito.golOspite, p_risultato: esito.risultato,
+  })
+  if (salvaError) throw salvaError
+  return Response.json({ amichevole_id: am.id, stato: 'giocata', gol_da: esito.golCasa, gol_a: esito.golOspite })
+}
+
 export default {
   // Due chiamanti: l'amministratore dal browser (JWT utente) e il cron
   // notturno, che presenta la chiave segreta del progetto nell'header `apikey`.
@@ -945,7 +1205,13 @@ export default {
   }, async (req, ctx) => {
     try {
       if (req.method !== 'POST') return Response.json({ error: 'Metodo non consentito.' }, { status: 405 })
-      const body = await req.json().catch(() => ({})) as { league_id?: number; giornata?: number }
+      const body = await req.json().catch(() => ({})) as { league_id?: number; giornata?: number; amichevole_id?: number }
+      // Amichevole (solo off-season): nessuna scrittura sui giocatori, vedi gestisciAmichevole.
+      if (body.amichevole_id !== undefined) {
+        const idAmichevole = Number(body.amichevole_id)
+        if (!Number.isInteger(idAmichevole) || idAmichevole < 1) return Response.json({ error: 'amichevole_id non valido.' }, { status: 400 })
+        return await gestisciAmichevole(ctx, idAmichevole)
+      }
       const leagueId = Number(body.league_id)
       if (!Number.isInteger(leagueId) || leagueId < 1) return Response.json({ error: 'league_id non valido.' }, { status: 400 })
 

@@ -3,7 +3,7 @@ import { useNotificheContesto, useTornaAllaHome } from '../lib/navigazione'
 import type { League } from '../types'
 import { Icona as IconaTonda } from './Icona'
 
-export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'under' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse'
+export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'under' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse' | 'amichevoli'
 type GameNavProps = { league: League; active: GameView; onNavigate?: (view: GameView) => void }
 
 // Icone disegnate a mano: i glifi Unicode di prima (▦ ♜ ♙ ◆ ◉ ≡) venivano resi dal
@@ -25,6 +25,7 @@ const ICONE: Record<string, ReactNode> = {
   help: <><circle cx="12" cy="12" r="9" /><path d="M9.3 9.3a2.7 2.7 0 1 1 3.6 2.5c-.8.4-1.4 1-1.4 2v.4" /><path d="M12 16.8v.1" /></>,
   finanza: <><path d="M4 8h13.5A2.5 2.5 0 0 1 20 10.5v7A2.5 2.5 0 0 1 17.5 20H6.5A2.5 2.5 0 0 1 4 17.5z" /><path d="M4 8V6.5A2.5 2.5 0 0 1 6.5 4h9" /><circle cx="16" cy="14" r="1.6" /></>,
   risorse: <><path d="M12 3.5 5 9.5 12 20.5 19 9.5z" /><path d="M5 9.5h14M9 9.5l3-6 3 6" /></>,
+  amichevoli: <><circle cx="12" cy="12" r="8.5" /><path d="m12 8 3.2 2.3-1.2 3.8h-4l-1.2-3.8z" /><path d="M12 8V3.8M15.2 10.3l4-1.3M14 14.1l2.5 3.4M10 14.1l-2.5 3.4M8.8 10.3 4.8 9" /></>,
   chevron: <path d="m8 10 4 4 4-4" />,
   menu: <><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></>,
 }
@@ -85,6 +86,7 @@ const offseasonItems: readonly NavEntry[] = [
   { view: 'finanza', label: 'Finanza' },
   { view: 'risorse', label: 'Risorse' },
   gruppoMercato,
+  { view: 'amichevoli', label: 'Amichevoli' },
   { view: 'matches', label: 'Partite' },
   { view: 'table', label: 'Classifica' },
   { view: 'tabellone', label: 'Tabellone' },
