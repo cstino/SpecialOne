@@ -26,6 +26,7 @@ import { macroRuolo } from '../lib/ruoli'
 import { Crest } from './Crest'
 import type { Team } from '../types'
 import { Icona } from './Icona'
+import { ReazioniLive } from './ReazioniLive'
 
 // Ogni quanto si richiede lo stato al database mentre il draft e' in corso.
 // Cinque secondi: la chiamata cade una volta al minuto, quindi appare con meno
@@ -355,6 +356,8 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId, onN
             : <>Prossima chiamata tra <strong className="font-display tabular-nums text-white">{Math.ceil(prossimaFra / 1000)}s</strong></>}
         </p>
       )}
+
+      <ReazioniLive leagueId={leagueId} contesto="on" mioTeamId={mioTeamId} sigla={(id) => teamById.get(id)?.sigla ?? '—'} />
 
       {precedenti.length > 0 && (
         <div className="flex flex-col">

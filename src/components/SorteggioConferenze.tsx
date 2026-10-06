@@ -5,6 +5,7 @@ import { ANTICIPO_PRIMA_ESTRAZIONE, NOME_CONFERENZA, NOME_CONFERENZA_BREVE, SECO
 import type { League, Membership, Team } from '../types'
 import { Crest } from './Crest'
 import { ConferenceBadge } from './ConferenceBadge'
+import { ReazioniLive } from './ReazioniLive'
 
 type DemoSorteggio = { stato: Stato; estrazioni: Estrazione[]; squadre: Team[]; adesso: number }
 type Props = { membership: Membership; onFine: () => void; onMenu?: () => void; demo?: DemoSorteggio }
@@ -168,6 +169,8 @@ export function SorteggioConferenze({ membership, onFine, onMenu, demo }: Props)
         <p className="sorteggio__carica-testo">{secondiRimasti <= SECONDI_ROULETTE ? 'Estrazione in corso' : 'Preparo l\'estrazione'}<i>.</i><i>.</i><i>.</i></p>
       </div>}
     </section>
+
+    <ReazioniLive leagueId={league.id} contesto="sorteggio" mioTeamId={membership.id} sigla={(id) => squadrePerId.get(id)?.sigla ?? '—'} demo={demo ? { teamIds: demo.squadre.map((t) => t.id) } : undefined} />
 
     <section className="sorteggio__colonne" aria-label="Conferenze">
       {(['est', 'ovest'] as const).map((c) => {

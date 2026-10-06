@@ -5,6 +5,7 @@ import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { faseLive, mmss, type ScelteLiveGiocatore, type ScelteLiveStato } from '../lib/useScelteLive'
 import type { League, Membership, Team } from '../types'
 import { Crest } from './Crest'
+import { ReazioniLive } from './ReazioniLive'
 
 type Props = {
   membership: Membership
@@ -121,6 +122,8 @@ export function DraftScelteLive({ membership, stato, adesso, onMenu, onVaiSorteg
           : <p>Le scelte sono nelle rose. Qui sotto il riepilogo.</p>}
       </div>}
     </section>
+
+    <ReazioniLive leagueId={league.id} contesto="draft" mioTeamId={membership.id} sigla={(id) => squadraDi.get(id)?.sigla ?? '—'} demo={squadreDemo ? { teamIds: squadreDemo.map((t) => t.id) } : undefined} />
 
     <section className="dlive__recap" aria-label="Scelte già rivelate">
       <h2>Scelte rivelate <span>{rivelate.length}<i>/{stato.totale}</i></span></h2>

@@ -2009,3 +2009,10 @@ metà" con la rimozione). Applicata prima in transazione con rollback, poi per d
   Nasce dalla segnalazione: la lista dei suggeriti della Sostituzione propone solo panchina e tribuna, quindi non si
   potevano invertire due titolari (es. i due esterni). `lib/useScambioTrascinando.ts`: tutto sul DOM (proprieta' CSS
   `translate` e `scale`), lo stato React serve solo per le classi.
+- **Reazioni in diretta** (6 ottobre 2026): nelle tre dirette (draft ON-Season in home, draft OFF-Season, sorteggio
+  delle conference) chi guarda puo' mandare una reazione prefatta con emoji ("🔥 Che colpo!", "😱 Incredibile!", ...,
+  12 messaggi), che galleggia per tutti gli spettatori della lega. Una ogni 5 secondi per persona, controllato anche nel
+  database (`public.invia_reazione`, tabella `reazioni_live` letta in tempo reale con Realtime; le righe si ripuliscono
+  da sole). Le emoji salgono in una **fascia riservata** fra la scena e il resto (`ReazioniLive.tsx`): non coprono mai
+  i dati del draft. Nessun testo libero: l'elenco dei codici e' in `lib/reazioni.ts` e nella funzione SQL (da tenere
+  allineati). Nell'anteprima (`?anteprima=offseason`) le reazioni degli altri sono inventate. Migrazione `20261006170000`.
