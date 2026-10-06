@@ -8,6 +8,7 @@ import { erroreSimmetriaSchema } from '../lib/simmetriaSchema'
 import { STILE_LABEL, assiDelloStile } from '../lib/stili'
 import { idoneitaRuolo, segnoIdoneita } from '../lib/tattica'
 import { PRESET, applicaPreset } from '../lib/preset'
+import { useScambioTrascinando } from '../lib/useScambioTrascinando'
 import { DialogoNomeRiserva, SchemiCard } from './SchemiCard'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { cognome } from '../lib/nomi'
@@ -550,6 +551,16 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   // rimpicciolendole se lo spazio non basta. La misura si ripete quando il
   // campo cambia dimensione (rotazione, finestra).
   const campoRef = useRef<HTMLDivElement | null>(null)
+  // Scambio di due titolari trascinando (tieni premuto, trascina su un altro titolare, rilascia).
+  const scambiabili = titolari.flatMap((id, index) => {
+    const giocatore = id ? players.find((item) => item.id === id) : undefined
+    return giocatore && !indisponibile(giocatore) ? [index] : []
+  })
+  const trascina = useScambioTrascinando({
+    campo: campoRef,
+    scambiabili: selected ? [] : scambiabili,
+    onScambia: (da, verso) => scambia({ zone: 'starter', index: da, id: titolari[da] ?? 0 }, { zone: 'starter', index: verso, id: titolari[verso] ?? 0 }),
+  })
   const [misure, setMisure] = useState<{ w: number; h: number; cw: number; ch: number } | null>(null)
   useLayoutEffect(() => {
     const el = campoRef.current
@@ -1160,9 +1171,9 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           {selected && <p className="formation-swap-hint">Tocca il giocatore (o uno slot libero) con cui spostare {selectedPlayer?.nome ?? ''}.</p>}
           <div className="formation-view-card">
             {openZone === 'starter' ? (
-              // Il campo e le card nello stile della formazione dell'intro del
-              // match (MatchIntro): gesso puntinato e fascio di luce nel colore
-              // della fase, sullo sfondo verticale della fase.
+              <>
+              {/* Il campo e le card nello stile della formazione dell'intro del match (MatchIntro): gesso
+                  puntinato e fascio di luce nel colore della fase, sullo sfondo verticale della fase. */}
               <div className="pitch-field rosa-campo" aria-label={`Campo con modulo ${modulo}`} style={{ ['--und-fondo' as string]: `url(${SFONDO_FASE_VERTICALE[fase]})` }}>
                 <div className="match-intro__gesso" aria-hidden="true">
                   <span className="match-intro__gesso-area match-intro__gesso-area--alto" />
@@ -1175,10 +1186,12 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
                     const { x, y } = disposizioneCard?.posti[i] ?? { x: x0, y: y0 }
                     const player = players.find((item) => item.id === titolari[index])
                     const location = { zone: 'starter', index, id: titolari[index] ?? 0 } as PlayerLocation
-                    return <div className={`pitch-posto pitch-slot pitch-slot--${reparto(slot)}`} style={{ left: `${x}%`, top: `${100 - y}%` }} key={`${slot}-${index}`}><CartaCampo player={player} imageUrl={imageUrls[player?.id ?? 0]} position={slot} ruolo={ruoli?.[index] ?? null} selected={selected?.zone === 'starter' && selected.index === index} onClick={player ? (event) => handlePlayerClick(event, location, player) : () => selected ? selectEmptyStarter(index) : setSceltaPosto(index)} /></div>
+                    return <div className={`pitch-posto pitch-slot pitch-slot--${reparto(slot)}${trascina.stato.da === index ? ' is-trascinato' : ''}${trascina.stato.verso === index ? ' is-bersaglio' : ''}`} style={{ left: `${x}%`, top: `${100 - y}%` }} key={`${slot}-${index}`} data-posto={index} onPointerDown={player ? (event) => trascina.premuto(event, index) : undefined} onContextMenu={player ? (event) => event.preventDefault() : undefined}><CartaCampo player={player} imageUrl={imageUrls[player?.id ?? 0]} position={slot} ruolo={ruoli?.[index] ?? null} selected={selected?.zone === 'starter' && selected.index === index} onClick={player ? (event) => { if (trascina.clickSoppresso()) { event.preventDefault(); return } handlePlayerClick(event, location, player) } : () => selected ? selectEmptyStarter(index) : setSceltaPosto(index)} /></div>
                   })}
                 </div>
               </div>
+              <p className="formation-trascina-hint">Tieni premuto un titolare e trascinalo su un altro per scambiarli di posto.</p>
+              </>
             ) : (
               <div className="formation-player-tray formation-player-tray--standalone" role="tabpanel">
                 {visibleLocations.filter((location) => !(selected?.zone === location.zone && selected.index === location.index)).map((location) => {

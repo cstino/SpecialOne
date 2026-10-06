@@ -4918,3 +4918,17 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .formation-conferma__annulla { border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.07); color: #e6ebf7; }
 .formation-conferma__ok { border: 0; background: linear-gradient(180deg, #ff7b7b, #e23b3b); color: #fff; box-shadow: 0 8px 22px rgba(226,59,59,.4); }
 .formation-conferma button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* Formazione: scambio di due titolari trascinando */
+.pitch-posto { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.pitch-posto.is-trascinato { z-index: 40; cursor: grabbing; filter: drop-shadow(0 16px 24px rgba(0,0,0,.55)); will-change: translate, scale; }
+.pitch-posto.is-trascinato .rosa-card { box-shadow: 0 0 0 2px rgba(255,255,255,.85); }
+.pitch-posto.is-rilascio { transition: translate .19s cubic-bezier(.2,.9,.25,1), scale .19s cubic-bezier(.2,.9,.25,1); z-index: 39; }
+.pitch-posto.is-bersaglio { z-index: 30; }
+.pitch-posto .rosa-card { transition: box-shadow .16s ease, transform .16s ease, filter .16s ease; }
+.pitch-posto.is-bersaglio .rosa-card { transform: scale(1.05); filter: brightness(1.16) saturate(1.1); box-shadow: 0 0 0 2px var(--fz-luce, #ffffff), 0 0 24px color-mix(in srgb, var(--fz-luce, #ffffff) 60%, transparent); }
+body.sta-trascinando { cursor: grabbing; overscroll-behavior: none; }
+body.sta-trascinando * { -webkit-user-select: none; user-select: none; }
+@media (prefers-reduced-motion: reduce) { .pitch-posto.is-rilascio { transition-duration: .01s; } .pitch-posto .rosa-card { transition: none; } }
+
+.formation-trascina-hint { margin: 8px 6px 0; color: rgba(255,255,255,.55); font-size: .74rem; line-height: 1.35; text-align: center; }

@@ -2002,3 +2002,10 @@ metà" con la rimozione). Applicata prima in transazione con rollback, poi per d
   tribuna, prima chi e' nel suo ruolo, poi per overall nel posto; gli indisponibili in fondo, non selezionabili).
   Per un giocatore di panchina o tribuna: al posto di quale titolare entra (i titolari ordinati da dove giocherebbe
   meglio lui). Lo scambio usa le stesse regole del doppio tocco (`scambia`), con quelle sugli infortunati.
+- **Scambio di due titolari trascinando**: nella Formazione si tiene premuto su un titolare (circa un terzo di secondo;
+  col mouse basta muoversi), la card si solleva e segue il dito, viene attirata dai titolari vicini (calamita) e quello
+  sotto si illumina; rilasciando i due si scambiano con un movimento unico. Rilasciando altrove torna al suo posto;
+  muovendosi prima del tempo si fa scorrere la pagina; un tocco breve apre ancora il menu. Esclusi gli indisponibili.
+  Nasce dalla segnalazione: la lista dei suggeriti della Sostituzione propone solo panchina e tribuna, quindi non si
+  potevano invertire due titolari (es. i due esterni). `lib/useScambioTrascinando.ts`: tutto sul DOM (proprieta' CSS
+  `translate` e `scale`), lo stato React serve solo per le classi.
