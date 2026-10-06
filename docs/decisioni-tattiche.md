@@ -1567,3 +1567,22 @@ indicazioni_xp) e `riserva_velocita` (schemi_squadra); `focus_corsia` accetta `F
 28 elementi. Le formazioni, i moduli e gli schemi riserva con indicazioni sopra uno stile
 passano a `personalizzato` (9 formazioni al momento della prova). Provata in transazione
 annullata.
+
+
+## 45. Ogni schema ha i suoi giocatori — 6 ottobre 2026
+
+Segnalato dal committente: preparando due schemi con giocatori diversi, tornando sul primo ci si ritrovavano
+i giocatori dell'ultimo salvato. Il motivo: i due schemi erano due **tattiche** (modulo, ruoli, compiti,
+indicazioni) ma la **distinta** (titolari, panchina, tribuna) era una sola, quella della formazione salvata.
+
+Ora anche la riserva conserva la sua distinta (`schemi_squadra.riserva_titolari`, `riserva_panchina`,
+`riserva_tribuna`; migrazione `20261006140000`, `salva_schemi` con tre parametri in piu', vecchia firma compatibile
+grazie ai valori predefiniti). L'app tiene la distinta dentro ogni schema (`Tattica.giocatori`): passando da uno
+schema all'altro i giocatori cambiano con lui; salvando, la distinta dello schema selezionato diventa la formazione
+che gioca e quella dell'altro resta nella riserva.
+
+- **Riserva nuova o mai salvata con i giocatori**: parte come copia della distinta in campo (come prima).
+- **Pulizia al caricamento**: chi non e' piu' in rosa lascia il posto vuoto dov'era; chi e' arrivato dopo va in tribuna.
+- **Controlli**: undici posti (0 = vuoto), ogni id deve essere della rosa della squadra (provato: un giocatore
+  altrui viene rifiutato; senza riserva le colonne si azzerano). Il blocco su infortunati e squalificati resta
+  sullo schema che si salva come attivo.

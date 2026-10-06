@@ -71,6 +71,9 @@ const MODULI_PERSONALIZZATI_MAX = 3
 type Tattica = {
   modulo: string; disposizione: string[] | null; ruoli: (string | null)[] | null; compiti: (string | null)[] | null
   focus: string | null; stile: string; linea: string | null; ampiezza: string | null; velocita: string | null; portiere: string | null
+  // I giocatori dello schema: ogni schema ha la sua distinta. Se manca (riserva appena creata o mai
+  // salvata con i giocatori) si parte dalla distinta in campo, come copia.
+  giocatori?: { titolari: number[]; panchina: number[]; tribuna: number[] } | null
 }
 const stessiValori = (a: (string | null)[] | null | undefined, b: (string | null)[] | null | undefined) =>
   JSON.stringify((a ?? []).map((v) => v ?? null)) === JSON.stringify((b ?? []).map((v) => v ?? null))
@@ -267,6 +270,20 @@ export function CartaCampo({ player, imageUrl, position, selected, onClick, ruol
   </button>
 }
 
+// La distinta salvata della riserva, ripulita con la rosa di oggi: chi non c'e' piu' lascia il posto
+// vuoto (0) dov'era, gli altri restano; chi e' arrivato dopo va in tribuna. Null se la riserva non ha
+// mai salvato i suoi giocatori (allora parte come copia della distinta in campo).
+function distintaRiserva(sc: Record<string, unknown>, rosa: { id: number }[]): Tattica['giocatori'] {
+  const t = sc.riserva_titolari as number[] | null | undefined
+  if (!Array.isArray(t) || t.length === 0) return null
+  const idsRosa = new Set(rosa.map((p) => p.id))
+  const titolari = t.map((id) => (idsRosa.has(id) ? id : 0))
+  const panchina = ((sc.riserva_panchina as number[] | null | undefined) ?? []).filter((id) => idsRosa.has(id) && !titolari.includes(id))
+  const tribuna = ((sc.riserva_tribuna as number[] | null | undefined) ?? []).filter((id) => idsRosa.has(id) && !titolari.includes(id) && !panchina.includes(id))
+  const dentro = new Set([...titolari, ...panchina, ...tribuna])
+  return { titolari, panchina, tribuna: [...tribuna, ...rosa.filter((p) => !dentro.has(p.id)).map((p) => p.id)] }
+}
+
 export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const league = membership.league as League
   const tatticheAttive = Boolean(league.tattiche_attive)
@@ -427,6 +444,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
               focus: (sc.riserva_focus_corsia as string | null) ?? null, stile: (sc.riserva_stile as string | null) ?? 'equilibrato',
               linea: (sc.riserva_linea as string | null) ?? null, ampiezza: (sc.riserva_ampiezza as string | null) ?? null, velocita: (sc.riserva_velocita as string | null) ?? null,
               portiere: (sc.riserva_portiere as string | null) ?? null,
+              giocatori: distintaRiserva(sc, loaded),
             }
             setHaRiserva(true); setNomeRiserva(sc.riserva_nome as string); setNomeRiservaConfermato(true)
             setRiservaFerma(riservaCaricata)
@@ -795,6 +813,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           p_disposizione: ris ? (ris.disposizione ?? MODULI[ris.modulo]) : null,
           p_ruoli: ris?.ruoli ?? null, p_compiti: ris?.compiti ?? null, p_focus_corsia: ris?.focus ?? null,
           p_stile: ris?.stile ?? null, p_linea: ris?.linea ?? null, p_ampiezza: ris?.ampiezza ?? null, p_velocita: ris?.velocita ?? null, p_portiere: ris?.portiere ?? null,
+          p_riserva_titolari: ris?.giocatori?.titolari ?? null, p_riserva_panchina: ris?.giocatori?.panchina ?? null, p_riserva_tribuna: ris?.giocatori?.tribuna ?? null,
         })
         if (schemiError) { setError(`Formazione salvata, ma gli schemi no: ${schemiError.message}`); setSaving(false); return }
         schemiSalvati.current = firmaSchemi
@@ -818,6 +837,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   function applicaTattica(t: Tattica) {
     setModulo(t.modulo); setDisposizione(t.disposizione); setRuoli(t.ruoli); setCompiti(t.compiti)
     setFocusCorsia(t.focus); setStile(t.stile); setLinea(t.linea); setAmpiezza(t.ampiezza); setVelocita(t.velocita); setPortiere(t.portiere)
+    if (t.giocatori) { setTitolari(t.giocatori.titolari); setPanchina(t.giocatori.panchina); setTribuna(t.giocatori.tribuna) }
     setSelected(null); setPlayerAction(null)
   }
 
@@ -938,7 +958,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
 
   // Gli schemi "canonici": quello che gioca e la riserva, indipendentemente da
   // quale dei due si sta guardando.
-  const tatticaCorrente: Tattica = { modulo, disposizione, ruoli, compiti, focus: focusCorsia, stile, linea, ampiezza, velocita, portiere }
+  const tatticaCorrente: Tattica = { modulo, disposizione, ruoli, compiti, focus: focusCorsia, stile, linea, ampiezza, velocita, portiere, giocatori: { titolari, panchina, tribuna } }
   const attivoCanonico: Tattica = schemaSel === 'attivo' ? tatticaCorrente : (attivoFermo ?? tatticaCorrente)
   const riservaCanonica: Tattica | null = !haRiserva ? null : schemaSel === 'riserva' ? tatticaCorrente : riservaFerma
   const firmaCorrente = JSON.stringify({ attivoCanonico, riservaCanonica, haRiserva, nomeAttivo, nomeRiserva, titolari, panchina, tribuna, schemaSel })
