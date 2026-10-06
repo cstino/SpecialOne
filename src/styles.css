@@ -4933,9 +4933,10 @@ body.sta-trascinando * { -webkit-user-select: none; user-select: none; }
 
 .formation-trascina-hint { margin: 8px 6px 0; color: rgba(255,255,255,.55); font-size: .74rem; line-height: 1.35; text-align: center; }
 
-/* Reazioni in diretta: fascia riservata, le emoji salgono senza coprire il resto */
-.reazioni { display: grid; gap: 8px; margin: 4px 0; }
-.reazioni__cielo { position: relative; height: 92px; overflow: hidden; pointer-events: none; border-radius: 12px; background: linear-gradient(180deg, transparent, rgba(255,255,255,.04)); }
+/* Reazioni in diretta: fascia riservata per le emoji, pulsante tondo e finestrella con tutte le reazioni */
+.reazioni { position: relative; margin: 4px 0; }
+.reazioni__cielo { position: relative; height: 84px; overflow: hidden; pointer-events: none; border-radius: 12px; background: linear-gradient(180deg, transparent, rgba(255,255,255,.04)); }
+.reazioni__suggerimento { position: absolute; inset: auto 64px 10px 0; text-align: center; color: rgba(255,255,255,.28); font: 600 .68rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .16em; text-transform: uppercase; }
 .reazioni__bolla { position: absolute; bottom: -8px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 8px; border-radius: 999px; background: rgba(14,16,30,.82); box-shadow: inset 0 0 0 1px rgba(255,255,255,.16), 0 6px 16px rgba(0,0,0,.35); color: #fff; white-space: nowrap; opacity: 0; transform: translate(-50%, 0); animation: reazione-sale 3.4s cubic-bezier(.2,.7,.3,1) forwards; }
 .reazioni__bolla.is-mia { box-shadow: inset 0 0 0 1.5px #ffd34d, 0 6px 16px rgba(0,0,0,.35); }
 .reazioni__bolla i { font-style: normal; font-size: 1.35rem; line-height: 1; }
@@ -4946,17 +4947,34 @@ body.sta-trascinando * { -webkit-user-select: none; user-select: none; }
   12% { opacity: 1; transform: translate(-50%, -6px) scale(1.08); }
   22% { transform: translate(-50%, -14px) scale(1); }
   75% { opacity: 1; }
-  100% { opacity: 0; transform: translate(-50%, -82px) scale(.96); }
+  100% { opacity: 0; transform: translate(-50%, -72px) scale(.96); }
 }
-.reazioni__pulsanti { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: none; scroll-snap-type: x proximity; }
-.reazioni__pulsanti::-webkit-scrollbar { display: none; }
-.reazioni__pulsanti button { appearance: none; flex: none; display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 8px 12px; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; background: rgba(255,255,255,.07); color: #e8ecf8; scroll-snap-align: start; cursor: pointer; transition: transform .12s ease, opacity .2s ease, background .2s ease; }
-.reazioni__pulsanti button:active:not(:disabled) { transform: scale(.94); }
-.reazioni__pulsanti button:disabled { opacity: .45; cursor: default; }
-.reazioni__pulsanti button i { font-style: normal; font-size: 1.15rem; line-height: 1; }
-.reazioni__pulsanti button span { font: 700 .72rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .06em; text-transform: uppercase; }
-.reazioni__pulsanti button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-.reazioni__stato { display: grid; gap: 4px; justify-items: center; }
-.reazioni__barra { --p: 100%; display: block; width: 100%; height: 3px; border-radius: 3px; background: linear-gradient(90deg, #b78cff var(--p), rgba(255,255,255,.12) 0); transition: background .1s linear; }
-.reazioni__stato small { color: rgba(255,255,255,.55); font-size: .7rem; }
-@media (prefers-reduced-motion: reduce) { .reazioni__bolla { animation: reazione-ferma 3.4s linear forwards; transform: translate(-50%, -30px); } @keyframes reazione-ferma { 0%, 85% { opacity: 1; } 100% { opacity: 0; } } }
+/* Pulsante tondo: nell'angolo della fascia, oppure fisso in basso a destra nelle schermate delle dirette. */
+.reazioni__fab { --p: 100%; appearance: none; position: absolute; right: 2px; bottom: 6px; z-index: 5; width: 54px; height: 54px; margin: 0; padding: 0; display: grid; place-items: center; border: 0; border-radius: 50%; background: conic-gradient(#b78cff var(--p), rgba(255,255,255,.18) 0); box-shadow: 0 8px 22px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.12); cursor: pointer; transition: transform .14s ease; }
+.reazioni__fab::before { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: linear-gradient(160deg, #2c2150, #151227); }
+.reazioni__fab span { position: relative; font-size: 1.55rem; line-height: 1; color: #fff; font-variant-numeric: tabular-nums; }
+.reazioni__fab.is-attesa span { font: 700 1.15rem/1 "Oswald", "Arial Narrow", sans-serif; }
+.reazioni__fab.is-aperto span { font-size: 1.1rem; }
+.reazioni__fab:active { transform: scale(.92); }
+.reazioni__fab:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.reazioni--fisso .reazioni__fab { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(18px, calc(env(safe-area-inset-bottom) + 10px)); z-index: 60; }
+.reazioni__scrim { appearance: none; position: fixed; inset: 0; z-index: 61; margin: 0; padding: 0; border: 0; background: rgba(4,6,14,.35); cursor: default; }
+.reazioni__pannello { position: absolute; right: 0; bottom: 66px; z-index: 62; width: min(92vw, 330px); padding: 12px; border: 1px solid rgba(183,140,255,.45); border-radius: 16px; background: linear-gradient(165deg, #241a44, #11101f 70%); box-shadow: 0 20px 48px rgba(0,0,0,.6), 0 0 30px rgba(183,140,255,.18); animation: reazioni-apri .16s ease-out both; transform-origin: 100% 100%; }
+.reazioni--fisso .reazioni__pannello { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: calc(max(18px, calc(env(safe-area-inset-bottom) + 10px)) + 66px); }
+.reazioni__pannello header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 0 2px 10px; }
+.reazioni__pannello header strong { color: #fff; font: 700 .9rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+.reazioni__pannello header small { color: rgba(255,255,255,.55); font-size: .7rem; text-align: right; }
+.reazioni__griglia { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.reazioni__griglia button { appearance: none; margin: 0; padding: 10px 4px 8px; display: grid; justify-items: center; gap: 5px; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(255,255,255,.06); color: #e8ecf8; cursor: pointer; transition: transform .12s ease, background .15s ease; }
+.reazioni__griglia button i { font-style: normal; font-size: 1.7rem; line-height: 1; }
+.reazioni__griglia button span { font: 700 .62rem/1.1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .06em; text-transform: uppercase; text-align: center; }
+.reazioni__griglia button:hover:not(:disabled) { background: rgba(183,140,255,.22); }
+.reazioni__griglia button:active:not(:disabled) { transform: scale(.94); }
+.reazioni__griglia button:disabled { opacity: .4; cursor: default; }
+.reazioni__griglia button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+@keyframes reazioni-apri { from { opacity: 0; transform: scale(.88) translateY(8px); } to { opacity: 1; transform: none; } }
+/* Con il pulsante fisso le pagine delle dirette lasciano spazio sotto: l'ultimo contenuto si scorre sopra il pulsante. */
+.sorteggio:has(.reazioni--fisso) { padding-bottom: 96px; }
+body:has(.anteprima) .reazioni--fisso .reazioni__fab { bottom: 84px; }
+body:has(.anteprima) .reazioni--fisso .reazioni__pannello { bottom: 150px; }
+@media (prefers-reduced-motion: reduce) { .reazioni__bolla { animation: reazione-ferma 3.4s linear forwards; transform: translate(-50%, -30px); } .reazioni__pannello { animation: none; } @keyframes reazione-ferma { 0%, 85% { opacity: 1; } 100% { opacity: 0; } } }

@@ -357,7 +357,7 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId, onN
         </p>
       )}
 
-      <ReazioniLive leagueId={leagueId} contesto="on" mioTeamId={mioTeamId} sigla={(id) => teamById.get(id)?.sigla ?? '—'} />
+      <ReazioniLive fisso={false} leagueId={leagueId} contesto="on" mioTeamId={mioTeamId} sigla={(id) => teamById.get(id)?.sigla ?? '—'} />
 
       {precedenti.length > 0 && (
         <div className="flex flex-col">

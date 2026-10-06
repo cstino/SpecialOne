@@ -2014,5 +2014,7 @@ metà" con la rimozione). Applicata prima in transazione con rollback, poi per d
   12 messaggi), che galleggia per tutti gli spettatori della lega. Una ogni 5 secondi per persona, controllato anche nel
   database (`public.invia_reazione`, tabella `reazioni_live` letta in tempo reale con Realtime; le righe si ripuliscono
   da sole). Le emoji salgono in una **fascia riservata** fra la scena e il resto (`ReazioniLive.tsx`): non coprono mai
-  i dati del draft. Nessun testo libero: l'elenco dei codici e' in `lib/reazioni.ts` e nella funzione SQL (da tenere
+  i dati del draft. Le reazioni si scelgono da un **pulsante tondo** (fisso in basso a destra nelle schermate delle dirette,
+  nell'angolo della fascia nella card in home) che apre una finestrella con la griglia dei 12 messaggi; dopo l'invio il
+  pulsante mostra il conto alla rovescia dei 5 secondi. Nessun testo libero: l'elenco dei codici e' in `lib/reazioni.ts` e nella funzione SQL (da tenere
   allineati). Nell'anteprima (`?anteprima=offseason`) le reazioni degli altri sono inventate. Migrazione `20261006170000`.
