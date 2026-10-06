@@ -4866,3 +4866,11 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .dlive-menu__vai { justify-self: start; margin-top: 4px; padding: 11px 16px; border-radius: 10px; background: linear-gradient(180deg, #c7a4ff, #8b5df0); color: #1a0f33; font: 700 .82rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .12em; text-transform: uppercase; }
 .dlive-menu__carta--conf .dlive-menu__vai { background: linear-gradient(90deg, #6cc2ff, #ff8366); color: #0d1020; }
 @media (prefers-reduced-motion: reduce) { .dlive-menu__punto { animation: none; } }
+
+/* Anteprima fittizia delle dirette di fine off-season */
+.anteprima { position: fixed; z-index: 50; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 10px; padding: 8px 12px max(8px, env(safe-area-inset-bottom)); background: rgba(8,10,22,.94); border-top: 1px solid rgba(183,140,255,.4); color: #dfe5f6; font: 700 .7rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .1em; text-transform: uppercase; overflow-x: auto; white-space: nowrap; }
+.anteprima strong { color: #ffd34d; flex: none; }
+.anteprima div { display: flex; gap: 6px; flex: none; }
+.anteprima button, .anteprima a { appearance: none; margin: 0; padding: 7px 10px; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; background: rgba(255,255,255,.07); color: inherit; font: inherit; text-decoration: none; cursor: pointer; flex: none; }
+.anteprima button.is-attiva { border-color: #b78cff; background: rgba(183,140,255,.28); color: #fff; }
+.sorteggio:has(~ .anteprima) { padding-bottom: 84px; }

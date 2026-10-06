@@ -11,6 +11,7 @@ import { Admin } from './components/Admin'
 import { AlboDOro } from './components/AlboDOro'
 import { AlboRivelazione } from './components/AlboRivelazione'
 import { OffseasonLive } from './components/OffseasonLive'
+import { AnteprimaOffseason } from './components/AnteprimaOffseason'
 import { useAlboRivelazione } from './lib/useAlboRivelazione'
 import { Avvisi } from './components/Avvisi'
 import { AuthScreen } from './components/AuthScreen'
@@ -357,6 +358,9 @@ export default function App() {
   }
 
   const active = memberships.find((item) => item.league_id === activeLeagueId) ?? memberships[0]
+
+  // Anteprima con dati fittizi delle dirette di fine off-season (non scrive niente).
+  if (new URLSearchParams(window.location.search).get('anteprima') === 'offseason') return <AnteprimaOffseason />
 
   function selezionaLega(leagueId: number) {
     setActiveLeagueId(leagueId)

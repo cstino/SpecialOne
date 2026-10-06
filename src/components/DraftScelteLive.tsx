@@ -12,6 +12,8 @@ type Props = {
   adesso: number
   onMenu: () => void
   onVaiSorteggio: (() => void) | null
+  // Anteprima con dati fittizi: le squadre arrivano da fuori, niente database.
+  squadreDemo?: Team[]
 }
 
 const FINESTRA_NOME: Record<string, string> = { on: 'ON-Season', off: 'OFF-Season' }
@@ -27,12 +29,14 @@ function FotoGiocatore({ g, grande = false }: { g: ScelteLiveGiocatore; grande?:
 // Draft OFF-Season in diretta. Il server ha gia' deciso tutto, ma il giocatore di
 // ogni scelta si legge solo dal momento del reveal: 15 secondi di annuncio
 // («con la scelta n la squadra X seleziona…»), 15 di reveal, poi la scelta va nel recap.
-export function DraftScelteLive({ membership, stato, adesso, onMenu, onVaiSorteggio }: Props) {
+export function DraftScelteLive({ membership, stato, adesso, onMenu, onVaiSorteggio, squadreDemo }: Props) {
   const league = membership.league as League
-  const [squadre, setSquadre] = useState<Team[]>([])
+  const [squadreReali, setSquadre] = useState<Team[]>([])
+  const squadre = squadreDemo ?? squadreReali
   const [stemmi, setStemmi] = useState<Map<number, string>>(new Map())
 
   useEffect(() => {
+    if (squadreDemo) return
     let vivo = true
     void (async () => {
       const { data } = await supabase.from('teams').select('*').eq('league_id', league.id).eq('attiva', true)
@@ -43,7 +47,7 @@ export function DraftScelteLive({ membership, stato, adesso, onMenu, onVaiSorteg
       setStemmi(firmati)
     })()
     return () => { vivo = false }
-  }, [league.id])
+  }, [league.id, squadreDemo])
 
   const squadraDi = useMemo(() => new Map(squadre.map((t) => [t.id, t])), [squadre])
   const fase = faseLive(stato, adesso)

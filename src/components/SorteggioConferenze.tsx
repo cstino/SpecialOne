@@ -6,7 +6,8 @@ import type { League, Membership, Team } from '../types'
 import { Crest } from './Crest'
 import { ConferenceBadge } from './ConferenceBadge'
 
-type Props = { membership: Membership; onFine: () => void; onMenu?: () => void }
+type DemoSorteggio = { stato: Stato; estrazioni: Estrazione[]; squadre: Team[]; adesso: number }
+type Props = { membership: Membership; onFine: () => void; onMenu?: () => void; demo?: DemoSorteggio }
 
 type Stato = {
   sorteggio_id: number; stagione: number; avviato_il: string; passo_secondi: number
@@ -44,17 +45,23 @@ function Roulette({ candidati, stemmi, secondiRimasti }: { candidati: Team[]; st
 // Sorteggio East / West in diretta. Il server ha gia' deciso l'ordine, ma ogni
 // estrazione si puo' leggere solo da quando viene rivelata (RLS): questa
 // schermata si limita a mostrare, in sincronia per tutti, quello che e' uscito.
-export function SorteggioConferenze({ membership, onFine, onMenu }: Props) {
+export function SorteggioConferenze({ membership, onFine, onMenu, demo }: Props) {
   const league = membership.league as League
-  const [stato, setStato] = useState<Stato | null>(null)
-  const [estrazioni, setEstrazioni] = useState<Estrazione[]>([])
-  const [squadre, setSquadre] = useState<Team[]>([])
+  const [statoReale, setStato] = useState<Stato | null>(null)
+  const [estrazioniReali, setEstrazioni] = useState<Estrazione[]>([])
+  const [squadreReali, setSquadre] = useState<Team[]>([])
   const [stemmi, setStemmi] = useState<Map<number, string>>(new Map())
-  const [adesso, setAdesso] = useState(() => Date.now())
+  const [adessoReale, setAdesso] = useState(() => Date.now())
+  // Anteprima con dati fittizi: stato, estrazioni, squadre e orologio arrivano da fuori.
+  const stato = demo ? demo.stato : statoReale
+  const estrazioni = demo ? demo.estrazioni : estrazioniReali
+  const squadre = demo ? demo.squadre : squadreReali
+  const adesso = demo ? demo.adesso : adessoReale
   const offset = useRef(0)
   const inCorso = useRef(false)
 
   useEffect(() => {
+    if (demo) return
     let vivo = true
     void (async () => {
       const { data } = await supabase.from('teams').select('*').eq('league_id', league.id).eq('attiva', true)
@@ -65,7 +72,7 @@ export function SorteggioConferenze({ membership, onFine, onMenu }: Props) {
       setStemmi(firmati)
     })()
     return () => { vivo = false }
-  }, [league.id])
+  }, [league.id, demo])
 
   const aggiorna = useCallback(async () => {
     if (inCorso.current) return
@@ -86,10 +93,11 @@ export function SorteggioConferenze({ membership, onFine, onMenu }: Props) {
   }, [league.id])
 
   useEffect(() => {
+    if (demo) return
     void aggiorna()
     const orologio = window.setInterval(() => setAdesso(Date.now() + offset.current), 250)
     return () => window.clearInterval(orologio)
-  }, [aggiorna])
+  }, [aggiorna, demo])
 
   const passoMs = (stato?.passo_secondi ?? 20) * 1000
   const avviatoMs = stato ? Date.parse(stato.avviato_il) : 0
@@ -105,21 +113,21 @@ export function SorteggioConferenze({ membership, onFine, onMenu }: Props) {
   // Se manca una estrazione che il tempo dice gia' rivelata la si chiede ogni secondo;
   // altrimenti si risincronizza ogni 5. A sorteggio finito si guarda quando la lega riparte.
   useEffect(() => {
-    if (!stato) return
+    if (!stato || demo) return
     const attesa = dovute > estrazioni.length
     const timer = window.setInterval(() => { void aggiorna() }, attesa ? 1000 : 5000)
     return () => window.clearInterval(timer)
-  }, [stato, dovute, estrazioni.length, aggiorna])
+  }, [stato, dovute, estrazioni.length, aggiorna, demo])
 
   useEffect(() => {
-    if (!finito) return
+    if (!finito || demo) return
     let vivo = true
     const timer = window.setInterval(async () => {
       const { data } = await supabase.from('leagues').select('fase_carriera').eq('id', league.id).single()
       if (vivo && data && data.fase_carriera !== 'sorteggio') onFine()
     }, 3000)
     return () => { vivo = false; window.clearInterval(timer) }
-  }, [finito, league.id, onFine])
+  }, [finito, league.id, onFine, demo])
 
   const squadrePerId = useMemo(() => new Map(squadre.map((t) => [t.id, t])), [squadre])
   const uscite = useMemo(() => new Set(estrazioni.map((e) => e.team_id)), [estrazioni])

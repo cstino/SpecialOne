@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { faseLive, mmss, useScelteLive } from '../lib/useScelteLive'
+import { faseLive, mmss, useScelteLive, type ScelteLiveStato } from '../lib/useScelteLive'
+import type { Team } from '../types'
 import type { League, Membership } from '../types'
 import { DraftScelteLive } from './DraftScelteLive'
 import { SorteggioConferenze } from './SorteggioConferenze'
 
 type Props = { membership: Membership; onFine: () => void }
+type DemoOffseason = { squadre: Team[]; sorteggio: (adesso: number) => NonNullable<Parameters<typeof SorteggioConferenze>[0]['demo']> }
+type ViewProps = Props & { stato: ScelteLiveStato | null | undefined; adesso: number; demo?: DemoOffseason }
 type Vista = 'menu' | 'draft' | 'sorteggio'
 
 // Dopo la chiusura dell'off-season, con le conferenze: due dirette una dopo
@@ -15,19 +18,25 @@ type Vista = 'menu' | 'draft' | 'sorteggio'
 export function OffseasonLive({ membership, onFine }: Props) {
   const league = membership.league as League
   const { stato, adesso } = useScelteLive(league.id)
+  return <OffseasonLiveView membership={membership} onFine={onFine} stato={stato} adesso={adesso} />
+}
+
+// La vista non sa da dove arrivano i dati: dal database (OffseasonLive) o dall'anteprima fittizia.
+export function OffseasonLiveView({ membership, onFine, stato, adesso, demo }: ViewProps) {
+  const league = membership.league as League
   const [vista, setVista] = useState<Vista>('menu')
 
   // Se si resta nel menu o nel draft quando la stagione parte, si ricarica la lega.
   const draftFinito = Boolean(stato) && adesso >= Date.parse(stato!.fine_il)
   useEffect(() => {
-    if (!draftFinito || vista === 'sorteggio') return
+    if (demo || !draftFinito || vista === 'sorteggio') return
     let vivo = true
     const timer = window.setInterval(async () => {
       const { data } = await supabase.from('leagues').select('fase_carriera').eq('id', league.id).single()
       if (vivo && data && data.fase_carriera !== 'sorteggio') onFine()
     }, 5000)
     return () => { vivo = false; window.clearInterval(timer) }
-  }, [draftFinito, vista, league.id, onFine])
+  }, [draftFinito, vista, league.id, onFine, demo])
 
   if (stato === undefined) {
     return <main className="sorteggio"><p className="sorteggio__attesa" style={{ textAlign: 'center', marginTop: '30vh' }}>Preparo la diretta…</p></main>
@@ -41,10 +50,10 @@ export function OffseasonLive({ membership, onFine }: Props) {
 
   if (vista === 'draft') {
     return <DraftScelteLive membership={membership} stato={stato} adesso={adesso} onMenu={() => setVista('menu')}
-      onVaiSorteggio={draftFinito ? () => setVista('sorteggio') : null} />
+      onVaiSorteggio={draftFinito ? () => setVista('sorteggio') : null} squadreDemo={demo?.squadre} />
   }
   if (vista === 'sorteggio') {
-    return <SorteggioConferenze membership={membership} onFine={onFine} onMenu={() => setVista('menu')} />
+    return <SorteggioConferenze membership={membership} onFine={onFine} onMenu={() => setVista('menu')} demo={demo?.sorteggio(adesso)} />
   }
 
   const inDirettaDraft = fase.stadio === 'intro' || fase.stadio === 'reveal'
