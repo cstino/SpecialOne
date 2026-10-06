@@ -346,6 +346,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [playerAction, setPlayerAction] = useState<PlayerAction | null>(null)
   // Il posto titolare vuoto per cui e' aperta la tendina di scelta.
   const [sceltaPosto, setSceltaPosto] = useState<number | null>(null)
+  // «Sostituzione» dal menu del giocatore: lista dei suggeriti (chi entra al suo posto, o dove puo' giocare lui).
+  const [sostituisci, setSostituisci] = useState<PlayerLocation | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -628,6 +630,13 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       return
     }
     if (selected.zone === location.zone && selected.index === location.index) { setSelected(null); return }
+    scambia(selected, location)
+  }
+
+  // Scambia di posto due giocatori (anche in zone diverse), con le regole sugli indisponibili:
+  // un infortunato o squalificato puo' andare solo in tribuna, e un titolare indisponibile sostituito
+  // da una riserva libera il posto in panchina. Lo usano il doppio tocco e la lista dei sostituti.
+  function scambia(selected: PlayerLocation, location: PlayerLocation) {
     const firstId = playerAt(selected)
     const secondId = playerAt(location)
     const firstPlayer = players.find((player) => player.id === firstId)
@@ -768,6 +777,32 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     setTribuna(players.map((player) => player.id))
     setSelected(null); setPlayerAction(null); setSaved(false); setError(null)
   }
+
+  const etichettaFit: Record<PositionFit, string> = { natural: 'Nel suo ruolo', adapted: 'Adattato', out: 'Fuori ruolo' }
+  // Una riga delle liste di sostituti: foto, nome, energia, ruoli, affinita' e overall nel posto.
+  const rigaScelta = (c: { id: number; player: Player; fit: PositionFit; efficace: number; fuori: boolean }, chiave: string, onPick: () => void, etichetta?: string) => (
+    <li key={`${chiave}`}>
+                <button type="button" disabled={c.fuori} onClick={onPick}>
+                  <span className="scelta-titolare__foto">{imageUrls[c.id] ? <img src={imageUrls[c.id]} alt="" /> : <b>{c.player.nome.charAt(0)}</b>}</span>
+                  <span className="scelta-titolare__nome">
+                    <span className="scelta-titolare__testa">
+                      <strong><TestoAdattato minimo={0.6}>{cognome(c.player.nome)}</TestoAdattato></strong>
+                      {/* L'energia si vede sempre: pastiglia accanto al nome, mai troncata. */}
+                      <em className={`scelta-titolare__energia energia--${livelloEnergia(c.player)}`}>
+                        {c.player.infortunato_fino_a > 0 ? 'Infortunato' : c.player.squalificato_fino_a > 0 ? 'Squalificato' : `${c.player.condizione}%`}
+                      </em>
+                    </span>
+                    {/* Ruolo primario in evidenza nel colore del reparto, poi i secondari. */}
+                    <small>
+                      <i className={`scelta-titolare__primario scelta-titolare__primario--${reparto(c.player.posizioni[0] ?? 'ATT')}`}>{c.player.posizioni[0]}</i>
+                      {c.player.posizioni.slice(1).map((pos) => <span key={pos}> · {pos}</span>)}
+                    </small>
+                  </span>
+                  <span className={`scelta-titolare__fit scelta-titolare__fit--${c.fit}`}>{etichetta ?? etichettaFit[c.fit]}</span>
+                  <span className="scelta-titolare__ovr"><b className={c.efficace < c.player.overall_corrente ? 'is-ridotto' : undefined}>{c.efficace}</b>{c.efficace !== c.player.overall_corrente && <small>{c.player.overall_corrente}</small>}</span>
+                </button>
+              </li>
+  )
 
   async function save(nomeRiservaScelto?: string) {
     if (erroreSchema) { setError(erroreSchema); return }
@@ -1190,7 +1225,6 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           const player = players.find((item) => item.id === c.id)
           return player ? [{ ...c, player, fit: positionFit(posto, player.posizioni), efficace: overallInCampo(player, posto), fuori: indisponibile(player) }] : []
         }).sort((a, b) => Number(a.fuori) - Number(b.fuori) || ordineFit[a.fit] - ordineFit[b.fit] || b.efficace - a.efficace || b.player.overall_corrente - a.player.overall_corrente)
-        const etichettaFit: Record<PositionFit, string> = { natural: 'Nel suo ruolo', adapted: 'Adattato', out: 'Fuori ruolo' }
         return <div className={`scelta-titolare-layer formazione-broadcast formazione-broadcast--${fase}`} role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setSceltaPosto(null) }}>
           <section className="scelta-titolare" role="dialog" aria-label={`Scegli il titolare per ${posto}`}>
             <header>
@@ -1198,27 +1232,62 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
               <button className="button-icona" type="button" onClick={() => setSceltaPosto(null)} aria-label="Chiudi"><Icona nome="chiudi" /></button>
             </header>
             {candidati.length === 0 ? <p className="scelta-titolare__vuoto">Nessun giocatore in panchina o in tribuna.</p>
-              : <ul>{candidati.map((c) => <li key={c.id}>
-                <button type="button" disabled={c.fuori} onClick={() => mettiTitolare(sceltaPosto, c.location)}>
-                  <span className="scelta-titolare__foto">{imageUrls[c.id] ? <img src={imageUrls[c.id]} alt="" /> : <b>{c.player.nome.charAt(0)}</b>}</span>
-                  <span className="scelta-titolare__nome">
-                    <span className="scelta-titolare__testa">
-                      <strong><TestoAdattato minimo={0.6}>{cognome(c.player.nome)}</TestoAdattato></strong>
-                      {/* L'energia si vede sempre: pastiglia accanto al nome, mai troncata. */}
-                      <em className={`scelta-titolare__energia energia--${livelloEnergia(c.player)}`}>
-                        {c.player.infortunato_fino_a > 0 ? 'Infortunato' : c.player.squalificato_fino_a > 0 ? 'Squalificato' : `${c.player.condizione}%`}
-                      </em>
-                    </span>
-                    {/* Ruolo primario in evidenza nel colore del reparto, poi i secondari. */}
-                    <small>
-                      <i className={`scelta-titolare__primario scelta-titolare__primario--${reparto(c.player.posizioni[0] ?? posto)}`}>{c.player.posizioni[0]}</i>
-                      {c.player.posizioni.slice(1).map((pos) => <span key={pos}> · {pos}</span>)}
-                    </small>
-                  </span>
-                  <span className={`scelta-titolare__fit scelta-titolare__fit--${c.fit}`}>{etichettaFit[c.fit]}</span>
-                  <span className="scelta-titolare__ovr"><b className={c.efficace < c.player.overall_corrente ? 'is-ridotto' : undefined}>{c.efficace}</b>{c.efficace !== c.player.overall_corrente && <small>{c.player.overall_corrente}</small>}</span>
-                </button>
-              </li>)}</ul>}
+              : <ul>{candidati.map((c) => rigaScelta(c, String(c.id), () => mettiTitolare(sceltaPosto, c.location)))}</ul>}
+          </section>
+        </div>
+      })()}
+      {sostituisci && (() => {
+        const idBase = playerAt(sostituisci)
+        const base = players.find((item) => item.id === idBase)
+        if (!base) return null
+        const ordineFit: Record<PositionFit, number> = { natural: 0, adapted: 1, out: 2 }
+        const daTitolare = sostituisci.zone === 'starter'
+        const posto = daTitolare ? slots[sostituisci.index] : null
+        // Un titolare viene sostituito da panchina e tribuna; uno di panchina o tribuna sceglie quale titolare rilevare.
+        const candidati = daTitolare
+          ? [
+            ...panchina.map((id, index) => ({ id, location: { zone: 'bench', index, id } as PlayerLocation })),
+            ...tribuna.map((id, index) => ({ id, location: { zone: 'tribuna', index, id } as PlayerLocation })),
+          ].flatMap((c) => {
+            const player = players.find((item) => item.id === c.id)
+            if (!player) return []
+            const fit = positionFit(posto as string, player.posizioni), efficace = overallInCampo(player, posto as string)
+            return [{ ...c, player, posto: posto as string, fit, efficace, fuori: indisponibile(player), vuoto: false, fitBase: fit, efficaceBase: efficace }]
+          })
+          : titolari.map((id, index) => ({ id, location: { zone: 'starter', index, id } as PlayerLocation, index })).flatMap((c) => {
+            const posizione = slots[c.index]
+            const attuale = c.id ? players.find((item) => item.id === c.id) : undefined
+            // La riga mostra chi occupa il posto (o il posto libero), l'ordine dice dove starebbe meglio il giocatore scelto.
+            const chi = attuale ?? base
+            return [{ ...c, player: chi, posto: posizione, fit: positionFit(posizione, chi.posizioni), efficace: overallInCampo(chi, posizione), fuori: indisponibile(base), vuoto: !c.id,
+              fitBase: positionFit(posizione, base.posizioni), efficaceBase: overallInCampo(base, posizione) }]
+          })
+        candidati.sort((a, b) => {
+          return Number(a.fuori) - Number(b.fuori) || ordineFit[a.fitBase] - ordineFit[b.fitBase] || b.efficaceBase - a.efficaceBase || b.player.overall_corrente - a.player.overall_corrente
+        })
+        const chiudi = () => setSostituisci(null)
+        const scegli = (c: (typeof candidati)[number]) => {
+          setSaved(false)
+          if (daTitolare) scambia(sostituisci, c.location)
+          else if (c.vuoto) mettiTitolare(c.location.index, sostituisci)
+          else scambia(sostituisci, c.location)
+          chiudi()
+        }
+        return <div className={`scelta-titolare-layer formazione-broadcast formazione-broadcast--${fase}`} role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) chiudi() }}>
+          <section className="scelta-titolare" role="dialog" aria-label={daTitolare ? `Chi entra al posto di ${base.nome}` : `Al posto di chi entra ${base.nome}`}>
+            <header>
+              <div><small>Sostituzione</small><strong>{daTitolare
+                ? <>Chi entra al posto di {cognome(base.nome)}{posto && <> in <i className={`rosa-card__ruolo--${reparto(posto)}`}>{posto}</i></>}?</>
+                : <>Al posto di chi entra {cognome(base.nome)}?</>}</strong></div>
+              <button className="button-icona" type="button" onClick={chiudi} aria-label="Chiudi"><Icona nome="chiudi" /></button>
+            </header>
+            {candidati.length === 0 ? <p className="scelta-titolare__vuoto">Nessun giocatore disponibile per la sostituzione.</p>
+              : <ul>{candidati.map((c) => {
+                const vuoto = c.vuoto
+                // Chi sceglie un titolare da rilevare vede il posto e, se c'e', il giocatore che lo occupa.
+                const etichetta = daTitolare ? undefined : vuoto ? `${c.posto} · libero` : `${c.posto} · ${etichettaFit[c.fit]}`
+                return rigaScelta({ id: c.id, player: vuoto ? base : c.player, fit: c.fit, efficace: c.efficace, fuori: c.fuori }, `${c.location.zone}-${c.location.index}`, () => scegli(c), etichetta)
+              })}</ul>}
           </section>
         </div>
       })()}
@@ -1232,7 +1301,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
             <button type="button" onClick={() => setPlayerAction(null)} aria-label="Chiudi menu"><Icona nome="chiudi" /></button>
           </div>
           <div className="player-action-menu__choices">
-            <button type="button" onClick={() => { const location = playerAction.location; setPlayerAction(null); selectPlayer(location) }}><span>⇄</span><strong>Sostituzione</strong></button>
+            <button type="button" onClick={() => { const location = playerAction.location; setPlayerAction(null); setSostituisci(location) }}><span>⇄</span><strong>Sostituzione</strong></button>
             <button type="button" onClick={() => { const player = playerAction.player; setPlayerAction(null); setDetailPlayer(player) }}><span>ⓘ</span><strong>Dettagli</strong></button>
           </div>
         </section>

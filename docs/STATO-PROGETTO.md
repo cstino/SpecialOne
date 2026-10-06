@@ -1997,3 +1997,8 @@ metà" con la rimozione). Applicata prima in transazione con rollback, poi per d
   «Scambi della stagione» (`dati.view = 'scambi'`). Migrazione `20261006130000`.
 - **Svuota formazione**: tasto nella pagina Formazione (secondo tocco di conferma): undici posti vuoti, tutta la rosa
   in tribuna; modulo, schema, ruoli e indicazioni restano; non salva finche' non si preme Salva.
+- **Sostituzione con i suggeriti**: nella pagina Formazione, toccando un giocatore e poi «Sostituzione» si apre la
+  stessa lista dei suggeriti che c'era per i posti vuoti. Per un titolare: chi entra al suo posto (panchina e
+  tribuna, prima chi e' nel suo ruolo, poi per overall nel posto; gli indisponibili in fondo, non selezionabili).
+  Per un giocatore di panchina o tribuna: al posto di quale titolare entra (i titolari ordinati da dove giocherebbe
+  meglio lui). Lo scambio usa le stesse regole del doppio tocco (`scambia`), con quelle sugli infortunati.
