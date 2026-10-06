@@ -122,3 +122,9 @@ pigro che lampeggiavano (andava a scatti). Ora: **l'estratta resta 14 secondi e 
 ultimi 6**, stemmi precaricati e caricati subito, ordine mescolato senza ripetizioni, rallentamento
 progressivo (da un cambio ogni 80 ms fino a uno ogni 380 ms), anello del conto alla rovescia sui 6 secondi.
 Il primo turno, che non ha un'estratta prima, mostra un punto interrogativo fermo finche' non iniziano i 6 secondi.
+
+**Aggiornamento (6 ottobre 2026): niente roulette dei loghi.** Al posto della roulette c'e' un caricamento
+disegnato: anelli concentrici che girano nel colore della conference che ricevera' la squadra (azzurro East,
+arancio West), con un anello che si riempie negli ultimi 6 secondi, l'emblema della conference al centro e il
+conto alla rovescia. Al termine la squadra si rivela con un'onda luminosa attorno allo stemma. Prima del
+conto finale (primo turno) gli anelli girano piano e la scritta dice «Preparo l'estrazione».

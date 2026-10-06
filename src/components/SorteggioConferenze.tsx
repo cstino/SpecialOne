@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { firmaStemmi } from '../lib/premiAlbo'
 import { NOME_CONFERENZA, NOME_CONFERENZA_BREVE, type Conferenza } from '../lib/conferenze'
-import { stemmaPresetDaValore } from '../lib/teamCrests'
 import type { League, Membership, Team } from '../types'
 import { Crest } from './Crest'
 import { ConferenceBadge } from './ConferenceBadge'
@@ -19,44 +18,21 @@ type Estrazione = { ordine: number; team_id: number; conferenza: Conferenza }
 // L'estratta resta in scena per quasi tutto il turno; la roulette gira solo negli ultimi secondi.
 const SECONDI_ROULETTE = 6
 
-// Gli stemmi della roulette cambiano ogni decimo di secondo: se non sono gia' in
-// cache il caricamento li fa lampeggiare e la roulette va a scatti.
-function precaricaStemmi(squadre: Team[], firmati: Map<number, string>) {
-  for (const t of squadre) {
-    const src = firmati.get(t.id) ?? stemmaPresetDaValore(t.stemma_url)?.src
-    if (src) { const img = new Image(); img.src = src }
-  }
-}
-
-function Roulette({ candidati, stemmi, secondiRimasti }: { candidati: Team[]; stemmi: Map<number, string>; secondiRimasti: number }) {
-  const [indice, setIndice] = useState(0)
-  const ridotto = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  const rimasti = useRef(secondiRimasti)
-  rimasti.current = secondiRimasti
+// Caricamento dell'estrazione: anelli che girano nel colore della conference che sta per
+// ricevere la squadra, un anello che si riempie negli ultimi secondi e, al termine, la
+// squadra si rivela. Sostituisce la roulette dei loghi: l'estratta non e' nota a nessuno.
+function Caricamento({ conferenza, secondiRimasti }: { conferenza: Conferenza; secondiRimasti: number }) {
+  const avanzamento = Math.min(100, Math.max(0, (1 - secondiRimasti / SECONDI_ROULETTE) * 100))
   const gira = secondiRimasti <= SECONDI_ROULETTE
-  // Ordine mescolato una volta sola: gli stemmi scorrono senza ripetersi di fila.
-  const ordine = useMemo(() => {
-    const o = candidati.map((_, i) => i)
-    for (let i = o.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [o[i], o[j]] = [o[j], o[i]] }
-    return o
-  }, [candidati.length]) // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (ridotto || !gira || candidati.length === 0) return
-    let timer = 0
-    const passo = () => {
-      setIndice((i) => (i + 1) % Math.max(1, ordine.length))
-      // Veloce all'inizio, poi rallenta piano fino a fermarsi: e' solo scena, l'estratta non e' ancora nota a nessuno.
-      const avanzamento = 1 - Math.min(1, Math.max(0, rimasti.current / SECONDI_ROULETTE))
-      timer = window.setTimeout(passo, 80 + 300 * avanzamento * avanzamento)
-    }
-    timer = window.setTimeout(passo, 80)
-    return () => window.clearTimeout(timer)
-  }, [candidati.length, ridotto, gira, ordine.length])
-  const squadra = gira && !ridotto ? candidati[ordine[indice % Math.max(1, ordine.length)] ?? 0] : undefined
-  return <div className={`sorteggio__roulette${gira ? ' is-gira' : ''}`} aria-hidden="true">
-    <div className="sorteggio__roulette-carta">
-      {squadra ? <Crest value={squadra.stemma_url} imageUrl={stemmi.get(squadra.id)} size="large" eager /> : <b>?</b>}
-    </div>
+  return <div className={`sorteggio__carica sorteggio__carica--${conferenza}${gira ? ' is-gira' : ''}`} aria-hidden="true">
+    <svg viewBox="0 0 200 200" className="sorteggio__carica-anelli">
+      <circle className="sorteggio__carica-pista" cx="100" cy="100" r="92" />
+      <circle className="sorteggio__carica-prog" cx="100" cy="100" r="92" pathLength="100" strokeDasharray={`${avanzamento} ${100 - avanzamento}`} />
+      <circle className="sorteggio__carica-tacche" cx="100" cy="100" r="80" />
+      <circle className="sorteggio__carica-tacche sorteggio__carica-tacche--inverso" cx="100" cy="100" r="66" />
+    </svg>
+    <div className="sorteggio__carica-nucleo"><ConferenceBadge conferenza={conferenza} /></div>
+    <b>{Math.ceil(secondiRimasti)}</b>
   </div>
 }
 
@@ -88,7 +64,6 @@ export function SorteggioConferenze({ membership, onFine, onMenu, demo }: Props)
       if (!vivo) return
       setSquadre(elenco)
       setStemmi(firmati)
-      precaricaStemmi(elenco, firmati)
     })()
     return () => { vivo = false }
   }, [league.id, demo])
@@ -150,8 +125,6 @@ export function SorteggioConferenze({ membership, onFine, onMenu, demo }: Props)
   }, [finito, league.id, onFine, demo])
 
   const squadrePerId = useMemo(() => new Map(squadre.map((t) => [t.id, t])), [squadre])
-  const uscite = useMemo(() => new Set(estrazioni.map((e) => e.team_id)), [estrazioni])
-  const candidati = useMemo(() => squadre.filter((t) => !uscite.has(t.id)), [squadre, uscite])
   const perConferenza = (c: Conferenza) => estrazioni.filter((e) => e.conferenza === c)
   const meta = Math.max(1, Math.floor((stato?.totale ?? squadre.length) / 2))
 
@@ -186,17 +159,15 @@ export function SorteggioConferenze({ membership, onFine, onMenu, demo }: Props)
 
       {stato && !finito && !prima && mostraCarta && squadraUltima && ultima && <div className={`sorteggio__estratta sorteggio__estratta--${ultima.conferenza}`} key={ultima.ordine}>
         <small>Estratta per la {NOME_CONFERENZA[ultima.conferenza]}</small>
-        <div className="sorteggio__estratta-stemma"><Crest value={squadraUltima.stemma_url} imageUrl={stemmi.get(squadraUltima.id)} size="large" stelle={squadraUltima.titoli_title} /></div>
+        <div className="sorteggio__estratta-stemma"><span className="sorteggio__onda" aria-hidden="true" /><Crest value={squadraUltima.stemma_url} imageUrl={stemmi.get(squadraUltima.id)} size="large" stelle={squadraUltima.titoli_title} /></div>
         <strong>{squadraUltima.nome}</strong>
         <span>{squadraUltima.sigla}{squadraUltima.id === membership.id ? ' · La tua squadra' : ''}</span>
       </div>}
 
       {stato && !finito && !prima && !mostraCarta && <div className={`sorteggio__suspense sorteggio__suspense--${prossimaConferenza}`}>
         <h1>{estrazioni.length === 0 ? 'La prima squadra estratta per la' : 'La prossima squadra per la'} <em>{NOME_CONFERENZA[prossimaConferenza]}</em> è…</h1>
-        <Roulette candidati={candidati} stemmi={stemmi} secondiRimasti={secondiRimasti} />
-        <div className="sorteggio__conto" style={{ ['--p' as string]: `${Math.min(100, Math.max(0, 1 - secondiRimasti / SECONDI_ROULETTE) * 100)}%` }}>
-          <b>{Math.ceil(secondiRimasti)}</b>
-        </div>
+        <Caricamento conferenza={prossimaConferenza} secondiRimasti={secondiRimasti} />
+        <p className="sorteggio__carica-testo">{secondiRimasti <= SECONDI_ROULETTE ? 'Estrazione in corso' : 'Preparo l\'estrazione'}<i>.</i><i>.</i><i>.</i></p>
       </div>}
     </section>
 
