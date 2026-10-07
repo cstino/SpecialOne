@@ -7,6 +7,7 @@ import { rnd, gauss, poisson, scegliPesato } from './random.js';
 import { deltaTattico } from './tattiche.js';
 import { avanzamentoRuolo } from './ruoli.js';
 import { calcolaPiazzati } from './piazzati.js';
+import { creaRendimento } from './rendimento.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -217,14 +218,48 @@ export function identitaStile(stile, indicazioni = null) {
 // `intervallo`: la finestra dell'intervallo non consuma una delle MAX_SOSTE
 // interruzioni, ma e' piu' prudente (soglia piu' bassa, al massimo
 // MAX_CAMBI_INTERVALLO). Restituisce i cambi fatti, per la cronaca.
-function sostituzioni(lineup, intervallo = false) {
+function sostituzioni(lineup, intervallo = false, rend = null) {
   const fattiOra = [];
   if (lineup.cambiFatti >= CFG.MAX_CAMBI) return fattiOra;
   if (!intervallo && lineup.soste >= CFG.MAX_SOSTE) return fattiOra;
   const soglia = intervallo ? CFG.SOGLIA_CAMBIO_INTERVALLO : CFG.SOGLIA_CAMBIO_COND;
   const massimo = intervallo ? CFG.MAX_CAMBI_INTERVALLO : CFG.MAX_CAMBI_FINESTRA;
+  // Scarso rendimento: il mister legge il voto che il giocatore ha costruito
+  // in campo finora (engine/rendimento.js). Mai il portiere, e non chi e' appena
+  // entrato. Entra la migliore alternativa dello slot, purche' non sia troppo
+  // piu' debole di chi esce.
   let fatti = 0;
-  for (let i = 0; i < lineup.slots.length && fatti < massimo; i++) {
+  let fattiRend = 0;
+  if (rend && lineup.cambiFatti < CFG.MAX_CAMBI && lineup.panchina.length > 0) {
+    const maxRend = intervallo ? CFG.MAX_CAMBI_RENDIMENTO_INTERVALLO : CFG.MAX_CAMBI_FINESTRA;
+    const scarsi = [];
+    for (let i = 0; i < lineup.slots.length; i++) {
+      const tit = lineup.titolari[i];
+      if (!tit || lineup.slots[i] === 'GK') continue;
+      if (rend.blocchiGiocati(tit.id) < CFG.MIN_BLOCCHI_RENDIMENTO) continue;
+      const voto = rend.voto(tit.id);
+      if (voto !== null && voto < CFG.SOGLIA_RENDIMENTO_CAMBIO) scarsi.push({ i, voto });
+    }
+    scarsi.sort((a, b) => a.voto - b.voto);
+    for (const { i } of scarsi) {
+      if (fattiRend >= maxRend || lineup.cambiFatti >= CFG.MAX_CAMBI || lineup.panchina.length === 0) break;
+      const slot = lineup.slots[i], tit = lineup.titolari[i];
+      const valoreTit = ovrEfficace(tit, slot, dt(lineup, tit, slot));
+      let bestIdx = -1, bestVal = -Infinity;
+      for (let j = 0; j < lineup.panchina.length; j++) {
+        const r = lineup.panchina[j];
+        const v = ovrEfficace(r, slot, dt(lineup, r, slot));
+        if (v > bestVal) { bestVal = v; bestIdx = j; }
+      }
+      if (bestIdx < 0 || bestVal < valoreTit - CFG.MARGINE_CAMBIO_RENDIMENTO) continue;
+      const entra = lineup.panchina.splice(bestIdx, 1)[0];
+      lineup.titolari[i] = entra;
+      entra._entrato = true;
+      lineup.cambiFatti++; fattiRend++;
+      fattiOra.push({ esce: tit.id, entra: entra.id, motivo: 'rendimento' });
+    }
+  }
+  for (let i = 0; i < lineup.slots.length && fatti < massimo && lineup.cambiFatti < CFG.MAX_CAMBI; i++) {
     const slot = lineup.slots[i], tit = lineup.titolari[i];
     // Il portiere non si sostituisce per stanchezza: nel calcio vero esce solo
     // per infortunio. Col modello di fatica da partita scendeva sotto soglia
@@ -242,11 +277,12 @@ function sostituzioni(lineup, intervallo = false) {
       lineup.titolari[i] = entra;
       entra._entrato = true;
       lineup.cambiFatti++; fatti++;
-      fattiOra.push({ esce: tit.id, entra: entra.id });
+      fattiOra.push({ esce: tit.id, entra: entra.id, motivo: 'stanchezza' });
       if (lineup.cambiFatti >= CFG.MAX_CAMBI) break;
     }
   }
-  if (fatti > 0 && !intervallo) lineup.soste++;
+
+  if ((fatti + fattiRend) > 0 && !intervallo) lineup.soste++;
   return fattiOra;
 }
 
@@ -428,6 +464,9 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   const rndCambi = creaRngInfortuni(opt.seedCambi ?? (seedInfortuni + 211));
   // Soste usate e cambi fatti, per lato: la cronaca li racconta coi minuti.
   lc.soste = 0; lo.soste = 0;
+  // Rendimento in campo (engine/rendimento.js): flussi casuali propri, non toccano gol, infortuni, cartellini.
+  const rend = creaRendimento(opt.seedRendimento ?? (seedInfortuni + 331));
+  const marcatoriPerBlocco = []; // gol su azione col marcatore e l'assist scelti nel blocco in cui cadono
   const cambiInPartita = [];
   const registraCambi = (lato, L, blocco, fatti, intervallo) => {
     if (!fatti.length) return;
@@ -437,7 +476,7 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     if (!intervallo && blocco === CFG.BLOCCHI_PARTITA - 1 && fatti.length >= 2 && L.soste < CFG.MAX_SOSTE
       && rndCambi() < CFG.QUOTA_SOSTA_DIVISA) { L.soste++; divisa = true; }
     fatti.forEach((c, k) => cambiInPartita.push({
-      lato, blocco, ...c, motivo: 'stanchezza',
+      lato, blocco, ...c, motivo: c.motivo ?? 'stanchezza',
       sosta: intervallo ? 0 : divisa && k === fatti.length - 1 ? L.soste : divisa ? L.soste - 1 : L.soste,
       tardiva: divisa && k === fatti.length - 1,
     }));
@@ -521,6 +560,16 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     golC += nGolC;
     golO += nGolO;
     golPerBlocco.push({ blocco: b + 1, casa: nGolC, ospite: nGolO });
+    // Marcatore e assist nel blocco in cui il gol cade, fra chi e' in campo
+    // adesso: il rendimento li usa subito, e la cronaca li racconta cosi' come sono.
+    const golBlocco = { blocco: b + 1, casa: [], ospite: [] };
+    for (const [lato, L, n] of [['casa', lc, nGolC], ['ospite', lo, nGolO]]) {
+      for (let k = 0; k < n; k++) { const g = rend.assegnaGol(lato, L); if (g) golBlocco[lato].push(g); }
+    }
+    marcatoriPerBlocco.push(golBlocco);
+    const piazzatiGolBlocco = { casa: 0, ospite: 0 };
+    const primoPiazzatoBlocco = piazzatiInPartita.length;
+    const primoCartellinoBlocco = cartelliniInPartita.length;
 
     // ---------- calci piazzati ----------
     // Angoli e punizioni, blocco per blocco sulla formazione in campo in quel
@@ -538,10 +587,19 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
       for (const [lato, L, D, xg, acc] of [['casa', lc, lo, xgC, piazzC], ['ospite', lo, lc, xgO, piazzO]]) {
         const pz = calcolaPiazzati(L, D, xg / rifBlocco, 1 / CFG.BLOCCHI_PARTITA);
         acc.gol += pz.gol; acc.tiri += pz.tiri; acc.inPorta += pz.inPorta;
+        piazzatiGolBlocco[lato] += pz.gol;
         if (lato === 'casa') golC += pz.gol; else golO += pz.gol;
         for (const m of pz.marcatori) piazzatiInPartita.push({ lato, blocco: b + 1, marcatore: m.id, tipo: m.tipo, battitore: m.battitore ?? null });
       }
     }
+
+    // Chi e' in campo a inizio blocco (con lo slot): e' su di loro che il
+    // rendimento conta il blocco, anche se qualcuno esce per infortunio o
+    // espulsione prima della fine.
+    const presentiBlocco = {
+      casa: lc.titolari.map((g, i) => (g ? { g, slot: lc.slots[i] } : null)).filter(Boolean),
+      ospite: lo.titolari.map((g, i) => (g ? { g, slot: lo.slots[i] } : null)).filter(Boolean),
+    };
 
     // consumo condizione + conteggio blocchi. Il portiere non consuma
     // condizione: nel calcio vero non si stanca come un giocatore di movimento,
@@ -627,10 +685,32 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
       }
     }
 
+    // ---------- rendimento del blocco ----------
+    {
+      const nb = CFG.BLOCCHI_PARTITA;
+      const possBlocco = clamp(ctrlC + idC.possesso - idO.possesso, 0.22, 0.78);
+      for (const [lato, L, A, poss, xgAvv, subiti, idLato] of [
+        ['casa', lc, lo, possBlocco, xgO, nGolO + piazzatiGolBlocco.ospite, idC],
+        ['ospite', lo, lc, 1 - possBlocco, xgC, nGolC + piazzatiGolBlocco.casa, idO],
+      ]) {
+        rend.aggiornaBlocco({
+          lato, presenti: presentiBlocco[lato], avversari: A, xgAvversario: xgAvv, golSubitiBlocco: subiti, tattica: L.tattica,
+          volumi: {
+            pass: CFG.PASSAGGI_BASE * poss * 2 / nb,
+            duelli: CFG.CONTRASTI_BASE * (1 - poss) * 2 * idLato.contrasti / nb,
+            dri: CFG.DRIBBLING_BASE * poss * 2 * idLato.dribbling / nb,
+          },
+        });
+      }
+      for (const lato of ['casa', 'ospite']) for (const g of golBlocco[lato]) rend.gol(g.marcatore, g.assist);
+      for (const p of piazzatiInPartita.slice(primoPiazzatoBlocco)) rend.gol(p.marcatore, p.battitore != null && p.battitore !== p.marcatore ? p.battitore : null);
+      for (const c of cartelliniInPartita.slice(primoCartellinoBlocco)) rend.cartellino(c.giocatore, c.tipo);
+    }
+
     if (CFG.FINESTRE_CAMBI.includes(b + 1)) {
       const intervallo = b + 1 === CFG.BLOCCO_INTERVALLO;
-      registraCambi('casa', lc, b + 1, sostituzioni(lc, intervallo), intervallo);
-      registraCambi('ospite', lo, b + 1, sostituzioni(lo, intervallo), intervallo);
+      registraCambi('casa', lc, b + 1, sostituzioni(lc, intervallo, rend), intervallo);
+      registraCambi('ospite', lo, b + 1, sostituzioni(lo, intervallo, rend), intervallo);
     }
 
     if (b + 1 === CFG.BLOCCHI_PARTITA) {
@@ -642,8 +722,8 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
         // nel calcio vero. Resta soggetta a MAX_CAMBI: chi li ha gia' esauriti
         // non ne guadagna uno in piu'. Come l'intervallo, la pausa prima dei
         // supplementari non consuma una sosta.
-        registraCambi('casa', lc, b + 1, sostituzioni(lc, true), true);
-        registraCambi('ospite', lo, b + 1, sostituzioni(lo, true), true);
+        registraCambi('casa', lc, b + 1, sostituzioni(lc, true, rend), true);
+        registraCambi('ospite', lo, b + 1, sostituzioni(lo, true, rend), true);
       }
     }
   }
@@ -680,6 +760,14 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   const possessoC = clamp(ctrlMedio + idC.possesso - idO.possesso, 0.22, 0.78);
   const sC = mk(lc, golC, possessoC, forzeLinee(lc), xgTotC, idC.volumeTiri * idO.tiriConcessi, idC.contrasti, idC.dribbling);
   const sO = mk(lo, golO, 1 - possessoC, forzeLinee(lo), xgTotO, idO.volumeTiri * idC.tiriConcessi, idO.contrasti, idO.dribbling);
+  // Passaggi, contrasti e dribbling di squadra sono la somma di quelli tentati
+  // blocco per blocco dai giocatori in campo (engine/rendimento.js): cosi' le
+  // statistiche individuali, quelle di squadra e il voto sono la stessa cosa.
+  for (const [lato, st] of [['casa', sC], ['ospite', sO]]) {
+    const somma = (chiave) => [...rend.tentativi(lato, chiave).values()].reduce((a, b) => a + b, 0);
+    st.passaggiT = somma('pass'); st.passaggiR = Math.round(st.passaggiT * st.passaggiPct);
+    st.contrasti = somma('duelli'); st.dribbling = somma('dri');
+  }
   // Le conclusioni da palla inattiva entrano nel conteggio: un colpo di testa
   // su angolo e' un tiro come gli altri, e senza questo le statistiche
   // raccontavano meno conclusioni di quante ne erano avvenute.
@@ -689,16 +777,18 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
   const perGiocatore = opt.statsGiocatori ? (() => {
     // Solo i gol su azione: quelli da piazzato hanno gia' il loro marcatore
     // (piazzatiInPartita).
-    const marcatoriCasa = marcatori(rosaCasa, slotStoricoCasa, golC - piazzC.gol);
-    const marcatoriOspite = marcatori(rosaOspite, slotStoricoOspite, golO - piazzO.gol);
+    const perId = (rosa) => new Map(rosa.giocatori.map((g) => [g.id, g]));
+    const idCasa = perId(rosaCasa), idOspite = perId(rosaOspite);
+    const marcatoriCasa = marcatoriPerBlocco.flatMap((blocco) => blocco.casa).map((gol) => idCasa.get(gol.marcatore)).filter(Boolean);
+    const marcatoriOspite = marcatoriPerBlocco.flatMap((blocco) => blocco.ospite).map((gol) => idOspite.get(gol.marcatore)).filter(Boolean);
     const minuti = rosa => new Map(rosa.giocatori
       .map(g => [g.id, Math.round((inCampo.get(g.id) || 0) * 90 / CFG.BLOCCHI_PARTITA)])
       .filter(([, valore]) => valore > 0));
     return { casa: {
       tiri: distribuisci(lc, 'tiri', sC.tiri, 'finishing'),
-      passaggi: distribuisci(lc, 'passaggi', sC.passaggiT, 'short_passing'),
-      contrasti: distribuisci(lc, 'contrasti', sC.contrasti, 'tackle'),
-      dribbling: distribuisci(lc, 'dribbling', sC.dribbling, 'dribbling'),
+      passaggi: rend.tentativi('casa', 'pass'),
+      contrasti: rend.tentativi('casa', 'duelli'),
+      dribbling: rend.tentativi('casa', 'dri'),
       minuti: minuti(rosaCasa),
       marcatori: marcatoriCasa.map(g => g.nome),
       marcatoriIds: marcatoriCasa.map(g => g.id),
@@ -708,9 +798,9 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     },
     ospite: {
       tiri: distribuisci(lo, 'tiri', sO.tiri, 'finishing'),
-      passaggi: distribuisci(lo, 'passaggi', sO.passaggiT, 'short_passing'),
-      contrasti: distribuisci(lo, 'contrasti', sO.contrasti, 'tackle'),
-      dribbling: distribuisci(lo, 'dribbling', sO.dribbling, 'dribbling'),
+      passaggi: rend.tentativi('ospite', 'pass'),
+      contrasti: rend.tentativi('ospite', 'duelli'),
+      dribbling: rend.tentativi('ospite', 'dri'),
       minuti: minuti(rosaOspite),
       marcatori: marcatoriOspite.map(g => g.nome),
       marcatoriIds: marcatoriOspite.map(g => g.id),
@@ -755,6 +845,9 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
 
   return {
     golC, golO, statsCasa: sC, statsOspite: sO, perGiocatore, golPerBlocco,
+    // Marcatore e assist di ogni gol su azione, nel blocco in cui cade, e il rendimento
+    // (voti live e azioni) che alimenta cambi e pagelle.
+    marcatoriPerBlocco, rendimento: rend,
     presenzePerBlocco: { casa: presenzeCasaPerBlocco, ospite: presenzeOspitePerBlocco },
     infortuniInPartita,
     cartelliniInPartita,

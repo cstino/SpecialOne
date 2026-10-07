@@ -110,7 +110,10 @@ export const CFG = {
   // --- Sostituzioni ---
   FINESTRE_CAMBI: [3, 4, 5], // fine di questi blocchi
   MAX_CAMBI: 5,
-  MAX_CAMBI_FINESTRA: 2,
+  // Nessun tetto per sosta (7 ottobre 2026, richiesta del committente): in una
+  // sosta se ne possono fare quanti se ne vuole, valgono solo i 5 cambi totali
+  // e le 3 soste. Era 2.
+  MAX_CAMBI_FINESTRA: 5,
   // Alzata da 55: col consumo nuovo un titolare arriva a ~78 alla prima
   // finestra e ~63 all'ultima. A 55 nessuna finestra si sarebbe mai aperta.
   SOGLIA_CAMBIO_COND: 75,
@@ -130,6 +133,17 @@ export const CFG = {
   // liberi a volte li divide in due momenti (un cambio subito, l'ultimo
   // verso la fine). Conta come una sosta in piu'. Probabilita' della divisione.
   QUOTA_SOSTA_DIVISA: 0.5,
+  // Cambi per scarso rendimento (engine/rendimento.js): il mister toglie chi sta
+  // giocando male, anche se e' fresco. Mai il portiere. Il voto e' quello in
+  // pagella, costruito dalle azioni vere del giocatore: sotto questa soglia, e
+  // dopo almeno MIN_BLOCCHI_RENDIMENTO blocchi giocati, e' candidato al cambio.
+  SOGLIA_RENDIMENTO_CAMBIO: 6.1,
+  MIN_BLOCCHI_RENDIMENTO: 2,
+  // Chi entra deve essere almeno cosi' vicino, in overall nello slot, a chi esce:
+  // non si toglie un 80 che gioca male per un 60.
+  MARGINE_CAMBIO_RENDIMENTO: 8,
+  // All'intervallo, oltre al cambio per stanchezza, al massimo uno per rendimento.
+  MAX_CAMBI_RENDIMENTO_INTERVALLO: 1,
 };
 
 // ============================================================

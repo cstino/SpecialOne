@@ -1586,3 +1586,48 @@ che gioca e quella dell'altro resta nella riserva.
 - **Controlli**: undici posti (0 = vuoto), ogni id deve essere della rosa della squadra (provato: un giocatore
   altrui viene rifiutato; senza riserva le colonne si azzerano). Il blocco su infortunati e squalificati resta
   sullo schema che si salva come attivo.
+
+## 46. Rendimento in partita e cambi per scarso rendimento — 8 ottobre 2026
+
+Richiesta del committente (7 ottobre): in una sosta si possono fare piu' di 2 cambi, e il mister deve poter
+sostituire anche chi sta giocando male, non solo chi e' stanco. Il motore deve vedere la valutazione LIVE del
+giocatore, costruita da cio' che succede in campo, **senza aggiungere nulla di casuale** (niente «forma del giorno»).
+Mai il portiere.
+
+**Cosa e' cambiato** (`engine/rendimento.js`, nuovo; `engine/engine.js`, `engine/config.js`, `engine/pagelle.js`):
+- **Voto che cresce durante la gara.** Dopo ognuno dei blocchi, ogni giocatore in campo accumula passaggi,
+  interventi, contrasti e dribbling (tentati e riusciti, con la stessa formula e gli stessi PESI delle pagelle),
+  piu' gol, assist, cartellini e gol subiti mentre era in campo. Flussi casuali PROPRI (seme `seedInfortuni + 331`):
+  gol, infortuni e cartellini non si spostano. Il caso entra solo dove entrava gia': la riuscita di ogni gesto.
+- **Voto finale = la stessa linea.** `pagelle()` con `L.live` prende il voto dal rendimento e aggiunge solo cio' che si sa
+  a fine gara (tiri, parate, porta inviolata, risultato). Niente rumore gaussiano: il voto che il mister vede a meta'
+  partita e quello in pagella sono la stessa cosa. Statistiche individuali e di squadra (passaggi, contrasti,
+  dribbling) sono i tentativi veri blocco per blocco, non piu' una distribuzione post-partita.
+- **Marcatore e assist scelti nel blocco del gol**, fra chi e' in campo in quel momento (stessi pesi di prima).
+  La Edge Function non li abbina piu' a posteriori: `eventiGolDalMotore` da' solo il minuto dentro il blocco.
+  `QUOTA_GOL_SENZA_ASSIST` e `PESO_ASSIST` ora vivono in `engine/rendimento.js`.
+- **Cambi** (`sostituzioni()`): 1) per rendimento, prima: voto live sotto `SOGLIA_RENDIMENTO_CAMBIO` (6,1), almeno
+  `MIN_BLOCCHI_RENDIMENTO` (2) blocchi giocati, entra la migliore alternativa dello slot purche' non sia piu' debole
+  di `MARGINE_CAMBIO_RENDIMENTO` (8) punti; all'intervallo al massimo `MAX_CAMBI_RENDIMENTO_INTERVALLO` (1) in piu'
+  del cambio per stanchezza; 2) per stanchezza, come prima. **Tolto il tetto di 2 cambi per sosta**
+  (`MAX_CAMBI_FINESTRA` 2 → 5): valgono solo i 5 cambi totali e le 3 soste.
+- **Cronaca e rapporto**: il cambio per rendimento porta `motivo: 'rendimento'` («scarso rendimento» nel rapporto,
+  «non in giornata» nella telecronaca).
+- **Cambio «fantasma» corretto** (Edge Function, `minutiGiocati`): un infortunio nell'ultimo blocco faceva entrare un
+  sostituto senza blocchi giocati nel motore, quindi senza riga di statistiche (il rapporto mostrava l'id).
+  Ora chi entra riceve i minuti veri della sua finestra.
+
+**Misure** (suite `tools/validazione`, confronto con la base prima delle modifiche):
+- `simulate.js`: stessi target in rosso/verde di prima, scostamenti nel rumore (gol/partita 2,14 → 2,20, punti
+  vincitore 56,7 → 57,2, condizione a fine stagione 86,5 → 87,4). I FUORI di partenza (gol/partita, pareggi...)
+  c'erano gia' prima: non vengono da questo cambiamento.
+- `prova-pagelle.mjs` (1.500 partite, rose vere): media voti 6,73, scarto 0,58, 5%-95% 6,0-7,8, migliore in campo
+  8,00; MVP per reparto GK 15 · DEF 28 · MID 29 · ATT 28 (prima: media 6,72, scarto 0,60, 8,01, 13/39/28/20).
+  Lo scarto e' un poco piu' basso (niente rumore); i difensori sono un poco meno spesso MVP.
+- Cambi per squadra (60 stagioni): 4,14 → 4,27; con 5 cambi: 35% → 47%; per rendimento ~0,4 a partita a squadra.
+- Funzione completa in locale (150 partite, `simulaAmichevoleCore`): i gol degli eventi sono quelli del punteggio, ogni
+  marcatore, assist e sostituto ha la sua riga di statistiche (0 problemi).
+
+**Da sapere**: la prima giornata dopo l'off-season ha pochi cambi per stanchezza perche' tutti partono con la condizione
+al massimo (media 3,1 a squadra alla giornata 1 di stagione 2, contro ~4,9 nelle altre). I cambi per rendimento non
+dipendono dalla condizione.

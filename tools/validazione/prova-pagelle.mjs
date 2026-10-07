@@ -15,6 +15,8 @@ import { deltaRuoli, sommaDelta, ruoliPerSlot } from '../../engine/ruoli.js';
 import { pagelle, migliorInCampo } from '../../engine/pagelle.js';
 
 const N = Number(process.argv[2] ?? 3000);
+// Con 'senza' si misura il vecchio calcolo post-partita; di default il voto nasce dal rendimento in campo.
+const LIVE = process.argv[3] !== 'senza';
 const MODULO = '4-3-3';
 const M = MODULI[MODULO];
 const pool = JSON.parse(readFileSync(new URL('./pool-reale.json', import.meta.url), 'utf8'))
@@ -49,6 +51,13 @@ function assist(stats, golIds) {
   return m;
 }
 
+// Gli assist li sceglie il motore, nel blocco del gol (engine/rendimento.js).
+function assistDalMotore(r, nome) {
+  const m = new Map();
+  for (const blocco of r.marcatoriPerBlocco) for (const gol of blocco[nome]) if (gol.assist != null) m.set(gol.assist, (m.get(gol.assist) ?? 0) + 1);
+  return m;
+}
+
 const azioni = {};
 const voti = [], mvp = [], mvpRep = {}, perRep = {}, perFit = { adatto: [], neutro: [], inadatto: [] };
 let mvpVincente = 0, partiteConVincitore = 0;
@@ -63,7 +72,8 @@ for (let i = 0; i < N; i++) {
   const r = simulaPartita(ra, rb, MODULO, MODULO, { usaCondizione: true, statsGiocatori: true, lineupCasa: A, lineupOspite: B });
   const lato = (rosaX, L, stats, squadra, gf, gs, nome) => ({
     giocatori: new Map(rosaX.giocatori.map((g) => [g.id, g])), lineup: L, stats, squadra, golFatti: gf, golSubiti: gs,
-    assist: assist(stats, stats.marcatoriIds),
+    live: LIVE ? r.rendimento : undefined,
+    assist: LIVE ? assistDalMotore(r, nome) : assist(stats, stats.marcatoriIds),
     cartellini: (r.cartelliniInPartita ?? []).filter((c) => c.lato === nome).map((c) => ({ giocatore: c.giocatore, tipo: c.tipo })),
   });
   const v = pagelle({

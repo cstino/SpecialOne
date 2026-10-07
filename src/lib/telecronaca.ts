@@ -421,6 +421,7 @@ export function costruisciTelecronaca(d: DatiTelecronaca): Riga[] {
       gruppo.forEach((x, k) => {
         if (k > 0) elenco.push(k === gruppo.length - 1 ? ' e ' : ', ')
         elenco.push(k === 0 ? 'dentro ' : '', { g: nome(x.entra) }, ' per ', { g: nome(x.esce) })
+        if (x.motivo === 'rendimento') elenco.push(' (non in giornata)')
       })
       let testo: Parte[]
       if (allenatore(lato)) {

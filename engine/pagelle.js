@@ -23,7 +23,7 @@
 import { REPARTO } from './config.js';
 
 // --- generatore casuale proprio (mulberry32): non tocca quello del motore ---
-function generatore(seme) {
+export function generatore(seme) {
   let a = seme >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
@@ -34,7 +34,7 @@ function generatore(seme) {
   };
 }
 
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 // Sotto questi minuti non si da' il voto: "senza voto", come sui giornali.
 export const MINUTI_MINIMI = 15;
@@ -72,18 +72,18 @@ export const PESI = {
 // Gli interventi difensivi (chiusure, intercetti, anticipi) per posizione, a
 // pressione avversaria media. Il motore non li distribuisce: senza, un
 // difensore aveva due contrasti a partita e poteva solo perdere punti.
-const INTERVENTI = { CB: 7, LB: 4.5, RB: 4.5, LWB: 3.5, RWB: 3.5, CDM: 3.5, CM: 2, CAM: 1, LM: 1.5, RM: 1.5, LW: 0.5, RW: 0.5, ST: 0.3, CF: 0.3 };
+export const INTERVENTI = { CB: 7, LB: 4.5, RB: 4.5, LWB: 3.5, RWB: 3.5, CDM: 3.5, CM: 2, CAM: 1, LM: 1.5, RM: 1.5, LW: 0.5, RW: 0.5, ST: 0.3, CF: 0.3 };
 
 // Il reparto avversario contro cui si gioca ogni gesto.
-const AVVERSARIO = { DEF: 'ATT', MID: 'MID', ATT: 'DEF', GK: 'ATT' };
+export const AVVERSARIO = { DEF: 'ATT', MID: 'MID', ATT: 'DEF', GK: 'ATT' };
 
-function mediaReparto(titolari, slots, reparto) {
+export function mediaReparto(titolari, slots, reparto) {
   let s = 0, n = 0;
   slots.forEach((sl, i) => { const g = titolari[i]; if (g && REPARTO[sl] === reparto) { s += g.ovr; n++; } });
   return n ? s / n : 70;
 }
 
-function quante(rng, n, p) {
+export function quante(rng, n, p) {
   let ok = 0;
   for (let i = 0; i < n; i++) if (rng() < p) ok++;
   return ok;
@@ -134,6 +134,25 @@ export function pagelle(lati, seme) {
       if (!g || minuti < MINUTI_MINIMI) { out.set(id, { voto: null, lato }); continue; }
       const rep = REPARTO[slot] ?? 'MID';
       const quota = Math.min(1, minuti / 90);
+
+      // Partita con rendimento in campo (engine/rendimento.js): il voto e' la
+      // linea che il mister ha visto crescere durante la gara, completata solo
+      // da cio' che si sa a fine partita (tiri, parate, porta inviolata,
+      // risultato). Nessuna estrazione in piu': niente rumore.
+      const dettaglioLive = L.live?.dettaglio(id);
+      if (dettaglioLive) {
+        const tiriL = L.stats.tiri?.get(id) ?? 0;
+        const golL = gol.get(id) ?? 0;
+        const inPortaL = Math.max(golL, Math.min(tiriL, Math.round(tiriL * tiriInPortaMiei / tiriMiei)));
+        let extra = (inPortaL - golL) * PESI.tiroInPorta + (tiriL - inPortaL) * PESI.tiroFuori;
+        const dl = { ...dettaglioLive, tiri: tiriL, tiriInPorta: inPortaL, gol: golL, assist: L.assist?.get(id) ?? 0 };
+        if (rep === 'GK') { dl.parate = parateTotali; extra += parateTotali * PESI.parata; }
+        if (minuti >= 60 && L.golSubiti === 0) extra += PESI.portaInviolata[rep] ?? 0;
+        extra += risultato * quota;
+        const votoL = L.live.votoFinale(id, { gol: golL, assist: dl.assist, minuti, extra });
+        out.set(id, { voto: Math.round(clamp(votoL, 3, 10) * 10) / 10, dettaglio: dl, lato });
+        continue;
+      }
       const a = g.attributi ?? {};
       const delta = L.lineup.tattica ? L.lineup.tattica(g, slot) : 0;
       const spinta = PESI.tattica * delta;

@@ -180,6 +180,8 @@ export type EventoSostituzione = EventoBase & {
   tipo: 'sostituzione'
   esce: number
   entra: number
+  // Solo per i cambi dove il mister toglie chi gioca male (anche se e' fresco).
+  motivo?: 'rendimento'
 }
 
 export type EventoInfortunio = EventoBase & {

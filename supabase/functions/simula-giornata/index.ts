@@ -23,16 +23,20 @@ type Lato = 'casa' | 'ospite'
 // `piazzato`: il gol nasce da un calcio d'angolo o da una punizione (tipo del
 // motore: angolo_dx, angolo_sx, punizione_corta, punizione_lunga).
 type EventoGol = { tipo: 'gol'; minuto: number; blocco: number; lato: Lato; team_id: number; marcatore: number; assist: number | null; piazzato?: string }
+// Marcatore e assist di ogni gol su azione, scelti dal motore nel blocco in cui cade (engine/rendimento.js).
+type GolMotore = { marcatore: number; assist: number | null }
+type MarcatoriBlocco = { blocco: number; casa: GolMotore[]; ospite: GolMotore[] }
 type PiazzatoMotore = { lato: Lato; blocco: number; marcatore: number; tipo: string; battitore: number | null }
 type EventoTiro = { tipo: 'tiro_parato' | 'tiro_fuori'; minuto: number; blocco: number; lato: Lato; team_id: number; giocatore: number }
-type EventoSostituzione = { tipo: 'sostituzione'; minuto: number; blocco: number; lato: Lato; team_id: number; esce: number; entra: number }
+// `motivo`: presente solo per i cambi per scarso rendimento (il mister toglie chi gioca male, anche se e' fresco).
+type EventoSostituzione = { tipo: 'sostituzione'; minuto: number; blocco: number; lato: Lato; team_id: number; esce: number; entra: number; motivo?: 'rendimento' }
 type EventoInfortunio = { tipo: 'infortunio'; minuto: number; blocco: number; lato: Lato; team_id: number; esce: number; entra: number }
 type EventoCartellino = { tipo: 'cartellino'; minuto: number; blocco: number; lato: Lato; team_id: number; giocatore: number; colore: 'giallo' | 'rosso_diretto' | 'doppio_giallo' }
 type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortunio | EventoCartellino
 // Un cambio come lo restituisce il motore (blocco al cui termine avviene e
 // sosta di gioco: 0 = intervallo o pausa prima dei supplementari) e come lo
 // racconta la cronaca, col suo minuto.
-type CambioMotore = { lato: Lato; blocco: number; esce: number; entra: number; motivo: 'stanchezza' | 'infortunio'; sosta: number; tardiva: boolean }
+type CambioMotore = { lato: Lato; blocco: number; esce: number; entra: number; motivo: 'stanchezza' | 'infortunio' | 'rendimento'; sosta: number; tardiva: boolean }
 type CambioCronaca = CambioMotore & { minuto: number }
 type CartellinoMotore = { lato: Lato; blocco: number; giocatore: number; tipo: 'giallo' | 'rosso_diretto' | 'doppio_giallo' }
 type CartellinoCronaca = CartellinoMotore & { minuto: number }
@@ -415,7 +419,35 @@ function scegliAssist(lineup: EngineLineup, marcatore: number, presenti: number[
   return scegliPesatoLocale(candidati, pesi, rnd)
 }
 
+// I gol su azione come li ha giocati il motore: marcatore e assist sono gia' stati
+// scelti nel blocco in cui il gol cade, fra chi era in campo, e il rendimento li ha
+// gia' contati nel voto. Qui resta solo da dare un minuto dentro il blocco.
+function eventiGolDalMotore(
+  marcatoriPerBlocco: MarcatoriBlocco[],
+  squadre: Record<Lato, number>,
+  seed: number,
+): EventoGol[] {
+  const rnd = creaRng(seed)
+  const usati: Record<Lato, Set<number>> = { casa: new Set(), ospite: new Set() }
+  const eventi: EventoGol[] = []
+  for (const blocco of marcatoriPerBlocco) {
+    for (const lato of ['casa', 'ospite'] as Lato[]) {
+      for (const gol of blocco[lato]) {
+        const inizio = (blocco.blocco - 1) * MINUTI_PER_BLOCCO + 1
+        const tutti = Array.from({ length: MINUTI_PER_BLOCCO }, (_, indice) => inizio + indice)
+        const liberi = tutti.filter((minuto) => !usati[lato].has(minuto))
+        const candidati = liberi.length ? liberi : tutti
+        const minuto = candidati[Math.floor(rnd() * candidati.length)]
+        usati[lato].add(minuto)
+        eventi.push({ tipo: 'gol', minuto, blocco: blocco.blocco, lato, team_id: squadre[lato], marcatore: gol.marcatore, assist: gol.assist })
+      }
+    }
+  }
+  return eventi.sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.blocco - destra.blocco)
+}
+
 // Trasforma i gol per blocco in eventi cronologici con minuto, marcatore e assist.
+// (Ripiego per i motori che non restituiscono i marcatori per blocco.)
 function costruisciEventiGol(
   golPerBlocco: GolBlocco[],
   lati: Array<{ lato: 'casa' | 'ospite'; teamId: number; lineup: EngineLineup; marcatori: number[]; presenzePerBlocco: number[][] }>,
@@ -732,6 +764,12 @@ function minutiGiocati(finestre: Map<number, { da: number; a: number }> | undefi
     const finestra = finestre.get(id)
     if (finestra) minuti.set(id, Math.max(1, finestra.a - finestra.da))
   }
+  // Chi entra dopo l'ultimo blocco (un infortunio nei minuti finali) non ha blocchi giocati nel
+  // motore, quindi niente riga di statistiche: restava un cambio "fantasma" (il nome non si
+  // trovava piu', e nel rapporto compariva l'id). Gli si riconoscono i minuti veri.
+  for (const [id, finestra] of finestre) {
+    if (!minuti.has(id) && finestra.a > finestra.da) minuti.set(id, Math.max(1, finestra.a - finestra.da))
+  }
 }
 
 function costruisciEventiPartita(
@@ -787,6 +825,7 @@ function costruisciEventiPartita(
     if (!lato) continue
     eventi.push({
       tipo: cambio.motivo === 'infortunio' ? 'infortunio' : 'sostituzione',
+      ...(cambio.motivo === 'rendimento' ? { motivo: 'rendimento' as const } : {}),
       minuto: Math.min(MINUTO_MASSIMO, cambio.minuto),
       blocco: Math.ceil(cambio.minuto / MINUTI_PER_BLOCCO),
       lato: cambio.lato,
@@ -1043,10 +1082,12 @@ export function simulaAmichevoleCore(d: DatiAmichevole, seed: number) {
     scartoAndata: 0,
   })
   const presenzePerBlocco = result.presenzePerBlocco as { casa: number[][]; ospite: number[][] }
-  const eventi = costruisciEventiGol(result.golPerBlocco as GolBlocco[], [
-    { lato: 'casa', teamId: d.casa.id, lineup: homeLineup, marcatori: result.perGiocatore.casa.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.casa },
-    { lato: 'ospite', teamId: d.ospite.id, lineup: awayLineup, marcatori: result.perGiocatore.ospite.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.ospite },
-  ], seed)
+  const eventi = result.marcatoriPerBlocco
+    ? eventiGolDalMotore(result.marcatoriPerBlocco as MarcatoriBlocco[], { casa: d.casa.id, ospite: d.ospite.id }, seed)
+    : costruisciEventiGol(result.golPerBlocco as GolBlocco[], [
+        { lato: 'casa', teamId: d.casa.id, lineup: homeLineup, marcatori: result.perGiocatore.casa.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.casa },
+        { lato: 'ospite', teamId: d.ospite.id, lineup: awayLineup, marcatori: result.perGiocatore.ospite.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.ospite },
+      ], seed)
   const rndPiazzati = creaRng(seed ^ 0x2545f491)
   for (const piazzato of (result.piazzatiInPartita ?? []) as PiazzatoMotore[]) {
     eventi.push({
@@ -1094,6 +1135,7 @@ export function simulaAmichevoleCore(d: DatiAmichevole, seed: number) {
     squadra: nome === 'casa' ? result.statsCasa : result.statsOspite,
     golFatti: gf, golSubiti: gs,
     assist: assistPerGiocatore,
+    live: result.rendimento,
     cartellini: cartelliniPartita.filter((c) => c.lato === nome).map((c) => ({ giocatore: c.giocatore, tipo: c.tipo })),
   })
   const voti = pagelle({
@@ -1481,10 +1523,12 @@ export default {
             )
           : null
         const presenzePerBlocco = result.presenzePerBlocco as { casa: number[][]; ospite: number[][] }
-        const eventi = costruisciEventiGol(result.golPerBlocco as GolBlocco[], [
-          { lato: 'casa', teamId: fixture.home_team_id, lineup: homeLineup, marcatori: result.perGiocatore.casa.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.casa },
-          { lato: 'ospite', teamId: fixture.away_team_id, lineup: awayLineup, marcatori: result.perGiocatore.ospite.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.ospite },
-        ], seed)
+        const eventi = result.marcatoriPerBlocco
+          ? eventiGolDalMotore(result.marcatoriPerBlocco as MarcatoriBlocco[], { casa: fixture.home_team_id, ospite: fixture.away_team_id }, seed)
+          : costruisciEventiGol(result.golPerBlocco as GolBlocco[], [
+              { lato: 'casa', teamId: fixture.home_team_id, lineup: homeLineup, marcatori: result.perGiocatore.casa.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.casa },
+              { lato: 'ospite', teamId: fixture.away_team_id, lineup: awayLineup, marcatori: result.perGiocatore.ospite.marcatoriIds as number[], presenzePerBlocco: presenzePerBlocco.ospite },
+            ], seed)
         // I gol da calcio piazzato arrivano dal motore gia' col loro blocco, il
         // marcatore e chi ha battuto (l'assist): diventano gol della cronaca
         // come gli altri, e il minuto lo sistema adattaAiMinutiInCampo.
@@ -1592,6 +1636,7 @@ export default {
               squadra: nome === 'casa' ? result.statsCasa : result.statsOspite,
               golFatti: gf, golSubiti: gs,
               assist: assistPerGiocatore,
+              live: result.rendimento,
               cartellini: cartelliniPartita.filter((c) => c.lato === nome).map((c) => ({ giocatore: c.giocatore, tipo: c.tipo })),
             })
             const voti = pagelle({
