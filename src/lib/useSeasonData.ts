@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 import type { Fixture, Match, Membership, Season, Standing, Team } from '../types'
+import { firmaStemma } from './stemmiFirmati'
 
 export function useSeasonData(membership: Membership) {
   const league = membership.league!
@@ -33,7 +34,7 @@ export function useSeasonData(membership: Membership) {
     const loadedTeams = (teamsResult.data ?? []) as Team[]
     setTeams(loadedTeams)
     const signedCrests = await Promise.all(loadedTeams.filter((team) => team.stemma_url && !team.stemma_url.startsWith('preset:')).map(async (team) => {
-      const { data } = await supabase.storage.from('team-crests').createSignedUrl(team.stemma_url!, 3600)
+      const { data } = await firmaStemma(team.stemma_url!)
       return [team.id, data?.signedUrl] as const
     }))
     setCrestUrls(Object.fromEntries(signedCrests.filter((entry): entry is readonly [number, string] => Boolean(entry[1]))))
@@ -48,9 +49,19 @@ export function useSeasonData(membership: Membership) {
 
     const [fixturesResult, matchesResult, standingsResult] = await Promise.all([
       supabase.from('fixtures').select('*').eq('league_id', league.id).eq('season_id', currentSeason.id).order('giornata').order('id'),
-      supabase.from('matches').select('id, fixture_id, league_id, gol_home, gol_away, modulo_home, modulo_away, titolari_home, titolari_away, stats_squadra, blocchi, simulata_il, gol_home_90, gol_away_90, rigori_home, rigori_away, rigori_serie').eq('league_id', league.id).order('simulata_il', { ascending: false }),
+      // Solo le partite della stagione corrente: le fixtures caricate sono solo queste, e le partite di
+      // tutte le stagioni passate (con i blocchi della cronaca) crescevano di peso a ogni stagione.
+      supabase.from('matches').select('id, fixture_id, league_id, gol_home, gol_away, modulo_home, modulo_away, titolari_home, titolari_away, stats_squadra, blocchi, simulata_il, gol_home_90, gol_away_90, rigori_home, rigori_away, rigori_serie, fixtures!inner(season_id)').eq('league_id', league.id).eq('fixtures.season_id', currentSeason.id).order('simulata_il', { ascending: false }),
       supabase.from('standings').select('*').eq('league_id', league.id).eq('season_id', currentSeason.id),
     ])
+
+    // Rete di sicurezza: se per qualunque motivo il filtro per stagione non funziona, si torna alla
+    // lettura completa di prima invece di lasciare l'app senza partite.
+    if (matchesResult.error) {
+      const ripiego = await supabase.from('matches').select('id, fixture_id, league_id, gol_home, gol_away, modulo_home, modulo_away, titolari_home, titolari_away, stats_squadra, blocchi, simulata_il, gol_home_90, gol_away_90, rigori_home, rigori_away, rigori_serie').eq('league_id', league.id).order('simulata_il', { ascending: false })
+      matchesResult.data = ripiego.data as typeof matchesResult.data
+      matchesResult.error = ripiego.error as typeof matchesResult.error
+    }
 
     const firstError = fixturesResult.error ?? matchesResult.error ?? standingsResult.error
     if (firstError) {

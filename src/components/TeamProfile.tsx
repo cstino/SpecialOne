@@ -19,6 +19,7 @@ import { UnderlineTabs } from './ui/underline-tabs'
 import { Icona } from './Icona'
 import { fasciaVoto, formatoVoto } from '../lib/voti'
 import { ruoloIt, ruoliIt } from '../lib/ruoli'
+import { firmaStemma } from '../lib/stemmiFirmati'
 
 type Props = {
   membership: Membership
@@ -233,7 +234,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     let active = true
     async function loadCrest() {
       if (!team?.stemma_url || team.stemma_url.startsWith('preset:')) { setCrestUrl(null); return }
-      const { data } = await supabase.storage.from('team-crests').createSignedUrl(team.stemma_url, 3600)
+      const { data } = await firmaStemma(team.stemma_url)
       if (active) setCrestUrl(data?.signedUrl ?? null)
     }
     void loadCrest()

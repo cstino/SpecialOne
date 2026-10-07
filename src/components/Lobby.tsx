@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import type { League, Membership, Team } from '../types'
 import { Crest } from './Crest'
 import { GameNav } from './GameNav'
+import { firmaStemma } from '../lib/stemmiFirmati'
 
 type LobbyProps = {
   user: User
@@ -57,7 +58,7 @@ export function Lobby({ user, membership, memberships, onSelectLeague, onNewLeag
       const uploaded = loadedTeams.filter((team) => team.stemma_url && !team.stemma_url.startsWith('preset:'))
       const signed = await Promise.all(
         uploaded.map(async (team) => {
-          const { data: signedData, error: signedError } = await supabase.storage.from('team-crests').createSignedUrl(team.stemma_url!, 3600)
+          const { data: signedData, error: signedError } = await firmaStemma(team.stemma_url!)
           return [team.stemma_url!, signedData?.signedUrl, signedError] as const
         }),
       )

@@ -8,6 +8,7 @@ import { Crest } from './Crest'
 import { GuidaArgomenti, ARGOMENTI_AIUTO } from './Help'
 import { Notifiche } from './Notifiche'
 import { Icona } from './Icona'
+import { firmaStemma } from '../lib/stemmiFirmati'
 
 type Props = {
   user: User
@@ -82,7 +83,7 @@ export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, 
       const firmati = await Promise.all(memberships
         .filter((item) => item.stemma_url && !item.stemma_url.startsWith('preset:'))
         .map(async (item) => {
-          const { data: url } = await supabase.storage.from('team-crests').createSignedUrl(item.stemma_url!, 3600)
+          const { data: url } = await firmaStemma(item.stemma_url!)
           return [item.id, url?.signedUrl] as const
         }))
       if (attivo) setStemmi(Object.fromEntries(firmati.filter((voce): voce is readonly [number, string] => Boolean(voce[1]))))

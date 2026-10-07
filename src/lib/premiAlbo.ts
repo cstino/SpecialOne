@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import { urlFotoGiocatore } from './fotoGiocatore'
 import type { Team } from '../types'
+import { firmaStemma } from './stemmiFirmati'
 
 export type Premio = {
   stagioneId: number
@@ -23,7 +24,7 @@ export async function firmaStemmi(squadre: Team[]) {
   const firmati = await Promise.all(squadre
     .filter((squadra) => squadra.stemma_url && !squadra.stemma_url.startsWith('preset:'))
     .map(async (squadra) => {
-      const { data } = await supabase.storage.from('team-crests').createSignedUrl(squadra.stemma_url!, 3600)
+      const { data } = await firmaStemma(squadra.stemma_url!)
       return [squadra.id, data?.signedUrl] as const
     }))
   return new Map(firmati.filter((voce): voce is readonly [number, string] => Boolean(voce[1])))

@@ -5,6 +5,7 @@ import type { League, Membership, Season, Standing, Team } from '../types'
 import { Crest } from './Crest'
 import { GameNav, type GameView } from './GameNav'
 import { SeasonState } from './SeasonUI'
+import { firmaStemma } from '../lib/stemmiFirmati'
 
 type Campione = {
   stagione: Season
@@ -101,7 +102,7 @@ export function AlboDOro({ membership, onNavigate }: Props) {
     const stemmiFirmati = await Promise.all(((squadre ?? []) as Team[])
       .filter((squadra) => squadra.stemma_url && !squadra.stemma_url.startsWith('preset:'))
       .map(async (squadra) => {
-        const { data } = await supabase.storage.from('team-crests').createSignedUrl(squadra.stemma_url!, 3600)
+        const { data } = await firmaStemma(squadra.stemma_url!)
         return [squadra.id, data?.signedUrl] as const
       }))
     const stemmiPerSquadra = new Map(stemmiFirmati.filter((voce): voce is readonly [number, string] => Boolean(voce[1])))

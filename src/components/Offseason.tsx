@@ -6,6 +6,7 @@ import type { League, Membership, Team } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { Crest } from './Crest'
 import { PopupSpiegazione } from './PopupSpiegazione'
+import { firmaStemma } from '../lib/stemmiFirmati'
 
 type StatoTeam = { id: number; nome: string; attiva: boolean; entrante: boolean; rosa: number; draft: string | null }
 type StatoOffseason = { fase: string; stagione_corrente: number; stagione_prossima: number; scade_il: string | null; posti_nuovi: number; squadre_attese: number; squadre: StatoTeam[] }
@@ -35,7 +36,7 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
     const loadedTeams = (teamResult.data ?? []) as Team[]
     setTeams(loadedTeams)
     const signed = await Promise.all(loadedTeams.filter(team => team.stemma_url && !team.stemma_url.startsWith('preset:')).map(async team => {
-      const { data } = await supabase.storage.from('team-crests').createSignedUrl(team.stemma_url!, 3600)
+      const { data } = await firmaStemma(team.stemma_url!)
       return [team.id, data?.signedUrl] as const
     }))
     setCrestUrls(Object.fromEntries(signed.filter((entry): entry is readonly [number, string] => Boolean(entry[1]))))
