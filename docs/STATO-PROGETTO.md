@@ -2050,3 +2050,10 @@ non cresce**; le **giocate sono visibili a tutta la lega** (inviti e partite non
   riceve **10 punti da distribuire** all'ingresso (`private.punti_ingresso_a_lega_avviata`, trigger `crea_risorse_squadra`), poi i 2
   punti a ogni quarto di stagione come tutti. Applicato alle 8 gia' entrate, con notifica «Punti abilita' da distribuire» → Risorse.
   Migrazione `20261006210000`.
+
+- **Promemoria della diretta di fine off-season** (7 ottobre 2026): due job una tantum di pg_cron (`promemoria-live-1300` e
+  `promemoria-live-1329`, in UTC 11:00 e 11:29) mandano a tutti i partecipanti della lega la notifica push «Alle 13:30 si chiude
+  l'off-season» e «Si parte tra un minuto!». Partono solo se la chiusura dell'off-season cade nella finestra giusta
+  (`private.promemoria_live_offseason`), cosi' spostando la scadenza non arrivano messaggi sbagliati; poi si tolgono da soli.
+  La chiusura la esegue `finalizza-offseason-scadute` (ogni minuto): draft in diretta dal minuto pieno successivo (13:31),
+  sorteggio 3 minuti dopo l'ultima scelta. Migrazione `20261007100000`.
