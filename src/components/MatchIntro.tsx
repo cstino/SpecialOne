@@ -9,7 +9,7 @@ import type { BracketTie, Fixture, Match, Membership, Team } from '../types'
 import { Crest } from './Crest'
 import { Icona } from './Icona'
 import { ruoloIt } from '../lib/ruoli'
-import { LOGO_CONFERENZA_EMBLEMA, NOME_CONFERENZA, NOME_CONFERENZA_BREVE } from '../lib/conferenze'
+import { LOGO_CONFERENZA_EMBLEMA, NOME_CONFERENZA } from '../lib/conferenze'
 
 type RigaClassificaStorica = { teamId: number; punti: number; differenzaReti: number; golFatti: number; posizione: number }
 
@@ -323,7 +323,7 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
 
       {beat.tipo === 'classifica' && (
         <div className={`match-intro__classifica classifica-broadcast formazione-broadcast formazione-broadcast--${fase}`} style={{ '--n-squadre': classificaPrecedente.length } as React.CSSProperties}>
-          <p className="match-intro__classifica-titolo">{conferenzaPartita && <img className="match-intro__classifica-conf" src={LOGO_CONFERENZA_EMBLEMA[conferenzaPartita]} alt={NOME_CONFERENZA[conferenzaPartita]} />}<span>{conferenzaPartita ? `Classifica ${NOME_CONFERENZA_BREVE[conferenzaPartita]}` : 'Classifica'}</span><small>Prima della giornata {fixture.giornata}</small></p>
+          <p className="match-intro__classifica-titolo">{conferenzaPartita && <img className="match-intro__classifica-conf" src={LOGO_CONFERENZA_EMBLEMA[conferenzaPartita]} alt={NOME_CONFERENZA[conferenzaPartita]} />}<span>Classifica</span><small>Prima della giornata {fixture.giornata}</small></p>
           <div className="classifica-broadcast__testa" aria-hidden="true"><span>#</span><span>Squadra</span><span>DR</span><span>PT</span></div>
           <ol>
             {classificaPrecedente.map((riga) => {
