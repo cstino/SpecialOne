@@ -262,7 +262,7 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
 
   return <main className="app-shell season-shell">
     <GameNav league={league} active="matches" onNavigate={navigate} />
-    <header className="topbar season-topbar"><button className="match-detail-back" type="button" onClick={onBack}>← Torna alle partite</button><span>Rapporto partita</span>{onRivedi && match && fixture?.stato === 'simulata' && <button className="match-detail-rivedi" type="button" onClick={onRivedi}>▶ Rivedi la partita</button>}</header>
+    <header className="topbar season-topbar"><button className="match-detail-back" type="button" onClick={onBack}>← Torna alle partite</button><span>Rapporto partita</span></header>
     <SeasonState loading={data.loading} error={data.error} onRetry={data.reload} />
     {!data.loading && !data.error && (!match || !fixture) && <section className="season-state"><span className="season-state__icon">!</span><h2>Partita non trovata</h2><button className="button button--primary" type="button" onClick={onBack}>Torna indietro</button></section>}
     {!data.loading && !data.error && match && fixture && (() => {
@@ -297,6 +297,7 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
               </li>)}
             </ul>)}
           </div>
+          {onRivedi && <button className="match-detail-rivedi match-detail-rivedi--eroe" type="button" onClick={onRivedi}>▶ Rivedi la partita</button>}
         </section>
 
         {!statsLoading && (() => {

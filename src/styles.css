@@ -5016,3 +5016,5 @@ body:has(.anteprima) .reazioni--fisso .reazioni__pannello { bottom: 150px; }
 .match-detail-rivedi { min-height: 38px; padding: 0 14px; border: 1px solid rgba(106, 240, 152, .5); border-radius: 9px; color: #9af5bd; background: rgba(40, 120, 70, .22); font: inherit; font-weight: 850; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
 .match-detail-rivedi:focus-visible { outline: 2px solid #9af5bd; outline-offset: 2px; }
 @media (max-width: 640px) { .match-detail-rivedi { padding: 0 10px; font-size: .62rem; } }
+
+.match-detail-rivedi--eroe { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; width: 100%; max-width: 420px; margin: 14px auto 0; min-height: 46px; font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; }
