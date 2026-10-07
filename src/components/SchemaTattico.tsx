@@ -29,6 +29,7 @@ import { Icona } from './Icona'
 import { STILI, STILE_LABEL, STILE_DESCRIZIONI, assiDelloStile } from '../lib/stili'
 import { SFONDO_FASE_VERTICALE, type FaseSquadra } from '../lib/faseSquadra'
 import { PRESET } from '../lib/preset'
+import { ruoloIt } from '../lib/ruoli'
 
 const ruoliPerSlot = (slot: string): string[] => RUOLI_SLOT[slot] ?? []
 
@@ -374,7 +375,7 @@ export default function SchemaTattico({
         {trascino?.mosso && ancoreLegali(trascino.index).map((a) => (
           <span key={a.id} aria-hidden="true"
             className={`schema__ancora${bersaglio?.id === a.id ? ' is-bersaglio' : ''}`}
-            style={{ left: `${a.x}%`, top: `${100 - a.y}%` }}>{a.slot}</span>
+            style={{ left: `${a.x}%`, top: `${100 - a.y}%` }}>{ruoloIt(a.slot)}</span>
         ))}
 
         {posti.map((posto) => {
@@ -397,7 +398,7 @@ export default function SchemaTattico({
                 setAperto((a) => (a === posto.index ? null : posto.index))
               }}
             >
-              <span className="schema__slot">{slot}</span>
+              <span className="schema__slot">{ruoloIt(slot)}</span>
               {(ruolo || (compito && compito !== 'equilibrio')) && (
                 <span className={`schema__badge schema__badge--${compito ?? 'equilibrio'}`}>
                   {ruolo ? RUOLO_LABEL[ruolo]?.nome ?? ruolo : compitoLabel(slot, compito ?? 'equilibrio').nome}

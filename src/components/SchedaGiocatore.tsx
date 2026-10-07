@@ -9,6 +9,7 @@ import { idoneitaRuolo, PROFILI_RUOLI, RUOLI_SLOT, segnoIdoneita } from '../lib/
 import { RUOLO_LABEL } from '../lib/ruoliTattici'
 import { nomeSuDueRighe } from '../lib/nomi'
 import { GRADINI_MINUTAGGIO, nomeConSoglia, percentuale as percentualeMinuti, statoMinuti, type GradinoMinutaggio } from '../lib/minutaggio'
+import { ruoloIt, ruoliIt } from '../lib/ruoli'
 
 export type StatsStagione = {
   presenze: number
@@ -341,7 +342,7 @@ function RuoliAdatti({ posizioni, attributi, overall }: { posizioni: string[]; a
         .map((ruolo) => ({ ruolo, valore: idoneitaRuolo(attributi, overall, ruolo) }))
         .sort((a, b) => b.valore - a.valore)
       return <div className="player-ruoli__gruppo" key={gruppo.posizioni.join()}>
-        {gruppi.length > 1 && <small className="player-ruoli__posizioni">{gruppo.posizioni.join(' · ')}</small>}
+        {gruppi.length > 1 && <small className="player-ruoli__posizioni">{ruoliIt(gruppo.posizioni)}</small>}
         <ul>
           {voci.map(({ ruolo, valore }) => {
             const segno = segnoIdoneita(valore)
@@ -801,7 +802,7 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
               {nomeSuDueRighe(giocatore.nome, giocatore.nomeEsteso).nome && <span className="player-modal__nome-proprio">{nomeSuDueRighe(giocatore.nome, giocatore.nomeEsteso).nome}</span>}
               <div className="player-modal__nome-riga">
                 <h2 id="player-modal-title">{nomeSuDueRighe(giocatore.nome, giocatore.nomeEsteso).cognome}</h2>
-                {giocatore.posizioni[0] && <span className={`role-pill role-pill--${rep.toLowerCase()}`}>{giocatore.posizioni[0]}</span>}
+                {giocatore.posizioni[0] && <span className={`role-pill role-pill--${rep.toLowerCase()}`}>{ruoloIt(giocatore.posizioni[0])}</span>}
               </div>
               <p>{giocatore.nazionalita || '—'}</p>
             </div>
@@ -812,7 +813,7 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
 
           <dl className="player-modal__facts">
             <div><dt>Età</dt><dd>{giocatore.eta}</dd></div>
-            <div><dt>Ruoli secondari</dt><dd>{giocatore.posizioni.slice(1).join(' · ') || 'Nessuno'}</dd></div>
+            <div><dt>Ruoli secondari</dt><dd>{ruoliIt(giocatore.posizioni.slice(1)) || 'Nessuno'}</dd></div>
             <div><dt>Piede</dt><dd>{giocatore.piede ?? '—'}</dd></div>
             <div><dt>Altezza</dt><dd>{giocatore.altezza ? `${giocatore.altezza} cm` : '—'}</dd></div>
             {!giocatore.minutaggio && giocatore.minutaggioRichiesto && <div className="fatto-minutaggio">
@@ -974,7 +975,7 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
               ala di fascia, marcatore...). Rende molto su un giovane che crescerà tanto, poco su chi è già arrivato;
               su un veterano che cala protegge le abilità del piano. Cambiare piano non toglie quello che ha già
               maturato, e {tatticheAttive ? '"Annulla allenamento" lo rimette senza piano' : '"Torna alla crescita naturale" lo rimette senza piano'}.</p>
-            <p><strong>Cambio ruolo</strong> non cambia: sostituisce il ruolo primario con uno vicino (un CB può
+            <p><strong>Cambio ruolo</strong> non cambia: sostituisce il ruolo primario con uno vicino (un DC può
               diventare terzino o mediano, non ala).
               {tatticheAttive
                 ? ' Il piano vale subito e può andare insieme al cambio ruolo: se a fine cambio il piano non vale per il nuovo ruolo, il giocatore torna alla crescita naturale (tenendo quello che ha già maturato) e ti avvisiamo.'
@@ -988,11 +989,11 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
             titolo="Cambio ruolo"
             attuale={null}
             inCorso={cambioRuolo.inCorso ? {
-              etichettaPrima: cambioRuolo.inCorso.ruoloPrecedente, etichettaDopo: cambioRuolo.inCorso.ruoloTarget,
+              etichettaPrima: ruoloIt(cambioRuolo.inCorso.ruoloPrecedente), etichettaDopo: ruoloIt(cambioRuolo.inCorso.ruoloTarget),
               avviatoGiornata: cambioRuolo.inCorso.avviatoGiornata, completaGiornata: cambioRuolo.inCorso.completaGiornata,
             } : null}
             prossimaGiornata={cambioRuolo.prossimaGiornata}
-            opzioni={cambioTarget?.map((r) => ({ chiave: r, etichetta: r }))
+            opzioni={cambioTarget?.map((r) => ({ chiave: r, etichetta: ruoloIt(r) }))
               ?? (cambioCaricamento ? null : [])}
             opzioniCaricamento={cambioCaricamento}
             scelta={cambioScelto}

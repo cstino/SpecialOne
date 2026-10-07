@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { cognome } from '../lib/nomi'
-import { MACRO_COLORE, MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
+import { MACRO_COLORE, MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo, ruoloIt } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { useSeasonData } from '../lib/useSeasonData'
@@ -379,7 +379,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0 }: Props) {
             <button type="button" className={`scambi-asset-card scambi-asset-card--player ${selezionati.includes(g.id) ? 'is-scelto' : ''}`}
               onClick={() => alterna(selezionati, g.id, imposta)} aria-pressed={selezionati.includes(g.id)}>
               <span className={`scambi-asset-card__ovr role-pill--${macroRuolo(g.posizioni ?? [g.ruolo]).toLowerCase()}`}>{g.overall}</span>
-              <span className="scambi-asset-card__info"><strong>{g.nome}</strong><small>{g.ruolo} · {g.eta} anni · {milioni(g.ingaggio)}</small></span>
+              <span className="scambi-asset-card__info"><strong>{g.nome}</strong><small>{ruoloIt(g.ruolo)} · {g.eta} anni · {milioni(g.ingaggio)}</small></span>
               {selezionati.includes(g.id) && <span className="scambi-asset-card__check" aria-hidden="true">✓</span>}
             </button>
           </li>)}
@@ -662,7 +662,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0 }: Props) {
                     <span className={`scambi-asset-card__ovr role-pill--${macroRuolo(g.posizioni ?? [g.ruolo]).toLowerCase()}`}>{g.overall}</span>
                     <span className="scambi-asset-card__info">
                       <strong>{g.nome}</strong>
-                      <small>{g.ruolo} · {g.eta} anni · {milioni(g.ingaggio)}</small>
+                      <small>{ruoloIt(g.ruolo)} · {g.eta} anni · {milioni(g.ingaggio)}</small>
                       <small className="scambi-asset-card__squadra">{nomeSquadra(g.team_id)}</small>
                     </span>
                     <span className="scambi-asset-card__stemma" title={nomeSquadra(g.team_id)}>

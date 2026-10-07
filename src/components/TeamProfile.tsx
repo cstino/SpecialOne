@@ -18,6 +18,7 @@ import { FixtureScore, SeasonState, TeamLabel } from './SeasonUI'
 import { UnderlineTabs } from './ui/underline-tabs'
 import { Icona } from './Icona'
 import { fasciaVoto, formatoVoto } from '../lib/voti'
+import { ruoloIt, ruoliIt } from '../lib/ruoli'
 
 type Props = {
   membership: Membership
@@ -789,7 +790,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                     <span className="team-roster-player__portrait">
                       {player.fotoFirmata ? <img src={player.fotoFirmata} alt="" loading="lazy" /> : <b aria-hidden="true">{player.nome.charAt(0)}</b>}
                     </span>
-                    <i className="team-roster-player__ruolo">{player.posizioni[0] ?? '—'}</i>
+                    <i className="team-roster-player__ruolo">{player.posizioni[0] ? ruoloIt(player.posizioni[0]) : '—'}</i>
                     {/* Al volo, chi sta lavorando e chi no. "Bilanciato" non conta:
                         e' la crescita naturale, senza piano. */}
                     {ownTeam && ((player.specializzazioneAttiva && player.specializzazioneAttiva !== 'bilanciato') || cambiRuolo.has(player.id)) && <span className="team-roster-player__lavori">
@@ -797,7 +798,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       {cambiRuolo.has(player.id) && <i className="team-roster-player__lavoro team-roster-player__lavoro--ruolo" title="Cambio ruolo in corso" aria-label="Cambio ruolo in corso"><Icona nome="cambio" /></i>}
                     </span>}
                   </span>
-                  <div><strong>{player.nome}</strong><small>{player.posizioni.join(' · ')} · {player.eta} anni · <em>{money(player.ingaggio)}/stagione</em> · <em className={contratto(player, league.stagione_corrente).urgente ? 'contratto-urgente' : 'contratto-residuo'}>{contratto(player, league.stagione_corrente).testo}</em></small></div>
+                  <div><strong>{player.nome}</strong><small>{ruoliIt(player.posizioni)} · {player.eta} anni · <em>{money(player.ingaggio)}/stagione</em> · <em className={contratto(player, league.stagione_corrente).urgente ? 'contratto-urgente' : 'contratto-residuo'}>{contratto(player, league.stagione_corrente).testo}</em></small></div>
                   <b>
                     <span className="ovr-con-delta">
                       {player.overall}
@@ -832,11 +833,11 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       <span className="team-roster-player__portrait">
                         {prospetto.fotoFirmata ? <img src={prospetto.fotoFirmata} alt="" loading="lazy" /> : <b aria-hidden="true">{g.nome.charAt(0)}</b>}
                       </span>
-                      <i className="team-roster-player__ruolo">{g.posizioni[0] ?? '—'}</i>
+                      <i className="team-roster-player__ruolo">{g.posizioni[0] ? ruoloIt(g.posizioni[0]) : '—'}</i>
                     </span>
                     <div>
                       <strong>{g.nome}</strong>
-                      <small>{g.posizioni.join(' · ')} · {g.eta} anni · <em>{money(prospetto.ingaggio)}/stagione</em> · potenziale {prospetto.potenziale_min === prospetto.potenziale_max ? prospetto.potenziale_min : `${prospetto.potenziale_min}-${prospetto.potenziale_max}`}</small>
+                      <small>{ruoliIt(g.posizioni)} · {g.eta} anni · <em>{money(prospetto.ingaggio)}/stagione</em> · potenziale {prospetto.potenziale_min === prospetto.potenziale_max ? prospetto.potenziale_min : `${prospetto.potenziale_min}-${prospetto.potenziale_max}`}</small>
                     </div>
                     <div className="vivaio-overall">
                       <b>

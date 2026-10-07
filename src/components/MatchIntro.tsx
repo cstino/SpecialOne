@@ -8,6 +8,7 @@ import type { useSeasonData } from '../lib/useSeasonData'
 import type { BracketTie, Fixture, Match, Membership, Team } from '../types'
 import { Crest } from './Crest'
 import { Icona } from './Icona'
+import { ruoloIt } from '../lib/ruoli'
 
 type RigaClassificaStorica = { teamId: number; punti: number; differenzaReti: number; golFatti: number; posizione: number }
 
@@ -399,7 +400,7 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
                         {giocatore?.foto ? <img src={giocatore.foto} alt="" /> : <span aria-hidden="true">{giocatore ? giocatore.nome.charAt(0) : '?'}</span>}
                       </div>
                       <strong className="match-intro__card-nome">{giocatore ? cognome(giocatore.nome) : '—'}</strong>
-                      <span className="match-intro__card-ruolo">{slot.slot}</span>
+                      <span className="match-intro__card-ruolo">{ruoloIt(slot.slot)}</span>
                     </div>
                   )
                 })}

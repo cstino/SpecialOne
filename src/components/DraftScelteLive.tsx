@@ -6,6 +6,7 @@ import { faseLive, mmss, type ScelteLiveGiocatore, type ScelteLiveStato } from '
 import type { League, Membership, Team } from '../types'
 import { Crest } from './Crest'
 import { ReazioniLive } from './ReazioniLive'
+import { ruoliIt } from '../lib/ruoli'
 
 type Props = {
   membership: Membership
@@ -98,7 +99,7 @@ export function DraftScelteLive({ membership, stato, adesso, onMenu, onVaiSorteg
           <strong>{pick.giocatore.nome}</strong>
           <div className="dlive__dati">
             <b className="dlive__ovr">{pick.giocatore.overall}</b>
-            <span>{pick.giocatore.posizioni.slice(0, 3).join(' · ')}</span>
+            <span>{ruoliIt(pick.giocatore.posizioni.slice(0, 3))}</span>
             <span>{pick.giocatore.eta} anni</span>
           </div>
           <div className="dlive__contratto">{euro(pick.giocatore.ingaggio)} · 1 stagione</div>

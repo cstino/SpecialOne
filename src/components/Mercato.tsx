@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ROSA_MASSIMA } from '../lib/league'
 import { cognome } from '../lib/nomi'
-import { MACRO_COLORE, MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
+import { MACRO_COLORE, MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo, ruoloIt, ruoliIt } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { SchedaGiocatore } from './SchedaGiocatore'
@@ -568,14 +568,14 @@ export function Mercato({ membership, onNavigate }: Props) {
       </div>
       <div className="free-agent-card__body">
         <header>
-          <span className={`role-pill role-pill--${macro.toLowerCase()}`}>{g?.ruolo ?? '—'}</span>
+          <span className={`role-pill role-pill--${macro.toLowerCase()}`}>{g?.ruolo ? ruoloIt(g.ruolo) : '—'}</span>
           <small>{MACRO_LABEL[macro]}</small>
         </header>
         <button className="free-agent-card__apri" type="button"
           onClick={() => void apriScheda(a.player_id)}
           aria-label={`Scheda di ${g?.nome ?? 'giocatore'}`}>
           <strong>{g?.nome ?? `#${a.player_id}`}</strong>
-          <p>{g?.eta ?? '—'} anni · {g?.posizioni?.join(' / ') ?? '—'}</p>
+          <p>{g?.eta ?? '—'} anni · {g?.posizioni ? ruoliIt(g.posizioni, ' / ') : '—'}</p>
         </button>
         {/* L'infortunio viaggia con l'istanza: chi viene svincolato rotto resta
             rotto, e chi offre deve saperlo PRIMA di offrire. Prima non si
@@ -801,7 +801,7 @@ export function Mercato({ membership, onNavigate }: Props) {
                   <b>{g?.overall ?? '—'}</b>
                   <span>
                     <strong>{g?.nome ?? `#${a.player_id}`}</strong>
-                    <small>{g?.ruolo} · {g?.eta} anni · ingaggio minimo {milioni(a.ingaggio_teorico)}</small>
+                    <small>{ruoloIt(g?.ruolo)} · {g?.eta} anni · ingaggio minimo {milioni(a.ingaggio_teorico)}</small>
                   </span>
                   {a.stato === 'aperta'
                     ? <div className={`mercato-asta-offerta${!aperto ? ' is-mercato-chiuso' : ''}`}>
@@ -853,7 +853,7 @@ export function Mercato({ membership, onNavigate }: Props) {
                   <div className="mercato-operazione__firma">
                     <small>ASTA VINTA</small>
                     <strong>{g?.nome ?? `Giocatore #${asta.player_id}`}</strong>
-                    <span>{g?.ruolo ?? 'Svincolato'} · Ingaggio {milioni(asta.ingaggio_finale ?? 0)}</span>
+                    <span>{g?.ruolo ? ruoloIt(g.ruolo) : 'Svincolato'} · Ingaggio {milioni(asta.ingaggio_finale ?? 0)}</span>
                   </div>
                   <div className="mercato-operazione__club mercato-operazione__club--firma">
                     {stemma(asta.vincitore_team_id!)}

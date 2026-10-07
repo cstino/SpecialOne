@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
-import { MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo } from '../lib/ruoli'
+import { MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, ruoliIt } from '../lib/ruoli'
 
 export type RosterPlayer = {
   id: number
@@ -48,7 +48,7 @@ export function RosaElenco({ giocatori, foto, loading }: RosaElencoProps) {
                 </div>
                 <div className="modale-rosa__nome">
                   <strong>{g.nome}</strong>
-                  <small>{g.eta} anni · {g.posizioni.length ? g.posizioni.join(' · ') : '—'}</small>
+                  <small>{g.eta} anni · {g.posizioni.length ? ruoliIt(g.posizioni) : '—'}</small>
                 </div>
                 <div className="modale-rosa__destra">
                   <b className="modale-rosa__ovr">{g.overall}</b>

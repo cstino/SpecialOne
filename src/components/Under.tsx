@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { MACRO_COLORE, MACRO_LABEL, macroRuolo, type MacroRuolo } from '../lib/ruoli'
+import { MACRO_COLORE, MACRO_LABEL, macroRuolo, type MacroRuolo, ruoloIt } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { useSeasonData } from '../lib/useSeasonData'
@@ -164,7 +164,7 @@ export function Under({ membership, onNavigate }: Props) {
                   <b>{g?.overall ?? '—'}</b>
                 </div>
                 <div className="free-agent-card__body">
-                  <header><span className={`role-pill role-pill--${macro.toLowerCase()}`} style={{ background: MACRO_COLORE[macro] }}>{g?.posizioni?.[0] ?? '—'}</span><small>{MACRO_LABEL[macro]}</small></header>
+                  <header><span className={`role-pill role-pill--${macro.toLowerCase()}`} style={{ background: MACRO_COLORE[macro] }}>{g?.posizioni?.[0] ? ruoloIt(g.posizioni[0]) : '—'}</span><small>{MACRO_LABEL[macro]}</small></header>
                   <strong>{g?.nome ?? `#${a.player_id}`}</strong>
                   <p>15 anni · potenziale {g == null || g.potenziale_min == null ? 'in valutazione'
                     : g.potenziale_min === g.potenziale_max ? g.potenziale_min : `${g.potenziale_min}-${g.potenziale_max}`}</p>

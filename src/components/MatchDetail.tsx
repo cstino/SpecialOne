@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
 import { ricostruisciEventiStorici } from '../lib/matchEvents'
-import { ordineRuolo } from '../lib/ruoli'
+import { ordineRuolo, ruoloIt } from '../lib/ruoli'
 import { useSeasonData } from '../lib/useSeasonData'
 import { isEventoGol, type EventoGol, type League, type MatchPlayerStat, type MatchTeamStats, type Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
@@ -237,7 +237,7 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
       <span className="pagella-riga__chi">
         <strong>{identita ? cognome(identita.nome) : `Giocatore ${row.player_instance_id}`}</strong>
         <span className="pagella-riga__info">
-          <i className={`ruolo-chip ruolo-chip--${REPARTO[ruolo] ?? 'MID'}`}>{ruolo}</i>
+          <i className={`ruolo-chip ruolo-chip--${REPARTO[ruolo] ?? 'MID'}`}>{ruoloIt(ruolo)}</i>
           {Array.from({ length: row.gol }, (_, k) => <span key={`g${k}`} className="pagella-icona" title="Gol"><Pallone /></span>)}
           {Array.from({ length: row.assist }, (_, k) => <span key={`a${k}`} className="pagella-icona pagella-icona--assist" title="Assist"><Scarpa /></span>)}
           {mostraUscita && row.minuti < 90 && <em className="pagella-uscita" title={`Uscito al ${row.minuti}'`}>↓ {row.minuti}′</em>}
@@ -311,7 +311,7 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
               <span className="mvp-card__etichetta"><Stella />Migliore in campo</span>
               <div className="mvp-card__chi">
                 <strong>{identita?.nome ?? `Giocatore ${id}`}</strong>
-                <small>{[identita?.posizioni[0], squadra].filter(Boolean).join(' · ')}</small>
+                <small>{[ruoloIt(identita?.posizioni[0]), squadra].filter(Boolean).join(' · ')}</small>
               </div>
               {motivazioni(p.dettaglio).length > 0 && <ul className="mvp-card__perche">
                 {motivazioni(p.dettaglio).map((m) => <li key={m}>{m}</li>)}

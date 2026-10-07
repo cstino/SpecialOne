@@ -22,6 +22,7 @@ import { PopupSpiegazione } from './PopupSpiegazione'
 import { SFONDO_FASE_VERTICALE, useFaseSquadra } from '../lib/faseSquadra'
 import { FtsgGauge } from './FtsgGauge'
 import { Icona } from './Icona'
+import { ruoloIt, ruoliIt } from '../lib/ruoli'
 
 // Mirror di engine/config.js CFG.FAM_PARTITE_PIENA: qui serve solo a
 // mostrare la stessa percentuale che il motore usa per il malus di
@@ -50,8 +51,8 @@ const MODULI: Record<string, string[]> = {
 
 const MODULO_DESCRIZIONI: Record<string, string> = {
   '4-3-3': '4 dif · 3 cen · 3 att',
-  '4-3-3 offensivo': '4 dif · 2 cen + CAM · 3 att',
-  '4-3-3 difensivo': '4 dif · 2 cen + CDM · 3 att',
+  '4-3-3 offensivo': '4 dif · 2 cen + COC · 3 att',
+  '4-3-3 difensivo': '4 dif · 2 cen + CDC · 3 att',
   '4-4-2': '4 dif · 4 cen · 2 att',
   '4-2-3-1': '4 dif · 2 med · 3 treq · 1 att',
   '3-5-2': '3 dif · 5 cen · 2 att',
@@ -220,7 +221,7 @@ function PlayerPortrait({ player, imageUrl, position, selected = false, onClick,
     <span className="lineup-player__plate">
       <strong><TestoAdattato>{player ? cognome(player.nome) : 'Seleziona'}</TestoAdattato></strong>
       <span className="lineup-player__meta">
-        <span className={`lineup-player__position lineup-player__position--${reparto(position)}`}>{position}</span>
+        <span className={`lineup-player__position lineup-player__position--${reparto(position)}`}>{ruoloIt(position)}</span>
         <b>{player?.overall_corrente ?? '—'}</b>
         {idoneo && <span className={`lineup-player__ruolo lineup-player__ruolo--${idoneo.tono}`}
           title={idoneo.tono === 'piu' ? 'Adatto al ruolo che gli hai dato nello schema' : 'Poco adatto al ruolo che gli hai dato nello schema'}>{idoneo.segno}</span>}
@@ -236,10 +237,10 @@ function PlayerPortrait({ player, imageUrl, position, selected = false, onClick,
 // destra, idoneita' al ruolo in basso a destra.
 export function CartaCampo({ player, imageUrl, position, selected, onClick, ruolo }: { player?: Player; imageUrl?: string; position: string; selected: boolean; onClick: (event: ReactMouseEvent<HTMLButtonElement>) => void; ruolo: string | null }) {
   if (!player) {
-    return <button className="rosa-card rosa-card--vuota" type="button" onClick={onClick} aria-label={`Posizione ${position} libera: tocca per assegnare un giocatore`}>
+    return <button className="rosa-card rosa-card--vuota" type="button" onClick={onClick} aria-label={`Posizione ${ruoloIt(position)} libera: tocca per assegnare un giocatore`}>
       <span className="rosa-card__foto"><span className="rosa-card__ritratto"><span className="rosa-card__iniziale">+</span></span></span>
       <span className="rosa-card__nome">Libero</span>
-      <span className="rosa-card__riga"><i className={`rosa-card__ruolo--${reparto(position)}`}>{position}</i></span>
+      <span className="rosa-card__riga"><i className={`rosa-card__ruolo--${reparto(position)}`}>{ruoloIt(position)}</i></span>
     </button>
   }
   const fit = positionFit(position, player.posizioni)
@@ -250,7 +251,7 @@ export function CartaCampo({ player, imageUrl, position, selected, onClick, ruol
   const livello = livelloEnergia(player)
   const fuoriGioco = player.infortunato_fino_a > 0 || player.squalificato_fino_a > 0
   return <button className={`rosa-card${selected ? ' is-selected' : ''}${fuoriGioco ? ' is-indisponibile' : ''}`} type="button" onClick={onClick}
-    aria-label={`${player.nome}, ${position}, overall ${efficace}${efficace !== player.overall_corrente ? ` in questo ruolo (${player.overall_corrente} nel suo)` : ''}`}>
+    aria-label={`${player.nome}, ${ruoloIt(position)}, overall ${efficace}${efficace !== player.overall_corrente ? ` in questo ruolo (${player.overall_corrente} nel suo)` : ''}`}>
     <span className="rosa-card__foto">
       <span className="rosa-card__ritratto">
         {imageUrl ? <img src={imageUrl} alt="" onError={(event) => { event.currentTarget.hidden = true }} /> : <span className="rosa-card__iniziale">{player.nome.charAt(0)}</span>}
@@ -267,7 +268,7 @@ export function CartaCampo({ player, imageUrl, position, selected, onClick, ruol
     </span>
     <span className="rosa-card__nome"><TestoAdattato>{cognome(player.nome)}</TestoAdattato></span>
     <span className="rosa-card__barra" title={`Energia ${player.condizione}%`} aria-label={`Energia ${player.condizione}%`}><i className={`energia--${livello}`} style={{ width: `${Math.max(4, Math.min(100, player.condizione))}%` }} /></span>
-    <span className="rosa-card__riga"><i className={`rosa-card__ruolo--${reparto(position)}`}>{position}</i><b className={efficace < player.overall_corrente ? 'is-ridotto' : undefined}>{efficace}</b></span>
+    <span className="rosa-card__riga"><i className={`rosa-card__ruolo--${reparto(position)}`}>{ruoloIt(position)}</i><b className={efficace < player.overall_corrente ? 'is-ridotto' : undefined}>{efficace}</b></span>
   </button>
 }
 
@@ -805,8 +806,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
                     </span>
                     {/* Ruolo primario in evidenza nel colore del reparto, poi i secondari. */}
                     <small>
-                      <i className={`scelta-titolare__primario scelta-titolare__primario--${reparto(c.player.posizioni[0] ?? 'ATT')}`}>{c.player.posizioni[0]}</i>
-                      {c.player.posizioni.slice(1).map((pos) => <span key={pos}> · {pos}</span>)}
+                      <i className={`scelta-titolare__primario scelta-titolare__primario--${reparto(c.player.posizioni[0] ?? 'ATT')}`}>{ruoloIt(c.player.posizioni[0])}</i>
+                      {c.player.posizioni.slice(1).map((pos) => <span key={pos}> · {ruoloIt(pos)}</span>)}
                     </small>
                   </span>
                   <span className={`scelta-titolare__fit scelta-titolare__fit--${c.fit}`}>{etichetta ?? etichettaFit[c.fit]}</span>
@@ -1281,7 +1282,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         <section className="player-action-menu" role="dialog" aria-label={`Azioni per ${playerAction.player.nome}`} style={{ left: playerAction.x, top: playerAction.y }}>
           <div className="player-action-menu__player">
             <span className={`player-action-menu__photo player-action-menu__photo--${reparto(playerAction.player.posizioni[0] ?? 'ATT')} has-photo`}><AnonymousPlayer /><img src={imageUrls[playerAction.player.id]} alt="" onError={(event) => { event.currentTarget.hidden = true; event.currentTarget.parentElement?.classList.remove('has-photo') }} /></span>
-            <div><strong>{playerAction.player.nome}</strong><small>{playerAction.player.posizioni.join(' · ')} · OVR {playerAction.player.overall_corrente}</small></div>
+            <div><strong>{playerAction.player.nome}</strong><small>{ruoliIt(playerAction.player.posizioni)} · OVR {playerAction.player.overall_corrente}</small></div>
             <button type="button" onClick={() => setPlayerAction(null)} aria-label="Chiudi menu"><Icona nome="chiudi" /></button>
           </div>
           <div className="player-action-menu__choices">

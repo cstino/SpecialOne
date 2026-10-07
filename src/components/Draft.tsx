@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
-import { ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
+import { ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo, ruoliIt } from '../lib/ruoli'
 import type { League, Membership } from '../types'
 import { GameNav } from './GameNav'
 import type { GameView } from './GameNav'
@@ -501,7 +501,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
                       <div className="draft-carta__info">
                         <strong>{byRolePayload.carta.nome}</strong>
                         <small>{byRolePayload.carta.eta} anni</small>
-                        <small className="draft-carta__posizioni">{byRolePayload.carta.posizioni.join(' · ')}</small>
+                        <small className="draft-carta__posizioni">{ruoliIt(byRolePayload.carta.posizioni)}</small>
                         {chiede(byRolePayload.carta)}
                       </div>
                       <b className="draft-carta__ovr">{byRolePayload.carta.overall}</b>
@@ -570,7 +570,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
                       <div className="draft-carta__info">
                         <strong>{carta.nome}</strong>
                         <small>{carta.eta} anni</small>
-                        <small className="draft-carta__posizioni">{carta.posizioni.join(' · ')}</small>
+                        <small className="draft-carta__posizioni">{ruoliIt(carta.posizioni)}</small>
                         {chiede(carta)}
                       </div>
                       <b className="draft-carta__ovr">{carta.overall}</b>

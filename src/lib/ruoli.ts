@@ -49,3 +49,22 @@ export function ordineRuolo(posizioni: string[] = []): number {
   const indice = ORDINE_RUOLO_FINE.indexOf(posizioni[0])
   return indice === -1 ? ORDINE_RUOLO_FINE.length : indice
 }
+
+// Sigle italiane dei ruoli: sono solo l'etichetta mostrata. Nel DB, nel motore e nella
+// logica restano i codici EA (GK, CB, ST...), che non vanno mai tradotti.
+// LWB/RWB (fluidificanti) e CF (centravanti) non erano nell'elenco del committente:
+// FS/FD e CA sono una scelta mia, da confermare.
+export const RUOLO_IT: Record<string, string> = {
+  GK: 'POR', CB: 'DC', RB: 'TD', LB: 'TS', CDM: 'CDC', CM: 'CC', RM: 'ED', LM: 'ES',
+  CAM: 'COC', RW: 'AD', LW: 'AS', ST: 'ATT', RWB: 'FD', LWB: 'FS', CF: 'CA',
+}
+
+export function ruoloIt(codice?: string | null): string {
+  if (!codice) return ''
+  return RUOLO_IT[codice] ?? codice
+}
+
+// Elenco di posizioni ("CM · CDM") con le sigle italiane.
+export function ruoliIt(posizioni: string[] | null | undefined, separatore = ' · '): string {
+  return (posizioni ?? []).map(ruoloIt).join(separatore)
+}

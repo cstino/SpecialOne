@@ -22,7 +22,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatCountdown, useOraCorrente } from '../lib/countdown'
 import { firmaFoto } from './RosaElenco'
-import { macroRuolo } from '../lib/ruoli'
+import { macroRuolo, ruoloIt } from '../lib/ruoli'
 import { Crest } from './Crest'
 import type { Team } from '../types'
 import { Icona } from './Icona'
@@ -333,7 +333,7 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId, onN
                   <div className="min-w-0">
                     <p className="font-display truncate text-xl font-extrabold leading-tight text-white">{ultima.nome ?? 'Giocatore'}</p>
                     <p className="mt-1 flex items-center gap-2 text-[.7rem] font-bold uppercase tracking-wide text-white/50">
-                      {ultima.ruolo && <span className={`role-pill role-pill--${ultima.macro}`}>{ultima.ruolo}</span>}
+                      {ultima.ruolo && <span className={`role-pill role-pill--${ultima.macro}`}>{ruoloIt(ultima.ruolo)}</span>}
                       {ultima.overall != null && <span className="tabular-nums">OVR {ultima.overall}</span>}
                     </p>
                   </div>
@@ -401,7 +401,7 @@ export function DraftLive({ leagueId, teamById, crestUrlByTeamId, mioTeamId, onN
                 <p className="truncate text-[.82rem] font-bold text-white">{c.nome ?? 'Scelta non esercitata'}</p>
                 <p className="truncate text-[.66rem] text-white/45">{teamById.get(c.teamId)?.nome ?? '—'}</p>
               </div>
-              {c.ruolo && <span className={`role-pill role-pill--${c.macro} shrink-0`}>{c.ruolo}</span>}
+              {c.ruolo && <span className={`role-pill role-pill--${c.macro} shrink-0`}>{ruoloIt(c.ruolo)}</span>}
               {c.overall != null && <strong className="font-display shrink-0 text-[.9rem] font-extrabold tabular-nums text-white/80">{c.overall}</strong>}
             </div>
           ))}
