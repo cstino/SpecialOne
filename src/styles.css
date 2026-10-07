@@ -4979,3 +4979,19 @@ body.sta-trascinando * { -webkit-user-select: none; user-select: none; }
 body:has(.anteprima) .reazioni--fisso .reazioni__fab { bottom: 84px; }
 body:has(.anteprima) .reazioni--fisso .reazioni__pannello { bottom: 150px; }
 @media (prefers-reduced-motion: reduce) { .reazioni__bolla { animation: reazione-ferma 3.4s linear forwards; transform: translate(-50%, -30px); } .reazioni__pannello { animation: none; } @keyframes reazione-ferma { 0%, 85% { opacity: 1; } 100% { opacity: 0; } } }
+
+/* La vetta con le conference: due schede che scorrono da sole */
+.vetta-conf { display: grid; gap: 8px; }
+.vetta-conf__pista { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; border-radius: 10px; }
+.vetta-conf__pista::-webkit-scrollbar { display: none; }
+.vetta-conf__scheda { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; display: grid; gap: 8px; }
+.vetta-conf__scheda > header { display: flex; align-items: center; gap: 8px; padding: 2px 2px 0; }
+.vetta-conf__scheda > header .conf-badge img { height: 26px; }
+.vetta-conf__scheda > header strong { color: #fff; font: 700 .8rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+.vetta-conf__scheda > header em { margin-left: auto; padding: 3px 8px; border-radius: 999px; background: color-mix(in srgb, var(--c) 22%, transparent); color: #fff; font: 700 .6rem/1 "Oswald", "Arial Narrow", sans-serif; font-style: normal; letter-spacing: .14em; text-transform: uppercase; }
+.vetta-conf__separatore { display: block !important; padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; color: rgba(255,255,255,.35); text-align: center; line-height: 1; }
+.vetta-conf__pallini { display: flex; justify-content: center; gap: 4px; }
+.vetta-conf__pallini button { appearance: none; margin: 0; padding: 8px 10px; border: 0; background: none; cursor: pointer; }
+.vetta-conf__pallini button span { display: block; width: 22px; height: 4px; border-radius: 4px; background: rgba(255,255,255,.2); transition: background .25s ease, width .25s ease; }
+.vetta-conf__pallini button.is-attivo span { width: 34px; background: var(--c); box-shadow: 0 0 10px color-mix(in srgb, var(--c) 60%, transparent); }
+.vetta-conf__pallini button:focus-visible { outline: 2px solid #fff; outline-offset: -2px; border-radius: 6px; }

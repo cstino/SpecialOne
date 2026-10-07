@@ -8,6 +8,7 @@ import { Crest } from './Crest'
 import { FixtureScore, Forma, formaPerSquadra, formatMatchDate, SeasonState, TeamLabel, TitoloAdattivo } from './SeasonUI'
 import { LeagueNews } from './LeagueNews'
 import { DraftLive } from './DraftLive'
+import { VettaConferenze } from './VettaConferenze'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; revealedMatchIds: Set<number>; onOpenMatch: (matchId: number) => void; onRevealMatch: (matchId: number) => void; onOpenTeam: (teamId: number) => void }
 
@@ -22,6 +23,8 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
   const fase = useFaseSquadra(league.id, membership.id, data.season?.id)
   const miaSquadra = data.teamById.get(membership.id)
   const miaClassifica = data.standings.find((riga) => riga.team_id === membership.id)
+  // Con le conferenze «La vetta» mostra le due classifiche, a rotazione; senza, le prime quattro come sempre.
+  const conConferenze = data.standings.some((riga) => riga.conferenza)
   const ultimaPartita = data.lastFixture ? data.matchByFixture.get(data.lastFixture.id) : undefined
   const revealAttivo = Boolean(data.lastFixture && data.lastFixture.giornata >= (league.reveal_dalla_giornata ?? 1))
   const ultimaVista = !revealAttivo || Boolean(ultimaPartita && revealedMatchIds.has(ultimaPartita.id))
@@ -153,7 +156,9 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
             <h2 className="dash-linguetta">La vetta</h2>
             <button className="dash-link" type="button" onClick={() => onNavigate('table')}>Classifica ›</button>
           </header>
-          <ol className="dash-vetta">
+          {conConferenze
+            ? <VettaConferenze standings={data.standings} miaConferenza={(miaClassifica?.conferenza as 'est' | 'ovest' | null | undefined) ?? null} miaSquadraId={membership.id} teamById={data.teamById} crestUrlByTeamId={data.crestUrlByTeamId} onOpenTeam={onOpenTeam} />
+            : <ol className="dash-vetta">
             {data.standings.slice(0, 4).map((standing, index) => (
               <li key={standing.team_id} className={standing.team_id === membership.id ? 'is-mia' : undefined} style={{ ['--i' as string]: index + 1 }}>
                 <b className="dash-vetta__pos">{standing.posizione ?? index + 1}</b>
@@ -161,7 +166,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
                 <strong className="dash-vetta__punti">{standing.punti}<small>pt</small></strong>
               </li>
             ))}
-          </ol>
+          </ol>}
         </section>
       </div>
     </>}

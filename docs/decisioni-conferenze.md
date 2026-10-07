@@ -133,3 +133,11 @@ conto finale (primo turno) gli anelli girano piano e la scritta dice «Preparo l
 che si vede (conto alla rovescia, menu) e' quando comincia il caricamento della prima squadra, cioe' 14 secondi
 dopo `sorteggi_conferenze.avviato_il` (`ANTICIPO_PRIMA_ESTRAZIONE` in `lib/conferenze.ts`): anche la prima
 squadra aspetta 6 secondi. Nessun cambio nel database.
+
+## «La vetta» in home con le conference (7 ottobre 2026)
+
+Il recap della classifica in home mostra le **due conference** in due schede (East e Western) che **scorrono da sole**
+ogni 5 secondi, si possono scorrere col dito o con i pallini, e si fermano per 8 secondi dopo un tocco (e a scheda
+del browser nascosta o con «riduci movimento» attivo). Si parte dalla conference della propria squadra, segnata «La tua»;
+se la propria squadra non e' fra le prime quattro compare sotto, dopo un «⋯». `VettaConferenze.tsx`. Senza conferenze «La vetta» resta com'era.
+La pagina **Classifica** ha gia' le due schede East/Western e si apre su quella della propria squadra.
