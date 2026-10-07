@@ -89,6 +89,22 @@ export function Scelte({ membership, onNavigate }: Props) {
     [scelte, membership.id],
   )
 
+  // I ticket di un'altra squadra: sono pubblici (scelte_draft si legge da tutta la lega), si guardano e basta.
+  const [squadraVista, setSquadraVista] = useState<number | null>(null)
+  const idVisto = squadraVista ?? membership.id
+  const squadreElenco = useMemo(
+    () => dati.teams.filter((t) => t.attiva).sort((a, b) => (a.id === membership.id ? -1 : b.id === membership.id ? 1 : a.nome.localeCompare(b.nome, 'it'))),
+    [dati.teams, membership.id],
+  )
+  const scelteViste = useMemo(
+    () => idVisto === membership.id
+      ? mieScelte
+      : scelte.filter((s) => s.team_proprietario_id === idVisto && s.stato !== 'usata' && s.stato !== 'vuota')
+          .sort((a, b) => a.stagione - b.stagione || ordineFinestra[a.finestra] - ordineFinestra[b.finestra]),
+    [scelte, mieScelte, idVisto, membership.id],
+  )
+  const squadraVistaNome = teamById.get(idVisto)?.nome ?? 'Squadra'
+
   // Le finestre "attive" sono quelle svelate e non ancora risolte: e' li'
   // che si possono ancora comporre le preferenze. Di solito una sola alla
   // volta, ma niente impedisce (per un attimo) di averne due.
@@ -488,12 +504,18 @@ export function Scelte({ membership, onNavigate }: Props) {
 
       <section className="mercato-blocco">
         <div className="sezione-testa">
-          <div><p className="kicker">Le mie scelte</p><h2>{mieScelte.length} ticket</h2></div>
+          <div><p className="kicker">{idVisto === membership.id ? 'Le mie scelte' : 'Scelte di un\'altra squadra'}</p><h2>{idVisto === membership.id ? `${scelteViste.length} ticket` : `${squadraVistaNome} · ${scelteViste.length} ticket`}</h2></div>
+          <label className="scelte-squadra">
+            <span>Squadra</span>
+            <select value={idVisto} onChange={(e) => setSquadraVista(Number(e.target.value))} aria-label="Di quale squadra vedere i ticket">
+              {squadreElenco.map((t) => <option key={t.id} value={t.id}>{t.id === membership.id ? `${t.nome} (la mia)` : t.nome}</option>)}
+            </select>
+          </label>
         </div>
-        {mieScelte.length === 0
-          ? <p className="season-empty">Nessuna scelta ancora assegnata a questa squadra.</p>
+        {scelteViste.length === 0
+          ? <p className="season-empty">{idVisto === membership.id ? 'Nessuna scelta ancora assegnata a questa squadra.' : `${squadraVistaNome} non ha ticket in questo momento.`}</p>
           : <ul className="scelte-lista">
-              {mieScelte.map((s) => {
+              {scelteViste.map((s) => {
                 const origine = teamById.get(s.team_origine_id)
                 return <li className={`scelta-ticket scelta-ticket--${s.finestra}`} key={s.id}>
                   <div className="scelta-ticket__taglio" aria-hidden="true">

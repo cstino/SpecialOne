@@ -5001,3 +5001,10 @@ body:has(.anteprima) .reazioni--fisso .reazioni__pannello { bottom: 150px; }
 .scambi-asset-card__stemma { display: grid; place-items: center; justify-self: end; width: 40px; height: 40px; }
 .scambi-asset-card__stemma .crest { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 5px rgba(0,0,0,.45)); }
 .scambi-asset-card__stemma > .crest-stellato { width: 100%; height: 100%; }
+
+/* Scelte: scegliere di quale squadra vedere i ticket */
+.scelte-squadra { display: grid; gap: 4px; min-width: 0; }
+.scelte-squadra span { color: rgba(255,255,255,.55); font: 700 .62rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+.scelte-squadra select { appearance: none; max-width: 100%; margin: 0; padding: 9px 34px 9px 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 10px; background: rgba(255,255,255,.07) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23cbd2e6' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center / 16px; color: #fff; font: 600 .86rem/1.2 Inter, Arial, sans-serif; text-overflow: ellipsis; cursor: pointer; }
+.scelte-squadra select:focus-visible { outline: 2px solid #b78cff; outline-offset: 2px; }
+.scelte-squadra select option { color: #111; }
