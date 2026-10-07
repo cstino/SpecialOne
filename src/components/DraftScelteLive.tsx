@@ -91,7 +91,7 @@ export function DraftScelteLive({ membership, stato, adesso, onMenu, onVaiSorteg
       </div>}
 
       {fase.stadio === 'reveal' && pick && <div className="dlive__reveal" key={`r${pick.n}`}>
-        {pick.esito === null && <p className="dlive__attesa-reveal">…</p>}
+        {pick.esito === null && <p className="dlive__attesa-reveal">Rivelo la scelta<i>.</i><i>.</i><i>.</i></p>}
         {pick.esito === 'usata' && pick.giocatore && <div className={`dlive__carta${mia(pick.team_id) ? ' is-mia' : ''}`}>
           <small>{squadraPick?.nome ?? 'La squadra'} ha scelto</small>
           <FotoGiocatore g={pick.giocatore} grande />

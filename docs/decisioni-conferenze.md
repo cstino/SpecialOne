@@ -152,3 +152,15 @@ La pagina **Classifica** ha gia' le due schede East/Western e si apre su quella 
   di 4–7). Il ritorno riparte dal secondo turno dell'andata (ordine 1, 2, …, ultimo, 0): nessuna coppia si rivede nella giornata
   dopo. Provato a 24 squadre: 264 partite, 12 per giornata, 132 coppie a campi invertiti, 0 rivincite consecutive. Le altre leghe
   (senza conferenze, gironi dispari) usano il metodo di prima. Migrazione `20261007110000`.
+
+## Difetti della prima diretta (7 ottobre 2026) e correzioni
+
+- **La carta del giocatore non compariva al reveal** (schermo vuoto con l'anello giallo, poi partiva la scelta dopo). Causa: l'aggiornamento
+  periodico dello stato del draft (`useScelteLive`) dipendeva da `adesso`, che cambia ogni 250 ms: l'intervallo veniva ricreato di continuo e
+  non scattava mai, quindi il giocatore (che il server rivela solo dal suo reveal) non veniva mai richiesto. L'anteprima non lo mostrava
+  perche' calcola lo stato in locale e non passa dal server. Ora il ciclo legge stato e orologio da riferimenti, si sveglia subito dopo
+  ogni reveal (e ogni 600 ms finche' manca); misurato 0,1–0,3 s di ritardo. Mentre arriva dice «Rivelo la scelta…».
+- **Sorteggio:** fra un'estrazione e l'altra, finche' il nome non arrivava, compariva la conference *successiva* con un conto da 20 secondi.
+  Ora in quell'attimo si vede «La squadra estratta per la [conference giusta] è…» con il caricamento che gira, senza numero; il recupero
+  dell'estratta e' piu' rapido (500 ms).
+- Le reazioni non c'entravano: il database le registrava (16 in pochi minuti da 6 squadre).

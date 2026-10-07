@@ -80,15 +80,39 @@ export function useScelteLive(leagueId: number) {
     return () => window.clearInterval(orologio)
   }, [aggiorna])
 
-  // Se manca un reveal che il tempo dice gia' scattato lo si chiede ogni secondo;
-  // altrimenti ci si risincronizza ogni 5.
+  // Se manca un reveal che il tempo dice gia' scattato lo si richiede ogni 600 ms; altrimenti ci si risincronizza
+  // ogni 5 secondi. Il ciclo legge stato e orologio da riferimenti: NON dipende da `adesso`, che cambia ogni
+  // 250 ms (con quella dipendenza l'intervallo veniva ricreato di continuo e non scattava mai: la carta del
+  // giocatore non compariva al reveal. Difetto visto nella diretta del 7 ottobre).
+  const statoRif = useRef(stato)
+  statoRif.current = stato
+  const adessoRif = useRef(adesso)
+  adessoRif.current = adesso
   useEffect(() => {
-    if (!stato) return
-    const dovute = stato.picks.filter((p) => Date.parse(p.reveal_il) <= adesso).length
-    const note = stato.picks.filter((p) => p.esito !== null).length
-    const timer = window.setInterval(() => { void aggiorna() }, dovute > note ? 1000 : 5000)
-    return () => window.clearInterval(timer)
-  }, [stato, adesso, aggiorna])
+    let vivo = true
+    let timer = 0
+    const ciclo = () => {
+      const s = statoRif.current
+      let attesa = 5000
+      if (s) {
+        const adesso = adessoRif.current
+        const inSospeso = s.picks.filter((p) => p.esito === null)
+        if (inSospeso.some((p) => Date.parse(p.reveal_il) <= adesso)) {
+          attesa = 600 // il reveal e' gia' scattato: si richiede finche' non arriva
+        } else if (inSospeso.length > 0) {
+          // Si guarda subito dopo il prossimo reveal, senza aspettare il giro da 5 secondi.
+          const alProssimo = Math.min(...inSospeso.map((p) => Date.parse(p.reveal_il) - adesso))
+          attesa = Math.max(300, Math.min(5000, alProssimo + 150))
+        }
+      }
+      timer = window.setTimeout(async () => {
+        await aggiorna()
+        if (vivo) ciclo()
+      }, attesa)
+    }
+    ciclo()
+    return () => { vivo = false; window.clearTimeout(timer) }
+  }, [aggiorna])
 
   return { stato, adesso, aggiorna }
 }

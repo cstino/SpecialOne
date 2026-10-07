@@ -20,18 +20,19 @@ type Estrazione = { ordine: number; team_id: number; conferenza: Conferenza }
 // Caricamento dell'estrazione: anelli che girano nel colore della conference che sta per
 // ricevere la squadra, un anello che si riempie negli ultimi secondi e, al termine, la
 // squadra si rivela. Sostituisce la roulette dei loghi: l'estratta non e' nota a nessuno.
-function Caricamento({ conferenza, secondiRimasti }: { conferenza: Conferenza; secondiRimasti: number }) {
+function Caricamento({ conferenza, secondiRimasti, attendi = false }: { conferenza: Conferenza; secondiRimasti: number; attendi?: boolean }) {
   const avanzamento = Math.min(100, Math.max(0, (1 - secondiRimasti / SECONDI_ROULETTE) * 100))
-  const gira = secondiRimasti <= SECONDI_ROULETTE
+  // `attendi`: il turno e' scattato ma il nome non e' ancora arrivato dal server: gira senza numero.
+  const gira = attendi || secondiRimasti <= SECONDI_ROULETTE
   return <div className={`sorteggio__carica sorteggio__carica--${conferenza}${gira ? ' is-gira' : ''}`} aria-hidden="true">
     <svg viewBox="0 0 200 200" className="sorteggio__carica-anelli">
       <circle className="sorteggio__carica-pista" cx="100" cy="100" r="92" />
-      <circle className="sorteggio__carica-prog" cx="100" cy="100" r="92" pathLength="100" strokeDasharray={`${avanzamento} ${100 - avanzamento}`} />
+      <circle className="sorteggio__carica-prog" cx="100" cy="100" r="92" pathLength="100" strokeDasharray={`${attendi ? 100 : avanzamento} ${attendi ? 0 : 100 - avanzamento}`} />
       <circle className="sorteggio__carica-tacche" cx="100" cy="100" r="80" />
       <circle className="sorteggio__carica-tacche sorteggio__carica-tacche--inverso" cx="100" cy="100" r="66" />
     </svg>
     <div className="sorteggio__carica-nucleo"><ConferenceBadge conferenza={conferenza} /></div>
-    <b>{Math.ceil(secondiRimasti)}</b>
+    <b>{attendi ? '' : Math.ceil(secondiRimasti)}</b>
   </div>
 }
 
@@ -109,7 +110,7 @@ export function SorteggioConferenze({ membership, onFine, onMenu, demo }: Props)
   useEffect(() => {
     if (!stato || demo) return
     const attesa = dovute > estrazioni.length
-    const timer = window.setInterval(() => { void aggiorna() }, attesa ? 1000 : 5000)
+    const timer = window.setInterval(() => { void aggiorna() }, attesa ? 500 : 5000)
     return () => window.clearInterval(timer)
   }, [stato, dovute, estrazioni.length, aggiorna, demo])
 
@@ -132,6 +133,9 @@ export function SorteggioConferenze({ membership, onFine, onMenu, demo }: Props)
   const prossimo = dovute + 1
   const prossimaConferenza: Conferenza = prossimo % 2 === 1 ? 'est' : 'ovest'
   const squadraUltima = ultima ? squadrePerId.get(ultima.team_id) : undefined
+  // Turno scattato ma estratta non ancora arrivata: si mostra l'attesa della squadra che sta per uscire (non la prossima).
+  const attendiDati = Boolean(stato) && !finito && !prima && dovute >= 1 && estrazioni.length < dovute
+  const confInArrivo: Conferenza = dovute % 2 === 1 ? 'est' : 'ovest'
 
   return <main className="sorteggio">
     <header className="sorteggio__testa">
@@ -163,7 +167,13 @@ export function SorteggioConferenze({ membership, onFine, onMenu, demo }: Props)
         <span>{squadraUltima.sigla}{squadraUltima.id === membership.id ? ' · La tua squadra' : ''}</span>
       </div>}
 
-      {stato && !finito && !prima && !mostraCarta && <div className={`sorteggio__suspense sorteggio__suspense--${prossimaConferenza}`}>
+      {stato && !finito && !prima && !mostraCarta && attendiDati && <div className={`sorteggio__suspense sorteggio__suspense--${confInArrivo}`}>
+        <h1>La squadra estratta per la <em>{NOME_CONFERENZA[confInArrivo]}</em> è…</h1>
+        <Caricamento conferenza={confInArrivo} secondiRimasti={0} attendi />
+        <p className="sorteggio__carica-testo">Estrazione in corso<i>.</i><i>.</i><i>.</i></p>
+      </div>}
+
+      {stato && !finito && !prima && !mostraCarta && !attendiDati && <div className={`sorteggio__suspense sorteggio__suspense--${prossimaConferenza}`}>
         <h1>{estrazioni.length === 0 ? 'La prima squadra estratta per la' : 'La prossima squadra per la'} <em>{NOME_CONFERENZA[prossimaConferenza]}</em> è…</h1>
         <Caricamento conferenza={prossimaConferenza} secondiRimasti={secondiRimasti} />
         <p className="sorteggio__carica-testo">{secondiRimasti <= SECONDI_ROULETTE ? 'Estrazione in corso' : 'Preparo l\'estrazione'}<i>.</i><i>.</i><i>.</i></p>
