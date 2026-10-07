@@ -256,3 +256,12 @@ guardando la distribuzione degli ingaggi del dataset, non a intuito.
    essere rimescolata liberamente. Se emergesse churn eccessivo, il freno naturale
    non è economico ma **procedurale**: finestre di mercato, numero massimo di
    operazioni per finestra.
+
+
+## I giocatori lasciati liberi in off-season finiscono nel mercato free agent (7 ottobre 2026)
+
+Richiesta del committente. Gli svincoli fatti a mano passavano gia' dalla coda dei rilasci (`private.rilasci_in_coda`) e compaiono tutti
+alla prima estrazione dopo la riapertura del mercato. I **contratti scaduti e non rinnovati** alla chiusura dell'off-season (e i tagli
+automatici per il tetto ingaggi) restavano solo senza squadra: nel mercato comparivano per sorteggio, e solo se fino a 75 di overall.
+Ora `finalizza_offseason` li mette nella coda: entrano tutti nella prima estrazione (alle 23:30 del giorno in cui parte la stagione).
+Provato: 48 contratti in scadenza + 30 gia' in coda = 78 free agent alla prima estrazione, coda svuotata. Migrazione `20261007130000`.
