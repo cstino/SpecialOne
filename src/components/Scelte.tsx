@@ -493,8 +493,9 @@ export function Scelte({ membership, onNavigate }: Props) {
                       <small>{origine?.nome ?? 'Squadra sconosciuta'}</small>
                     </div>
                     <div className="scelta-ticket__dettagli">
-                      <strong>{s.posizione != null ? `${s.posizione}ª scelta` : 'Posizione da determinare'}</strong>
-                      <span className={`scelta-ticket__stato scelta-ticket__stato--${s.stato}`}>{ETICHETTA_STATO[s.stato]}</span>
+                      {/* ON-Season: l'ordine si calcola alla chiusura dell'off-season dal monte ingaggi, dal minore al maggiore. */}
+                      <strong>{s.posizione != null ? `${s.posizione}ª scelta` : s.finestra === 'on' ? 'Ordine da calcolare' : 'Posizione da determinare'}</strong>
+                      <span className={`scelta-ticket__stato scelta-ticket__stato--${s.stato}`}>{s.finestra === 'on' && s.stato === 'futura' ? 'Monte ingaggi minore' : ETICHETTA_STATO[s.stato]}</span>
                     </div>
                   </div>
                 </li>
