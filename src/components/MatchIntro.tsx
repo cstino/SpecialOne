@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
 import { LOGO_FASE, MUSICA_FASE, type FaseSquadra } from '../lib/faseSquadra'
-import { righeFormazione } from '../lib/formazioni'
+import { MODULI, righeDaDisposizione, righeFormazione } from '../lib/formazioni'
+import { nomeSchieramento } from '../lib/schieramento'
 import { firmaFoto } from './RosaElenco'
 import type { useSeasonData } from '../lib/useSeasonData'
 import type { BracketTie, Fixture, Match, Membership, Team } from '../types'
@@ -102,7 +103,14 @@ const BEATS_PER_FASE: Record<FaseSquadra, Beat[]> = {
   ],
 }
 
-type Lineup = { modulo: string; titolari: number[] }
+type Lineup = { modulo: string; titolari: number[]; disposizione?: string[] | null }
+
+// Schieramento diverso da quello standard del modulo: solo allora la presentazione non puo' fidarsi del nome.
+function personalizzata(lineup: Lineup) {
+  const d = lineup.disposizione
+  const standard = MODULI[lineup.modulo]
+  return d?.length === 11 && !(standard && standard.length === 11 && standard.every((slot, i) => slot === d[i]))
+}
 type Giocatore = { nome: string; foto?: string }
 type InfoBracket = { tipo: FaseSquadra; bracketId: number; turno: number; turniTotali: number; etichettaTurno: string }
 
@@ -178,18 +186,18 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
   useEffect(() => {
     let vivo = true
     async function carica() {
-      const { data: righeLineup } = await supabase.from('lineups').select('team_id, modulo, titolari')
+      const { data: righeLineup } = await supabase.from('lineups').select('team_id, modulo, titolari, disposizione')
         .eq('league_id', fixture.league_id).eq('giornata', fixture.giornata)
         .in('team_id', [fixture.home_team_id, fixture.away_team_id])
       if (!vivo) return
-      const mappaLineup = new Map<number, Lineup>((righeLineup ?? []).map((riga) => [riga.team_id, { modulo: riga.modulo, titolari: riga.titolari as number[] }]))
+      const mappaLineup = new Map<number, Lineup>((righeLineup ?? []).map((riga) => [riga.team_id, { modulo: riga.modulo, titolari: riga.titolari as number[], disposizione: riga.disposizione as string[] | null }]))
       // L'undici salvato in `lineups` puo' differire da quello sceso in campo
       // (titolare infortunato sostituito, formazione automatica delle 23:00,
       // modulo cambiato): la presentazione deve mostrare chi ha giocato davvero.
       const giocata = data.matchByFixture.get(fixture.id)
       if (giocata) {
-        if (giocata.titolari_home?.length === 11) mappaLineup.set(fixture.home_team_id, { modulo: giocata.modulo_home, titolari: giocata.titolari_home })
-        if (giocata.titolari_away?.length === 11) mappaLineup.set(fixture.away_team_id, { modulo: giocata.modulo_away, titolari: giocata.titolari_away })
+        if (giocata.titolari_home?.length === 11) mappaLineup.set(fixture.home_team_id, { modulo: giocata.modulo_home, titolari: giocata.titolari_home, disposizione: mappaLineup.get(fixture.home_team_id)?.disposizione })
+        if (giocata.titolari_away?.length === 11) mappaLineup.set(fixture.away_team_id, { modulo: giocata.modulo_away, titolari: giocata.titolari_away, disposizione: mappaLineup.get(fixture.away_team_id)?.disposizione })
       }
       setLineups(mappaLineup)
 
@@ -238,7 +246,9 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
   const righe = useMemo(
     // Il portiere sta in alto e la squadra guarda verso il basso: la sua
     // sinistra e' la destra dello schermo, quindi ogni riga va specchiata.
-    () => lineupInScena ? righeFormazione(lineupInScena.modulo, lineupInScena.titolari).map((riga) => [...riga].reverse()) : [],
+    () => !lineupInScena ? []
+      : (personalizzata(lineupInScena) ? righeDaDisposizione(lineupInScena.disposizione!, lineupInScena.titolari) : righeFormazione(lineupInScena.modulo, lineupInScena.titolari))
+        .map((riga) => [...riga].reverse()),
     [lineupInScena],
   )
   // Ordine di comparsa globale (dal portiere agli attaccanti) per calcolare
@@ -387,7 +397,7 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
           <header className="match-intro__undici-testa">
             <span className="match-intro__undici-stemma"><Crest value={squadraInScena.stemma_url ?? null} stelle={squadraInScena?.titoli_title} imageUrl={crestInScena} size="large" /></span>
             <strong>{squadraInScena.nome}</strong>
-            {lineupInScena && <small>{lineupInScena.modulo}</small>}
+            {lineupInScena && <small>{personalizzata(lineupInScena) ? nomeSchieramento(lineupInScena.disposizione!, MODULI) : lineupInScena.modulo}</small>}
           </header>
           <div className="match-intro__undici-campo">
             <div className="match-intro__gesso" aria-hidden="true">

@@ -4,6 +4,8 @@
 // di engine/config.js, lo stesso a cui punta lineups.titolari[i]. Andare in
 // ordine di array equivale quindi ad andare dal portiere agli attaccanti.
 
+import { schieramentoInCampo } from './schieramento'
+
 export const MODULI: Record<string, string[]> = {
   '4-3-3': ['GK', 'LB', 'CB', 'CB', 'RB', 'CM', 'CM', 'CM', 'LW', 'ST', 'RW'],
   '4-3-3 offensivo': ['GK', 'LB', 'CB', 'CB', 'RB', 'CM', 'CM', 'CAM', 'LW', 'ST', 'RW'],
@@ -51,6 +53,21 @@ export type SlotFormazione<T> = { slot: string; index: number; valore: T | undef
 // player_instance_id) nelle righe da disegnare sul campo, dal portiere agli
 // attaccanti. Un array vuoto per riga se il modulo non e' mappato: meglio un
 // campo incompleto che un errore a runtime su un modulo storico non piu' in uso.
+// Schieramento personalizzato: le righe si ricavano dalle postazioni in campo (stesso calcolo della pagina
+// Formazione), non dal nome del modulo. Righe dal portiere agli attaccanti, ciascuna da sinistra a destra.
+export function righeDaDisposizione<T>(disposizione: readonly string[], valori: readonly T[]): SlotFormazione<T>[][] {
+  const posti = schieramentoInCampo([...disposizione]).sort((a, b) => a.y - b.y || a.x - b.x)
+  const righe: { y: number; posti: typeof posti }[] = []
+  for (const posto of posti) {
+    const riga = righe[righe.length - 1]
+    if (riga && posto.y - riga.y <= 6) riga.posti.push(posto)
+    else righe.push({ y: posto.y, posti: [posto] })
+  }
+  return righe.map((riga) => riga.posti
+    .sort((a, b) => a.x - b.x)
+    .map((posto) => ({ slot: posto.slot, index: posto.index, valore: valori[posto.index] })))
+}
+
 export function righeFormazione<T>(modulo: string, valori: readonly T[]): SlotFormazione<T>[][] {
   const slots = MODULI[modulo]
   if (!slots) return []
