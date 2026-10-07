@@ -8,7 +8,7 @@ import { PopupSpiegazione } from './PopupSpiegazione'
 import { SeasonState } from './SeasonUI'
 import { Crest } from './Crest'
 import { firmaFoto } from './RosaElenco'
-import { ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
+import { ORDINE_MACRO_RUOLO, macroRuolo, ruoliIt, ruoloIt, type MacroRuolo } from '../lib/ruoli'
 import { GRADINI_MINUTAGGIO, gradinoRichiesto, nomeConSoglia, useSoglieMinutaggio } from '../lib/minutaggio'
 import { useSeasonData } from '../lib/useSeasonData'
 import { attributiInLega, type Attributi } from '../lib/attributiGiocatore'
@@ -324,8 +324,8 @@ export function Scelte({ membership, onNavigate }: Props) {
                           <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
                             <strong className="truncate text-[.92rem] font-extrabold text-white">{cognome(g.nome)}</strong>
                             <div className="flex flex-wrap items-center gap-1.5">
-                              <span className={`role-pill role-pill--${macro.toLowerCase()}`}>{primario ?? '—'}</span>
-                              {secondari.length > 0 && <span className="text-[.68rem] font-semibold text-white/35">{secondari.join(' / ')}</span>}
+                              <span className={`role-pill role-pill--${macro.toLowerCase()}`}>{primario ? ruoloIt(primario) : '—'}</span>
+                              {secondari.length > 0 && <span className="text-[.68rem] font-semibold text-white/35">{ruoliIt(secondari, ' / ')}</span>}
                               {(() => {
                                 const chiede = gradinoRichiesto(soglieMinutaggio, g.overall, g.eta, primario ?? undefined)
                                 return chiede && <span className={`free-agent-card__chiede is-${chiede}`} title={GRADINI_MINUTAGGIO[chiede].detto}>Chiede: {nomeConSoglia(chiede)}</span>
@@ -469,8 +469,8 @@ export function Scelte({ membership, onNavigate }: Props) {
                                   <div className="scelte-preferenze__dettagli">
                                     <button type="button" className="scelte-apri-scheda" onClick={() => void apriSchedaPool(g)} aria-label={`Scheda di ${g.nome}`}><strong>{cognome(g.nome)}</strong></button>
                                     <div className="scelte-preferenze__ruoli">
-                                      <span className={`role-pill role-pill--${macro.toLowerCase()}`}>{primario ?? '—'}</span>
-                                      {secondari.length > 0 && <small>{secondari.join(' / ')}</small>}
+                                      <span className={`role-pill role-pill--${macro.toLowerCase()}`}>{primario ? ruoloIt(primario) : '—'}</span>
+                                      {secondari.length > 0 && <small>{ruoliIt(secondari, ' / ')}</small>}
                                     </div>
                                     <span className="scelte-preferenze__meta">{g.eta} anni · {(g.ingaggio_teorico / 1_000_000).toFixed(1)} M€</span>
                                   </div>
@@ -563,7 +563,7 @@ export function Scelte({ membership, onNavigate }: Props) {
                     </div>
                     <div className="riepilogo-scelte__dettagli">
                       <strong>{cognome(g.nome)}</strong>
-                      <span className={`role-pill role-pill--${macroRuolo(g.posizioni ?? []).toLowerCase()}`}>{primario ?? '—'}</span>
+                      <span className={`role-pill role-pill--${macroRuolo(g.posizioni ?? []).toLowerCase()}`}>{primario ? ruoloIt(primario) : '—'}</span>
                     </div>
                     <b>
                       <span className="ovr-con-delta">

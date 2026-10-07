@@ -81,6 +81,7 @@ const NOME_RUOLO: Record<DraftCard['ruolo'], string> = {
 
 // Usato solo dal draft BY ROLE (un pulsante di spin per reparto): 4 ruoli
 // distinti, uno a scelta.
+const SIGLA_MACRO: Record<string, string> = { GK: 'POR', DEF: 'DIF', MID: 'CEN', ATT: 'ATT' }
 const ORDINE_RUOLI_PACCHETTO: DraftCard['ruolo'][] = ['GK', 'DEF', 'MID', 'ATT']
 
 // Un pacchetto "2 of 4" (in realta' 7 carte, non piu' 4: 1 portiere, 2
@@ -470,7 +471,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
                   <div className="draft-role-grid">
                     {ORDINE_RUOLI_PACCHETTO.map((ruolo) => (
                       <button key={ruolo} className={`draft-role-choice draft-role-choice--${ruolo.toLowerCase()}`} type="button" disabled={pending} onClick={() => spinByRole(ruolo)}>
-                        <span>{ruolo}</span>
+                        <span>{SIGLA_MACRO[ruolo] ?? ruolo}</span>
                         <strong>{NOME_RUOLO[ruolo]}</strong>
                         <small>Spin</small>
                       </button>
