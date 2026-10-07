@@ -302,7 +302,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   useEffect(() => {
     if (fasePartita !== 'rigori' || faseRigore !== 'esito' || !serieRigori[rigoreCorrente]?.segnato) return
     const audio = suonoGolRef.current
-    if (audio) { audio.currentTime = 0; void audio.play().catch(() => {}) }
+    if (audio) { audio.muted = false; audio.currentTime = 0; void audio.play().catch(() => {}) }
   }, [fasePartita, faseRigore, rigoreCorrente, serieRigori])
 
   // Sblocco dell'audio all'apertura della cronaca: un play() immediatamente
@@ -321,7 +321,10 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
       void audio.play()
         .then(() => { audio.pause(); audio.currentTime = 0 })
         .catch(() => {})
-        .finally(() => { audio.muted = false })
+        // Si ritorna al volume solo dopo un attimo: riattivarlo subito dopo pause() lasciava uscire
+        // il pezzetto di boato gia' in coda nell'uscita audio dell'iPhone (segnalato il 7 ottobre 2026).
+        // I punti che suonano davvero (gol, sottofondo) riattivano comunque l'audio prima di partire.
+        .finally(() => { window.setTimeout(() => { audio.muted = false }, 600) })
     }
   }, [])
 
@@ -331,7 +334,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   useEffect(() => {
     const audio = sottofondoRef.current
     if (!audio) return
-    if (sottofondoAcceso) void audio.play().catch(() => {})
+    if (sottofondoAcceso) { audio.muted = false; void audio.play().catch(() => {}) }
     else audio.pause()
   }, [sottofondoAcceso])
 
@@ -342,7 +345,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   useEffect(() => {
     if (!popupGol) return
     const audio = suonoGolRef.current
-    if (audio) { audio.currentTime = 0; void audio.play().catch(() => {}) }
+    if (audio) { audio.muted = false; audio.currentTime = 0; void audio.play().catch(() => {}) }
     const timer = window.setTimeout(() => {
       const golConcluso = popupGol
       setInTimeline((precedente) => new Set(precedente).add(golConcluso))

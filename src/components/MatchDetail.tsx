@@ -18,6 +18,7 @@ type Props = {
   membership: Membership
   matchId: number
   onBack: () => void
+  onRivedi?: () => void
   onNavigate: (view: GameView) => void
   onOpenTeam: (teamId: number) => void
 }
@@ -52,7 +53,7 @@ function motivazioni(d: Record<string, number> | null): string[] {
   return voci.sort((a, b) => b[0] - a[0]).slice(0, 3).map(([, testo]) => testo)
 }
 
-export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTeam }: Props) {
+export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate, onOpenTeam }: Props) {
   const league = membership.league as League
   const data = useSeasonData(membership)
   const [stats, setStats] = useState<MatchPlayerStat[]>([])
@@ -261,7 +262,7 @@ export function MatchDetail({ membership, matchId, onBack, onNavigate, onOpenTea
 
   return <main className="app-shell season-shell">
     <GameNav league={league} active="matches" onNavigate={navigate} />
-    <header className="topbar season-topbar"><button className="match-detail-back" type="button" onClick={onBack}>← Torna alle partite</button><span>Rapporto partita</span></header>
+    <header className="topbar season-topbar"><button className="match-detail-back" type="button" onClick={onBack}>← Torna alle partite</button><span>Rapporto partita</span>{onRivedi && match && fixture?.stato === 'simulata' && <button className="match-detail-rivedi" type="button" onClick={onRivedi}>▶ Rivedi la partita</button>}</header>
     <SeasonState loading={data.loading} error={data.error} onRetry={data.reload} />
     {!data.loading && !data.error && (!match || !fixture) && <section className="season-state"><span className="season-state__icon">!</span><h2>Partita non trovata</h2><button className="button button--primary" type="button" onClick={onBack}>Torna indietro</button></section>}
     {!data.loading && !data.error && match && fixture && (() => {

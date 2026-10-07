@@ -5011,3 +5011,8 @@ body:has(.anteprima) .reazioni--fisso .reazioni__pannello { bottom: 150px; }
 
 /* Intro: emblema della conference sopra il titolo della classifica */
 .classifica-broadcast .match-intro__classifica-conf { width: clamp(30px, 8vh, 46px); height: clamp(30px, 8vh, 46px); object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,.45)); }
+
+/* Rapporto partita: riguardare l'intro e la diretta */
+.match-detail-rivedi { min-height: 38px; padding: 0 14px; border: 1px solid rgba(106, 240, 152, .5); border-radius: 9px; color: #9af5bd; background: rgba(40, 120, 70, .22); font: inherit; font-weight: 850; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+.match-detail-rivedi:focus-visible { outline: 2px solid #9af5bd; outline-offset: 2px; }
+@media (max-width: 640px) { .match-detail-rivedi { padding: 0 10px; font-size: .62rem; } }
