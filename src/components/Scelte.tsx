@@ -8,7 +8,7 @@ import { PopupSpiegazione } from './PopupSpiegazione'
 import { SeasonState } from './SeasonUI'
 import { Crest } from './Crest'
 import { firmaFoto } from './RosaElenco'
-import { macroRuolo } from '../lib/ruoli'
+import { ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
 import { GRADINI_MINUTAGGIO, gradinoRichiesto, nomeConSoglia, useSoglieMinutaggio } from '../lib/minutaggio'
 import { useSeasonData } from '../lib/useSeasonData'
 import { attributiInLega, type Attributi } from '../lib/attributiGiocatore'
@@ -285,6 +285,44 @@ export function Scelte({ membership, onNavigate }: Props) {
     setSalvataggioInCorso(null)
   }
 
+  // Una riga del pool degli eleggibili: con il «+» per aggiungerla alla propria lista, oppure di sola lettura.
+  const rigaPool = (g: GiocatorePool, onAggiungi?: () => void) => {
+              const [primario, ...secondari] = g.posizioni ?? []
+              const macro = macroRuolo(g.posizioni ?? [])
+                  return <li className="flex items-center gap-3 py-3.5 pr-1.5" key={g.id}>
+                          <button type="button" className="scelte-apri-scheda flex min-w-0 flex-1 items-center gap-3" onClick={() => void apriSchedaPool(g)} aria-label={`Scheda di ${g.nome}`}>
+                          <div className="h-14 w-12 flex-none">
+                            {foto.get(g.id)
+                              ? <img className="h-full w-full object-contain object-bottom" src={foto.get(g.id)} alt="" loading="lazy" />
+                              : <div className="grid h-full w-full place-items-center rounded-lg bg-white/[0.05] text-lg font-extrabold text-white/25" aria-hidden="true">{g.nome.charAt(0)}</div>}
+                          </div>
+                          <span className="w-9 flex-none text-center text-xl font-extrabold text-purple-300">
+                            <span className="ovr-con-delta">
+                              {g.overall}
+                              {g.deltaOverall !== 0 && <i
+                                className={`ovr-delta ovr-delta--${g.deltaOverall > 0 ? 'su' : 'giu'}`}
+                                title={`${g.deltaOverall > 0 ? 'Migliorato' : 'Peggiorato'} di ${Math.abs(g.deltaOverall)} da inizio stagione`}
+                              >{g.deltaOverall > 0 ? '+' : '−'}{Math.abs(g.deltaOverall)}</i>}
+                            </span>
+                          </span>
+                          <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
+                            <strong className="truncate text-[.92rem] font-extrabold text-white">{cognome(g.nome)}</strong>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className={`role-pill role-pill--${macro.toLowerCase()}`}>{primario ?? '—'}</span>
+                              {secondari.length > 0 && <span className="text-[.68rem] font-semibold text-white/35">{secondari.join(' / ')}</span>}
+                              {(() => {
+                                const chiede = gradinoRichiesto(soglieMinutaggio, g.overall, g.eta, primario ?? undefined)
+                                return chiede && <span className={`free-agent-card__chiede is-${chiede}`} title={GRADINI_MINUTAGGIO[chiede].detto}>Chiede: {nomeConSoglia(chiede)}</span>
+                              })()}
+                            </div>
+                            <span className="text-[.72rem] font-semibold text-white/45">{g.eta} anni</span>
+                            <span className="text-[.74rem] font-extrabold text-purple-300">{(g.ingaggio_teorico / 1_000_000).toFixed(1)} M€</span>
+                          </div>
+                          </button>
+                          {onAggiungi && <button type="button" className="scelte-pool__add" aria-label={`Aggiungi ${cognome(g.nome)} alla lista`} onClick={onAggiungi}>+</button>}
+                        </li>
+  }
+
   return <main className="app-shell season-shell">
     <GameNav league={league} active="scelte" onNavigate={onNavigate} />
     <header className="topbar season-topbar">
@@ -342,7 +380,17 @@ export function Scelte({ membership, onNavigate }: Props) {
             : <p>La scadenza non è ancora fissata (l'off-season non è ancora iniziata): le preferenze restano modificabili liberamente.</p>}
 
           {mieScelteFinestra.length === 0
-            ? <p className="season-empty">Non hai scelte pronte in questa finestra.</p>
+            ? <>
+                <p className="season-empty">Non hai scelte pronte in questa finestra: puoi comunque guardare i giocatori eleggibili.</p>
+                <details className="scelte-preferenze__aggiungi scelte-preferenze__aggiungi--lettura">
+                  <summary><span>Giocatori eleggibili</span><b>{poolFinestra.length} nel pool</b></summary>
+                  {poolFinestra.length === 0
+                    ? <p className="season-empty">Il pool di questa finestra non è ancora stato svelato.</p>
+                    : <ul className="mt-2.5 flex max-h-[620px] list-none flex-col divide-y divide-white/10 overflow-y-auto p-0">
+                        {[...poolFinestra].sort((a, b) => ORDINE_MACRO_RUOLO.indexOf(macroRuolo(a.posizioni ?? []) as MacroRuolo) - ORDINE_MACRO_RUOLO.indexOf(macroRuolo(b.posizioni ?? []) as MacroRuolo) || b.overall - a.overall).map((g) => rigaPool(g))}
+                      </ul>}
+                </details>
+              </>
             : [[...mieScelteFinestra].sort((a, b) => (a.posizione ?? 0) - (b.posizione ?? 0))].map((gruppo) => {
                 const s = gruppo[0]
                 const massimo = Math.max(...gruppo.map((sc) => sc.posizione ?? 0))
@@ -424,42 +472,7 @@ export function Scelte({ membership, onNavigate }: Props) {
                   {!congelate && bozza.length < massimo && <details className="scelte-preferenze__aggiungi">
                     <summary><span>Aggiungi dal pool</span><b>{poolFinestra.length - bozza.length} disponibili</b></summary>
                     <ul className="mt-2.5 flex max-h-[620px] list-none flex-col divide-y divide-white/10 overflow-y-auto p-0">
-                      {poolFinestra.filter((g) => !bozza.includes(g.id)).map((g) => {
-                        const [primario, ...secondari] = g.posizioni ?? []
-                        const macro = macroRuolo(g.posizioni ?? [])
-                        return <li className="flex items-center gap-3 py-3.5 pr-1.5" key={g.id}>
-                          <button type="button" className="scelte-apri-scheda flex min-w-0 flex-1 items-center gap-3" onClick={() => void apriSchedaPool(g)} aria-label={`Scheda di ${g.nome}`}>
-                          <div className="h-14 w-12 flex-none">
-                            {foto.get(g.id)
-                              ? <img className="h-full w-full object-contain object-bottom" src={foto.get(g.id)} alt="" loading="lazy" />
-                              : <div className="grid h-full w-full place-items-center rounded-lg bg-white/[0.05] text-lg font-extrabold text-white/25" aria-hidden="true">{g.nome.charAt(0)}</div>}
-                          </div>
-                          <span className="w-9 flex-none text-center text-xl font-extrabold text-purple-300">
-                            <span className="ovr-con-delta">
-                              {g.overall}
-                              {g.deltaOverall !== 0 && <i
-                                className={`ovr-delta ovr-delta--${g.deltaOverall > 0 ? 'su' : 'giu'}`}
-                                title={`${g.deltaOverall > 0 ? 'Migliorato' : 'Peggiorato'} di ${Math.abs(g.deltaOverall)} da inizio stagione`}
-                              >{g.deltaOverall > 0 ? '+' : '−'}{Math.abs(g.deltaOverall)}</i>}
-                            </span>
-                          </span>
-                          <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
-                            <strong className="truncate text-[.92rem] font-extrabold text-white">{cognome(g.nome)}</strong>
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <span className={`role-pill role-pill--${macro.toLowerCase()}`}>{primario ?? '—'}</span>
-                              {secondari.length > 0 && <span className="text-[.68rem] font-semibold text-white/35">{secondari.join(' / ')}</span>}
-                              {(() => {
-                                const chiede = gradinoRichiesto(soglieMinutaggio, g.overall, g.eta, primario ?? undefined)
-                                return chiede && <span className={`free-agent-card__chiede is-${chiede}`} title={GRADINI_MINUTAGGIO[chiede].detto}>Chiede: {nomeConSoglia(chiede)}</span>
-                              })()}
-                            </div>
-                            <span className="text-[.72rem] font-semibold text-white/45">{g.eta} anni</span>
-                            <span className="text-[.74rem] font-extrabold text-purple-300">{(g.ingaggio_teorico / 1_000_000).toFixed(1)} M€</span>
-                          </div>
-                          </button>
-                          <button type="button" className="scelte-pool__add" aria-label={`Aggiungi ${cognome(g.nome)} alla lista`} onClick={() => aggiungi(g.id)}>+</button>
-                        </li>
-                      })}
+                      {poolFinestra.filter((g) => !bozza.includes(g.id)).map((g) => rigaPool(g, () => aggiungi(g.id)))}
                     </ul>
                   </details>}
 

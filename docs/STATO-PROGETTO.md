@@ -2057,3 +2057,7 @@ non cresce**; le **giocate sono visibili a tutta la lega** (inviti e partite non
   (`private.promemoria_live_offseason`), cosi' spostando la scadenza non arrivano messaggi sbagliati; poi si tolgono da soli.
   La chiusura la esegue `finalizza-offseason-scadute` (ogni minuto): draft in diretta dal minuto pieno successivo (13:31),
   sorteggio 3 minuti dopo l'ultima scelta. Migrazione `20261007100000`.
+
+- **Eleggibili visibili a tutti** (7 ottobre 2026): nella pagina Scelte, chi non ha scelte in una finestra aperta vede comunque il pool dei
+  giocatori eleggibili, in sola lettura (senza «+», senza lista di preferenze e senza «Salva»): un riquadro «Giocatori eleggibili · N nel pool»,
+  ordinati per ruolo e overall, con scheda del giocatore. Il pool era gia' leggibile da tutti i membri (RLS); cambia solo la pagina.
