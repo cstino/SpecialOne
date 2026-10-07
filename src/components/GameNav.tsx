@@ -65,8 +65,8 @@ const draftItems: readonly NavEntry[] = [
 
 const seasonItems: readonly NavEntry[] = [
   { view: 'overview', label: 'Overview' },
-  { view: 'squad', label: 'Rosa' },
-  { view: 'team', label: 'Squadra' },
+  { view: 'squad', label: 'Formazione' },
+  { view: 'team', label: 'Club' },
   { view: 'finanza', label: 'Finanza' },
   { view: 'risorse', label: 'Risorse' },
   gruppoMercato,
@@ -80,8 +80,8 @@ const seasonItems: readonly NavEntry[] = [
 
 const offseasonItems: readonly NavEntry[] = [
   { view: 'offseason', label: 'Off-season' },
-  { view: 'squad', label: 'Rosa' },
-  { view: 'team', label: 'Squadra' },
+  { view: 'squad', label: 'Formazione' },
+  { view: 'team', label: 'Club' },
   { view: 'finanza', label: 'Finanza' },
   { view: 'risorse', label: 'Risorse' },
   gruppoMercato,
@@ -96,7 +96,7 @@ const offseasonItems: readonly NavEntry[] = [
 const concludedItems: readonly NavEntry[] = [
   { view: 'offseason', label: 'Off-season' },
   { view: 'overview', label: 'Overview' },
-  { view: 'team', label: 'Squadra' },
+  { view: 'team', label: 'Club' },
   { view: 'finanza', label: 'Finanza' },
   { view: 'risorse', label: 'Risorse' },
   { view: 'matches', label: 'Partite' },
@@ -222,7 +222,7 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
       const conto = contaVoce(voce.view)
       return <button className={`game-nav-item ${active === voce.view ? 'is-active' : ''}`} key={voce.view} type="button" onClick={() => vai(voce.view)} aria-current={active === voce.view ? 'page' : undefined}>
         <i aria-hidden="true"><Icona nome={voce.view} /></i>
-        <span>{perMobile && voce.view === 'squad' ? 'Rosa' : voce.label}</span>
+        <span>{perMobile && voce.view === 'squad' ? 'Formazione' : voce.label}</span>
         {conto > 0 && <em className="game-nav-item__badge">{conto > 9 ? '9+' : conto}</em>}
         {active === voce.view && <b />}
       </button>
