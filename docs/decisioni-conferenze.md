@@ -95,7 +95,7 @@ compare a draft finito) e la possibilita' di uscire e rientrare.
   n la squadra X seleziona…») **e 15 di reveal** del giocatore; in basso il recap delle scelte gia'
   rivelate. La diretta parte al minuto pieno successivo alla chiusura. Il **sorteggio parte 3 minuti
   dopo l'ultima scelta** (16 scelte = 8 minuti, poi 3 di pausa, poi 24 x 20 s = 8 minuti).
-- **Prima giornata.** Con le conferenze e' alle 23:00 di almeno **20 ore** dopo la fine del sorteggio
+- **Prima giornata.** (Sostituita il 7 ottobre: ora e' alle 23:00 del primo giorno utile dopo il sorteggio, quindi lo stesso giorno.) Con le conferenze era alle 23:00 di almeno **20 ore** dopo la fine del sorteggio
   (`inizializza_stagione`): chi scopre la conference ha un giorno per schierarsi. Provato: finita la
   diretta alle 10:14, prima giornata il giorno dopo alle 23:00.
 - **Cosa e' segreto.** `scelte_live_stato(lega)` restituisce il giocatore di una scelta solo da quando
@@ -141,3 +141,14 @@ ogni 5 secondi, si possono scorrere col dito o con i pallini, e si fermano per 8
 del browser nascosta o con «riduci movimento» attivo). Si parte dalla conference della propria squadra, segnata «La tua»;
 se la propria squadra non e' fra le prime quattro compare sotto, dopo un «⋯». `VettaConferenze.tsx`. Senza conferenze «La vetta» resta com'era.
 La pagina **Classifica** ha gia' le due schede East/Western e si apre su quella della propria squadra.
+
+## Prima giornata lo stesso giorno e calendario alternato (7 ottobre 2026)
+
+- **Prima giornata:** alle 23:00 del primo giorno utile dopo la fine del sorteggio, quindi **oggi** (7 ottobre) se il sorteggio finisce
+  prima delle 23:00. Tolta la regola delle 20 ore.
+- **Calendario delle conferenze:** metodo di Berger con ritorno speculare (`inizializza_stagione`). Andata e ritorno: ogni coppia due
+  volte a **campi invertiti**; ogni squadra gioca ogni giornata; **casa e fuori si alternano** con il minimo di rotture (al
+  massimo due partite di fila nello stesso campo, 24 rotture per conferenza invece di 42, 5 o 6 partite in casa per girone invece
+  di 4–7). Il ritorno riparte dal secondo turno dell'andata (ordine 1, 2, …, ultimo, 0): nessuna coppia si rivede nella giornata
+  dopo. Provato a 24 squadre: 264 partite, 12 per giornata, 132 coppie a campi invertiti, 0 rivincite consecutive. Le altre leghe
+  (senza conferenze, gironi dispari) usano il metodo di prima. Migrazione `20261007110000`.
