@@ -9,6 +9,7 @@ import type { BracketTie, Fixture, Match, Membership, Team } from '../types'
 import { Crest } from './Crest'
 import { Icona } from './Icona'
 import { ruoloIt } from '../lib/ruoli'
+import { NOME_CONFERENZA_BREVE } from '../lib/conferenze'
 
 type RigaClassificaStorica = { teamId: number; punti: number; differenzaReti: number; golFatti: number; posizione: number }
 
@@ -262,9 +263,19 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
     return mano ? `${mano} · ${giorno}` : giorno
   }, [fixture, data.fixtures])
 
+  // Con le conference la classifica e' una per conference: le due squadre della partita
+  // stanno nella stessa, e si mostra solo quella (le altre non si sono mai incontrate).
+  const conferenzaPartita = data.standings.find((riga) => riga.team_id === fixture.home_team_id)?.conferenza ?? null
+  const idSquadreClassifica = useMemo(
+    () => conferenzaPartita
+      ? data.standings.filter((riga) => riga.conferenza === conferenzaPartita).map((riga) => riga.team_id)
+      : data.teams.map((team) => team.id),
+    [conferenzaPartita, data.standings, data.teams]
+  )
+
   const classificaPrecedente = useMemo(
-    () => classificaFinoA(data.fixtures, data.matchByFixture, data.teams.map((team) => team.id), fixture.giornata),
-    [data.fixtures, data.matchByFixture, data.teams, fixture.giornata]
+    () => classificaFinoA(data.fixtures, data.matchByFixture, idSquadreClassifica, fixture.giornata),
+    [data.fixtures, data.matchByFixture, idSquadreClassifica, fixture.giornata]
   )
 
   // Finche' non si sa se e' regular o playoff si mostra solo il fondale
@@ -312,7 +323,7 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
 
       {beat.tipo === 'classifica' && (
         <div className={`match-intro__classifica classifica-broadcast formazione-broadcast formazione-broadcast--${fase}`} style={{ '--n-squadre': classificaPrecedente.length } as React.CSSProperties}>
-          <p className="match-intro__classifica-titolo"><span>Classifica</span><small>Prima della giornata {fixture.giornata}</small></p>
+          <p className="match-intro__classifica-titolo"><span>{conferenzaPartita ? `Classifica ${NOME_CONFERENZA_BREVE[conferenzaPartita]}` : 'Classifica'}</span><small>Prima della giornata {fixture.giornata}</small></p>
           <div className="classifica-broadcast__testa" aria-hidden="true"><span>#</span><span>Squadra</span><span>DR</span><span>PT</span></div>
           <ol>
             {classificaPrecedente.map((riga) => {
