@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { cognome } from '../lib/nomi'
-import { macroRuolo } from '../lib/ruoli'
+import { MACRO_COLORE, MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo } from '../lib/ruoli'
 import { supabase } from '../lib/supabase'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { useSeasonData } from '../lib/useSeasonData'
@@ -450,6 +450,20 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0 }: Props) {
     () => rose.filter((g) => g.sulMercato && g.team_id !== membership.id)
       .sort((a, b) => b.overall - a.overall),
     [rose, membership.id])
+  // La vetrina e' divisa per ruolo (portieri, difensori, centrocampisti, attaccanti), una scheda per ruolo.
+  const [ruoloVendita, setRuoloVendita] = useState<MacroRuolo | null>(null)
+  const venditaPerRuolo = useMemo(() => {
+    const mappa = new Map<MacroRuolo, Giocatore[]>()
+    for (const g of inVendita) {
+      const ruolo = macroRuolo(g.posizioni ?? [g.ruolo]) as MacroRuolo
+      mappa.set(ruolo, [...(mappa.get(ruolo) ?? []), g])
+    }
+    return mappa
+  }, [inVendita])
+  // Se la scheda scelta si svuota (o non e' ancora scelta) si va sulla prima che ha qualcuno.
+  const ruoloVenditaVisto: MacroRuolo | null = ruoloVendita && venditaPerRuolo.has(ruoloVendita)
+    ? ruoloVendita
+    : ORDINE_MACRO_RUOLO.find((r) => venditaPerRuolo.has(r)) ?? null
 
   const schedaAperta = schedaApertaId != null ? giocatore(schedaApertaId) : undefined
   const capienzaPct = capienza ? Math.min(100, Math.max(0, (capienza.monte / Math.max(capienza.tetto, 1)) * 100)) : 0
@@ -634,15 +648,25 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0 }: Props) {
               <p className="scambi-vetrina-nota">
                 Segnalano «questo lo cederei». Non e' un canale a parte: se ti interessa, componi una normale proposta qui sopra.
               </p>
+              <UnderlineTabs
+                tabs={ORDINE_MACRO_RUOLO.map((ruolo) => ({ value: ruolo, label: MACRO_LABEL[ruolo], badge: venditaPerRuolo.get(ruolo)?.length ?? 0, disabled: !venditaPerRuolo.has(ruolo), activeColor: MACRO_COLORE[ruolo] }))}
+                value={ruoloVenditaVisto ?? ORDINE_MACRO_RUOLO[0]}
+                onChange={setRuoloVendita}
+                layoutId="scambi-vetrina-ruolo-indicator"
+                className="mb-3"
+              />
               <ul className="scambi-asset-grid">
-                {inVendita.map((g) => <li key={g.id}>
-                  <button type="button" className="scambi-asset-card scambi-asset-card--player"
+                {(ruoloVenditaVisto ? venditaPerRuolo.get(ruoloVenditaVisto) ?? [] : []).map((g) => <li key={g.id}>
+                  <button type="button" className="scambi-asset-card scambi-asset-card--player scambi-asset-card--vetrina"
                     onClick={() => void apriScheda(g.id)}>
                     <span className={`scambi-asset-card__ovr role-pill--${macroRuolo(g.posizioni ?? [g.ruolo]).toLowerCase()}`}>{g.overall}</span>
                     <span className="scambi-asset-card__info">
                       <strong>{g.nome}</strong>
                       <small>{g.ruolo} · {g.eta} anni · {milioni(g.ingaggio)}</small>
                       <small className="scambi-asset-card__squadra">{nomeSquadra(g.team_id)}</small>
+                    </span>
+                    <span className="scambi-asset-card__stemma" title={nomeSquadra(g.team_id)}>
+                      <Crest value={dati.teamById.get(g.team_id)?.stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(g.team_id)} stelle={dati.teamById.get(g.team_id)?.titoli_title} />
                     </span>
                   </button>
                 </li>)}

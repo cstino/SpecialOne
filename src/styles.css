@@ -4995,3 +4995,9 @@ body:has(.anteprima) .reazioni--fisso .reazioni__pannello { bottom: 150px; }
 .vetta-conf__pallini button span { display: block; width: 22px; height: 4px; border-radius: 4px; background: rgba(255,255,255,.2); transition: background .25s ease, width .25s ease; }
 .vetta-conf__pallini button.is-attivo span { width: 34px; background: var(--c); box-shadow: 0 0 10px color-mix(in srgb, var(--c) 60%, transparent); }
 .vetta-conf__pallini button:focus-visible { outline: 2px solid #fff; outline-offset: -2px; border-radius: 6px; }
+
+/* Vetrina «In vendita»: card con lo stemma della squadra a destra */
+.scambi-asset-card--vetrina { grid-template-columns: 34px minmax(0, 1fr) 40px; }
+.scambi-asset-card__stemma { display: grid; place-items: center; justify-self: end; width: 40px; height: 40px; }
+.scambi-asset-card__stemma .crest { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 5px rgba(0,0,0,.45)); }
+.scambi-asset-card__stemma > .crest-stellato { width: 100%; height: 100%; }
