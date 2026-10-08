@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { motion } from 'motion/react'
 
 // Barra di tab con indicatore sottolineato animato (riferimento: pagina
@@ -21,6 +21,14 @@ type UnderlineTabsProps<T extends string> = {
 }
 
 export function UnderlineTabs<T extends string>({ tabs, value, onChange, layoutId = 'underline-tab-indicator', className = '' }: UnderlineTabsProps<T>) {
+  const barra = useRef<HTMLDivElement>(null)
+  // La scheda scelta resta in vista: con la riga piu' larga dello schermo si porta al centro, senza spostare la pagina.
+  useEffect(() => {
+    const el = barra.current?.querySelector<HTMLElement>('[aria-selected="true"]')
+    const contenitore = barra.current
+    if (!el || !contenitore || contenitore.scrollWidth <= contenitore.clientWidth) return
+    contenitore.scrollTo({ left: el.offsetLeft - (contenitore.clientWidth - el.offsetWidth) / 2, behavior: 'smooth' })
+  }, [value])
   return (
     // overflow-x/y non possono essere uno "auto" e l'altro "visible" insieme
     // (regola della spec CSS Overflow: se uno dei due non e' "visible",
@@ -32,7 +40,11 @@ export function UnderlineTabs<T extends string>({ tabs, value, onChange, layoutI
     // segnalato) perche' un overflow-y "auto" implicito resta comunque
     // scrollabile col dito anche senza nulla da scorrere.
     <div
-      className={`flex justify-center gap-7 overflow-x-auto overflow-y-hidden border-b border-white/10 ${className}`}
+      ref={barra}
+      // Centrate quando ci stanno, scorribili dall'inizio quando sono piu' larghe dello schermo: con justify-center
+      // la parte che esce a SINISTRA non si puo' raggiungere (su Android «Portieri» spariva del tutto). I margini
+      // automatici sul primo e sull'ultimo bottone centrano senza quel difetto.
+      className={`flex justify-start gap-7 overflow-x-auto overflow-y-hidden border-b border-white/10 [&>button:first-child]:ml-auto [&>button:last-child]:mr-auto ${className}`}
       style={{ touchAction: 'pan-x' }}
       role="tablist"
     >
