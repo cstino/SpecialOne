@@ -700,6 +700,18 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
     return () => document.removeEventListener('keydown', chiudiConEsc)
   }, [onClose])
 
+  // La tastiera del telefono: la scheda segue l'area davvero visibile (visualViewport), cosi' resta sopra la tastiera
+  // e il campo che si sta compilando non finisce coperto (offerta di rinnovo, 8 ottobre 2026).
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const radice = document.documentElement.style
+    const aggiorna = () => { radice.setProperty('--vv-h', `${Math.round(vv.height)}px`); radice.setProperty('--vv-top', `${Math.round(vv.offsetTop)}px`) }
+    aggiorna()
+    vv.addEventListener('resize', aggiorna); vv.addEventListener('scroll', aggiorna)
+    return () => { vv.removeEventListener('resize', aggiorna); vv.removeEventListener('scroll', aggiorna); radice.removeProperty('--vv-h'); radice.removeProperty('--vv-top') }
+  }, [])
+
   // Pagina ferma sotto la scheda, nel modo che funziona anche su iPhone: il body viene fissato alla posizione
   // in cui si era (top negativo) e alla chiusura si torna esattamente li'. Con il solo overflow: hidden, in
   // Safari la scheda finiva in cima alla pagina, fuori dallo schermo, mentre si restava in fondo alla lista
@@ -769,7 +781,8 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
             <div>
               <label>
                 <span>Ingaggio</span>
-                <input type="text" inputMode="decimal" value={offertaM} onChange={(evento) => setOffertaM(evento.target.value)} aria-label="Ingaggio offerto in milioni" />
+                <input type="text" inputMode="decimal" value={offertaM} onChange={(evento) => setOffertaM(evento.target.value)} aria-label="Ingaggio offerto in milioni"
+                  onFocus={(evento) => { const campo = evento.currentTarget; window.setTimeout(() => campo.scrollIntoView({ block: 'center', behavior: 'smooth' }), 320) }} />
                 <small>M€ a stagione</small>
               </label>
             </div>

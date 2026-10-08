@@ -5047,3 +5047,7 @@ body:has(.anteprima) .reazioni--fisso .reazioni__pannello { bottom: 150px; }
 @media (max-width: 640px) {
   .player-modal-backdrop { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(5, 4, 9, .88); }
 }
+
+/* Con la tastiera aperta la scheda occupa solo l'area visibile: il foglio resta sopra la tastiera. */
+.player-modal-backdrop { inset: var(--vv-top, 0px) 0 auto 0; height: var(--vv-h, 100dvh); }
+@media (max-width: 640px) { .player-modal { max-height: min(88dvh, calc(var(--vv-h, 100dvh) - 8px)); } }
