@@ -175,8 +175,14 @@ const GIALLO_FALLO = [
 ]
 const GIALLO_ALTRO = [
   'Proteste vibranti di {A}: l\'arbitro lo ammonisce.',
-  '{A} perde tempo sulla rimessa: giallo.',
   'Ammonito {A} per simulazione!',
+]
+// Il giallo per perdita di tempo ha senso solo per chi e' in vantaggio, e nel finale (dal 70'): chi perde non
+// perde tempo, e nel primo tempo non lo si ammonisce quasi mai (segnalato l'8 ottobre 2026).
+const GIALLO_PERDITA_TEMPO = [
+  '{A} perde tempo sulla rimessa: giallo.',
+  '{A} se la prende comoda sul rinvio: l\'arbitro lo ammonisce.',
+  'Ammonito {A}: troppo tempo per battere la punizione.',
 ]
 const ROSSO = [
   'Intervento a gamba tesa di {A} su {B}! Rosso diretto!',
@@ -397,7 +403,10 @@ export function costruisciTelecronaca(d: DatiTelecronaca): Riga[] {
       const avversari = [...inCampo(altro(lato), e.minuto)].filter((id) => id !== portiere(altro(lato), e.minuto))
       const B = unoDi(avversari)
       if (e.colore === 'giallo') {
-        const modello = B != null && rnd() < 0.8 ? pesca(GIALLO_FALLO) : pesca(GIALLO_ALTRO)
+        const p = punteggioAl(e.minuto)
+        const inVantaggio = (lato === 'casa' ? p.casa - p.ospite : p.ospite - p.casa) > 0
+        const perditaTempo = inVantaggio && e.minuto >= 70 && rnd() < 0.35
+        const modello = perditaTempo ? pesca(GIALLO_PERDITA_TEMPO) : B != null && rnd() < 0.8 ? pesca(GIALLO_FALLO) : pesca(GIALLO_ALTRO)
         righe.push({ chiave, minuto: e.minuto, lato, tipo: 'giallo', testo: componi(modello, { A: e.giocatore, B, lato }) })
       } else {
         const rimasti = inCampo(lato, e.minuto).size - 1
