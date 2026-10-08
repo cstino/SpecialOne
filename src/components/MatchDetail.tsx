@@ -341,7 +341,7 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
                 : e.tipo === 'cartellino'
                   ? <><span className={`momento-icona momento-icona--${e.colore === 'giallo' ? 'giallo' : 'rosso'}`} aria-label={e.colore === 'giallo' ? 'Ammonizione' : 'Espulsione'} /><span><b>{nome(e.giocatore)}</b>{e.colore === 'doppio_giallo' && <small>secondo giallo</small>}</span></>
                   : e.tipo === 'sostituzione'
-                    ? <><span className="momento-icona momento-icona--cambio" aria-label="Sostituzione"><Icona nome="cambio" /></span><span><b className="entra">{nome(e.entra)}</b><small>esce {nome(e.esce)}{e.motivo === 'rendimento' && ' · scarso rendimento'}</small></span></>
+                    ? <><span className="momento-icona momento-icona--cambio" aria-label="Sostituzione"><Icona nome="cambio" /></span><span><b className="entra">{nome(e.entra)}</b><small>esce {nome(e.esce)}</small></span></>
                     : e.tipo === 'infortunio'
                       ? <><span className="momento-icona momento-icona--infortunio" aria-label="Infortunio" /><span><b>{nome(e.esce)}</b><small>infortunato, entra {nome(e.entra)}</small></span></>
                       : null
