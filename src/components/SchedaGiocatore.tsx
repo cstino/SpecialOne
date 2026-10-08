@@ -697,10 +697,23 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
   useEffect(() => {
     const chiudiConEsc = (evento: KeyboardEvent) => { if (evento.key === 'Escape') onClose() }
     document.addEventListener('keydown', chiudiConEsc)
-    const overflowPrecedente = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.removeEventListener('keydown', chiudiConEsc); document.body.style.overflow = overflowPrecedente }
+    return () => document.removeEventListener('keydown', chiudiConEsc)
   }, [onClose])
+
+  // Pagina ferma sotto la scheda, nel modo che funziona anche su iPhone: il body viene fissato alla posizione
+  // in cui si era (top negativo) e alla chiusura si torna esattamente li'. Con il solo overflow: hidden, in
+  // Safari la scheda finiva in cima alla pagina, fuori dallo schermo, mentre si restava in fondo alla lista
+  // (segnalato l'8 ottobre 2026). Una volta sola per apertura: onClose cambia a ogni render del genitore.
+  useEffect(() => {
+    const y = window.scrollY
+    const corpo = document.body.style
+    const prima = { position: corpo.position, top: corpo.top, left: corpo.left, right: corpo.right, width: corpo.width, overflow: corpo.overflow }
+    Object.assign(corpo, { position: 'fixed', top: `-${y}px`, left: '0', right: '0', width: '100%', overflow: 'hidden' })
+    return () => {
+      Object.assign(corpo, prima)
+      window.scrollTo(0, y)
+    }
+  }, [])
 
   const rep = reparto(giocatore.posizioni[0])
 
