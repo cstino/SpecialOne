@@ -136,6 +136,8 @@ export default function App() {
   // Cambia a ogni notifica «scambio ufficiale» toccata: dice a Scambi di scorrere al riepilogo.
   const [scorriScambi, setScorriScambi] = useState(0)
   // Dalla scheda di un giocatore altrui: apre Scambi con lui gia' chiesto a quella squadra.
+  // Da una notifica di mercato (proposta ricevuta, esito, scambio ufficiale): la proposta da mostrare in Scambi.
+  const [propostaDaMostrare, setPropostaDaMostrare] = useState<{ id: number; n: number } | null>(null)
   const [scambioPreselezione, setScambioPreselezione] = useState<{ teamId: number; istanzaId: number } | null>(null)
   const apriNotifica = useCallback((notifica: Notifica) => {
     const legaId = notifica.league_id
@@ -144,8 +146,12 @@ export default function App() {
     setNelMenu(false)
     setViewedTeamId(null)
     // «HERE WE GO»: scambio ufficiale, si apre Mercato > Scambi e si scorre al riepilogo degli scambi.
-    setGameView(notifica.dati?.view === 'squad' ? 'squad' : notifica.dati?.view === 'scambi' ? 'scambi' : 'overview')
-    if (notifica.dati?.view === 'scambi') setScorriScambi((n) => n + 1)
+    // Ogni notifica legata a una proposta (proposta ricevuta, esito, HERE WE GO) porta a quella proposta in Scambi.
+    const proposta = notifica.dati?.proposta_id
+    const versoScambi = notifica.dati?.view === 'scambi' || typeof proposta === 'number'
+    setGameView(notifica.dati?.view === 'squad' ? 'squad' : versoScambi ? 'scambi' : 'overview')
+    if (typeof proposta === 'number') setPropostaDaMostrare((p) => ({ id: proposta, n: (p?.n ?? 0) + 1 }))
+    else if (notifica.dati?.view === 'scambi') setScorriScambi((n) => n + 1)
     const partita = notifica.dati?.match_id
     setOpenMatch(null)
     setRevealMatch(null)
@@ -462,6 +468,7 @@ export default function App() {
 
   function navigateGame(view: GameView) {
     setScorriScambi(0)
+    setPropostaDaMostrare(null)
     setOpenMatch(null)
     setRevealMatch(null)
     setViewedTeamId(null)
@@ -478,7 +485,7 @@ export default function App() {
       : gameView === 'squad' ? <Formazione membership={active} onNavigate={navigateGame} />
       : gameView === 'team' ? <TeamProfile membership={active} teamId={viewedTeamId ?? active.id} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'team' })} onTeamUpdated={loadMemberships} onProponiScambio={(squadra, istanza) => { setScambioPreselezione({ teamId: squadra, istanzaId: istanza }); navigateGame('scambi') }} />
       : gameView === 'mercato' ? <Mercato membership={active} onNavigate={navigateGame} />
-      : gameView === 'scambi' ? <Scambi membership={active} onNavigate={navigateGame} scorriAConclusi={scorriScambi} preselezione={scambioPreselezione} onPreselezioneUsata={() => setScambioPreselezione(null)} />
+      : gameView === 'scambi' ? <Scambi membership={active} onNavigate={navigateGame} scorriAConclusi={scorriScambi} propostaDaMostrare={propostaDaMostrare} preselezione={scambioPreselezione} onPreselezioneUsata={() => setScambioPreselezione(null)} />
       : gameView === 'scelte' ? <Scelte membership={active} onNavigate={navigateGame} />
       : gameView === 'under' ? <Under membership={active} onNavigate={navigateGame} />
       : gameView === 'matches' ? <Matches membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} onOpenMatch={(id) => setOpenMatch({ id, from: 'matches' })} onRevealMatch={(id) => setRevealMatch({ id, from: 'matches' })} onOpenTeam={openTeam} />

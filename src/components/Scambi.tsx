@@ -36,6 +36,8 @@ type Props = {
   // Arrivando dalla scheda di un giocatore altrui (Club): squadra e giocatore da chiedere.
   preselezione?: { teamId: number; istanzaId: number } | null
   onPreselezioneUsata?: () => void
+  // Da una notifica di mercato: la proposta da mostrare (n cresce a ogni tocco, anche sulla stessa proposta).
+  propostaDaMostrare?: { id: number; n: number } | null
 }
 
 // I ruoli cercabili, nell'ordine del campo (codici del database, sigle in italiano a schermo).
@@ -129,7 +131,7 @@ function etichettaScelta(s: Scelta) {
   return `${s.finestra === 'on' ? 'ON' : 'OFF'}-Season ${s.stagione}`
 }
 
-export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezione = null, onPreselezioneUsata }: Props) {
+export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezione = null, onPreselezioneUsata, propostaDaMostrare = null }: Props) {
   const league = membership.league as League
   const dati = useSeasonData(membership)
   // Colori della fase (verde regular, blu title, arancio draft), come Rosa e dashboard.
@@ -142,11 +144,26 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
   const [capienza, setCapienza] = useState<Capienza | null>(null)
   const [caricamento, setCaricamento] = useState(true)
   // Arrivando da una notifica «scambio ufficiale» si scorre al riepilogo, appena la pagina e' pronta.
+  // Da una notifica di mercato si arriva sulla proposta: ricevuta, inviata o fra gli scambi conclusi. Se non e'
+  // piu' in nessun elenco (rifiutata, ritirata, scaduta) si resta sulle proposte, in cima alla pagina.
+  const [propostaEvidenziata, setPropostaEvidenziata] = useState<number | null>(null)
   useEffect(() => {
-    if (!scorriAConclusi || caricamento) return
+    if (!propostaDaMostrare || caricamento) return
+    const timer = window.setTimeout(() => {
+      const el = document.querySelector(`[data-proposta="${propostaDaMostrare.id}"]`)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setPropostaEvidenziata(propostaDaMostrare.id)
+        window.setTimeout(() => setPropostaEvidenziata(null), 2600)
+      } else window.scrollTo({ top: 0, behavior: 'smooth' })
+    }, 200)
+    return () => window.clearTimeout(timer)
+  }, [propostaDaMostrare, caricamento])
+  useEffect(() => {
+    if (!scorriAConclusi || caricamento || propostaDaMostrare) return
     const timer = window.setTimeout(() => document.getElementById('scambi-stagione')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
     return () => window.clearTimeout(timer)
-  }, [scorriAConclusi, caricamento])
+  }, [scorriAConclusi, caricamento, propostaDaMostrare])
   const [errore, setErrore] = useState<string | null>(null)
 
   const [avversaria, setAvversaria] = useState<number | null>(null)
@@ -574,7 +591,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
           ? <p className="season-empty">Nessuna proposta da valutare.</p>
           : <div className="scambi-proposte-grid">
               <AnimatePresence>
-                {ricevute.map((p) => <motion.article layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }} className="scambi-card" key={p.id}>
+                {ricevute.map((p) => <motion.article layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }} className={`scambi-card${propostaEvidenziata === p.id ? ' is-evidenziata' : ''}`} data-proposta={p.id} key={p.id}>
                   <header>{stemma(p.da_team_id)}<strong>{nomeSquadra(p.da_team_id)}</strong></header>
                   {riepilogo(p)}
                   <footer className={sceltaRifiutoId === p.id ? 'scambi-rifiuto-aperto' : ''}>
@@ -680,7 +697,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
         <div className="sezione-testa"><div><p className="kicker">In uscita</p><h2>Proposte inviate</h2></div></div>
         {inviate.length === 0
           ? <p className="season-empty">Nessuna proposta in attesa di risposta.</p>
-          : <div className="scambi-proposte-grid">{inviate.map((p) => <article className="scambi-card" key={p.id}>
+          : <div className="scambi-proposte-grid">{inviate.map((p) => <article className={`scambi-card${propostaEvidenziata === p.id ? ' is-evidenziata' : ''}`} data-proposta={p.id} key={p.id}>
               <header>{stemma(p.a_team_id)}<strong>A {nomeSquadra(p.a_team_id)}</strong></header>
               {riepilogo(p)}
               <footer>
@@ -812,7 +829,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
         {concluseStagione.length === 0
           ? <p className="season-empty">Nessuno scambio concluso in questa stagione.</p>
           : <ul className="scambi-trasparenza">
-              {concluseStagione.map((p) => <li className="scambi-operazione" key={p.id}>
+              {concluseStagione.map((p) => <li className={`scambi-operazione${propostaEvidenziata === p.id ? ' is-evidenziata' : ''}`} data-proposta={p.id} key={p.id}>
                 <div className="scambi-operazione__lato">
                   {stemma(p.da_team_id)}
                   <div className="scambi-operazione__chips">{p.giocatori_offerti.map((id) => pacchettoChip(id, 'g'))}{p.scelte_offerte.map((id) => pacchettoChip(id, 's'))}</div>
