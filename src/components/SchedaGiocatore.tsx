@@ -531,14 +531,22 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
   const modaleRef = useRef<HTMLElement>(null)
   // Altezza fissa: cambiando scheda il contenuto riparte dall'alto.
   useEffect(() => { modaleRef.current?.scrollTo({ top: 0 }) }, [pagina])
-  const touchStartX = useRef<number | null>(null)
+  const touchStart = useRef<{ x: number; y: number; t: number } | null>(null)
 
-  function onTouchStart(evento: React.TouchEvent) { touchStartX.current = evento.touches[0]?.clientX ?? null }
+  // Si cambia pagina solo con uno swipe chiaramente ORIZZONTALE: uno scorrimento veloce in su o in giu' sposta
+  // sempre un po' il dito di lato, e prima bastavano 60 px per finire su Training (8 ottobre 2026).
+  function onTouchStart(evento: React.TouchEvent) {
+    const t = evento.touches[0]
+    touchStart.current = t && evento.touches.length === 1 ? { x: t.clientX, y: t.clientY, t: Date.now() } : null
+  }
   function onTouchEnd(evento: React.TouchEvent) {
-    if (touchStartX.current == null || !haTraining) return
-    const dx = (evento.changedTouches[0]?.clientX ?? touchStartX.current) - touchStartX.current
-    touchStartX.current = null
-    if (Math.abs(dx) < 60) return
+    const inizio = touchStart.current
+    touchStart.current = null
+    if (!inizio || !haTraining) return
+    const fine = evento.changedTouches[0]
+    if (!fine) return
+    const dx = fine.clientX - inizio.x, dy = fine.clientY - inizio.y
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2 || Date.now() - inizio.t > 800) return
     if (dx < 0 && pagina === 'scheda') setPagina('training')
     if (dx > 0 && pagina === 'training') setPagina('scheda')
   }
