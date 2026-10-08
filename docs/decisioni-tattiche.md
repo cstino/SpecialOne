@@ -1608,7 +1608,7 @@ Mai il portiere.
   `QUOTA_GOL_SENZA_ASSIST` e `PESO_ASSIST` ora vivono in `engine/rendimento.js`.
 - **Cambi** (`sostituzioni()`): 1) per rendimento, prima: voto live sotto `SOGLIA_RENDIMENTO_CAMBIO` (6,1), almeno
   `MIN_BLOCCHI_RENDIMENTO` (2) blocchi giocati, entra la migliore alternativa dello slot purche' non sia piu' debole
-  di `MARGINE_CAMBIO_RENDIMENTO` (8) punti; all'intervallo al massimo `MAX_CAMBI_RENDIMENTO_INTERVALLO` (1) in piu'
+  di `MARGINE_CAMBIO_RENDIMENTO` (8) punti; **mai chi e' subentrato dalla panchina** (committente, 8 ottobre); all'intervallo al massimo `MAX_CAMBI_RENDIMENTO_INTERVALLO` (1) in piu'
   del cambio per stanchezza; 2) per stanchezza, come prima. **Tolto il tetto di 2 cambi per sosta**
   (`MAX_CAMBI_FINESTRA` 2 → 5): valgono solo i 5 cambi totali e le 3 soste.
 - **Cronaca e rapporto**: il cambio per rendimento porta `motivo: 'rendimento'` («scarso rendimento» nel rapporto,

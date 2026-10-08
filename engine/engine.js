@@ -236,6 +236,8 @@ function sostituzioni(lineup, intervallo = false, rend = null) {
     for (let i = 0; i < lineup.slots.length; i++) {
       const tit = lineup.titolari[i];
       if (!tit || lineup.slots[i] === 'GK') continue;
+      // Chi e' subentrato dalla panchina non si toglie per rendimento: il mister lo ha appena scelto.
+      if (tit._entrato) continue;
       if (rend.blocchiGiocati(tit.id) < CFG.MIN_BLOCCHI_RENDIMENTO) continue;
       const voto = rend.voto(tit.id);
       if (voto !== null && voto < CFG.SOGLIA_RENDIMENTO_CAMBIO) scarsi.push({ i, voto });
