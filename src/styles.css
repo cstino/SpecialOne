@@ -5059,3 +5059,11 @@ body:has(.anteprima) .reazioni--fisso .reazioni__pannello { bottom: 150px; }
 .faccina-morale { display: block; width: 26px; height: 26px; margin-top: 1px; filter: drop-shadow(0 0 6px color-mix(in srgb, currentColor 35%, transparent)); }
 .faccina-morale--ottimo { color: #65e69a; } .faccina-morale--buono { color: #c9a6ff; } .faccina-morale--medio { color: #f0c44d; }
 .faccina-morale--basso { color: #ffa06b; } .faccina-morale--critico { color: #ff7188; }
+
+/* Faccina del morale: sul telefono sta nella colonna della foto, centrata con la riga delle statistiche (minuti, gol, assist, voto);
+   dal tablet in su resta sotto la sigla del ruolo. */
+.faccina-morale--riga { display: none; }
+@media (max-width: 640px) {
+  .faccina-morale--avatar { display: none; }
+  .faccina-morale--riga { display: block; grid-column: 1; grid-row: 2; align-self: center; justify-self: center; margin: 0; }
+}

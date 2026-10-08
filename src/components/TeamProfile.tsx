@@ -795,7 +795,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       {player.fotoFirmata ? <img src={player.fotoFirmata} alt="" loading="lazy" /> : <b aria-hidden="true">{player.nome.charAt(0)}</b>}
                     </span>
                     <i className="team-roster-player__ruolo">{player.posizioni[0] ? ruoloIt(player.posizioni[0]) : '—'}</i>
-                    {ownTeam && typeof player.morale === 'number' && <FaccinaMorale morale={player.morale} />}
+                    {ownTeam && typeof player.morale === 'number' && <FaccinaMorale morale={player.morale} className="faccina-morale--avatar" />}
                     {/* Al volo, chi sta lavorando e chi no. "Bilanciato" non conta:
                         e' la crescita naturale, senza piano. */}
                     {((ownTeam && ((player.specializzazioneAttiva && player.specializzazioneAttiva !== 'bilanciato') || cambiRuolo.has(player.id))) || player.sulMercato) && <span className="team-roster-player__lavori">
@@ -814,6 +814,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       >{player.deltaOverall > 0 ? '+' : '−'}{Math.abs(player.deltaOverall)}</i>}
                     </span>
                   </b>
+                  {ownTeam && typeof player.morale === 'number' && <FaccinaMorale morale={player.morale} className="faccina-morale--riga" />}
                   <dl><span className={player.minutaggio?.minutiPct != null ? `minuti-${statoMinuti(player.minutaggio.minutiPct, player.minutaggio.gradino)}` : undefined}><i className="min-valore">{statsPerGiocatore.get(player.id)?.minuti ?? 0}{player.minutaggio?.minutiPct != null && <em>({percentuale(player.minutaggio.minutiPct)})</em>}</i><small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span><span>{(() => { const mv = statsPerGiocatore.get(player.id)?.mediaVoto; return mv == null ? '—' : <b className={`voto voto--${fasciaVoto(mv)}`}>{formatoVoto(mv)}</b> })()}<small>MV</small></span></dl>
                 </button>)}</div>}
       </section>}
