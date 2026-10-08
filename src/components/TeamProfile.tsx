@@ -27,6 +27,8 @@ type Props = {
   onNavigate: (view: GameView) => void
   onOpenMatch: (matchId: number) => void
   onTeamUpdated: () => Promise<void>
+  /** Dalla scheda di un giocatore altrui: apre il mercato scambi con lui gia' selezionato. */
+  onProponiScambio?: (teamId: number, istanzaId: number) => void
 }
 
 type RosterPlayer = {
@@ -157,7 +159,7 @@ function buonuscita(player: RosterPlayer, stagioneCorrente: number) {
   return Math.floor((residue * player.ingaggio) / 2)
 }
 
-export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTeamUpdated }: Props) {
+export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTeamUpdated, onProponiScambio }: Props) {
   const league = membership.league as League
   const seasonData = useSeasonData(membership)
   const [tab, setTab] = useState<'sommario' | 'rosa' | 'vivaio'>('sommario')
@@ -794,9 +796,10 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                     <i className="team-roster-player__ruolo">{player.posizioni[0] ? ruoloIt(player.posizioni[0]) : '—'}</i>
                     {/* Al volo, chi sta lavorando e chi no. "Bilanciato" non conta:
                         e' la crescita naturale, senza piano. */}
-                    {ownTeam && ((player.specializzazioneAttiva && player.specializzazioneAttiva !== 'bilanciato') || cambiRuolo.has(player.id)) && <span className="team-roster-player__lavori">
-                      {player.specializzazioneAttiva && player.specializzazioneAttiva !== 'bilanciato' && <i className="team-roster-player__lavoro team-roster-player__lavoro--piano" title="Piano di sviluppo attivo" aria-label="Piano di sviluppo attivo"><Icona nome="allenamento" /></i>}
-                      {cambiRuolo.has(player.id) && <i className="team-roster-player__lavoro team-roster-player__lavoro--ruolo" title="Cambio ruolo in corso" aria-label="Cambio ruolo in corso"><Icona nome="cambio" /></i>}
+                    {((ownTeam && ((player.specializzazioneAttiva && player.specializzazioneAttiva !== 'bilanciato') || cambiRuolo.has(player.id))) || player.sulMercato) && <span className="team-roster-player__lavori">
+                      {player.sulMercato && <i className="team-roster-player__lavoro team-roster-player__lavoro--mercato" title="Sul mercato" aria-label="Sul mercato">$</i>}
+                      {ownTeam && player.specializzazioneAttiva && player.specializzazioneAttiva !== 'bilanciato' && <i className="team-roster-player__lavoro team-roster-player__lavoro--piano" title="Piano di sviluppo attivo" aria-label="Piano di sviluppo attivo"><Icona nome="allenamento" /></i>}
+                      {ownTeam && cambiRuolo.has(player.id) && <i className="team-roster-player__lavoro team-roster-player__lavoro--ruolo" title="Cambio ruolo in corso" aria-label="Cambio ruolo in corso"><Icona nome="cambio" /></i>}
                     </span>}
                   </span>
                   <div><strong>{player.nome}</strong><small>{ruoliIt(player.posizioni)} · {player.eta} anni · <em>{money(player.ingaggio)}/stagione</em> · <em className={contratto(player, league.stagione_corrente).urgente ? 'contratto-urgente' : 'contratto-residuo'}>{contratto(player, league.stagione_corrente).testo}</em></small></div>
@@ -1001,6 +1004,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
             return risposta
           },
         } : undefined}
+        proponiScambio={!ownTeam && onProponiScambio && league.stato === 'stagione' ? { onClick: () => onProponiScambio(teamId, schedaAperta.id) } : undefined}
         listaMercato={ownTeam && league.stato === 'stagione' ? {
           inLista: schedaAperta.sulMercato,
           onCambia: async (valore) => {

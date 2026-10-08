@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { cognome } from '../lib/nomi'
 import { MACRO_COLORE, MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo, ruoloIt } from '../lib/ruoli'
@@ -12,7 +13,8 @@ import { GameNav, type GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { SchedaGiocatore } from './SchedaGiocatore'
-import { attributiIstanza, type Attributi } from '../lib/attributiGiocatore'
+import { attributiInLega, attributiIstanza, type Attributi } from '../lib/attributiGiocatore'
+import { SegnaMercato } from './SegnaMercato'
 import { UnderlineTabs } from './ui/underline-tabs'
 import { useFaseSquadra } from '../lib/faseSquadra'
 
@@ -28,7 +30,20 @@ const perCalendario = (a: { stagione: number; finestra: 'on' | 'off' }, b: { sta
 
 // scorriAConclusi: un numero che cresce quando si arriva da una notifica «scambio ufficiale»;
 // a pagina caricata si scorre al riepilogo degli scambi della stagione.
-type Props = { membership: Membership; onNavigate: (view: GameView) => void; scorriAConclusi?: number }
+type Props = {
+  membership: Membership
+  onNavigate: (view: GameView) => void
+  scorriAConclusi?: number
+  // Arrivando dalla scheda di un giocatore altrui (Club): squadra e giocatore da chiedere.
+  preselezione?: { teamId: number; istanzaId: number } | null
+  onPreselezioneUsata?: () => void
+}
+
+// I ruoli cercabili, nell'ordine del campo (codici del database, sigle in italiano a schermo).
+const RUOLI_RICERCA = ['GK', 'CB', 'RB', 'LB', 'CDM', 'CM', 'RM', 'LM', 'CAM', 'RW', 'LW', 'ST']
+const LIMITE_RISULTATI = 30
+const soloCifre = (v: string) => v.replace(/\D/g, '').slice(0, 3)
+const numeroOppure = (v: string): number | null => (v === '' ? null : Number(v))
 
 type StatoProposta = 'in_attesa' | 'accettata' | 'rifiutata' | 'ritirata' | 'scaduta'
 
@@ -115,7 +130,7 @@ function etichettaScelta(s: Scelta) {
   return `${s.finestra === 'on' ? 'ON' : 'OFF'}-Season ${s.stagione}`
 }
 
-export function Scambi({ membership, onNavigate, scorriAConclusi = 0 }: Props) {
+export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezione = null, onPreselezioneUsata }: Props) {
   const league = membership.league as League
   const dati = useSeasonData(membership)
   // Colori della fase (verde regular, blu title, arancio draft), come Rosa e dashboard.
@@ -159,7 +174,13 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0 }: Props) {
   // attributiDi, che cerca per players.id, e la scheda mostrava le abilita'
   // di un altro giocatore. Ora arrivano quelle vere, crescita compresa.
   async function apriScheda(id: number) {
-    setAttributiScheda(await attributiIstanza(id))
+    let attributi = await attributiIstanza(id)
+    // Se le abilita' correnti non arrivano (succede con i giocatori di altre squadre) si ripiega su quelle della lega.
+    if (Object.keys(attributi).length === 0) {
+      const g = rose.find((r) => r.id === id)
+      if (g) attributi = await attributiInLega(league.id, g.player_id)
+    }
+    setAttributiScheda(attributi)
     setSchedaApertaId(id)
   }
   const [tabComposer, setTabComposer] = useState<'giocatori' | 'scelte'>('giocatori')
@@ -379,7 +400,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0 }: Props) {
             <button type="button" className={`scambi-asset-card scambi-asset-card--player ${selezionati.includes(g.id) ? 'is-scelto' : ''}`}
               onClick={() => alterna(selezionati, g.id, imposta)} aria-pressed={selezionati.includes(g.id)}>
               <span className={`scambi-asset-card__ovr role-pill--${macroRuolo(g.posizioni ?? [g.ruolo]).toLowerCase()}`}>{g.overall}</span>
-              <span className="scambi-asset-card__info"><strong>{g.nome}</strong><small>{ruoloIt(g.ruolo)} · {g.eta} anni · {milioni(g.ingaggio)}</small></span>
+              <span className="scambi-asset-card__info"><strong>{g.nome}{g.sulMercato && <SegnaMercato />}</strong><small>{ruoloIt(g.ruolo)} · {g.eta} anni · {milioni(g.ingaggio)}</small></span>
               {selezionati.includes(g.id) && <span className="scambi-asset-card__check" aria-hidden="true">✓</span>}
             </button>
           </li>)}
@@ -443,13 +464,12 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0 }: Props) {
   // Non serve nessuna query nuova: la pagina caricava gia' tutte le istanze
   // della lega con anagrafica e foto, mancava solo di chiedere il campo.
   //
-  // I propri giocatori restano fuori: chi li ha messi in lista lo sa, e
-  // vederseli qui in mezzo confonderebbe una vetrina che serve a guardare
-  // cosa offrono gli ALTRI.
+  // Ci sono anche i propri giocatori messi in lista (8 ottobre 2026, richiesta del
+  // committente): si vede cosa e' esposto davvero, con la dicitura «Tuo».
   const inVendita = useMemo(
-    () => rose.filter((g) => g.sulMercato && g.team_id !== membership.id)
+    () => rose.filter((g) => g.sulMercato)
       .sort((a, b) => b.overall - a.overall),
-    [rose, membership.id])
+    [rose])
   // La vetrina e' divisa per ruolo (portieri, difensori, centrocampisti, attaccanti), una scheda per ruolo.
   const [ruoloVendita, setRuoloVendita] = useState<MacroRuolo | null>(null)
   const venditaPerRuolo = useMemo(() => {
@@ -466,6 +486,43 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0 }: Props) {
     : ORDINE_MACRO_RUOLO.find((r) => venditaPerRuolo.has(r)) ?? null
 
   const schedaAperta = schedaApertaId != null ? giocatore(schedaApertaId) : undefined
+
+  // «Proponi scambio» dalla scheda di un giocatore altrui: la squadra e il giocatore sono gia' scelti nel compositore.
+  function preparaScambio(g: Giocatore) {
+    setContropropostaOrigine(null)
+    setAvversaria(g.team_id)
+    setChiesti([g.id]); setOfferti([]); setScelteChieste([]); setScelteOfferte([])
+    setTabComposer('giocatori')
+    setSchedaApertaId(null)
+    setEsito(null)
+    window.setTimeout(() => compositoreRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
+  }
+  useEffect(() => {
+    if (!preselezione || caricamento) return
+    const g = rose.find((r) => r.id === preselezione.istanzaId)
+    if (g) preparaScambio(g)
+    onPreselezioneUsata?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselezione, caricamento, rose])
+
+  // RICERCA nella lega: ruolo, eta' e overall, con minimi e massimi. Solo i giocatori delle ALTRE squadre
+  // (i propri sono gia' nel compositore).
+  const [ruoloRicerca, setRuoloRicerca] = useState<string | null>(null)
+  const [etaDa, setEtaDa] = useState(''); const [etaA, setEtaA] = useState('')
+  const [ovrDa, setOvrDa] = useState(''); const [ovrA, setOvrA] = useState('')
+  const [ancheSecondari, setAncheSecondari] = useState(false)
+  const [soloVendita, setSoloVendita] = useState(false)
+  const filtriAttivi = ruoloRicerca !== null || etaDa !== '' || etaA !== '' || ovrDa !== '' || ovrA !== '' || soloVendita
+  const azzeraRicerca = () => { setRuoloRicerca(null); setEtaDa(''); setEtaA(''); setOvrDa(''); setOvrA(''); setAncheSecondari(false); setSoloVendita(false) }
+  const risultatiRicerca = useMemo(() => {
+    const eMin = numeroOppure(etaDa), eMax = numeroOppure(etaA), oMin = numeroOppure(ovrDa), oMax = numeroOppure(ovrA)
+    return rose.filter((g) => g.team_id !== membership.id)
+      .filter((g) => !ruoloRicerca || (ancheSecondari ? (g.posizioni ?? [g.ruolo]).includes(ruoloRicerca) : (g.posizioni?.[0] ?? g.ruolo) === ruoloRicerca))
+      .filter((g) => (eMin === null || g.eta >= eMin) && (eMax === null || g.eta <= eMax))
+      .filter((g) => (oMin === null || g.overall >= oMin) && (oMax === null || g.overall <= oMax))
+      .filter((g) => !soloVendita || g.sulMercato)
+      .sort((a, b) => b.overall - a.overall || a.eta - b.eta)
+  }, [rose, membership.id, ruoloRicerca, ancheSecondari, etaDa, etaA, ovrDa, ovrA, soloVendita])
   const capienzaPct = capienza ? Math.min(100, Math.max(0, (capienza.monte / Math.max(capienza.tetto, 1)) * 100)) : 0
   const capienzaCritica = capienza ? capienza.capienza < 0 : false
 
@@ -636,6 +693,59 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0 }: Props) {
             </article>)}</div>}
       </section>
 
+      {/* ---- Ricerca nella lega ---- */}
+      <section className="scambi-blocco scambi-cerca">
+        <div className="sezione-testa">
+          <div><p className="kicker">Cerca</p><h2>Giocatori della lega{filtriAttivi && <span className="scambi-conteggio"> {risultatiRicerca.length}</span>}</h2></div>
+          {filtriAttivi && <button className="button button--secondary" type="button" onClick={azzeraRicerca}>Azzera</button>}
+        </div>
+        <div className="scambi-cerca__ruoli" role="group" aria-label="Ruolo">
+          <button type="button" className={ruoloRicerca === null ? 'is-attivo' : ''} aria-pressed={ruoloRicerca === null} onClick={() => setRuoloRicerca(null)}>Tutti</button>
+          {RUOLI_RICERCA.map((r) => <button key={r} type="button" className={ruoloRicerca === r ? 'is-attivo' : ''} aria-pressed={ruoloRicerca === r}
+            style={{ ['--c' as string]: MACRO_COLORE[macroRuolo([r]) as MacroRuolo] }} onClick={() => setRuoloRicerca(ruoloRicerca === r ? null : r)}>{ruoloIt(r)}</button>)}
+        </div>
+        <div className="scambi-cerca__campi">
+          <fieldset>
+            <legend>Età</legend>
+            <input inputMode="numeric" placeholder="da" aria-label="Età minima" value={etaDa} onChange={(e) => setEtaDa(soloCifre(e.target.value))} />
+            <span aria-hidden="true">–</span>
+            <input inputMode="numeric" placeholder="a" aria-label="Età massima" value={etaA} onChange={(e) => setEtaA(soloCifre(e.target.value))} />
+          </fieldset>
+          <fieldset>
+            <legend>Overall</legend>
+            <input inputMode="numeric" placeholder="da" aria-label="Overall minimo" value={ovrDa} onChange={(e) => setOvrDa(soloCifre(e.target.value))} />
+            <span aria-hidden="true">–</span>
+            <input inputMode="numeric" placeholder="a" aria-label="Overall massimo" value={ovrA} onChange={(e) => setOvrA(soloCifre(e.target.value))} />
+          </fieldset>
+        </div>
+        <div className="scambi-cerca__opzioni">
+          <label><input type="checkbox" checked={ancheSecondari} onChange={(e) => setAncheSecondari(e.target.checked)} />Anche ruolo secondario</label>
+          <label><input type="checkbox" checked={soloVendita} onChange={(e) => setSoloVendita(e.target.checked)} />Solo sul mercato</label>
+        </div>
+        {!filtriAttivi
+          ? <p className="scambi-vetrina-nota">Scegli un ruolo o imposta età e overall (minimi, massimi o entrambi) per cercare nelle rose delle altre squadre.</p>
+          : risultatiRicerca.length === 0
+            ? <p className="season-empty">Nessun giocatore con questi filtri.</p>
+            : <>
+                <ul className="scambi-asset-grid scambi-cerca__risultati">
+                  {risultatiRicerca.slice(0, LIMITE_RISULTATI).map((g) => <li key={g.id}>
+                    <button type="button" className="scambi-asset-card scambi-asset-card--player scambi-asset-card--vetrina" onClick={() => void apriScheda(g.id)}>
+                      <span className={`scambi-asset-card__ovr role-pill--${macroRuolo(g.posizioni ?? [g.ruolo]).toLowerCase()}`}>{g.overall}</span>
+                      <span className="scambi-asset-card__info">
+                        <strong>{g.nome}{g.sulMercato && <SegnaMercato />}</strong>
+                        <small>{ruoloIt(g.ruolo)} · {g.eta} anni · {milioni(g.ingaggio)}</small>
+                        <small className="scambi-asset-card__squadra">{nomeSquadra(g.team_id)}</small>
+                      </span>
+                      <span className="scambi-asset-card__stemma" title={nomeSquadra(g.team_id)}>
+                        <Crest value={dati.teamById.get(g.team_id)?.stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(g.team_id)} stelle={dati.teamById.get(g.team_id)?.titoli_title} />
+                      </span>
+                    </button>
+                  </li>)}
+                </ul>
+                {risultatiRicerca.length > LIMITE_RISULTATI && <p className="scambi-vetrina-nota">Mostro i primi {LIMITE_RISULTATI} su {risultatiRicerca.length}: restringi i filtri per vedere gli altri.</p>}
+              </>}
+      </section>
+
       {/* ---- Vetrina della lega ---- */}
       <section className="scambi-blocco">
         <div className="sezione-testa"><div>
@@ -643,7 +753,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0 }: Props) {
           <h2>In vendita{inVendita.length > 0 && <span className="scambi-conteggio"> {inVendita.length}</span>}</h2>
         </div></div>
         {inVendita.length === 0
-          ? <p className="season-empty">Nessuna squadra ha messo giocatori in lista. Puoi metterci i tuoi dalla loro scheda, nella pagina Squadra.</p>
+          ? <p className="season-empty">Nessuna squadra ha messo giocatori in lista. Puoi metterci i tuoi dalla loro scheda, nella pagina Club.</p>
           : <>
               <p className="scambi-vetrina-nota">
                 Segnalano «questo lo cederei». Non e' un canale a parte: se ti interessa, componi una normale proposta qui sopra.
@@ -661,7 +771,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0 }: Props) {
                     onClick={() => void apriScheda(g.id)}>
                     <span className={`scambi-asset-card__ovr role-pill--${macroRuolo(g.posizioni ?? [g.ruolo]).toLowerCase()}`}>{g.overall}</span>
                     <span className="scambi-asset-card__info">
-                      <strong>{g.nome}</strong>
+                      <strong>{g.nome}{g.team_id === membership.id && <em className="scambi-asset-card__tuo">Tuo</em>}</strong>
                       <small>{ruoloIt(g.ruolo)} · {g.eta} anni · {milioni(g.ingaggio)}</small>
                       <small className="scambi-asset-card__squadra">{nomeSquadra(g.team_id)}</small>
                     </span>
@@ -726,7 +836,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0 }: Props) {
         </div>
       </div>}
 
-      {schedaAperta && <SchedaGiocatore
+      {schedaAperta && createPortal(<SchedaGiocatore
         giocatore={{
           nome: schedaAperta.nome, nomeEsteso: schedaAperta.nomeEsteso, club: schedaAperta.club, nazionalita: schedaAperta.nazionalita,
           posizioni: schedaAperta.posizioni ?? [schedaAperta.ruolo], overall: schedaAperta.overall, eta: schedaAperta.eta,
@@ -737,8 +847,9 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0 }: Props) {
         fotoUrl={schedaAperta.foto_firmata}
         fase={fase}
         tatticheAttive={Boolean(league.tattiche_attive)}
+        proponiScambio={schedaAperta.team_id !== membership.id ? { onClick: () => preparaScambio(schedaAperta) } : undefined}
         onClose={() => setSchedaApertaId(null)}
-      />}
+      />, document.body)}
     </div>}
   </main>
 }

@@ -135,6 +135,8 @@ export default function App() {
   // home: e' la differenza fra un avviso e un collegamento.
   // Cambia a ogni notifica «scambio ufficiale» toccata: dice a Scambi di scorrere al riepilogo.
   const [scorriScambi, setScorriScambi] = useState(0)
+  // Dalla scheda di un giocatore altrui: apre Scambi con lui gia' chiesto a quella squadra.
+  const [scambioPreselezione, setScambioPreselezione] = useState<{ teamId: number; istanzaId: number } | null>(null)
   const apriNotifica = useCallback((notifica: Notifica) => {
     const legaId = notifica.league_id
     if (legaId == null) return
@@ -474,9 +476,9 @@ export default function App() {
   const schermata = openMatch
       ? <MatchDetail membership={active} matchId={openMatch.id} onBack={() => { setOpenMatch(null); setGameView(openMatch.from) }} onRivedi={() => setRevealMatch(openMatch)} onNavigate={navigateGame} onOpenTeam={openTeam} />
       : gameView === 'squad' ? <Formazione membership={active} onNavigate={navigateGame} />
-      : gameView === 'team' ? <TeamProfile membership={active} teamId={viewedTeamId ?? active.id} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'team' })} onTeamUpdated={loadMemberships} />
+      : gameView === 'team' ? <TeamProfile membership={active} teamId={viewedTeamId ?? active.id} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'team' })} onTeamUpdated={loadMemberships} onProponiScambio={(squadra, istanza) => { setScambioPreselezione({ teamId: squadra, istanzaId: istanza }); navigateGame('scambi') }} />
       : gameView === 'mercato' ? <Mercato membership={active} onNavigate={navigateGame} />
-      : gameView === 'scambi' ? <Scambi membership={active} onNavigate={navigateGame} scorriAConclusi={scorriScambi} />
+      : gameView === 'scambi' ? <Scambi membership={active} onNavigate={navigateGame} scorriAConclusi={scorriScambi} preselezione={scambioPreselezione} onPreselezioneUsata={() => setScambioPreselezione(null)} />
       : gameView === 'scelte' ? <Scelte membership={active} onNavigate={navigateGame} />
       : gameView === 'under' ? <Under membership={active} onNavigate={navigateGame} />
       : gameView === 'matches' ? <Matches membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} onOpenMatch={(id) => setOpenMatch({ id, from: 'matches' })} onRevealMatch={(id) => setRevealMatch({ id, from: 'matches' })} onOpenTeam={openTeam} />

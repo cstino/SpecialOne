@@ -5018,3 +5018,26 @@ body:has(.anteprima) .reazioni--fisso .reazioni__pannello { bottom: 150px; }
 @media (max-width: 640px) { .match-detail-rivedi { padding: 0 10px; font-size: .62rem; } }
 
 .match-detail-rivedi--eroe { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; width: 100%; max-width: 420px; margin: 14px auto 0; min-height: 46px; font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; }
+
+/* Segnalino «sul mercato»: cerchietto verde col dollaro */
+.segna-mercato { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: 6px; border-radius: 50%; background: #37d67a; color: #06150d; font: 800 .66rem/1 Inter, Arial, sans-serif; font-style: normal; vertical-align: middle; box-shadow: 0 0 8px rgba(55, 214, 122, .45); }
+.team-roster-player__lavoro--mercato { background: #37d67a; font: 800 .72rem/1 Inter, Arial, sans-serif; color: #06150d; }
+.scambi-asset-card__tuo { margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: rgba(183, 140, 255, .18); color: #cdb0ff; font: 700 .56rem/1.4 "Oswald", "Arial Narrow", sans-serif; font-style: normal; letter-spacing: .14em; text-transform: uppercase; vertical-align: middle; }
+
+/* Scambi: ricerca dei giocatori della lega */
+.scambi-cerca__ruoli { display: flex; gap: 6px; margin: 0 -2px; padding: 2px 2px 6px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.scambi-cerca__ruoli::-webkit-scrollbar { display: none; }
+.scambi-cerca__ruoli button { flex: none; min-width: 46px; min-height: 36px; padding: 0 12px; border: 1px solid #253a33; border-radius: 9px; background: #121b18; color: #9fb8b0; font: 700 .74rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; transition: border-color .14s, color .14s, background .14s; }
+.scambi-cerca__ruoli button:hover { color: #eafaf5; }
+.scambi-cerca__ruoli button.is-attivo { color: #fff; border-color: var(--c, #6fe0b4); background: color-mix(in srgb, var(--c, #6fe0b4) 18%, #121b18); box-shadow: 0 0 12px color-mix(in srgb, var(--c, #6fe0b4) 30%, transparent); }
+.scambi-cerca__ruoli button:focus-visible, .scambi-cerca__campi input:focus-visible { outline: 2px solid #6fe0b4; outline-offset: 2px; }
+.scambi-cerca__campi { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.scambi-cerca__campi fieldset { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 6px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.scambi-cerca__campi legend { grid-column: 1 / -1; margin-bottom: 4px; padding: 0; color: rgba(255, 255, 255, .55); font: 700 .62rem/1 "Oswald", "Arial Narrow", sans-serif; letter-spacing: .16em; text-transform: uppercase; }
+.scambi-cerca__campi input { width: 100%; min-width: 0; min-height: 44px; margin: 0; padding: 0 10px; border: 1px solid #253a33; border-radius: 10px; background: #121b18; color: #eafaf5; font: 700 1rem/1 Inter, Arial, sans-serif; text-align: center; font-variant-numeric: tabular-nums; }
+.scambi-cerca__campi input::placeholder { color: #5e756e; font-weight: 600; }
+.scambi-cerca__campi span { color: #5e756e; }
+.scambi-cerca__opzioni { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.scambi-cerca__opzioni label { display: inline-flex; align-items: center; gap: 8px; color: #9fb8b0; font-size: .78rem; cursor: pointer; }
+.scambi-cerca__opzioni input { width: 18px; height: 18px; margin: 0; accent-color: #37d67a; }
+.scambi-cerca__risultati { max-height: 420px; }

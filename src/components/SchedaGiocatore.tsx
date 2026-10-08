@@ -128,6 +128,8 @@ type Props = {
     inLista: boolean
     onCambia: (valore: boolean) => Promise<void>
   }
+  /** Giocatore di un'altra squadra: porta al mercato scambi con lui gia' selezionato. */
+  proponiScambio?: { onClick: () => void }
   cambioRuolo?: {
     inCorso: { ruoloPrecedente: string; ruoloTarget: string; avviatoGiornata: number; completaGiornata: number } | null
     /** Giornata di riferimento per il conto alla rovescia: solo indicativa, il server decide davvero. */
@@ -496,7 +498,7 @@ function PannelloAllenamento({
   </section>
 }
 
-export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, userId, giocatore, fotoUrl, stagione, azionePericolosa, rinnovo, listaMercato, cambioRuolo, specializzazione, onClose }: Props) {
+export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, userId, giocatore, fotoUrl, stagione, azionePericolosa, rinnovo, listaMercato, proponiScambio, cambioRuolo, specializzazione, onClose }: Props) {
   const [confermaAperta, setConfermaAperta] = useState(false)
   const [vistaRinnovo, setVistaRinnovo] = useState(false)
   const [proposta, setProposta] = useState<PropostaRinnovo | null>(null)
@@ -936,13 +938,14 @@ export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, user
             </div>
           </div>
 
-          {(azionePericolosa || rinnovo || listaMercato) && <div className="player-modal__danger">
+          {(azionePericolosa || rinnovo || listaMercato || proponiScambio) && <div className="player-modal__danger">
             {!confermaAperta
               ? <div className="player-modal__azioni">
                   {azionePericolosa && <button className="button button--danger-ghost" type="button" onClick={() => setConfermaAperta(true)}>{azionePericolosa.etichetta}</button>}
                   {rinnovo && (rinnovo.bloccato
                     ? <button className="button button--secondary" type="button" disabled title={rinnovo.bloccato}>Rinnovo</button>
                     : <button className="button button--secondary" type="button" onClick={apriRinnovo}>Rinnovo</button>)}
+                  {proponiScambio && <button className="button button--primary player-modal__lista" type="button" onClick={proponiScambio.onClick}>Proponi scambio</button>}
                   {listaMercato && <button className={`button player-modal__lista ${inLista ? 'button--secondary' : 'button--primary'}`} type="button" disabled={listaInCorso} onClick={cambiaLista}>
                     {listaInCorso ? 'Attendi…' : inLista ? 'Rimuovi dal mercato' : 'Metti sul mercato'}
                   </button>}
