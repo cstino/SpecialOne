@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from 'recharts'
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { Progress } from './ui/progress'
@@ -498,7 +499,14 @@ function PannelloAllenamento({
   </section>
 }
 
-export function SchedaGiocatore({ fase = 'regular', tatticheAttive = false, userId, giocatore, fotoUrl, stagione, azionePericolosa, rinnovo, listaMercato, proponiScambio, cambioRuolo, specializzazione, onClose }: Props) {
+// La scheda si monta direttamente sul body, fuori dalla pagina: cosi' nessun contenitore (trasformazioni, filtri,
+// sfocature, impilamenti) puo' spostarla o tagliarla. Su iPhone, aperta dentro Club e Scambi, finiva in cima alla
+// pagina, senza oscurare il resto (8 ottobre 2026).
+export function SchedaGiocatore(props: Props) {
+  return createPortal(<SchedaGiocatoreInterna {...props} />, document.body)
+}
+
+function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, userId, giocatore, fotoUrl, stagione, azionePericolosa, rinnovo, listaMercato, proponiScambio, cambioRuolo, specializzazione, onClose }: Props) {
   const [confermaAperta, setConfermaAperta] = useState(false)
   const [vistaRinnovo, setVistaRinnovo] = useState(false)
   const [proposta, setProposta] = useState<PropostaRinnovo | null>(null)

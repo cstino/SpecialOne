@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { cognome } from '../lib/nomi'
 import { MACRO_COLORE, MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo, ruoloIt } from '../lib/ruoli'
@@ -836,7 +835,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
         </div>
       </div>}
 
-      {schedaAperta && createPortal(<SchedaGiocatore
+      {schedaAperta && <SchedaGiocatore
         giocatore={{
           nome: schedaAperta.nome, nomeEsteso: schedaAperta.nomeEsteso, club: schedaAperta.club, nazionalita: schedaAperta.nazionalita,
           posizioni: schedaAperta.posizioni ?? [schedaAperta.ruolo], overall: schedaAperta.overall, eta: schedaAperta.eta,
@@ -849,7 +848,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
         tatticheAttive={Boolean(league.tattiche_attive)}
         proponiScambio={schedaAperta.team_id !== membership.id ? { onClick: () => preparaScambio(schedaAperta) } : undefined}
         onClose={() => setSchedaApertaId(null)}
-      />, document.body)}
+      />}
     </div>}
   </main>
 }
