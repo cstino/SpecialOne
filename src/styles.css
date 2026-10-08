@@ -5054,3 +5054,8 @@ body:has(.anteprima) .reazioni--fisso .reazioni__pannello { bottom: 150px; }
 
 /* La proposta aperta da una notifica si illumina per un attimo */
 .scambi-card.is-evidenziata, .scambi-operazione.is-evidenziata { outline: 2px solid #6fe0b4; outline-offset: 3px; box-shadow: 0 0 22px rgba(111, 224, 180, .35); transition: outline-color .3s, box-shadow .3s; }
+
+/* Faccina del morale (rosa del Club): colori uguali alle diciture della scheda */
+.faccina-morale { display: block; width: 26px; height: 26px; margin-top: 1px; filter: drop-shadow(0 0 6px color-mix(in srgb, currentColor 35%, transparent)); }
+.faccina-morale--ottimo { color: #65e69a; } .faccina-morale--buono { color: #c9a6ff; } .faccina-morale--medio { color: #f0c44d; }
+.faccina-morale--basso { color: #ffa06b; } .faccina-morale--critico { color: #ff7188; }

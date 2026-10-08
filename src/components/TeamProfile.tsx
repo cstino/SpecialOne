@@ -9,6 +9,7 @@ import { useSeasonData } from '../lib/useSeasonData'
 import { useFaseSquadra } from '../lib/faseSquadra'
 import type { CrestChoice, Fixture, League, MatchPlayerStat, Membership, Team } from '../types'
 import { Crest } from './Crest'
+import { FaccinaMorale } from './FaccinaMorale'
 import { CrestPicker } from './CrestPicker'
 import { GameNav, type GameView } from './GameNav'
 import { PopupSpiegazione } from './PopupSpiegazione'
@@ -794,6 +795,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       {player.fotoFirmata ? <img src={player.fotoFirmata} alt="" loading="lazy" /> : <b aria-hidden="true">{player.nome.charAt(0)}</b>}
                     </span>
                     <i className="team-roster-player__ruolo">{player.posizioni[0] ? ruoloIt(player.posizioni[0]) : '—'}</i>
+                    {ownTeam && typeof player.morale === 'number' && <FaccinaMorale morale={player.morale} />}
                     {/* Al volo, chi sta lavorando e chi no. "Bilanciato" non conta:
                         e' la crescita naturale, senza piano. */}
                     {((ownTeam && ((player.specializzazioneAttiva && player.specializzazioneAttiva !== 'bilanciato') || cambiRuolo.has(player.id))) || player.sulMercato) && <span className="team-roster-player__lavori">

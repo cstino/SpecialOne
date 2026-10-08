@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { etichettaMorale } from './FaccinaMorale'
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from 'recharts'
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { Progress } from './ui/progress'
@@ -242,14 +243,6 @@ function percentuale(parte: number, totale: number) {
 
 const milioni = (euro: number) => `${(euro / 1_000_000).toFixed(1).replace('.', ',')} M€`
 const stagioni = (n: number) => `${n} ${n === 1 ? 'stagione' : 'stagioni'}`
-
-function etichettaMorale(morale: number) {
-  if (morale >= 80) return { testo: 'Entusiasta', classe: 'ottimo' }
-  if (morale >= 60) return { testo: 'Sereno', classe: 'buono' }
-  if (morale >= 40) return { testo: 'Insoddisfatto', classe: 'medio' }
-  if (morale >= 20) return { testo: 'Scontento', classe: 'basso' }
-  return { testo: 'In rotta con la squadra', classe: 'critico' }
-}
 
 // I tre rami sommano 100: il dominante e' il tratto che definisce il giocatore.
 const RAMI_MENTALITA: Array<[keyof NonNullable<DatiScheda['mentalita']>, string, string]> = [
