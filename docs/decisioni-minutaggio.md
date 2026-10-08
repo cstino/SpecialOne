@@ -116,6 +116,14 @@ quel momento:
 La richiesta di cessione non si ritira nella stessa squadra; uno scambio la azzera. Non mette
 il giocatore in lista di vendita da sola: decidere se e come cederlo resta al mister.
 
+**Aggiornamento 8 ottobre 2026 (committente).** Il richiamo non parte piu' dai minuti: parte quando il **morale**
+del giocatore e' **sotto 30** al controllo (stesso calendario: giornata 8, poi ogni 5), per tutti i giocatori delle
+squadre umane, con o senza minutaggio trattato. Messaggio: «Salve mister, volevo dirle che non sono soddisfatto del mio
+impiego e credo di meritare di meglio. Le chiedo di prendere provvedimenti, altrimenti sarò costretto a richiedere la
+cessione.» Al controllo dopo, ancora sotto 30: richiesta di cessione; risalito: il richiamo si cancella. Il morale
+contiene gia' minutaggio (con la promessa non mantenuta che pesa il 50% in piu'), ingaggio e classifica.
+Migrazione `20261008114000_richiamo_per_morale.sql`.
+
 ## 6. Soglia minima, colori e assenti
 
 La **soglia minima** di un gradino è la quota di minuti sotto la quale la promessa non è più
