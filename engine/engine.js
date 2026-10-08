@@ -218,7 +218,7 @@ export function identitaStile(stile, indicazioni = null) {
 // `intervallo`: la finestra dell'intervallo non consuma una delle MAX_SOSTE
 // interruzioni, ma e' piu' prudente (soglia piu' bassa, al massimo
 // MAX_CAMBI_INTERVALLO). Restituisce i cambi fatti, per la cronaca.
-function sostituzioni(lineup, intervallo = false, rend = null) {
+function sostituzioni(lineup, intervallo = false, rend = null, blocco = 0) {
   const fattiOra = [];
   if (lineup.cambiFatti >= CFG.MAX_CAMBI) return fattiOra;
   if (!intervallo && lineup.soste >= CFG.MAX_SOSTE) return fattiOra;
@@ -284,7 +284,40 @@ function sostituzioni(lineup, intervallo = false, rend = null) {
     }
   }
 
-  if ((fatti + fattiRend) > 0 && !intervallo) lineup.soste++;
+  // Rotazione: la squadra che alla finestra ha ancora cambi da fare per arrivare
+  // all'obiettivo (quasi tutte usano tutti e cinque) toglie i piu' affaticati.
+  // Mai il portiere, mai chi e' appena entrato.
+  let fattiRotazione = 0;
+  const obiettivo = intervallo ? 0 : (CFG.OBIETTIVO_CAMBI[blocco] ?? 0);
+  while (obiettivo > 0 && lineup.cambiFatti < Math.min(obiettivo, CFG.MAX_CAMBI) && lineup.panchina.length > 0) {
+    let iScelto = -1, condMin = Infinity;
+    for (let i = 0; i < lineup.slots.length; i++) {
+      const tit = lineup.titolari[i];
+      if (!tit || lineup.slots[i] === 'GK' || tit._entrato || tit._escluso) continue;
+      if (tit.condizione < condMin) { condMin = tit.condizione; iScelto = i; }
+    }
+    if (iScelto < 0) break;
+    const slot = lineup.slots[iScelto], tit = lineup.titolari[iScelto];
+    const valoreTit = ovrEfficace(tit, slot, dt(lineup, tit, slot));
+    let bestIdx = -1, bestVal = -Infinity;
+    for (let j = 0; j < lineup.panchina.length; j++) {
+      const r = lineup.panchina[j];
+      const v = ovrEfficace(r, slot, dt(lineup, r, slot));
+      if (v > bestVal) { bestVal = v; bestIdx = j; }
+    }
+    if (bestIdx < 0 || bestVal < valoreTit - CFG.MARGINE_CAMBIO_ROTAZIONE) {
+      // Nessuno adatto per il piu' stanco: si prova col successivo, una volta sola per giro.
+      tit._escluso = true;
+      continue;
+    }
+    const entra = lineup.panchina.splice(bestIdx, 1)[0];
+    lineup.titolari[iScelto] = entra;
+    entra._entrato = true;
+    lineup.cambiFatti++; fattiRotazione++;
+    fattiOra.push({ esce: tit.id, entra: entra.id, motivo: 'stanchezza' });
+  }
+  for (const g of lineup.titolari) if (g) delete g._escluso;
+  if ((fatti + fattiRend + fattiRotazione) > 0 && !intervallo) lineup.soste++;
   return fattiOra;
 }
 
@@ -711,8 +744,8 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
 
     if (CFG.FINESTRE_CAMBI.includes(b + 1)) {
       const intervallo = b + 1 === CFG.BLOCCO_INTERVALLO;
-      registraCambi('casa', lc, b + 1, sostituzioni(lc, intervallo, rend), intervallo);
-      registraCambi('ospite', lo, b + 1, sostituzioni(lo, intervallo, rend), intervallo);
+      registraCambi('casa', lc, b + 1, sostituzioni(lc, intervallo, rend, b + 1), intervallo);
+      registraCambi('ospite', lo, b + 1, sostituzioni(lo, intervallo, rend, b + 1), intervallo);
     }
 
     if (b + 1 === CFG.BLOCCHI_PARTITA) {

@@ -137,13 +137,21 @@ export const CFG = {
   // giocando male, anche se e' fresco. Mai il portiere. Il voto e' quello in
   // pagella, costruito dalle azioni vere del giocatore: sotto questa soglia, e
   // dopo almeno MIN_BLOCCHI_RENDIMENTO blocchi giocati, e' candidato al cambio.
-  SOGLIA_RENDIMENTO_CAMBIO: 6.1,
+  SOGLIA_RENDIMENTO_CAMBIO: 6.2,
   MIN_BLOCCHI_RENDIMENTO: 2,
   // Chi entra deve essere almeno cosi' vicino, in overall nello slot, a chi esce:
   // non si toglie un 80 che gioca male per un 60.
   MARGINE_CAMBIO_RENDIMENTO: 8,
   // All'intervallo, oltre al cambio per stanchezza, al massimo uno per rendimento.
   MAX_CAMBI_RENDIMENTO_INTERVALLO: 1,
+  // Nel calcio vero quasi tutte le squadre usano tutti i cinque cambi: chi arriva
+  // alla finestra con meno cambi del previsto li completa dando il cambio ai piu'
+  // affaticati (rotazione, gambe fresche). Chiave: blocco al cui termine si apre
+  // la finestra; valore: quanti cambi totali la squadra ha fatto, almeno, dopo di
+  // essa. Il cambio entra solo se l'alternativa non e' piu' debole di
+  // MARGINE_CAMBIO_ROTAZIONE punti di overall nello slot.
+  OBIETTIVO_CAMBI: { 4: 3, 5: 5 },
+  MARGINE_CAMBIO_ROTAZIONE: 12,
 };
 
 // ============================================================

@@ -43,7 +43,7 @@ export const MINUTI_MINIMI = 15;
 // media intorno a 6,7, scarto intorno a 0,6, migliore in campo fra 7,5 e 8,5,
 // e l'MVP distribuito su tutti i reparti.
 export const PESI = {
-  base: 6.4,
+  base: 6.5,
   vittoria: 0.15, sconfitta: -0.15,
   gol: { ATT: 1.0, MID: 1.1, DEF: 1.2, GK: 1.5 },
   assist: 0.7,
@@ -52,9 +52,9 @@ export const PESI = {
   // PRECISIONE rispetto all'attesa, non uno per uno, piu' un poco di volume.
   precisione: 0.04, attesaPassaggi: 0.82, volumePassaggi: 0.003,
   contrastoVinto: 0.14, contrastoPerso: -0.1,
-  intervento: 0.11, interventoMancato: -0.12,
+  intervento: 0.14, interventoMancato: -0.12,
   dribblingRiuscito: 0.1, dribblingFallito: -0.06,
-  parata: 0.17,
+  parata: 0.14,
   // DEF era -0,14: nelle partite vere si segna molto (Serie F 4,3 gol a
   // partita) e i difensori avevano la media piu' bassa di tutti (6,49 contro
   // 6,81 degli attaccanti su 20.000 voti di LegaBot). Registro, punto 38.

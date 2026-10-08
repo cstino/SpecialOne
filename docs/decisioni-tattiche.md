@@ -1606,10 +1606,13 @@ Mai il portiere.
 - **Marcatore e assist scelti nel blocco del gol**, fra chi e' in campo in quel momento (stessi pesi di prima).
   La Edge Function non li abbina piu' a posteriori: `eventiGolDalMotore` da' solo il minuto dentro il blocco.
   `QUOTA_GOL_SENZA_ASSIST` e `PESO_ASSIST` ora vivono in `engine/rendimento.js`.
-- **Cambi** (`sostituzioni()`): 1) per rendimento, prima: voto live sotto `SOGLIA_RENDIMENTO_CAMBIO` (6,1), almeno
+- **Cambi** (`sostituzioni()`): 1) per rendimento, prima: voto live sotto `SOGLIA_RENDIMENTO_CAMBIO` (6,2), almeno
   `MIN_BLOCCHI_RENDIMENTO` (2) blocchi giocati, entra la migliore alternativa dello slot purche' non sia piu' debole
   di `MARGINE_CAMBIO_RENDIMENTO` (8) punti; **mai chi e' subentrato dalla panchina** (committente, 8 ottobre); all'intervallo al massimo `MAX_CAMBI_RENDIMENTO_INTERVALLO` (1) in piu'
-  del cambio per stanchezza; 2) per stanchezza, come prima. **Tolto il tetto di 2 cambi per sosta**
+  del cambio per stanchezza; 2) per stanchezza, come prima; 3) **rotazione** (committente, 8 ottobre: nel calcio vero
+  quasi tutte le squadre usano tutti e cinque i cambi): `OBIETTIVO_CAMBI` `{4: 3, 5: 5}`, alla finestra che chiude il
+  blocco 4 la squadra arriva ad almeno 3 cambi, a quella del blocco 5 a 5, togliendo i piu' affaticati (mai il portiere,
+  mai un subentrato) se l'alternativa non e' piu' debole di `MARGINE_CAMBIO_ROTAZIONE` (12) punti di overall nello slot. **Tolto il tetto di 2 cambi per sosta**
   (`MAX_CAMBI_FINESTRA` 2 → 5): valgono solo i 5 cambi totali e le 3 soste.
 - **Cronaca e rapporto**: il cambio per rendimento porta `motivo: 'rendimento'` («scarso rendimento» nel rapporto,
   «non in giornata» nella telecronaca).
@@ -1618,13 +1621,15 @@ Mai il portiere.
   Ora chi entra riceve i minuti veri della sua finestra.
 
 **Misure** (suite `tools/validazione`, confronto con la base prima delle modifiche):
-- `simulate.js`: stessi target in rosso/verde di prima, scostamenti nel rumore (gol/partita 2,14 → 2,20, punti
-  vincitore 56,7 → 57,2, condizione a fine stagione 86,5 → 87,4). I FUORI di partenza (gol/partita, pareggi...)
-  c'erano gia' prima: non vengono da questo cambiamento.
-- `prova-pagelle.mjs` (1.500 partite, rose vere): media voti 6,73, scarto 0,58, 5%-95% 6,0-7,8, migliore in campo
-  8,00; MVP per reparto GK 15 · DEF 28 · MID 29 · ATT 28 (prima: media 6,72, scarto 0,60, 8,01, 13/39/28/20).
-  Lo scarto e' un poco piu' basso (niente rumore); i difensori sono un poco meno spesso MVP.
-- Cambi per squadra (60 stagioni): 4,14 → 4,27; con 5 cambi: 35% → 47%; per rendimento ~0,4 a partita a squadra.
+- `simulate.js`: nessun target che era OK diventa FUORI. Con la rotazione dei cambi (gambe fresche) la squadra rende un
+  poco di piu': gol/partita 1,92 → 2,10 e 2,14 → 2,19 nella stagione, vittorie casa 41,5 → 43,6 (ora OK), tiri per
+  squadra 10,6 → 11,2 (ora OK). I FUORI di partenza (gol/partita, pareggi...) c'erano gia' prima.
+- `prova-pagelle.mjs` (1.500 partite, rose vere): media voti 6,70, scarto 0,52, 5%-95% 6,1-7,7, migliore in campo 8,05;
+  MVP per reparto GK 10 · DEF 35 · MID 28 · ATT 27 (titolari 9/36/27/27). Per tenere queste misure sono stati ritoccati
+  `PESI.base` 6,4 → 6,5 (i subentrati, con voto stretto verso il 6, abbassavano la media), `intervento` 0,11 → 0,14 e
+  `parata` 0,17 → 0,14. Prima: 6,72 / 0,60 / 8,01 / 13-39-28-20.
+- Cambi per squadra (60 stagioni, rose sintetiche con panchina piu' debole): 4,14 → 4,72; con 5 cambi: 35% → 74%.
+  Con le rose vere di Serie F (150 partite): 298 squadre su 300 con 5 cambi, circa 0,4 a squadra per rendimento.
 - Funzione completa in locale (150 partite, `simulaAmichevoleCore`): i gol degli eventi sono quelli del punteggio, ogni
   marcatore, assist e sostituto ha la sua riga di statistiche (0 problemi).
 
