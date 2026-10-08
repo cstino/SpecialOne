@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
 import { ricostruisciEventiStorici } from '../lib/matchEvents'
 import { ordineRuolo, ruoloIt } from '../lib/ruoli'
-import { useSeasonData } from '../lib/useSeasonData'
+import { usePartitaCompleta, useSeasonData } from '../lib/useSeasonData'
 import { isEventoGol, type EventoGol, type League, type MatchPlayerStat, type MatchTeamStats, type Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { SeasonState } from './SeasonUI'
@@ -62,7 +62,10 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
   const [statsError, setStatsError] = useState<string | null>(null)
   const [titolariLineupByTeam, setTitolariLineupByTeam] = useState<Map<number, Set<number>>>(new Map())
   const [pagelle, setPagelle] = useState<Map<number, Pagella>>(new Map())
-  const match = data.matches.find((item) => item.id === matchId)
+  // La partita con la cronaca e le statistiche complete: la lista di stagione ne ha solo le colonne leggere.
+  const partitaCompleta = usePartitaCompleta(matchId)
+  const match = partitaCompleta ?? undefined
+  const caricamentoPartita = partitaCompleta === undefined
   const fixture = match ? data.fixtures.find((item) => item.id === match.fixture_id) : undefined
 
   useEffect(() => {
@@ -263,8 +266,8 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
   return <main className="app-shell season-shell">
     <GameNav league={league} active="matches" onNavigate={navigate} />
     <header className="topbar season-topbar"><button className="match-detail-back" type="button" onClick={onBack}>← Torna alle partite</button><span>Rapporto partita</span></header>
-    <SeasonState loading={data.loading} error={data.error} onRetry={data.reload} />
-    {!data.loading && !data.error && (!match || !fixture) && <section className="season-state"><span className="season-state__icon">!</span><h2>Partita non trovata</h2><button className="button button--primary" type="button" onClick={onBack}>Torna indietro</button></section>}
+    <SeasonState loading={data.loading || caricamentoPartita} error={data.error} onRetry={data.reload} />
+    {!data.loading && !caricamentoPartita && !data.error && (!match || !fixture) && <section className="season-state"><span className="season-state__icon">!</span><h2>Partita non trovata</h2><button className="button button--primary" type="button" onClick={onBack}>Torna indietro</button></section>}
     {!data.loading && !data.error && match && fixture && (() => {
       const casa = data.teamById.get(fixture.home_team_id)
       const ospite = data.teamById.get(fixture.away_team_id)

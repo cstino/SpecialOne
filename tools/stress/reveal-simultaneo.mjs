@@ -17,7 +17,7 @@ const { SUPABASE_URL, SUPABASE_ANON_KEY, EMAIL, PASSWORD } = process.env
 const LEGA = Number(process.env.LEGA ?? 62)
 const N = Number(process.env.N ?? 20)
 const GIRI = Number(process.env.GIRI ?? 1)
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !EMAIL || !PASSWORD) {
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !EMAIL || (!PASSWORD && !process.env.SERVICE_ROLE_KEY)) {
   console.error('Servono SUPABASE_URL, SUPABASE_ANON_KEY, EMAIL e PASSWORD (vedi in cima al file).')
   process.exit(1)
 }
@@ -54,12 +54,14 @@ async function persona(i, token) {
   const sid = stagione.data?.id
   const [fix, partite] = await Promise.all([
     misura('fixtures', sb.from('fixtures').select('*').eq('league_id', LEGA).eq('season_id', sid).order('giornata').order('id')),
-    misura('matches', sb.from('matches').select('id, fixture_id, league_id, gol_home, gol_away, modulo_home, modulo_away, titolari_home, titolari_away, stats_squadra, blocchi, simulata_il, gol_home_90, gol_away_90, rigori_home, rigori_away, rigori_serie, fixtures!inner(season_id)').eq('league_id', LEGA).eq('fixtures.season_id', sid).order('simulata_il', { ascending: false })),
+    misura('matches', sb.from('matches').select('id, fixture_id, league_id, gol_home, gol_away, modulo_home, modulo_away, titolari_home, titolari_away, simulata_il, gol_home_90, gol_away_90, rigori_home, rigori_away, fixtures!inner(season_id)').eq('league_id', LEGA).eq('fixtures.season_id', sid).order('simulata_il', { ascending: false })),
     misura('standings', sb.from('standings').select('*').eq('league_id', LEGA).eq('season_id', sid)),
   ])
   // La partita piu' recente: quella che tutti aprono insieme.
   const match = (partite.data ?? [])[0]
   if (match) {
+    // Come l'app: la cronaca completa solo della partita aperta.
+    await misura('partita completa', sb.from('matches').select('id, blocchi, stats_squadra, rigori_serie').eq('id', match.id).maybeSingle())
     const fixture = (fix.data ?? []).find((f) => f.id === match.fixture_id)
     const [stats] = await Promise.all([
       misura('match_stats', sb.from('match_stats').select('team_id, player_instance_id, minuti, gol, tiri, tiri_porta').eq('match_id', match.id)),
@@ -75,10 +77,22 @@ async function persona(i, token) {
   return performance.now() - t0
 }
 
+// Accesso: con PASSWORD come un utente qualsiasi; senza, con SERVICE_ROLE_KEY si genera un link magico per EMAIL
+// (nessuna email spedita) e lo si conferma subito: e' la sessione vera di quell'utente, RLS compresa.
 const accesso = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } })
-const { data: sessione, error: erroreAccesso } = await accesso.auth.signInWithPassword({ email: EMAIL, password: PASSWORD })
-if (erroreAccesso) { console.error('Accesso non riuscito:', erroreAccesso.message); process.exit(1) }
-const token = sessione.session.access_token
+let token
+if (PASSWORD) {
+  const { data: sessione, error } = await accesso.auth.signInWithPassword({ email: EMAIL, password: PASSWORD })
+  if (error) { console.error('Accesso non riuscito:', error.message); process.exit(1) }
+  token = sessione.session.access_token
+} else {
+  const admin = createClient(SUPABASE_URL, process.env.SERVICE_ROLE_KEY, { auth: { persistSession: false } })
+  const { data: link, error } = await admin.auth.admin.generateLink({ type: 'magiclink', email: EMAIL })
+  if (error) { console.error('Link non generato:', error.message); process.exit(1) }
+  const { data: sessione, error: e2 } = await accesso.auth.verifyOtp({ token_hash: link.properties.hashed_token, type: 'magiclink' })
+  if (e2) { console.error('Accesso non riuscito:', e2.message); process.exit(1) }
+  token = sessione.session.access_token
+}
 
 for (let giro = 1; giro <= GIRI; giro++) {
   tempi.length = 0; errori.length = 0

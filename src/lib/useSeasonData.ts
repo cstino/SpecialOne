@@ -1,7 +1,95 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
-import type { Fixture, Match, Membership, Season, Standing, Team } from '../types'
 import { firmaStemma } from './stemmiFirmati'
+import type { Fixture, Match, Membership, Season, Standing, Team } from '../types'
+
+// Colonne leggere delle partite: senza la cronaca (blocchi), le statistiche di squadra e la serie dei rigori, che
+// pesano quasi tutto e servono solo aprendo UNA partita (usePartitaCompleta). Le partite dell'ultima giornata le
+// hanno comunque, per le notizie della home.
+const COLONNE_LEGGERE = 'id, fixture_id, league_id, gol_home, gol_away, modulo_home, modulo_away, titolari_home, titolari_away, simulata_il, gol_home_90, gol_away_90, rigori_home, rigori_away'
+const COLONNE_PESANTI = 'id, blocchi, stats_squadra, rigori_serie'
+
+type Istantanea = {
+  season: Season | null; teams: Team[]; crestUrls: Record<number, string>
+  fixtures: Fixture[]; matches: Match[]; standings: Standing[]
+}
+// Una sola copia dei dati di stagione per lega, condivisa da tutte le pagine aperte (home, partita, intro, rapporto,
+// Scambi...): prima ognuna li riscaricava, e aprire un risultato dalla home li chiedeva due o tre volte.
+// Si riusa per FRESCHEZZA_MS; "Riprova" e il ricarico dopo la simulazione vanno sempre al database.
+const FRESCHEZZA_MS = 60_000
+const istantanee = new Map<string, { quando: number; dati: Istantanea }>()
+const inCorso = new Map<string, Promise<Istantanea>>()
+
+async function scarica(leagueId: number, stagione: number): Promise<Istantanea> {
+  const [seasonResult, teamsResult] = await Promise.all([
+    supabase.from('seasons').select('*').eq('league_id', leagueId).eq('numero', stagione).maybeSingle(),
+    supabase.from('teams').select('*').eq('league_id', leagueId).order('nome'),
+  ])
+  if (seasonResult.error || teamsResult.error) throw new Error(seasonResult.error?.message ?? teamsResult.error?.message ?? 'Dati della stagione non disponibili.')
+  const season = seasonResult.data as Season | null
+  const teams = (teamsResult.data ?? []) as Team[]
+  const signedCrests = await Promise.all(teams.filter((team) => team.stemma_url && !team.stemma_url.startsWith('preset:')).map(async (team) => {
+    const { data } = await firmaStemma(team.stemma_url!)
+    return [team.id, data?.signedUrl] as const
+  }))
+  const crestUrls = Object.fromEntries(signedCrests.filter((entry): entry is readonly [number, string] => Boolean(entry[1])))
+  if (!season) return { season, teams, crestUrls, fixtures: [], matches: [], standings: [] }
+
+  const [fixturesResult, matchesResultIniziale, standingsResult] = await Promise.all([
+    supabase.from('fixtures').select('*').eq('league_id', leagueId).eq('season_id', season.id).order('giornata').order('id'),
+    // Solo le partite della stagione corrente: le fixtures caricate sono solo queste.
+    supabase.from('matches').select(`${COLONNE_LEGGERE}, fixtures!inner(season_id)`).eq('league_id', leagueId).eq('fixtures.season_id', season.id).order('simulata_il', { ascending: false }),
+    supabase.from('standings').select('*').eq('league_id', leagueId).eq('season_id', season.id),
+  ])
+  let matchesResult = matchesResultIniziale
+  // Rete di sicurezza: se il filtro per stagione non funziona si torna alla lettura completa.
+  if (matchesResult.error) matchesResult = await supabase.from('matches').select(COLONNE_LEGGERE).eq('league_id', leagueId).order('simulata_il', { ascending: false }) as typeof matchesResult
+  const firstError = fixturesResult.error ?? matchesResult.error ?? standingsResult.error
+  if (firstError) throw new Error(firstError.message)
+  const fixtures = (fixturesResult.data ?? []) as Fixture[]
+  const leggere = (matchesResult.data ?? []).map((riga) => ({ ...(riga as object), blocchi: [], stats_squadra: { home: {}, away: {} }, rigori_serie: null })) as unknown as Match[]
+
+  // La cronaca completa solo per le partite dell'ultima giornata giocata (le notizie della home la raccontano).
+  const giornataPerFixture = new Map(fixtures.map((f) => [f.id, f.giornata]))
+  const ultima = Math.max(0, ...leggere.map((m) => giornataPerFixture.get(m.fixture_id) ?? 0))
+  const idsUltima = leggere.filter((m) => giornataPerFixture.get(m.fixture_id) === ultima).map((m) => m.id)
+  if (idsUltima.length) {
+    const { data: pesanti } = await supabase.from('matches').select(COLONNE_PESANTI).in('id', idsUltima)
+    const perId = new Map((pesanti ?? []).map((riga) => [riga.id as number, riga]))
+    for (const m of leggere) {
+      const p = perId.get(m.id)
+      if (p) Object.assign(m, { blocchi: p.blocchi ?? [], stats_squadra: p.stats_squadra ?? m.stats_squadra, rigori_serie: p.rigori_serie ?? null })
+    }
+  }
+  return { season, teams, crestUrls, fixtures, matches: leggere, standings: (standingsResult.data ?? []) as Standing[] }
+}
+
+function caricaCondiviso(leagueId: number, stagione: number, forza: boolean): Promise<Istantanea> {
+  const chiave = `${leagueId}:${stagione}`
+  const nota = istantanee.get(chiave)
+  if (!forza && nota && Date.now() - nota.quando < FRESCHEZZA_MS) return Promise.resolve(nota.dati)
+  const attesa = inCorso.get(chiave)
+  if (attesa) return attesa
+  const promessa = scarica(leagueId, stagione)
+    .then((dati) => { istantanee.set(chiave, { quando: Date.now(), dati }); return dati })
+    .finally(() => inCorso.delete(chiave))
+  inCorso.set(chiave, promessa)
+  return promessa
+}
+
+// Una partita con tutto (cronaca, statistiche di squadra, rigori): la chiede solo chi apre quella partita.
+export function usePartitaCompleta(matchId: number) {
+  // undefined = si sta caricando; null = non trovata.
+  const [partita, setPartita] = useState<Match | null | undefined>(undefined)
+  useEffect(() => {
+    let vivo = true
+    setPartita(undefined)
+    void supabase.from('matches').select(`${COLONNE_LEGGERE}, ${COLONNE_PESANTI.replace('id, ', '')}`).eq('id', matchId).maybeSingle()
+      .then(({ data }) => { if (vivo) setPartita(data ? data as unknown as Match : null) })
+    return () => { vivo = false }
+  }, [matchId])
+  return partita
+}
 
 export function useSeasonData(membership: Membership) {
   const league = membership.league!
@@ -14,67 +102,19 @@ export function useSeasonData(membership: Membership) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (forza = false) => {
     setLoading(true)
     setError(null)
-
-    const [seasonResult, teamsResult] = await Promise.all([
-      supabase.from('seasons').select('*').eq('league_id', league.id).eq('numero', league.stagione_corrente).maybeSingle(),
-      supabase.from('teams').select('*').eq('league_id', league.id).order('nome'),
-    ])
-
-    if (seasonResult.error || teamsResult.error) {
-      setError(seasonResult.error?.message ?? teamsResult.error?.message ?? 'Dati della stagione non disponibili.')
-      setLoading(false)
-      return
+    try {
+      const dati = await caricaCondiviso(league.id, league.stagione_corrente, forza)
+      setSeason(dati.season); setTeams(dati.teams); setCrestUrls(dati.crestUrls)
+      setFixtures(dati.fixtures); setMatches(dati.matches); setStandings(dati.standings)
+    } catch (errore) {
+      setError(errore instanceof Error ? errore.message : 'Dati della stagione non disponibili.')
     }
-
-    const currentSeason = seasonResult.data as Season | null
-    setSeason(currentSeason)
-    const loadedTeams = (teamsResult.data ?? []) as Team[]
-    setTeams(loadedTeams)
-    const signedCrests = await Promise.all(loadedTeams.filter((team) => team.stemma_url && !team.stemma_url.startsWith('preset:')).map(async (team) => {
-      const { data } = await firmaStemma(team.stemma_url!)
-      return [team.id, data?.signedUrl] as const
-    }))
-    setCrestUrls(Object.fromEntries(signedCrests.filter((entry): entry is readonly [number, string] => Boolean(entry[1]))))
-
-    if (!currentSeason) {
-      setFixtures([])
-      setMatches([])
-      setStandings([])
-      setLoading(false)
-      return
-    }
-
-    const [fixturesResult, matchesResult, standingsResult] = await Promise.all([
-      supabase.from('fixtures').select('*').eq('league_id', league.id).eq('season_id', currentSeason.id).order('giornata').order('id'),
-      // Solo le partite della stagione corrente: le fixtures caricate sono solo queste, e le partite di
-      // tutte le stagioni passate (con i blocchi della cronaca) crescevano di peso a ogni stagione.
-      supabase.from('matches').select('id, fixture_id, league_id, gol_home, gol_away, modulo_home, modulo_away, titolari_home, titolari_away, stats_squadra, blocchi, simulata_il, gol_home_90, gol_away_90, rigori_home, rigori_away, rigori_serie, fixtures!inner(season_id)').eq('league_id', league.id).eq('fixtures.season_id', currentSeason.id).order('simulata_il', { ascending: false }),
-      supabase.from('standings').select('*').eq('league_id', league.id).eq('season_id', currentSeason.id),
-    ])
-
-    // Rete di sicurezza: se per qualunque motivo il filtro per stagione non funziona, si torna alla
-    // lettura completa di prima invece di lasciare l'app senza partite.
-    if (matchesResult.error) {
-      const ripiego = await supabase.from('matches').select('id, fixture_id, league_id, gol_home, gol_away, modulo_home, modulo_away, titolari_home, titolari_away, stats_squadra, blocchi, simulata_il, gol_home_90, gol_away_90, rigori_home, rigori_away, rigori_serie').eq('league_id', league.id).order('simulata_il', { ascending: false })
-      matchesResult.data = ripiego.data as typeof matchesResult.data
-      matchesResult.error = ripiego.error as typeof matchesResult.error
-    }
-
-    const firstError = fixturesResult.error ?? matchesResult.error ?? standingsResult.error
-    if (firstError) {
-      setError(firstError.message)
-      setLoading(false)
-      return
-    }
-
-    setFixtures((fixturesResult.data ?? []) as Fixture[])
-    setMatches((matchesResult.data ?? []) as Match[])
-    setStandings((standingsResult.data ?? []) as Standing[])
     setLoading(false)
   }, [league.id, league.stagione_corrente])
+  const reload = useCallback(() => load(true), [load])
 
   useEffect(() => { void load() }, [load])
 
@@ -86,7 +126,7 @@ export function useSeasonData(membership: Membership) {
     if (!prossima) return
     const scadenza = new Date(prossima.data_sim).getTime()
     if (Date.now() < scadenza) return
-    const timer = window.setInterval(() => { void load() }, 15_000)
+    const timer = window.setInterval(() => { void load(true) }, 15_000)
     return () => window.clearInterval(timer)
   }, [fixtures, load])
 
@@ -122,6 +162,6 @@ export function useSeasonData(membership: Membership) {
 
   return {
     season, teams, teamById, crestUrlByTeamId, fixtures, matches, matchByFixture, standings: orderedStandings,
-    currentGiornata, nextFixture, lastFixture, giornateStagione, loading, error, reload: load,
+    currentGiornata, nextFixture, lastFixture, giornateStagione, loading, error, reload,
   }
 }

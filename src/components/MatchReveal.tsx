@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'rea
 import { supabase } from '../lib/supabase'
 import { cognome } from '../lib/nomi'
 import { ricostruisciEventiStorici, type StatEventoStorico } from '../lib/matchEvents'
-import { useSeasonData } from '../lib/useSeasonData'
+import { usePartitaCompleta, useSeasonData } from '../lib/useSeasonData'
 import { LOGO_FASE, SFONDO_FASE_VERTICALE, type FaseSquadra } from '../lib/faseSquadra'
 
 const NOME_FASE: Record<FaseSquadra, string> = { regular: 'Stagione regolare', title: 'Title Playoffs', draft: 'Draft Playoffs' }
@@ -101,7 +101,8 @@ const SPOT = { teamId: 285, fixtureId: 2424, src: '/spot/maudit-printemps.mp4' }
 
 export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenReport }: Props) {
   const data = useSeasonData(membership)
-  const match = data.matches.find((item) => item.id === matchId)
+  // La partita con la cronaca e le statistiche complete: la lista di stagione ne ha solo le colonne leggere.
+  const match = usePartitaCompleta(matchId) ?? undefined
   const fixture = match ? data.fixtures.find((item) => item.id === match.fixture_id) : undefined
   const [nomi, setNomi] = useState<Map<number, Player>>(new Map())
   const [statsStoriche, setStatsStoriche] = useState<StatEventoStorico[]>([])
