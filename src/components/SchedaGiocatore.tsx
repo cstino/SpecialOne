@@ -719,8 +719,10 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
   useEffect(() => {
     const y = window.scrollY
     const corpo = document.body.style
-    const prima = { position: corpo.position, top: corpo.top, left: corpo.left, right: corpo.right, width: corpo.width, overflow: corpo.overflow }
-    Object.assign(corpo, { position: 'fixed', top: `-${y}px`, left: '0', right: '0', width: '100%', overflow: 'hidden' })
+    // Niente overflow sul body: in WebKit un body che ritaglia taglia anche la scheda (fissa), che restava visibile
+    // solo per la striscia in cui il body copriva ancora lo schermo.
+    const prima = { position: corpo.position, top: corpo.top, left: corpo.left, right: corpo.right, width: corpo.width, overflowX: corpo.overflowX }
+    Object.assign(corpo, { position: 'fixed', top: `-${y}px`, left: '0', right: '0', width: '100%', overflowX: 'visible' })
     return () => {
       Object.assign(corpo, prima)
       window.scrollTo(0, y)
