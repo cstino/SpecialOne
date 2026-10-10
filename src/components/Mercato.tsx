@@ -177,7 +177,7 @@ export function Mercato({ membership, onNavigate }: Props) {
     setErrore(null)
     const [istanzeRes, asteRes, offerteRes, contiRes] = await Promise.all([
       supabase.from('player_instances')
-        .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato')
+        .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato, posizioni_override')
         .eq('league_id', league.id).not('team_id', 'is', null),
       supabase.from('free_agent_auctions')
         .select('id, giorno, tornata, player_id, ingaggio_teorico, stato, origine, vincitore_team_id, ingaggio_finale')
@@ -210,22 +210,39 @@ export function Mercato({ membership, onNavigate }: Props) {
           // L'infortunio viaggia con l'istanza: uno svincolato rotto resta
           // rotto, e chi offre deve poterlo vedere prima di offrire.
           supabase.from('player_instances')
-            .select('player_id, overall_corrente, eta_corrente, overall_inizio_stagione, infortunato_fino_a')
+            .select('player_id, overall_corrente, eta_corrente, overall_inizio_stagione, infortunato_fino_a, posizioni_override')
             .eq('league_id', league.id).is('team_id', null).in('player_id', idsAsta),
         ])
       : [{ data: [], error: null }, { data: [], error: null }]
     const istanzeSvincolate = new Map((orfaneRes.data ?? [])
-      .map((i) => [i.player_id, i as { overall_corrente: number; eta_corrente: number; overall_inizio_stagione: number; infortunato_fino_a: number }]))
-    // Una sola interrogazione per l'anagrafica: i giocatori delle rose e
-    // quelli all'asta vengono dalla stessa tabella.
-    const daCercare = [...new Set([
-      ...istanze.map((i) => i.player_id),
-      ...asteRighe.map((a) => a.player_id),
-    ])]
-    const { data: anagrafica, error: erroreAnagrafica } = daCercare.length
-      ? await supabase.from('players').select('id, nome, nome_completo, club, nazionalita, posizioni, piede, altezza, overall, eta, foto_url').in('id', daCercare)
-      : { data: [], error: null }
+      .map((i) => [i.player_id, i as { overall_corrente: number; eta_corrente: number; overall_inizio_stagione: number; infortunato_fino_a: number; posizioni_override: string[] | null }]))
+    // Le anagrafiche delle aste vanno richieste separatamente da quelle delle
+    // rose. In leghe molto popolate l'elenco combinato produce una query REST
+    // molto lunga: se proprio una delle quattro righe giornaliere manca dalla
+    // risposta, il fallback la mostra come "—" e, senza posizioni, la
+    // classifica erroneamente tra i centrocampisti. La query dedicata alle
+    // aste resta sempre minuscola e garantisce un giocatore per macro-ruolo.
+    const idsRose = [...new Set(istanze.map((i) => i.player_id))]
+    const [anagraficaRoseRes, anagraficaAsteRes] = await Promise.all([
+      idsRose.length
+        ? supabase.from('players').select('id, nome, nome_completo, club, nazionalita, posizioni, piede, altezza, overall, eta, foto_url').in('id', idsRose)
+        : Promise.resolve({ data: [], error: null }),
+      idsAsta.length
+        ? supabase.from('players').select('id, nome, nome_completo, club, nazionalita, posizioni, piede, altezza, overall, eta, foto_url').in('id', idsAsta)
+        : Promise.resolve({ data: [], error: null }),
+    ])
+    const erroreAnagrafica = anagraficaRoseRes.error ?? anagraficaAsteRes.error
     if (erroreAnagrafica) { setErrore(erroreAnagrafica.message); setCaricamento(false); return }
+    const idsAnagraficaAste = new Set((anagraficaAsteRes.data ?? []).map((p) => p.id))
+    if (idsAsta.some((id) => !idsAnagraficaAste.has(id))) {
+      setErrore('Non riesco a caricare tutti i giocatori dell’asta. Riprova tra poco.')
+      setCaricamento(false)
+      return
+    }
+    const anagrafica = [
+      ...(anagraficaRoseRes.data ?? []),
+      ...(anagraficaAsteRes.data ?? []),
+    ]
 
     const fotoFirmate = await Promise.all((anagrafica ?? [])
       .filter((p) => p.foto_url)
@@ -244,11 +261,13 @@ export function Mercato({ membership, onNavigate }: Props) {
     // Un errore qui non deve impedire di usare il mercato: e' un indicatore.
     setConti(contiRes.error ? null : contiRes.data as { capienza: number; slot_liberi: number })
     const progressionePerId = new Map((progressioneRes.data ?? []).map((r) => [r.player_id, r as { overall_corrente: number; eta_corrente: number; overall_inizio_stagione: number }]))
-    setSvincolati(new Map(asteRighe.map((a) => [a.player_id, {
+    setSvincolati(new Map(asteRighe.map((a) => {
+      const posizioni = istanzeSvincolate.get(a.player_id)?.posizioni_override ?? perId.get(a.player_id)?.posizioni ?? []
+      return [a.player_id, {
       nome: cognome(perId.get(a.player_id)?.nome ?? '—'),
-      ruolo: perId.get(a.player_id)?.posizioni?.[0] ?? '—',
+      ruolo: posizioni[0] ?? '—',
       club: perId.get(a.player_id)?.club ?? '—',
-      posizioni: perId.get(a.player_id)?.posizioni ?? [],
+      posizioni,
       // Stessa precedenza a tre livelli del server (private.estrai_svincolati_lega
       // e risolvi_aste_giorno): istanza orfana → pool mai scelto → catalogo.
       // Uno svincolato "vero" (gia' stato in rosa) ha l'overall maturato
@@ -276,8 +295,10 @@ export function Mercato({ membership, onNavigate }: Props) {
       nazionalita: perId.get(a.player_id)?.nazionalita ?? null,
       piede: perId.get(a.player_id)?.piede ?? null,
       altezza: perId.get(a.player_id)?.altezza ?? null,
-    }])))
-    setRose(istanze.map((i) => ({
+    }]})))
+    setRose(istanze.map((i) => {
+      const posizioni = i.posizioni_override ?? perId.get(i.player_id)?.posizioni ?? []
+      return {
       id: i.id,
       player_id: i.player_id,
       team_id: i.team_id as number,
@@ -285,17 +306,17 @@ export function Mercato({ membership, onNavigate }: Props) {
       eta: i.eta_corrente,
       ingaggio: i.ingaggio,
       nome: cognome(perId.get(i.player_id)?.nome ?? '—'),
-      ruolo: perId.get(i.player_id)?.posizioni?.[0] ?? '—',
+      ruolo: posizioni[0] ?? '—',
       club: perId.get(i.player_id)?.club,
       nazionalita: perId.get(i.player_id)?.nazionalita,
-      posizioni: perId.get(i.player_id)?.posizioni,
+      posizioni,
       piede: perId.get(i.player_id)?.piede,
       altezza: perId.get(i.player_id)?.altezza,
       foto_firmata: fotoPerId.get(i.player_id),
       condizione: i.condizione,
       infortunatoFinoA: i.infortunato_fino_a,
       ritiroAnnunciato: i.ritiro_annunciato,
-    })))
+    }}))
     setCaricamento(false)
   }, [league.id])
 

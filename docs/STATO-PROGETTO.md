@@ -2061,3 +2061,31 @@ non cresce**; le **giocate sono visibili a tutta la lega** (inviti e partite non
 - **Eleggibili visibili a tutti** (7 ottobre 2026): nella pagina Scelte, chi non ha scelte in una finestra aperta vede comunque il pool dei
   giocatori eleggibili, in sola lettura (senza «+», senza lista di preferenze e senza «Salva»): un riquadro «Giocatori eleggibili · N nel pool»,
   ordinati per ruolo e overall, con scheda del giocatore. Il pool era gia' leggibile da tutti i membri (RLS); cambia solo la pagina.
+
+## 9 ottobre 2026 — rinnovo fuori cap di Coccialand annullato
+
+In Serie F (lega 63), Coccialand (squadra 279) ha rinnovato T. Iroegbunam (istanza 5846) a
+20 M€/stagione il 8 ottobre alle 21:42 di Roma. La transazione 13553 registra +17,8 M€ rispetto
+al precedente ingaggio di 2,2 M€ (transazione 12396). Il monte della stagione 2 è arrivato a
+89,7 M€ sul tetto di 80 M€. Causa: `offri_rinnovo` controllava solo la capienza della stagione
+3, ma scriveva subito `player_instances.ingaggio`, usato anche per il monte della stagione 2.
+
+La migrazione `20261008220117_annulla_rinnovo_iroegbunam_e_blocca_cap.sql` ripristina per la
+sola istanza 5846 ingaggio 2,2 M€, scadenza 2, `rinnovo_stagione = 1` e morale 61 (il rinnovo
+errato gli aveva dato +35). Conserva la transazione 13553 nel registro append-only e aggiunge
+una rettifica di −17,8 M€. Il monte torna a 71,9 M€. La RPC ora verifica **stagione corrente e
+successiva** sotto un lock della squadra; la UI già espone il messaggio SQL come errore.
+Provato l'intero intervento in `begin/rollback`, compreso un nuovo tentativo da 20 M€ con
+l'identità del proprietario: rifiutato con «Fuori dal tetto ingaggi» per la stagione 2.
+
+La migrazione `20261008220358_rinnovi_pc_cap_e_saldo.sql` chiude lo stesso varco per i PC.
+Corregge inoltre due residui del vecchio modello: estensione secondo la durata proposta invece
+che di un anno, e lettura di `teams.budget` (colonna eliminata). Prova in rollback su LegaBot:
+340 rinnovi nuovi, nessun PC oltre il cap corrente o futuro, nessuna durata diversa da un anno.
+Dopo la prova LegaBot conserva i suoi 4 rinnovi preesistenti: in produzione è stata applicata
+solo la definizione della funzione.
+
+**Nota operativa:** la cronologia `supabase_migrations.schema_migrations` del progetto remoto
+si ferma ad agosto, benché lo schema contenga le migrazioni successive. Per evitare un push
+massivo di file arretrati, queste due migrazioni sono state applicate in modo mirato con
+`supabase db query --linked --experimental --file`. Restano versionate nel repository.

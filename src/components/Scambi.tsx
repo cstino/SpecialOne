@@ -207,7 +207,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
     setErrore(null)
     const [istanzeRes, scelteRes, proposteRes, trattativeRes, capienzaRes] = await Promise.all([
       supabase.from('player_instances')
-        .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato, sul_mercato')
+        .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato, sul_mercato, posizioni_override')
         .eq('league_id', league.id).not('team_id', 'is', null),
       supabase.from('scelte_draft')
         .select('id, team_origine_id, team_proprietario_id, stagione, finestra, posizione, stato')
@@ -244,15 +244,17 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
     setTrattativePubbliche(trattativeRes.error ? [] : (trattativeRes.data ?? []) as TrattativaPubblica[])
     setScelte((scelteRes.data ?? []) as Scelta[])
     setCapienza(capienzaRes.error ? null : capienzaRes.data as Capienza)
-    setRose(istanze.map((i) => ({
+    setRose(istanze.map((i) => {
+      const posizioni = i.posizioni_override ?? perId.get(i.player_id)?.posizioni ?? []
+      return {
       id: i.id, player_id: i.player_id, team_id: i.team_id as number,
       overall: i.overall_corrente, eta: i.eta_corrente, ingaggio: i.ingaggio,
       nome: cognome(perId.get(i.player_id)?.nome ?? '—'),
       nomeEsteso: (perId.get(i.player_id) as { nome_completo?: string | null } | undefined)?.nome_completo ?? null,
-      ruolo: perId.get(i.player_id)?.posizioni?.[0] ?? '—',
+      ruolo: posizioni[0] ?? '—',
       club: perId.get(i.player_id)?.club,
       nazionalita: perId.get(i.player_id)?.nazionalita,
-      posizioni: perId.get(i.player_id)?.posizioni,
+      posizioni,
       piede: perId.get(i.player_id)?.piede,
       altezza: perId.get(i.player_id)?.altezza,
       foto_firmata: fotoPerId.get(i.player_id),
@@ -260,7 +262,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
       infortunatoFinoA: i.infortunato_fino_a,
       ritiroAnnunciato: i.ritiro_annunciato,
       sulMercato: i.sul_mercato,
-    })))
+    }}))
     setCaricamento(false)
   }, [league.id])
 

@@ -8,7 +8,7 @@ import { GameNav, type GameView } from './GameNav'
 import { Forma, formaPerSquadra, SeasonState, TeamLabel } from './SeasonUI'
 import { Crest } from './Crest'
 import { ConferenceBadge } from './ConferenceBadge'
-import { NOME_CONFERENZA_BREVE, type Conferenza } from '../lib/conferenze'
+import type { Conferenza } from '../lib/conferenze'
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { UnderlineTabs } from './ui/underline-tabs'
 
@@ -158,9 +158,9 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
       <section className="standings-panel" onTouchStart={alTouchStart} onTouchEnd={alTouchEnd}>
         {scheda === 'classifica' && <>
           {conferenze && <div className="standings-conferenze" role="tablist" aria-label="Conferenza">
-            {(['est', 'ovest'] as const).map((c) => <button type="button" role="tab" aria-selected={c === conferenzaVista}
+            {(['ovest', 'est'] as const).map((c) => <button type="button" role="tab" aria-selected={c === conferenzaVista}
               className={c === conferenzaVista ? 'is-attiva' : ''} style={{ ['--c' as string]: c === 'est' ? '#4db3ff' : '#ff6b4a' }}
-              key={c} onClick={() => setConferenzaScelta(c)}><ConferenceBadge conferenza={c} />{NOME_CONFERENZA_BREVE[c]}</button>)}
+              key={c} onClick={() => setConferenzaScelta(c)}><ConferenceBadge conferenza={c} grande /></button>)}
           </div>}
           <div className="standings-head"><span>POS</span><span>SQUADRA</span><span>PG</span><span>V</span><span>N</span><span>P</span><span>GF</span><span>GS</span><span>DR</span><span>PT</span><span /></div>
           <div className="standings-body">

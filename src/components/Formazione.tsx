@@ -773,8 +773,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     }
     if (!player) return
     const rect = event.currentTarget.getBoundingClientRect()
-    const menuWidth = 230
-    const menuHeight = 138
+    const menuWidth = Math.min(340, window.innerWidth - 24)
+    const menuHeight = 224
     const x = Math.max(12, Math.min(rect.left + rect.width / 2 - menuWidth / 2, window.innerWidth - menuWidth - 12))
     const y = rect.bottom + menuHeight + 8 < window.innerHeight ? rect.bottom + 8 : Math.max(12, rect.top - menuHeight - 8)
     setPlayerAction({ player, location, x, y })
@@ -1279,11 +1279,18 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       {chiediNomeRiserva && <DialogoNomeRiserva nomeIniziale={nomeRiserva} classe={`formazione-broadcast formazione-broadcast--${fase}`} onAnnulla={() => setChiediNomeRiserva(false)}
         onConferma={(nome) => { setChiediNomeRiserva(false); setNomeRiserva(nome); void save(nome) }} />}
       {playerAction && <div className="player-action-layer" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) setPlayerAction(null) }}>
-        <section className="player-action-menu" role="dialog" aria-label={`Azioni per ${playerAction.player.nome}`} style={{ left: playerAction.x, top: playerAction.y }}>
+        <section className={`player-action-menu formazione-broadcast formazione-broadcast--${fase}`} role="dialog" aria-label={`Azioni per ${playerAction.player.nome}`} style={{ left: playerAction.x, top: playerAction.y }}>
           <div className="player-action-menu__player">
             <span className={`player-action-menu__photo player-action-menu__photo--${reparto(playerAction.player.posizioni[0] ?? 'ATT')} has-photo`}><AnonymousPlayer /><img src={imageUrls[playerAction.player.id]} alt="" onError={(event) => { event.currentTarget.hidden = true; event.currentTarget.parentElement?.classList.remove('has-photo') }} /></span>
-            <div><strong>{playerAction.player.nome}</strong><small>{ruoliIt(playerAction.player.posizioni)} · OVR {playerAction.player.overall_corrente}</small></div>
+            <div className="player-action-menu__identity">
+              <div className="player-action-menu__name"><strong>{playerAction.player.nome}</strong><span className="player-action-menu__overall"><b>{playerAction.player.overall_corrente}</b><small>OVR</small></span></div>
+              <small className="player-action-menu__roles">{ruoliIt(playerAction.player.posizioni)}</small>
+            </div>
             <button type="button" onClick={() => setPlayerAction(null)} aria-label="Chiudi menu"><Icona nome="chiudi" /></button>
+          </div>
+          <div className="player-action-menu__energy">
+            <div><span>Energia</span><strong>{playerAction.player.condizione}%</strong></div>
+            <span className="player-action-menu__energy-track" aria-label={`Energia ${playerAction.player.condizione}%`}><i className={`energia--${livelloEnergia(playerAction.player)}`} style={{ width: `${Math.max(4, Math.min(100, playerAction.player.condizione))}%` }} /></span>
           </div>
           <div className="player-action-menu__choices">
             <button type="button" onClick={() => { const location = playerAction.location; setPlayerAction(null); if (location.zone === 'starter') setSostituisci(location); else selectPlayer(location) }}><span>⇄</span><strong>Sostituzione</strong></button>

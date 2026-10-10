@@ -12,7 +12,7 @@ import { LOGO_FASE, SFONDO_FASE, type FaseSquadra } from '../lib/faseSquadra'
 import { Crest } from './Crest'
 import { Icona } from './Icona'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
-import { REPARTO } from '../lib/tattica'
+import { MODULI, REPARTO } from '../lib/tattica'
 
 type Props = {
   membership: Membership
@@ -60,7 +60,7 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
   const [players, setPlayers] = useState<Map<number, PlayerIdentity>>(new Map())
   const [statsLoading, setStatsLoading] = useState(true)
   const [statsError, setStatsError] = useState<string | null>(null)
-  const [titolariLineupByTeam, setTitolariLineupByTeam] = useState<Map<number, Set<number>>>(new Map())
+  const [lineupByTeam, setLineupByTeam] = useState<Map<number, { titolari: Set<number>; slots: string[] }>>(new Map())
   const [pagelle, setPagelle] = useState<Map<number, Pagella>>(new Map())
   // La partita con la cronaca e le statistiche complete: la lista di stagione ne ha solo le colonne leggere.
   const partitaCompleta = usePartitaCompleta(matchId)
@@ -78,7 +78,7 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
       const loadedStats = (statRows ?? []) as MatchPlayerStat[]
       const instanceIds = loadedStats.map((item) => item.player_instance_id)
       const { data: instances, error: instanceError } = instanceIds.length
-        ? await supabase.from('player_instances').select('id, player_id').in('id', instanceIds)
+        ? await supabase.from('player_instances').select('id, player_id, posizioni_override').in('id', instanceIds)
         : { data: [], error: null }
       if (instanceError) { if (active) { setStatsError(instanceError.message); setStatsLoading(false) }; return }
       const playerIds = [...new Set((instances ?? []).map((item) => item.player_id))]
@@ -90,7 +90,13 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
       const instancePlayers = new Map<number, PlayerIdentity>()
       for (const instance of instances ?? []) {
         const player = catalogById.get(instance.player_id)
-        if (player) instancePlayers.set(instance.id, player)
+        if (player) {
+          instancePlayers.set(instance.id, {
+            ...player,
+            // Il ruolo modificato nella lega prevale su quello storico del catalogo.
+            posizioni: instance.posizioni_override ?? player.posizioni,
+          })
+        }
       }
       // Le pagelle esistono dalle partite simulate con la Edge Function delle
       // tattiche: per quelle di prima la colonna resta vuota, senza errori.
@@ -112,13 +118,19 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
     let active = true
     async function loadLineups() {
       if (!fixture) return
-      const { data: rows } = await supabase.from('lineups').select('team_id, titolari')
+      const { data: rows } = await supabase.from('lineups').select('team_id, titolari, modulo, disposizione')
         .eq('league_id', fixture.league_id).eq('giornata', fixture.giornata)
         .in('team_id', [fixture.home_team_id, fixture.away_team_id])
       if (!active) return
-      const mappa = new Map<number, Set<number>>()
-      for (const row of rows ?? []) mappa.set(row.team_id, new Set(row.titolari as number[]))
-      setTitolariLineupByTeam(mappa)
+      const mappa = new Map<number, { titolari: Set<number>; slots: string[] }>()
+      for (const row of rows ?? []) {
+        const disposizione = row.disposizione as string[] | null
+        mappa.set(row.team_id, {
+          titolari: new Set(row.titolari as number[]),
+          slots: disposizione?.length === 11 ? disposizione : (MODULI[row.modulo] ?? []),
+        })
+      }
+      setLineupByTeam(mappa)
     }
     void loadLineups()
     return () => { active = false }
@@ -136,10 +148,10 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
       [fixture.home_team_id, match.titolari_home],
       [fixture.away_team_id, match.titolari_away],
     ] as const) {
-      mappa.set(teamId, effettivi.length ? new Set(effettivi) : (titolariLineupByTeam.get(teamId) ?? new Set()))
+      mappa.set(teamId, effettivi.length ? new Set(effettivi) : (lineupByTeam.get(teamId)?.titolari ?? new Set()))
     }
     return mappa
-  }, [match, fixture, titolariLineupByTeam])
+  }, [match, fixture, lineupByTeam])
 
   // Fase, turno e andata: come la cronaca live (MatchReveal) e l'intro
   // (MatchIntro), cosi' il riepilogo ha la stessa veste grafica della partita.
@@ -197,6 +209,29 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
     return [...registrati].sort((sinistra, destra) => sinistra.minuto - destra.minuto)
   }, [fixture, match, stats, statsLoading])
 
+  // Il badge delle pagelle descrive il posto realmente occupato in campo.
+  // I titolari mantengono l'ordine degli undici slot; ogni subentrato eredita
+  // lo stesso slot di chi esce, come avviene nel motore della partita.
+  const slotByPlayer = useMemo(() => {
+    const mappa = new Map<number, string>()
+    if (!match || !fixture) return mappa
+    for (const [teamId, titolari, modulo] of [
+      [fixture.home_team_id, match.titolari_home, match.modulo_home],
+      [fixture.away_team_id, match.titolari_away, match.modulo_away],
+    ] as const) {
+      const fallback = lineupByTeam.get(teamId)
+      const undici = titolari.length ? titolari : [...(fallback?.titolari ?? [])]
+      const slots = fallback?.slots.length === 11 ? fallback.slots : (MODULI[modulo] ?? [])
+      undici.forEach((id, indice) => { if (slots[indice]) mappa.set(id, slots[indice]) })
+    }
+    for (const evento of eventi) {
+      if (evento.tipo !== 'sostituzione' && evento.tipo !== 'infortunio') continue
+      const slot = mappa.get(evento.esce)
+      if (slot) mappa.set(evento.entra, slot)
+    }
+    return mappa
+  }, [eventi, fixture, lineupByTeam, match])
+
   // Ordinati per reparto (GK -> ST) prima ancora che per prestazione: e' cosi'
   // che si legge un tabellino, non per gol fatti.
   const byTeam = useMemo(() => {
@@ -204,11 +239,12 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
     for (const row of stats) grouped.set(row.team_id, [...(grouped.get(row.team_id) ?? []), row])
     for (const rows of grouped.values()) {
       rows.sort((left, right) =>
-        ordineRuolo(players.get(left.player_instance_id)?.posizioni) - ordineRuolo(players.get(right.player_instance_id)?.posizioni)
+        ordineRuolo([slotByPlayer.get(left.player_instance_id) ?? players.get(left.player_instance_id)?.posizioni[0] ?? ''])
+        - ordineRuolo([slotByPlayer.get(right.player_instance_id) ?? players.get(right.player_instance_id)?.posizioni[0] ?? ''])
         || right.gol - left.gol || right.assist - left.assist || right.tiri_porta - left.tiri_porta || right.minuti - left.minuti)
     }
     return grouped
-  }, [stats, players])
+  }, [stats, players, slotByPlayer])
 
   // Titolari e subentrati in due gruppi separati, ciascuno gia' ordinato come
   // sopra. Chi e' uscito si riconosce senza ambiguita' solo fra i titolari
@@ -232,7 +268,7 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
   // ridotti significano senza ambiguita' "sostituito", non "entrato tardi".
   function rigaGiocatore(row: MatchPlayerStat, mostraUscita: boolean, posizione: number) {
     const identita = players.get(row.player_instance_id)
-    const ruolo = identita?.posizioni[0] ?? '—'
+    const ruolo = slotByPlayer.get(row.player_instance_id) ?? identita?.posizioni[0] ?? '—'
     const foto = urlFotoGiocatore(identita?.foto_url)
     // Gol e assist come icone accanto al nome: niente colonne in piu', cosi'
     // la riga non scorre mai di lato anche a 360 px.
@@ -316,7 +352,7 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
               <span className="mvp-card__etichetta"><Stella />Migliore in campo</span>
               <div className="mvp-card__chi">
                 <strong>{identita?.nome ?? `Giocatore ${id}`}</strong>
-                <small>{[ruoloIt(identita?.posizioni[0]), squadra].filter(Boolean).join(' · ')}</small>
+                <small>{[ruoloIt(slotByPlayer.get(id) ?? identita?.posizioni[0]), squadra].filter(Boolean).join(' · ')}</small>
               </div>
               {motivazioni(p.dettaglio).length > 0 && <ul className="mvp-card__perche">
                 {motivazioni(p.dettaglio).map((m) => <li key={m}>{m}</li>)}

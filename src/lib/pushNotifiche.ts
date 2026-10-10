@@ -26,6 +26,28 @@ export async function sottoscrizioneAttuale() {
   return registrazione.pushManager.getSubscription()
 }
 
+async function salvaSottoscrizione(sottoscrizione: PushSubscription) {
+  const json = sottoscrizione.toJSON()
+  if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
+    return { ok: false, errore: 'Sottoscrizione incompleta restituita dal browser.' }
+  }
+
+  const { data: autenticazione, error: autenticazioneError } = await supabase.auth.getUser()
+  if (autenticazioneError || !autenticazione.user) {
+    return { ok: false, errore: 'Sessione non disponibile. Accedi di nuovo e riprova.' }
+  }
+
+  const { error } = await supabase.from('push_subscriptions').upsert({
+    endpoint: json.endpoint,
+    p256dh: json.keys.p256dh,
+    auth_key: json.keys.auth,
+    user_agent: navigator.userAgent,
+    user_id: autenticazione.user.id,
+  }, { onConflict: 'endpoint' })
+
+  return error ? { ok: false, errore: error.message } : { ok: true }
+}
+
 // Chiede il permesso (se serve), crea la sottoscrizione push del browser e la
 // salva su Supabase: da quel momento il trigger su notifications trova una
 // riga a cui mandare le push per questo utente.
@@ -42,23 +64,45 @@ export async function attivaPush(): Promise<{ ok: boolean; errore?: string }> {
       applicationServerKey: base64UrlAUint8Array(VAPID_PUBLIC_KEY!),
     })
 
-    const json = sottoscrizione.toJSON()
-    if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
-      return { ok: false, errore: 'Sottoscrizione incompleta restituita dal browser.' }
-    }
-
-    const { error } = await supabase.from('push_subscriptions').upsert({
-      endpoint: json.endpoint,
-      p256dh: json.keys.p256dh,
-      auth_key: json.keys.auth,
-      user_agent: navigator.userAgent,
-      user_id: (await supabase.auth.getUser()).data.user?.id,
-    }, { onConflict: 'endpoint' })
-    if (error) return { ok: false, errore: error.message }
-
-    return { ok: true }
+    return await salvaSottoscrizione(sottoscrizione)
   } catch (caught) {
     return { ok: false, errore: caught instanceof Error ? caught.message : 'Attivazione non riuscita.' }
+  }
+}
+
+// Il permesso e la sottoscrizione nel browser non bastano: la Edge Function
+// puo' aver eliminato dal database un endpoint revocato (404/410), oppure i
+// dati locali possono essere sopravvissuti a un cambio account. In entrambi
+// i casi la vecchia UI diceva "attive" pur non avendo un destinatario lato
+// server. Verifichiamo entrambi i lati e, se sono disallineati, ricreiamo la
+// sottoscrizione invece di risalvare un endpoint che il push service ha gia'
+// dichiarato scaduto.
+export async function sincronizzaPush(): Promise<{ ok: boolean; errore?: string }> {
+  if (!pushSupportata()) return { ok: false, errore: 'Le notifiche push non sono supportate su questo browser.' }
+  if (Notification.permission !== 'granted') return { ok: false, errore: 'Permesso non concesso.' }
+
+  try {
+    const locale = await sottoscrizioneAttuale()
+    if (!locale) return await attivaPush()
+
+    const { data: remota, error } = await supabase
+      .from('push_subscriptions')
+      .select('id')
+      .eq('endpoint', locale.endpoint)
+      .maybeSingle()
+    if (error) return { ok: false, errore: error.message }
+
+    if (!remota) {
+      const rimossa = await locale.unsubscribe()
+      if (!rimossa) return { ok: false, errore: 'La vecchia sottoscrizione non puo\' essere rinnovata.' }
+      return await attivaPush()
+    }
+
+    // Aggiorna anche chiavi, user agent e proprietario se il browser li ha
+    // rigenerati senza cambiare endpoint.
+    return await salvaSottoscrizione(locale)
+  } catch (caught) {
+    return { ok: false, errore: caught instanceof Error ? caught.message : 'Sincronizzazione non riuscita.' }
   }
 }
 

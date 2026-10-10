@@ -17,9 +17,10 @@ function Stella() {
 
 export function Crest({ value, imageUrl, size = 'small', stelle, eager = false }: CrestProps) {
   const stemma = imageUrl ? null : stemmaPresetDaValore(value)
+  const classePreset = stemma ? ` crest--preset-${stemma.id}` : ''
   const img = imageUrl
     ? <img className={`crest crest--${size}`} src={imageUrl} alt="" decoding="async" />
-    : <img className={`crest crest--${size}`} src={stemma?.src ?? '/stemmi-squadra/thumbs/1.png'} alt="" loading={eager ? 'eager' : 'lazy'} decoding={eager ? 'sync' : 'async'} />
+    : <img className={`crest crest--${size}${classePreset}`} src={stemma?.src ?? '/stemmi-squadra/thumbs/1.png'} alt="" loading={eager ? 'eager' : 'lazy'} decoding={eager ? 'sync' : 'async'} />
 
   const n = Math.max(0, Math.floor(stelle ?? 0))
   if (n === 0) return img

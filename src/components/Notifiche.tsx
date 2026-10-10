@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { quandoRelativo, useNotifiche, type Notifica, type TipoNotifica } from '../lib/notifiche'
-import { attivaPush, disattivaPush, permessoPush, sottoscrizioneAttuale } from '../lib/pushNotifiche'
+import { attivaPush, disattivaPush, permessoPush, sincronizzaPush, sottoscrizioneAttuale } from '../lib/pushNotifiche'
 import { Icona } from './Icona'
 
 type NotificheProps = {
@@ -55,15 +55,17 @@ export function Notifiche({ userId, onApriNotifica, embedded = false }: Notifich
       if (permesso === 'non-supportato') { if (attivo) setStatoPush('non-supportato'); return }
       if (permesso === 'denied') { if (attivo) setStatoPush('negato'); return }
       let sottoscrizione = await sottoscrizioneAttuale()
-      if (!sottoscrizione && permesso === 'granted') {
-        const esito = await attivaPush()
-        if (esito.ok) sottoscrizione = await sottoscrizioneAttuale()
+      if (permesso === 'granted') {
+        const esito = await sincronizzaPush()
+        // "Attivo" significa ora browser + database sincronizzati, non solo
+        // che il browser conserva localmente un endpoint forse inutilizzabile.
+        sottoscrizione = esito.ok ? await sottoscrizioneAttuale() : null
       }
       if (attivo) setStatoPush(sottoscrizione ? 'attivo' : 'inattivo')
     }
     void controlla()
     return () => { attivo = false }
-  }, [aperto])
+  }, [aperto, userId])
 
   async function alternaPush() {
     setStatoPush('in-corso')
