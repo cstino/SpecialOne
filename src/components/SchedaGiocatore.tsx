@@ -701,16 +701,31 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
     return () => document.removeEventListener('keydown', chiudiConEsc)
   }, [onClose])
 
-  // La tastiera del telefono: la scheda segue l'area davvero visibile (visualViewport), cosi' resta sopra la tastiera
-  // e il campo che si sta compilando non finisce coperto (offerta di rinnovo, 8 ottobre 2026).
+  // La tastiera del telefono: SOLO mentre si scrive in un campo della scheda (offerta di rinnovo) la scheda segue
+  // l'area davvero visibile (visualViewport), cosi' resta sopra la tastiera. Negli altri casi usa tutto lo schermo:
+  // su iPhone l'altezza visibile a volte restava quella "con tastiera" anche a tastiera chiusa (dopo aver cercato
+  // un giocatore), e la scheda si apriva troncata a meta' (segnalato l'11 ottobre 2026).
   useEffect(() => {
     const vv = window.visualViewport
     if (!vv) return
     const radice = document.documentElement.style
-    const aggiorna = () => { radice.setProperty('--vv-h', `${Math.round(vv.height)}px`); radice.setProperty('--vv-top', `${Math.round(vv.offsetTop)}px`) }
-    aggiorna()
+    const pulisci = () => { radice.removeProperty('--vv-h'); radice.removeProperty('--vv-top') }
+    const aggiorna = () => {
+      const attivo = document.activeElement
+      const scrivendo = attivo instanceof HTMLInputElement || attivo instanceof HTMLTextAreaElement
+      const nellaScheda = scrivendo && Boolean(attivo.closest('.player-modal'))
+      if (!nellaScheda || vv.height >= window.innerHeight - 40) { pulisci(); return }
+      radice.setProperty('--vv-h', `${Math.round(vv.height)}px`); radice.setProperty('--vv-top', `${Math.round(vv.offsetTop)}px`)
+    }
+    pulisci()
+    const dopo = () => window.setTimeout(aggiorna, 60)
     vv.addEventListener('resize', aggiorna); vv.addEventListener('scroll', aggiorna)
-    return () => { vv.removeEventListener('resize', aggiorna); vv.removeEventListener('scroll', aggiorna); radice.removeProperty('--vv-h'); radice.removeProperty('--vv-top') }
+    document.addEventListener('focusin', dopo); document.addEventListener('focusout', dopo)
+    return () => {
+      vv.removeEventListener('resize', aggiorna); vv.removeEventListener('scroll', aggiorna)
+      document.removeEventListener('focusin', dopo); document.removeEventListener('focusout', dopo)
+      pulisci()
+    }
   }, [])
 
   // Pagina ferma sotto la scheda, nel modo che funziona anche su iPhone: il body viene fissato alla posizione
