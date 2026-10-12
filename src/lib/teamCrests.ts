@@ -45,6 +45,7 @@ export const STEMMI_SQUADRA = [
   { id: 'riskmond', nome: 'Riskmond', src: '/stemmi-squadra/thumbs/riskmond.png' },
   { id: 'rocca', nome: 'Rocca', src: '/stemmi-squadra/thumbs/rocca.png' },
   { id: 'scernobil-united', nome: 'Scernobil United', src: '/stemmi-squadra/thumbs/scernobil-united.png' },
+  { id: 'real-paupiedad', nome: 'Real Paupiedad', src: '/stemmi-squadra/thumbs/real-paupiedad.png' },
   { id: 'rosa', nome: 'Rosa', src: '/stemmi-squadra/thumbs/rosa.png' },
   { id: 'siga', nome: 'Siga', src: '/stemmi-squadra/thumbs/siga.png' },
   { id: 'skull', nome: 'Skull', src: '/stemmi-squadra/thumbs/skull.png' },
