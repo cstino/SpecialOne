@@ -386,9 +386,6 @@ input:disabled { opacity: 0.65; }
 }
 .crest--small { width: 44px; }
 .crest--large { width: 74px; }
-/* Il marchio circolare di Mafiester City conserva piu' aria interna rispetto
-   agli stemmi che arrivano ai bordi del PNG: compensazione ottica globale. */
-.crest--preset-mafiester-city { scale: 1.14; }
 
 /* Join */
 .join-stage { padding: 2rem 1.25rem 4rem; }
