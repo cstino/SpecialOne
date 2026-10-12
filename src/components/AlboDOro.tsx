@@ -120,7 +120,7 @@ export function AlboDOro({ membership, onNavigate }: Props) {
     }))
 
     // Un errore sui premi non deve nascondere l'albo dei campioni.
-    setPremi((await caricaPremi(league.id)).filter((premio) => premio.ambito === 'totale'))
+    setPremi((await caricaPremi(league.id)).filter((premio) => premio.ambito === 'totale' || premio.ambito === 'champions'))
     setLoading(false)
   }, [league.id])
 

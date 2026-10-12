@@ -6,8 +6,8 @@ import { firmaStemma } from './stemmiFirmati'
 export type Premio = {
   stagioneId: number
   fase: 'regular' | 'title'
-  // 'totale' = tutti; 'est' e 'ovest' = la conferenza della squadra del giocatore (solo nelle leghe con le conferenze).
-  ambito: 'totale' | 'est' | 'ovest'
+  // 'totale' = stagione regolare; nei playoff un premio per torneo: 'champions' (o Title Playoff), 'europa', 'draft'.
+  ambito: 'totale' | 'champions' | 'europa' | 'draft'
   premio: 'marcatore' | 'assistman' | 'portiere'
   nome: string
   foto?: string
