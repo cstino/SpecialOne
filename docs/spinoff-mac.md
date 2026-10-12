@@ -27,12 +27,19 @@ Una **copia** di Supabase che gira sul Mac mini, pronta per il giorno in cui il 
    Funzioni portate con `tools/spinoff/costruisci-funzioni.sh` (copia anche `engine/` e riscrive gli import); gli indirizzi del
    cloud dentro le funzioni del database sono riscritti con `tools/spinoff/indirizzi-locali.sql`; segreto `chiave_simulazione`
    nel vault = chiave di servizio dello stack (che e' anche `CHIAVE_SEGRETA_PROGETTO` delle funzioni).
-7. Le sottoscrizioni push sono **svuotate** nella copia: non puo' mandare notifiche a nessuno.
+7. **Accesso da fuori e login vero** (12 ottobre 2026, prova con tunnel `cloudflared` temporaneo, indirizzi che cambiano a ogni avvio):
+   app avviata con `VITE_SUPABASE_URL` = indirizzo del tunnel verso il Mac; login con un utente segnaposto a cui si e' messo una
+   password di prova (via API admin di GoTrue). Nota: gli utenti inseriti a mano devono avere le colonne token a `''`, non NULL,
+   altrimenti GoTrue risponde «Database error querying schema».
+8. **Test di carico contro il Mac** (`tools/stress/reveal-simultaneo.mjs`, Serie F): 20 persone 0,15 s, 40 persone 0,35 s in locale;
+   **via tunnel pubblico 20 persone 0,8 s, 40 persone 0,9 s**, zero errori (cloud gratuito: 24 s nel caso peggiore con 20).
+9. Le sottoscrizioni push sono **svuotate** nella copia: non puo' mandare notifiche a nessuno.
 
 ## Cosa manca per un passaggio vero
 - [ ] Chiavi VAPID (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`) per le notifiche push: ora non configurate, e le sottoscrizioni sono vuote.
-- [ ] Indirizzo pubblico: Cloudflare Tunnel (gratis) + un nome di dominio; `SUPABASE_PUBLIC_URL`/`API_EXTERNAL_URL`/`SITE_URL`.
-- [ ] Account veri (auth.users con password) e prova di login dall'app puntata alla copia (anteprima Vercel separata).
+- [ ] Indirizzo stabile: dominio `specialonegame.com` (DNS ora su Vercel; zona Cloudflare pronta, vedi `docs/backup-cloudflare.md`):
+      serve spostare i nameserver su Cloudflare, poi tunnel con nome (es. `db.specialonegame.com`) e `SUPABASE_PUBLIC_URL`/`API_EXTERNAL_URL`/`SITE_URL`.
+- [ ] Account veri (auth.users con password) al passaggio definitivo.
 - [ ] Mac sempre acceso: niente sospensione, riavvio automatico di Docker, gruppo di continuita'; backup giornaliero fuori casa.
 - [ ] Procedura di passaggio e di ritorno al cloud (prova generale con congelamento della lega).
 - [ ] Prova di carico (`tools/stress/reveal-simultaneo.mjs`) contro il Mac.
