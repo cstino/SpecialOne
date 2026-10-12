@@ -1,4 +1,4 @@
--- Nuovo stemma predefinito 'marpzzc' (M'arpzzc FC), assegnato alla squadra 277. Funzione riscritta dalla definizione viva.
+-- Nuovi loghi delle squadre (secondo gruppo): preset in whitelist (funzione riscritta dalla definizione viva) e assegnazione.
 CREATE OR REPLACE FUNCTION private.stemma_valido(p_stemma_url text, p_user_id uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -13,6 +13,8 @@ AS $function$
       'preset:aquile',
       'preset:arpzzc',
       'preset:aviator',
+      'preset:marpzzc',
+      'preset:riskmond',
       'preset:balor-dito',
       'preset:cola-zero',
       'preset:doomsday-fc',
@@ -39,7 +41,6 @@ AS $function$
       'preset:lupo',
       'preset:mafiester-city',
       'preset:maomao',
-      'preset:marpzzc',
       'preset:massoni',
       'preset:mcdonald',
       'preset:musk',
@@ -73,7 +74,7 @@ AS $function$
         where t.user_id = p_user_id and t.stemma_url = p_stemma_url
       )
     );
-$function$
-;
+$function$;
 
-update public.teams set stemma_url = 'preset:marpzzc' where id = 277;
+update public.teams set stemma_url = 'preset:marpzzc' where id in (277);
+update public.teams set stemma_url = 'preset:riskmond' where id in (300);

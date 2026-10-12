@@ -37,6 +37,7 @@ export const STEMMI_SQUADRA = [
   { id: 'paninissimi', nome: 'Paninissimi', src: '/stemmi-squadra/thumbs/paninissimi.png' },
   { id: 'piramidi', nome: 'Piramidi', src: '/stemmi-squadra/thumbs/piramidi.png' },
   { id: 'pro-secco', nome: 'Pro Secco', src: '/stemmi-squadra/thumbs/pro-secco.png' },
+  { id: 'riskmond', nome: 'Riskmond', src: '/stemmi-squadra/thumbs/riskmond.png' },
   { id: 'rocca', nome: 'Rocca', src: '/stemmi-squadra/thumbs/rocca.png' },
   { id: 'scernobil-united', nome: 'Scernobil United', src: '/stemmi-squadra/thumbs/scernobil-united.png' },
   { id: 'rosa', nome: 'Rosa', src: '/stemmi-squadra/thumbs/rosa.png' },
