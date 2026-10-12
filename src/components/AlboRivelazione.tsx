@@ -87,13 +87,11 @@ export function AlboRivelazione({ membership, stagioneId, onFine }: Props) {
       ])
       if (!vivo) return
       const classifica = (classificaRes.data ?? []) as Standing[]
-      // SOLO PROVA (mai nella versione pubblicata): ?provaConferenze finge le conferenze e un'Europa League (copia del Draft).
-      const finto = import.meta.env.DEV && new URLSearchParams(window.location.search).has('provaConferenze')
-      const conConferenze = finto || classifica.some((voce) => voce.conferenza)
+      const conConferenze = classifica.some((voce) => voce.conferenza)
       const tabelloni = (tabelloniRes.data ?? []) as Array<{ tipo: string; vincitore_team_id: number | null }>
       const vincitore = (tipi: string[]) => tabelloni.find((t) => tipi.includes(t.tipo) && t.vincitore_team_id != null)?.vincitore_team_id ?? null
       const idDraft = vincitore(['draft'])
-      const idEuropa = vincitore(['europa']) ?? (finto ? vincitore(['draft']) : null)
+      const idEuropa = vincitore(['europa'])
       let idChampions = vincitore(['champions', 'title'])
       // Senza il tabellone del titolo (leghe piccole) il campione e' il primo della stagione regolare.
       const daPlayoff = idChampions != null
@@ -129,9 +127,7 @@ export function AlboRivelazione({ membership, stagioneId, onFine }: Props) {
       setConferenze(conConferenze)
       setTornei(lista)
       const premiStagione = tuttiPremi.filter((premio) => premio.stagioneId === stagioneId)
-      setPremi(finto
-        ? [...premiStagione, ...premiStagione.filter((p) => p.ambito === 'draft').map((p) => ({ ...p, ambito: 'europa' as const, nome: `${p.nome} (finto Europa)` }))]
-        : premiStagione)
+      setPremi(premiStagione)
       setPronto(true)
     }
     void carica()
