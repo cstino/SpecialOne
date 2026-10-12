@@ -20,7 +20,7 @@ stato)
   ;;
 congela)
   echo "Cloud: job spenti e funzioni chiuse all'app (congela.sql)..."
-  q "update cron.job set active=false" > /dev/null
+  q "select cron.alter_job(jobid, active := false) from cron.job" > /dev/null
   $CLOUD tools/spinoff/congela.sql > /dev/null
   echo "fatto: da ora l'app collegata al cloud riceve 'permission denied' e chi la ricarica passa al nuovo indirizzo."
   ;;
@@ -54,7 +54,7 @@ scongela)
   echo "ROLLBACK: cloud scrivibile e job del cloud accesi, job del Mac spenti."
   docker exec supabase-db psql -U postgres -qc "select cron.alter_job(jobid, active := false) from cron.job;" > /dev/null
   $CLOUD tools/spinoff/scongela.sql > /dev/null
-  q "update cron.job set active=true" > /dev/null
+  q "select cron.alter_job(jobid, active := true) from cron.job" > /dev/null
   echo "fatto. Ricordare di rimettere su Vercel l'indirizzo e la chiave del cloud e ripubblicare l'app."
   ;;
 *) sed -n 2,9p "$0";;
