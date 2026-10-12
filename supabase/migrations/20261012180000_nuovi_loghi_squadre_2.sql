@@ -18,6 +18,7 @@ AS $function$
       'preset:hage-no-justu',
       'preset:as-turbo',
       'preset:cocciaspigola',
+      'preset:juventu-nazionale',
       'preset:balor-dito',
       'preset:cola-zero',
       'preset:doomsday-fc',
@@ -84,3 +85,4 @@ update public.teams set stemma_url = 'preset:riskmond' where id in (300);
 update public.teams set stemma_url = 'preset:hage-no-justu' where id in (280);
 update public.teams set stemma_url = 'preset:as-turbo' where id in (85, 275);
 update public.teams set stemma_url = 'preset:cocciaspigola' where id in (272, 283);
+update public.teams set stemma_url = 'preset:juventu-nazionale' where id in (304);

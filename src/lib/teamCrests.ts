@@ -25,6 +25,7 @@ export const STEMMI_SQUADRA = [
   { id: 'generale', nome: 'Generale', src: '/stemmi-squadra/thumbs/generale.png' },
   { id: 'hage-no-justu', nome: 'Hage No Justu', src: '/stemmi-squadra/thumbs/hage-no-justu.png' },
   { id: 'ho-chi-minh-city', nome: 'Ho Chi Minh City', src: '/stemmi-squadra/thumbs/ho-chi-minh-city.png' },
+  { id: 'juventu-nazionale', nome: 'Juventù Nazionale', src: '/stemmi-squadra/thumbs/juventu-nazionale.png' },
   { id: 'leoni', nome: 'Leoni', src: '/stemmi-squadra/thumbs/leoni.png' },
   { id: 'lions', nome: 'Lions', src: '/stemmi-squadra/thumbs/lions.png' },
   { id: 'lupo', nome: 'Lupo', src: '/stemmi-squadra/thumbs/lupo.png' },
