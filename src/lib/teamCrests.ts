@@ -26,6 +26,7 @@ export const STEMMI_SQUADRA = [
   { id: 'maomao', nome: 'Maomao', src: '/stemmi-squadra/thumbs/maomao.png' },
   { id: 'mafiester-city', nome: 'Mafiester City', src: '/stemmi-squadra/thumbs/mafiester-city.png' },
   { id: 'massoni', nome: 'Massoni', src: '/stemmi-squadra/thumbs/massoni.png' },
+  { id: 'maudit-printemps', nome: 'Maudit Printemps', src: '/stemmi-squadra/thumbs/maudit-printemps.png' },
   { id: 'mcdonald', nome: 'McDonald', src: '/stemmi-squadra/thumbs/mcdonald.png' },
   { id: 'musk', nome: 'Musk', src: '/stemmi-squadra/thumbs/musk.png' },
   { id: 'musso', nome: 'Musso', src: '/stemmi-squadra/thumbs/musso.png' },
