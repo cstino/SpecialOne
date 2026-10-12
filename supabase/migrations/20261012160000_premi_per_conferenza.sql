@@ -1,7 +1,8 @@
 -- Premi individuali per conferenza e totale (rivelazione di fine stagione).
--- Ogni premio esce in tre ambiti: 'totale' (tutti), 'est' e 'ovest' (la conferenza della squadra con cui il
--- giocatore ha giocato piu' minuti, da standings.conferenza). Senza conferenze esce solo 'totale', come prima.
--- Fase 'title' = partite di tutti i tabelloni (title/champions, europa, draft playoffs).
+-- Fase 'regular': ogni premio esce in tre ambiti: 'totale' (tutti), 'est' e 'ovest' (la conferenza della squadra
+-- con cui il giocatore ha giocato piu' minuti, da standings.conferenza). Senza conferenze esce solo 'totale'.
+-- Fase 'title' (i tornei): un solo premio 'totale' sulle partite di tutti i tabelloni (title/champions, europa,
+-- draft playoffs), perche' li' le conferenze si mescolano.
 -- Cambia il tipo restituito (colonna ambito in piu'): si ricrea la funzione.
 drop function if exists public.premi_individuali_lega(bigint);
 
@@ -64,7 +65,7 @@ begin
     from base b
     left join public.standings st on st.season_id = b.sid and st.team_id = b.tid
     cross join lateral (values ('totale'::text), (st.conferenza::text)) as a(amb)
-    where a.amb is not null
+    where a.amb is not null and (a.amb = 'totale' or b.ph = 'regular')
   ),
   candidati as (
     select c.*, row_number() over (partition by c.sid, c.ph, c.pr, c.amb order by c.val desc, c.o2 desc, c.o3 asc, c.pid) as pos

@@ -39,18 +39,20 @@ const LOGO_UEFA = {
 } as const
 
 const ORDINE_FASI: Array<Premio['fase']> = ['regular', 'title']
-const ORDINE_AMBITI: Array<Premio['ambito']> = ['est', 'ovest', 'totale']
+const ambitiDellaFase = (fase: Premio['fase']): Array<Premio['ambito']> => (fase === 'regular' ? ['est', 'ovest', 'totale'] : ['totale'])
 const NOME_FASE = { regular: 'Regular Season', title: 'Title Playoffs' } as const
+// Con le conferenze i playoff sono i tre tornei (Champions, Europa, Draft): un solo premio per tutti.
+const nomeFase = (fase: Premio['fase'], conferenze: boolean) => (fase === 'title' && conferenze ? 'Playoffs' : NOME_FASE[fase])
 const FRASE_PREMIO = {
   marcatore: 'Il miglior marcatore',
   assistman: 'Il miglior assistman',
   portiere: 'Il miglior portiere',
 } as const
 // Dopo la frase: dove vale il premio. «assoluto» solo nelle leghe con le conferenze.
-function suffissoAmbito(ambito: Premio['ambito'], conferenze: boolean) {
+function suffissoAmbito(ambito: Premio['ambito'], conferenze: boolean, fase: Premio['fase']) {
   if (ambito === 'est') return ' dell’Eastern Conference'
   if (ambito === 'ovest') return ' della Western Conference'
-  return conferenze ? ' in assoluto' : ''
+  return conferenze && fase === 'regular' ? ' in assoluto' : ''
 }
 const ETICHETTA_AMBITO = { est: 'Eastern', ovest: 'Western', totale: 'Assoluto' } as const
 
@@ -85,11 +87,13 @@ export function AlboRivelazione({ membership, stagioneId, onFine }: Props) {
       ])
       if (!vivo) return
       const classifica = (classificaRes.data ?? []) as Standing[]
-      const conConferenze = classifica.some((voce) => voce.conferenza)
+      // SOLO PROVA (mai nella versione pubblicata): ?provaConferenze finge conferenze, Europa League e premi East/West.
+      const finto = import.meta.env.DEV && new URLSearchParams(window.location.search).has('provaConferenze')
+      const conConferenze = finto || classifica.some((voce) => voce.conferenza)
       const tabelloni = (tabelloniRes.data ?? []) as Array<{ tipo: string; vincitore_team_id: number | null }>
       const vincitore = (tipi: string[]) => tabelloni.find((t) => tipi.includes(t.tipo) && t.vincitore_team_id != null)?.vincitore_team_id ?? null
       const idDraft = vincitore(['draft'])
-      const idEuropa = vincitore(['europa'])
+      const idEuropa = vincitore(['europa']) ?? (finto ? vincitore(['draft']) : null)
       let idChampions = vincitore(['champions', 'title'])
       // Senza il tabellone del titolo (leghe piccole) il campione e' il primo della stagione regolare.
       const daPlayoff = idChampions != null
@@ -124,7 +128,14 @@ export function AlboRivelazione({ membership, stagioneId, onFine }: Props) {
       setNumero((stagioneRes.data as { numero: number } | null)?.numero ?? null)
       setConferenze(conConferenze)
       setTornei(lista)
-      setPremi(tuttiPremi.filter((premio) => premio.stagioneId === stagioneId))
+      const premiStagione = tuttiPremi.filter((premio) => premio.stagioneId === stagioneId)
+      setPremi(finto
+        ? [...premiStagione.filter((p) => p.ambito === 'totale').flatMap((p) => p.fase === 'regular' ? [
+            { ...p, ambito: 'est' as const, nome: `${p.nome} (finto Est)` },
+            { ...p, ambito: 'ovest' as const, nome: `${p.nome} (finto Ovest)` },
+            p,
+          ] : [p])]
+        : premiStagione)
       setPronto(true)
     }
     void carica()
@@ -135,7 +146,7 @@ export function AlboRivelazione({ membership, stagioneId, onFine }: Props) {
   // Draft Playoffs, Europa League e, per ultima, la Champions League (il gran finale con i coriandoli).
   const battute = useMemo<Battuta[]>(() => {
     const lista: Battuta[] = []
-    for (const fase of ORDINE_FASI) for (const { chiave } of PREMI) for (const ambito of ORDINE_AMBITI) {
+    for (const fase of ORDINE_FASI) for (const { chiave } of PREMI) for (const ambito of ambitiDellaFase(fase)) {
       const premio = premi.find((voce) => voce.fase === fase && voce.premio === chiave && voce.ambito === ambito)
       if (premio) lista.push({ tipo: 'premio', premio })
     }
@@ -197,7 +208,7 @@ export function AlboRivelazione({ membership, stagioneId, onFine }: Props) {
       {premio && info && <>
         <p className="albo-riv__occhiello">Stagione {numero ?? ''} · Premi</p>
         {premio.ambito !== 'totale' && <div className="albo-riv__conferenza"><ConferenceBadge conferenza={premio.ambito as Conferenza} /><span>{NOME_CONFERENZA[premio.ambito as Conferenza]}</span></div>}
-        <h1 className="albo-riv__titolo albo-riv__titolo--frase">{FRASE_PREMIO[premio.premio]}{suffissoAmbito(premio.ambito, conferenze)} è…</h1>
+        <h1 className="albo-riv__titolo albo-riv__titolo--frase">{FRASE_PREMIO[premio.premio]}{suffissoAmbito(premio.ambito, conferenze, premio.fase)} è…</h1>
         <div className={`albo-riv__carta ${svelata ? 'is-svelata' : ''}`}>
           <div className="albo-riv__carta-giro">
             <div className="albo-riv__faccia albo-riv__faccia--dietro" aria-hidden={svelata}>
@@ -206,7 +217,7 @@ export function AlboRivelazione({ membership, stagioneId, onFine }: Props) {
                 <span className="albo-retro__icona"><IconaPremio tipo={premio.premio} /></span>
                 <span className="albo-retro__medaglia"><b>?</b></span>
                 <strong className="albo-retro__titolo">{info.titolo}</strong>
-                <small className="albo-retro__fase">{NOME_FASE[premio.fase]}{conferenze ? ` · ${ETICHETTA_AMBITO[premio.ambito]}` : ''} · Stagione {numero ?? ''}</small>
+                <small className="albo-retro__fase">{nomeFase(premio.fase, conferenze)}{conferenze && premio.fase === 'regular' ? ` · ${ETICHETTA_AMBITO[premio.ambito]}` : ''} · Stagione {numero ?? ''}</small>
               </div>
             </div>
             <div className="albo-riv__faccia albo-riv__faccia--fronte" aria-hidden={!svelata}>
@@ -226,7 +237,7 @@ export function AlboRivelazione({ membership, stagioneId, onFine }: Props) {
                     <Crest value={premio.squadra?.stemma_url ?? null} stelle={premio.squadra?.titoli_title} imageUrl={premio.stemmaFirmato} size="small" />
                     <span>{premio.squadra?.nome ?? '—'}</span>
                   </span>
-                  <em className="albo-carta__premio">{info.titolo}<i aria-hidden="true">·</i>{NOME_FASE[premio.fase]}{conferenze && <><i aria-hidden="true">·</i>{ETICHETTA_AMBITO[premio.ambito]}</>}</em>
+                  <em className="albo-carta__premio">{info.titolo}<i aria-hidden="true">·</i>{nomeFase(premio.fase, conferenze)}{conferenze && premio.fase === 'regular' && <><i aria-hidden="true">·</i>{ETICHETTA_AMBITO[premio.ambito]}</>}</em>
                 </div>
               </div>
             </div>
