@@ -191,7 +191,12 @@ export function AlboRivelazione({ membership, stagioneId, onFine }: Props) {
     </header>
 
     <main className="albo-riv__scena" key={indice}>
-      <img className="albo-riv__logo" src={logoBattuta} alt="" />
+      {battuta.tipo === 'premio' && battuta.premio.fase === 'title' && conferenze
+        // Premio dei playoff con i tre tornei: i loghi dei tre tornei, non quello di uno solo.
+        ? <div className="albo-riv__logo-tornei" aria-hidden="true">
+            <img src={LOGO_UEFA.champions} alt="" /><img src={LOGO_UEFA.europa} alt="" /><img src={LOGO_FASE.draft} alt="" />
+          </div>
+        : <img className="albo-riv__logo" src={logoBattuta} alt="" />}
 
       {battuta.tipo === 'torneo' && <>
         <p className="albo-riv__occhiello">Stagione {numero ?? ''} · {battuta.torneo.titolo}</p>

@@ -5188,3 +5188,5 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 /* Rivelazione dell'albo: conferenza sopra la frase del premio. */
 .albo-riv__conferenza { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px; color: #e9e2f7; font: 800 .74rem/1 "Bai Jamjuree", ui-sans-serif, sans-serif; letter-spacing: .14em; text-transform: uppercase; }
 .albo-riv__conferenza .conf-badge img { height: 30px; }
+.albo-riv__logo-tornei { display: flex; align-items: center; justify-content: center; gap: 18px; width: min(100%, 360px); }
+.albo-riv__logo-tornei img { flex: 1 1 0; min-width: 0; max-height: 48px; object-fit: contain; filter: drop-shadow(0 4px 14px rgba(0,0,0,.55)); }
