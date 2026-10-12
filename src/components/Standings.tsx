@@ -135,7 +135,7 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
         <span className="players-standings-foto">{riga.foto ? <img src={riga.foto} alt="" /> : null}</span>
         <span>
           <strong>{riga.nome}</strong>
-          <small>{filtroGiocatori === 'tutte' && confDiSquadra.get(riga.teamId) && <ConferenceBadge conferenza={confDiSquadra.get(riga.teamId)!} />}<Crest value={data.teamById.get(riga.teamId)?.stemma_url ?? null} stelle={data.teamById.get(riga.teamId)?.titoli_title} imageUrl={data.crestUrlByTeamId.get(riga.teamId)} />{data.teamById.get(riga.teamId)?.nome ?? 'Squadra'}</small>
+          <small>{filtroGiocatori === 'tutte' && confDiSquadra.get(riga.teamId) && <ConferenceBadge conferenza={confDiSquadra.get(riga.teamId)!} />}<Crest value={data.teamById.get(riga.teamId)?.stemma_url ?? null} stelle={data.teamById.get(riga.teamId)?.titoli_title} imageUrl={data.crestUrlByTeamId.get(riga.teamId)} /><span className="players-standings-squadra">{data.teamById.get(riga.teamId)?.nome ?? 'Squadra'}</span></small>
         </span>
       </div>
       <strong className="players-standings-valore">{riga[chiave]}</strong>

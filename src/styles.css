@@ -5173,3 +5173,14 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .players-standings-giocatore small .conf-badge img { height: 15px; filter: none; }
 .players-standings-giocatore small .conf-badge { margin-right: 4px; }
 @media (max-width: 389px) { .filtro-conf button { gap: 5px; padding: 0 4px; font-size: .72rem; letter-spacing: .03em; } }
+
+/* Classifica marcatori/assist: il nome squadra si tronca con i puntini e su schermi stretti le colonne si stringono
+   (il numero finiva sopra il nome con Bai Jamjuree). */
+.players-standings-giocatore small .players-standings-squadra { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.players-standings-giocatore > span:last-child { min-width: 0; }
+@media (max-width: 430px) {
+  .players-standings-row { grid-template-columns: 24px minmax(0, 1fr) 30px 56px; gap: 8px; padding: 10px 12px; }
+  .players-standings-foto { width: 32px; height: 32px; }
+  .players-standings-giocatore { gap: 8px; }
+  .players-standings-secondario { font-size: .58rem; }
+}
