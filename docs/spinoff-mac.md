@@ -45,3 +45,17 @@ Una **copia** di Supabase che gira sul Mac mini, pronta per il giorno in cui il 
 - [ ] Prova di carico (`tools/stress/reveal-simultaneo.mjs`) contro il Mac.
 
 `sh tools/spinoff/ricarica-dati.sh` rifa la copia dei dati dal cloud (sola lettura sul cloud).
+
+## Pagina "Server in manutenzione"
+
+Tabella `public.stato_app` (una riga, leggibile da tutti). L'app la controlla all'apertura, ogni 45 s e al ritorno in primo piano.
+Se il server non risponde per due controlli di fila, mostra la stessa pagina da sola.
+
+```
+-- accendi (con messaggio facoltativo)
+update public.stato_app set manutenzione = true, messaggio = null;
+-- spegni
+update public.stato_app set manutenzione = false;
+```
+Cloud: `npx supabase db query --linked "<sql>"`. Mac: `docker exec supabase-db psql -U postgres -c "<sql>"`.
+Nel passaggio: accendi sul cloud prima di `congela`; il dato viene caricato sul Mac, poi spegni sul Mac.

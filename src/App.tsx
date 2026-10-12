@@ -15,6 +15,8 @@ import { AnteprimaOffseason } from './components/AnteprimaOffseason'
 import { useAlboRivelazione } from './lib/useAlboRivelazione'
 import { Avvisi } from './components/Avvisi'
 import { AuthScreen } from './components/AuthScreen'
+import { Manutenzione } from './components/Manutenzione'
+import { useManutenzione } from './lib/useManutenzione'
 import { Draft } from './components/Draft'
 import { Finanza } from './components/Finanza'
 import { Risorse } from './components/Risorse'
@@ -61,6 +63,7 @@ type IstantaneaNavigazione = {
 }
 
 export default function App() {
+  const manutenzione = useManutenzione()
   const [session, setSession] = useState<Session | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [memberships, setMemberships] = useState<Membership[]>([])
@@ -338,6 +341,7 @@ export default function App() {
     await loadMemberships()
   }
 
+  if (manutenzione.attiva) return <Manutenzione stato={manutenzione} />
   if (configurationError) {
     return <main className="fatal-state"><img src="/specialone-mark.svg" alt="" /><h1>Configurazione incompleta</h1><p>{configurationError}</p></main>
   }
