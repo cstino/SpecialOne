@@ -5145,3 +5145,14 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .stemma-zoom__chiudi:focus-visible { outline: 2px solid #c59be8; outline-offset: 2px; }
 @keyframes stemma-zoom-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .stemma-zoom { animation: none; } }
+
+/* Schermi stretti (Android da 360 px o meno): Bai Jamjuree e' piu' largo dei vecchi caratteri condensati.
+   La barra della formazione va su due righe (OVR e familiarita' sopra, Svuota/Salva a tutta larghezza sotto). */
+@media (max-width: 389px) {
+  .formazione-broadcast .formation-toolbar { grid-template-columns: 1fr 1fr; grid-template-areas: "overall ftsg" "save save" "tattica tattica"; gap: 12px 10px; }
+  .formazione-broadcast .formation-overall span, .formazione-broadcast .formation-ftsg span { letter-spacing: .08em; }
+  .formation-save-azioni { width: 100%; }
+  .formation-save-azioni .formation-save-button { letter-spacing: .1em; padding-left: 10px; padding-right: 10px; }
+  .formazione-schede .formazione-scheda { gap: 5px; padding: 0 4px; font-size: .78rem; letter-spacing: .02em; }
+  .formazione-schede .formazione-scheda b { min-width: 20px; padding: 0 5px; }
+}
