@@ -11,6 +11,7 @@ export const STEMMI_SQUADRA = [
   { id: 'calvi', nome: 'Calvi', src: '/stemmi-squadra/thumbs/calvi.png' },
   { id: 'canna', nome: 'Canna', src: '/stemmi-squadra/thumbs/canna.png' },
   { id: 'cola', nome: 'Cola', src: '/stemmi-squadra/thumbs/cola.png' },
+  { id: 'cocciaspigola', nome: 'Cocciaspigola', src: '/stemmi-squadra/thumbs/cocciaspigola.png' },
   { id: 'cola-zero', nome: 'Cola Zero', src: '/stemmi-squadra/thumbs/cola-zero.png' },
   { id: 'coord', nome: 'Coord', src: '/stemmi-squadra/thumbs/coord.png' },
   { id: 'cotoletta', nome: 'Cotoletta', src: '/stemmi-squadra/thumbs/cotoletta.png' },
