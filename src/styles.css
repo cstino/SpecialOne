@@ -4502,8 +4502,8 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .albo-riv__scena { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; width: 100%; max-width: 440px; margin: 0 auto; padding: 12px 0; text-align: center; animation: albo-riv-scena .55s cubic-bezier(.2,.8,.2,1) both; }
 .albo-riv__logo { height: 42px; width: auto; max-width: 60vw; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,.6)); }
 .albo-riv__occhiello { margin: 0; color: var(--oro); font: 600 .8rem/1 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: .32em; margin-right: -.32em; text-transform: uppercase; }
-.albo-riv__titolo { margin: 0; color: #fff; font: 700 clamp(2.4rem, 12vw, 3.8rem)/.95 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: .02em; text-transform: uppercase; text-shadow: 0 6px 28px rgba(0,0,0,.6); text-wrap: balance; }
-.albo-riv__titolo--frase { font-size: clamp(1.5rem, 7.2vw, 2.3rem); line-height: 1.05; }
+.albo-riv__titolo { margin: 0; color: #fff; font: 700 clamp(1.7rem, 7.6vw, 3.1rem)/1 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: .02em; text-transform: uppercase; text-shadow: 0 6px 28px rgba(0,0,0,.6); text-wrap: balance; }
+.albo-riv__titolo--frase { font-size: clamp(1.3rem, 6.2vw, 2.1rem); line-height: 1.1; overflow-wrap: anywhere; }
 .albo-riv__campione { display: grid; justify-items: center; gap: 8px; width: 100%; }
 .albo-riv__stemma { display: grid; place-items: center; width: clamp(130px, 40vw, 170px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(255,211,77,.34), rgba(255,211,77,0) 68%); filter: drop-shadow(0 12px 30px rgba(0,0,0,.55)); animation: albo-riv-stemma 1s cubic-bezier(.2,.8,.2,1) both; }
 .albo-riv__stemma .crest { width: 78%; height: 78%; object-fit: contain; }
