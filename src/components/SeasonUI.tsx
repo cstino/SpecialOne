@@ -40,9 +40,12 @@ export function TitoloAdattivo({ testo, className, taglioMassimo = 67, taglioMin
     }
 
     adatta()
+    // Il font si carica dopo il primo giro: senza questo il titolo resta misurato sul carattere di riserva.
+    let attivo = true
+    void document.fonts?.ready.then(() => { if (attivo) adatta() })
     const osservatore = new ResizeObserver(adatta)
     osservatore.observe(contenitore)
-    return () => osservatore.disconnect()
+    return () => { attivo = false; osservatore.disconnect() }
   }, [testo, taglioMassimo, taglioMinimo])
 
   return <h1 ref={ref} className={className} style={taglia ? { fontSize: taglia, whiteSpace: 'nowrap' } : { whiteSpace: 'nowrap', visibility: 'hidden' }}>{testo}</h1>
