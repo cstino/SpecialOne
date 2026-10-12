@@ -17,17 +17,20 @@ Una **copia** di Supabase che gira sul Mac mini, pronta per il giorno in cui il 
 3. **Utenti**: 27 utenti SEGNAPOSTO (stesso id, email `utente-xxxx@spinoff.local`, **nessuna password**). I veri account
    (con le password) si copiano solo al passaggio definitivo.
 4. **Job pianificati**: i 16 del cloud, creati **disattivati** (`cron.job.active = false`).
-5. **Archivio**: i 2 bucket (`team-crests` privato, `player-photos` pubblico) e le 3 regole di accesso. **File ancora da copiare**
-   (10.951 foto giocatori, 60 MB; 5 stemmi, 1,4 MB).
-6. **Prova della simulazione** (funzione `simula-giornata` eseguita in locale contro la copia): LegaBot giornata 11 e
-   Serie F giornata 6 completate. **Serie F, giornata intera in 4,1 s** (rose, 12 partite, progressione, stipendi),
-   contro i 10+ s della sola lettura delle abilita' sul cloud del 11 ottobre.
+5. **Archivio**: i 2 bucket (`team-crests` privato, `player-photos` pubblico), le 3 regole di accesso e i file
+   (10.951 foto giocatori, 60 MB; 5 stemmi), copiati con `tools/spinoff/copia-archivio.mjs`. Su Docker Desktop i file stanno in un
+   **volume Docker con nome** (`docker-compose.mac.yml`): le cartelle montate da macOS non supportano gli attributi estesi e
+   Storage rispondeva 500. Su un server Linux non serve.
+6. **Prova della simulazione**: eseguita prima dal terminale (Serie F, giornata intera in **4,1 s** contro i 10+ s della sola
+   lettura delle abilita' sul cloud dell'11 ottobre) e poi **dentro lo stack**: job `simula-giornata-notturna` -> `pg_net` ->
+   gateway -> Edge Function -> database, giornata 7 di Serie F simulata, HTTP 200.
+   Funzioni portate con `tools/spinoff/costruisci-funzioni.sh` (copia anche `engine/` e riscrive gli import); gli indirizzi del
+   cloud dentro le funzioni del database sono riscritti con `tools/spinoff/indirizzi-locali.sql`; segreto `chiave_simulazione`
+   nel vault = chiave di servizio dello stack (che e' anche `CHIAVE_SEGRETA_PROGETTO` delle funzioni).
 7. Le sottoscrizioni push sono **svuotate** nella copia: non puo' mandare notifiche a nessuno.
 
 ## Cosa manca per un passaggio vero
-- [ ] Funzioni (`simula-giornata`, `invia-push`) dentro lo stack (ora girano solo da terminale): copiare anche `engine/`
-      e riscrivere gli import; variabili `CHIAVE_SEGRETA_PROGETTO`, chiavi VAPID per le push; segreto `chiave_simulazione` nel vault.
-- [ ] Copia dei file dell'archivio (foto e stemmi).
+- [ ] Chiavi VAPID (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`) per le notifiche push: ora non configurate, e le sottoscrizioni sono vuote.
 - [ ] Indirizzo pubblico: Cloudflare Tunnel (gratis) + un nome di dominio; `SUPABASE_PUBLIC_URL`/`API_EXTERNAL_URL`/`SITE_URL`.
 - [ ] Account veri (auth.users con password) e prova di login dall'app puntata alla copia (anteprima Vercel separata).
 - [ ] Mac sempre acceso: niente sospensione, riavvio automatico di Docker, gruppo di continuita'; backup giornaliero fuori casa.
