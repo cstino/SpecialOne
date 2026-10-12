@@ -18,6 +18,7 @@ export const STEMMI_SQUADRA = [
   { id: 'eddaii', nome: 'Eddaii', src: '/stemmi-squadra/thumbs/eddaii.png' },
   { id: 'flat', nome: 'Flat', src: '/stemmi-squadra/thumbs/flat.png' },
   { id: 'generale', nome: 'Generale', src: '/stemmi-squadra/thumbs/generale.png' },
+  { id: 'ho-chi-minh-city', nome: 'Ho Chi Minh City', src: '/stemmi-squadra/thumbs/ho-chi-minh-city.png' },
   { id: 'leoni', nome: 'Leoni', src: '/stemmi-squadra/thumbs/leoni.png' },
   { id: 'lions', nome: 'Lions', src: '/stemmi-squadra/thumbs/lions.png' },
   { id: 'lupo', nome: 'Lupo', src: '/stemmi-squadra/thumbs/lupo.png' },
