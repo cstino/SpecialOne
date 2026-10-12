@@ -47,6 +47,7 @@ export const STEMMI_SQUADRA = [
   { id: 'trump', nome: 'Trump', src: '/stemmi-squadra/thumbs/trump.png' },
   { id: 'trump-portatore', nome: 'Trump portatore', src: '/stemmi-squadra/thumbs/trump-portatore.png' },
   { id: 'twins', nome: 'Twins', src: '/stemmi-squadra/thumbs/twins.png' },
+  { id: 'weed-athletic', nome: 'Weed Athletic', src: '/stemmi-squadra/thumbs/weed-athletic.png' },
   { id: 'wolves', nome: 'Wolves', src: '/stemmi-squadra/thumbs/wolves.png' },
   { id: 'yugioh', nome: 'Yu-Gi-Oh', src: '/stemmi-squadra/thumbs/yugioh.png' },
 ] as const
