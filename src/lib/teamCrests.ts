@@ -5,6 +5,7 @@ export const STEMMI_SQUADRA = [
   { id: 'aquile', nome: 'Aquile', src: '/stemmi-squadra/thumbs/aquile.png' },
   { id: 'arpzzc', nome: 'Arpzzc', src: '/stemmi-squadra/thumbs/arpzzc.png' },
   { id: 'aviator', nome: 'Aviator', src: '/stemmi-squadra/thumbs/aviator.png' },
+  { id: 'balor-dito', nome: 'FC Balor Dito', src: '/stemmi-squadra/thumbs/balor-dito.png' },
   { id: 'bigbrain', nome: 'Big Brain', src: '/stemmi-squadra/thumbs/bigbrain.png' },
   { id: 'calvi', nome: 'Calvi', src: '/stemmi-squadra/thumbs/calvi.png' },
   { id: 'canna', nome: 'Canna', src: '/stemmi-squadra/thumbs/canna.png' },
