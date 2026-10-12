@@ -5184,3 +5184,7 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
   .players-standings-giocatore { gap: 8px; }
   .players-standings-secondario { font-size: .58rem; }
 }
+
+/* Rivelazione dell'albo: conferenza sopra la frase del premio. */
+.albo-riv__conferenza { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px; color: #e9e2f7; font: 800 .74rem/1 "Bai Jamjuree", ui-sans-serif, sans-serif; letter-spacing: .14em; text-transform: uppercase; }
+.albo-riv__conferenza .conf-badge img { height: 30px; }

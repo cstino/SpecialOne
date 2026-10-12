@@ -164,3 +164,18 @@ La pagina **Classifica** ha gia' le due schede East/Western e si apre su quella 
   Ora in quell'attimo si vede «La squadra estratta per la [conference giusta] è…» con il caricamento che gira, senza numero; il recupero
   dell'estratta e' piu' rapido (500 ms).
 - Le reazioni non c'entravano: il database le registrava (16 in pochi minuti da 6 squadre).
+
+## Rivelazione dei premi di fine stagione (12 ottobre 2026)
+
+`AlboRivelazione` mostra ora, in ordine: i premi dei giocatori (per fase `regular` e `title`, per premio
+marcatore/assistman/portiere, in tre ambiti: **East, West, Totale**), poi i vincitori dei tornei: **Draft Playoffs**,
+**Europa League** e, per ultima, la **Champions League**.
+
+- Funzione `public.premi_individuali_lega` (migrazione `20261012160000`): colonna `ambito` ('totale'/'est'/'ovest'); la
+  conferenza e' quella di `standings.conferenza` della squadra con cui il giocatore ha giocato piu' minuti. Senza conferenze
+  esce solo 'totale'. La fase `title` conta le partite di **tutti** i tabelloni (title/champions, europa, draft).
+- I vincitori si leggono da `brackets.vincitore_team_id` con `tipo` in: `draft`; `europa`; `champions` o `title`.
+  **Il BLOCCO 2 dovra' creare i tabelloni con questi `tipo`** e allargare il vincolo CHECK di `brackets.tipo`
+  (oggi solo 'title'/'draft') a 'champions' e 'europa'. Nelle leghe senza conferenze il titolo si chiama «Title Playoff»;
+  con le conferenze «Champions League» (logo UEFA).
+- L'albo d'oro (lista) continua a mostrare solo i premi 'totale'.

@@ -6,6 +6,8 @@ import { firmaStemma } from './stemmiFirmati'
 export type Premio = {
   stagioneId: number
   fase: 'regular' | 'title'
+  // 'totale' = tutti; 'est' e 'ovest' = la conferenza della squadra del giocatore (solo nelle leghe con le conferenze).
+  ambito: 'totale' | 'est' | 'ovest'
   premio: 'marcatore' | 'assistman' | 'portiere'
   nome: string
   foto?: string
@@ -35,7 +37,7 @@ export async function firmaStemmi(squadre: Team[]) {
 // premi sono un di piu' e non devono nascondere il resto.
 export async function caricaPremi(leagueId: number): Promise<Premio[]> {
   const { data } = await supabase.rpc('premi_individuali_lega', { p_league_id: leagueId })
-  const grezzi = (data ?? []) as Array<{ season_id: number; fase: Premio['fase']; premio: Premio['premio']; nome: string; foto_url: string | null; team_id: number; valore: number }>
+  const grezzi = (data ?? []) as Array<{ season_id: number; fase: Premio['fase']; premio: Premio['premio']; nome: string; foto_url: string | null; team_id: number; valore: number; ambito?: Premio['ambito'] }>
   const idsSquadre = [...new Set(grezzi.map((riga) => riga.team_id))]
   const { data: squadre } = idsSquadre.length
     ? await supabase.from('teams').select('*').in('id', idsSquadre)
@@ -44,7 +46,7 @@ export async function caricaPremi(leagueId: number): Promise<Premio[]> {
   const perId = new Map(elenco.map((squadra) => [squadra.id, squadra]))
   const stemmi = await firmaStemmi(elenco)
   return grezzi.map((riga) => ({
-    stagioneId: riga.season_id, fase: riga.fase, premio: riga.premio, nome: riga.nome, valore: riga.valore,
+    stagioneId: riga.season_id, fase: riga.fase, ambito: riga.ambito ?? 'totale', premio: riga.premio, nome: riga.nome, valore: riga.valore,
     foto: urlFotoGiocatore(riga.foto_url),
     squadra: perId.get(riga.team_id) ?? null,
     stemmaFirmato: stemmi.get(riga.team_id),
