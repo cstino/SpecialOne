@@ -10,6 +10,7 @@ import { useFaseSquadra } from '../lib/faseSquadra'
 import type { CrestChoice, Fixture, League, MatchPlayerStat, Membership, Team } from '../types'
 import { Crest } from './Crest'
 import { FaccinaMorale } from './FaccinaMorale'
+import { StemmaIngrandito } from './StemmaIngrandito'
 import { CrestPicker } from './CrestPicker'
 import { GameNav, type GameView } from './GameNav'
 import { PopupSpiegazione } from './PopupSpiegazione'
@@ -179,6 +180,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [sigla, setSigla] = useState('')
   const [crest, setCrest] = useState<CrestChoice>({ type: 'preset', value: STEMMA_SQUADRA_DEFAULT })
   const [saving, setSaving] = useState(false)
+  const [stemmaAperto, setStemmaAperto] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [releasePending, setReleasePending] = useState(false)
   const [releaseError, setReleaseError] = useState<string | null>(null)
@@ -684,7 +686,8 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       <section className={`team-profile-hero team-profile-hero--${fase}`}>
         {crestBgUrl && <div className="team-profile-hero__vetro" style={{ backgroundImage: `url(${crestBgUrl})` }} aria-hidden="true" />}
         <div className="team-profile-hero__inner">
-          <div className="team-profile-crest"><Crest value={team.stemma_url} stelle={team?.titoli_title} imageUrl={crestUrl} size="large" /></div>
+          <button type="button" className="team-profile-crest" aria-label="Ingrandisci lo stemma" onClick={() => setStemmaAperto(true)}><Crest value={team.stemma_url} stelle={team?.titoli_title} imageUrl={crestUrl} size="large" /></button>
+          {stemmaAperto && <StemmaIngrandito value={team.stemma_url} imageUrl={crestUrl} stelle={team?.titoli_title} nome={team.nome} onChiudi={() => setStemmaAperto(false)} />}
           <div className="team-profile-hero__testo">
             <p className="kicker">{league.nome} · Stagione {league.stagione_corrente}</p>
             <h1>{team.nome}</h1>
