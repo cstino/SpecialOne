@@ -5156,3 +5156,20 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
   .formazione-schede .formazione-scheda { gap: 5px; padding: 0 4px; font-size: .78rem; letter-spacing: .02em; }
   .formazione-schede .formazione-scheda b { min-width: 20px; padding: 0 5px; }
 }
+
+/* Filtro per conferenza (Partite, Marcatori, Assist) e intestazioni di gruppo nelle giornate. */
+.filtro-conf { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 4px 0 14px; padding: 4px; border: 1px solid #2e2640; border-radius: 14px; background: #120f1c; }
+.filtro-conf button { min-width: 0; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; padding: 0 8px; border: 1px solid transparent; border-radius: 10px; color: #a79bc4; background: transparent; font: 800 .8rem/1 "Bai Jamjuree", ui-sans-serif, sans-serif; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; transition: background .18s ease, color .18s ease, border-color .18s ease; }
+.filtro-conf button .conf-badge img { height: 26px; filter: none; }
+.filtro-conf button.is-attiva { color: #fff; background: linear-gradient(135deg, rgba(155,76,255,.5), rgba(103,38,196,.5)); border-color: #7a4fc4; }
+.filtro-conf button.filtro-conf--est.is-attiva { background: linear-gradient(135deg, rgba(77,179,255,.28), rgba(30,90,160,.3)); border-color: #4db3ff; }
+.filtro-conf button.filtro-conf--ovest.is-attiva { background: linear-gradient(135deg, rgba(255,107,74,.28), rgba(150,50,30,.3)); border-color: #ff6b4a; }
+.filtro-conf button:focus-visible { outline: 2px solid #c59be8; outline-offset: 2px; }
+.fixture-gruppo + .fixture-gruppo { margin-top: 10px; }
+.fixture-gruppo__testa { display: flex; align-items: center; gap: 8px; margin: 10px 0 4px; padding-bottom: 6px; border-bottom: 1px solid #2b2733; color: #cfc6e6; font: 800 .74rem/1 "Bai Jamjuree", ui-sans-serif, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+.fixture-gruppo__testa .conf-badge img { height: 24px; filter: none; }
+.fixture-gruppo__testa--est b { color: #4db3ff; }
+.fixture-gruppo__testa--ovest b { color: #ff6b4a; }
+.players-standings-giocatore small .conf-badge img { height: 15px; filter: none; }
+.players-standings-giocatore small .conf-badge { margin-right: 4px; }
+@media (max-width: 389px) { .filtro-conf button { gap: 5px; padding: 0 4px; font-size: .72rem; letter-spacing: .03em; } }

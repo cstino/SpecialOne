@@ -3,6 +3,9 @@ import { useSeasonData } from '../lib/useSeasonData'
 import type { Fixture, League, Match, Membership, Team } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { FixtureScore, formatMatchDate, SeasonState, TeamLabel } from './SeasonUI'
+import { ConferenceBadge } from './ConferenceBadge'
+import { FiltroConferenza, type FiltroConf } from './FiltroConferenza'
+import { NOME_CONFERENZA, type Conferenza } from '../lib/conferenze'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; revealedMatchIds: Set<number>; onOpenMatch: (matchId: number) => void; onRevealMatch: (matchId: number) => void; onOpenTeam: (teamId: number) => void }
 
@@ -18,11 +21,30 @@ type CardProps = {
   onRevealMatch: (matchId: number) => void
   onOpenTeam: (teamId: number) => void
   evidenza?: boolean
+  // Con le conferenze: conferenza di una squadra (null = sconosciuta) e filtro scelto.
+  confDiSquadra?: Map<number, Conferenza>
+  filtro?: FiltroConf
 }
 
-function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeamId, matchByFixture, revealedMatchIds, onOpenMatch, onRevealMatch, onOpenTeam, evidenza = false }: CardProps) {
+function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeamId, matchByFixture, revealedMatchIds, onOpenMatch, onRevealMatch, onOpenTeam, evidenza = false, confDiSquadra, filtro = 'tutte' }: CardProps) {
   const simulate = fixtures.filter((fixture) => fixture.stato === 'simulata').length
   const completata = fixtures.length > 0 && simulate === fixtures.length
+
+  // Con le conferenze le partite si dividono per conferenza (stesso girone = stessa conferenza);
+  // le sfide fra conferenze diverse (tabelloni) restano in un gruppo a parte, senza intestazione.
+  const gruppi = useMemo(() => {
+    if (!confDiSquadra || confDiSquadra.size === 0) return fixtures.length ? [{ chiave: 'tutte', conf: null as Conferenza | null, fixtures }] : []
+    const per: Record<string, Fixture[]> = { est: [], ovest: [], altre: [] }
+    for (const f of fixtures) {
+      const h = confDiSquadra.get(f.home_team_id), a = confDiSquadra.get(f.away_team_id)
+      if (h && h === a) per[h].push(f)
+      else per.altre.push(f)
+    }
+    const ordine: [string, Conferenza | null][] = [['est', 'est'], ['ovest', 'ovest'], ['altre', null]]
+    return ordine
+      .filter(([k]) => per[k].length > 0 && (filtro === 'tutte' || k === filtro || (k === 'altre' && per.altre.some((f) => confDiSquadra.get(f.home_team_id) === filtro || confDiSquadra.get(f.away_team_id) === filtro))))
+      .map(([k, c]) => ({ chiave: k, conf: c, fixtures: k === 'altre' && filtro !== 'tutte' ? per.altre.filter((f) => confDiSquadra.get(f.home_team_id) === filtro || confDiSquadra.get(f.away_team_id) === filtro) : per[k] }))
+  }, [fixtures, confDiSquadra, filtro])
 
   return <article className={`giornata-card ${evidenza ? 'giornata-card--evidenza' : ''}`}>
     <header className="giornata-card__testa">
@@ -35,7 +57,9 @@ function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeam
     </header>
 
     <div className="fixture-list">
-      {fixtures.map((fixture) => {
+      {gruppi.map((gruppo) => <div className="fixture-gruppo" key={gruppo.chiave}>
+        {gruppo.conf && <div className={`fixture-gruppo__testa fixture-gruppo__testa--${gruppo.conf}`}><ConferenceBadge conferenza={gruppo.conf} /><b>{NOME_CONFERENZA[gruppo.conf]}</b></div>}
+        {gruppo.fixtures.map((fixture) => {
         const match = matchByFixture.get(fixture.id)
         const mia = fixture.home_team_id === membership.id || fixture.away_team_id === membership.id
         const revealAttivo = mia && fixture.giornata >= ((membership.league as League | undefined)?.reveal_dalla_giornata ?? 1)
@@ -61,8 +85,10 @@ function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeam
           <TeamLabel team={teamById.get(fixture.away_team_id)} imageUrl={crestUrlByTeamId.get(fixture.away_team_id)} onClick={() => onOpenTeam(fixture.away_team_id)} />
           {mia && <small>LA TUA PARTITA</small>}
         </article>
-      })}
+        })}
+      </div>)}
       {!fixtures.length && <p className="season-empty">Turno di riposo.</p>}
+      {fixtures.length > 0 && !gruppi.length && <p className="season-empty">Nessuna partita di questa conferenza in questa giornata.</p>}
     </div>
   </article>
 }
@@ -71,6 +97,13 @@ export function Matches({ membership, onNavigate, revealedMatchIds, onOpenMatch,
   const league = membership.league as League
   const data = useSeasonData(membership)
   const [calendarioAperto, setCalendarioAperto] = useState(false)
+  // Conferenza di ogni squadra (dalla classifica): attiva solo se la lega ha le conferenze.
+  const confDiSquadra = useMemo(() => {
+    const m = new Map<number, Conferenza>()
+    for (const r of data.standings) if (r.conferenza) m.set(r.team_id, r.conferenza as Conferenza)
+    return m
+  }, [data.standings])
+  const [filtro, setFiltro] = useState<FiltroConf>('tutte')
 
   const giornate = useMemo(() => {
     const mappa = new Map<number, Fixture[]>()
@@ -97,6 +130,8 @@ export function Matches({ membership, onNavigate, revealedMatchIds, onOpenMatch,
     onOpenMatch,
     onRevealMatch,
     onOpenTeam,
+    confDiSquadra,
+    filtro,
   }
 
   return <main className="app-shell season-shell">
@@ -105,6 +140,8 @@ export function Matches({ membership, onNavigate, revealedMatchIds, onOpenMatch,
     <SeasonState loading={data.loading} error={data.error} onRetry={data.reload} />
     {!data.loading && !data.error && <div className="season-page season-page--narrow">
       <section className="season-title-row"><div><p className="kicker">Stagione {league.stagione_corrente} · {league.nome}</p><h1>Partite.</h1><p>Una giornata ogni sera, alle 23:00 ora di Roma.</p></div><div className="season-total"><strong>{completate.length}</strong><span>di {data.giornateStagione} giornate</span></div></section>
+
+      {confDiSquadra.size > 0 && <FiltroConferenza value={filtro} onChange={setFiltro} />}
 
       {calendarioAperto ? <>
         <div className="sezione-testa">

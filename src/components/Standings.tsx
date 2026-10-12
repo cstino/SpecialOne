@@ -8,6 +8,7 @@ import { GameNav, type GameView } from './GameNav'
 import { Forma, formaPerSquadra, SeasonState, TeamLabel } from './SeasonUI'
 import { Crest } from './Crest'
 import { ConferenceBadge } from './ConferenceBadge'
+import { FiltroConferenza, type FiltroConf } from './FiltroConferenza'
 import type { Conferenza } from '../lib/conferenze'
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { UnderlineTabs } from './ui/underline-tabs'
@@ -40,6 +41,8 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
   const [conferenzaScelta, setConferenzaScelta] = useState<Conferenza | null>(null)
   const conferenzaVista: Conferenza = conferenzaScelta ?? miaConferenza ?? 'est'
   const righeClassifica = conferenze ? data.standings.filter((riga) => riga.conferenza === conferenzaVista) : data.standings
+  const [filtroGiocatori, setFiltroGiocatori] = useState<FiltroConf>('tutte')
+  const confDiSquadra = useMemo(() => new Map(data.standings.filter((r) => r.conferenza).map((r) => [r.team_id, r.conferenza as Conferenza])), [data.standings])
   const [righeGiocatori, setRigheGiocatori] = useState<RigaClassificaGiocatori[]>([])
   const [caricoGiocatori, setCaricoGiocatori] = useState(true)
 
@@ -91,13 +94,17 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
     return () => { attivo = false }
   }, [league.id])
 
+  const righeFiltrate = useMemo(
+    () => filtroGiocatori === 'tutte' ? righeGiocatori : righeGiocatori.filter((r) => confDiSquadra.get(r.teamId) === filtroGiocatori),
+    [righeGiocatori, filtroGiocatori, confDiSquadra],
+  )
   const marcatori = useMemo(
-    () => [...righeGiocatori].sort((a, b) => b.gol - a.gol || b.assist - a.assist).slice(0, 10),
-    [righeGiocatori],
+    () => [...righeFiltrate].sort((a, b) => b.gol - a.gol || b.assist - a.assist).slice(0, 10),
+    [righeFiltrate],
   )
   const assistman = useMemo(
-    () => [...righeGiocatori].sort((a, b) => b.assist - a.assist || b.gol - a.gol).slice(0, 10),
-    [righeGiocatori],
+    () => [...righeFiltrate].sort((a, b) => b.assist - a.assist || b.gol - a.gol).slice(0, 10),
+    [righeFiltrate],
   )
 
   // Swipe orizzontale sul pannello, in aggiunta ai tab: non e' l'unico modo
@@ -128,7 +135,7 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
         <span className="players-standings-foto">{riga.foto ? <img src={riga.foto} alt="" /> : null}</span>
         <span>
           <strong>{riga.nome}</strong>
-          <small><Crest value={data.teamById.get(riga.teamId)?.stemma_url ?? null} stelle={data.teamById.get(riga.teamId)?.titoli_title} imageUrl={data.crestUrlByTeamId.get(riga.teamId)} />{data.teamById.get(riga.teamId)?.nome ?? 'Squadra'}</small>
+          <small>{filtroGiocatori === 'tutte' && confDiSquadra.get(riga.teamId) && <ConferenceBadge conferenza={confDiSquadra.get(riga.teamId)!} />}<Crest value={data.teamById.get(riga.teamId)?.stemma_url ?? null} stelle={data.teamById.get(riga.teamId)?.titoli_title} imageUrl={data.crestUrlByTeamId.get(riga.teamId)} />{data.teamById.get(riga.teamId)?.nome ?? 'Squadra'}</small>
         </span>
       </div>
       <strong className="players-standings-valore">{riga[chiave]}</strong>
@@ -203,6 +210,7 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
           </footer>
         </>}
 
+        {conferenze && (scheda === 'marcatori' || scheda === 'assistman') && <FiltroConferenza value={filtroGiocatori} onChange={setFiltroGiocatori} />}
         {scheda === 'marcatori' && (caricoGiocatori
           ? <p className="season-empty">Carico la classifica marcatori…</p>
           : marcatori.length === 0
