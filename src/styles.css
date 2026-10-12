@@ -5185,3 +5185,7 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
   .players-standings-secondario { font-size: .58rem; }
 }
 
+
+/* Rivelazione dell'albo: la stella dei titoli sta sopra lo stemma, non sopra il cerchio dorato piu' grande. */
+.albo-riv__stemma > .crest-stellato { width: 78%; height: 78%; }
+.albo-riv__stemma > .crest-stellato .crest { width: 100%; height: 100%; }
