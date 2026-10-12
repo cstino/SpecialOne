@@ -16,6 +16,7 @@ AS $function$
       'preset:marpzzc',
       'preset:riskmond',
       'preset:hage-no-justu',
+      'preset:as-turbo',
       'preset:balor-dito',
       'preset:cola-zero',
       'preset:doomsday-fc',
@@ -80,3 +81,4 @@ $function$;
 update public.teams set stemma_url = 'preset:marpzzc' where id in (277);
 update public.teams set stemma_url = 'preset:riskmond' where id in (300);
 update public.teams set stemma_url = 'preset:hage-no-justu' where id in (280);
+update public.teams set stemma_url = 'preset:as-turbo' where id in (85, 275);

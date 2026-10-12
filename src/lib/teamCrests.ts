@@ -3,6 +3,7 @@ export const STEMMI_SQUADRA = [
   { id: 'alci', nome: 'Alci', src: '/stemmi-squadra/thumbs/alci.png' },
   { id: 'aliens', nome: 'Aliens', src: '/stemmi-squadra/thumbs/aliens.png' },
   { id: 'aquile', nome: 'Aquile', src: '/stemmi-squadra/thumbs/aquile.png' },
+  { id: 'as-turbo', nome: 'Team AS Turbo', src: '/stemmi-squadra/thumbs/as-turbo.png' },
   { id: 'arpzzc', nome: 'Arpzzc', src: '/stemmi-squadra/thumbs/arpzzc.png' },
   { id: 'aviator', nome: 'Aviator', src: '/stemmi-squadra/thumbs/aviator.png' },
   { id: 'balor-dito', nome: 'FC Balor Dito', src: '/stemmi-squadra/thumbs/balor-dito.png' },
