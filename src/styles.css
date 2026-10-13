@@ -5201,3 +5201,45 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 }
 /* Il segnalino +N/−N sporge di 13 px a destra del numero: nella colonna auto del vivaio va riservato lo spazio. */
 .vivaio-overall .ovr-con-delta:has(.ovr-delta) { margin-right: 13px; }
+
+/* Voto di equilibrio dello scambio: badge in alto a destra nella card, bilancia nel dettaglio. */
+.scambi-operazione { position: relative; padding-right: 74px; }
+.scambio-voto { position: absolute; top: 10px; right: 10px; display: inline-flex; align-items: baseline; gap: 1px; margin: 0; padding: 6px 9px 5px; border: 1px solid var(--voto-bordo); border-radius: 10px; color: var(--voto); background: linear-gradient(160deg, color-mix(in srgb, var(--voto) 22%, #0d1117), color-mix(in srgb, var(--voto) 6%, #0a0d12)); box-shadow: 0 0 16px color-mix(in srgb, var(--voto) 30%, transparent), inset 0 1px 0 rgba(255,255,255,.08); font: 700 1rem/1 "Bai Jamjuree", ui-sans-serif, sans-serif; font-variant-numeric: tabular-nums; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
+.scambio-voto small { color: color-mix(in srgb, var(--voto) 70%, #fff); font-size: .58rem; font-weight: 600; opacity: .75; }
+.scambio-voto:hover { transform: translateY(-1px); box-shadow: 0 0 22px color-mix(in srgb, var(--voto) 45%, transparent), inset 0 1px 0 rgba(255,255,255,.1); }
+.scambio-voto:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.scambio-voto--equo { --voto: #4ed27f; --voto-bordo: rgba(78,210,127,.55); }
+.scambio-voto--medio { --voto: #f3c969; --voto-bordo: rgba(243,201,105,.55); }
+.scambio-voto--squilibrato { --voto: #f05d76; --voto-bordo: rgba(240,93,118,.55); }
+.scambio-voto--grande { position: static; padding: 10px 12px 8px; font-size: 1.6rem; cursor: default; flex: none; }
+.scambio-voto--grande small { font-size: .7rem; }
+
+.bilancia { max-width: 460px; display: grid; gap: 14px; }
+.bilancia__testa { display: flex; align-items: center; gap: 14px; }
+.bilancia__testa h2 { margin: 0 0 4px; font-size: 1.15rem; text-wrap: balance; }
+.bilancia__testa p { margin: 0; color: #9a93ad; font-size: .86rem; }
+.bilancia__asta { position: relative; height: 92px; display: grid; place-items: center; }
+.bilancia__trave { position: relative; width: 78%; height: 4px; border-radius: 4px; background: linear-gradient(90deg, #6d5aa0, #b9a6e8, #6d5aa0); transition: transform .6s cubic-bezier(.3,1.4,.5,1); display: flex; justify-content: space-between; align-items: flex-start; }
+.bilancia__piatto { display: grid; place-items: center; width: 52px; height: 52px; margin-top: 6px; transform: translateX(-50%); }
+.bilancia__piatto:last-child { transform: translateX(50%); }
+.bilancia__piatto .crest { width: 46px; }
+.bilancia__perno { position: absolute; left: 50%; top: 44px; width: 0; height: 0; transform: translateX(-50%); border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 34px solid #3a3150; }
+.bilancia__barra { height: 8px; border-radius: 99px; background: #3a2f52; overflow: hidden; }
+.bilancia__barra span { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #9b4cff, #c59be8); }
+.bilancia__quote { display: flex; justify-content: space-between; gap: 10px; color: #b6aad1; font-size: .8rem; }
+.bilancia__quote b { color: #fff; font-variant-numeric: tabular-nums; }
+.bilancia__lati { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bilancia__lati section { min-width: 0; padding: 10px; border: 1px solid #2c2740; border-radius: 12px; background: #141120; }
+.bilancia__lati h3 { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: .78rem; color: #cfc6e6; }
+.bilancia__lati h3 .crest { width: 22px; flex: none; }
+.bilancia__lati h3 span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bilancia__lati ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.bilancia__lati li { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; font-size: .8rem; }
+.bilancia__lati li > span { min-width: 0; display: grid; overflow-wrap: anywhere; }
+.bilancia__lati li small { color: #8d849a; font-size: .68rem; }
+.bilancia__lati li b { color: #fff; font-variant-numeric: tabular-nums; }
+.bilancia__totale { margin: 8px 0 0; padding-top: 6px; border-top: 1px solid #2c2740; display: flex; justify-content: space-between; color: #9a93ad; font-size: .78rem; }
+.bilancia__totale b { color: #fff; }
+.bilancia__nota { margin: 0; color: #7f7795; font-size: .74rem; line-height: 1.45; }
+@media (max-width: 420px) { .bilancia__lati { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .bilancia__trave { transition: none; } }

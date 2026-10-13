@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { cognome } from '../lib/nomi'
 import { MACRO_COLORE, MACRO_LABEL, ORDINE_MACRO_RUOLO, macroRuolo, type MacroRuolo, ruoloIt } from '../lib/ruoli'
@@ -98,6 +98,9 @@ type Scelta = {
   stato: StatoScelta
 }
 
+type PezzoValutato = { lato: 'da' | 'a'; tipo: 'g' | 's'; etichetta: string; overall: number | null; eta: number | null; valore: number }
+type Valutazione = { proposta_id: number; voto: number; valore_da: number; valore_a: number; dettaglio: PezzoValutato[] }
+
 type Capienza = { stagione: number; tetto: number; monte: number; capienza: number; rosa: number; slot_liberi: number }
 
 type TrattativaPubblica = {
@@ -139,6 +142,8 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
   const adesso = useOraCorrente()
   const [rose, setRose] = useState<Giocatore[]>([])
   const [scelte, setScelte] = useState<Scelta[]>([])
+  const [valutazioni, setValutazioni] = useState<Map<number, Valutazione>>(new Map())
+  const [bilanciaAperta, setBilanciaAperta] = useState<number | null>(null)
   const [proposte, setProposte] = useState<Proposta[]>([])
   const [trattativePubbliche, setTrattativePubbliche] = useState<TrattativaPubblica[]>([])
   const [capienza, setCapienza] = useState<Capienza | null>(null)
@@ -205,7 +210,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
   const carica = useCallback(async (silenzioso = false) => {
     if (!silenzioso) setCaricamento(true)
     setErrore(null)
-    const [istanzeRes, scelteRes, proposteRes, trattativeRes, capienzaRes] = await Promise.all([
+    const [istanzeRes, scelteRes, proposteRes, trattativeRes, capienzaRes, valutazioniRes] = await Promise.all([
       supabase.from('player_instances')
         .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato, sul_mercato, posizioni_override')
         .eq('league_id', league.id).not('team_id', 'is', null),
@@ -216,6 +221,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
       supabase.from('trade_proposals').select('*').eq('league_id', league.id).order('creata_il', { ascending: false }),
       supabase.rpc('trattative_pubbliche', { p_league_id: league.id }),
       supabase.rpc('capienza_squadra', { p_league_id: league.id }),
+      supabase.rpc('valutazione_scambi', { p_league_id: league.id }),
     ])
     const primoErrore = istanzeRes.error ?? scelteRes.error ?? proposteRes.error
     if (primoErrore) { setErrore(primoErrore.message); setCaricamento(false); return }
@@ -244,6 +250,8 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
     setTrattativePubbliche(trattativeRes.error ? [] : (trattativeRes.data ?? []) as TrattativaPubblica[])
     setScelte((scelteRes.data ?? []) as Scelta[])
     setCapienza(capienzaRes.error ? null : capienzaRes.data as Capienza)
+    // Il voto e' un di piu': se non arriva, le card restano senza.
+    setValutazioni(new Map(((valutazioniRes.error ? [] : valutazioniRes.data ?? []) as Valutazione[]).map((v) => [v.proposta_id, v])))
     setRose(istanze.map((i) => {
       const posizioni = i.posizioni_override ?? perId.get(i.player_id)?.posizioni ?? []
       return {
@@ -842,9 +850,23 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
                   {stemma(p.a_team_id)}
                 </div>
                 <em>{ETICHETTE_STATO[p.stato]} · {p.risolta_il ? dataBreve(p.risolta_il) : ''}</em>
+                {valutazioni.get(p.id) && <VotoScambio voto={valutazioni.get(p.id)!.voto} onClick={() => setBilanciaAperta(p.id)} />}
               </li>)}
             </ul>}
       </section>
+
+      {bilanciaAperta !== null && valutazioni.get(bilanciaAperta) && (() => {
+        const v = valutazioni.get(bilanciaAperta)!
+        const prop = proposte.find((x) => x.id === bilanciaAperta)
+        if (!prop) return null
+        return <BilanciaScambio
+          valutazione={v}
+          // chi ha proposto riceve cio' che cede l'altra squadra (lato 'a'), e viceversa
+          squadraDa={{ nome: nomeSquadra(prop.da_team_id), stemma: stemma(prop.da_team_id) }}
+          squadraA={{ nome: nomeSquadra(prop.a_team_id), stemma: stemma(prop.a_team_id) }}
+          onClose={() => setBilanciaAperta(null)}
+        />
+      })()}
 
       {erroreAzione && <div className="popup-spiegazione-sfondo" role="alertdialog" aria-modal="true" aria-label="Operazione non riuscita">
         <div className="popup-spiegazione">
@@ -870,4 +892,77 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
       />}
     </div>}
   </main>
+}
+
+// ---- Voto di equilibrio dello scambio (public.valutazione_scambi) ----
+
+function fasciaVoto(voto: number) {
+  return voto >= 8.5 ? 'equo' : voto >= 6 ? 'medio' : 'squilibrato'
+}
+
+function VotoScambio({ voto, onClick }: { voto: number; onClick: () => void }) {
+  return <button type="button" className={`scambio-voto scambio-voto--${fasciaVoto(voto)}`} onClick={onClick}
+    aria-label={`Equilibrio dello scambio: ${voto.toFixed(1)} su 10. Vedi il dettaglio`}>
+    <b>{voto.toFixed(1)}</b><small>/10</small>
+  </button>
+}
+
+type SquadraBilancia = { nome: string; stemma: ReactNode }
+
+function BilanciaScambio({ valutazione: v, squadraDa, squadraA, onClose }: {
+  valutazione: Valutazione; squadraDa: SquadraBilancia; squadraA: SquadraBilancia; onClose: () => void
+}) {
+  // Valore RICEVUTO da ciascuna squadra.
+  const riceveDa = v.valore_a
+  const riceveA = v.valore_da
+  const totale = riceveDa + riceveA || 1
+  const quotaDa = (riceveDa / totale) * 100
+  // Inclinazione della bilancia: fino a 14 gradi, verso chi riceve di piu'.
+  const inclinazione = Math.max(-14, Math.min(14, (quotaDa - 50) * 0.6))
+  const vincitore = v.voto >= 9.5 ? null : riceveDa > riceveA ? squadraDa.nome : squadraA.nome
+  const elenco = (lato: 'da' | 'a') => v.dettaglio.filter((p) => p.lato === lato)
+  return <div className="popup-spiegazione-sfondo" role="dialog" aria-modal="true" aria-label="Equilibrio dello scambio" onClick={onClose}>
+    <div className="popup-spiegazione bilancia" onClick={(e) => e.stopPropagation()}>
+      <header className="bilancia__testa">
+        <span className={`scambio-voto scambio-voto--${fasciaVoto(v.voto)} scambio-voto--grande`}><b>{v.voto.toFixed(1)}</b><small>/10</small></span>
+        <div>
+          <h2>{v.voto >= 9.5 ? 'Scambio equilibrato' : `Pende verso ${vincitore}`}</h2>
+          <p>{v.voto >= 8.5 ? 'Valori molto vicini.' : v.voto >= 6 ? 'Una squadra ci guadagna, ma senza esagerare.' : 'Uno dei due lati vale molto di più.'}</p>
+        </div>
+      </header>
+
+      <div className="bilancia__asta" aria-hidden="true">
+        <div className="bilancia__trave" style={{ transform: `rotate(${-inclinazione}deg)` }}>
+          <span className="bilancia__piatto">{squadraDa.stemma}</span>
+          <span className="bilancia__piatto">{squadraA.stemma}</span>
+        </div>
+        <i className="bilancia__perno" />
+      </div>
+
+      <div className="bilancia__barra" aria-hidden="true">
+        <span style={{ width: `${quotaDa}%` }} />
+      </div>
+      <div className="bilancia__quote">
+        <span><b>{Math.round(quotaDa)}%</b> {squadraDa.nome}</span>
+        <span>{squadraA.nome} <b>{Math.round(100 - quotaDa)}%</b></span>
+      </div>
+
+      <div className="bilancia__lati">
+        {([[squadraDa, 'a', riceveDa], [squadraA, 'da', riceveA]] as const).map(([sq, lato, tot]) =>
+          <section key={lato}>
+            <h3>{sq.stemma}<span>{sq.nome} riceve</span></h3>
+            <ul>
+              {elenco(lato).map((p, i) => <li key={i}>
+                <span>{p.etichetta}{p.tipo === 'g' && p.overall != null && <small>{p.overall} · {p.eta} anni</small>}{p.tipo === 's' && <small>scelta al draft</small>}</span>
+                <b>{p.valore.toFixed(1)}</b>
+              </li>)}
+            </ul>
+            <p className="bilancia__totale">Totale <b>{tot.toFixed(1)}</b></p>
+          </section>)}
+      </div>
+
+      <p className="bilancia__nota">Calcolato sui valori di oggi: overall, crescita attesa in base all'età e scelte al draft in base alla posizione. Non tiene conto di ingaggi e bisogni di ruolo.</p>
+      <button className="button button--primary" type="button" onClick={onClose}>Chiudi</button>
+    </div>
+  </div>
 }
