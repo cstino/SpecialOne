@@ -948,19 +948,14 @@ function BilanciaScambio({ valutazione: v, squadraDa, squadraA, onClose }: {
             <ul>
               {elenco(lato).map((p, i) => <li key={i}>
                 <span>{p.etichetta}{p.tipo === 'g' && p.overall != null && <small>{p.overall} · {p.eta} anni</small>}{p.tipo === 's' && <small>scelta al draft</small>}</span>
-                <b>{(p.pieno ?? p.valore).toFixed(1)}</b>
+                <b>{p.valore.toFixed(1)}</b>
               </li>)}
             </ul>
-            {(() => {
-              const pieno = elenco(lato).reduce((somma, p) => somma + (p.pieno ?? p.valore), 0)
-              const sconto = pieno - tot
-              return sconto >= 0.05 && <p className="bilancia__sconto" title="I posti in campo sono 11: in un pacchetto il secondo pezzo vale l'80%, il terzo il 65%, il quarto il 55%">Sconto pacchetto <b>−{sconto.toFixed(1)}</b></p>
-            })()}
             <p className="bilancia__totale">Totale <b>{tot.toFixed(1)}</b></p>
           </section>)}
       </div>
 
-      <p className="bilancia__nota">Calcolato sui valori di oggi: overall, crescita attesa in base all'età e scelte al draft in base alla posizione. In un pacchetto il secondo pezzo conta l'80%, il terzo il 65%: i posti in campo sono 11. Non tiene conto di ingaggi e bisogni di ruolo.</p>
+      <p className="bilancia__nota">Calcolato sui valori di oggi: overall, crescita attesa in base all'età e scelte al draft in base alla posizione. Non tiene conto di ingaggi e bisogni di ruolo.</p>
       <button className="button button--primary" type="button" onClick={onClose}>Chiudi</button>
     </div>
   </div>

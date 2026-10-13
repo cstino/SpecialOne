@@ -2,7 +2,7 @@
 -- Valore di un giocatore: overall + una quota della crescita che manca al potenziale (piu' e' giovane piu' conta),
 -- meno un calo oltre i 30 anni; poi 1,13^(valore-70), cosi' un campione vale piu' di due giocatori discreti.
 -- Scelte: come un giocatore da 83,5 (1a scelta) a 77 (ultima), a meta' classifica se la posizione non e' nota,
--- meno 1 punto per ogni stagione di distanza. In un pacchetto il 2o, 3o... pezzo conta un po' meno (11 posti in campo).
+-- meno 1 punto per ogni stagione di distanza. Il valore di un lato e' la somma dei suoi pezzi.
 create or replace function private.valore_proiettato(p_ovr numeric, p_pot numeric, p_eta numeric)
  returns numeric language sql immutable set search_path to ''
 as $$
@@ -56,7 +56,7 @@ begin
     from pezzi pz
   ),
   pesati as (
-    select v.*, v.base * (case v.rango when 1 then 1 when 2 then 0.8 when 3 then 0.65 when 4 then 0.55 else 0.5 end) as valore
+    select v.*, v.base as valore
     from valutati v
   ),
   lati as (
