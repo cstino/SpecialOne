@@ -5218,12 +5218,6 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .bilancia__testa { display: flex; align-items: center; gap: 14px; }
 .bilancia__testa h2 { margin: 0 0 4px; font-size: 1.15rem; text-wrap: balance; }
 .bilancia__testa p { margin: 0; color: #9a93ad; font-size: .86rem; }
-.bilancia__asta { position: relative; height: 92px; display: grid; place-items: center; }
-.bilancia__trave { position: relative; width: 78%; height: 4px; border-radius: 4px; background: linear-gradient(90deg, #6d5aa0, #b9a6e8, #6d5aa0); transition: transform .6s cubic-bezier(.3,1.4,.5,1); display: flex; justify-content: space-between; align-items: flex-start; }
-.bilancia__piatto { display: grid; place-items: center; width: 52px; height: 52px; margin-top: 6px; transform: translateX(-50%); }
-.bilancia__piatto:last-child { transform: translateX(50%); }
-.bilancia__piatto .crest { width: 46px; }
-.bilancia__perno { position: absolute; left: 50%; top: 44px; width: 0; height: 0; transform: translateX(-50%); border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 34px solid #3a3150; }
 .bilancia__barra { height: 8px; border-radius: 99px; background: #3a2f52; overflow: hidden; }
 .bilancia__barra span { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #9b4cff, #c59be8); }
 .bilancia__quote { display: flex; justify-content: space-between; gap: 10px; color: #b6aad1; font-size: .8rem; }
@@ -5242,4 +5236,9 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .bilancia__totale b { color: #fff; }
 .bilancia__nota { margin: 0; color: #7f7795; font-size: .74rem; line-height: 1.45; }
 @media (max-width: 420px) { .bilancia__lati { grid-template-columns: 1fr; } }
-@media (prefers-reduced-motion: reduce) { .bilancia__trave { transition: none; } }
+.bilancia-grafica { position: relative; width: min(100%, 340px); margin: 0 auto; aspect-ratio: 320 / 190; }
+.bilancia-grafica svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.bilancia-grafica .bil-filo { stroke: #c9a85a; stroke-width: 1.4; opacity: .85; }
+.bilancia-grafica .bil-piatto { filter: drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
+.bilancia-grafica__stemma { position: absolute; width: 15%; aspect-ratio: 1; transform: translate(-50%, -50%); display: grid; place-items: center; pointer-events: none; filter: drop-shadow(0 4px 8px rgba(0,0,0,.55)); }
+.bilancia-grafica__stemma .crest, .bilancia-grafica__stemma .crest-stellato { width: 100%; height: 100%; }

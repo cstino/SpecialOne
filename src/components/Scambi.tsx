@@ -931,13 +931,7 @@ function BilanciaScambio({ valutazione: v, squadraDa, squadraA, onClose }: {
         </div>
       </header>
 
-      <div className="bilancia__asta" aria-hidden="true">
-        <div className="bilancia__trave" style={{ transform: `rotate(${-inclinazione}deg)` }}>
-          <span className="bilancia__piatto">{squadraDa.stemma}</span>
-          <span className="bilancia__piatto">{squadraA.stemma}</span>
-        </div>
-        <i className="bilancia__perno" />
-      </div>
+      <BilanciaGrafica inclinazione={inclinazione} sinistra={squadraDa.stemma} destra={squadraA.stemma} />
 
       <div className="bilancia__barra" aria-hidden="true">
         <span style={{ width: `${quotaDa}%` }} />
@@ -964,5 +958,71 @@ function BilanciaScambio({ valutazione: v, squadraDa, squadraA, onClose }: {
       <p className="bilancia__nota">Calcolato sui valori di oggi: overall, crescita attesa in base all'età e scelte al draft in base alla posizione. Non tiene conto di ingaggi e bisogni di ruolo.</p>
       <button className="button button--primary" type="button" onClick={onClose}>Chiudi</button>
     </div>
+  </div>
+}
+
+// Bilancia a due piatti: la trave ruota attorno al perno, i piatti restano appesi in verticale.
+// Inclinazione positiva = scende il piatto di SINISTRA (chi riceve di piu' sta in basso).
+function BilanciaGrafica({ inclinazione, sinistra, destra }: { inclinazione: number; sinistra: ReactNode; destra: ReactNode }) {
+  const [angolo, setAngolo] = useState(0)
+  useEffect(() => {
+    const ridotto = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (ridotto) { setAngolo(inclinazione); return }
+    let raf = 0
+    const inizio = performance.now()
+    const durata = 1100
+    const passo = (t: number) => {
+      const x = Math.min(1, (t - inizio) / durata)
+      // molla smorzata: oscilla un poco e si ferma
+      const e = 1 - Math.exp(-5 * x) * Math.cos(9 * x)
+      setAngolo(inclinazione * e)
+      if (x < 1) raf = requestAnimationFrame(passo)
+    }
+    raf = requestAnimationFrame(passo)
+    return () => cancelAnimationFrame(raf)
+  }, [inclinazione])
+
+  const W = 320, H = 190, cx = 160, cy = 46, L = 112, filo = 52, piatto = 30
+  const r = (angolo * Math.PI) / 180
+  const sx = cx - L * Math.cos(r), sy = cy + L * Math.sin(r)
+  const dx = cx + L * Math.cos(r), dy = cy - L * Math.sin(r)
+  const pct = (x: number, tot: number) => `${(x / tot) * 100}%`
+  const piattoSvg = (x: number, y: number) => <g>
+    <line x1={x} y1={y} x2={x - piatto} y2={y + filo} className="bil-filo" />
+    <line x1={x} y1={y} x2={x + piatto} y2={y + filo} className="bil-filo" />
+    <path d={`M ${x - piatto - 4} ${y + filo} Q ${x} ${y + filo + 22} ${x + piatto + 4} ${y + filo} Z`} fill="url(#bil-oro)" className="bil-piatto" />
+    <ellipse cx={x} cy={y + filo} rx={piatto + 4} ry={4} fill="#fff3c4" opacity=".55" />
+    <circle cx={x} cy={y} r={4.5} fill="url(#bil-oro)" />
+  </g>
+  return <div className="bilancia-grafica" aria-hidden="true">
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="bil-oro" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffe9a3" /><stop offset=".45" stopColor="#d8b34f" /><stop offset="1" stopColor="#8a6a1e" />
+        </linearGradient>
+        <linearGradient id="bil-colonna" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#6e5a2a" /><stop offset=".5" stopColor="#f2d27a" /><stop offset="1" stopColor="#6e5a2a" />
+        </linearGradient>
+        <radialGradient id="bil-alone" cx=".5" cy=".5" r=".5">
+          <stop offset="0" stopColor="#c59be8" stopOpacity=".35" /><stop offset="1" stopColor="#c59be8" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <ellipse cx={cx} cy={cy + 10} rx="120" ry="70" fill="url(#bil-alone)" />
+      {/* colonna e base */}
+      <rect x={cx - 4} y={cy} width="8" height={H - cy - 26} rx="3" fill="url(#bil-colonna)" />
+      <path d={`M ${cx - 46} ${H - 8} L ${cx + 46} ${H - 8} L ${cx + 30} ${H - 26} L ${cx - 30} ${H - 26} Z`} fill="url(#bil-colonna)" />
+      <rect x={cx - 54} y={H - 9} width="108" height="6" rx="3" fill="#8a6a1e" />
+      {/* trave */}
+      <line x1={sx} y1={sy} x2={dx} y2={dy} stroke="url(#bil-oro)" strokeWidth="6" strokeLinecap="round" />
+      {piattoSvg(sx, sy)}
+      {piattoSvg(dx, dy)}
+      {/* perno con la punta che indica il verso */}
+      <circle cx={cx} cy={cy} r="9" fill="url(#bil-oro)" stroke="#5c4714" strokeWidth="1.5" />
+      <circle cx={cx} cy={cy} r="3" fill="#5c4714" />
+      <path d={`M ${cx} ${cy - 30} L ${cx - 5} ${cy - 12} L ${cx + 5} ${cy - 12} Z`} fill="url(#bil-oro)" transform={`rotate(${-angolo} ${cx} ${cy})`} />
+    </svg>
+    {/* gli stemmi stanno nei piatti */}
+    <span className="bilancia-grafica__stemma" style={{ left: pct(sx, W), top: pct(sy + filo - 20, H) }}>{sinistra}</span>
+    <span className="bilancia-grafica__stemma" style={{ left: pct(dx, W), top: pct(dy + filo - 20, H) }}>{destra}</span>
   </div>
 }
