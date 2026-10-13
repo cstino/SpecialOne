@@ -98,7 +98,7 @@ type Scelta = {
   stato: StatoScelta
 }
 
-type PezzoValutato = { lato: 'da' | 'a'; tipo: 'g' | 's'; etichetta: string; overall: number | null; eta: number | null; valore: number; pieno?: number }
+type PezzoValutato = { lato: 'da' | 'a'; tipo: 'g' | 's'; etichetta: string; overall: number | null; eta: number | null; valore: number }
 type Valutazione = { proposta_id: number; voto: number; valore_da: number; valore_a: number; dettaglio: PezzoValutato[] }
 
 type Capienza = { stagione: number; tetto: number; monte: number; capienza: number; rosa: number; slot_liberi: number }
