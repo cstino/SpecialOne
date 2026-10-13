@@ -64,7 +64,7 @@ begin
            coalesce(sum(valore) filter (where lato = 'da'), 0) as vda,
            coalesce(sum(valore) filter (where lato = 'a'), 0) as va,
            jsonb_agg(jsonb_build_object('lato', lato, 'tipo', tipo, 'etichetta', etichetta,
-                     'overall', ovr, 'eta', eta, 'valore', round(valore, 2)) order by lato, valore desc) as det
+                     'overall', ovr, 'eta', eta, 'valore', round(valore, 2), 'pieno', round(base, 2)) order by lato, base desc) as det
     from pesati group by id
   )
   select l.id,
