@@ -5199,3 +5199,5 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 @media (max-width: 640px) {
   .team-roster-player:has(.vivaio-overall) { grid-template-columns: 44px minmax(0, 1fr) auto; }
 }
+/* Il segnalino +N/−N sporge di 13 px a destra del numero: nella colonna auto del vivaio va riservato lo spazio. */
+.vivaio-overall .ovr-con-delta:has(.ovr-delta) { margin-right: 13px; }
