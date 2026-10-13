@@ -5193,3 +5193,9 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 /* Vivaio: il potenziale sta sopra l'overall, piccolo e grigio (nella riga del nome veniva tagliato). */
 .team-roster-player .vivaio-overall .vivaio-ovr-riga { display: flex; align-items: baseline; justify-content: center; gap: 5px; }
 .team-roster-player .vivaio-overall .vivaio-pot { color: #8d849a; font-size: .62rem; font-weight: 700; line-height: 1; white-space: nowrap; }
+
+/* Vivaio: la colonna dell'overall si adatta a «(potenziale) overall» invece di restare a 38-50 px (usciva dalla scheda). */
+.team-roster-player:has(.vivaio-overall) { grid-template-columns: 54px minmax(0, 1fr) auto 180px; }
+@media (max-width: 640px) {
+  .team-roster-player:has(.vivaio-overall) { grid-template-columns: 44px minmax(0, 1fr) auto; }
+}
