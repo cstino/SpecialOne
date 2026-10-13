@@ -5189,3 +5189,6 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 /* Rivelazione dell'albo: la stella dei titoli sta sopra lo stemma, non sopra il cerchio dorato piu' grande. */
 .albo-riv__stemma > .crest-stellato { width: 78%; height: 78%; }
 .albo-riv__stemma > .crest-stellato .crest { width: 100%; height: 100%; }
+
+/* Vivaio: il potenziale sta sopra l'overall, piccolo e grigio (nella riga del nome veniva tagliato). */
+.team-roster-player .vivaio-overall .vivaio-pot { color: #8d849a; font-size: .56rem; font-weight: 700; letter-spacing: .02em; line-height: 1; white-space: nowrap; }

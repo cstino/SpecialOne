@@ -847,9 +847,10 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                     </span>
                     <div>
                       <strong>{g.nome}</strong>
-                      <small>{ruoliIt(g.posizioni)} · {g.eta} anni · <em>{money(prospetto.ingaggio)}/stagione</em> · potenziale {prospetto.potenziale_min === prospetto.potenziale_max ? prospetto.potenziale_min : `${prospetto.potenziale_min}-${prospetto.potenziale_max}`}</small>
+                      <small>{ruoliIt(g.posizioni)} · {g.eta} anni · <em>{money(prospetto.ingaggio)}/stagione</em></small>
                     </div>
                     <div className="vivaio-overall">
+                      <small className="vivaio-pot" title="Potenziale del giovane: la forbice si restringe con i livelli del Vivaio">pot. {prospetto.potenziale_min === prospetto.potenziale_max ? prospetto.potenziale_min : `${prospetto.potenziale_min}-${prospetto.potenziale_max}`}</small>
                       <b>
                         <span className="ovr-con-delta">
                           {g.overall}
