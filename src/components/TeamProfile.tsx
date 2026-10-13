@@ -850,7 +850,8 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       <small>{ruoliIt(g.posizioni)} · {g.eta} anni · <em>{money(prospetto.ingaggio)}/stagione</em></small>
                     </div>
                     <div className="vivaio-overall">
-                      <small className="vivaio-pot" title="Potenziale del giovane: la forbice si restringe con i livelli del Vivaio">pot. {prospetto.potenziale_min === prospetto.potenziale_max ? prospetto.potenziale_min : `${prospetto.potenziale_min}-${prospetto.potenziale_max}`}</small>
+                      <span className="vivaio-ovr-riga">
+                      <small className="vivaio-pot" title="Potenziale del giovane: la forbice si restringe con i livelli del Vivaio">({prospetto.potenziale_min === prospetto.potenziale_max ? prospetto.potenziale_min : `${prospetto.potenziale_min}-${prospetto.potenziale_max}`})</small>
                       <b>
                         <span className="ovr-con-delta">
                           {g.overall}
@@ -860,6 +861,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                           >{g.overall > prospetto.overall_inizio_stagione ? '+' : '−'}{Math.abs(g.overall - prospetto.overall_inizio_stagione)}</i>}
                         </span>
                       </b>
+                      </span>
                       <em
                         className={`vivaio-countdown ${prospetto.giornate_rimanenti <= 3 ? 'vivaio-countdown--urgente' : prospetto.giornate_rimanenti <= 8 ? 'vivaio-countdown--attenzione' : ''}`}
                         title={`${prospetto.giornate_rimanenti} ${prospetto.giornate_rimanenti === 1 ? 'giornata' : 'giornate'} prima del rilascio automatico sul mercato UNDER`}
