@@ -827,6 +827,13 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       return
     }
     const cleanBench = panchina.filter((id) => !titolari.includes(id)).slice(0, PANCHINA_MAX)
+    // Nessun giocatore puo' stare in due zone (il database rifiuta la distinta con «lineups_giocatori_unici»):
+    // la tribuna perde chi e' gia' titolare o in panchina e i doppioni, e chi non compare in nessuna zona
+    // ci finisce, cosi' nessuno resta fuori dalla distinta.
+    const inCampoOPanca = new Set([...titolari, ...cleanBench])
+    const tribunaPulita = [...new Set(tribuna)].filter((id) => id && !inCampoOPanca.has(id))
+    const presenti = new Set([...inCampoOPanca, ...tribunaPulita])
+    const tribunaFinale = [...tribunaPulita, ...players.filter((player) => !presenti.has(player.id)).map((player) => player.id)]
     const nonSelezionabili = [...titolari, ...cleanBench].filter((id) => indisponibile(players.find((player) => player.id === id)))
     if (nonSelezionabili.length) {
       setError('Sposta tutti i giocatori infortunati o squalificati in tribuna prima di salvare.')
@@ -842,11 +849,16 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
     const { error: saveError } = await supabase.rpc('salva_formazione', {
       p_league_id: league.id, p_giornata: giornata, p_modulo: att.modulo,
       p_disposizione: att.disposizione, p_ruoli: att.ruoli, p_compiti: att.compiti, p_focus_corsia: att.focus,
-      p_titolari: titolari, p_panchina: cleanBench, p_tribuna: tribuna,
+      p_titolari: titolari, p_panchina: cleanBench, p_tribuna: tribunaFinale,
       p_stile_gioco: att.stile,
       p_linea: att.linea, p_ampiezza: att.ampiezza, p_velocita: att.velocita, p_portiere: att.portiere,
     })
-    if (saveError) { setError(saveError.message); setSaving(false); return }
+    if (saveError) {
+      setError(saveError.message.includes('lineups_giocatori_unici')
+        ? 'La distinta ha un giocatore in due zone. Ricarica la pagina e riprova: se capita ancora, avvisa l\'amministratore.'
+        : saveError.message)
+      setSaving(false); return
+    }
     // E, nelle leghe con le tattiche accese, i nomi e la riserva.
     if (tatticheAttive) {
       const ris = !haRiserva ? null : invertire ? attivoFermo : riservaCanonica
