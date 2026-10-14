@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <!-- Sui Ray-Ban Display (schermo fisso 600x600, nessun telefono ha queste misure) l'app principale passa
+         alla versione per gli occhiali, anche se il sistema di Meta apre la radice del sito. -->
+    <script>
+      if (innerWidth === 600 && innerHeight === 600 && !location.pathname.startsWith('/occhiali')) location.replace('/occhiali')
+    </script>
     <meta name="theme-color" content="#0c0b12" />
     <meta name="description" content="SpecialOne — il manageriale calcistico per la tua lega privata." />
     <!-- Lega privata: niente indicizzazione (decisioni-fase1.md §3). -->
