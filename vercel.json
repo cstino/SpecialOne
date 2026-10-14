@@ -49,6 +49,15 @@
           "value": "no-cache"
         }
       ]
+    },
+    {
+      "source": "/occhiali.webmanifest",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json"
+        }
+      ]
     }
   ]
 }
