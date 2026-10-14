@@ -176,10 +176,11 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
               // Title/Draft Playoff (docs/decisioni-draft-picks.md §1.1): sempre le
               // prime 8, indipendentemente da N. Sotto le 8 squadre non c'e' nessun
               // playoff (Tabellone.tsx), quindi niente zona da segnalare.
-              // Con le conferenze: 1-4 Champions League, 5-8 Europa League, 9-12 Draft Playoffs
-              // (dentro la propria conferenza). Senza: prime 8 Title, le altre Draft.
+              // Con le conferenze (opzione B, decisa il 14/10/2026): 1-2 Champions diretta ai quarti, 3-6 play-in
+              // Champions, 7-10 play-in Draft Playoffs, 11-12 Draft Playoffs diretta ai quarti (dentro la propria
+              // conferenza). Senza conferenze: prime 8 Title, le altre Draft.
               const zonaPlayoff = conferenze
-                ? (posizione <= 4 ? 'champions' : posizione <= 8 ? 'europa' : 'draftpo')
+                ? (posizione <= 2 ? 'champions' : posizione <= 6 ? 'champions-playin' : posizione <= 10 ? 'draftpo-playin' : 'draftpo')
                 : data.standings.length >= 8 ? (posizione <= 8 ? 'title' : 'draft') : null
               return <div className={`standings-row ${standing.team_id === membership.id ? 'is-mine' : ''}`} key={standing.team_id}>
                 <span className="standings-position">{posizione}</span>
@@ -189,7 +190,7 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
                 </div>
                 <span>{standing.giocate}</span><span>{standing.vittorie}</span><span>{standing.pareggi}</span><span>{standing.sconfitte}</span><span>{standing.gol_fatti}</span><span>{standing.gol_subiti}</span><span>{standing.differenza_reti > 0 ? `+${standing.differenza_reti}` : standing.differenza_reti}</span><strong>{standing.punti}</strong>
                 <span className="standings-zona">
-                  {zonaPlayoff && <i className={`standings-zona__chip is-${zonaPlayoff}`} aria-label={{ title: 'Zona Title Playoff', draft: 'Zona Draft Playoff', champions: 'Zona Champions League', europa: 'Zona Europa League', draftpo: 'Zona Draft Playoffs' }[zonaPlayoff]} />}
+                  {zonaPlayoff && <i className={`standings-zona__chip is-${zonaPlayoff}`} aria-label={{ title: 'Zona Title Playoff', draft: 'Zona Draft Playoff', champions: 'Champions League, diretta ai quarti', 'champions-playin': 'Champions League, play-in', 'draftpo-playin': 'Draft Playoffs, play-in', draftpo: 'Draft Playoffs, diretta ai quarti' }[zonaPlayoff]} />}
                 </span>
               </div>
             })}
@@ -198,9 +199,10 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
             <span><i className="standings-legend-dot" /> La tua squadra</span>
             {conferenze
               ? <>
-                  <span><i className="standings-zona__chip is-champions" /> Champions League</span>
-                  <span><i className="standings-zona__chip is-europa" /> Europa League</span>
-                  <span><i className="standings-zona__chip is-draftpo" /> Draft Playoffs</span>
+                  <span><i className="standings-zona__chip is-champions" /> Champions League · diretta ai quarti</span>
+                  <span><i className="standings-zona__chip is-champions-playin" /> Champions League · play-in</span>
+                  <span><i className="standings-zona__chip is-draftpo-playin" /> Draft Playoffs · play-in</span>
+                  <span><i className="standings-zona__chip is-draftpo" /> Draft Playoffs · diretta ai quarti</span>
                 </>
               : <>
                   <span><i className="standings-zona__chip is-title" /> Title Playoff</span>

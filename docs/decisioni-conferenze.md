@@ -179,3 +179,18 @@ marcatore/assistman/portiere, in tre ambiti: **East, West, Totale**), poi i vinc
   (oggi solo 'title'/'draft') a 'champions' e 'europa'. Nelle leghe senza conferenze il titolo si chiama «Title Playoff»;
   con le conferenze «Champions League» (logo UEFA).
 - L'albo d'oro (lista) continua a mostrare solo i premi 'totale'.
+
+## Formato dei playoff con le conferenze: OPZIONE B (deciso il 14 ottobre 2026)
+
+L'Europa League sparisce. Per ogni conference (12 squadre):
+- **Champions League** (1ª-6ª): 1ª e 2ª dirette ai quarti; play-in 3E–6W, 4E–5W, 3W–6E, 4W–5E (vincenti A, B, C, D);
+  quarti 1E–D, 2W–A, 1W–B, 2E–C; semifinali (1E/D)–(2W/A) e (1W/B)–(2E/C); finale secca in campo neutro.
+- **Draft Playoffs** (7ª-12ª), al contrario: 12ª e 11ª dirette ai quarti; play-in 10E–7W, 9E–8W, 10W–7E, 9W–8E
+  (vincenti E, F, G, H); quarti 12E–H, 11W–E, 12W–F, 11E–G; semifinali (12E/H)–(11W/E) e (12W/F)–(11E/G); finale secca.
+- Andata e ritorno in ogni turno tranne la finale; ritorno in casa alla favorita (meglio piazzata in Champions, peggio
+  piazzata nel Draft Playoffs); parita' nella somma dei gol -> rigori. 7 serate per entrambi, in parallelo.
+- Ordine delle scelte: 1ª-4ª Draft Playoffs (vincitore, finalista, semifinaliste), 5ª-8ª eliminate ai quarti del Draft,
+  9ª-12ª eliminate nel play-in del Draft, 13ª-16ª eliminate nel play-in della Champions, 17ª-22ª eliminate ai quarti e in
+  semifinale di Champions, 23ª finalista, 24ª campione.
+- Gia' fatto: legenda e colori della classifica. Da fare (BLOCCO 2): `crea_tabelloni` & co. con questo formato,
+  `brackets.tipo` 'champions' e 'draft' (il CHECK ammette oggi solo 'title'/'draft'). Va pronto entro la 22ª giornata.

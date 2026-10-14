@@ -5244,3 +5244,6 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .bilancia-grafica__stemma .crest, .bilancia-grafica__stemma .crest-stellato { width: 100%; height: 100%; }
 /* Nella bilancia gli stemmi stanno nei piatti: le stelle dei titoli si sovrapponevano alla trave. */
 .bilancia-grafica__stemma .crest-stelle { display: none; }
+/* Zone con le conferenze (opzione B): pieno = diretta ai quarti, tratteggiato = play-in. */
+.standings-zona__chip.is-champions-playin { background: repeating-linear-gradient(180deg, #2f6bff 0 5px, rgba(47,107,255,.35) 5px 8px); box-shadow: 0 0 8px rgba(47,107,255,.3); }
+.standings-zona__chip.is-draftpo-playin { background: repeating-linear-gradient(180deg, #9b8cc9 0 5px, rgba(155,140,201,.3) 5px 8px); box-shadow: 0 0 8px rgba(155,140,201,.25); }
