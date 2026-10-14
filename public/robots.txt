@@ -5,5 +5,12 @@
 # indicizzabile. L'app e' gia' dietro autenticazione; questo file toglie di
 # mezzo anche l'indicizzazione della pagina di accesso.
 
+# Eccezione: la pagina degli occhiali Ray-Ban Display, il suo manifest e le icone devono essere leggibili
+# dal sistema di Meta che mostra nome e icona della web app (non contengono dati del gioco).
 User-agent: *
+Allow: /occhiali$
+Allow: /occhiali.html
+Allow: /occhiali.webmanifest
+Allow: /icone-occhiali/
+Allow: /favicon.ico
 Disallow: /
