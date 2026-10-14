@@ -60,3 +60,4 @@ main.oc-focus:focus-visible { outline: none; }
 .oc-codice { width: 320px; padding: 14px; border: 2px solid #3a3260; border-radius: 16px; background: #000; color: var(--fg); font: 700 46px/1 "Bai Jamjuree", system-ui, sans-serif; letter-spacing: .25em; text-align: center; }
 .oc-bottone { width: 320px; padding: 16px; border: 0; border-radius: 16px; background: var(--accento); color: #000; font: 700 28px/1 "Bai Jamjuree", system-ui, sans-serif; }
 .oc-errore { color: var(--rosso) !important; }
+.oc-cifre { margin: -8px 0 0 !important; font-size: 18px !important; color: #8a82a6 !important; }

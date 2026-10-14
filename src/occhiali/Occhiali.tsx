@@ -53,8 +53,11 @@ function Collegamento() {
     <img className="oc-logo" src="/specialone-icon-192.png" alt="" />
     <h1>Collega gli occhiali</h1>
     <p>Sul telefono apri SpecialOne, menu, <b>Collega occhiali</b>, e scrivi qui il codice.</p>
-    <input ref={campo} className="oc-focus oc-codice" type="text" inputMode="numeric" maxLength={6} placeholder="000000"
-      value={codice} onChange={(e) => setCodice(e.target.value.replace(/\D/g, '').slice(0, 6))} aria-label="Codice di 6 cifre" />
+    {/* Niente maxLength: sugli occhiali il compositore si fermava a 5 cifre. Le cifre in piu' si tagliano qui. */}
+    <input ref={campo} className="oc-focus oc-codice" type="text" inputMode="numeric" autoComplete="one-time-code" placeholder="000000"
+      value={codice} onChange={(e) => setCodice(e.target.value.replace(/\D/g, '').slice(0, 6))}
+      onKeyDown={(e) => { if (e.key === 'Enter' && codice.length === 6) { e.preventDefault(); void invia() } }} aria-label="Codice di 6 cifre" />
+    <p className="oc-cifre" aria-hidden="true">{codice.length}/6 cifre</p>
     <button ref={bottone} className="oc-focus oc-bottone" type="button" onClick={() => void invia()} disabled={attesa}>{attesa ? 'Collego…' : 'Collega'}</button>
     {errore && <p className="oc-errore" role="alert">{errore}</p>}
   </main>

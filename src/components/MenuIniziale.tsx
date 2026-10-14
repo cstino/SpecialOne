@@ -277,10 +277,10 @@ export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, 
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M9.3 9.3a2.7 2.7 0 1 1 3.6 2.5c-.8.4-1.4 1-1.4 2v.4" /><path d="M12 16.8v.1" /></svg>
             Aiuto
           </button>
-          <button type="button" onClick={() => void creaCodiceOcchiali()}>
+          {puoCreareLeghe(user.email) && <button type="button" onClick={() => void creaCodiceOcchiali()}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="6.5" cy="13" r="3.5" /><circle cx="17.5" cy="13" r="3.5" /><path d="M10 13h4M3 13l1.5-5h2M21 13l-1.5-5h-2" /></svg>
             Collega occhiali
-          </button>
+          </button>}
           <button className="pannello-voci__uscita" type="button" onClick={() => supabase.auth.signOut()}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5M20 12H9M12 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6" /></svg>
             Esci
