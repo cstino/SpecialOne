@@ -20,3 +20,7 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/invia-push/deno.json"
 entrypoint = "./functions/invia-push/index.ts"
+
+[functions.collega-occhiali]
+enabled = true
+verify_jwt = false

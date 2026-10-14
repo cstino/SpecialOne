@@ -10,6 +10,15 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  // Due pagine: l'app (index.html) e la versione per gli occhiali Ray-Ban Display (occhiali.html).
+  build: {
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        occhiali: fileURLToPath(new URL('./occhiali.html', import.meta.url)),
+      },
+    },
+  },
   server: {
     host: true,
     port: 5173,

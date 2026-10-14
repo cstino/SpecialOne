@@ -5,7 +5,7 @@
 # Uso: sh tools/spinoff/costruisci-funzioni.sh   (dalla radice del repo), poi: sh run.sh restart functions
 set -e
 DEST="$HOME/supabase-spinoff/project/volumes/functions"
-for f in simula-giornata invia-push; do
+for f in simula-giornata invia-push collega-occhiali; do
   rm -rf "$DEST/$f"; mkdir -p "$DEST/$f"
   cp supabase/functions/$f/index.ts supabase/functions/$f/deno.json "$DEST/$f/"
   if grep -q "../../../engine/" "$DEST/$f/index.ts"; then

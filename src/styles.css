@@ -5247,3 +5247,6 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 /* Zone con le conferenze (opzione B): colore pieno = diretta ai quarti, tinta piu' chiara = play-in. */
 .standings-zona__chip.is-champions-playin { background: #5cc8ff; box-shadow: 0 0 10px rgba(92,200,255,.45); }
 .standings-zona__chip.is-draftpo-playin { background: #d4c8f5; box-shadow: 0 0 10px rgba(212,200,245,.35); }
+
+/* Codice per collegare gli occhiali Ray-Ban Display (menu iniziale). */
+.codice-occhiali__cifre { margin: 14px 0 !important; color: #fff; font: 700 2.6rem/1 "Bai Jamjuree", ui-sans-serif, sans-serif; letter-spacing: .28em; text-align: center; font-variant-numeric: tabular-nums; }

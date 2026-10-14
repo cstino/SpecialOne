@@ -9,4 +9,5 @@
 # nella barra resta quello che l'utente ha aperto.
 #
 # Questo file non disturba Vercel, che usa vercel.json e ignora _redirects.
+/occhiali /occhiali.html 200
 /*    /index.html   200

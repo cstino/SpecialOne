@@ -30,6 +30,14 @@ const ETICHETTE_STATO: Record<string, string> = {
 export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, onEntraConCodice, onRefresh, onApriNotifica }: Props) {
   const [vista, setVista] = useState<'leghe' | 'profilo' | 'aiuto'>('leghe')
   const [menuAperto, setMenuAperto] = useState(false)
+  // Collegamento degli occhiali Ray-Ban Display: codice di 6 cifre, valido 10 minuti.
+  const [codiceOcchiali, setCodiceOcchiali] = useState<{ codice: string | null; errore: string | null } | null>(null)
+  async function creaCodiceOcchiali() {
+    setMenuAperto(false)
+    setCodiceOcchiali({ codice: null, errore: null })
+    const { data, error } = await supabase.rpc('crea_codice_occhiali')
+    setCodiceOcchiali(error ? { codice: null, errore: error.message } : { codice: String(data), errore: null })
+  }
   const [righeClassifica, setRigheClassifica] = useState<Standing[]>([])
   const [stagioni, setStagioni] = useState<Map<number, Season>>(new Map())
   const [stemmi, setStemmi] = useState<Record<number, string>>({})
@@ -269,12 +277,31 @@ export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, 
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M9.3 9.3a2.7 2.7 0 1 1 3.6 2.5c-.8.4-1.4 1-1.4 2v.4" /><path d="M12 16.8v.1" /></svg>
             Aiuto
           </button>
+          <button type="button" onClick={() => void creaCodiceOcchiali()}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="6.5" cy="13" r="3.5" /><circle cx="17.5" cy="13" r="3.5" /><path d="M10 13h4M3 13l1.5-5h2M21 13l-1.5-5h-2" /></svg>
+            Collega occhiali
+          </button>
           <button className="pannello-voci__uscita" type="button" onClick={() => supabase.auth.signOut()}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5M20 12H9M12 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6" /></svg>
             Esci
           </button>
         </nav>
       </aside>
+    </div>}
+    {codiceOcchiali && <div className="popup-spiegazione-sfondo" role="dialog" aria-modal="true" aria-label="Collega gli occhiali" onClick={() => setCodiceOcchiali(null)}>
+      <div className="popup-spiegazione codice-occhiali" onClick={(e) => e.stopPropagation()}>
+        <h2>Collega gli occhiali</h2>
+        <div className="popup-spiegazione__corpo">
+          {codiceOcchiali.errore
+            ? <p>{codiceOcchiali.errore}</p>
+            : <>
+                <p>Sui Ray-Ban Display apri <b>specialonegame.com/occhiali</b> e scrivi questo codice:</p>
+                <p className="codice-occhiali__cifre">{codiceOcchiali.codice ?? '······'}</p>
+                <p>Vale 10 minuti e si può usare una volta sola.</p>
+              </>}
+        </div>
+        <button className="button button--primary" type="button" onClick={() => setCodiceOcchiali(null)}>Fatto</button>
+      </div>
     </div>}
   </main>
 }
