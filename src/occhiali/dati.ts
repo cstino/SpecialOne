@@ -154,7 +154,10 @@ export async function collega(codice: string): Promise<string | null> {
     const d = await r.json()
     if (!r.ok || !d.token_hash) return d.errore ?? 'Collegamento non riuscito.'
     const { error } = await supabase.auth.verifyOtp({ token_hash: d.token_hash, type: 'magiclink' })
-    return error ? 'Collegamento non riuscito, riprova.' : null
+    if (error) return 'Collegamento non riuscito, riprova.'
+    // Si registra la sessione degli occhiali, cosi' dal telefono si possono scollegare.
+    await supabase.rpc('registra_occhiali')
+    return null
   } catch {
     return 'Server non raggiungibile.'
   }

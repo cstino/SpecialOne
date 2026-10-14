@@ -31,12 +31,16 @@ export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, 
   const [vista, setVista] = useState<'leghe' | 'profilo' | 'aiuto'>('leghe')
   const [menuAperto, setMenuAperto] = useState(false)
   // Collegamento degli occhiali Ray-Ban Display: codice di 6 cifre, valido 10 minuti.
-  const [codiceOcchiali, setCodiceOcchiali] = useState<{ codice: string | null; errore: string | null } | null>(null)
+  const [codiceOcchiali, setCodiceOcchiali] = useState<{ codice: string | null; errore: string | null; collegati?: number; scollegati?: boolean } | null>(null)
   async function creaCodiceOcchiali() {
     setMenuAperto(false)
     setCodiceOcchiali({ codice: null, errore: null })
-    const { data, error } = await supabase.rpc('crea_codice_occhiali')
-    setCodiceOcchiali(error ? { codice: null, errore: error.message } : { codice: String(data), errore: null })
+    const [{ data, error }, collegati] = await Promise.all([supabase.rpc('crea_codice_occhiali'), supabase.rpc('occhiali_collegati')])
+    setCodiceOcchiali(error ? { codice: null, errore: error.message } : { codice: String(data), errore: null, collegati: Number(collegati.data ?? 0) })
+  }
+  async function scollegaOcchiali() {
+    await supabase.rpc('scollega_occhiali')
+    setCodiceOcchiali((c) => c && { ...c, collegati: 0, scollegati: true })
   }
   const [righeClassifica, setRigheClassifica] = useState<Standing[]>([])
   const [stagioni, setStagioni] = useState<Map<number, Season>>(new Map())
@@ -297,7 +301,13 @@ export function MenuIniziale({ user, memberships, onEntraNellaLega, onCreaLega, 
             : <>
                 <p>Sui Ray-Ban Display apri <b>specialonegame.com/occhiali</b> e scrivi questo codice:</p>
                 <p className="codice-occhiali__cifre">{codiceOcchiali.codice ?? '······'}</p>
-                <p>Vale 10 minuti e si può usare una volta sola.</p>
+                <p>Vale 10 minuti e si può usare una volta sola. Gli occhiali restano collegati finché non li scolleghi.</p>
+                {codiceOcchiali.scollegati
+                  ? <p className="codice-occhiali__stato">Occhiali scollegati: entro un'ora al massimo tornano alla richiesta del codice.</p>
+                  : (codiceOcchiali.collegati ?? 0) > 0 && <p className="codice-occhiali__stato">
+                      {codiceOcchiali.collegati === 1 ? 'Hai degli occhiali collegati.' : `Hai ${codiceOcchiali.collegati} collegamenti di occhiali attivi.`}
+                      <button className="button button--secondary codice-occhiali__scollega" type="button" onClick={() => void scollegaOcchiali()}>Scollega occhiali</button>
+                    </p>}
               </>}
         </div>
         <button className="button button--primary" type="button" onClick={() => setCodiceOcchiali(null)}>Fatto</button>

@@ -5250,3 +5250,5 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 
 /* Codice per collegare gli occhiali Ray-Ban Display (menu iniziale). */
 .codice-occhiali__cifre { margin: 14px 0 !important; color: #fff; font: 700 2.6rem/1 "Bai Jamjuree", ui-sans-serif, sans-serif; letter-spacing: .28em; text-align: center; font-variant-numeric: tabular-nums; }
+.codice-occhiali__stato { display: grid; gap: 10px; margin-top: 6px !important; padding-top: 12px; border-top: 1px solid #2c2740; color: #b6aad1; }
+.codice-occhiali__scollega { justify-self: start; }
