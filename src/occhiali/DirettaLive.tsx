@@ -49,7 +49,9 @@ const ETICHETTA: Record<Riga['tipo'], string> = {
   cambio: 'Cambio', infortunio: 'Infortunio', fallo: 'Fallo', angolo: 'Angolo', fischio: 'Arbitro',
 }
 
-export function DirettaLive({ partita, onEsci }: { partita: Risultato; onEsci: () => void }) {
+// automatica = partita alle 23:00 senza averla aperta: a fine partita si chiude da sola dopo qualche secondo
+// (cosi' parte la diretta della lega successiva, se c'e').
+export function DirettaLive({ partita, onEsci, automatica = false }: { partita: Risultato; onEsci: () => void; automatica?: boolean }) {
   const [minuto, setMinuto] = useState(0)
   const [scena, setScena] = useState<Gol | null>(null)
   const [voce, setVoce] = useState(leggiVoce)
@@ -112,6 +114,12 @@ export function DirettaLive({ partita, onEsci }: { partita: Risultato; onEsci: (
       if (voce) parla(`Triplice fischio! Finisce ${partita.casa.nome} ${golCasa}, ${partita.ospite.nome} ${golOspite}.`)
     }
   }, [minuto]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!automatica || minuto < fine) return
+    const t = window.setTimeout(onEsci, 12_000)
+    return () => window.clearTimeout(t)
+  }, [automatica, minuto, fine, onEsci])
 
   const righe = useMemo(() => partita.telecronaca.filter((r) => r.minuto <= minuto), [partita.telecronaca, minuto])
   const ultime = righe.slice(-2).reverse()
