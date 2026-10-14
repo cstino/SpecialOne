@@ -8,10 +8,11 @@
     <!-- Lega privata: niente indicizzazione (decisioni-fase1.md §3). -->
     <meta name="robots" content="noindex, nofollow" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" href="/specialone-icon.svg" type="image/svg+xml" />
+    <!-- PNG prima dell'SVG: gli occhiali Ray-Ban Display non leggono gli SVG. -->
     <link rel="icon" href="/specialone-icon-192.png" sizes="192x192" type="image/png" />
+    <link rel="icon" href="/specialone-icon.svg" type="image/svg+xml" />
     <!-- iOS non legge il manifest per l'icona "aggiungi a Home": vuole questo, ed esplicitamente in PNG. -->
-    <link rel="apple-touch-icon" href="/specialone-icon-180.png" />
+    <link rel="apple-touch-icon" href="/specialone-icon-180.png" sizes="180x180" />
     <title>SpecialOne</title>
   </head>
   <body>
