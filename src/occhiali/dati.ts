@@ -1,5 +1,9 @@
 import { supabase } from '../lib/supabase'
 import { stemmaPresetDaValore } from '../lib/teamCrests'
+import { costruisciTelecronaca, type GiocatoreTelecronaca, type Riga } from '../lib/telecronaca'
+import { curvaPressione } from '../lib/pressione'
+import { cognome } from '../lib/nomi'
+import type { EventoPartita } from '../types'
 
 // Tutto quello che gli occhiali mostrano, letto con l'utente collegato (stesse regole di lettura dell'app).
 export type Squadra = { id: number; nome: string; stemma: string | null }
@@ -9,7 +13,12 @@ export type Partita = {
   casa: Squadra; ospite: Squadra; inCasa: boolean
 }
 export type Evento = { minuto: number; lato: 'casa' | 'ospite'; tipo: 'gol' | 'giallo' | 'rosso'; testo: string }
-export type Risultato = Partita & { golCasa: number; golOspite: number; svelata: boolean; eventi: Evento[] }
+export type Gol = { minuto: number; lato: 'casa' | 'ospite'; marcatore: string; assist: string | null }
+export type Risultato = Partita & {
+  golCasa: number; golOspite: number; svelata: boolean; eventi: Evento[]
+  // Per la diretta: telecronaca dell'app (stesse frasi), gol, curva della pressione, durata.
+  telecronaca: Riga[]; gol: Gol[]; curva: number[]; fine: number
+}
 export type RigaClassifica = { posizione: number; nome: string; punti: number; giocate: number; mia: boolean }
 export type Notifica = { titolo: string; corpo: string | null; quando: string; letta: boolean }
 export type Quadro = {
@@ -72,26 +81,52 @@ export async function caricaQuadro(lega: Lega): Promise<Quadro> {
 
   let ultima: Risultato | null = null
   if (ultimaF) {
-    const { data: m } = await supabase.from('matches').select('id, gol_home, gol_away, blocchi').eq('fixture_id', ultimaF.id).maybeSingle()
+    const { data: m } = await supabase.from('matches').select('id, gol_home, gol_away, blocchi, titolari_home, titolari_away').eq('fixture_id', ultimaF.id).maybeSingle()
     if (m) {
       const { data: vista } = await supabase.from('match_reveals').select('match_id').eq('match_id', m.id).eq('user_id', user.id).maybeSingle()
-      const grezzi = ((m.blocchi ?? []) as Array<Record<string, unknown>>)
-        .filter((e) => e.tipo === 'gol' || 'marcatore' in e || e.tipo === 'cartellino')
-      const ids = [...new Set(grezzi.flatMap((e) => [e.marcatore, e.assist, e.giocatore]).filter((x): x is number => typeof x === 'number'))]
+      const tutti = ((m.blocchi ?? []) as EventoPartita[]).slice().sort((a, b) => a.minuto - b.minuto)
+      const grezzi = tutti as unknown as Array<Record<string, unknown>>
+      const ids = [...new Set([
+        ...grezzi.flatMap((e) => [e.marcatore, e.assist, e.giocatore, e.entra, e.esce]),
+        ...((m.titolari_home ?? []) as number[]), ...((m.titolari_away ?? []) as number[]),
+      ].filter((x): x is number => typeof x === 'number' && x > 0))]
       const { data: istanze } = ids.length ? await supabase.from('player_instances').select('id, player_id').in('id', ids) : { data: [] }
-      const { data: anagrafica } = (istanze ?? []).length ? await supabase.from('players').select('id, nome').in('id', (istanze ?? []).map((i) => i.player_id)) : { data: [] }
-      const nome = (id: unknown) => {
-        const i = (istanze ?? []).find((x) => x.id === id)
-        return (anagrafica ?? []).find((p) => p.id === i?.player_id)?.nome ?? '—'
-      }
-      const eventi: Evento[] = grezzi.map((e) => {
+      const { data: anagrafica } = (istanze ?? []).length ? await supabase.from('players').select('id, nome, posizioni').in('id', (istanze ?? []).map((i) => i.player_id)) : { data: [] }
+      const nomi = new Map<number, GiocatoreTelecronaca>((istanze ?? []).flatMap((i) => {
+        const g = (anagrafica ?? []).find((p) => p.id === i.player_id)
+        return g ? [[i.id, { nome: g.nome, posizioni: g.posizioni }] as const] : []
+      }))
+      const nome = (id: unknown) => (typeof id === 'number' ? nomi.get(id)?.nome : null) ?? '—'
+      const eventi: Evento[] = grezzi.filter((e) => e.tipo === 'gol' || 'marcatore' in e || e.tipo === 'cartellino').map((e) => {
         const gol = e.tipo === 'gol' || 'marcatore' in e
         const tipo: Evento['tipo'] = gol ? 'gol' : e.colore === 'giallo' ? 'giallo' : 'rosso'
-        const testo = gol ? `${nome(e.marcatore)}${e.assist ? ` (assist ${nome(e.assist)})` : ''}` : nome(e.giocatore)
         const lato: Evento['lato'] = e.lato === 'ospite' ? 'ospite' : 'casa'
-        return { minuto: Number(e.minuto), lato, tipo, testo: String(testo) }
-      }).sort((a, b) => a.minuto - b.minuto)
-      ultima = { ...partita(ultimaF), golCasa: m.gol_home, golOspite: m.gol_away, svelata: Boolean(vista), eventi }
+        return { minuto: Number(e.minuto), lato, tipo, testo: gol ? `${nome(e.marcatore)}${e.assist ? ` (assist ${nome(e.assist)})` : ''}` : nome(e.giocatore) }
+      })
+      // Squadre, sigle e allenatori come nella diretta del telefono.
+      const { data: sq } = await supabase.from('teams').select('id, nome, sigla, user_id, controllata_da_pc').in('id', [ultimaF.home_team_id, ultimaF.away_team_id])
+      const casaSq = (sq ?? []).find((t) => t.id === ultimaF.home_team_id)
+      const ospiteSq = (sq ?? []).find((t) => t.id === ultimaF.away_team_id)
+      const utenti = [casaSq, ospiteSq].filter((t) => t && !t.controllata_da_pc && t.user_id).map((t) => t!.user_id as string)
+      const { data: profili } = utenti.length ? await supabase.from('profiles').select('user_id, nome_allenatore').in('user_id', utenti) : { data: [] }
+      const allenatore = (t: typeof casaSq) => (t && !t.controllata_da_pc ? (profili ?? []).find((p) => p.user_id === t.user_id)?.nome_allenatore ?? null : null)
+      const fine = tutti.some((e) => e.minuto > 90) ? 120 : 90
+      const telecronaca = costruisciTelecronaca({
+        eventi: tutti, nomi,
+        titolariCasa: (m.titolari_home ?? []) as number[], titolariOspite: (m.titolari_away ?? []) as number[],
+        casa: { nome: casaSq?.nome ?? 'Casa', sigla: casaSq?.sigla ?? 'CAS' },
+        ospite: { nome: ospiteSq?.nome ?? 'Ospite', sigla: ospiteSq?.sigla ?? 'OSP' },
+        allenatoreCasa: allenatore(casaSq), allenatoreOspite: allenatore(ospiteSq),
+        seme: m.id, supplementari: fine > 90,
+      })
+      const gol: Gol[] = grezzi.filter((e) => e.tipo === 'gol' || 'marcatore' in e).map((e) => ({
+        minuto: Number(e.minuto), lato: e.lato === 'ospite' ? 'ospite' : 'casa',
+        marcatore: cognome(nome(e.marcatore)), assist: e.assist ? cognome(nome(e.assist)) : null,
+      }))
+      ultima = {
+        ...partita(ultimaF), golCasa: m.gol_home, golOspite: m.gol_away, svelata: Boolean(vista), eventi,
+        telecronaca, gol, curva: curvaPressione(tutti, fine, m.id), fine,
+      }
     }
   }
 
