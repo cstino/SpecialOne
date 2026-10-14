@@ -64,96 +64,95 @@ function Collegamento() {
   </main>
 }
 
+// Prima si sceglie la lega, poi si entra nel suo pannello. Esc dal pannello torna qui.
+const CHIAVE_LEGA = 'occhiali-lega'
 function Pannello() {
-  const [leghe, setLeghe] = useState<Lega[]>([])
-  const [iLega, setILega] = useState(0)
+  const [leghe, setLeghe] = useState<Lega[] | null>(null)
+  const [scelta, setScelta] = useState<Lega | null>(null)
+  useEffect(() => { void caricaLeghe().then(setLeghe) }, [])
+  if (!leghe) return <main className="oc"><p className="oc-centro">SpecialOne…</p></main>
+  if (!leghe.length) return <main className="oc"><p className="oc-centro">Nessuna squadra attiva.</p></main>
+  if (scelta) return <PannelloLega lega={scelta} onIndietro={() => setScelta(null)} />
+  return <SceltaLega leghe={leghe} onScegli={(l) => { try { localStorage.setItem(CHIAVE_LEGA, String(l.id)) } catch { /* niente */ } setScelta(l) }} />
+}
+
+function SceltaLega({ leghe, onScegli }: { leghe: Lega[]; onScegli: (l: Lega) => void }) {
+  const ultima = (() => { try { return Number(localStorage.getItem(CHIAVE_LEGA)) } catch { return 0 } })()
+  const iniziale = Math.max(0, leghe.findIndex((l) => l.id === ultima))
+  const bottoni = useRef<(HTMLButtonElement | null)[]>([])
+  useEffect(() => { bottoni.current[iniziale]?.focus() }, [iniziale])
+  const frecce = (e: KeyboardEvent, i: number) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); bottoni.current[(i + 1) % leghe.length]?.focus() }
+    if (e.key === 'ArrowUp') { e.preventDefault(); bottoni.current[(i + leghe.length - 1) % leghe.length]?.focus() }
+  }
+  return <main className="oc oc-leghe">
+    <header className="oc-leghe__testa"><img src="/specialone-icon-192.png" alt="" /><h1>Scegli la lega</h1></header>
+    <div className="oc-leghe__lista">
+      {leghe.map((l, i) => <button key={l.id} ref={(el) => { bottoni.current[i] = el }} type="button"
+        className={`oc-focus oc-lega${l.inCorso ? '' : ' is-ferma'}`} onClick={() => onScegli(l)} onKeyDown={(e) => frecce(e, i)}>
+        <Stemma s={l.squadra} />
+        <span className="oc-lega__nomi"><b>{l.nome}</b><small>{l.squadra.nome}</small></span>
+        <em>{l.inCorso ? 'In corso' : 'Ferma'}</em>
+      </button>)}
+    </div>
+    <footer className="oc-piede">▲ ▼ scegli · Invio entra</footer>
+  </main>
+}
+
+function PannelloLega({ lega, onIndietro }: { lega: Lega; onIndietro: () => void }) {
   const [schermata, setSchermata] = useState(0)
   const [quadro, setQuadro] = useState<Quadro | null>(null)
   const [adesso, setAdesso] = useState(Date.now())
   const [live, setLive] = useState(false)   // diretta a tutto schermo
   const [automatica, setAutomatica] = useState(false)   // la diretta e' partita da sola (alle 23:00)
-  // Diretta automatica: per ogni lega l'ultima partita gia' nota; quando ne compare una nuova (simulazione
-  // delle 23:00) e non e' ancora stata vista, la diretta parte da sola, una lega dopo l'altra.
-  const note = useRef(new Map<number, number | null>())
-  const [coda, setCoda] = useState<number[]>([])   // indici delle leghe da mostrare
-  const ricarichePerCoda = useRef(0)
+  // Diretta automatica, solo per questa lega: l'ultima partita gia' nota all'apertura; se dalle 23:00 ne
+  // compare una nuova non ancora vista, la diretta parte da sola.
+  const nota = useRef<number | null | undefined>(undefined)
   const radice = useRef<HTMLElement>(null)
 
-  useEffect(() => {
-    void caricaLeghe().then(async (l) => {
-      setLeghe(l)
-      const quadri = await Promise.all(l.map((x) => caricaQuadro(x)))
-      quadri.forEach((q, i) => note.current.set(l[i].id, q.ultima?.fixtureId ?? null))
-    })
-  }, [])
-
-  // Dalle 23:00 alle 23:59 (ora di Roma) controlla ogni 30 secondi se e' uscita una partita nuova.
-  useEffect(() => {
-    if (!leghe.length) return
-    const controlla = async () => {
-      const ora = Number(new Intl.DateTimeFormat('it-IT', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Rome' }).format(new Date()))
-      // Solo in sviluppo: ?prova23 finge che siano le 23 (per provare la diretta automatica).
-      const prova = import.meta.env.DEV && new URLSearchParams(window.location.search).has('prova23')
-      if ((ora !== 23 && !prova) || !note.current.size) return
-      const quadri = await Promise.all(leghe.map((x) => caricaQuadro(x)))
-      const nuove: number[] = []
-      quadri.forEach((q, i) => {
-        const id = q.ultima?.fixtureId ?? null
-        if (id !== null && note.current.get(leghe[i].id) !== id) {
-          note.current.set(leghe[i].id, id)
-          if (!q.ultima?.svelata) nuove.push(i)
-        }
-      })
-      if (nuove.length) setCoda((c) => [...c, ...nuove.filter((i) => !c.includes(i))])
-    }
-    const t = window.setInterval(() => void controlla(), 30_000)
-    return () => window.clearInterval(t)
-  }, [leghe])
-
-  const lega = leghe[iLega] ?? null
-  const aggiorna = useCallback(() => { if (lega) void caricaQuadro(lega).then(setQuadro) }, [lega])
-  useEffect(() => { setQuadro(null); setLive(false); aggiorna() }, [aggiorna])
+  const aggiorna = useCallback(() => { void caricaQuadro(lega).then((q) => {
+    if (nota.current === undefined) nota.current = q.ultima?.fixtureId ?? null
+    setQuadro(q)
+  }) }, [lega])
+  useEffect(() => { aggiorna() }, [aggiorna])
   useEffect(() => {
     const t = window.setInterval(() => setAdesso(Date.now()), 1000)
     const r = window.setInterval(aggiorna, 60_000)
     return () => { window.clearInterval(t); window.clearInterval(r) }
   }, [aggiorna])
-  useEffect(() => { radice.current?.focus() }, [leghe.length])
+  useEffect(() => { if (!live) radice.current?.focus() }, [live, quadro === null])
 
-  useEffect(() => { if (!live) radice.current?.focus() }, [live])
-
-  // Se c'e' una diretta in coda e non se ne sta guardando un'altra: passa a quella lega e parte.
+  // Dalle 23:00 alle 23:59 (ora di Roma) controlla ogni 30 secondi se la partita di stasera e' uscita.
   useEffect(() => {
-    if (live || !coda.length) return
-    const i = coda[0]
-    if (iLega !== i) { setILega(i); return }
-    if (!quadro) return
-    if (quadro.ultima && quadro.ultima.fixtureId === note.current.get(leghe[i]?.id ?? -1)) {
-      ricarichePerCoda.current = 0
-      setSchermata(1); setAutomatica(true); setLive(true); setCoda((c) => c.slice(1))
-    } else if (ricarichePerCoda.current < 3) {
-      // I dati della lega aperta sono di prima della partita: si ricaricano (al massimo un paio di volte).
-      ricarichePerCoda.current++; aggiorna()
-    } else {
-      ricarichePerCoda.current = 0; setCoda((c) => c.slice(1))
+    const controlla = async () => {
+      const ora = Number(new Intl.DateTimeFormat('it-IT', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Rome' }).format(new Date()))
+      // Solo in sviluppo: ?prova23 finge che siano le 23 (per provare la diretta automatica).
+      const prova = import.meta.env.DEV && new URLSearchParams(window.location.search).has('prova23')
+      if ((ora !== 23 && !prova) || nota.current === undefined || live) return
+      const q = await caricaQuadro(lega)
+      const id = q.ultima?.fixtureId ?? null
+      if (id === null || id === nota.current) return
+      nota.current = id
+      setQuadro(q)
+      if (!q.ultima?.svelata) { setSchermata(1); setAutomatica(true); setLive(true) }
     }
-  }, [coda, live, iLega, quadro, leghe, aggiorna])
+    const t = window.setInterval(() => void controlla(), 30_000)
+    return () => window.clearInterval(t)
+  }, [lega, live])
 
   const tasti = (e: KeyboardEvent) => {
     if (e.key === 'ArrowRight') { e.preventDefault(); setSchermata((s) => (s + 1) % SCHERMATE.length) }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); setSchermata((s) => (s + SCHERMATE.length - 1) % SCHERMATE.length) }
-    else if (e.key === 'ArrowDown' && leghe.length > 1) { e.preventDefault(); setILega((i) => (i + 1) % leghe.length) }
-    else if (e.key === 'ArrowUp' && leghe.length > 1) { e.preventDefault(); setILega((i) => (i + leghe.length - 1) % leghe.length) }
+    else if (e.key === 'Escape') { e.preventDefault(); onIndietro() }
     else if (e.key === 'Enter' && SCHERMATE[schermata] === 'Diretta' && quadro?.ultima) { e.preventDefault(); setLive(true) }
   }
 
-  if (!leghe.length) return <main className="oc"><p className="oc-centro">Nessuna squadra attiva.</p></main>
   if (live && quadro?.ultima) return <DirettaLive partita={quadro.ultima} automatica={automatica}
     onEsci={() => { setLive(false); setAutomatica(false); aggiorna() }} />
   return <main className="oc oc-focus" ref={radice} tabIndex={0} onKeyDown={tasti} aria-label="SpecialOne">
     <header className="oc-testa">
-      <Stemma s={lega!.squadra} />
-      <div className="oc-testa__nomi"><b>{lega!.squadra.nome}</b><small>{lega!.nome}{leghe.length > 1 ? ` · ${iLega + 1}/${leghe.length}` : ''}</small></div>
+      <Stemma s={lega.squadra} />
+      <div className="oc-testa__nomi"><b>{lega.squadra.nome}</b><small>{lega.nome}</small></div>
     </header>
     <nav className="oc-schede" aria-hidden="true">
       {SCHERMATE.map((n, i) => <span key={n} className={i === schermata ? 'is-attiva' : ''}>{n}</span>)}
@@ -165,7 +164,7 @@ function Pannello() {
         : SCHERMATE[schermata] === 'Classifica' ? <Classifica quadro={quadro} />
         : <Avvisi quadro={quadro} />}
     </section>
-    <footer className="oc-piede">◀ ▶ schermate{leghe.length > 1 ? ' · ▲ ▼ lega' : ''}{SCHERMATE[schermata] === 'Diretta' ? ' · Invio diretta' : ''}</footer>
+    <footer className="oc-piede">◀ ▶ schermate · Esc leghe{SCHERMATE[schermata] === 'Diretta' ? ' · Invio diretta' : ''}</footer>
   </main>
 }
 

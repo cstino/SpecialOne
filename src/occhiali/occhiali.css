@@ -104,3 +104,18 @@ main.oc-focus:focus-visible { outline: none; }
 @keyframes oc-gol-entra { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
 @keyframes oc-gol-pulsa { from { transform: scale(1); } to { transform: scale(1.06); } }
 @media (prefers-reduced-motion: reduce) { .oc-gol, .oc-gol__scritta { animation: none; } }
+
+/* Scelta della lega */
+.oc-leghe { gap: 18px; }
+.oc-leghe__testa { display: flex; align-items: center; gap: 14px; }
+.oc-leghe__testa img { width: 52px; height: 52px; }
+.oc-leghe__testa h1 { margin: 0; font-size: 34px; }
+.oc-leghe__lista { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 14px; }
+.oc-lega { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; border: 2px solid #2a2440; border-radius: 18px; background: #000; color: var(--fg); font-family: inherit; text-align: left; cursor: pointer; }
+.oc-lega:focus-visible, .oc-lega:focus { outline: none; border-color: var(--accento); box-shadow: 0 0 0 3px var(--accento); }
+.oc-lega__nomi { min-width: 0; display: grid; }
+.oc-lega__nomi b { font-size: 28px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oc-lega__nomi small { color: var(--tenue); font-size: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oc-lega em { font-style: normal; font-size: 18px; font-weight: 700; color: var(--verde); }
+.oc-lega.is-ferma { opacity: .6; }
+.oc-lega.is-ferma em { color: var(--tenue); }

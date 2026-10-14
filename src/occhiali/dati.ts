@@ -7,7 +7,7 @@ import type { EventoPartita } from '../types'
 
 // Tutto quello che gli occhiali mostrano, letto con l'utente collegato (stesse regole di lettura dell'app).
 export type Squadra = { id: number; nome: string; stemma: string | null }
-export type Lega = { id: number; nome: string; squadra: Squadra; stagioneId: number | null }
+export type Lega = { id: number; nome: string; squadra: Squadra; stagioneId: number | null; inCorso: boolean }
 export type Partita = {
   fixtureId: number; giornata: number; dataSim: string; stato: string
   casa: Squadra; ospite: Squadra; inCasa: boolean
@@ -36,13 +36,13 @@ export async function caricaLeghe(): Promise<Lega[]> {
   if (!ids.length) return []
   const [{ data: leghe }, { data: stagioni }] = await Promise.all([
     supabase.from('leagues').select('id, nome, stato, stagione_corrente').in('id', ids),
-    supabase.from('seasons').select('id, league_id, numero').in('league_id', ids),
+    supabase.from('seasons').select('id, league_id, numero, stato').in('league_id', ids),
   ])
   return (squadre ?? []).map((s) => {
     const l = (leghe ?? []).find((x) => x.id === s.league_id)
     const st = (stagioni ?? []).find((x) => x.league_id === s.league_id && x.numero === l?.stagione_corrente)
-    return { id: s.league_id, nome: l?.nome ?? 'Lega', squadra: { id: s.id, nome: s.nome, stemma: stemmaDi(s.stemma_url) }, stagioneId: st?.id ?? null }
-  }).sort((a, b) => a.nome.localeCompare(b.nome))
+    return { id: s.league_id, nome: l?.nome ?? 'Lega', squadra: { id: s.id, nome: s.nome, stemma: stemmaDi(s.stemma_url) }, stagioneId: st?.id ?? null, inCorso: st?.stato === 'in_corso' }
+  }).sort((a, b) => Number(b.inCorso) - Number(a.inCorso) || a.nome.localeCompare(b.nome))
 }
 
 export async function caricaQuadro(lega: Lega): Promise<Quadro> {
