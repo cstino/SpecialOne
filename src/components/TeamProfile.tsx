@@ -863,7 +863,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                   </span>
                   <div><strong>{g.nome}</strong><small>{ruoliIt(g.posizioni)} · {g.eta} anni · <em>{money(g.ingaggio)}/stagione</em> · sul tetto finché nessuno lo prende</small></div>
                   <b>{g.overall}</b>
-                  <span className="team-roster-player__svincolato" aria-hidden="true">SVINCOLATO</span>
+                  <span className="team-roster-player__svincolato" aria-hidden="true">Svincolato</span>
                 </button>)}
               </div>}
       </section>}
