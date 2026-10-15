@@ -818,7 +818,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                     </span>
                   </b>
                   {ownTeam && typeof player.morale === 'number' && <FaccinaMorale morale={player.morale} className="faccina-morale--riga" />}
-                  <dl><span className={player.minutaggio?.minutiPct != null ? `minuti-${statoMinuti(player.minutaggio.minutiPct, player.minutaggio.gradino)}` : undefined}><i className="min-valore">{statsPerGiocatore.get(player.id)?.minuti ?? 0}{player.minutaggio?.minutiPct != null && <em>({percentuale(player.minutaggio.minutiPct)})</em>}</i><small>MIN</small></span><span>{player.gol}<small>GOL</small></span><span>{player.assist}<small>ASS</small></span><span>{(() => { const mv = statsPerGiocatore.get(player.id)?.mediaVoto; return mv == null ? '—' : <b className={`voto voto--${fasciaVoto(mv)}`}>{formatoVoto(mv)}</b> })()}<small>MV</small></span></dl>
+                  <dl><span className={player.minutaggio?.minutiPct != null ? `minuti-${statoMinuti(player.minutaggio.minutiPct, player.minutaggio.gradino)}` : undefined}><i className="min-valore">{statsPerGiocatore.get(player.id)?.minuti ?? 0}{player.minutaggio?.minutiPct != null && <em>({percentuale(player.minutaggio.minutiPct)})</em>}</i><small>MIN</small></span><span>{statsPerGiocatore.get(player.id)?.gol ?? 0}<small>GOL</small></span><span>{statsPerGiocatore.get(player.id)?.assist ?? 0}<small>ASS</small></span><span>{(() => { const mv = statsPerGiocatore.get(player.id)?.mediaVoto; return mv == null ? '—' : <b className={`voto voto--${fasciaVoto(mv)}`}>{formatoVoto(mv)}</b> })()}<small>MV</small></span></dl>
                 </button>)}</div>}
       </section>}
 
