@@ -698,8 +698,9 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     setPlayers((current) => current.filter((item) => item.id !== player.id))
     setStatRows((current) => current.filter((item) => item.player_instance_id !== player.id))
     setSchedaAperta(null)
-    setRosterNotice(`${player.nome} è stato svincolato. Nessun rimborso è stato accreditato.`)
+    setRosterNotice(`${player.nome} è stato svincolato: resta in fondo alla rosa come svincolato finché nessuno lo prende, e puoi richiamarlo una volta in questa stagione.`)
     setReleasePending(false)
+    void caricaSvincolati()
   }
 
   return <main className="app-shell season-shell">
