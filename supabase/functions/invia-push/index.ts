@@ -83,6 +83,10 @@ export default {
           await webpush.sendNotification(
             { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth_key } },
             payload,
+            // Urgenza alta: senza, Android (modalita' risparmio / Doze) tiene la notifica in coda finche' il telefono
+            // non si "sveglia" da solo, e a app chiusa sembra che non arrivi. TTL di un giorno: una notifica
+            // di mercato o di formazione vecchia di un giorno non serve piu'.
+            { urgency: 'high', TTL: 86400 },
           )
           inviate += 1
         } catch (errore) {
