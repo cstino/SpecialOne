@@ -403,3 +403,11 @@ Anche `estrai_pool_scelte` salta chi e' gia' in un pool aperto.
 (2) le istanze senza squadra, (3) il catalogo. Aubameyang, preso da una squadra, non era piu' in nessuna delle prime
 due (la sua riga di progressione si cancella alla firma): cadeva sul catalogo, 81, mentre in rosa vale 79 e 37 anni.
 Con il pool riservato un giocatore del pool non puo' piu' stare in una rosa, quindi non succede piu'.
+
+## Regola Stepien: versione severa (16 ottobre 2026)
+
+Dopo lo scambio 583 (Pro secco / ASD Cola Zero, che ha ceduto ON-Season 2 e OFF-Season 2) la regola e' stata resa piu'
+rigida: **non si possono cedere due proprie scelte consecutive nel tempo**. L'ordine e' ON n, OFF n, ON n+1, OFF n+1...
+quindi ON 2 + OFF 2 no, e nemmeno OFF 2 + ON 3. Prima valeva solo per due stagioni consecutive nella stessa finestra.
+Non e' retroattiva (chi ha gia' due scelte consecutive cedute non viene toccato) e scatta solo se lo scambio che si
+propone o si accetta cede una delle due scelte della coppia. Migrazione `20261016000000`.
