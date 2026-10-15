@@ -9,3 +9,8 @@ select t.user_id, 63, 'sistema', 'Scelta OFF-Season 2 restituita',
        'Decisione dell''amministratore: la scelta OFF-Season 2 di ASD Cola Zero, ceduta nello scambio con Pro secco, torna ad ASD Cola Zero perché il suo allenatore ha lasciato la squadra il giorno dopo. Il resto dello scambio resta valido.',
        jsonb_build_object('scelta_id', 3398, 'proposta_id', 583)
 from public.teams t where t.id in (299, 305) and t.user_id is not null;
+
+-- Lo scambio 583 si mostra com'e' rimasto: senza quella scelta, e con il voto ricalcolato.
+update public.trade_proposals set scelte_richieste = array_remove(scelte_richieste, 3398::bigint) where id = 583;
+delete from public.valutazioni_scambi where proposta_id = 583;
+select private.calcola_valutazione_scambio(583);
