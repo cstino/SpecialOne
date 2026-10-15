@@ -4807,7 +4807,7 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 @media (prefers-reduced-motion: reduce) { .standings-conferenze .conf-badge, .standings-conferenze button::after { transition: none; } }
 .standings-zona__chip.is-champions { background: #2f6bff; box-shadow: 0 0 10px rgba(47,107,255,.5); }
 .standings-zona__chip.is-europa { background: #ff8a2b; box-shadow: 0 0 10px rgba(255,138,43,.4); }
-.standings-zona__chip.is-draftpo { background: #9b8cc9; box-shadow: 0 0 10px rgba(155,140,201,.35); }
+.standings-zona__chip.is-draftpo { background: #ff4d5e; box-shadow: 0 0 10px rgba(255,77,94,.5); }
 
 
 /* Campione in carica: coppa dorata accanto al nome, solo in classifica */
@@ -5246,7 +5246,7 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .bilancia-grafica__stemma .crest-stelle { display: none; }
 /* Zone con le conferenze (opzione B): colore pieno = diretta ai quarti, tinta piu' chiara = play-in. */
 .standings-zona__chip.is-champions-playin { background: #5cc8ff; box-shadow: 0 0 10px rgba(92,200,255,.45); }
-.standings-zona__chip.is-draftpo-playin { background: #d4c8f5; box-shadow: 0 0 10px rgba(212,200,245,.35); }
+.standings-zona__chip.is-draftpo-playin { background: #ff9a3d; box-shadow: 0 0 10px rgba(255,154,61,.45); }
 
 /* Codice per collegare gli occhiali Ray-Ban Display (menu iniziale). */
 .codice-occhiali__cifre { margin: 14px 0 !important; color: #fff; font: 700 2.6rem/1 "Bai Jamjuree", ui-sans-serif, sans-serif; letter-spacing: .28em; text-align: center; font-variant-numeric: tabular-nums; }
