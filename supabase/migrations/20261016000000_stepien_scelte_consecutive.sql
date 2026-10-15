@@ -110,11 +110,11 @@ begin
   -- finestra (docs/decisioni-draft-picks.md §7).
   if cardinality(v_s_off) > 0 and private.viola_regola_stepien(v_mia.id, v_s_off) then
     raise exception using errcode = '22023',
-      message = 'Questo scambio ti lascerebbe senza una tua scelta d''origine per due scelte consecutive (ad esempio la ON e la OFF della stessa stagione) (regola Stepien).';
+      message = 'Regola Stepien: non puoi cedere due tue scelte consecutive (la ON e la OFF della stessa stagione, oppure la OFF di una stagione e la ON della successiva).';
   end if;
   if cardinality(v_s_ric) > 0 and private.viola_regola_stepien(v_dest.id, v_s_ric) then
     raise exception using errcode = '22023',
-      message = 'Questo scambio lascerebbe ' || v_dest.nome || ' senza una propria scelta d''origine per due scelte consecutive (ad esempio la ON e la OFF della stessa stagione) (regola Stepien).';
+      message = 'Regola Stepien: ' || v_dest.nome || ' non puo'' cedere due proprie scelte consecutive (la ON e la OFF della stessa stagione, oppure la OFF di una stagione e la ON della successiva).';
   end if;
 
   v_scadenza := (date_trunc('day', now() at time zone 'Europe/Rome') + interval '21 hours') at time zone 'Europe/Rome';
@@ -240,11 +240,11 @@ begin
 
   if cardinality(v_p.scelte_offerte) > 0 and private.viola_regola_stepien(v_da.id, v_p.scelte_offerte) then
     raise exception using errcode = '22023',
-      message = 'Questo scambio lascerebbe ' || v_da.nome || ' senza una propria scelta d''origine per due scelte consecutive (ad esempio la ON e la OFF della stessa stagione) (regola Stepien): la proposta non e'' piu'' valida.';
+      message = 'Regola Stepien: ' || v_da.nome || ' non puo'' cedere due proprie scelte consecutive (la ON e la OFF della stessa stagione, oppure la OFF di una stagione e la ON della successiva). La proposta non e'' piu'' valida.';
   end if;
   if cardinality(v_p.scelte_richieste) > 0 and private.viola_regola_stepien(v_a.id, v_p.scelte_richieste) then
     raise exception using errcode = '22023',
-      message = 'Questo scambio ti lascerebbe senza una tua scelta d''origine per due scelte consecutive (ad esempio la ON e la OFF della stessa stagione) (regola Stepien).';
+      message = 'Regola Stepien: non puoi cedere due tue scelte consecutive (la ON e la OFF della stessa stagione, oppure la OFF di una stagione e la ON della successiva).';
   end if;
 
   select count(*) into v_rosa_da from public.player_instances where team_id = v_da.id;
