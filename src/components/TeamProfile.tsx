@@ -161,6 +161,8 @@ function buonuscita(player: RosterPlayer, stagioneCorrente: number) {
   return Math.floor((residue * player.ingaggio) / 2)
 }
 
+type Svincolato = { id: number; nome: string; posizioni: string[]; overall: number; eta: number; ingaggio: number; contrattoScadenza: number; foto?: string; richiamatoStagione: number | null }
+
 export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTeamUpdated, onProponiScambio }: Props) {
   const league = membership.league as League
   const seasonData = useSeasonData(membership)
@@ -168,6 +170,9 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [teamOverride, setTeamOverride] = useState<Team | null>(null)
   const [crestUrl, setCrestUrl] = useState<string | null>(null)
   const [players, setPlayers] = useState<RosterPlayer[]>([])
+  // Svincolati ancora a carico della squadra (in stagione): restano visibili in rosa, scuriti, e si possono richiamare.
+  const [svincolati, setSvincolati] = useState<Svincolato[]>([])
+  const [richiamo, setRichiamo] = useState<{ giocatore: Svincolato; errore: string | null; inCorso: boolean } | null>(null)
   const [statRows, setStatRows] = useState<MatchPlayerStat[]>([])
   const [pagelleRows, setPagelleRows] = useState<Array<{ match_id: number; player_instance_id: number; voto: number | null; migliore_in_campo: boolean }>>([])
   const [schedaAperta, setSchedaAperta] = useState<RosterPlayer | null>(null)
@@ -270,6 +275,33 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         : { type: 'preset', value: STEMMA_SQUADRA_DEFAULT })
   }, [team, crestUrl])
 
+  async function caricaSvincolati() {
+    const { data: righe } = await supabase.from('player_instances')
+      .select('id, player_id, overall_corrente, eta_corrente, ingaggio, contratto_scadenza, richiamato_stagione, posizioni_override')
+      .eq('league_id', league.id).eq('peso_team_id', teamId).is('team_id', null).eq('ritirato', false)
+      .gte('contratto_scadenza', league.stagione_corrente)
+    const lista = righe ?? []
+    if (!lista.length) { setSvincolati([]); return }
+    const { data: anagrafica } = await supabase.from('players').select('id, nome, posizioni, foto_url').in('id', lista.map((r) => r.player_id))
+    setSvincolati(lista.map((r) => {
+      const a = (anagrafica ?? []).find((x) => x.id === r.player_id)
+      return {
+        id: r.id, nome: a?.nome ?? 'Giocatore', posizioni: r.posizioni_override ?? a?.posizioni ?? [], overall: r.overall_corrente, eta: r.eta_corrente,
+        ingaggio: r.ingaggio, contrattoScadenza: r.contratto_scadenza, foto: urlFotoGiocatore(a?.foto_url ?? null) ?? undefined, richiamatoStagione: r.richiamato_stagione,
+      }
+    }))
+  }
+
+  async function confermaRichiamo() {
+    if (!richiamo) return
+    setRichiamo({ ...richiamo, inCorso: true, errore: null })
+    const { error } = await supabase.rpc('richiama_svincolato', { p_instance_id: richiamo.giocatore.id })
+    if (error) { setRichiamo({ ...richiamo, inCorso: false, errore: error.message }); return }
+    setRichiamo(null)
+    setRosterNotice(`${richiamo.giocatore.nome} è tornato in rosa con il suo contratto.`)
+    await caricaRoster()
+  }
+
   const caricaRoster = useCallback(async () => {
       setRosterLoading(true)
       setRosterError(null)
@@ -349,7 +381,8 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
         .map((g) => [g.player_instance_id, { gradino: g.gradino, trattato: g.trattato, richiamo: Boolean(g.richiamo), cessione: g.cessione, richiesto: g.richiesto, minutiPct: g.minuti_pct == null ? null : Number(g.minuti_pct) }]))
       setPlayers(loaded.map((p) => ({ ...p, fotoFirmata: fotoPerId.get(p.id), minutaggio: gradini.get(p.id) })))
       setStatRows((statsResult.data ?? []) as MatchPlayerStat[]); setRosterLoading(false)
-  }, [league.id, league.tattiche_attive, teamId])
+      void caricaSvincolati()
+  }, [league.id, league.tattiche_attive, teamId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { void caricaRoster() }, [caricaRoster])
 
@@ -819,8 +852,42 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                   </b>
                   {ownTeam && typeof player.morale === 'number' && <FaccinaMorale morale={player.morale} className="faccina-morale--riga" />}
                   <dl><span className={player.minutaggio?.minutiPct != null ? `minuti-${statoMinuti(player.minutaggio.minutiPct, player.minutaggio.gradino)}` : undefined}><i className="min-valore">{statsPerGiocatore.get(player.id)?.minuti ?? 0}{player.minutaggio?.minutiPct != null && <em>({percentuale(player.minutaggio.minutiPct)})</em>}</i><small>MIN</small></span><span>{statsPerGiocatore.get(player.id)?.gol ?? 0}<small>GOL</small></span><span>{statsPerGiocatore.get(player.id)?.assist ?? 0}<small>ASS</small></span><span>{(() => { const mv = statsPerGiocatore.get(player.id)?.mediaVoto; return mv == null ? '—' : <b className={`voto voto--${fasciaVoto(mv)}`}>{formatoVoto(mv)}</b> })()}<small>MV</small></span></dl>
-                </button>)}</div>}
+                </button>)}
+                {svincolati.map((g) => <button className={`team-roster-player team-roster-player--svincolato team-roster-player--${department(g.posizioni[0])}`} type="button" key={`sv-${g.id}`}
+                  onClick={() => ownTeam && setRichiamo({ giocatore: g, errore: null, inCorso: false })} disabled={!ownTeam}
+                  aria-label={`${g.nome}, svincolato${ownTeam ? ': tocca per richiamarlo' : ''}`}>
+                  <span className="team-roster-player__avatar">
+                    <span className="team-roster-player__portrait">{g.foto ? <img src={g.foto} alt="" loading="lazy" /> : <b aria-hidden="true">{g.nome.charAt(0)}</b>}</span>
+                    <i className="team-roster-player__ruolo">{g.posizioni[0] ? ruoloIt(g.posizioni[0]) : '—'}</i>
+                  </span>
+                  <div><strong>{g.nome}</strong><small>{ruoliIt(g.posizioni)} · {g.eta} anni · <em>{money(g.ingaggio)}/stagione</em> · sul tetto finché nessuno lo prende</small></div>
+                  <b>{g.overall}</b>
+                  <span className="team-roster-player__svincolato" aria-hidden="true">SVINCOLATO</span>
+                </button>)}
+              </div>}
       </section>}
+
+      {richiamo && (() => {
+        const g = richiamo.giocatore
+        const giaRichiamato = g.richiamatoStagione === league.stagione_corrente
+        const rosaPiena = players.length >= ROSA_MASSIMA
+        return <div className="popup-spiegazione-sfondo" role="dialog" aria-modal="true" aria-label={`Richiama ${g.nome}`} onClick={() => setRichiamo(null)}>
+          <div className="popup-spiegazione" onClick={(e) => e.stopPropagation()}>
+            <h2>Richiamare {g.nome}?</h2>
+            <div className="popup-spiegazione__corpo">
+              <p>Torna nella tua rosa con il suo contratto: <b>{money(g.ingaggio)}/stagione</b>. Se è in un'asta, l'asta viene annullata e chi aveva offerto viene avvisato.</p>
+              <p>Puoi richiamare un giocatore <b>una sola volta per stagione</b>.</p>
+              {giaRichiamato && <p className="notice notice--error">L'hai già richiamato una volta in questa stagione: non puoi farlo di nuovo.</p>}
+              {!giaRichiamato && rosaPiena && <p className="notice notice--error">La rosa è piena ({ROSA_MASSIMA} giocatori): libera un posto per richiamarlo.</p>}
+              {richiamo.errore && <p className="notice notice--error">{richiamo.errore}</p>}
+            </div>
+            <button className="button button--primary" type="button" disabled={giaRichiamato || rosaPiena || richiamo.inCorso} onClick={() => void confermaRichiamo()}>
+              {richiamo.inCorso ? 'Richiamo…' : 'Richiama'}
+            </button>
+            <button className="button button--secondary" type="button" onClick={() => setRichiamo(null)}>Annulla</button>
+          </div>
+        </div>
+      })()}
 
       {tab === 'vivaio' && <section className="team-roster-panel">
         <div className="season-card__heading">

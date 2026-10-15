@@ -5252,3 +5252,12 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .codice-occhiali__cifre { margin: 14px 0 !important; color: #fff; font: 700 2.6rem/1 "Bai Jamjuree", ui-sans-serif, sans-serif; letter-spacing: .28em; text-align: center; font-variant-numeric: tabular-nums; }
 .codice-occhiali__stato { display: grid; gap: 10px; margin-top: 6px !important; padding-top: 12px; border-top: 1px solid #2c2740; color: #b6aad1; }
 .codice-occhiali__scollega { justify-self: start; }
+
+/* Svincolati ancora a carico: card scurita con la scritta SVINCOLATO, richiamabile dalla propria squadra. */
+.team-roster-player--svincolato { position: relative; overflow: hidden; opacity: 1; background: #0d0b12; }
+/* Si scurisce il contenuto, non la scritta. */
+.team-roster-player--svincolato > :not(.team-roster-player__svincolato) { filter: grayscale(.6) brightness(.55); }
+.team-roster-player--svincolato:not(:disabled) { cursor: pointer; }
+.team-roster-player--svincolato:disabled { cursor: default; }
+.team-roster-player--svincolato:not(:disabled):hover > :not(.team-roster-player__svincolato) { filter: grayscale(.4) brightness(.75); }
+.team-roster-player__svincolato { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; color: #ffd75e; font: 800 clamp(1.4rem, 6vw, 2.2rem)/1 "Bai Jamjuree", ui-sans-serif, sans-serif; letter-spacing: .22em; text-shadow: 0 2px 10px rgba(0,0,0,.9); transform: rotate(-6deg); }
