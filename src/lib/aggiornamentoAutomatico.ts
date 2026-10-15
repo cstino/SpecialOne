@@ -4,10 +4,11 @@
 // 1 ottobre 2026). Quando l'app torna in primo piano si confronta il bundle
 // caricato con quello che index.html indica adesso: se e' cambiato, si
 // ricarica. Lo stato di gioco e' tutto su Supabase, non si perde niente.
-const BUNDLE = /\/assets\/index-[\w-]+\.js/
+// index-*.js (o main-*.js, il nome usato per qualche giorno a ottobre 2026 dopo la pagina degli occhiali).
+const BUNDLE = /\/assets\/(?:index|main)-[\w-]+\.js/
 
 function bundleCaricato() {
-  const script = document.querySelector<HTMLScriptElement>('script[type="module"][src*="/assets/index-"]')
+  const script = document.querySelector<HTMLScriptElement>('script[type="module"][src*="/assets/index-"], script[type="module"][src*="/assets/main-"]')
   return script?.src.match(BUNDLE)?.[0] ?? null
 }
 

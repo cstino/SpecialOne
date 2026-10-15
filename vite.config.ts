@@ -14,7 +14,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        // La chiave 'index' tiene il file dell'app con il nome index-*.js: l'aggiornamento automatico
+        // (lib/aggiornamentoAutomatico.ts) delle app gia' aperte riconosce le versioni nuove da quel nome.
+        index: fileURLToPath(new URL('./index.html', import.meta.url)),
         occhiali: fileURLToPath(new URL('./occhiali.html', import.meta.url)),
       },
     },
