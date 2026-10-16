@@ -91,7 +91,7 @@ Tre fasi separate, ognuna giocabile da sola, in quest'ordine consigliato:
 ## Punti ancora aperti
 1. Le risposte compaiono pubblicamente nel feed per tutta la lega? (proposta: sì; le
    domande restano private finché non si risponde)
-4. Rivalità: di quanto si muove il grado e quanto si raffredda (vedi §2).
+2. Rivalità: di quanto si muove il grado e quanto si raffredda (vedi §2).
 
 ## Note tecniche
 - Serve una chiave API di Claude nella funzione notturna sul Mac (segreto, mai nel
