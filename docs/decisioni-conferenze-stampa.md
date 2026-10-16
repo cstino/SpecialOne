@@ -124,13 +124,22 @@ e criticare un giocatore non converrebbe mai. Quindi:
   poi si rilancia la suite di validazione e si confrontano i numeri con
   `docs/risultati-fase0.txt` (procedura del CLAUDE.md §4).
 
-## 3. Notizie in stile social
-- **Deciso**: in home una card con le notizie **della squadra dell'utente** per prime;
-  toccandola si entra in un feed stile Twitter.
-- Nel feed: account ufficiale della lega, giornalisti inventati, frasi delle conferenze
-  come post degli allenatori, botta e risposta fra rivali, partite, aste, scambi.
+## 3. SocialOne — le notizie in stile social
+- **Deciso**: la sezione social si chiama **SocialOne**, per restare in tema col gioco.
+- In home una card con le notizie **della squadra dell'utente** per prime; toccandola si entra
+  nel feed, stile Twitter.
+- Nel feed: account ufficiale della lega, testate e programmi sportivi, frasi delle
+  conferenze come post degli allenatori, botta e risposta fra rivali, partite, aste, scambi e,
+  **deciso il 16 ottobre 2026, i messaggi dei tifosi**.
+- **Messaggi dei tifosi**: il tono dipende dall'umore del pubblico (vedi §2b): esultano dopo una
+  vittoria, protestano dopo una sconfitta o una conferenza che non è piaciuta, rispondono a uno
+  scherno verso una rivale. Idea per contenere i costi dell'AI gratuita: modelli di frase per
+  la maggior parte dei post, l'AI solo per i momenti forti (protesta dopo una conferenza,
+  scherno, partita decisiva).
 - Serve un archivio dei post nel database: oggi `LeagueNews.tsx` costruisce le notizie al
   volo e non salva niente.
+- Aperti: i post dei tifosi sono visibili a tutta la lega (proposta: sì, come il pubblico)?
+  I giocatori possono rispondere?
 
 ---
 
