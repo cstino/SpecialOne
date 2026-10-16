@@ -10,6 +10,7 @@ import { useFaseSquadra } from '../lib/faseSquadra'
 import type { CrestChoice, Fixture, League, MatchPlayerStat, Membership, Team } from '../types'
 import { Crest } from './Crest'
 import { FaccinaMorale } from './FaccinaMorale'
+import { MoraleSquadra } from './MoraleSquadra'
 import { StemmaIngrandito } from './StemmaIngrandito'
 import { CrestPicker } from './CrestPicker'
 import { GameNav, type GameView } from './GameNav'
@@ -782,6 +783,9 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
             <article><small>Overall</small><b>{players.length ? (players.reduce((sum, player) => sum + player.overall, 0) / players.length).toFixed(1) : '—'}</b></article>
           </div>
         </section>
+
+        {/* Il morale degli altri non si vede: solo la propria squadra. Misura gli 11 migliori per overall. */}
+        {ownTeam && <MoraleSquadra morali={[...players].sort((a, b) => b.overall - a.overall).flatMap((p) => typeof p.morale === 'number' ? [p.morale] : []).slice(0, 11)} />}
 
         <section className="team-profile-grid">
           <article className="team-profile-panel team-recent-panel"><div className="season-card__heading"><div><p className="kicker">Forma recente</p><h2>Ultime partite</h2></div></div>{recentFixtures.length ? recentFixtures.map((fixture) => { const match = seasonData.matchByFixture.get(fixture.id); return <button className={`esito-riga esito-riga--${esitoDi(fixture) ?? 'N'}`} type="button" key={fixture.id} onClick={() => match && onOpenMatch(match.id)}><TeamLabel team={seasonData.teamById.get(fixture.home_team_id)} imageUrl={seasonData.crestUrlByTeamId.get(fixture.home_team_id)} /><FixtureScore fixture={fixture} match={match} /><TeamLabel team={seasonData.teamById.get(fixture.away_team_id)} imageUrl={seasonData.crestUrlByTeamId.get(fixture.away_team_id)} reversed /></button> }) : <p className="season-empty">Nessuna partita disputata.</p>}</article>

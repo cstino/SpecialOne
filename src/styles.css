@@ -4295,6 +4295,38 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 @keyframes gol-testa { from { opacity: 0; transform: skewY(-4deg) scaleX(0); } to { opacity: 1; transform: skewY(-4deg) scaleX(1); } }
 @keyframes gol-entra { from { opacity: 0; transform: translateY(12px) scale(.92); } to { opacity: 1; transform: none; } }
 
+/* Morale di squadra nel sommario del club. */
+.morale-squadra { --mq: #c9a6ff; display: grid; gap: 10px; width: 100%; padding: 14px 16px 12px; border: 1px solid color-mix(in srgb, var(--mq) 30%, #2b2739); border-radius: 16px; color: #fff; background: radial-gradient(ellipse 80% 90% at 50% 0%, color-mix(in srgb, var(--mq) 16%, transparent), transparent 72%), linear-gradient(180deg, #181621, #110f18); text-align: left; font: inherit; cursor: pointer; transition: border-color .2s, transform .15s; }
+.morale-squadra:hover { border-color: color-mix(in srgb, var(--mq) 55%, #2b2739); }
+.morale-squadra:active { transform: scale(.992); }
+.morale-squadra--ottimo { --mq: #65e69a; } .morale-squadra--buono { --mq: #c9a6ff; } .morale-squadra--medio { --mq: #f0c44d; }
+.morale-squadra--basso { --mq: #ffa06b; } .morale-squadra--critico { --mq: #ff7188; }
+.morale-squadra__intestazione { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.morale-squadra__intestazione small { color: #8f86a3; font-size: .6rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.morale-squadra__intestazione em { color: var(--mq); font-size: .7rem; font-style: normal; font-weight: 800; }
+.morale-squadra__corpo { position: relative; display: grid; place-items: center; }
+.morale-squadra__arco { width: min(100%, 300px); height: auto; overflow: visible; }
+.morale-squadra__binario, .morale-squadra__riempimento { fill: none; stroke-linecap: round; stroke-width: 12; }
+.morale-squadra__binario { stroke: #2b2739; }
+.morale-squadra__riempimento { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--mq) 55%, transparent)); }
+.morale-squadra__cursore { fill: #fff; stroke: var(--mq); stroke-width: 3.5; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
+.morale-squadra__valore { position: absolute; left: 50%; bottom: 3%; display: grid; justify-items: center; gap: 1px; transform: translateX(-50%); }
+.morale-squadra__faccina { width: 22px; height: 22px; color: var(--mq); }
+.morale-squadra__valore b { color: #fff; font: 900 2.6rem/1 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.morale-squadra__valore span { color: var(--mq); font-size: .74rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.morale-squadra__fasce { display: flex; gap: 3px; height: 6px; }
+.morale-squadra__fascia { display: block; flex-basis: 0; min-width: 0; border-radius: 3px; }
+.morale-squadra__fascia--ottimo { background: #65e69a; } .morale-squadra__fascia--buono { background: #c9a6ff; } .morale-squadra__fascia--medio { background: #f0c44d; }
+.morale-squadra__fascia--basso { background: #ffa06b; } .morale-squadra__fascia--critico { background: #ff7188; }
+.morale-squadra__nota { color: #8f86a3; font-size: .68rem; line-height: 1.4; text-align: center; text-transform: capitalize; }
+.popup-morale h3 { margin: 6px 0 -4px; color: #fff; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; }
+.popup-morale ul { display: grid; gap: 7px; margin: 0; padding-left: 18px; }
+.popup-morale__fasce { padding-left: 0 !important; list-style: none; }
+.popup-morale__fasce li { display: flex; align-items: center; gap: 8px; }
+.popup-morale__fasce li i { width: 10px; height: 10px; flex: none; }
+.popup-morale__fasce li span { color: #8f86a3; font-variant-numeric: tabular-nums; }
+.popup-morale__fasce li em { margin-left: auto; color: #cabfd6; font-style: normal; }
+
 /* Sala stampa (conferenze post partita, prova in LegaBot). */
 .stampa { gap: 18px; }
 .stampa__voce { display: grid; gap: 8px; }
