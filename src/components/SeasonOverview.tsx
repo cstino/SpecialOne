@@ -9,6 +9,7 @@ import { FixtureScore, Forma, formaPerSquadra, formatMatchDate, SeasonState, Tea
 import { LeagueNews } from './LeagueNews'
 import { DraftLive } from './DraftLive'
 import { VettaConferenze } from './VettaConferenze'
+import { SalaStampa } from './SalaStampa'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; revealedMatchIds: Set<number>; onOpenMatch: (matchId: number) => void; onRevealMatch: (matchId: number) => void; onOpenTeam: (teamId: number) => void }
 
@@ -148,6 +149,8 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
             </div>
           </article>
         </section>
+
+        {league.conferenze_stampa && <SalaStampa teamId={membership.id} revealedMatchIds={revealedMatchIds} />}
 
         <LeagueNews leagueId={league.id} fixtures={data.fixtures} matches={data.matches} standings={data.standings} teamById={data.teamById} crestUrlByTeamId={data.crestUrlByTeamId} onOpenMatch={onOpenMatch} onOpenTeam={onOpenTeam} />
 

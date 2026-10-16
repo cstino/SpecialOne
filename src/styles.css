@@ -4295,6 +4295,29 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 @keyframes gol-testa { from { opacity: 0; transform: skewY(-4deg) scaleX(0); } to { opacity: 1; transform: skewY(-4deg) scaleX(1); } }
 @keyframes gol-entra { from { opacity: 0; transform: translateY(12px) scale(.92); } to { opacity: 1; transform: none; } }
 
+/* Sala stampa (conferenze post partita, prova in LegaBot). */
+.stampa { gap: 18px; }
+.stampa__voce { display: grid; gap: 8px; }
+.stampa__voce + .stampa__voce { padding-top: 16px; border-top: 1px solid rgba(255,255,255,.08); }
+.stampa__testata { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--fz-luce); font-size: .68rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.stampa__domanda { margin: 0; color: #fff; font-size: .98rem; font-weight: 700; line-height: 1.4; }
+.stampa__risposta { margin: 0; padding: 8px 12px; border-left: 3px solid rgba(255,255,255,.25); color: rgba(255,255,255,.78); font-size: .9rem; font-style: italic; line-height: 1.45; white-space: pre-wrap; }
+.stampa__form { display: grid; gap: 8px; }
+.stampa__form textarea { width: 100%; box-sizing: border-box; min-height: 84px; padding: 10px 12px; border: 1px solid rgba(255,255,255,.14); border-radius: 8px; color: #fff; background: rgba(0,0,0,.35); font: 500 .92rem/1.45 inherit; font-family: inherit; resize: vertical; }
+.stampa__form textarea:focus { outline: 2px solid color-mix(in srgb, var(--fz-luce) 60%, transparent); outline-offset: 1px; }
+.stampa__azioni { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: rgba(255,255,255,.45); font-size: .72rem; font-variant-numeric: tabular-nums; }
+.stampa__azioni .overview-cta-button { width: auto; padding-inline: 22px; }
+.stampa__esito { --es: #9aa4b8; display: grid; gap: 3px; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--es) 14%, transparent); box-shadow: inset 3px 0 0 var(--es); }
+.stampa__esito strong { color: var(--es); font-size: .8rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.stampa__esito span { color: #fff; font-size: .88rem; line-height: 1.4; }
+.stampa__esito em { color: rgba(255,255,255,.6); font-size: .74rem; font-style: normal; font-weight: 700; }
+.stampa__esito.is-ottima { --es: #34e0a1; }
+.stampa__esito.is-buona { --es: #7fd6ff; }
+.stampa__esito.is-scarsa { --es: #ffb04d; }
+.stampa__esito.is-pessima { --es: #ff4d6d; }
+.stampa__attesa, .stampa__nocomment { margin: 0; color: rgba(255,255,255,.6); font-size: .88rem; }
+.stampa__errore { margin: 0; color: #ff8a9e; font-size: .82rem; }
+
 /* Card dei tiri in porta (prova in LegaBot): neutra e in tensione durante
    l'azione, poi verde se e' gol, rossa se il portiere la ferma. */
 .tiro-card { --acc: #ffc94d; max-width: 360px; gap: 12px; border-color: rgba(255,201,77,.35); background: linear-gradient(165deg, rgba(64,52,22,.82), rgba(12,10,24,.95) 62%); animation: rig-card .35s ease-out both, tiro-tensione 1.1s ease-in-out infinite; transition: border-color .3s, background .3s; }
