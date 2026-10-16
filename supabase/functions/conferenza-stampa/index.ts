@@ -16,8 +16,13 @@ import { withSupabase } from '@supabase/server'
 // ============================================================
 
 const CHIAVE_SEGRETA = Deno.env.get('CHIAVE_SEGRETA_PROGETTO') ?? ''
-const CHIAVE_AI = Deno.env.get('ANTHROPIC_API_KEY') ?? ''
-const MODELLO = 'claude-haiku-4-5-20251001'
+// AI gratuite: Gemini (Google AI Studio) prima, Groq come riserva se Gemini
+// e' irraggiungibile o ha finito la quota del giorno. Le chiavi stanno solo
+// nel .env del Mac, mai nel codice.
+const CHIAVE_GEMINI = Deno.env.get('GEMINI_API_KEY') ?? ''
+const MODELLO_GEMINI = Deno.env.get('GEMINI_MODEL') ?? 'gemini-2.5-flash'
+const CHIAVE_GROQ = Deno.env.get('GROQ_API_KEY') ?? ''
+const MODELLO_GROQ = Deno.env.get('GROQ_MODEL') ?? 'llama-3.3-70b-versatile'
 const MAX_RISPOSTA = 1200
 
 const CORS = {
@@ -30,27 +35,65 @@ const json = (stato: number, corpo: unknown) =>
 
 type Strumento = { name: string; description: string; input_schema: Record<string, unknown> }
 
-// Una chiamata all'AI con uno strumento obbligatorio: la risposta arriva gia'
-// come oggetto con lo schema richiesto, niente testo da interpretare.
-async function chiediAI<T>(system: string, messaggio: string, strumento: Strumento): Promise<T> {
-  if (!CHIAVE_AI) throw new Error('Manca ANTHROPIC_API_KEY nelle funzioni.')
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
+// Lo schema in formato Gemini: tipi in maiuscolo, senza minimum/maximum (i
+// limiti li applica comunque il server).
+function schemaGemini(nodo: unknown): unknown {
+  if (Array.isArray(nodo)) return nodo.map(schemaGemini)
+  if (!nodo || typeof nodo !== 'object') return nodo
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(nodo)) {
+    if (k === 'minimum' || k === 'maximum') continue
+    out[k] = k === 'type' && typeof v === 'string' ? v.toUpperCase() : schemaGemini(v)
+  }
+  return out
+}
+
+async function chiediGemini<T>(system: string, messaggio: string, strumento: Strumento): Promise<T> {
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODELLO_GEMINI}:generateContent`, {
     method: 'POST',
-    headers: { 'x-api-key': CHIAVE_AI, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    headers: { 'x-goog-api-key': CHIAVE_GEMINI, 'content-type': 'application/json' },
     body: JSON.stringify({
-      model: MODELLO,
-      max_tokens: 1024,
-      system,
-      messages: [{ role: 'user', content: messaggio }],
-      tools: [strumento],
-      tool_choice: { type: 'tool', name: strumento.name },
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: 'user', parts: [{ text: messaggio }] }],
+      generationConfig: { responseMimeType: 'application/json', responseSchema: schemaGemini(strumento.input_schema), temperature: 0.8 },
     }),
   })
-  if (!r.ok) throw new Error(`AI ${r.status}: ${(await r.text()).slice(0, 300)}`)
-  const corpo = await r.json() as { content?: Array<{ type: string; name?: string; input?: unknown }> }
-  const uso = corpo.content?.find((c) => c.type === 'tool_use' && c.name === strumento.name)
-  if (!uso?.input) throw new Error('Risposta dell’AI senza strumento.')
-  return uso.input as T
+  if (!r.ok) throw new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 300)}`)
+  const corpo = await r.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
+  const testo = corpo.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? ''
+  return JSON.parse(testo) as T
+}
+
+async function chiediGroq<T>(system: string, messaggio: string, strumento: Strumento): Promise<T> {
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${CHIAVE_GROQ}`, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      model: MODELLO_GROQ,
+      temperature: 0.8,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: `${system}\n\nRispondi SOLO con un oggetto JSON che rispetta questo schema (${strumento.description}):\n${JSON.stringify(strumento.input_schema)}` },
+        { role: 'user', content: messaggio },
+      ],
+    }),
+  })
+  if (!r.ok) throw new Error(`Groq ${r.status}: ${(await r.text()).slice(0, 300)}`)
+  const corpo = await r.json() as { choices?: Array<{ message?: { content?: string } }> }
+  return JSON.parse(corpo.choices?.[0]?.message?.content ?? '') as T
+}
+
+// La risposta arriva gia' come oggetto con lo schema richiesto, niente testo
+// libero da interpretare. Gemini prima, Groq se Gemini fallisce.
+async function chiediAI<T>(system: string, messaggio: string, strumento: Strumento): Promise<T> {
+  const errori: string[] = []
+  if (CHIAVE_GEMINI) {
+    try { return await chiediGemini<T>(system, messaggio, strumento) } catch (e) { errori.push(String(e)) }
+  }
+  if (CHIAVE_GROQ) {
+    try { return await chiediGroq<T>(system, messaggio, strumento) } catch (e) { errori.push(String(e)) }
+  }
+  throw new Error(errori.length ? errori.join(' | ') : 'Nessuna chiave AI (GEMINI_API_KEY / GROQ_API_KEY) nelle funzioni.')
 }
 
 // ------------------------------------------------------------

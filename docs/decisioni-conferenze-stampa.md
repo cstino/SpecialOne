@@ -94,8 +94,12 @@ Tre fasi separate, ognuna giocabile da sola, in quest'ordine consigliato:
 2. Rivalità: di quanto si muove il grado e quanto si raffredda (vedi §2).
 
 ## Note tecniche
-- Serve una chiave API di Claude nella funzione notturna sul Mac (segreto, mai nel
-  frontend). Modello piccolo (Haiku 4.5): costo stimato in centesimi al mese.
+- AI gratuite (deciso il 16 ottobre 2026): **Gemini Flash** (Google AI Studio, versione
+  gratuita) come principale, **Groq** (Llama 3.3 70B, gratuito) come riserva automatica se
+  Gemini fallisce o finisce la quota. Chiavi `GEMINI_API_KEY` e `GROQ_API_KEY` solo nel
+  `.env` del Mac (mai nel frontend né su git); modelli cambiabili con `GEMINI_MODEL` e
+  `GROQ_MODEL`. Una sola chiave per servizio: più account Google per sommare le quote
+  violerebbero i termini, e non servono (poche decine di richieste al giorno).
 - RLS: domande visibili solo all'allenatore interessato fino alla risposta; il giudizio
   numerico dell'AI resta lato server.
 - Fuso orario: scadenze e generazione sempre `Europe/Rome`.
