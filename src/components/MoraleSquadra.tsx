@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { FaccinaMorale, etichettaMorale, type FasciaMorale } from './FaccinaMorale'
 
 // Il morale di squadra nel sommario del club: un indicatore a mezzaluna e, toccandolo,
-// la spiegazione di come incide. Misura gli 11 migliori della rosa per overall (CLAUDE.md:
-// la media di tutta la rosa e' una metrica inutile, meta' dei giocatori non gioca mai).
+// la spiegazione di come incide. Misura i titolari della formazione per la prossima partita, perche' il
+// morale conta in campo solo per chi gioca (CLAUDE.md: la media di tutta la rosa e' una metrica
+// inutile, meta' dei giocatori non gioca mai); senza formazione salvata, i migliori 11 per overall.
 // Solo per la propria squadra: il morale degli altri non si vede.
 
-type Props = { morali: number[] }
+type Props = { morali: number[]; daFormazione: boolean }
 
 const FASCE: Array<{ classe: FasciaMorale; testo: string; da: string }> = [
   { classe: 'ottimo', testo: 'Entusiasta', da: '80–100' },
@@ -28,7 +29,7 @@ function arco(da: number, a: number) {
   return `M ${p.x.toFixed(2)} ${p.y.toFixed(2)} A ${R} ${R} 0 0 1 ${q.x.toFixed(2)} ${q.y.toFixed(2)}`
 }
 
-export function MoraleSquadra({ morali }: Props) {
+export function MoraleSquadra({ morali, daFormazione }: Props) {
   const [aperto, setAperto] = useState(false)
   if (!morali.length) return null
   const media = morali.reduce((a, b) => a + b, 0) / morali.length
@@ -65,14 +66,14 @@ export function MoraleSquadra({ morali }: Props) {
       <span className="morale-squadra__fasce" aria-hidden="true">
         {conteggi.map((f) => <i key={f.classe} className={`morale-squadra__fascia morale-squadra__fascia--${f.classe}`} style={{ flexGrow: f.n }} title={`${f.testo}: ${f.n}`} />)}
       </span>
-      <small className="morale-squadra__nota">{morali.length} giocatori considerati · {conteggi.filter((f) => f.n).map((f) => `${f.n} ${f.testo.toLowerCase()}`).join(' · ')}</small>
+      <small className="morale-squadra__nota">{morali.length} {daFormazione ? 'titolari' : 'giocatori'} considerati · {conteggi.filter((f) => f.n).map((f) => `${f.n} ${f.testo.toLowerCase()}`).join(' · ')}</small>
     </button>
 
     {aperto && <div className="popup-spiegazione-sfondo" role="dialog" aria-modal="true" aria-label="Come incide il morale di squadra" onClick={() => setAperto(false)}>
       <div className="popup-spiegazione popup-morale" onClick={(e) => e.stopPropagation()}>
         <h2>Il morale di squadra</h2>
         <div className="popup-spiegazione__corpo">
-          <p>Il valore è la <b>media del morale dei {morali.length} migliori giocatori</b> della rosa. Ogni giocatore ha un morale da 0 a 100, e <b>70 è il punto neutro</b>: sopra gioca un filo meglio, sotto un filo peggio.</p>
+          <p>Il valore è la <b>media del morale {daFormazione ? `degli ${morali.length} titolari che hai schierato` : `dei ${morali.length} migliori giocatori`}</b>{daFormazione ? ' nella formazione per la prossima partita: se cambi formazione, cambia anche il numero' : ' della rosa (non hai ancora salvato una formazione)'}. Ogni giocatore ha un morale da 0 a 100, e <b>70 è il punto neutro</b>: sopra gioca un filo meglio, sotto un filo peggio.</p>
 
           <h3>Come incide in partita</h3>
           <p>Poco, di proposito: nel calcio vero (e nelle misure su Football Manager) il morale è la leva più piccola. Un giocatore a morale 100 rende come se avesse circa <b>+0,3 di overall</b>, uno a morale 40 circa <b>−0,3</b>; sotto i 20 circa smette di peggiorare. Fra una squadra a morale 45 e una a 95 corrono circa <b>3–4 punti in una stagione da 38 giornate</b>. Non cambia una partita, può spostare un campionato quando le squadre sono vicine.</p>

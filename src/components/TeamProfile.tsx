@@ -173,6 +173,9 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [players, setPlayers] = useState<RosterPlayer[]>([])
   // Svincolati ancora a carico della squadra (in stagione): restano visibili in rosa, scuriti, e si possono richiamare.
   const [svincolati, setSvincolati] = useState<Svincolato[]>([])
+  // I titolari che schiero per la prossima partita (stessa regola della pagina Formazione: l'ultima
+  // distinta salvata fino a quella giornata). Servono al morale di squadra: pesa chi scende in campo.
+  const [titolariSchierati, setTitolariSchierati] = useState<number[] | null>(null)
   const [richiamo, setRichiamo] = useState<{ giocatore: Svincolato; errore: string | null; inCorso: boolean } | null>(null)
   const [statRows, setStatRows] = useState<MatchPlayerStat[]>([])
   const [pagelleRows, setPagelleRows] = useState<Array<{ match_id: number; player_instance_id: number; voto: number | null; migliore_in_campo: boolean }>>([])
@@ -211,6 +214,16 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [specializzazioni, setSpecializzazioni] = useState<Map<number, SpecializzazioneRiga>>(new Map())
   const team = teamOverride?.id === teamId ? teamOverride : seasonData.teamById.get(teamId)
   const ownTeam = teamId === membership.id
+  const giornataProssima = seasonData.nextFixture?.giornata
+  useEffect(() => {
+    if (!ownTeam || !league.conferenze_stampa || seasonData.loading) return
+    let vivo = true
+    const target = giornataProssima ?? (league.fase_carriera === 'offseason' ? 1 : league.giornate_totali)
+    void supabase.from('lineups').select('titolari').eq('league_id', league.id).eq('team_id', membership.id)
+      .lte('giornata', target).order('automatica', { ascending: true }).order('giornata', { ascending: false }).limit(1).maybeSingle()
+      .then(({ data }) => { if (vivo) setTitolariSchierati(((data?.titolari ?? []) as number[]).filter((id) => id > 0)) })
+    return () => { vivo = false }
+  }, [ownTeam, league.conferenze_stampa, league.id, league.fase_carriera, league.giornate_totali, membership.id, giornataProssima, seasonData.loading])
   const fase = useFaseSquadra(league.id, teamId, seasonData.season?.id)
   // Sfondo dell'hero: il logo della squadra stessa, non quello di fase (quello
   // resta solo in Overview). Un preset risolve subito a un file statico; uno
@@ -784,8 +797,12 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           </div>
         </section>
 
-        {/* Prova in LegaBot (stesso interruttore delle conferenze stampa). Il morale degli altri non si vede: solo la propria squadra. Misura gli 11 migliori per overall. */}
-        {ownTeam && league.conferenze_stampa && <MoraleSquadra morali={[...players].sort((a, b) => b.overall - a.overall).flatMap((p) => typeof p.morale === 'number' ? [p.morale] : []).slice(0, 11)} />}
+        {/* Prova in LegaBot (stesso interruttore delle conferenze stampa). Il morale degli altri non si vede: solo la propria squadra. Misura i titolari schierati. */}
+        {ownTeam && league.conferenze_stampa && (() => {
+          // Chi scende in campo: i titolari della formazione. Senza una formazione salvata, i migliori 11 per overall.
+          const schierati = titolariSchierati?.length ? players.filter((p) => titolariSchierati.includes(p.id)) : [...players].sort((a, b) => b.overall - a.overall).slice(0, 11)
+          return <MoraleSquadra morali={schierati.flatMap((p) => typeof p.morale === 'number' ? [p.morale] : [])} daFormazione={Boolean(titolariSchierati?.length)} />
+        })()}
 
         <section className="team-profile-grid">
           <article className="team-profile-panel team-recent-panel"><div className="season-card__heading"><div><p className="kicker">Forma recente</p><h2>Ultime partite</h2></div></div>{recentFixtures.length ? recentFixtures.map((fixture) => { const match = seasonData.matchByFixture.get(fixture.id); return <button className={`esito-riga esito-riga--${esitoDi(fixture) ?? 'N'}`} type="button" key={fixture.id} onClick={() => match && onOpenMatch(match.id)}><TeamLabel team={seasonData.teamById.get(fixture.home_team_id)} imageUrl={seasonData.crestUrlByTeamId.get(fixture.home_team_id)} /><FixtureScore fixture={fixture} match={match} /><TeamLabel team={seasonData.teamById.get(fixture.away_team_id)} imageUrl={seasonData.crestUrlByTeamId.get(fixture.away_team_id)} reversed /></button> }) : <p className="season-empty">Nessuna partita disputata.</p>}</article>
