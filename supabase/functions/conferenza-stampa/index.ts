@@ -239,8 +239,11 @@ async function genera(admin: any, matchId: number) {
       'scegli gli spunti più forti (gol nel finale, rimonte, espulsioni, serie negative o positive, classifica, migliori e peggiori in campo). ' +
       'Se un giocatore della squadra è andato molto male o è stato espulso, una domanda può incalzare l\'allenatore proprio su di lui ("lo difende?", "lo rifarebbe giocare?"): è la domanda trappola, dove né difenderlo sempre né scaricarlo è la risposta ovvia. ' +
       'Fai 2 domande se la partita offre almeno due spunti diversi, altrimenti 1. ' +
-      'Il giornalista è indicato col nome di una testata o radio INVENTATA e plausibile: mai testate reali ' +
-      '(niente Gazzetta dello Sport, Corriere dello Sport, Tuttosport, Sky, DAZN, Rai e simili).',
+      'La voce "giornalista" è il nome di una testata o di un programma sportivo italiano REALE, scelto fra questi: ' +
+      'Sky Sport, Sky Sport 24, DAZN, Rai Sport, 90° minuto, Tutto il calcio minuto per minuto, Sport Mediaset, Mediaset Infinity, ' +
+      'La Gazzetta dello Sport, Corriere dello Sport, Tuttosport, Il Corriere della Sera, La Repubblica, Radio 24, Radio Rai, TMW Radio, Calciomercato.com, Il Processo. ' +
+      'Scrivi SOLO il nome della testata o del programma: MAI il nome di un giornalista vero o inventato. ' +
+      'Se fai due domande usa due testate diverse, e scegli la testata che si addice allo stile della domanda',
       scheda,
       {
         name: 'scrivi_domande',
@@ -253,7 +256,7 @@ async function genera(admin: any, matchId: number) {
               items: {
                 type: 'object',
                 properties: {
-                  giornalista: { type: 'string', description: 'Testata o radio inventata, es. "Radio Curva Sud"' },
+                  giornalista: { type: 'string', description: 'Solo il nome della testata o del programma, es. "Sky Sport"' },
                   domanda: { type: 'string' },
                 },
                 required: ['giornalista', 'domanda'],
