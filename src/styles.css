@@ -4321,6 +4321,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .morale-squadra__nota { color: #8f86a3; font-size: .68rem; line-height: 1.4; text-align: center; text-transform: capitalize; }
 .popup-morale h3 { margin: 6px 0 -4px; color: #fff; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; }
 .popup-morale ul { display: grid; gap: 7px; margin: 0; padding-left: 18px; }
+.popup-morale__titolari { padding: 9px 12px; border-radius: 10px; background: rgba(255,255,255,.05); }
 .popup-morale__fasce { padding-left: 0 !important; list-style: none; }
 .popup-morale__fasce li { display: flex; align-items: center; gap: 8px; }
 .popup-morale__fasce li i { width: 10px; height: 10px; flex: none; }

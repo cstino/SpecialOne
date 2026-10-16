@@ -797,11 +797,13 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           </div>
         </section>
 
-        {/* Prova in LegaBot (stesso interruttore delle conferenze stampa). Il morale degli altri non si vede: solo la propria squadra. Misura i titolari schierati. */}
+        {/* Prova in LegaBot (stesso interruttore delle conferenze stampa). Il morale degli altri non si vede: solo la propria squadra. E' il morale di spogliatoio: tutta la rosa. */}
         {ownTeam && league.conferenze_stampa && (() => {
-          // Chi scende in campo: i titolari della formazione. Senza una formazione salvata, i migliori 11 per overall.
-          const schierati = titolariSchierati?.length ? players.filter((p) => titolariSchierati.includes(p.id)) : [...players].sort((a, b) => b.overall - a.overall).slice(0, 11)
-          return <MoraleSquadra morali={schierati.flatMap((p) => typeof p.morale === 'number' ? [p.morale] : [])} daFormazione={Boolean(titolariSchierati?.length)} />
+          // Spogliatoio = tutta la rosa. I titolari si mostrano a parte solo se la distinta salvata e' completa
+          // (una distinta vecchia puo' contenere giocatori ceduti: con meno di 11 ancora in rosa non e' attendibile).
+          const morale = (p: { morale?: number }) => typeof p.morale === 'number' ? [p.morale] : []
+          const schierati = titolariSchierati?.length ? players.filter((p) => titolariSchierati.includes(p.id)) : []
+          return <MoraleSquadra morali={players.flatMap(morale)} titolari={schierati.length >= 11 ? schierati.flatMap(morale) : null} />
         })()}
 
         <section className="team-profile-grid">

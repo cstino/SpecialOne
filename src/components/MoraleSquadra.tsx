@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { FaccinaMorale, etichettaMorale, type FasciaMorale } from './FaccinaMorale'
 
 // Il morale di squadra nel sommario del club: un indicatore a mezzaluna e, toccandolo,
-// la spiegazione di come incide. Misura i titolari della formazione per la prossima partita, perche' il
-// morale conta in campo solo per chi gioca (CLAUDE.md: la media di tutta la rosa e' una metrica
-// inutile, meta' dei giocatori non gioca mai); senza formazione salvata, i migliori 11 per overall.
-// Solo per la propria squadra: il morale degli altri non si vede.
+// la spiegazione di come incide. E' il morale di SPOGLIATOIO: la media di tutta la rosa
+// (deciso con l'utente il 16 ottobre 2026), con a parte quello dei titolari schierati,
+// che e' quello che conta in campo. Solo per la propria squadra: il morale degli altri non si vede.
 
-type Props = { morali: number[]; daFormazione: boolean }
+// `titolari`: i morali dei titolari della formazione, solo se la distinta e' completa (11 su 11 ancora in rosa).
+type Props = { morali: number[]; titolari: number[] | null }
 
 const FASCE: Array<{ classe: FasciaMorale; testo: string; da: string }> = [
   { classe: 'ottimo', testo: 'Entusiasta', da: '80–100' },
@@ -29,13 +29,14 @@ function arco(da: number, a: number) {
   return `M ${p.x.toFixed(2)} ${p.y.toFixed(2)} A ${R} ${R} 0 0 1 ${q.x.toFixed(2)} ${q.y.toFixed(2)}`
 }
 
-export function MoraleSquadra({ morali, daFormazione }: Props) {
+export function MoraleSquadra({ morali, titolari }: Props) {
   const [aperto, setAperto] = useState(false)
   if (!morali.length) return null
   const media = morali.reduce((a, b) => a + b, 0) / morali.length
   const valore = Math.round(media)
   const { testo, classe } = etichettaMorale(valore)
   const conteggi = FASCE.map((f) => ({ ...f, n: morali.filter((m) => etichettaMorale(m).classe === f.classe).length }))
+  const mediaTitolari = titolari?.length ? Math.round(titolari.reduce((a, b) => a + b, 0) / titolari.length) : null
   const cursore = punto(Math.max(0, Math.min(100, media)))
 
   return <>
@@ -66,17 +67,19 @@ export function MoraleSquadra({ morali, daFormazione }: Props) {
       <span className="morale-squadra__fasce" aria-hidden="true">
         {conteggi.map((f) => <i key={f.classe} className={`morale-squadra__fascia morale-squadra__fascia--${f.classe}`} style={{ flexGrow: f.n }} title={`${f.testo}: ${f.n}`} />)}
       </span>
-      <small className="morale-squadra__nota">{morali.length} {daFormazione ? 'titolari' : 'giocatori'} considerati · {conteggi.filter((f) => f.n).map((f) => `${f.n} ${f.testo.toLowerCase()}`).join(' · ')}</small>
+      <small className="morale-squadra__nota">Spogliatoio di {morali.length} giocatori · {conteggi.filter((f) => f.n).map((f) => `${f.n} ${f.testo.toLowerCase()}`).join(' · ')}</small>
     </button>
 
     {aperto && <div className="popup-spiegazione-sfondo" role="dialog" aria-modal="true" aria-label="Come incide il morale di squadra" onClick={() => setAperto(false)}>
       <div className="popup-spiegazione popup-morale" onClick={(e) => e.stopPropagation()}>
         <h2>Il morale di squadra</h2>
         <div className="popup-spiegazione__corpo">
-          <p>Il valore è la <b>media del morale {daFormazione ? `degli ${morali.length} titolari che hai schierato` : `dei ${morali.length} migliori giocatori`}</b>{daFormazione ? ' nella formazione per la prossima partita: se cambi formazione, cambia anche il numero' : ' della rosa (non hai ancora salvato una formazione)'}. Ogni giocatore ha un morale da 0 a 100, e <b>70 è il punto neutro</b>: sopra gioca un filo meglio, sotto un filo peggio.</p>
+          <p>È il <b>morale dello spogliatoio</b>: la media del morale di tutti i {morali.length} giocatori della rosa. Ogni giocatore ha un morale da 0 a 100, e <b>70 è il punto neutro</b>: sopra è contento, sotto è scontento.</p>
+          {mediaTitolari != null && <p className="popup-morale__titolari">I <b>titolari che hai schierato</b> per la prossima partita: morale medio <b>{mediaTitolari}</b>. È il numero che conta in campo.</p>}
 
           <h3>Come incide in partita</h3>
-          <p>Poco, di proposito: nel calcio vero (e nelle misure su Football Manager) il morale è la leva più piccola. Un giocatore a morale 100 rende come se avesse circa <b>+0,3 di overall</b>, uno a morale 40 circa <b>−0,3</b>; sotto i 20 circa smette di peggiorare. Fra una squadra a morale 45 e una a 95 corrono circa <b>3–4 punti in una stagione da 38 giornate</b>. Non cambia una partita, può spostare un campionato quando le squadre sono vicine.</p>
+          <p>In campo pesa il morale di chi gioca, non quello di tutta la rosa, e pesa poco di proposito: nel calcio vero (e nelle misure su Football Manager) è la leva più piccola. Un giocatore a morale 100 rende come se avesse circa <b>+0,3 di overall</b>, uno a morale 40 circa <b>−0,3</b>; sotto i 20 circa smette di peggiorare. Fra una squadra a morale 45 e una a 95 corrono circa <b>3–4 punti in una stagione da 38 giornate</b>. Non cambia una partita, può spostare un campionato quando le squadre sono vicine.</p>
+          <p>Chi sta fuori conta lo stesso: il morale pesa nelle <b>trattative</b> (quanto chiede in un rinnovo, se accetta un'offerta) e basta una formazione diversa per vederlo in campo. Un campione scontento in panchina è un problema da risolvere con minuti o ingaggio.</p>
           <p>Il <b>capitano</b> tiene su lo spogliatoio: attenua buona parte del malcontento dei compagni. Se però è lui il più scontento, lo peggiora.</p>
 
           <h3>Cosa lo fa muovere</h3>
