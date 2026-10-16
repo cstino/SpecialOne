@@ -566,8 +566,10 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
             </div>
             <strong className="rig__nome">{cognome(tiratore?.nome ?? 'Giocatore')}</strong>
             <p className="tiro-card__cronaca">
-              <span>{testo(scena.prima)}</span>
-              {esito && <span className="tiro-card__esito" key="esito">{' '}{testo(scena.esito)}</span>}
+              {/* Nell'esito solo la frase dell'esito: rileggere anche l'azione non c'era tempo. */}
+              {esito
+                ? <span className="tiro-card__esito" key="esito">{testo(scena.esito.map((parte, k) => k === 0 && typeof parte === 'string' ? parte.replace(/^…/, '').replace(/^./, (c) => c.toUpperCase()) : parte))}</span>
+                : <span>{testo(scena.prima)}</span>}
             </p>
             {esito && scena.gol && <div className="match-reveal__gol-risultato">
               <span className={lato === 'casa' ? 'is-segna' : ''}>{casa?.sigla}</span>
