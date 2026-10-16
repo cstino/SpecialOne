@@ -88,7 +88,8 @@ create trigger conferenze_domande_avviso
   after insert on public.conferenze_domande
   for each row execute function private.avvisa_conferenza();
 
--- L'effetto di una risposta sul morale. p_voto (-3..+3) vale per tutta la
+-- L'effetto di una risposta sul morale. p_voto (-3..+1,5: asimmetrico, una grande
+-- conferenza aiuta poco e una pessima fa danni veri) vale per tutta la
 -- rosa, p_giocatori ([{id, effetto}]) aggiunge l'effetto sui giocatori citati.
 -- Scala: 1 punto di voto = 1,5 punti di morale (su 0-100), smorzato vicino
 -- agli estremi (un morale gia' a 95 sale poco, uno a 10 scende poco), cosi'
@@ -99,7 +100,7 @@ language plpgsql security definer set search_path = ''
 as $$
 declare
   v_team bigint;
-  v_voto numeric := greatest(-3, least(3, coalesce(p_voto, 0)));
+  v_voto numeric := greatest(-3, least(1.5, coalesce(p_voto, 0)));
   v_media numeric;
 begin
   select team_id into v_team from public.conferenze_domande where id = p_domanda_id;
@@ -108,7 +109,7 @@ begin
   with effetti as (
     select pi.id, pi.morale,
            (v_voto + coalesce((
-              select greatest(-3, least(3, (g->>'effetto')::numeric))
+              select greatest(-3, least(1.5, (g->>'effetto')::numeric))
               from jsonb_array_elements(coalesce(p_giocatori, '[]'::jsonb)) g
               where (g->>'id')::bigint = pi.id limit 1), 0)) * 1.5 as grezzo
     from public.player_instances pi

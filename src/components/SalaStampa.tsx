@@ -21,7 +21,7 @@ type Domanda = {
 const MAX = 1200
 
 function giudizio(voto: number) {
-  if (voto >= 2) return { testo: 'Conferenza da leader', tono: 'ottima' }
+  if (voto >= 1) return { testo: 'Conferenza da leader', tono: 'ottima' }
   if (voto >= 0.5) return { testo: 'Parole convincenti', tono: 'buona' }
   if (voto > -0.5) return { testo: 'Risposta di routine', tono: 'neutra' }
   if (voto > -2) return { testo: 'Parole poco convincenti', tono: 'scarsa' }
