@@ -105,6 +105,7 @@ const dev = (a) => { const m = media(a); return Math.sqrt(media(a.map((x) => (x 
 const q = (a, p) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(p * (s.length - 1))]; };
 console.log(`\n  ${N} partite, ${voti.length} voti`);
 console.log(`  voti: media ${media(voti).toFixed(2)}  scarto ${dev(voti).toFixed(2)}  5%-95%: ${q(voti, .05)}-${q(voti, .95)}  min ${Math.min(...voti)} max ${Math.max(...voti)}`);
+console.log(`  insufficienti: <6 ${(100*voti.filter(v=>v<6).length/voti.length).toFixed(1)}%  <5.5 ${(100*voti.filter(v=>v<5.5).length/voti.length).toFixed(1)}%  >=7 ${(100*voti.filter(v=>v>=7).length/voti.length).toFixed(1)}%`);
 console.log(`  migliore in campo: media ${media(mvp).toFixed(2)}  10%-90%: ${q(mvp, .1)}-${q(mvp, .9)}  della squadra vincente ${(mvpVincente / partiteConVincitore * 100).toFixed(0)}%`);
 const tot = Object.values(mvpRep).reduce((a, b) => a + b, 0);
 console.log('  MVP per reparto: ' + ['GK', 'DEF', 'MID', 'ATT'].map((k) => `${k} ${((mvpRep[k] ?? 0) / tot * 100).toFixed(0)}%`).join('  ') + '   (titolari: GK 9%, DEF 36%, MID 27%, ATT 27%)');

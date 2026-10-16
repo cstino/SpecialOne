@@ -46,6 +46,8 @@ export function creaRendimento(seme) {
   // Un flusso a parte per marcatori e assist: se cambia il numero di azioni
   // tentate non devono cambiare i gol.
   const rngGol = generatore((seme ^ 0x9e3779b9) >>> 0);
+  // E uno per gli errori individuali sui gol subiti: non sposta ne' i gol ne' i marcatori.
+  const rngErr = generatore((seme ^ 0x85ebca6b) >>> 0);
   const stati = new Map();
   const golDiSquadra = { casa: new Map(), ospite: new Map() };
 
@@ -57,7 +59,7 @@ export function creaRendimento(seme) {
         esp: { pass: 0, duelli: 0, dri: 0, int: 0 },
         att: { pass: 0, duelli: 0, dri: 0, int: 0 },
         ok: { pass: 0, duelli: 0, dri: 0, int: 0 },
-        gol: 0, assist: 0, golSubiti: 0, giallo: false, rosso: false,
+        gol: 0, assist: 0, golSubiti: 0, errori: 0, giallo: false, rosso: false,
       };
       stati.set(g.id, s);
     }
@@ -78,10 +80,15 @@ export function creaRendimento(seme) {
     v += s.ok.dri * PESI.dribblingRiuscito + (s.att.dri - s.ok.dri) * PESI.dribblingFallito;
     v += (extra.gol ?? s.gol) * (PESI.gol[rep] ?? 1) + (extra.assist ?? s.assist) * PESI.assist;
     v += s.golSubiti * (PESI.golSubito[rep] ?? 0);
-    if (s.rosso) v += PESI.rosso; else if (s.giallo) v += PESI.giallo;
+    v += s.errori * PESI.errore;
     v += extra.extra ?? 0;
     // Chi gioca poco resta vicino al 6: ha avuto meno occasioni per farsi notare.
-    return 6 + (v - 6) * (0.45 + 0.55 * quota);
+    let voto = 6 + (v - 6) * (0.45 + 0.55 * quota);
+    // I cartellini si pagano per intero, anche se arrivano al 17': non si
+    // diluiscono con i minuti. L'espulso non puo' superare il tetto.
+    if (s.rosso) voto = Math.min(voto + PESI.rosso, PESI.tettoRosso);
+    else if (s.giallo) voto += PESI.giallo;
+    return voto;
   }
 
   return {
@@ -137,6 +144,20 @@ export function creaRendimento(seme) {
 
         if (golSubitiBlocco > 0) s.golSubiti += golSubitiBlocco;
       });
+
+      // Su una parte dei gol subiti c'e' un errore individuale (disimpegno
+      // sbagliato, uscita a vuoto, marcatura persa): il colpevole e' scelto fra
+      // chi era in campo, piu' facile in difesa e fra i pali.
+      for (let k = 0; k < golSubitiBlocco; k++) {
+        if (rngErr() >= PESI.quotaGolConErrore) continue;
+        const pesi = presenti.map(({ slot }) => PESI.pesoErrore[REPARTO[slot] ?? 'MID'] ?? 0);
+        const tot = pesi.reduce((a, b) => a + b, 0);
+        if (tot <= 0) continue;
+        let r = rngErr() * tot, i = 0;
+        for (; i < pesi.length - 1; i++) { r -= pesi[i]; if (r <= 0) break; }
+        const colpevole = stati.get(presenti[i].g.id);
+        if (colpevole) colpevole.errori++;
+      }
     },
 
     // Marcatore e assist di un gol su azione, scelti fra chi e' in campo ADESSO.

@@ -40,10 +40,10 @@ export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const MINUTI_MINIMI = 15;
 
 // Il peso di ogni gesto sul voto. Tarati con tools/validazione/prova-pagelle.mjs:
-// media intorno a 6,7, scarto intorno a 0,6, migliore in campo fra 7,5 e 8,5,
+// media intorno a 6,6, scarto intorno a 0,55, migliore in campo fra 7,5 e 8,5,
 // e l'MVP distribuito su tutti i reparti.
 export const PESI = {
-  base: 6.5,
+  base: 6.4,
   vittoria: 0.15, sconfitta: -0.15,
   gol: { ATT: 1.0, MID: 1.1, DEF: 1.2, GK: 1.5 },
   assist: 0.7,
@@ -63,7 +63,10 @@ export const PESI = {
   // i reparti come su SofaScore, con gli attaccanti piu' estremi.
   basePerReparto: { GK: 0, DEF: 0.04, MID: 0, ATT: -0.08 },
   portaInviolata: { GK: 0.4, DEF: 0.35, MID: 0.08, ATT: 0 },
-  giallo: -0.3, rosso: -1.5,
+  giallo: -0.3, rosso: -1.5, tettoRosso: 5.0,
+  // Errore individuale su un gol subito (solo nel rendimento live): quota di
+  // gol che nascono da un errore, penalita' e chi ne risponde per reparto.
+  errore: -0.9, quotaGolConErrore: 0.3, pesoErrore: { GK: 1.2, DEF: 2.5, MID: 1, ATT: 0.1 },
   rumore: 0.15,
   // Quanto lo scarto tattico (punti di overall) sposta la riuscita dei gesti.
   tattica: 0.02,
