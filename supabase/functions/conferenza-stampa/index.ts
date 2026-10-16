@@ -1,5 +1,6 @@
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { withSupabase } from '@supabase/server'
+import { jwtVerify } from 'jose'
 
 // ============================================================
 //  CONFERENZE STAMPA POST PARTITA (docs/decisioni-conferenze-stampa.md, fase 1)
@@ -16,6 +17,19 @@ import { withSupabase } from '@supabase/server'
 // ============================================================
 
 const CHIAVE_SEGRETA = Deno.env.get('CHIAVE_SEGRETA_PROGETTO') ?? ''
+const SEGRETO_JWT = Deno.env.get('JWT_SECRET') ?? ''
+
+// L'utente lo identifica la funzione stessa: dal passaggio al Mac il login firma i
+// token HS256 senza `kid`, e la verifica "user" di @supabase/server li rifiuta
+// (401 prima di arrivare qui). Si controlla la firma col segreto del progetto.
+async function utenteDalToken(req: Request): Promise<string | null> {
+  const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '')
+  if (!token || !SEGRETO_JWT) return null
+  try {
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(SEGRETO_JWT), { algorithms: ['HS256'] })
+    return payload.role === 'authenticated' && typeof payload.sub === 'string' ? payload.sub : null
+  } catch { return null }
+}
 // AI gratuite: Gemini (Google AI Studio) prima, Groq come riserva se Gemini
 // e' irraggiungibile o ha finito la quota del giorno. Le chiavi stanno solo
 // nel .env del Mac, mai nel codice.
@@ -104,6 +118,12 @@ async function chiediAI<T>(system: string, messaggio: string, strumento: Strumen
   }
   throw new Error(errori.length ? errori.join(' | ') : 'Nessuna chiave AI (GEMINI_API_KEY / GROQ_API_KEY) nelle funzioni.')
 }
+
+// I voti in pagella non vanno MAI nel testo delle domande: all'AI arriva solo la
+// valutazione a parole della prestazione.
+const prestazione = (voto: number) =>
+  voto >= 8 ? 'prestazione eccellente' : voto >= 7 ? 'ottima prestazione' : voto >= 6.5 ? 'buona prestazione'
+  : voto >= 6 ? 'prestazione discreta' : voto >= 5.5 ? 'prestazione sottotono' : 'prestazione molto negativa, con errori evidenti'
 
 // Gli ultimi risultati di una squadra prima di una certa giornata (V/P/S, dal piu' recente).
 // deno-lint-ignore no-explicit-any
@@ -201,10 +221,10 @@ async function genera(admin: any, matchId: number) {
       golRacconto.length ? `Gol in ordine:\n${golRacconto.join('\n')}` : 'Nessun gol.',
       rossi.length ? `Espulsioni: ${rossi.join('; ')}` : '',
       infortuni.length ? `Infortuni: ${infortuni.join('; ')}` : '',
-      mvp ? `Migliore in campo: ${nome.get(mvp.player_instance_id)} (${(teamById.get(mvp.team_id) as { nome: string })?.nome}, voto ${mvp.voto}).` : '',
+      mvp ? `Migliore in campo: ${nome.get(mvp.player_instance_id)} (${(teamById.get(mvp.team_id) as { nome: string })?.nome}).` : '',
       mie.filter((p: { voto: number }) => p.voto <= 5.5).length
-        ? `Giocatori di ${t.nome} in grave difficoltà oggi: ${mie.filter((p: { voto: number }) => p.voto <= 5.5).map((p: { player_instance_id: number; voto: number }) => `${nome.get(p.player_instance_id)} (voto ${p.voto})`).join(', ')}.` : '',
-      mie.length ? `Pagelle di ${t.nome}: migliore ${nome.get(mie[0].player_instance_id)} ${mie[0].voto}, peggiore ${nome.get(mie[mie.length - 1].player_instance_id)} ${mie[mie.length - 1].voto}.` : '',
+        ? `Giocatori di ${t.nome} in grave difficoltà oggi: ${mie.filter((p: { voto: number }) => p.voto <= 5.5).map((p: { player_instance_id: number; voto: number }) => `${nome.get(p.player_instance_id)} (${prestazione(p.voto)})`).join(', ')}.` : '',
+      mie.length ? `Fra i giocatori di ${t.nome}: il migliore è stato ${nome.get(mie[0].player_instance_id)} (${prestazione(mie[0].voto)}), il meno brillante ${nome.get(mie[mie.length - 1].player_instance_id)} (${prestazione(mie[mie.length - 1].voto)}).` : '',
       pos ? `Classifica dopo questa partita: ${t.nome} ${pos.posizione}° su ${nSquadre} con ${pos.punti} punti in ${pos.giocate} partite${posAvv ? `; ${avversario} ${posAvv.posizione}° con ${posAvv.punti}` : ''}.` : '',
       ultime.length ? `Risultati precedenti di ${t.nome} (dal più recente): ${ultime.join(' ')}${senzaVittorie === -1 ? ` — nessuna vittoria nelle ultime ${ultime.length}` : senzaVittorie >= 2 ? ` — senza vittorie da ${senzaVittorie} partite` : ''}.` : '',
     ].filter(Boolean).join('\n')
@@ -213,6 +233,7 @@ async function genera(admin: any, matchId: number) {
       'Sei la sala stampa di un gioco manageriale di calcio in italiano, giocato fra amici. ' +
       'Dopo la partita scrivi le domande che i giornalisti fanno all\'allenatore in conferenza stampa. ' +
       'Regole: usa SOLO i fatti forniti, non inventarne altri; dai del lei e inizia con "Mister"; ' +
+      'NON citare mai voti, pagelle o numeri di valutazione dei giocatori: parla della prestazione a parole ("qualche errore di troppo", "una partita sottotono", "è parso incerto", "ha deciso la partita"); ' +
       'tono da conferenza vera, diretto, a volte pungente quando il risultato o la serie lo giustificano, mai offensivo; ' +
       'ogni domanda al massimo 280 caratteri, una sola domanda per voce (niente elenchi); ' +
       'scegli gli spunti più forti (gol nel finale, rimonte, espulsioni, serie negative o positive, classifica, migliori e peggiori in campo). ' +
@@ -416,7 +437,7 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
 
 export default {
   fetch: withSupabase({
-    auth: ['user', 'secret'],
+    auth: ['secret', 'none'],
     env: { secretKeys: CHIAVE_SEGRETA ? { default: CHIAVE_SEGRETA } : {} },
   }, async (req, ctx) => {
     if (req.method === 'OPTIONS') return new Response(null, { headers: CORS })
@@ -428,7 +449,7 @@ export default {
         return await genera(ctx.supabaseAdmin, Number(body.match_id))
       }
       if (body.azione === 'rispondi') {
-        const userId = ctx.userClaims?.id
+        const userId = await utenteDalToken(req)
         if (!userId) return json(401, { errore: 'Accedi per rispondere.' })
         return await rispondi(ctx.supabaseAdmin, userId, Number(body.domanda_id), String(body.risposta ?? ''))
       }

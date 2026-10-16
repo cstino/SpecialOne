@@ -3,6 +3,7 @@
   "specifiers": {
     "jsr:@supabase/functions-js@2.111.0": "2.111.0",
     "npm:@supabase/server@1.4.1": "1.4.1_@supabase+supabase-js@2.117.2",
+    "npm:jose@5": "5.10.0",
     "npm:openai@^4.52.5": "4.104.0"
   },
   "jsr": {
@@ -46,7 +47,7 @@
       "integrity": "sha512-Fyzpi+Srfn+flN3PwueObhSmwhXFaTkrnk3iD+ttNBEz6gD0VmaOqTe7tCxTSodm1zncWSxsyPQxATL7V+SfIw==",
       "dependencies": [
         "@supabase/supabase-js",
-        "jose"
+        "jose@6.2.12"
       ]
     },
     "@supabase/storage-js@2.117.2": {
@@ -214,6 +215,9 @@
     "iceberg-js@0.8.1": {
       "integrity": "sha512-1dhVQZXhcHje7798IVM+xoo/1ZdVfzOMIc8/rgVSijRK38EDqOJoGula9N/8ZI5RD8QTxNQtK/Gozpr+qUqRRA=="
     },
+    "jose@5.10.0": {
+      "integrity": "sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg=="
+    },
     "jose@6.2.12": {
       "integrity": "sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw=="
     },
@@ -281,7 +285,8 @@
   "workspace": {
     "dependencies": [
       "jsr:@supabase/functions-js@2.111.0",
-      "npm:@supabase/server@1.4.1"
+      "npm:@supabase/server@1.4.1",
+      "npm:jose@5"
     ]
   }
 }
