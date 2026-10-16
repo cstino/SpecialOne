@@ -99,6 +99,31 @@ e criticare un giocatore non converrebbe mai. Quindi:
 - Aperti: di quanto sale/scende per una singola risposta, se uno scontro diretto acceso
   (espulsioni, gol nel finale) la alza da solo, quanto si raffredda col tempo.
 
+## 2b. Rapporto con il pubblico (idea del 16 ottobre 2026, **non ancora implementata**)
+- Ogni squadra ha un **umore del pubblico da 0 a 100**. Le risposte in conferenza lo muovono
+  (rispetto ai tifosi, promesse, scaricare le colpe, schernire gli avversari); i risultati lo
+  muovono **poco e lentamente**.
+- **Deciso**: un pubblico contento al massimo dà il **bonus casa pieno, +2,0 punti di overall**
+  (il valore di oggi, quello con cui il motore è validato). Sotto il massimo il bonus cala,
+  fino a **0** con il pubblico in rottura. Mai uno svantaggio.
+- **Deciso**: l'umore del pubblico lo **vedono tutti** (a differenza del morale di spogliatoio):
+  è informazione che fa parte del gioco, per chi va a giocare in trasferta.
+- **Deciso**: **schernire un avversario fa salire il pubblico e anche la rivalità** con quel
+  club: i due tirano insieme. Elogiarlo fa scendere la rivalità e raffredda un po' i tifosi.
+- Un pubblico scontento **protesta sui social**: nella prima versione notifica e una riga sulla
+  card, il vero feed arriva con la fase 3.
+- Misurato (12.000 partite, squadre identiche): bonus casa +2,0 → 43,5% vittorie in casa,
+  +1,0 → 37,9%, 0 → 34,1%. Fra pubblico al massimo e in rottura: **9 punti percentuali**,
+  circa **+0,25 punti per partita in casa, quasi 5 a stagione (38 giornate)**. È la leva
+  psicologica più forte (il morale al massimo contro il minimo ne vale 3-4).
+- Proposte da confermare: tutti **partono al massimo** (al lancio non cambia niente); il
+  bonus è **pieno già da circa 80/100** (non lineare), sotto cala fino a 0; i risultati
+  pesano poco, per evitare la **spirale** (perdi → pubblico scontento → meno bonus → perdi).
+- Tecnica: opzione "moltiplicatore del bonus casa" in `engine/engine.js` (`opt.campoNeutro`
+  oggi vale 0 o 2,0, riga ~566), **default 1**, così senza l'opzione il motore resta identico;
+  poi si rilancia la suite di validazione e si confrontano i numeri con
+  `docs/risultati-fase0.txt` (procedura del CLAUDE.md §4).
+
 ## 3. Notizie in stile social
 - **Deciso**: in home una card con le notizie **della squadra dell'utente** per prime;
   toccandola si entra in un feed stile Twitter.
