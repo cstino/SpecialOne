@@ -256,6 +256,23 @@ async function genera(admin: any, matchId: number) {
   return json(200, { domande: create })
 }
 
+// Quante delle risposte precedenti la nuova ripete, a parole: confronta gli insiemi di
+// parole (da 4 lettere in su) e conta le risposte con almeno il 35% di parole in comune.
+// Calcolo fisso e spiegabile ("se riscrivi le stesse parole, il tono non e' piu' nuovo"):
+// l'AI da sola misurava la ripetizione in modo instabile (0 o 3 sulla stessa cosa).
+function parole(testo: string) {
+  return new Set(testo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/[^a-z0-9]+/).filter((w) => w.length >= 4))
+}
+function ripetizioni(nuova: string, precedenti: string[]) {
+  const a = parole(nuova)
+  if (!a.size) return 0
+  return precedenti.filter((x) => {
+    const b = parole(x)
+    const comuni = [...a].filter((w) => b.has(w)).length
+    return comuni / (a.size + b.size - comuni || 1) >= 0.35
+  }).length
+}
+
 // ------------------------------------------------------------
 //  RISPONDI
 // ------------------------------------------------------------
@@ -294,15 +311,29 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
     // conferenze e come sono andate le ultime partite. Senza, "e' colpa mia"
     // sarebbe sempre la risposta migliore.
     const { data: storico } = await admin.from('conferenze_domande')
-      .select('domanda, risposta, voto').eq('team_id', d.team_id).not('risposta', 'is', null).not('voto', 'is', null)
+      .select('match_id, domanda, risposta, voto').eq('team_id', d.team_id).not('risposta', 'is', null).not('voto', 'is', null)
       .neq('id', domandaId).order('id', { ascending: false }).limit(5)
-    const { data: fx } = await admin.from('matches').select('fixtures(season_id, giornata)').eq('id', d.match_id).single()
+    // Come era finita la partita di ciascuna conferenza passata: l'AI confronta
+    // la risposta solo con quelle dopo lo stesso tipo di risultato.
+    const idPartite = (storico ?? []).map((x: { match_id: number }) => x.match_id)
+    const { data: partitePassate } = idPartite.length
+      ? await admin.from('matches').select('id, gol_home, gol_away, fixtures(home_team_id)').in('id', idPartite)
+      : { data: [] }
+    const esitoPartita = new Map((partitePassate ?? []).map((m: { id: number; gol_home: number; gol_away: number; fixtures: { home_team_id: number } | Array<{ home_team_id: number }> | null }) => {
+      const fx0 = Array.isArray(m.fixtures) ? m.fixtures[0] : m.fixtures
+      const [miei, loro] = fx0?.home_team_id === d.team_id ? [m.gol_home, m.gol_away] : [m.gol_away, m.gol_home]
+      return [m.id, miei > loro ? 'vittoria' : miei < loro ? 'sconfitta' : 'pareggio']
+    }))
+    const { data: fx } = await admin.from('matches').select('gol_home, gol_away, fixtures(season_id, giornata, home_team_id)').eq('id', d.match_id).single()
     const fixt = Array.isArray(fx?.fixtures) ? fx.fixtures[0] : fx?.fixtures
+    const [mieiOra, loroOra] = fixt?.home_team_id === d.team_id ? [fx?.gol_home, fx?.gol_away] : [fx?.gol_away, fx?.gol_home]
+    const esitoOra = mieiOra == null ? '' : mieiOra > loroOra ? 'vittoria' : mieiOra < loroOra ? 'sconfitta' : 'pareggio'
     const ultime = fixt ? await formaRecente(admin, fixt.season_id, fixt.giornata + 1, d.team_id) : []
     const memoria = [
+      esitoOra ? `Questa conferenza viene dopo una ${esitoOra} (${mieiOra}-${loroOra}).` : '',
       ultime.length ? `Ultimi risultati della squadra (dal più recente): ${ultime.join(' ')}.` : '',
       (storico ?? []).length
-        ? `Le sue ultime conferenze (dalla più recente):\n${(storico ?? []).map((x: { domanda: string; risposta: string; voto: number }, n: number) => `${n + 1}. Domanda: ${x.domanda.slice(0, 160)}\n   Risposta: ${x.risposta.slice(0, 280)}\n   Esito: ${x.voto}`).join('\n')}`
+        ? `Le sue ultime conferenze (dalla più recente):\n${(storico ?? []).map((x: { match_id: number; domanda: string; risposta: string; voto: number }, n: number) => `${n + 1}. [dopo una ${esitoPartita.get(x.match_id) ?? 'partita'}] Domanda: ${x.domanda.slice(0, 160)}\n   Risposta: ${x.risposta.slice(0, 280)}\n   Esito: ${x.voto}`).join('\n')}`
         : 'È la sua prima conferenza.',
     ].filter(Boolean).join('\n')
     const idRosa = new Set((rosa ?? []).map((g: { id: number }) => g.id))
@@ -323,12 +354,12 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
       'l\'umiltà dopo una vittoria piace); leadership: difendere pubblicamente il gruppo e prendersi le responsabilità fa bene, ' +
       'scaricare le colpe sui giocatori fa male alla rosa. Una risposta generica da ufficio stampa vale intorno a 0 / +0,5; ' +
       'il +1,5 e il -3 sono rari. ' +
-      'MEMORIA: nel messaggio trovi gli ultimi risultati e le ultime conferenze dell\'allenatore. Giudica la risposta nel contesto: ' +
-      'la stessa formula ripetuta (sempre "è colpa mia", sempre "i ragazzi hanno dato tutto", sempre elogi) perde valore e dopo 2-3 volte ' +
-      'diventa una frase fatta: se intanto i risultati restano negativi, i giocatori non ci credono più e il voto scende (anche sotto zero). ' +
-      'Prendersi la colpa convince la prima volta, non la quarta di fila; cambiare tono o argomento quando serve vale di più. ' +
-      'Nel campo ripetitiva indica da 0 a 3 quanto la risposta ripete la stessa formula o lo stesso schema delle ultime conferenze ' +
-      '(0 = prima volta o tono diverso, 1 = simile a una, 2 = simile a due o tre, 3 = praticamente identica a quasi tutte); a calcolare la penalità ci pensa il sistema. ' +
+      'MEMORIA: nel messaggio trovi il risultato di questa partita, gli ultimi risultati e le ultime conferenze dell\'allenatore. ' +
+      'Il voto valuta la risposta COME SE FOSSE LA PRIMA VOLTA, tenendo conto del risultato di questa partita ma NON delle ripetizioni: ' +
+      'la ripetizione la misuri a parte nel campo ripetitiva e la penalità la applica il sistema (non abbassare il voto anche tu, sarebbe contata due volte). ' +
+      'Nel campo ripetitiva indica da 0 a 3 quanto la risposta ripete la stessa formula o lo stesso schema delle conferenze precedenti DOPO LO STESSO TIPO DI RISULTATO ' +
+      '(le conferenze dopo risultati diversi non contano: dire "è colpa mia" dopo una rara sconfitta di una squadra che di solito vince non è una frase fatta) ' +
+      '(0 = nessuna conferenza simile dopo lo stesso risultato, 1 = simile a una, 2 = simile a due, 3 = identica a tre o più); a calcolare la penalità ci pensa il sistema. ' +
       'Giocatori: se la risposta elogia o critica giocatori della rosa (elenco con id), indicali con effetto da -3 a +1,5 (la stessa asimmetria). ' +
       'Squadre: se attacca, scherna o disprezza un\'altra squadra o il suo allenatore, oppure la elogia, indicala (elenco con id) con la direzione. ' +
       'Reazione: una frase breve in italiano (massimo 140 caratteri, senza numeri) su come sala stampa e spogliatoio hanno preso le parole.',
@@ -353,12 +384,15 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
 
     // Il server decide: insensata = minimo, voto limitato e arrotondato al mezzo punto,
     // solo giocatori della rosa e squadre della lega.
-    // Frasi fatte: ogni livello di ripetizione toglie 0,5; 1 se i risultati recenti
-    // sono deludenti (almeno 2 non vittorie nelle ultime 4). Cosi' "e' colpa mia"
+    // Frasi fatte: ogni livello di ripetizione toglie 0,5; 0,75 se i risultati recenti
+    // sono deludenti (almeno 3 non vittorie nelle ultime 4). Cosi' "e' colpa mia"
     // ripetuto dopo una serie negativa non e' piu' la risposta sicura.
-    const serieNegativa = ultime.slice(0, 4).filter((r) => r !== 'V').length >= 2
-    const ripetitiva = Math.max(0, Math.min(3, Math.round(Number(v.ripetitiva || 0))))
-    const penalita = ripetitiva * (serieNegativa ? 1 : 0.5)
+    const serieNegativa = ultime.slice(0, 4).filter((r) => r !== 'V').length >= 3
+    const stessoRisultato = (storico ?? []).filter((x: { match_id: number }) => esitoPartita.get(x.match_id) === esitoOra).map((x: { risposta: string }) => x.risposta)
+    const livelloParole = Math.min(3, ripetizioni(testo, stessoRisultato))
+    // L'AI puo' solo aggiungere un livello (riconosce le parafrasi, che a parole sfuggono).
+    const ripetitiva = Math.max(0, Math.min(3, livelloParole + (Number(v.ripetitiva || 0) >= 2 ? 1 : 0)))
+    const penalita = ripetitiva * (serieNegativa ? 0.75 : 0.5)
     const voto = v.insensata ? -3 : Math.max(-3, Math.min(1.5, Math.round((Number(v.voto || 0) - penalita) * 2) / 2))
     const giocatori = v.insensata ? [] : (v.giocatori ?? []).filter((g) => idRosa.has(Number(g.id)))
       .map((g) => ({ id: Number(g.id), effetto: Math.max(-3, Math.min(1.5, Math.round(Number(g.effetto || 0) * 2) / 2)) }))
@@ -369,7 +403,7 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
     if (errEffetto) throw errEffetto
     await admin.from('conferenze_domande').update({
       voto, reazione, effetto_morale: effetto,
-      valutazione: { insensata: Boolean(v.insensata), voto_ai: v.voto, ripetitiva, penalita, giocatori, squadre: squadreCitate },
+      valutazione: { insensata: Boolean(v.insensata), voto_ai: v.voto, ripetitiva, ripetitiva_parole: livelloParole, ripetitiva_ai: v.ripetitiva ?? null, penalita, giocatori, squadre: squadreCitate },
     }).eq('id', domandaId)
     return json(200, { voto, reazione, effetto_morale: effetto, giocatori })
   } catch (errore) {

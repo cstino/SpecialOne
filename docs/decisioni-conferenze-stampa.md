@@ -44,11 +44,17 @@ Senza correttivi "è colpa mia, i ragazzi hanno dato tutto" sarebbe sempre la ri
 e criticare un giocatore non converrebbe mai. Quindi:
 - **Voto asimmetrico, da −3 a +1,5**: una grande conferenza aiuta poco, una pessima fa danni
   veri (vale anche per l'effetto sui giocatori citati).
-- **Memoria dello spogliatoio**: l'AI riceve le ultime 5 conferenze (domanda, risposta, esito)
-  e gli ultimi 5 risultati. Indica quanto la risposta ripete la formula precedente
-  (`ripetitiva`, 0-3); la penalità la calcola il **server**: 0,5 per livello, 1 per livello se
-  almeno 2 delle ultime 4 partite non sono vittorie. Provato: stessa risposta "colpa mia" =
-  +0,5 alla prima conferenza, −1,5 dopo quattro uguali con serie negativa.
+- **Memoria dello spogliatoio**: l'AI riceve il risultato della partita, gli ultimi 5 risultati
+  e le ultime 5 conferenze (domanda, risposta, esito, **e com'era finita quella partita**).
+  La ripetizione la misura il **server**, non l'AI (che la stimava in modo instabile: 0 o 3
+  sulla stessa cosa): conta quante risposte date dopo **lo stesso tipo di risultato** (vittoria,
+  pareggio, sconfitta) hanno almeno il 35% di parole in comune con la nuova (parole da 4
+  lettere in su). L'AI può solo aggiungere un livello, per le parafrasi. Livello 0-3;
+  penalità 0,5 per livello, 0,75 se almeno 3 delle ultime 4 partite non sono vittorie.
+  Il voto dell'AI valuta la risposta "come se fosse la prima volta" (niente doppio conteggio).
+  Conseguenza voluta: una squadra che vince quasi sempre e dice "è colpa mia" nelle rare
+  sconfitte non viene punita (due ripetizioni = −1 su un +1: neutro), mentre chi dice sempre
+  lo stesso dopo ogni sconfitta di una serie negativa arriva a −1,25.
 - **Domande trappola**: se un giocatore ha preso ≤ 5,5 o è stato espulso, una domanda può
   incalzare proprio su di lui.
 - **Da fare (fase successiva)**: la critica pubblica che funziona secondo il carattere del
