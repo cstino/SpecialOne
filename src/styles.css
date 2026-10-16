@@ -4295,6 +4295,25 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 @keyframes gol-testa { from { opacity: 0; transform: skewY(-4deg) scaleX(0); } to { opacity: 1; transform: skewY(-4deg) scaleX(1); } }
 @keyframes gol-entra { from { opacity: 0; transform: translateY(12px) scale(.92); } to { opacity: 1; transform: none; } }
 
+/* Capitano a requisiti (prova in LegaBot). */
+.team-roster-player__fascia { min-width: 20px; padding: 2px 5px; border-radius: 5px; color: #1b1405; background: #f0c44d; font-style: normal; font-size: .58rem; font-weight: 900; text-align: center; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+.player-modal__capitano { display: grid; gap: 10px; padding: 14px; border: 1px solid #4a3f1c; border-radius: 14px; background: linear-gradient(180deg, rgba(240,196,77,.08), transparent); }
+.player-modal__capitano-testa { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.player-modal__capitano-testa span { color: #8f86a3; font-size: .6rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.player-modal__capitano-testa strong { color: #f0c44d; font-size: .82rem; }
+.player-modal__capitano-requisiti { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.player-modal__capitano-requisiti li { display: flex; align-items: center; gap: 9px; color: #7d748f; font-size: .84rem; }
+.player-modal__capitano-requisiti li i { display: grid; place-items: center; width: 20px; height: 20px; flex: none; border-radius: 50%; background: #241f30; color: #6a617c; font-style: normal; font-size: .72rem; font-weight: 900; }
+.player-modal__capitano-requisiti li.is-ok { color: #fff; }
+.player-modal__capitano-requisiti li.is-ok i { background: #f0c44d; color: #1b1405; }
+.player-modal__capitano-nota { margin: 0; color: #8f86a3; font-size: .76rem; line-height: 1.45; }
+.player-modal__capitano-conferma { display: grid; gap: 8px; }
+.player-modal__capitano-conferma p { margin: 0; color: #e8dfa8; font-size: .84rem; line-height: 1.45; }
+.morale-squadra__capitano { display: flex; align-items: center; justify-content: center; gap: 8px; color: #cabfd6; font-size: .78rem; }
+.morale-squadra__capitano i { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; background: #f0c44d; color: #1b1405; font-style: normal; font-size: .62rem; font-weight: 900; }
+.morale-squadra__capitano b { color: #fff; }
+.morale-squadra__capitano em { color: #8f86a3; font-style: normal; font-size: .7rem; }
+
 /* Morale di squadra nel sommario del club. */
 .morale-squadra { --mq: #c9a6ff; display: grid; gap: 10px; width: 100%; padding: 14px 16px 12px; border: 1px solid color-mix(in srgb, var(--mq) 30%, #2b2739); border-radius: 16px; color: #fff; background: radial-gradient(ellipse 80% 90% at 50% 0%, color-mix(in srgb, var(--mq) 16%, transparent), transparent 72%), linear-gradient(180deg, #181621, #110f18); text-align: left; font: inherit; cursor: pointer; transition: border-color .2s, transform .15s; }
 .morale-squadra:hover { border-color: color-mix(in srgb, var(--mq) 55%, #2b2739); }

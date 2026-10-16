@@ -124,6 +124,27 @@ e criticare un giocatore non converrebbe mai. Quindi:
   poi si rilancia la suite di validazione e si confrontano i numeri con
   `docs/risultati-fase0.txt` (procedura del CLAUDE.md §4).
 
+## 2c. Capitano a requisiti (deciso il 17 ottobre 2026, in prova su LegaBot)
+- Un capitano completo ha quattro requisiti, un punto ciascuno (idoneità da 0 a 4):
+  1. **bandiera come ramo principale** (basta il sì/no, non conta quanto è alta);
+  2. **esperienza**: più di 25 anni;
+  3. **anzianità**: fra i 5 giocatori della rosa da più tempo nel club;
+  4. **centrale nel progetto**: titolare per il minutaggio (gradino "titolare").
+- L'idoneità decide quanto il capitano **attenua il malcontento** dei compagni nel ricalcolo
+  del morale (4/4 = effetto pieno, fino al 30%; 0/4 = nessuno). Se è lui lo scontento
+  (morale < 50) la sua qualità scende e può peggiorare lo spogliatoio. Il capitano è anche
+  chi risponde ai tifosi (§2b). Nelle altre leghe resta la formula di prima.
+- Chi non nomina nessuno ha il **capitano automatico**: il più idoneo.
+- **Cambiare capitano costa**: l'ex capitano prende un colpo al morale, **−12 più 0,12 per ogni
+  punto di bandiera** (da −12 a −24), con una notifica. Passare da "nessun capitano designato"
+  non costa. Vale anche tornando al capitano automatico.
+- **Anzianità**: quasi tutti arrivano dal draft e `arrivo_stagione` è vuoto, quindi a parità
+  vince il più anziano d'età. Diventa un criterio vero stagione dopo stagione.
+- Non toccato: il motore di partita continua a usare per il capitano la formula vecchia
+  (morale + freddezza), il cui effetto è piccolo (+0,68 punti su 38 giornate misurati).
+- Dove: scheda del giocatore (requisiti e "Nomina capitano"), badge "C" nella rosa, riga nella
+  card del morale di squadra. Migrazione `20261017100000_capitano_a_requisiti.sql`.
+
 ## 3. SocialOne — le notizie in stile social
 - **Deciso**: la sezione social si chiama **SocialOne**, per restare in tema col gioco.
 - In home una card con le notizie **della squadra dell'utente** per prime; toccandola si entra

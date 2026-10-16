@@ -175,6 +175,16 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [svincolati, setSvincolati] = useState<Svincolato[]>([])
   // I titolari che schiero per la prossima partita (stessa regola della pagina Formazione: l'ultima
   // distinta salvata fino a quella giornata). Servono al morale di squadra: pesa chi scende in campo.
+  // Capitano a requisiti (prova in LegaBot): i quattro requisiti di ogni giocatore e chi porta la fascia.
+  type RequisitiCapitano = { bandiera: boolean; esperienza: boolean; anzianita: boolean; titolare: boolean; punti: number; designato: boolean; effettivo: boolean }
+  const [requisitiCapitano, setRequisitiCapitano] = useState<Map<number, RequisitiCapitano>>(new Map())
+  const [nominaInCorso, setNominaInCorso] = useState(false)
+  const [nominaErrore, setNominaErrore] = useState<string | null>(null)
+  const caricaCapitano = useCallback(async () => {
+    const { data } = await supabase.rpc('candidati_capitano', { p_league_id: league.id })
+    setRequisitiCapitano(new Map(((data ?? []) as Array<{ player_instance_id: number; bandiera: boolean; esperienza: boolean; anzianita: boolean; titolare: boolean; punti: number; designato: boolean; capitano_effettivo: boolean }>)
+      .map((r) => [r.player_instance_id, { bandiera: r.bandiera, esperienza: r.esperienza, anzianita: r.anzianita, titolare: r.titolare, punti: r.punti, designato: r.designato, effettivo: r.capitano_effettivo }])))
+  }, [league.id])
   const [titolariSchierati, setTitolariSchierati] = useState<number[] | null>(null)
   const [richiamo, setRichiamo] = useState<{ giocatore: Svincolato; errore: string | null; inCorso: boolean } | null>(null)
   const [statRows, setStatRows] = useState<MatchPlayerStat[]>([])
@@ -215,6 +225,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const team = teamOverride?.id === teamId ? teamOverride : seasonData.teamById.get(teamId)
   const ownTeam = teamId === membership.id
   const giornataProssima = seasonData.nextFixture?.giornata
+  useEffect(() => { if (ownTeam && league.conferenze_stampa) void caricaCapitano() }, [ownTeam, league.conferenze_stampa, caricaCapitano])
   useEffect(() => {
     if (!ownTeam || !league.conferenze_stampa || seasonData.loading) return
     let vivo = true
@@ -698,6 +709,20 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     setSchedaAperta(player)
   }
 
+  async function nominaCapitano() {
+    if (!schedaAperta || !ownTeam) return
+    setNominaInCorso(true)
+    setNominaErrore(null)
+    const { data, error } = await supabase.rpc('scegli_capitano', { p_league_id: league.id, p_player_instance_id: schedaAperta.id })
+    setNominaInCorso(false)
+    if (error) { setNominaErrore(error.message); return }
+    const colpo = (data as { colpo_morale?: number } | null)?.colpo_morale ?? 0
+    const nome = schedaAperta.nome
+    setSchedaAperta(null)
+    setRosterNotice(colpo > 0 ? `${nome} è il nuovo capitano. Chi portava la fascia ha perso ${colpo} di morale.` : `${nome} è il nuovo capitano.`)
+    await caricaCapitano()
+  }
+
   async function releasePlayer() {
     if (!schedaAperta || !ownTeam) return
     setReleasePending(true)
@@ -803,7 +828,10 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           // (una distinta vecchia puo' contenere giocatori ceduti: con meno di 11 ancora in rosa non e' attendibile).
           const morale = (p: { morale?: number }) => typeof p.morale === 'number' ? [p.morale] : []
           const schierati = titolariSchierati?.length ? players.filter((p) => titolariSchierati.includes(p.id)) : []
-          return <MoraleSquadra morali={players.flatMap(morale)} titolari={schierati.length >= 11 ? schierati.flatMap(morale) : null} />
+          const capEntry = [...requisitiCapitano.entries()].find(([, v]) => v.effettivo)
+          const capGiocatore = capEntry ? players.find((p) => p.id === capEntry[0]) : undefined
+          return <MoraleSquadra morali={players.flatMap(morale)} titolari={schierati.length >= 11 ? schierati.flatMap(morale) : null}
+            capitano={capEntry && capGiocatore ? { nome: capGiocatore.nome, punti: capEntry[1].punti, designato: capEntry[1].designato } : null} />
         })()}
 
         <section className="team-profile-grid">
@@ -855,6 +883,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       {player.fotoFirmata ? <img src={player.fotoFirmata} alt="" loading="lazy" /> : <b aria-hidden="true">{player.nome.charAt(0)}</b>}
                     </span>
                     <i className="team-roster-player__ruolo">{player.posizioni[0] ? ruoloIt(player.posizioni[0]) : '—'}</i>
+                    {ownTeam && requisitiCapitano.get(player.id)?.effettivo && <i className="team-roster-player__fascia" title="Capitano" aria-label="Capitano">C</i>}
                     {ownTeam && typeof player.morale === 'number' && <FaccinaMorale morale={player.morale} className="faccina-morale--avatar" />}
                     {/* Al volo, chi sta lavorando e chi no. "Bilanciato" non conta:
                         e' la crescita naturale, senza piano. */}
@@ -1063,6 +1092,12 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           tiri: 0, tiriPorta: 0, passaggiTentati: 0, passaggiRiusciti: 0, contrastiVinti: 0, dribbling: 0,
           mediaVoto: null, migliore: 0, ultimiVoti: [],
         }}
+        capitano={ownTeam && league.conferenze_stampa && requisitiCapitano.get(schedaAperta.id) ? (() => {
+          const r = requisitiCapitano.get(schedaAperta.id)!
+          const exId = [...requisitiCapitano.entries()].find(([, v]) => v.designato)?.[0]
+          const ex = exId != null && exId !== schedaAperta.id ? players.find((p) => p.id === exId)?.nome ?? null : null
+          return { requisiti: r, effettivo: r.effettivo, designato: r.designato, exCapitano: ex, inCorso: nominaInCorso, errore: nominaErrore, onNomina: () => void nominaCapitano() }
+        })() : undefined}
         azionePericolosa={ownTeam && league.stato === 'stagione' ? {
           etichetta: 'Svincola giocatore',
           descrizione: schedaAperta.ritiroAnnunciato

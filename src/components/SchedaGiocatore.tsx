@@ -110,6 +110,17 @@ type Props = {
   giocatore: DatiScheda
   fotoUrl?: string
   stagione?: StatsStagione
+  /** Fascia di capitano (prova in LegaBot): i quattro requisiti, e la nomina con il suo costo. */
+  capitano?: {
+    requisiti: { bandiera: boolean; esperienza: boolean; anzianita: boolean; titolare: boolean; punti: number }
+    effettivo: boolean
+    designato: boolean
+    /** Chi perderebbe la fascia nominando questo giocatore, se c'e' un capitano designato. */
+    exCapitano: string | null
+    inCorso?: boolean
+    errore?: string | null
+    onNomina: () => void
+  }
   azionePericolosa?: {
     etichetta: string
     descrizione: string
@@ -499,8 +510,9 @@ export function SchedaGiocatore(props: Props) {
   return createPortal(<SchedaGiocatoreInterna {...props} />, document.body)
 }
 
-function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, userId, giocatore, fotoUrl, stagione, azionePericolosa, rinnovo, listaMercato, proponiScambio, cambioRuolo, specializzazione, onClose }: Props) {
+function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, userId, giocatore, fotoUrl, stagione, capitano, azionePericolosa, rinnovo, listaMercato, proponiScambio, cambioRuolo, specializzazione, onClose }: Props) {
   const [confermaAperta, setConfermaAperta] = useState(false)
+  const [confermaCapitano, setConfermaCapitano] = useState(false)
   const [vistaRinnovo, setVistaRinnovo] = useState(false)
   const [proposta, setProposta] = useState<PropostaRinnovo | null>(null)
   const [rinnovoErrore, setRinnovoErrore] = useState<string | null>(null)
@@ -942,6 +954,33 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
                 </div>
               </>
             })()}
+          </section>}
+
+          {capitano && <section className="player-modal__capitano">
+            <div className="player-modal__capitano-testa">
+              <span>Fascia di capitano</span>
+              <strong>{capitano.effettivo ? (capitano.designato ? 'È il tuo capitano' : 'Capitano automatico') : `${capitano.requisiti.punti} requisiti su 4`}</strong>
+            </div>
+            <ul className="player-modal__capitano-requisiti">
+              {([
+                ['bandiera', 'Bandiera come ramo principale'],
+                ['esperienza', 'Esperienza: più di 25 anni'],
+                ['anzianita', 'Fra i 5 da più tempo nel club'],
+                ['titolare', 'Centrale nel progetto (titolare)'],
+              ] as const).map(([chiave, testo]) => <li className={capitano.requisiti[chiave] ? 'is-ok' : ''} key={chiave}>
+                <i aria-hidden="true">{capitano.requisiti[chiave] ? '✓' : '–'}</i>{testo}
+              </li>)}
+            </ul>
+            <p className="player-modal__capitano-nota">Un capitano completo tiene su lo spogliatoio: attenua il malcontento dei compagni. Se è lui lo scontento, lo peggiora.</p>
+            {!capitano.designato && !confermaCapitano && <button className="button button--secondary" type="button" onClick={() => setConfermaCapitano(true)}>Nomina capitano</button>}
+            {!capitano.designato && confermaCapitano && <div className="player-modal__capitano-conferma">
+              <p>{capitano.exCapitano
+                ? <><b>{capitano.exCapitano}</b> perderà la fascia e ne risentirà: morale da −12 a −24 (di più se è un bandiera).</>
+                : 'Oggi la fascia è automatica: nominarlo non ha costi.'}</p>
+              {capitano.errore && <p className="notice notice--error">{capitano.errore}</p>}
+              <button className="button button--primary" type="button" disabled={capitano.inCorso} onClick={capitano.onNomina}>{capitano.inCorso ? 'Nomino…' : 'Conferma'}</button>
+              <button className="button button--secondary" type="button" onClick={() => setConfermaCapitano(false)}>Annulla</button>
+            </div>}
           </section>}
 
           {stagione && <div className="player-modal__stats">

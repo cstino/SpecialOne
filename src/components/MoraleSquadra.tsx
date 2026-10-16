@@ -7,7 +7,7 @@ import { FaccinaMorale, etichettaMorale, type FasciaMorale } from './FaccinaMora
 // che e' quello che conta in campo. Solo per la propria squadra: il morale degli altri non si vede.
 
 // `titolari`: i morali dei titolari della formazione, solo se la distinta e' completa (11 su 11 ancora in rosa).
-type Props = { morali: number[]; titolari: number[] | null }
+type Props = { morali: number[]; titolari: number[] | null; capitano?: { nome: string; punti: number; designato: boolean } | null }
 
 const FASCE: Array<{ classe: FasciaMorale; testo: string; da: string }> = [
   { classe: 'ottimo', testo: 'Entusiasta', da: '80–100' },
@@ -29,7 +29,7 @@ function arco(da: number, a: number) {
   return `M ${p.x.toFixed(2)} ${p.y.toFixed(2)} A ${R} ${R} 0 0 1 ${q.x.toFixed(2)} ${q.y.toFixed(2)}`
 }
 
-export function MoraleSquadra({ morali, titolari }: Props) {
+export function MoraleSquadra({ morali, titolari, capitano }: Props) {
   const [aperto, setAperto] = useState(false)
   if (!morali.length) return null
   const media = morali.reduce((a, b) => a + b, 0) / morali.length
@@ -67,6 +67,7 @@ export function MoraleSquadra({ morali, titolari }: Props) {
       <span className="morale-squadra__fasce" aria-hidden="true">
         {conteggi.map((f) => <i key={f.classe} className={`morale-squadra__fascia morale-squadra__fascia--${f.classe}`} style={{ flexGrow: f.n }} title={`${f.testo}: ${f.n}`} />)}
       </span>
+      {capitano && <span className="morale-squadra__capitano"><i aria-hidden="true">C</i><b>{capitano.nome}</b><em>{capitano.punti}/4 requisiti{capitano.designato ? '' : ' · automatico'}</em></span>}
       <small className="morale-squadra__nota">Spogliatoio di {morali.length} giocatori · {conteggi.filter((f) => f.n).map((f) => `${f.n} ${f.testo.toLowerCase()}`).join(' · ')}</small>
     </button>
 
@@ -80,7 +81,7 @@ export function MoraleSquadra({ morali, titolari }: Props) {
           <h3>Come incide in partita</h3>
           <p>In campo pesa il morale di chi gioca, non quello di tutta la rosa, e pesa poco di proposito: nel calcio vero (e nelle misure su Football Manager) è la leva più piccola. Un giocatore a morale 100 rende come se avesse circa <b>+0,3 di overall</b>, uno a morale 40 circa <b>−0,3</b>; sotto i 20 circa smette di peggiorare. Fra una squadra a morale 45 e una a 95 corrono circa <b>3–4 punti in una stagione da 38 giornate</b>. Non cambia una partita, può spostare un campionato quando le squadre sono vicine.</p>
           <p>Chi sta fuori conta lo stesso: il morale pesa nelle <b>trattative</b> (quanto chiede in un rinnovo, se accetta un'offerta) e basta una formazione diversa per vederlo in campo. Un campione scontento in panchina è un problema da risolvere con minuti o ingaggio.</p>
-          <p>Il <b>capitano</b> tiene su lo spogliatoio: attenua buona parte del malcontento dei compagni. Se però è lui il più scontento, lo peggiora.</p>
+          <p>Il <b>capitano</b> tiene su lo spogliatoio: attenua buona parte del malcontento dei compagni, e più è completo più lo fa. Un capitano completo è un <b>bandiera</b>, ha <b>più di 25 anni</b>, è fra i <b>5 da più tempo nel club</b> ed è un <b>titolare</b>. Se però è lui il più scontento, lo peggiora. Cambiare capitano costa: chi perde la fascia perde morale. Lo nomini dalla scheda del giocatore.</p>
 
           <h3>Cosa lo fa muovere</h3>
           <ul>
