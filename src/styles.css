@@ -4295,6 +4295,30 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 @keyframes gol-testa { from { opacity: 0; transform: skewY(-4deg) scaleX(0); } to { opacity: 1; transform: skewY(-4deg) scaleX(1); } }
 @keyframes gol-entra { from { opacity: 0; transform: translateY(12px) scale(.92); } to { opacity: 1; transform: none; } }
 
+/* Card dei tiri in porta (prova in LegaBot): neutra e in tensione durante
+   l'azione, poi verde se e' gol, rossa se il portiere la ferma. */
+.tiro-card { --acc: #ffc94d; max-width: 360px; gap: 12px; border-color: rgba(255,201,77,.35); background: linear-gradient(165deg, rgba(64,52,22,.82), rgba(12,10,24,.95) 62%); animation: rig-card .35s ease-out both, tiro-tensione 1.1s ease-in-out infinite; transition: border-color .3s, background .3s; }
+.tiro-card .rig__filigrana { -webkit-text-stroke-color: rgba(255,201,77,.14); }
+.tiro-card .rig__foto { width: 116px; height: 116px; background: conic-gradient(from 0deg, var(--acc), #fff3c4, var(--acc)); }
+.tiro-card > .rig__nome { font-size: clamp(1.8rem, 9vw, 2.4rem); }
+.tiro-card__testa { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,.1); color: #fff; font-size: .8rem; font-weight: 800; }
+.tiro-card__testa .rig__stemma { width: 24px; height: 24px; }
+.tiro-card__testa em { color: rgba(255,255,255,.55); font-size: .7rem; font-style: normal; font-weight: 700; }
+.tiro-card__cronaca { margin: 0; min-height: 4.2em; color: rgba(255,255,255,.88); font-size: .95rem; font-weight: 600; line-height: 1.4; text-align: center; text-wrap: balance; }
+.tiro-card__cronaca strong { color: #fff; font-weight: 900; }
+.tiro-card__esito { color: var(--acc); font-weight: 800; animation: rig-testo .35s ease-out both; }
+.tiro-card__banda { position: relative; width: calc(100% + 36px); margin: -4px -18px 0; padding: 10px 0; background: linear-gradient(90deg, transparent, var(--acc) 15%, var(--acc) 85%, transparent); transform: skewY(-4deg); animation: gol-testa .45s cubic-bezier(.2,.9,.25,1.2) both; text-align: center; }
+.tiro-card__banda strong { display: inline-block; color: #fff; font: 900 italic clamp(2.2rem, 12vw, 3rem)/1 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: .03em; text-shadow: 0 3px 0 rgba(0,0,0,.35); transform: skewX(-8deg); animation: rig-esito .6s .05s cubic-bezier(.2,.9,.25,1.25) both; }
+.tiro-card.is-gol { --acc: #34e0a1; border-color: rgba(52,224,161,.55); background: linear-gradient(165deg, rgba(20,92,70,.85), rgba(12,10,24,.95) 62%); animation: rig-card .35s ease-out both; }
+.tiro-card.is-gol .rig__filigrana { -webkit-text-stroke-color: rgba(52,224,161,.18); }
+.tiro-card.is-gol .tiro-card__esito { color: #7dffc9; }
+.tiro-card.is-parata { --acc: #ff4d6d; border-color: rgba(255,77,109,.55); background: linear-gradient(165deg, rgba(110,22,40,.85), rgba(12,10,24,.95) 62%); animation: rig-card .35s ease-out both, rig-scossa .4s ease-out; }
+.tiro-card.is-parata .rig__filigrana { -webkit-text-stroke-color: rgba(255,77,109,.16); }
+.tiro-card.is-parata .tiro-card__esito { color: #ff9aac; }
+.tiro-card.is-gol .rig__foto, .tiro-card.is-parata .rig__foto { background: conic-gradient(from 0deg, var(--acc), #fff, var(--acc)); }
+@keyframes tiro-tensione { 0%, 100% { box-shadow: 0 24px 60px rgba(0,0,0,.5), 0 0 0 0 rgba(255,201,77,0); } 50% { box-shadow: 0 24px 60px rgba(0,0,0,.5), 0 0 0 6px rgba(255,201,77,.18); } }
+@media (prefers-reduced-motion: reduce) { .tiro-card, .tiro-card * { animation-duration: .01s !important; animation-iteration-count: 1 !important; } }
+
 /* Locandina dell'intro, stile grafica "matchday" della Champions: turno in
    Oswald, card scura con stemmi e VS sullo sfondo verticale della fase. */
 .match-intro__locandina { --loc-fondo: url(/sfondi-fase-verticali/title_playoffs_vert.png); --loc-card: #0a1670; --loc-vs: #46e3ff; position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 18px; padding: max(84px, calc(env(safe-area-inset-top) + 64px)) 20px max(30px, env(safe-area-inset-bottom)); overflow: hidden; background: linear-gradient(to bottom, rgba(0,0,0,.35), transparent 34%, transparent 70%, rgba(0,0,0,.45)), var(--loc-fondo) center / cover no-repeat; text-align: center; }

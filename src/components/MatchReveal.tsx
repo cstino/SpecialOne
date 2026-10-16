@@ -93,6 +93,11 @@ const RIGORE_ESITO_MS = 3200
 // dell'esultanza (~2,4s), un filo piu' corta cosi' il boato non viene
 // interrotto a meta'.
 const DURATA_POPUP_GOL_MS = 2200
+// Card dei tiri in porta (prova in LegaBot): quanto dura l'azione prima
+// dell'esito, e quanto resta in scena una parata.
+const LEGA_TIRI_IN_PORTA = 62
+const DURATA_TIRO_MS = 2600
+const DURATA_PARATA_MS = 2000
 
 // Sorpresa una tantum: uno spot prima dell'intro, solo per Maudit Printemps
 // (squadra 285) e solo per la prima partita del turno playoff (fixture 2424,
@@ -125,6 +130,11 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const [popupGol, setPopupGol] = useState<EventoGol | null>(null)
   const codaGolRef = useRef<EventoGol[]>([])
   const [inTimeline, setInTimeline] = useState<Set<EventoPartita>>(new Set())
+  // Modalita' tiri in porta: ogni tiro in porta (gol o parata) va in scena in
+  // una card che prima racconta l'azione e poi diventa verde (gol) o rossa.
+  const tiriInPorta = membership.league_id === LEGA_TIRI_IN_PORTA
+  const [popupTiro, setPopupTiro] = useState<{ riga: Riga; fase: 'tiro' | 'esito' } | null>(null)
+  const codaTiriRef = useRef<Riga[]>([])
 
   useEffect(() => {
     let vivo = true
@@ -190,7 +200,10 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const inRigori = fasePartita === 'rigori' && !rigoriFiniti
   const completata = minutoCorrente >= oraFinale && rigoriFiniti
   const minuto = Math.max(0, minutoCorrente)
-  const punteggio = eventi.filter((evento) => evento.minuto <= minuto).reduce((totale, evento) => {
+  // Con le card dei tiri il gol si conta solo quando la card lo rivela.
+  const golRivelato = (evento: EventoPartita) => !tiriInPorta || evento.minuto < minuto || inTimeline.has(evento)
+    || (popupTiro?.fase === 'esito' && popupTiro.riga.scena?.evento === evento)
+  const punteggio = eventi.filter((evento) => evento.minuto <= minuto && golRivelato(evento)).reduce((totale, evento) => {
     if (isEventoGol(evento)) {
       if (evento.lato === 'casa') totale.casa++
       else totale.ospite++
@@ -246,12 +259,51 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     return () => { attivo = false }
   }, [eventi, serieRigori, haRigori, match])
 
+  // La telecronaca: fissa per partita, costruita quando ci sono i nomi.
+  const casaSq = fixture ? data.teamById.get(fixture.home_team_id) : undefined
+  const ospiteSq = fixture ? data.teamById.get(fixture.away_team_id) : undefined
+  // Gli allenatori raccontano i cambi ("Rossi pesca dalla panchina…"); le
+  // squadre del PC non ne hanno uno.
+  const [allenatori, setAllenatori] = useState<Record<string, string>>({})
+  const idAllenatori = [casaSq, ospiteSq].filter((t) => t && !t.controllata_da_pc && t.user_id).map((t) => t!.user_id).join(',')
+  useEffect(() => {
+    if (!idAllenatori) return
+    let vivo = true
+    void supabase.from('profiles').select('user_id, nome_allenatore').in('user_id', idAllenatori.split(',')).then(({ data: righe }) => {
+      if (vivo) setAllenatori(Object.fromEntries((righe ?? []).map((r: { user_id: string; nome_allenatore: string | null }) => [r.user_id, r.nome_allenatore ?? ''])))
+    })
+    return () => { vivo = false }
+  }, [idAllenatori])
+  const telecronaca = useMemo<Riga[]>(() => {
+    if (!match || !eventi.length || !nomi.size) return []
+    return costruisciTelecronaca({
+      eventi, nomi,
+      titolariCasa: match.titolari_home ?? [], titolariOspite: match.titolari_away ?? [],
+      casa: { nome: casaSq?.nome ?? 'Casa', sigla: casaSq?.sigla ?? 'CAS' },
+      ospite: { nome: ospiteSq?.nome ?? 'Ospite', sigla: ospiteSq?.sigla ?? 'OSP' },
+      allenatoreCasa: casaSq && !casaSq.controllata_da_pc ? allenatori[casaSq.user_id] : null,
+      allenatoreOspite: ospiteSq && !ospiteSq.controllata_da_pc ? allenatori[ospiteSq.user_id] : null,
+      seme: match.id, supplementari, tuttiInPorta: tiriInPorta,
+    })
+  }, [match, eventi, nomi, casaSq, ospiteSq, supplementari, allenatori, tiriInPorta])
   // L'avanzamento si ferma mentre c'e' un gol in scena: riprende da solo
   // quando popupGol torna null (vedi l'effetto piu' sotto).
   useEffect(() => {
-    if (minutoCorrente < 0 || minutoCorrente >= fineFase || popupGol || annuncio) return
+    if (minutoCorrente < 0 || minutoCorrente >= fineFase || popupGol || popupTiro || annuncio) return
+    // Le card dei tiri nascono dalla telecronaca: finche' non c'e' (nomi in
+    // caricamento) la partita non parte, altrimenti si salterebbero dei gol.
+    if (tiriInPorta && eventi.length > 0 && !telecronaca.length) return
     const timer = window.setTimeout(() => {
       const prossimo = minutoCorrente + 1
+      if (tiriInPorta) {
+        const scene = telecronaca.filter((riga) => riga.scena && riga.minuto === prossimo)
+        setMinutoCorrente(prossimo)
+        if (scene.length) {
+          codaTiriRef.current.push(...scene.slice(1))
+          setPopupTiro({ riga: scene[0], fase: 'tiro' })
+        }
+        return
+      }
       const golAlMinuto = eventi.filter((evento): evento is EventoGol => isEventoGol(evento) && evento.minuto === prossimo)
       setMinutoCorrente(prossimo)
       if (golAlMinuto.length) {
@@ -260,13 +312,13 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
       }
     }, 700)
     return () => window.clearTimeout(timer)
-  }, [minutoCorrente, popupGol, annuncio, fineFase, eventi])
+  }, [minutoCorrente, popupGol, popupTiro, annuncio, fineFase, eventi, tiriInPorta, telecronaca])
 
   // A fine fase la partita si ferma e annuncia la successiva: dai 90' ai
   // supplementari (se in parita'), da li' ai rigori (se serve). Aspetta che
   // l'eventuale gol dell'ultimo minuto abbia finito la sua scena.
   useEffect(() => {
-    if (popupGol || annuncio || minutoCorrente !== fineFase) return
+    if (popupGol || popupTiro || annuncio || minutoCorrente !== fineFase) return
     if (fasePartita === 'regolamentari' && supplementari && !annunciFatti.current.supplementari) {
       annunciFatti.current.supplementari = true
       setAnnuncio('supplementari')
@@ -274,7 +326,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
       annunciFatti.current.rigori = true
       setAnnuncio('rigori')
     }
-  }, [minutoCorrente, fineFase, fasePartita, popupGol, annuncio, supplementari, haRigori])
+  }, [minutoCorrente, fineFase, fasePartita, popupGol, popupTiro, annuncio, supplementari, haRigori])
 
   useEffect(() => {
     if (!annuncio) return
@@ -331,7 +383,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
 
   // Sottofondo dello stadio: si accende mentre la partita scorre (o mentre
   // un gol e' in scena) e si spegne a fine cronaca.
-  const sottofondoAcceso = eventi.length > 0 && (inCorso || inRigori || popupGol !== null || annuncio !== null)
+  const sottofondoAcceso = eventi.length > 0 && (inCorso || inRigori || popupGol !== null || popupTiro !== null || annuncio !== null)
   useEffect(() => {
     const audio = sottofondoRef.current
     if (!audio) return
@@ -355,42 +407,36 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
     return () => window.clearTimeout(timer)
   }, [popupGol])
 
+  // La card del tiro: prima l'azione (DURATA_TIRO_MS), poi l'esito. Sul gol
+  // parte il boato e la card resta quanto la vecchia card del gol; la parata
+  // dura meno. Poi il tiro entra in telecronaca e si passa al prossimo.
+  useEffect(() => {
+    if (!popupTiro) return
+    if (popupTiro.fase === 'tiro') {
+      const timer = window.setTimeout(() => setPopupTiro({ riga: popupTiro.riga, fase: 'esito' }), DURATA_TIRO_MS)
+      return () => window.clearTimeout(timer)
+    }
+    const gol = popupTiro.riga.scena?.gol ?? false
+    const audio = suonoGolRef.current
+    if (gol && audio) { audio.muted = false; audio.currentTime = 0; void audio.play().catch(() => {}) }
+    const timer = window.setTimeout(() => {
+      const concluso = popupTiro.riga.scena?.evento
+      if (concluso) setInTimeline((precedente) => new Set(precedente).add(concluso))
+      const prossima = codaTiriRef.current.shift()
+      setPopupTiro(prossima ? { riga: prossima, fase: 'tiro' } : null)
+    }, gol ? DURATA_POPUP_GOL_MS + 400 : DURATA_PARATA_MS)
+    return () => window.clearTimeout(timer)
+  }, [popupTiro])
+
   useEffect(() => {
     if (!completata || revealRegistrato.current) return
     revealRegistrato.current = true
     onRevealed(matchId)
   }, [matchId, completata, onRevealed])
 
-  // La telecronaca: fissa per partita, costruita quando ci sono i nomi.
-  const casaSq = fixture ? data.teamById.get(fixture.home_team_id) : undefined
-  const ospiteSq = fixture ? data.teamById.get(fixture.away_team_id) : undefined
-  // Gli allenatori raccontano i cambi ("Rossi pesca dalla panchina…"); le
-  // squadre del PC non ne hanno uno.
-  const [allenatori, setAllenatori] = useState<Record<string, string>>({})
-  const idAllenatori = [casaSq, ospiteSq].filter((t) => t && !t.controllata_da_pc && t.user_id).map((t) => t!.user_id).join(',')
-  useEffect(() => {
-    if (!idAllenatori) return
-    let vivo = true
-    void supabase.from('profiles').select('user_id, nome_allenatore').in('user_id', idAllenatori.split(',')).then(({ data: righe }) => {
-      if (vivo) setAllenatori(Object.fromEntries((righe ?? []).map((r: { user_id: string; nome_allenatore: string | null }) => [r.user_id, r.nome_allenatore ?? ''])))
-    })
-    return () => { vivo = false }
-  }, [idAllenatori])
-  const telecronaca = useMemo<Riga[]>(() => {
-    if (!match || !eventi.length || !nomi.size) return []
-    return costruisciTelecronaca({
-      eventi, nomi,
-      titolariCasa: match.titolari_home ?? [], titolariOspite: match.titolari_away ?? [],
-      casa: { nome: casaSq?.nome ?? 'Casa', sigla: casaSq?.sigla ?? 'CAS' },
-      ospite: { nome: ospiteSq?.nome ?? 'Ospite', sigla: ospiteSq?.sigla ?? 'OSP' },
-      allenatoreCasa: casaSq && !casaSq.controllata_da_pc ? allenatori[casaSq.user_id] : null,
-      allenatoreOspite: ospiteSq && !ospiteSq.controllata_da_pc ? allenatori[ospiteSq.user_id] : null,
-      seme: match.id, supplementari,
-    })
-  }, [match, eventi, nomi, casaSq, ospiteSq, supplementari, allenatori])
   // Un gol entra in telecronaca solo dopo la sua scena (inTimeline).
   const righeVisibili = useMemo(() => telecronaca.filter((riga) => riga.minuto <= minuto
-    && (!riga.gol || inTimeline.has(riga.gol))), [telecronaca, minuto, inTimeline])
+    && (!(riga.scena?.evento ?? riga.gol) || inTimeline.has((riga.scena?.evento ?? riga.gol)!))), [telecronaca, minuto, inTimeline])
 
   // Il grafico della pressione: la curva e' calcolata una volta su tutta la
   // partita (scala fissa), e si disegna fino al minuto corrente.
@@ -494,6 +540,43 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
           </div>
         </div>
       </div>}
+
+      {popupTiro && popupTiro.riga.scena && (() => {
+        const scena = popupTiro.riga.scena
+        const lato = popupTiro.riga.lato ?? 'casa'
+        const evento = scena.evento
+        const tiratore = nomi.get(isEventoGol(evento) ? evento.marcatore : 'giocatore' in evento ? evento.giocatore : 0)
+        const squadra = lato === 'casa' ? casa : ospite
+        const esito = popupTiro.fase === 'esito'
+        const testo = (parti: typeof scena.prima) => parti.map((parte, k) => typeof parte === 'string' ? parte : <strong key={k}>{parte.g}</strong>)
+        const min = popupTiro.riga.minuto
+        return <div className="match-reveal__gol-popup" role="alert">
+          <div className={`rig__card tiro-card${esito ? (scena.gol ? ' is-gol' : ' is-parata') : ''}`} key={popupTiro.riga.chiave}>
+            <span className="rig__filigrana" aria-hidden="true">{cognome(tiratore?.nome ?? '')}</span>
+            <div className="tiro-card__testa">
+              <span className="rig__stemma"><Crest value={squadra?.stemma_url ?? null} stelle={squadra?.titoli_title} imageUrl={data.crestUrlByTeamId.get(lato === 'casa' ? fixture.home_team_id : fixture.away_team_id) ?? undefined} size="small" /></span>
+              <span>{squadra?.nome ?? 'Squadra'}</span>
+              <em>{min}’ · {min > 105 ? '2º suppl.' : min > 90 ? '1º suppl.' : min > 45 ? '2º tempo' : '1º tempo'}</em>
+            </div>
+            {esito && <div className="tiro-card__banda" key="banda"><strong>{scena.gol ? 'GOOOL!' : 'PARATA!'}</strong></div>}
+            <div className="rig__ritratto">
+              <div className="rig__foto">
+                {tiratore?.foto ? <img src={tiratore.foto} alt="" /> : <span aria-hidden="true">{cognome(tiratore?.nome ?? '?').charAt(0)}</span>}
+              </div>
+            </div>
+            <strong className="rig__nome">{cognome(tiratore?.nome ?? 'Giocatore')}</strong>
+            <p className="tiro-card__cronaca">
+              <span>{testo(scena.prima)}</span>
+              {esito && <span className="tiro-card__esito" key="esito">{' '}{testo(scena.esito)}</span>}
+            </p>
+            {esito && scena.gol && <div className="match-reveal__gol-risultato">
+              <span className={lato === 'casa' ? 'is-segna' : ''}>{casa?.sigla}</span>
+              <b>{punteggio.casa}<i>–</i>{punteggio.ospite}</b>
+              <span className={lato === 'ospite' ? 'is-segna' : ''}>{ospite?.sigla}</span>
+            </div>}
+          </div>
+        </div>
+      })()}
 
       {annuncio && <div className={`match-reveal__stacco is-${annuncio}`} role="alert">
         <div className="match-reveal__stacco-lame" aria-hidden="true" />

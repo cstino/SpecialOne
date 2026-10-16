@@ -23,6 +23,10 @@ export type Riga = {
   // Per i gol: l'evento originale, che entra in telecronaca solo dopo la
   // scena del gol (stesso meccanismo della vecchia cronaca).
   gol?: EventoPartita
+  // Modalita' "tiri in porta" (prova in LegaBot): il tiro va prima in scena
+  // in una card (prima = l'azione, esito = gol o parata) e solo dopo entra in
+  // telecronaca, come i gol.
+  scena?: { evento: EventoPartita; prima: Parte[]; esito: Parte[]; gol: boolean }
 }
 
 export type GiocatoreTelecronaca = { nome: string; posizioni?: string[] }
@@ -44,6 +48,8 @@ export type DatiTelecronaca = {
   // Tiri raccontati al massimo per squadra: gli altri restano nelle
   // statistiche e nel grafico della pressione, non in telecronaca.
   maxTiri?: number
+  // Tutti i tiri in porta (gol e parate) diventano una card con suspense.
+  tuttiInPorta?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -150,6 +156,53 @@ const PARATA = [
   'Punizione di {A} dal limite, {P} la vede partire e la blocca.',
   '{A} si libera e conclude: miracolo di {P}!',
 ]
+// Card dei tiri in porta: l'azione si racconta PRIMA di sapere com'e' finita,
+// quindi le stesse frasi valgono per gol e parate (niente spoiler). {B} e' chi
+// serve la palla: per i gol l'assist vero, per le parate un compagno in campo.
+const PRIMA_SOLO = [
+  '{A} si accentra, alza la testa e prova il tiro a giro…',
+  '{A} si smarca al limite dell\'area e carica il destro…',
+  '{A} controlla in area, si gira e calcia…',
+  'Palla vagante al limite, arriva {A} e lascia partire una botta…',
+  '{A} punta l\'uomo, lo salta e conclude…',
+  '{A} si inserisce senza palla, nessuno lo segue… tiro!',
+  '{A} ci prova da fuori, di collo pieno…',
+  '{A} ruba palla a centrocampo, scappa via e calcia…',
+  '{A} in mezzo a due difensori, trova lo spazio e tira…',
+]
+const PRIMA_SERVITO = [
+  '{B} la mette in mezzo, {A} si coordina…',
+  'Filtrante di {B} per {A}, a tu per tu con {P}…',
+  '{B} pennella dalla fascia, {A} stacca di testa…',
+  'Scambio stretto fra {B} e {A}, che calcia di prima…',
+  '{B} alza la testa e lancia {A} in profondità…',
+  'Cross basso di {B}, {A} arriva in corsa…',
+]
+const PRIMA_PUNIZIONE = [
+  'Punizione dal limite per {S}: sul pallone va {A}…',
+  'Calcio piazzato per {S}, {A} prende la rincorsa…',
+]
+const PRIMA_ANGOLO = [
+  'Angolo per {S}: lo batte {B}, in area svetta {A}…',
+  'Corner di {B}, mischia in area e {A} prova la deviazione…',
+]
+const ESITO_GOL = [
+  '…ed è GOOOL!!! {A} non perdona!',
+  '…RETE! Niente da fare per {P}!',
+  '…GOOOL! Palla nell\'angolino, esplode lo stadio!',
+  '…dentro! È il gol di {A}!',
+  '…la palla si infila sotto la traversa: GOOOL!',
+]
+const ESITO_PARATA = [
+  '…{P} in tuffo riesce a bloccare!',
+  '…ma {P} c\'è! Respinge coi pugni!',
+  '…{P} vola e la toglie dall\'incrocio!',
+  '…parata di {P}, che la fa sua in due tempi.',
+  '…{P} esce e chiude lo specchio!',
+  '…riflesso incredibile di {P}, salvataggio sulla linea!',
+  '…{P} si distende e devia in angolo!',
+]
+
 const FUORI = [
   '{A} prova la conclusione, palla alta sopra la traversa.',
   'Tiro di {A} dal limite: di poco a lato!',
@@ -335,12 +388,15 @@ export function costruisciTelecronaca(d: DatiTelecronaca): Riga[] {
 
   // Tiri: solo una parte arriva in telecronaca, distribuita su tutta la
   // partita (le parate prima, sono le piu' raccontabili).
-  const maxTiri = d.maxTiri ?? 6
+  const maxTiriBase = d.maxTiri ?? 6
   const tiriTenuti = new Set<EventoPartita>()
   for (const lato of ['casa', 'ospite'] as Lato[]) {
     // Un portiere che tira e' un residuo di una vecchia distribuzione dei tiri
     // (corretta il 2 ottobre 2026): in telecronaca non si racconta.
-    const tiri = eventi.filter((e) => e.lato === lato && (e.tipo === 'tiro_parato' || e.tipo === 'tiro_fuori') && reparto(e.giocatore) !== 'GK')
+    // Con le card dei tiri in porta le parate ci sono gia' tutte: qui restano
+    // solo un po' di tiri fuori, per colore.
+    const tiri = eventi.filter((e) => e.lato === lato && (e.tipo === 'tiro_fuori' || (!d.tuttiInPorta && e.tipo === 'tiro_parato')) && reparto(e.giocatore) !== 'GK')
+    const maxTiri = d.tuttiInPorta ? 3 : maxTiriBase
     if (tiri.length <= maxTiri) { tiri.forEach((t) => tiriTenuti.add(t)); continue }
     const parati = tiri.filter((t) => t.tipo === 'tiro_parato')
     const scelti = [...parati.slice(0, Math.ceil(maxTiri * 0.6)), ...tiri.filter((t) => t.tipo === 'tiro_fuori')]
@@ -388,7 +444,24 @@ export function costruisciTelecronaca(d: DatiTelecronaca): Riga[] {
         // la partita: pareggio, sorpasso, vantaggio o un gol che la riapre.
         : e.minuto >= 85 && Math.abs(dopo) <= 1 ? TEMPO_GOL.finale : null
       const coda = [pesca(CODA_GOL[contesto]), ...(tempo && rnd() < 0.7 ? [pesca(tempo)] : [])].join(' ')
-      righe.push({ chiave, minuto: e.minuto, lato, tipo: 'gol', gol: e, testo: [...componi(modello, { A: e.marcatore, B: e.assist, P, lato }), ' ', ...componi(coda, { lato })] })
+      const riga: Riga = { chiave, minuto: e.minuto, lato, tipo: 'gol', gol: e, testo: [...componi(modello, { A: e.marcatore, B: e.assist, P, lato }), ' ', ...componi(coda, { lato })] }
+      if (d.tuttiInPorta) {
+        const prima = e.piazzato
+          ? pesca(e.piazzato.startsWith('angolo') && e.assist != null ? PRIMA_ANGOLO : PRIMA_PUNIZIONE)
+          : pesca(e.assist != null ? PRIMA_SERVITO : PRIMA_SOLO)
+        riga.scena = { evento: e, gol: true, prima: componi(prima, { A: e.marcatore, B: e.assist, P, lato }), esito: componi(pesca(ESITO_GOL), { A: e.marcatore, P, lato }) }
+      }
+      righe.push(riga)
+      return
+    }
+    if (d.tuttiInPorta && e.tipo === 'tiro_parato' && reparto(e.giocatore) !== 'GK') {
+      const P = portiere(altro(lato), e.minuto)
+      const compagni = [...inCampo(lato, e.minuto)].filter((id) => id !== e.giocatore && reparto(id) !== 'GK')
+      const r = rnd()
+      const B = r < 0.5 ? unoDi(compagni) : null
+      const prima = r < 0.08 ? PRIMA_PUNIZIONE : r < 0.12 && B != null ? PRIMA_ANGOLO : B != null ? PRIMA_SERVITO : PRIMA_SOLO
+      const scena = { evento: e, gol: false, prima: componi(pesca(prima), { A: e.giocatore, B, P, lato }), esito: componi(pesca(ESITO_PARATA), { A: e.giocatore, P, lato }) }
+      righe.push({ chiave, minuto: e.minuto, lato, tipo: 'parata', scena, testo: componi(pesca(PARATA), { A: e.giocatore, P, lato }) })
       return
     }
     if (e.tipo === 'tiro_parato' || e.tipo === 'tiro_fuori') {
