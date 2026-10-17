@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { firmaFoto } from './RosaElenco'
 
@@ -37,7 +37,7 @@ async function messaggioErrore(errore: unknown) {
   return 'Il giocatore non risponde, riprova tra poco.'
 }
 
-export function RichiesteGiocatori({ teamId, onCambio }: { teamId: number; onCambio?: () => void }) {
+export function RichiesteGiocatori({ teamId, onCambio, senzaTitolo = false, quandoVuota = null }: { teamId: number; onCambio?: () => void; senzaTitolo?: boolean; quandoVuota?: ReactNode }) {
   const [richieste, setRichieste] = useState<Richiesta[]>([])
   const [giocatori, setGiocatori] = useState<Map<number, Giocatore>>(new Map())
   const [bozze, setBozze] = useState<Record<number, string>>({})
@@ -66,7 +66,7 @@ export function RichiesteGiocatori({ teamId, onCambio }: { teamId: number; onCam
   }, [teamId, giocatori])
 
   useEffect(() => { void carica() }, [teamId]) // eslint-disable-line react-hooks/exhaustive-deps
-  if (!richieste.length) return null
+  if (!richieste.length) return <>{quandoVuota}</>
 
   async function rispondi(r: Richiesta) {
     const testo = (bozze[r.id] ?? '').trim()
@@ -81,7 +81,7 @@ export function RichiesteGiocatori({ teamId, onCambio }: { teamId: number; onCam
   }
 
   return <section className="dash-sezione">
-    <header className="dash-testa"><h2 className="dash-linguetta">Spogliatoio</h2></header>
+    {!senzaTitolo && <header className="dash-testa"><h2 className="dash-linguetta">Spogliatoio</h2></header>}
     <div className="dash-card richieste">
       {richieste.map((r) => {
         const g = giocatori.get(r.player_instance_id)

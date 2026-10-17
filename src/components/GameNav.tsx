@@ -3,7 +3,7 @@ import { useNotificheContesto, useTornaAllaHome } from '../lib/navigazione'
 import type { League } from '../types'
 import { Icona as IconaTonda } from './Icona'
 
-export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'under' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse' | 'social' | 'rivalita'
+export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'under' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse' | 'social' | 'rivalita' | 'salastampa' | 'spogliatoio'
 type GameNavProps = { league: League; active: GameView; onNavigate?: (view: GameView) => void }
 
 // Icone disegnate a mano: i glifi Unicode di prima (▦ ♜ ♙ ◆ ◉ ≡) venivano resi dal
@@ -28,6 +28,11 @@ const ICONE: Record<string, ReactNode> = {
   chevron: <path d="m8 10 4 4 4-4" />,
   social: <><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-6l-4.5 3.5V17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" /><path d="M8 9.5h8M8 12.5h5" /></>,
   rivalita: <><path d="M13 3 5 13h5.5L9 21l8-11h-5.5z" /></>,
+  gestione: <><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z" /><path d="M7 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1" /><path d="M8.5 12h7M8.5 16h4.5" /></>,
+  risultati: <><path d="M4 20V10M10 20V4M16 20v-8M21 20H3" /><path d="m3.5 7 4-3 4 2 4-4" /></>,
+  extra: <><path d="m12 3 2.2 5.2L20 9l-4.3 3.8L17 18.5 12 15.6 7 18.5l1.3-5.7L4 9l5.8-.8z" /></>,
+  salastampa: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" /></>,
+  spogliatoio: <><path d="M4 12.5V8l4-2.5L12 7l4-1.5L20 8v4.5" /><path d="M5 12.5h14V19H5z" /><path d="M9.5 15.5h5" /></>,
   menu: <><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></>,
 }
 
@@ -40,11 +45,22 @@ function Icona({ nome }: { nome: string }) {
 }
 
 type NavLeaf = { view: GameView; label: string }
-// Un'unica voce "Mercato" in menu, che si apre su Free Agent/Scambi/Draft:
-// prima erano voci separate, ma per l'utente restano un solo argomento e
-// meritano un solo posto in menu (richiesta esplicita).
-type NavGroup = { group: 'mercato'; label: string; children: readonly NavLeaf[] }
+// Le voci del menu sono raggruppate per argomento, ognuna con il suo sottomenu: un'unica riga in menu che
+// si apre sulle pagine dell'argomento (Mercato per primo, poi Gestione, Risultati ed Extra campo).
+type NavGroup = { group: 'gestione' | 'mercato' | 'risultati' | 'extra'; label: string; children: readonly NavLeaf[] }
 type NavEntry = NavLeaf | NavGroup
+
+const gruppoGestione: NavGroup = {
+  group: 'gestione', label: 'Gestione',
+  children: [
+    { view: 'squad', label: 'Formazione' },
+    { view: 'team', label: 'Club' },
+    { view: 'finanza', label: 'Finanza' },
+    { view: 'risorse', label: 'Risorse' },
+  ],
+}
+// A campionato concluso non c'e' piu' una formazione da preparare.
+const gruppoGestioneConcluso: NavGroup = { ...gruppoGestione, children: gruppoGestione.children.filter((c) => c.view !== 'squad') }
 
 const gruppoMercato: NavGroup = {
   group: 'mercato', label: 'Mercato',
@@ -53,6 +69,27 @@ const gruppoMercato: NavGroup = {
     { view: 'scambi', label: 'Scambi' },
     { view: 'scelte', label: 'Draft' },
     { view: 'under', label: 'UNDER' },
+  ],
+}
+
+const gruppoRisultati: NavGroup = {
+  group: 'risultati', label: 'Risultati',
+  children: [
+    { view: 'matches', label: 'Partite' },
+    { view: 'table', label: 'Classifica' },
+    { view: 'tabellone', label: 'Tabellone' },
+    { view: 'honors', label: "Albo d'oro" },
+  ],
+}
+
+// Solo nelle leghe con le novita' di spogliatoio e social (prova in LegaBot).
+const gruppoExtra: NavGroup = {
+  group: 'extra', label: 'Extra campo',
+  children: [
+    { view: 'social', label: 'SocialOne' },
+    { view: 'rivalita', label: 'Rivalità' },
+    { view: 'salastampa', label: 'Sala stampa' },
+    { view: 'spogliatoio', label: 'Spogliatoio' },
   ],
 }
 
@@ -67,30 +104,18 @@ const draftItems: readonly NavEntry[] = [
 
 const seasonItems: readonly NavEntry[] = [
   { view: 'overview', label: 'Overview' },
-  { view: 'squad', label: 'Formazione' },
-  { view: 'team', label: 'Club' },
-  { view: 'finanza', label: 'Finanza' },
-  { view: 'risorse', label: 'Risorse' },
+  gruppoGestione,
   gruppoMercato,
-  { view: 'matches', label: 'Partite' },
-  { view: 'table', label: 'Classifica' },
-  { view: 'tabellone', label: 'Tabellone' },
-  { view: 'honors', label: "Albo d'oro" },
+  gruppoRisultati,
   { view: 'notifications', label: 'Avvisi' },
   { view: 'help', label: 'Aiuto' },
 ]
 
 const offseasonItems: readonly NavEntry[] = [
   { view: 'offseason', label: 'Off-season' },
-  { view: 'squad', label: 'Formazione' },
-  { view: 'team', label: 'Club' },
-  { view: 'finanza', label: 'Finanza' },
-  { view: 'risorse', label: 'Risorse' },
+  gruppoGestione,
   gruppoMercato,
-  { view: 'matches', label: 'Partite' },
-  { view: 'table', label: 'Classifica' },
-  { view: 'tabellone', label: 'Tabellone' },
-  { view: 'honors', label: "Albo d'oro" },
+  gruppoRisultati,
   { view: 'notifications', label: 'Avvisi' },
   { view: 'help', label: 'Aiuto' },
 ]
@@ -98,13 +123,8 @@ const offseasonItems: readonly NavEntry[] = [
 const concludedItems: readonly NavEntry[] = [
   { view: 'offseason', label: 'Off-season' },
   { view: 'overview', label: 'Overview' },
-  { view: 'team', label: 'Club' },
-  { view: 'finanza', label: 'Finanza' },
-  { view: 'risorse', label: 'Risorse' },
-  { view: 'matches', label: 'Partite' },
-  { view: 'table', label: 'Classifica' },
-  { view: 'tabellone', label: 'Tabellone' },
-  { view: 'honors', label: "Albo d'oro" },
+  gruppoGestioneConcluso,
+  gruppoRisultati,
   { view: 'notifications', label: 'Avvisi' },
   { view: 'help', label: 'Aiuto' },
 ]
@@ -154,19 +174,24 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
   // per l'admin tranne in off-season, che ha gia' un pannello dedicato;
   // e' Admin.tsx a mostrare solo le azioni sensate per lo stato corrente.
   const eAdmin = league.admin_id === notifiche?.userId
-  // SocialOne e Rivalità (prova in LegaBot): subito dopo la prima voce (Overview / Off-season).
-  const conSocial: readonly NavEntry[] = league.conferenze_stampa && league.stato !== 'draft'
-    ? [baseItems[0], { view: 'social', label: 'SocialOne' }, { view: 'rivalita', label: 'Rivalità' }, ...baseItems.slice(1)]
+  // Extra campo (prova in LegaBot): prima di Avvisi.
+  const conExtra: readonly NavEntry[] = league.conferenze_stampa && league.stato !== 'draft'
+    ? baseItems.flatMap((voce) => !eGruppo(voce) && voce.view === 'notifications' ? [gruppoExtra, voce] : [voce])
     : baseItems
   const items: readonly NavEntry[] = eAdmin && league.fase_carriera !== 'offseason'
-    ? [...conSocial, { view: 'admin', label: 'Admin' }]
-    : conSocial
+    ? [...conExtra, { view: 'admin', label: 'Admin' }]
+    : conExtra
   const [menuMobileAperto, setMenuMobileAperto] = useState(false)
-  const dentroGruppoMercato = gruppoMercato.children.some((c) => c.view === active)
-  const [mercatoAperto, setMercatoAperto] = useState(dentroGruppoMercato)
-  // Se si arriva su una voce del gruppo (es. da un link diretto o da un tab
-  // interno alla pagina Mercato), il sottomenu si apre da solo.
-  useEffect(() => { if (dentroGruppoMercato) setMercatoAperto(true) }, [dentroGruppoMercato])
+  // Ogni argomento si apre da solo quando si e' su una delle sue pagine (link diretto, tab interno).
+  const gruppoDi = (view: GameView) => items.find((v): v is NavGroup => eGruppo(v) && v.children.some((c) => c.view === view))?.group
+  const [gruppiAperti, setGruppiAperti] = useState<Record<string, boolean>>(() => {
+    const g = gruppoDi(active)
+    return g ? { [g]: true } : {}
+  })
+  useEffect(() => {
+    const g = gruppoDi(active)
+    if (g) setGruppiAperti((a) => a[g] ? a : { ...a, [g]: true })
+  }, [active]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!menuMobileAperto) return
@@ -197,19 +222,21 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
     return items.map((voce) => {
       if (eGruppo(voce)) {
         const nonLetteGruppo = voce.children.reduce((totale, figlio) => totale + contaVoce(figlio.view), 0)
+        const dentro = voce.children.some((c) => c.view === active)
+        const aperto = Boolean(gruppiAperti[voce.group])
         return <div className="game-nav-group" key={voce.group}>
           <button
-            className={`game-nav-item ${dentroGruppoMercato ? 'is-active' : ''}`}
+            className={`game-nav-item ${dentro ? 'is-active' : ''}`}
             type="button"
-            onClick={() => setMercatoAperto((a) => !a)}
-            aria-expanded={mercatoAperto}
+            onClick={() => setGruppiAperti((a) => ({ ...a, [voce.group]: !a[voce.group] }))}
+            aria-expanded={aperto}
           >
-            <i aria-hidden="true"><Icona nome="mercato" /></i><span>{voce.label}</span>
-            {!mercatoAperto && nonLetteGruppo > 0 && <em className="game-nav-item__badge">{nonLetteGruppo > 9 ? '9+' : nonLetteGruppo}</em>}
-            <i className={`game-nav-chevron ${mercatoAperto ? 'is-aperto' : ''}`} aria-hidden="true"><Icona nome="chevron" /></i>
-            {dentroGruppoMercato && <b />}
+            <i aria-hidden="true"><Icona nome={voce.group} /></i><span>{voce.label}</span>
+            {!aperto && nonLetteGruppo > 0 && <em className="game-nav-item__badge">{nonLetteGruppo > 9 ? '9+' : nonLetteGruppo}</em>}
+            <i className={`game-nav-chevron ${aperto ? 'is-aperto' : ''}`} aria-hidden="true"><Icona nome="chevron" /></i>
+            {dentro && <b />}
           </button>
-          {mercatoAperto && <div className="game-nav-sottomenu">
+          {aperto && <div className="game-nav-sottomenu">
             {voce.children.map((figlio) => {
               const contoFiglio = contaVoce(figlio.view)
               return <button

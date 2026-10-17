@@ -198,6 +198,14 @@ testo libero e l'AI valuta l'effetto sul **morale di quel giocatore** (solo suo,
   (promessa da mantenere) nella rosa. Migrazioni `20261017230000_richieste_giocatori.sql` e
   `20261017235000_richieste_giocatori_cron.sql`, componente `RichiesteGiocatori.tsx`.
 
+## 2f. Menu a categorie (deciso e costruito il 17 ottobre 2026)
+Il menu laterale è raggruppato per argomento, ognuno con il suo sottomenu (vale per tutte le leghe):
+**Overview** · **Gestione** (Formazione, Club, Finanza, Risorse) · **Mercato** (Free Agent, Scambi, Draft, UNDER)
+· **Risultati** (Partite, Classifica, Tabellone, Albo d'oro) · **Extra campo** (SocialOne, Rivalità, Sala stampa,
+Spogliatoio: solo nelle leghe con le novità, cioè LegaBot) · **Avvisi** · **Aiuto** (e Admin per l'admin).
+Sala stampa e Spogliatoio non stanno più nella home, che si era riempita troppo: sono pagine a parte in
+Extra campo, e le loro notifiche portano lì e accendono il pallino sulla voce di menu.
+
 ## 3. SocialOne — le notizie in stile social
 - **Deciso**: la sezione social si chiama **SocialOne**, per restare in tema col gioco.
 - In home una card con le notizie **della squadra dell'utente** per prime; toccandola si entra

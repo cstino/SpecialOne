@@ -16,6 +16,7 @@ import { useAlboRivelazione } from './lib/useAlboRivelazione'
 import { Avvisi } from './components/Avvisi'
 import { SocialOne } from './components/SocialOne'
 import { Rivalita } from './components/Rivalita'
+import { PaginaSalaStampa, PaginaSpogliatoio } from './components/PaginaExtra'
 import { AuthScreen } from './components/AuthScreen'
 import { Manutenzione } from './components/Manutenzione'
 import { useManutenzione } from './lib/useManutenzione'
@@ -154,7 +155,8 @@ export default function App() {
     // Ogni notifica legata a una proposta (proposta ricevuta, esito, HERE WE GO) porta a quella proposta in Scambi.
     const proposta = notifica.dati?.proposta_id
     const versoScambi = notifica.dati?.view === 'scambi' || typeof proposta === 'number'
-    setGameView(notifica.dati?.view === 'squad' ? 'squad' : versoScambi ? 'scambi' : 'overview')
+    const viaDiretta = notifica.dati?.view === 'salastampa' || notifica.dati?.view === 'spogliatoio' || notifica.dati?.view === 'social' || notifica.dati?.view === 'rivalita'
+    setGameView(viaDiretta ? notifica.dati?.view as GameView : notifica.dati?.view === 'squad' ? 'squad' : versoScambi ? 'scambi' : 'overview')
     if (typeof proposta === 'number') setPropostaDaMostrare((p) => ({ id: proposta, n: (p?.n ?? 0) + 1 }))
     else if (notifica.dati?.view === 'scambi') setScorriScambi((n) => n + 1)
     const partita = notifica.dati?.match_id
@@ -501,6 +503,8 @@ export default function App() {
       : gameView === 'notifications' ? <Avvisi membership={active} onNavigate={navigateGame} />
       : gameView === 'social' ? <SocialOne membership={active} onNavigate={navigateGame} />
       : gameView === 'rivalita' ? <Rivalita membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
+      : gameView === 'salastampa' ? <PaginaSalaStampa membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} />
+      : gameView === 'spogliatoio' ? <PaginaSpogliatoio membership={active} onNavigate={navigateGame} />
       : gameView === 'admin' ? <Admin membership={active} onNavigate={navigateGame} />
       : gameView === 'help' ? <Help membership={active} onNavigate={navigateGame} />
       : gameView === 'finanza' ? <Finanza membership={active} onNavigate={navigateGame} />

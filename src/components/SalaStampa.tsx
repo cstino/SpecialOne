@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 
 // Conferenze stampa post partita (docs/decisioni-conferenze-stampa.md, fase 1).
@@ -39,7 +39,7 @@ async function messaggioErrore(errore: unknown) {
   return 'La sala stampa non risponde, riprova tra poco.'
 }
 
-export function SalaStampa({ teamId, revealedMatchIds }: { teamId: number; revealedMatchIds: Set<number> }) {
+export function SalaStampa({ teamId, revealedMatchIds, senzaTitolo = false, quandoVuota = null }: { teamId: number; revealedMatchIds: Set<number>; senzaTitolo?: boolean; quandoVuota?: ReactNode }) {
   const [domande, setDomande] = useState<Domanda[]>([])
   const [bozze, setBozze] = useState<Record<number, string>>({})
   const [invio, setInvio] = useState<number | null>(null)
@@ -59,7 +59,7 @@ export function SalaStampa({ teamId, revealedMatchIds }: { teamId: number; revea
   // Solo l'ultima partita con domande: le conferenze vecchie non servono qui.
   const ultimaPartita = domande[0]?.match_id
   const correnti = domande.filter((d) => d.match_id === ultimaPartita)
-  if (!correnti.length) return null
+  if (!correnti.length) return <>{quandoVuota}</>
   const vista = revealedMatchIds.has(ultimaPartita)
 
   async function rispondi(d: Domanda) {
@@ -77,7 +77,7 @@ export function SalaStampa({ teamId, revealedMatchIds }: { teamId: number; revea
   }
 
   return <section className="dash-sezione">
-    <header className="dash-testa"><h2 className="dash-linguetta">Sala stampa</h2></header>
+    {!senzaTitolo && <header className="dash-testa"><h2 className="dash-linguetta">Sala stampa</h2></header>}
     <div className="dash-card stampa">
       {!vista
         ? <p className="stampa__attesa">I giornalisti ti aspettano dopo la partita: guardala prima, poi passa in sala stampa.</p>
