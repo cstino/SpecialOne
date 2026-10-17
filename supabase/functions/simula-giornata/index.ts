@@ -1294,6 +1294,13 @@ export default {
       // (design §10.7). Nell'andata i ruoli erano invertiti, quindi il
       // vantaggio di chi ORA gioca in casa e' gol_away meno gol_home.
       const scartoAndataPerFixture = new Map<number, number>()
+      // Il pubblico (leghe con le conferenze stampa): moltiplicatore del bonus casa di ogni squadra,
+      // 1 = pubblico contento al massimo. Nelle altre leghe la mappa resta vuota e il motore usa 1.
+      const moltiplicatoriCasa = new Map<number, number>()
+      {
+        const { data: righe } = await ctx.supabaseAdmin.rpc('moltiplicatori_casa', { p_league_id: leagueId })
+        for (const r of (righe ?? []) as Array<{ team_id: number; moltiplicatore: number }>) moltiplicatoriCasa.set(r.team_id, Number(r.moltiplicatore))
+      }
       const tieDaControllare = fixtures.filter((f) => f.bracket_tie_id !== null && f.mano === 2)
       if (tieDaControllare.length > 0) {
         const { data: andate, error: andateError } = await ctx.supabaseAdmin.from('fixtures')
@@ -1507,6 +1514,7 @@ export default {
           indicazioniCasa: indicazioniPartita?.casa,
           indicazioniOspite: indicazioniPartita?.ospite,
           campoNeutro: fixture.campo_neutro,
+          moltiplicatoreCasa: moltiplicatoriCasa.get(fixture.home_team_id) ?? 1,
           seedInfortuni: seed ^ 0x6d2b79f5,
           supplementariSeParita: decisiva,
           scartoAndata,
