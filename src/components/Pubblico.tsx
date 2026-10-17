@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { supabase } from '../lib/supabase'
 import { useSeasonData } from '../lib/useSeasonData'
 import type { League, Membership } from '../types'
 import { Crest } from './Crest'
@@ -6,8 +7,8 @@ import { GameNav, type GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
 
 // Il pubblico (docs/decisioni-conferenze-stampa.md §2b): l'umore dei tifosi di ogni squadra, da 0 a 100,
-// visibile a tutta la lega. Muove il bonus casa: pieno (+2,0 di overall) da 80 in su, nessun bonus a 10 o
-// meno, mai uno svantaggio. Chi va a giocare in trasferta sa che stadio trova.
+// della tua squadra, con l'andamento nel tempo (tabella pubblico_storico). Muove il bonus casa: pieno (+2,0 di overall) da 80 in su, nessun bonus a 10 o
+// meno, mai uno svantaggio. Qui vedi solo il tuo.
 
 const BONUS_MAX = 2
 const moltiplicatore = (p: number) => Math.max(0, Math.min(1, (p - 10) / 70))
@@ -22,12 +23,65 @@ export function fascia(p: number) {
   return { testo: 'Contestazione', classe: 'critico' }
 }
 
+type Punto = { etichetta: string; valore: number }
+
+// L'andamento della stagione corrente: un punto per giornata (l'ultimo valore di quella giornata), piu' il
+// valore di partenza. Le variazioni arrivano da pubblico_storico, riempita da un trigger su teams.pubblico.
+function useAndamento(leagueId: number, teamId: number, stagione: number) {
+  const [punti, setPunti] = useState<Punto[] | null>(null)
+  useEffect(() => {
+    let vivo = true
+    void supabase.from('pubblico_storico').select('giornata, prima, valore').eq('team_id', teamId).eq('stagione', stagione).order('id').then(({ data }) => {
+      if (!vivo) return
+      const righe = (data ?? []) as Array<{ giornata: number; prima: number; valore: number }>
+      if (!righe.length) { setPunti([]); return }
+      const perGiornata = new Map<number, number>()
+      for (const x of righe) perGiornata.set(x.giornata, Number(x.valore))
+      // "Inizio" e' il valore prima della prima variazione, oppure, se prima della giornata 1 ci sono
+      // gia' state variazioni (conferenze), il loro ultimo valore.
+      const out: Punto[] = [{ etichetta: 'Inizio', valore: perGiornata.get(0) ?? Number(righe[0].prima) }]
+      for (const [g, v] of [...perGiornata.entries()].sort((a, b) => a[0] - b[0])) if (g > 0) out.push({ etichetta: `G${g}`, valore: v })
+      setPunti(out)
+    })
+    return () => { vivo = false }
+  }, [leagueId, teamId, stagione])
+  return punti
+}
+
+function GraficoPubblico({ punti }: { punti: Punto[] }) {
+  const L = 320, A = 170, m = { s: 26, d: 14, su: 12, g: 26 }
+  const w = L - m.s - m.d, h = A - m.su - m.g
+  const x = (i: number) => m.s + (punti.length === 1 ? w / 2 : (i / (punti.length - 1)) * w)
+  const y = (v: number) => m.su + (1 - v / 100) * h
+  const linea = punti.map((q, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(q.valore).toFixed(1)}`).join(' ')
+  const area = `${linea} L${x(punti.length - 1).toFixed(1)},${y(0)} L${x(0).toFixed(1)},${y(0)} Z`
+  const passo = Math.max(1, Math.ceil(punti.length / 6))
+  const ultimo = punti[punti.length - 1]
+  return <svg className="pubblico-grafico" viewBox={`0 0 ${L} ${A}`} role="img" aria-label={`Andamento del pubblico: ora ${Math.round(ultimo.valore)} su 100`}>
+    <defs><linearGradient id="pubblico-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#7be3a0" stopOpacity=".38" /><stop offset="1" stopColor="#7be3a0" stopOpacity="0" /></linearGradient></defs>
+    {[0, 20, 40, 60, 80, 100].map((v) => <g key={v}>
+      <line className={v === 80 ? 'pubblico-grafico__soglia' : 'pubblico-grafico__griglia'} x1={m.s} x2={L - m.d} y1={y(v)} y2={y(v)} />
+      <text className="pubblico-grafico__asse" x={m.s - 6} y={y(v) + 3} textAnchor="end">{v}</text>
+    </g>)}
+    <text className="pubblico-grafico__nota" x={L - m.d} y={y(80) - 4} textAnchor="end">bonus casa pieno</text>
+    <path d={area} fill="url(#pubblico-area)" />
+    <path className="pubblico-grafico__linea" d={linea} />
+    {punti.map((q, i) => <g key={i}>
+      {(i % passo === 0 || i === punti.length - 1) && <text className="pubblico-grafico__asse" x={x(i)} y={A - 8} textAnchor="middle">{q.etichetta}</text>}
+      {i < punti.length - 1 && <circle className="pubblico-grafico__punto" cx={x(i)} cy={y(q.valore)} r="2.2" />}
+    </g>)}
+    <circle className="pubblico-grafico__ultimo" cx={x(punti.length - 1)} cy={y(ultimo.valore)} r="5" />
+    <text className="pubblico-grafico__valore" x={Math.min(x(punti.length - 1), L - m.d - 8)} y={y(ultimo.valore) - 10} textAnchor="middle">{Math.round(ultimo.valore)}</text>
+  </svg>
+}
+
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; onOpenTeam?: (teamId: number) => void }
 
-export function PaginaPubblico({ membership, onNavigate, onOpenTeam }: Props) {
+export function PaginaPubblico({ membership, onNavigate }: Props) {
   const league = membership.league as League
   const dati = useSeasonData(membership)
   const [spiega, setSpiega] = useState(false)
+  const andamento = useAndamento(league.id, membership.id, league.stagione_corrente ?? 1)
   const righe = useMemo(() => [...dati.teamById.values()]
     .filter((t) => t.attiva !== false)
     .map((t) => ({ team: t, pubblico: Number(t.pubblico ?? 100) }))
@@ -56,21 +110,12 @@ export function PaginaPubblico({ membership, onNavigate, onOpenTeam }: Props) {
           <span className="pubblico-mio__bonus">Bonus casa: <b>{fmtBonus(bonus(mio.pubblico))}</b> di overall <em>{mio.pubblico >= 80 ? '(il massimo)' : `(il massimo è ${fmtBonus(BONUS_MAX)})`}</em></span>
         </button>}
 
-        <h2 className="pubblico-titolo">Tutta la lega</h2>
-        <ol className="pubblico-lista">
-          {righe.map(({ team, pubblico }) => {
-            const g = fascia(pubblico)
-            return <li key={team.id}>
-              <button className={`pubblico-riga pubblico-riga--${g.classe}${team.id === membership.id ? ' is-mia' : ''}`} type="button" onClick={() => onOpenTeam?.(team.id)} disabled={!onOpenTeam}
-                aria-label={`${team.nome}: pubblico ${Math.round(pubblico)} su 100, ${g.testo}, bonus casa ${fmtBonus(bonus(pubblico))}`}>
-                <span className="pubblico-riga__stemma"><Crest value={team.stemma_url ?? null} stelle={team.titoli_title} imageUrl={dati.crestUrlByTeamId.get(team.id)} size="small" /></span>
-                <span className="pubblico-riga__nome"><strong>{team.nome}</strong><small>{g.testo} · casa {fmtBonus(bonus(pubblico))}</small></span>
-                <span className="pubblico-barra" aria-hidden="true"><i style={{ width: `${100 - pubblico}%` }} /></span>
-                <b className="pubblico-riga__valore">{Math.round(pubblico)}</b>
-              </button>
-            </li>
-          })}
-        </ol>
+        <h2 className="pubblico-titolo">Come sta andando</h2>
+        <section className="pubblico-andamento">
+          {andamento === null ? <p className="pubblico-andamento__vuoto">Carico l'andamento…</p>
+            : andamento.length === 0 ? <p className="pubblico-andamento__vuoto">Il pubblico per ora non si è mosso. L'andamento comparirà qui dopo la prossima conferenza stampa o la prossima partita.</p>
+            : <GraficoPubblico punti={andamento} />}
+        </section>
       </>}
     </div>
 
@@ -78,7 +123,7 @@ export function PaginaPubblico({ membership, onNavigate, onOpenTeam }: Props) {
       <div className="popup-spiegazione popup-morale" onClick={(e) => e.stopPropagation()}>
         <h2>Il pubblico</h2>
         <div className="popup-spiegazione__corpo">
-          <p>Ogni squadra ha un <b>umore del pubblico da 0 a 100</b>, uguale per tutti all'inizio (100). Lo vedono tutti.</p>
+          <p>Ogni squadra ha un <b>umore del pubblico da 0 a 100</b>, uguale per tutti all'inizio (100). Nella pagina vedi il tuo e come è cambiato nella stagione.</p>
           <h3>Perché conta</h3>
           <p>Decide il <b>bonus casa</b>: quando giochi in casa la tua squadra rende come con <b>+2,0 di overall</b> in attacco e a centrocampo. Con il pubblico <b>da 80 in su il bonus è pieno</b>; sotto cala fino a <b>zero a 10 o meno</b>. Non diventa mai uno svantaggio. Fra pubblico al massimo e in rottura ballano circa <b>5 punti in una stagione da 38 giornate</b>: è più del morale.</p>
           <h3>Cosa lo muove</h3>

@@ -5617,3 +5617,16 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .scegli-rivale__avviso span { color: #cfc6e0; font-size: .82rem; line-height: 1.4; }
 .scegli-rivale__tag { position: absolute; top: 8px; left: 8px; padding: 2px 7px; border-radius: 99px; background: rgba(255,90,110,.25); color: #ffb3bc; font-style: normal; font-size: .62rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .rivalita-scelto-da { color: #ff8b97; font-weight: 700; }
+
+/* Pubblico: andamento della propria squadra */
+.pubblico-andamento { padding: 14px 12px 8px; border: 1px solid rgba(255,255,255,.1); border-radius: 18px; background: linear-gradient(180deg, rgba(123,227,160,.07), rgba(255,255,255,.02)); }
+.pubblico-andamento__vuoto { margin: 0; padding: 18px 8px; color: #9b92b0; font-size: .88rem; line-height: 1.45; text-align: center; }
+.pubblico-grafico { display: block; width: 100%; height: auto; overflow: visible; }
+.pubblico-grafico__griglia { stroke: rgba(255,255,255,.08); stroke-width: 1; }
+.pubblico-grafico__soglia { stroke: rgba(123,227,160,.55); stroke-width: 1; stroke-dasharray: 3 3; }
+.pubblico-grafico__asse { fill: #8b829e; font-size: 8.5px; font-variant-numeric: tabular-nums; }
+.pubblico-grafico__nota { fill: #7be3a0; font-size: 8px; letter-spacing: .06em; text-transform: uppercase; }
+.pubblico-grafico__linea { fill: none; stroke: #7be3a0; stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.pubblico-grafico__punto { fill: #0d0c14; stroke: #7be3a0; stroke-width: 1.4; }
+.pubblico-grafico__ultimo { fill: #7be3a0; stroke: #0d0c14; stroke-width: 2; filter: drop-shadow(0 0 5px rgba(123,227,160,.7)); }
+.pubblico-grafico__valore { fill: #fff; font-size: 11px; font-weight: 800; }
