@@ -4361,6 +4361,41 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .popup-morale__fasce li span { color: #8f86a3; font-variant-numeric: tabular-nums; }
 .popup-morale__fasce li em { margin-left: auto; color: #cabfd6; font-style: normal; }
 
+/* Pubblico (prova in LegaBot). */
+.pubblico-mio { --pb: #c9a6ff; display: grid; gap: 12px; width: 100%; padding: 16px 16px 14px; border: 1px solid color-mix(in srgb, var(--pb) 30%, #2b2739); border-radius: 16px; color: #fff; background: radial-gradient(ellipse 80% 90% at 50% 0%, color-mix(in srgb, var(--pb) 16%, transparent), transparent 72%), linear-gradient(180deg, #181621, #110f18); text-align: left; font: inherit; cursor: pointer; }
+.pubblico-mio--ottimo { --pb: #65e69a; } .pubblico-mio--buono { --pb: #c9a6ff; } .pubblico-mio--medio { --pb: #f0c44d; } .pubblico-mio--basso { --pb: #ffa06b; } .pubblico-mio--critico { --pb: #ff7188; }
+.pubblico-mio__testa { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pubblico-mio__testa small { color: #8f86a3; font-size: .6rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.pubblico-mio__testa em { color: var(--pb); font-size: .7rem; font-style: normal; font-weight: 800; }
+.pubblico-mio__corpo { display: grid; justify-items: center; gap: 6px; }
+.pubblico-mio__stemma .crest { width: 64px; height: 64px; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,.5)); }
+.pubblico-mio__valore { display: flex; align-items: baseline; gap: 3px; }
+.pubblico-mio__valore b { color: #fff; font: 900 3.2rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.pubblico-mio__valore small { color: #8f86a3; font-size: .9rem; font-weight: 800; }
+.pubblico-mio__etichetta { color: var(--pb); font-size: .78rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+/* Il gradiente sta sulla pista, sempre alla stessa scala (rosso 0, giallo 45, verde 100); la parte vuota e' un velo scuro da destra. */
+.pubblico-barra { position: relative; display: block; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #ff7188, #f0c44d 45%, #65e69a); overflow: hidden; }
+.pubblico-barra i { position: absolute; top: 0; right: 0; bottom: 0; background: #2b2739; }
+.pubblico-barra--grande { height: 12px; border-radius: 6px; }
+.pubblico-barra--grande { box-shadow: 0 0 12px color-mix(in srgb, var(--pb) 35%, transparent); }
+.pubblico-barra--grande u { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,.7); }
+.pubblico-mio__bonus { color: #cabfd6; font-size: .84rem; text-align: center; }
+.pubblico-mio__bonus b { color: #fff; font-size: .95rem; }
+.pubblico-mio__bonus em { color: #8f86a3; font-style: normal; font-size: .76rem; }
+.pubblico-titolo { margin: 22px 0 10px; color: #fff; font-size: 1.05rem; font-weight: 800; }
+.pubblico-lista { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.pubblico-riga { --pb: #c9a6ff; display: grid; grid-template-columns: 34px minmax(0, 1fr) 76px 38px; align-items: center; gap: 12px; width: 100%; padding: 10px 14px; border: 1px solid #2b2739; border-radius: 12px; background: #17151f; color: #fff; font: inherit; text-align: left; cursor: pointer; transition: border-color .15s; }
+.pubblico-riga:hover:not(:disabled) { border-color: color-mix(in srgb, var(--pb) 55%, #2b2739); }
+.pubblico-riga:disabled { cursor: default; }
+.pubblico-riga--ottimo { --pb: #65e69a; } .pubblico-riga--buono { --pb: #c9a6ff; } .pubblico-riga--medio { --pb: #f0c44d; } .pubblico-riga--basso { --pb: #ffa06b; } .pubblico-riga--critico { --pb: #ff7188; }
+.pubblico-riga.is-mia { border-color: color-mix(in srgb, var(--pb) 50%, #2b2739); background: linear-gradient(90deg, color-mix(in srgb, var(--pb) 12%, #17151f), #17151f 70%); }
+.pubblico-riga__stemma .crest { width: 32px; height: 32px; object-fit: contain; }
+.pubblico-riga__nome { display: grid; gap: 2px; min-width: 0; }
+.pubblico-riga__nome strong { overflow: hidden; font-size: .92rem; text-overflow: ellipsis; white-space: nowrap; }
+.pubblico-riga__nome small { color: var(--pb); font-size: .64rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.pubblico-riga__valore { color: #fff; font: 900 1.2rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; font-variant-numeric: tabular-nums; text-align: right; }
+@media (max-width: 380px) { .pubblico-riga { grid-template-columns: 30px minmax(0, 1fr) 54px 34px; gap: 9px; padding: 9px 11px; } }
+
 /* Rivalita' (prova in LegaBot). */
 .rivalita-lista { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .rivalita-riga { --rv: #6f6780; display: grid; grid-template-columns: 34px minmax(0, 1fr) 84px 52px; align-items: center; gap: 12px; width: 100%; padding: 11px 14px; border: 1px solid #2b2739; border-radius: 12px; background: #17151f; color: #fff; font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, background .15s; }

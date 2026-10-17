@@ -17,6 +17,7 @@ import { Avvisi } from './components/Avvisi'
 import { SocialOne } from './components/SocialOne'
 import { Rivalita } from './components/Rivalita'
 import { PaginaSalaStampa, PaginaSpogliatoio } from './components/PaginaExtra'
+import { PaginaPubblico } from './components/Pubblico'
 import { AuthScreen } from './components/AuthScreen'
 import { Manutenzione } from './components/Manutenzione'
 import { useManutenzione } from './lib/useManutenzione'
@@ -505,6 +506,7 @@ export default function App() {
       : gameView === 'rivalita' ? <Rivalita membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
       : gameView === 'salastampa' ? <PaginaSalaStampa membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} />
       : gameView === 'spogliatoio' ? <PaginaSpogliatoio membership={active} onNavigate={navigateGame} />
+      : gameView === 'pubblico' ? <PaginaPubblico membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
       : gameView === 'admin' ? <Admin membership={active} onNavigate={navigateGame} />
       : gameView === 'help' ? <Help membership={active} onNavigate={navigateGame} />
       : gameView === 'finanza' ? <Finanza membership={active} onNavigate={navigateGame} />

@@ -199,6 +199,8 @@ testo libero e l'AI valuta l'effetto sul **morale di quel giocatore** (solo suo,
   `20261017235000_richieste_giocatori_cron.sql`, componente `RichiesteGiocatori.tsx`.
 
 ## 2f. Menu a categorie (deciso e costruito il 17 ottobre 2026)
+**Aggiornamento (17 ottobre, committente)**: **Spogliatoio** sta in **Gestione** (non più in Extra campo) e c'è una pagina **Pubblico** in **Extra campo**: l'umore dei tifosi di tutte le squadre, visibile a tutta la lega, con il tuo in evidenza, il bonus casa che ne deriva e la spiegazione al tocco.
+
 Il menu laterale è raggruppato per argomento, ognuno con il suo sottomenu (vale per tutte le leghe):
 **Overview** · **Gestione** (Formazione, Club, Finanza, Risorse) · **Mercato** (Free Agent, Scambi, Draft, UNDER)
 · **Risultati** (Partite, Classifica, Tabellone, Albo d'oro) · **Extra campo** (SocialOne, Rivalità, Sala stampa,

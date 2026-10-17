@@ -3,7 +3,7 @@ import { useNotificheContesto, useTornaAllaHome } from '../lib/navigazione'
 import type { League } from '../types'
 import { Icona as IconaTonda } from './Icona'
 
-export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'under' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse' | 'social' | 'rivalita' | 'salastampa' | 'spogliatoio'
+export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'under' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse' | 'social' | 'rivalita' | 'salastampa' | 'spogliatoio' | 'pubblico'
 type GameNavProps = { league: League; active: GameView; onNavigate?: (view: GameView) => void }
 
 // Icone disegnate a mano: i glifi Unicode di prima (▦ ♜ ♙ ◆ ◉ ≡) venivano resi dal
@@ -28,6 +28,7 @@ const ICONE: Record<string, ReactNode> = {
   chevron: <path d="m8 10 4 4 4-4" />,
   social: <><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-6l-4.5 3.5V17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" /><path d="M8 9.5h8M8 12.5h5" /></>,
   rivalita: <><path d="M13 3 5 13h5.5L9 21l8-11h-5.5z" /></>,
+  pubblico: <><circle cx="8" cy="9" r="2.6" /><circle cx="16.5" cy="9.5" r="2.2" /><path d="M3 19c0-3 2.4-4.8 5-4.8s5 1.8 5 4.8M14 14.6c.8-.3 1.6-.4 2.5-.4 2.3 0 4.5 1.5 4.5 4.3" /></>,
   gestione: <><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z" /><path d="M7 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1" /><path d="M8.5 12h7M8.5 16h4.5" /></>,
   risultati: <><path d="M4 20V10M10 20V4M16 20v-8M21 20H3" /><path d="m3.5 7 4-3 4 2 4-4" /></>,
   extra: <><path d="m12 3 2.2 5.2L20 9l-4.3 3.8L17 18.5 12 15.6 7 18.5l1.3-5.7L4 9l5.8-.8z" /></>,
@@ -88,8 +89,8 @@ const gruppoExtra: NavGroup = {
   children: [
     { view: 'social', label: 'SocialOne' },
     { view: 'rivalita', label: 'Rivalità' },
+    { view: 'pubblico', label: 'Pubblico' },
     { view: 'salastampa', label: 'Sala stampa' },
-    { view: 'spogliatoio', label: 'Spogliatoio' },
   ],
 }
 
@@ -175,9 +176,15 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
   // e' Admin.tsx a mostrare solo le azioni sensate per lo stato corrente.
   const eAdmin = league.admin_id === notifiche?.userId
   // Extra campo (prova in LegaBot): prima di Avvisi.
-  const conExtra: readonly NavEntry[] = league.conferenze_stampa && league.stato !== 'draft'
-    ? baseItems.flatMap((voce) => !eGruppo(voce) && voce.view === 'notifications' ? [gruppoExtra, voce] : [voce])
+  // Spogliatoio sta in Gestione (richieste dei giocatori): solo nelle leghe con le novita'.
+  const conSpogliatoio: readonly NavEntry[] = league.conferenze_stampa && league.stato !== 'draft'
+    ? baseItems.map((voce) => eGruppo(voce) && voce.group === 'gestione'
+        ? { ...voce, children: [...voce.children, { view: 'spogliatoio' as GameView, label: 'Spogliatoio' }] }
+        : voce)
     : baseItems
+  const conExtra: readonly NavEntry[] = league.conferenze_stampa && league.stato !== 'draft'
+    ? conSpogliatoio.flatMap((voce) => !eGruppo(voce) && voce.view === 'notifications' ? [gruppoExtra, voce] : [voce])
+    : conSpogliatoio
   const items: readonly NavEntry[] = eAdmin && league.fase_carriera !== 'offseason'
     ? [...conExtra, { view: 'admin', label: 'Admin' }]
     : conExtra
