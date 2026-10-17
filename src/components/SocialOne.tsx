@@ -362,23 +362,3 @@ export function SocialOne({ membership, onNavigate }: Props) {
     </div>
   </main>
 }
-
-// L'anteprima in home, al posto delle notizie: i primi post "per te" e il rimando al feed.
-export function SocialAnteprima({ membership, onNavigate }: Props) {
-  const league = membership.league as League
-  const dati = useSeasonData(membership)
-  const { post, caricamento, mettiMiPiace, commenta } = useSocialFeed(league.id, true, 3)
-  const foto = useFotoGiocatori(post)
-  return <section className="dash-sezione x-anteprima">
-    <header className="dash-testa">
-      <h2 className="dash-linguetta">SocialOne</h2>
-      <button className="dash-link" type="button" onClick={() => onNavigate('social')}>Apri il feed ›</button>
-    </header>
-    <div className="x-anteprima__riquadro">
-      {caricamento ? <div className="x-stato"><p>Carico il feed…</p></div>
-        : post.length === 0 ? <div className="x-stato"><p>Ancora nessun post: appena succede qualcosa nella lega, lo trovi qui.</p></div>
-        : <Feed post={post} dati={dati} foto={foto} onMiPiace={(id) => void mettiMiPiace(id)} onCommenta={commenta} />}
-      <button className="x-anteprima__tutti" type="button" onClick={() => onNavigate('social')}>Mostra tutto il feed</button>
-    </div>
-  </section>
-}

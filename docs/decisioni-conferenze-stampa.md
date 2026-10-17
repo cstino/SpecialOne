@@ -203,7 +203,8 @@ Il menu laterale è raggruppato per argomento, ognuno con il suo sottomenu (vale
 **Overview** · **Gestione** (Formazione, Club, Finanza, Risorse) · **Mercato** (Free Agent, Scambi, Draft, UNDER)
 · **Risultati** (Partite, Classifica, Tabellone, Albo d'oro) · **Extra campo** (SocialOne, Rivalità, Sala stampa,
 Spogliatoio: solo nelle leghe con le novità, cioè LegaBot) · **Avvisi** · **Aiuto** (e Admin per l'admin).
-Sala stampa e Spogliatoio non stanno più nella home, che si era riempita troppo: sono pagine a parte in
+Anche SocialOne non sta più nella home (occupava troppo spazio): la home di LegaBot è tornata come quella delle
+altre leghe, con "Oggi nella lega". Sala stampa e Spogliatoio non stanno più nella home, che si era riempita troppo: sono pagine a parte in
 Extra campo, e le loro notifiche portano lì e accendono il pallino sulla voce di menu.
 
 ## 3. SocialOne — le notizie in stile social
