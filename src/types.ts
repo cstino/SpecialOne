@@ -31,6 +31,9 @@ export type Team = {
   id: number
   // Umore del pubblico, 0-100 (prova in LegaBot): muove il bonus casa. Visibile a tutta la lega.
   pubblico?: number | null
+  // La squadra rivale dichiarata (derby fisso), con la stagione in cui e' stata scelta: si cambia una volta a stagione.
+  rivale_id?: number | null
+  rivale_stagione?: number | null
   league_id: number
   // Le squadre PC arrivano dal database senza utente; il client le normalizza
   // a stringa vuota prima di usarle nei componenti che indicizzano per user id.

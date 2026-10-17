@@ -44,6 +44,7 @@ import { Lobby } from './components/Lobby'
 import { LoadingLogo } from './components/LoadingLogo'
 import { MenuIniziale } from './components/MenuIniziale'
 import { NomeAllenatoreObbligatorio, useNomeAllenatoreObbligatorio } from './components/NomeAllenatoreObbligatorio'
+import { ScegliRivale } from './components/ScegliRivale'
 import { NovitaBenvenuto, useNovitaBenvenuto } from './components/NovitaBenvenuto'
 import { Onboarding } from './components/Onboarding'
 import { ContestoHome, ContestoNotifiche } from './lib/navigazione'
@@ -70,6 +71,9 @@ export default function App() {
   const manutenzione = useManutenzione()
   const [session, setSession] = useState<Session | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
+  // Scelta della squadra rivale: rimandata per questa sessione, oppure riaperta dalla pagina Rivalita'.
+  const [rivaleRimandato, setRivaleRimandato] = useState(false)
+  const [cambiaRivale, setCambiaRivale] = useState(false)
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [dataLoading, setDataLoading] = useState(false)
   const [activeLeagueId, setActiveLeagueId] = useState<number | null>(null)
@@ -380,6 +384,15 @@ export default function App() {
 
   const active = memberships.find((item) => item.league_id === activeLeagueId) ?? memberships[0]
 
+  // Nelle leghe con le novita' ogni allenatore indica il suo rivale (derby fisso): la pagina compare finche'
+  // non lo sceglie, a meno che rimandi.
+  if (active.league?.conferenze_stampa && active.league.stato === 'stagione' && active.user_id
+    && ((!active.rivale_id && !rivaleRimandato) || cambiaRivale)) {
+    return <ScegliRivale membership={active}
+      onFatto={() => { setCambiaRivale(false); void loadMemberships() }}
+      onDopo={() => { setCambiaRivale(false); setRivaleRimandato(true) }} />
+  }
+
   // Anteprima con dati fittizi delle dirette di fine off-season (non scrive niente).
   if (new URLSearchParams(window.location.search).get('anteprima') === 'offseason') return <AnteprimaOffseason />
 
@@ -503,7 +516,7 @@ export default function App() {
       : gameView === 'honors' ? <AlboDOro membership={active} onNavigate={navigateGame} />
       : gameView === 'notifications' ? <Avvisi membership={active} onNavigate={navigateGame} />
       : gameView === 'social' ? <SocialOne membership={active} onNavigate={navigateGame} />
-      : gameView === 'rivalita' ? <Rivalita membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
+      : gameView === 'rivalita' ? <Rivalita membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} onCambiaRivale={() => setCambiaRivale(true)} />
       : gameView === 'salastampa' ? <PaginaSalaStampa membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} />
       : gameView === 'spogliatoio' ? <PaginaSpogliatoio membership={active} onNavigate={navigateGame} />
       : gameView === 'pubblico' ? <PaginaPubblico membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />

@@ -118,6 +118,7 @@ export function SalaStampa({ teamId, revealedMatchIds, senzaTitolo = false, quan
                       {invio === d.id ? 'La sala ascolta…' : 'Rispondi'}
                     </button>
                   </div>
+                  <p className="stampa__suggerimento">Puoi parlare di qualsiasi squadra della lega, anche una che non affronti: schernirla o attaccarla fa salire la rivalità (e il pubblico), elogiarla la fa scendere.</p>
                   {errori[d.id] && <p className="stampa__errore" role="alert">{errori[d.id]}</p>}
                 </div>}
           </article>

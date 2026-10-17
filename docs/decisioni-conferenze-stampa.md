@@ -306,3 +306,8 @@ Extra campo, e le loro notifiche portano lì e accendono il pallino sulla voce d
 - RLS: domande visibili solo all'allenatore interessato fino alla risposta; il giudizio
   numerico dell'AI resta lato server.
 - Fuso orario: scadenze e generazione sempre `Europe/Rome`.
+
+## 4. Rivale dichiarato e domande sul campionato (18/10/2026)
+
+- **Rivale dichiarato.** Alla prima apertura in una lega con le novità ogni allenatore sceglie la squadra con cui ha la rivalità più sentita (pagina `ScegliRivale`, "Scelgo dopo" la rimanda alla sessione successiva). Quella partita è sempre un derby: la coppia ha grado minimo 91 (il derby scatta oltre 90), anche se a sceglierla è stato solo uno dei due. Il grado non scende sotto 91 né col raffreddamento né con gli elogi finché una delle due squadre ha scelto l'altra. Si cambia una volta a stagione (dalla pagina Rivalità). Le altre rivalità salgono e scendono come prima. Colonne `teams.rivale_id` / `rivale_stagione`, RPC `scegli_rivale`.
+- **Domande sul campionato.** Dalla 3ª giornata (non nei playoff, almeno 6 squadre) la scheda per l'AI include le prime e le ultime tre della classifica, e una delle domande può riguardare la lotta al vertice, il titolo o la salvezza, con le squadre reali. Nominarle nella risposta muove la rivalità anche con squadre mai affrontate. Nessuna chiamata AI in più.

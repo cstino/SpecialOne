@@ -180,6 +180,14 @@ async function genera(admin: any, matchId: number) {
   const { data: classifica } = await admin.from('standings').select('team_id, posizione, punti, giocate').eq('season_id', f.season_id)
   const posizione = new Map((classifica ?? []).map((s: { team_id: number }) => [s.team_id, s]))
   const nSquadre = (classifica ?? []).length
+  // Le squadre in testa e in coda: servono per le domande sul campionato (lotta al vertice, lotta salvezza).
+  const ordinata = [...(classifica ?? [])].sort((a: { posizione: number }, b: { posizione: number }) => a.posizione - b.posizione) as Array<{ team_id: number; posizione: number; punti: number }>
+  const { data: tutte } = await admin.from('teams').select('id, nome').eq('league_id', f.league_id)
+  const nomeSquadra = new Map((tutte ?? []).map((x: { id: number; nome: string }) => [x.id, x.nome]))
+  const elenco = (v: typeof ordinata) => v.map((x) => `${nomeSquadra.get(x.team_id)} ${x.posizione}° (${x.punti} pt)`).join(', ')
+  const campionatoUtile = !f.bracket_tie_id && f.giornata >= 3 && nSquadre >= 6
+  const vertice = campionatoUtile ? ordinata.slice(0, 3) : []
+  const coda = campionatoUtile ? ordinata.slice(-3) : []
 
   const forma = (teamId: number) => formaRecente(admin, f.season_id, f.giornata, teamId)
 
@@ -226,6 +234,7 @@ async function genera(admin: any, matchId: number) {
         ? `Giocatori di ${t.nome} in grave difficoltà oggi: ${mie.filter((p: { voto: number }) => p.voto <= 5.5).map((p: { player_instance_id: number; voto: number }) => `${nome.get(p.player_instance_id)} (${prestazione(p.voto)})`).join(', ')}.` : '',
       mie.length ? `Fra i giocatori di ${t.nome}: il migliore è stato ${nome.get(mie[0].player_instance_id)} (${prestazione(mie[0].voto)}), il meno brillante ${nome.get(mie[mie.length - 1].player_instance_id)} (${prestazione(mie[mie.length - 1].voto)}).` : '',
       pos ? `Classifica dopo questa partita: ${t.nome} ${pos.posizione}° su ${nSquadre} con ${pos.punti} punti in ${pos.giocate} partite${posAvv ? `; ${avversario} ${posAvv.posizione}° con ${posAvv.punti}` : ''}.` : '',
+      campionatoUtile ? `Il campionato: in testa ${elenco(vertice)}. In fondo: ${elenco(coda)}.` : '',
       ultime.length ? `Risultati precedenti di ${t.nome} (dal più recente): ${ultime.join(' ')}${senzaVittorie === -1 ? ` — nessuna vittoria nelle ultime ${ultime.length}` : senzaVittorie >= 2 ? ` — senza vittorie da ${senzaVittorie} partite` : ''}.` : '',
     ].filter(Boolean).join('\n')
 
@@ -238,6 +247,8 @@ async function genera(admin: any, matchId: number) {
       'ogni domanda al massimo 280 caratteri, una sola domanda per voce (niente elenchi); ' +
       'scegli gli spunti più forti (gol nel finale, rimonte, espulsioni, serie negative o positive, classifica, migliori e peggiori in campo). ' +
       'Se un giocatore della squadra è andato molto male o è stato espulso, una domanda può incalzare l\'allenatore proprio su di lui ("lo difende?", "lo rifarebbe giocare?"): è la domanda trappola, dove né difenderlo sempre né scaricarlo è la risposta ovvia. ' +
+      'Se nel riepilogo c\'è la voce "Il campionato", una delle domande può allargarsi al torneo: la lotta al vertice o per il titolo, la corsa a un posto alto, la lotta salvezza in fondo, o cosa ne pensa delle squadre che stanno davanti o dietro; ' +
+      'scegli il tema in base alla posizione della squadra dell\'allenatore (in alto: corsa al titolo e rivali dirette; a metà: obiettivi e ambizioni; in basso: salvezza), e nomina le squadre reali del riepilogo, mai altre; varia il taglio da una domanda all\'altra, senza usare sempre la stessa formula. ' +
       'Fai 2 domande se la partita offre almeno due spunti diversi, altrimenti 1. ' +
       'La voce "giornalista" è il nome di una testata o di un programma sportivo italiano REALE, scelto fra questi: ' +
       'Sky Sport, Sky Sport 24, DAZN, Rai Sport, 90° minuto, Tutto il calcio minuto per minuto, Sport Mediaset, Mediaset Infinity, ' +

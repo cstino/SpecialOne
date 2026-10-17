@@ -19,9 +19,9 @@ function fascia(grado: number): Fascia {
   return { testo: 'Nessuna rivalità', classe: 'nulla' }
 }
 
-type Props = { membership: Membership; onNavigate: (view: GameView) => void; onOpenTeam?: (teamId: number) => void }
+type Props = { membership: Membership; onNavigate: (view: GameView) => void; onOpenTeam?: (teamId: number) => void; onCambiaRivale?: () => void }
 
-export function Rivalita({ membership, onNavigate, onOpenTeam }: Props) {
+export function Rivalita({ membership, onNavigate, onOpenTeam, onCambiaRivale }: Props) {
   const league = membership.league as League
   const dati = useSeasonData(membership)
   const [gradi, setGradi] = useState<Map<number, number> | null>(null)
@@ -51,7 +51,8 @@ export function Rivalita({ membership, onNavigate, onOpenTeam }: Props) {
     <div className="season-page season-page--narrow rivalita-page">
       <section className="alerts-heading">
         <div><p className="kicker">{league.nome}</p><h1>Rivalità.</h1>
-          <p>Il rapporto con ogni squadra, da 0 a 100%. Sale se in conferenza stampa schernisci, attacchi o disprezzi un avversario, scende se lo elogi, e si raffredda col tempo. Negli scontri diretti il risultato pesa su morale e pubblico, in proporzione al grado. Lo vedi solo tu.</p></div>
+          <p>Il rapporto con ogni squadra, da 0 a 100%. Sale se in conferenza stampa schernisci, attacchi o disprezzi una squadra (qualsiasi, anche una che non affronti presto), scende se la elogi, e si raffredda di un punto a giornata. Ogni risposta vale +10 se la attacchi, −6 se la elogi. Negli scontri diretti il risultato pesa su morale e pubblico, in proporzione al grado. Lo vedi solo tu.</p>
+          {onCambiaRivale && <p>Il tuo derby: <strong>{membership.rivale_id ? dati.teamById.get(membership.rivale_id)?.nome ?? '—' : 'non ancora scelto'}</strong>. <button className="rivalita-cambia" type="button" onClick={onCambiaRivale}>{membership.rivale_id ? 'Cambia rivale' : 'Scegli il rivale'}</button></p>}</div>
       </section>
       {dati.loading || gradi === null
         ? <section className="season-state is-caricamento"><LoadingLogo compatto /><h2>Carico le rivalità…</h2><span className="caricamento-barra" aria-hidden="true" /></section>

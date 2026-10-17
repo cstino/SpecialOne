@@ -4590,6 +4590,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .stampa__esito.is-scarsa { --es: #ffb04d; }
 .stampa__esito.is-pessima { --es: #ff4d6d; }
 .stampa__attesa, .stampa__nocomment { margin: 0; color: rgba(255,255,255,.6); font-size: .88rem; }
+.stampa__suggerimento { margin: 0; color: #8f86a3; font-size: .74rem; line-height: 1.4; }
 .stampa__errore { margin: 0; color: #ff8a9e; font-size: .82rem; }
 
 .stampa__replica { margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: rgba(255,113,136,.16); color: #ff7188; font-size: .58rem; font-weight: 900; letter-spacing: .08em; }
@@ -5587,3 +5588,14 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .team-roster-player--svincolato:not(:disabled):hover > :not(.team-roster-player__svincolato) { filter: grayscale(.4) brightness(.75); }
 .team-roster-player__svincolato { position: absolute; top: 9px; right: 12px; display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border: 1px solid rgba(255,154,61,.45); border-radius: 999px; color: #ffb46b; background: rgba(255,154,61,.12); font: 700 .58rem/1.2 "Bai Jamjuree", ui-sans-serif, sans-serif; letter-spacing: .14em; text-transform: uppercase; pointer-events: none; }
 .team-roster-player__svincolato::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #ffb46b; box-shadow: 0 0 6px rgba(255,154,61,.7); }
+
+/* Scelta della squadra rivale (derby fisso) */
+.scegli-rivale { max-width: 520px; margin: 0 auto; padding: 28px 16px 40px; display: grid; gap: 14px; color: #f4f1fb; }
+.scegli-rivale h1 { margin: 0; font-size: 1.7rem; }
+.scegli-rivale p { margin: 0; color: #b9b0cc; line-height: 1.45; }
+.scegli-rivale__elenco { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.scegli-rivale__elenco button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid rgba(255,255,255,.14); border-radius: 10px; background: rgba(255,255,255,.04); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.scegli-rivale__elenco button.attiva { border-color: #ff5a6e; background: rgba(255,90,110,.14); }
+.scegli-rivale__errore { color: #ff8b8b !important; }
+.scegli-rivale__azioni { display: grid; gap: 8px; }
+.rivalita-cambia { border: 0; background: none; padding: 0; color: #ff8b97; font: inherit; text-decoration: underline; cursor: pointer; }
