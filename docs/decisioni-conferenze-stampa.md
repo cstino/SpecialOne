@@ -145,6 +145,18 @@ e criticare un giocatore non converrebbe mai. Quindi:
 - Dove: scheda del giocatore (requisiti e "Nomina capitano"), badge "C" nella rosa, riga nella
   card del morale di squadra. Migrazione `20261017100000_capitano_a_requisiti.sql`.
 
+## 2d. Morale a ogni giornata (deciso il 17 ottobre 2026, in prova su LegaBot)
+- Nelle leghe con le conferenze stampa il morale non si ricalcola più a quarti di stagione ma a
+  **ogni giornata**, subito dopo la simulazione: si applica 1/L del delta di un quarto
+  (L = giornate di un quarto), quindi il **totale a stagione è quello di prima** ma il morale
+  scorre invece di saltare. Formule invariate (minutaggio, ingaggio, risultati, bandiera, capitano).
+- Il morale è un intero: l'arrotondamento è a sorte, così il valore medio si conserva e i delta
+  piccoli non spariscono. Una sola applicazione per giornata anche se la simulazione si rilancia.
+- Si aggancia a `applica_morale_checkpoint` (già chiamata dalla simulazione a ogni giornata):
+  nessuna modifica alla Edge Function. Migrazione `20261017140000_morale_giornaliero.sql`.
+- Da guardare nei primi giorni: volatilità e spirale (una brutta serie abbassa il morale, che
+  rende un filo meno). Altre leghe invariate finché non si decide di estenderlo.
+
 ## 3. SocialOne — le notizie in stile social
 - **Deciso**: la sezione social si chiama **SocialOne**, per restare in tema col gioco.
 - In home una card con le notizie **della squadra dell'utente** per prime; toccandola si entra
