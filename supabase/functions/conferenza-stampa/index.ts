@@ -180,14 +180,18 @@ async function genera(admin: any, matchId: number) {
   const { data: classifica } = await admin.from('standings').select('team_id, posizione, punti, giocate').eq('season_id', f.season_id)
   const posizione = new Map((classifica ?? []).map((s: { team_id: number }) => [s.team_id, s]))
   const nSquadre = (classifica ?? []).length
-  // Le squadre in testa e in coda: servono per le domande sul campionato (lotta al vertice, lotta salvezza).
+  // Le squadre in testa e in coda: servono per le domande sul campionato (lotta al vertice, Title Playoff e Draft Playoff).
   const ordinata = [...(classifica ?? [])].sort((a: { posizione: number }, b: { posizione: number }) => a.posizione - b.posizione) as Array<{ team_id: number; posizione: number; punti: number }>
   const { data: tutte } = await admin.from('teams').select('id, nome').eq('league_id', f.league_id)
   const nomeSquadra = new Map((tutte ?? []).map((x: { id: number; nome: string }) => [x.id, x.nome]))
   const elenco = (v: typeof ordinata) => v.map((x) => `${nomeSquadra.get(x.team_id)} ${x.posizione}° (${x.punti} pt)`).join(', ')
   const campionatoUtile = !f.bracket_tie_id && f.giornata >= 3 && nSquadre >= 6
+  // Niente retrocessione: le prime 8 vanno al Title Playoff, tutte le altre al Draft Playoff (che esiste solo con
+  // piu' di 8 squadre; l'ordine di scelta del mercato dipende da quei tabelloni).
+  const POSTI_TITLE = 8
   const vertice = campionatoUtile ? ordinata.slice(0, 3) : []
-  const coda = campionatoUtile ? ordinata.slice(-3) : []
+  const sulLimite = campionatoUtile && nSquadre > POSTI_TITLE ? ordinata.slice(POSTI_TITLE - 2, POSTI_TITLE + 2) : []
+  const zonaDraft = campionatoUtile && nSquadre > POSTI_TITLE ? ordinata.slice(POSTI_TITLE) : []
 
   const forma = (teamId: number) => formaRecente(admin, f.season_id, f.giornata, teamId)
 
@@ -219,6 +223,8 @@ async function genera(admin: any, matchId: number) {
     const pos = posizione.get(t.id) as { posizione: number; punti: number; giocate: number } | undefined
     const posAvv = posizione.get(inCasa ? f.away_team_id : f.home_team_id) as { posizione: number; punti: number } | undefined
     const ultime = await forma(t.id)
+    // Ogni tanto una domanda sugli obiettivi di stagione: sempre dopo la prima giornata, poi una volta su cinque.
+    const obiettivi = !f.bracket_tie_id && (f.giornata === 1 || Math.random() < 0.2)
     const senzaVittorie = ultime.findIndex((r) => r === 'V')
 
     const scheda = [
@@ -234,7 +240,12 @@ async function genera(admin: any, matchId: number) {
         ? `Giocatori di ${t.nome} in grave difficoltà oggi: ${mie.filter((p: { voto: number }) => p.voto <= 5.5).map((p: { player_instance_id: number; voto: number }) => `${nome.get(p.player_instance_id)} (${prestazione(p.voto)})`).join(', ')}.` : '',
       mie.length ? `Fra i giocatori di ${t.nome}: il migliore è stato ${nome.get(mie[0].player_instance_id)} (${prestazione(mie[0].voto)}), il meno brillante ${nome.get(mie[mie.length - 1].player_instance_id)} (${prestazione(mie[mie.length - 1].voto)}).` : '',
       pos ? `Classifica dopo questa partita: ${t.nome} ${pos.posizione}° su ${nSquadre} con ${pos.punti} punti in ${pos.giocate} partite${posAvv ? `; ${avversario} ${posAvv.posizione}° con ${posAvv.punti}` : ''}.` : '',
-      campionatoUtile ? `Il campionato: in testa ${elenco(vertice)}. In fondo: ${elenco(coda)}.` : '',
+      campionatoUtile
+        ? `Il campionato: in testa ${elenco(vertice)}. ${zonaDraft.length
+          ? `Le prime ${POSTI_TITLE} vanno al Title Playoff (per il titolo), le altre al Draft Playoff (per l'ordine di scelta nel mercato). Sul confine fra i due playoff: ${elenco(sulLimite)}.`
+          : `Le ${nSquadre} squadre vanno tutte al Title Playoff (per il titolo).`}`
+        : '',
+      obiettivi ? `Da inizio stagione (${pos ? `${t.nome} è ${pos.posizione}° con ${pos.punti} punti` : 'classifica ancora vuota'}): una domanda può chiedere all'allenatore gli obiettivi di stagione della squadra e fin dove pensa di arrivare.` : '',
       ultime.length ? `Risultati precedenti di ${t.nome} (dal più recente): ${ultime.join(' ')}${senzaVittorie === -1 ? ` — nessuna vittoria nelle ultime ${ultime.length}` : senzaVittorie >= 2 ? ` — senza vittorie da ${senzaVittorie} partite` : ''}.` : '',
     ].filter(Boolean).join('\n')
 
@@ -247,8 +258,11 @@ async function genera(admin: any, matchId: number) {
       'ogni domanda al massimo 280 caratteri, una sola domanda per voce (niente elenchi); ' +
       'scegli gli spunti più forti (gol nel finale, rimonte, espulsioni, serie negative o positive, classifica, migliori e peggiori in campo). ' +
       'Se un giocatore della squadra è andato molto male o è stato espulso, una domanda può incalzare l\'allenatore proprio su di lui ("lo difende?", "lo rifarebbe giocare?"): è la domanda trappola, dove né difenderlo sempre né scaricarlo è la risposta ovvia. ' +
-      'Se nel riepilogo c\'è la voce "Il campionato", una delle domande può allargarsi al torneo: la lotta al vertice o per il titolo, la corsa a un posto alto, la lotta salvezza in fondo, o cosa ne pensa delle squadre che stanno davanti o dietro; ' +
-      'scegli il tema in base alla posizione della squadra dell\'allenatore (in alto: corsa al titolo e rivali dirette; a metà: obiettivi e ambizioni; in basso: salvezza), e nomina le squadre reali del riepilogo, mai altre; varia il taglio da una domanda all\'altra, senza usare sempre la stessa formula. ' +
+      'In questo campionato NON esiste la retrocessione: non parlare MAI di salvezza, retrocessione o zona retrocessione. ' +
+      'Se nel riepilogo c\'è la voce "Il campionato", una delle domande può allargarsi al torneo: la lotta al vertice e per il titolo, la corsa per entrare fra le prime del Title Playoff, la lotta per il Draft Playoff (chi ci finisce, l\'ordine di scelta nel mercato), o cosa ne pensa delle squadre che stanno davanti o dietro; ' +
+      'parla del Draft Playoff solo se il riepilogo lo cita; ' +
+      'scegli il tema in base alla posizione della squadra dell\'allenatore (in alto: corsa al titolo e rivali dirette; sul confine: la corsa per entrare nel Title Playoff; in basso: il Draft Playoff), e nomina le squadre reali del riepilogo, mai altre; varia il taglio da una domanda all\'altra, senza usare sempre la stessa formula. ' +
+      'Se nel riepilogo c\'è la voce sugli obiettivi di stagione, una delle domande chiede quali sono gli obiettivi della squadra e fin dove pensa di arrivare (titolo, Title Playoff, crescita dei giovani, ecc.), senza dare per scontato un obiettivo. ' +
       'Fai 2 domande se la partita offre almeno due spunti diversi, altrimenti 1. ' +
       'La voce "giornalista" è il nome di una testata o di un programma sportivo italiano REALE, scelto fra questi: ' +
       'Sky Sport, Sky Sport 24, DAZN, Rai Sport, 90° minuto, Tutto il calcio minuto per minuto, Sport Mediaset, Mediaset Infinity, ' +
