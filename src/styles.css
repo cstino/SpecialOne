@@ -2099,6 +2099,17 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .league-news__visual { position:relative;align-self:stretch;display:grid;place-items:end center;overflow:hidden; }.league-news__visual::before { content:"";position:absolute;inset:10% -30% -10%;background:radial-gradient(circle,rgba(77,216,202,.25),rgba(159,63,230,.16) 40%,transparent 70%);filter:blur(8px); }.league-news__visual>img:not(.league-news__mark) { position:relative;z-index:1;width:130%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 12px 10px rgba(0,0,0,.5)); }.league-news__mark { position:relative;z-index:1;width:74px;opacity:.42;filter:drop-shadow(0 0 22px rgba(185,82,255,.5)); }
 .league-news__duel { position:relative;z-index:1;display:grid;grid-template-columns:1fr;justify-items:center;gap:7px; }.league-news__duel .crest { width:58px; }.league-news__duel b { color:#9b8aa9;font-size:.54rem;letter-spacing:.12em; }
 .league-news__controls { position:relative;z-index:2;display:grid;grid-template-columns:34px 1fr 34px;align-items:center;gap:9px;padding:0; }.league-news__controls>button { width:32px;height:32px;padding:0;border:1px solid #493558;border-radius:50%;color:#d9c9e7;background:#211a2a;font-size:1.15rem;line-height:1;cursor:pointer; }.league-news__controls>div { display:flex;justify-content:center;gap:5px; }.league-news__controls>div button { width:6px;height:6px;padding:0;border:0;border-radius:999px;background:#55475f;cursor:pointer;transition:width .18s ease,background .18s ease; }.league-news__controls>div button.is-active { width:20px;background:#bf68ff; }
+.league-news--social .league-news__copy small { color:#b98cff; }
+.league-news--social .social-card__testo { display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;color:#cabfd6;font-size:.82rem;line-height:1.45; }
+.league-news--social .league-news__copy strong { font-size:1.15rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.social-card__meta { display:flex;align-items:center;gap:6px;color:#8f86a3;font-size:.72rem;font-weight:700;font-variant-numeric:tabular-nums; }
+.social-card__meta i { color:#f91880;font-style:normal;font-size:.8rem; }
+.social-card__meta i + * { margin-right:6px; }
+.social-card__avatar { place-items:center !important; }
+.social-card__avatar .x-avatar, .social-card__avatar .x-avatar-tifoso { width:84px;height:84px; }
+.social-card__avatar .x-avatar-tifoso .x-avatar { width:84px;height:84px; }
+.social-card__avatar .x-avatar-tifoso__stemma { width:30px;height:30px;right:-6px;bottom:-4px; }
+.social-card__avatar .x-avatar--persona b { font-size:1.4rem; }
 .league-news--partita .league-news__copy small { color:#60d5cf; }.league-news--mercato .league-news__copy small { color:#d28cff; }
 .season-card__heading { position: relative; display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; }
 .season-card .kicker { margin-bottom: 7px; color: #bf78f7; font-size: .66rem; }

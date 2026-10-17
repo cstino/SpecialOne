@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Icona } from './Icona'
 import { supabase } from '../lib/supabase'
 import { useSeasonData } from '../lib/useSeasonData'
 import type { League, Membership } from '../types'
@@ -75,7 +76,7 @@ export function useSocialFeed(leagueId: number, perTe: boolean, limite = PAGINA)
   return { post, caricamento, altri, errore, mostraAltri, mettiMiPiace, commenta, ricarica: () => void carica(0) }
 }
 
-function useFotoGiocatori(post: PostSocial[]) {
+export function useFotoGiocatori(post: PostSocial[]) {
   const [foto, setFoto] = useState<Map<number, string>>(new Map())
   const ids = useMemo(() => [...new Set(post.flatMap((p) => p.player_instance_id ? [p.player_instance_id] : []))].sort((a, b) => a - b).join(','), [post])
   useEffect(() => {
@@ -152,7 +153,7 @@ function Svg({ nome }: { nome: keyof typeof IconaAzione }) {
   return <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{IconaAzione[nome]}</svg>
 }
 
-function Avatar({ post, dati, foto }: { post: PostSocial; dati: Dati; foto: Map<number, string> }) {
+export function Avatar({ post, dati, foto }: { post: PostSocial; dati: Dati; foto: Map<number, string> }) {
   if (post.autore_tipo === 'lega') return <span className="x-avatar x-avatar--lega"><img src="/specialone-mark.svg" alt="" /></span>
   if (post.autore_tipo === 'giocatore') {
     const url = post.player_instance_id ? foto.get(post.player_instance_id) : undefined
@@ -361,4 +362,53 @@ export function SocialOne({ membership, onNavigate }: Props) {
         </>}
     </div>
   </main>
+}
+
+// La card in home, al posto di "Oggi nella lega": stessa struttura e stesse misure, ma con i post di SocialOne.
+// Ruota da sola fra i post piu' rilevanti per te; toccarla apre il feed.
+const ETICHETTA_CARD: Record<PostSocial['autore_tipo'], string> = {
+  lega: 'UFFICIALE', testata: 'STAMPA', allenatore: 'ALLENATORE', tifosi: 'TIFOSI', giocatore: 'GIOCATORE',
+}
+
+export function SocialCard({ membership, onNavigate }: Props) {
+  const league = membership.league as League
+  const dati = useSeasonData(membership)
+  const { post, caricamento } = useSocialFeed(league.id, true, 6)
+  const radici = useMemo(() => post.filter((p) => p.in_risposta_a === null), [post])
+  const foto = useFotoGiocatori(radici)
+  const [indice, setIndice] = useState(0)
+
+  useEffect(() => {
+    setIndice((i) => Math.min(i, Math.max(0, radici.length - 1)))
+    if (radici.length < 2) return
+    const timer = window.setInterval(() => setIndice((i) => (i + 1) % radici.length), 6500)
+    return () => window.clearInterval(timer)
+  }, [radici.length])
+
+  const attivo = radici[indice]
+  const risposte = attivo ? post.filter((p) => p.in_risposta_a === attivo.id).length : 0
+  return <article className="league-news league-news--social">
+    <header className="league-news__heading"><div><p className="kicker">Social</p><h2>SocialOne</h2></div><span>LIVE</span></header>
+    <div className="league-news__viewport">
+      <button className="league-news__story" type="button" onClick={() => onNavigate('social')}>
+        {caricamento ? <div className="league-news__copy"><small>SOCIALONE</small><p>Carico il feed…</p></div>
+          : !attivo ? <div className="league-news__copy"><small>SOCIALONE</small><strong>Ancora nessun post</strong><p>Appena succede qualcosa nella lega, lo trovi qui.</p><em>Apri SocialOne →</em></div>
+          : <>
+            <div className="league-news__copy">
+              <small>{ETICHETTA_CARD[attivo.autore_tipo]} · {tempoBreve(attivo.creato_il).toUpperCase()}</small>
+              <strong>{attivo.autore_nome}</strong>
+              <p className="social-card__testo"><ConTag testo={attivo.testo} /></p>
+              <span className="social-card__meta"><i aria-hidden="true">♥</i>{attivo.n_mi_piace}{risposte > 0 && <span>· {risposte} {risposte === 1 ? 'risposta' : 'risposte'}</span>}</span>
+              <em>Apri SocialOne →</em>
+            </div>
+            <div className="league-news__visual social-card__avatar" aria-hidden="true"><Avatar post={attivo} dati={dati} foto={foto} /></div>
+          </>}
+      </button>
+    </div>
+    {radici.length > 1 && <footer className="league-news__controls">
+      <button type="button" aria-label="Post precedente" onClick={() => setIndice((indice - 1 + radici.length) % radici.length)}><Icona nome="indietro" /></button>
+      <div>{radici.map((p, i) => <button key={p.id} className={i === indice ? 'is-active' : ''} type="button" aria-label={`Vai al post ${i + 1}`} onClick={() => setIndice(i)} />)}</div>
+      <button type="button" aria-label="Post successivo" onClick={() => setIndice((indice + 1) % radici.length)}><Icona nome="avanti" /></button>
+    </footer>}
+  </article>
 }
