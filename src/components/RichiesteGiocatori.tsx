@@ -24,10 +24,10 @@ type Giocatore = { nome: string; ruolo: string; foto?: string }
 
 const MAX = 1200
 const CHIEDE: Record<Richiesta['tipo'], string> = {
-  titolare: 'Chiede di giocare titolare', spazio: 'Chiede più spazio', riposo: 'Chiede di riposare',
+  titolare: 'Chiede di giocare titolare', spazio: 'Chiede più minuti', riposo: 'Chiede di riposare',
 }
 const PROMESSA: Record<Richiesta['tipo'], string> = {
-  titolare: 'titolare nella prossima partita', spazio: 'più minuti nella prossima partita', riposo: 'a riposo nella prossima partita',
+  titolare: 'titolare nella prossima partita', spazio: 'almeno mezz\'ora nella prossima partita', riposo: 'a riposo nella prossima partita',
 }
 const numero = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toFixed(0)}`
 

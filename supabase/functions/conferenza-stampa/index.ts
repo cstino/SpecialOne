@@ -480,7 +480,7 @@ type ValutazioneRichiesta = { insensata: boolean; voto: number; promessa?: boole
 
 const COSA_CHIEDE: Record<string, string> = {
   titolare: 'di essere schierato titolare nella prossima partita',
-  spazio: 'più minuti nelle prossime partite',
+  spazio: 'più minuti nella prossima partita (almeno mezz\'ora)',
   riposo: 'di riposare (restare fuori dai titolari) nella prossima partita',
 }
 const PROMESSA_VALE: Record<string, string> = {

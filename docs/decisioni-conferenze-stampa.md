@@ -174,8 +174,9 @@ e criticare un giocatore non converrebbe mai. Quindi:
 Durante l'anno un giocatore scrive al mister con una richiesta personale; l'allenatore risponde sempre a
 testo libero e l'AI valuta l'effetto sul **morale di quel giocatore** (solo suo, non della rosa).
 
-- **Tipi**: "schierami titolare nella prossima partita", "più spazio nelle prossime partite", "posso
-  riposare?". Escluso: la fascia di capitano (cambiare capitano toglie morale all'ex capitano, sarebbe
+- **Tipi**: "schierami titolare nella prossima partita", "più minuti nella prossima partita (almeno
+  mezz'ora)", "posso riposare?". Le richieste riguardano sempre la PROSSIMA partita, con un vincolo che
+  si può verificare. Escluso: la fascia di capitano (cambiare capitano toglie morale all'ex capitano, sarebbe
   una richiesta troppo azzardata).
 - **Quando nascono** (`private.genera_richieste_giocatori`, cron 5 minuti): **poche, 6-7 a stagione per squadra,
   mai durante i playoff** (deciso il 17 ottobre 2026). Massimo 7 a stagione, almeno 3 giornate fra una e
