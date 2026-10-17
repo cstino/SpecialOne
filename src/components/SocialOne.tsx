@@ -62,7 +62,15 @@ export function useSocialFeed(leagueId: number, perTe: boolean, limite = PAGINA)
     if (r) setPost((p) => p.map((x) => x.id === id ? { ...x, mio_mi_piace: r.mio, n_mi_piace: Number(r.totale) } : x))
   }, [carica])
 
-  return { post, caricamento, altri, errore, mostraAltri, mettiMiPiace, ricarica: () => void carica(0) }
+  // Un commento: risponde al post e ricarica il feed (la conversazione si aggiorna).
+  const commenta = useCallback(async (id: number, testo: string): Promise<string | null> => {
+    const { error } = await supabase.rpc('social_commenta', { p_post_id: id, p_testo: testo })
+    if (error) return error.message
+    await carica(0)
+    return null
+  }, [carica])
+
+  return { post, caricamento, altri, errore, mostraAltri, mettiMiPiace, commenta, ricarica: () => void carica(0) }
 }
 
 function useFotoGiocatori(post: PostSocial[]) {
@@ -205,11 +213,25 @@ function CardScambio({ post, dati }: { post: PostSocial; dati: Dati }) {
 //  Il post
 // ------------------------------------------------------------
 
-export function PostX({ post, dati, foto, nRisposte, rispondeA, filoSopra, filoSotto, onMiPiace }: {
+export function PostX({ post, dati, foto, nRisposte, rispondeA, filoSopra, filoSotto, onMiPiace, onCommenta }: {
   post: PostSocial; dati: Dati; foto: Map<number, string>; nRisposte: number
   rispondeA?: PostSocial | null; filoSopra?: boolean; filoSotto?: boolean; onMiPiace: (id: number) => void
+  onCommenta: (id: number, testo: string) => Promise<string | null>
 }) {
   const [condiviso, setCondiviso] = useState(false)
+  const [commento, setCommento] = useState<string | null>(null)
+  const [invio, setInvio] = useState(false)
+  const [erroreCommento, setErroreCommento] = useState<string | null>(null)
+  async function inviaCommento() {
+    const testo = (commento ?? '').trim()
+    if (!testo) return
+    setInvio(true)
+    setErroreCommento(null)
+    const errore = await onCommenta(post.id, testo)
+    setInvio(false)
+    if (errore) setErroreCommento(errore)
+    else setCommento(null)
+  }
   const [scoppio, setScoppio] = useState(0)
   const squadra = post.team_id ? dati.teamById.get(post.team_id)?.nome : undefined
   const card = post.autore_tipo === 'lega' ? (CardPartita({ post, dati }) ?? CardScambio({ post, dati })) : null
@@ -241,7 +263,8 @@ export function PostX({ post, dati, foto, nRisposte, rispondeA, filoSopra, filoS
       {card ?? <p className="x-post__testo">{post.testo}</p>}
       {post.riguarda_me && <span className="x-post__tua">La tua squadra</span>}
       <footer className="x-azioni">
-        <span className={`x-azione x-azione--risposte${nRisposte ? '' : ' is-vuota'}`} aria-label={`${nRisposte} risposte`}><Svg nome="risposte" />{nRisposte > 0 && <span>{nRisposte}</span>}</span>
+        <button className={`x-azione x-azione--risposte${commento !== null ? ' is-attivo' : ''}`} type="button" onClick={() => { setCommento((c) => c === null ? '' : null); setErroreCommento(null) }}
+          aria-expanded={commento !== null} aria-label={nRisposte ? `Commenta (${nRisposte} risposte)` : 'Commenta'}><Svg nome="risposte" />{nRisposte > 0 && <span>{nRisposte}</span>}</button>
         <button className={`x-azione x-azione--cuore${post.mio_mi_piace ? ' is-attivo' : ''}`} type="button"
           onClick={() => { if (!post.mio_mi_piace) setScoppio((n) => n + 1); onMiPiace(post.id) }}
           aria-pressed={post.mio_mi_piace} aria-label={post.mio_mi_piace ? 'Togli il mi piace' : 'Metti mi piace'}>
@@ -252,11 +275,22 @@ export function PostX({ post, dati, foto, nRisposte, rispondeA, filoSopra, filoS
           <Svg nome={condiviso ? 'fatto' : 'condividi'} />{condiviso && <span>Copiato</span>}
         </button>
       </footer>
+      {commento !== null && <div className="x-commento">
+        <p className="x-commento__a">In risposta a <b>@{handle(post, dati)}</b></p>
+        <textarea autoFocus value={commento} maxLength={280} rows={2} placeholder="Scrivi la tua risposta" disabled={invio}
+          onChange={(e) => setCommento(e.target.value)} />
+        <div className="x-commento__piede">
+          <span className={commento.length > 250 ? 'is-quasi' : ''}>{280 - commento.length}</span>
+          <button type="button" className="x-commento__annulla" onClick={() => setCommento(null)}>Annulla</button>
+          <button type="button" className="x-commento__invia" disabled={!commento.trim() || invio} onClick={() => void inviaCommento()}>{invio ? 'Invio…' : 'Rispondi'}</button>
+        </div>
+        {erroreCommento && <p className="x-commento__errore" role="alert">{erroreCommento}</p>}
+      </div>}
     </div>
   </article>
 }
 
-function Feed({ post, dati, foto, onMiPiace }: { post: PostSocial[]; dati: Dati; foto: Map<number, string>; onMiPiace: (id: number) => void }) {
+function Feed({ post, dati, foto, onMiPiace, onCommenta }: { post: PostSocial[]; dati: Dati; foto: Map<number, string>; onMiPiace: (id: number) => void; onCommenta: (id: number, testo: string) => Promise<string | null> }) {
   const fili = useMemo(() => aFili(post), [post])
   const perId = useMemo(() => new Map(post.map((p) => [p.id, p])), [post])
   const risposte = useMemo(() => {
@@ -268,7 +302,7 @@ function Feed({ post, dati, foto, onMiPiace }: { post: PostSocial[]; dati: Dati;
     {fili.map((filo) => <div className={`x-filo-gruppo${filo.length > 1 ? ' is-conversazione' : ''}`} key={filo[0].id}>
       {filo.map((p, i) => <PostX key={p.id} post={p} dati={dati} foto={foto} nRisposte={risposte.get(p.id) ?? 0}
         rispondeA={p.in_risposta_a ? perId.get(p.in_risposta_a) ?? null : null}
-        filoSopra={i > 0} filoSotto={i < filo.length - 1} onMiPiace={onMiPiace} />)}
+        filoSopra={i > 0} filoSotto={i < filo.length - 1} onMiPiace={onMiPiace} onCommenta={onCommenta} />)}
     </div>)}
   </div>
 }
@@ -283,7 +317,7 @@ export function SocialOne({ membership, onNavigate }: Props) {
   const league = membership.league as League
   const dati = useSeasonData(membership)
   const [scheda, setScheda] = useState<'per-te' | 'lega'>('per-te')
-  const { post, caricamento, altri, errore, mostraAltri, mettiMiPiace } = useSocialFeed(league.id, scheda === 'per-te')
+  const { post, caricamento, altri, errore, mostraAltri, mettiMiPiace, commenta } = useSocialFeed(league.id, scheda === 'per-te')
   const foto = useFotoGiocatori(post)
 
   return <main className="app-shell season-shell social-shell">
@@ -303,7 +337,7 @@ export function SocialOne({ membership, onNavigate }: Props) {
         : errore ? <div className="x-stato"><p>{errore}</p></div>
         : post.length === 0 ? <div className="x-stato"><strong>Ancora nessun post</strong><p>Appena succede qualcosa nella lega, lo trovi qui.</p></div>
         : <>
-          <Feed post={post} dati={dati} foto={foto} onMiPiace={(id) => void mettiMiPiace(id)} />
+          <Feed post={post} dati={dati} foto={foto} onMiPiace={(id) => void mettiMiPiace(id)} onCommenta={commenta} />
           {altri && <button className="x-altri" type="button" onClick={mostraAltri}>Mostra altri post</button>}
         </>}
     </div>
@@ -314,7 +348,7 @@ export function SocialOne({ membership, onNavigate }: Props) {
 export function SocialAnteprima({ membership, onNavigate }: Props) {
   const league = membership.league as League
   const dati = useSeasonData(membership)
-  const { post, caricamento, mettiMiPiace } = useSocialFeed(league.id, true, 6)
+  const { post, caricamento, mettiMiPiace, commenta } = useSocialFeed(league.id, true, 6)
   const foto = useFotoGiocatori(post)
   return <section className="dash-sezione x-anteprima">
     <header className="dash-testa">
@@ -324,7 +358,7 @@ export function SocialAnteprima({ membership, onNavigate }: Props) {
     <div className="x-anteprima__riquadro">
       {caricamento ? <div className="x-stato"><p>Carico il feed…</p></div>
         : post.length === 0 ? <div className="x-stato"><p>Ancora nessun post: appena succede qualcosa nella lega, lo trovi qui.</p></div>
-        : <Feed post={post.slice(0, 4)} dati={dati} foto={foto} onMiPiace={(id) => void mettiMiPiace(id)} />}
+        : <Feed post={post.slice(0, 4)} dati={dati} foto={foto} onMiPiace={(id) => void mettiMiPiace(id)} onCommenta={commenta} />}
       <button className="x-anteprima__tutti" type="button" onClick={() => onNavigate('social')}>Mostra tutto il feed</button>
     </div>
   </section>

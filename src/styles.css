@@ -4437,7 +4437,20 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .x-azioni { display: flex; align-items: center; gap: 4px; max-width: 360px; margin: 2px 0 0 -8px; }
 .x-azione { display: inline-flex; flex: 1; align-items: center; gap: 4px; min-height: 34px; padding: 0 8px 0 0; border: 0; background: transparent; color: #71767b; font: 500 .8rem/1 inherit; font-family: inherit; font-variant-numeric: tabular-nums; cursor: pointer; }
 .x-azione svg { width: 34px; height: 34px; padding: 8px; border-radius: 50%; transition: background .15s, color .15s; }
-.x-azione--risposte { cursor: default; }
+.x-azione--risposte:hover, .x-azione--risposte.is-attivo { color: #1d9bf0; }
+.x-azione--risposte:hover svg { background: rgba(29,155,240,.12); }
+.x-commento { display: grid; gap: 8px; margin: 2px 0 10px; padding: 10px 12px; border: 1px solid #2a2633; border-radius: 14px; background: #0c0a11; }
+.x-commento__a { margin: 0; color: #71767b; font-size: .8rem; }
+.x-commento__a b { color: #b98cff; font-weight: 600; }
+.x-commento textarea { width: 100%; box-sizing: border-box; min-height: 56px; padding: 0; border: 0; outline: none; background: transparent; color: #e7e9ea; font: 400 1rem/1.4 inherit; font-family: inherit; resize: none; }
+.x-commento textarea::placeholder { color: #5b5868; }
+.x-commento__piede { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.x-commento__piede span { margin-right: auto; color: #5b5868; font-size: .78rem; font-variant-numeric: tabular-nums; }
+.x-commento__piede span.is-quasi { color: #f2954a; }
+.x-commento__annulla { padding: 8px 12px; border: 0; border-radius: 999px; background: transparent; color: #a6a3b0; font: 600 .86rem/1 inherit; font-family: inherit; cursor: pointer; }
+.x-commento__invia { padding: 9px 18px; border: 0; border-radius: 999px; background: #e7e9ea; color: #0b0a10; font: 800 .88rem/1 inherit; font-family: inherit; cursor: pointer; }
+.x-commento__invia:disabled { opacity: .45; cursor: default; }
+.x-commento__errore { margin: 0; color: #ff7188; font-size: .8rem; }
 .x-azione--cuore:hover, .x-azione--cuore.is-attivo { color: #f91880; }
 .x-azione--cuore:hover svg { background: rgba(249,24,128,.12); }
 .x-azione--condividi:hover, .x-azione--condividi.is-attivo { color: #b98cff; }

@@ -194,8 +194,10 @@ e criticare un giocatore non converrebbe mai. Quindi:
   della valutazione), i giocatori (il miglior marcatore di ogni squadra a fine partita, col tono del suo
   carattere; il capitano che risponde ai tifosi dopo una protesta forte e calma il pubblico di 0-3 punti).
   Migrazione `20261017170000_socialone.sql`, schermata `SocialOne.tsx`, voce di menu dopo Overview.
-- **Non ancora**: lo sfogo dei giocatori scontenti (da decidere: pubblico o solo un avviso privato),
-  commenti degli utenti, risposte fra rivali (si aggiungono con il menù Rivalità).
+- **Commenti degli allenatori** (17 ottobre 2026): il fumetto sotto ogni post apre la risposta, che entra
+  nella conversazione a filo con nome e stemma. Solo colore, nessun effetto su morale/pubblico/rivalità.
+  Massimo 280 caratteri, uno ogni 20 secondi (`social_commenta`).
+- **Non ancora**: lo sfogo dei giocatori scontenti (da decidere: pubblico o solo un avviso privato).
 
 ---
 
