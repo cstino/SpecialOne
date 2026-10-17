@@ -290,11 +290,8 @@ export function SocialOne({ membership, onNavigate }: Props) {
     <GameNav league={league} active="social" onNavigate={onNavigate} />
     <div className="x-pagina">
       <header className="x-barra">
-        <div className="x-barra__titolo">
-          <img src="/specialone-mark.svg" alt="" />
-          <span>Social<b>One</b></span>
-          <small>{league.nome}</small>
-        </div>
+        {/* Solo il titolo: logo e nome della lega sono gia' nella barra dell'app, subito sopra. */}
+        <h1 className="x-barra__titolo">Social<b>One</b></h1>
         <nav className="x-schede" role="tablist" aria-label="Feed">
           {([['per-te', 'Per te'], ['lega', 'Tutta la lega']] as const).map(([valore, testo]) =>
             <button key={valore} type="button" role="tab" aria-selected={scheda === valore} className={scheda === valore ? 'is-attiva' : ''} onClick={() => setScheda(valore)}>

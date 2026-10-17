@@ -4370,11 +4370,8 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .social-shell { background: #050407; }
 .x-pagina { width: min(600px, 100%); margin: 0 auto; min-height: 100vh; border-inline: 1px solid #1f1c27; background: #050407; }
 .x-barra { position: sticky; top: 0; z-index: 20; background: rgba(5,4,7,.78); backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4); border-bottom: 1px solid #1f1c27; }
-.x-barra__titolo { display: flex; align-items: center; gap: 9px; padding: 12px 16px 6px; }
-.x-barra__titolo img { width: 26px; height: 26px; }
-.x-barra__titolo span { color: #fff; font: 800 1.22rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; letter-spacing: -.01em; }
-.x-barra__titolo span b { color: #b98cff; font-weight: 800; }
-.x-barra__titolo small { margin-left: auto; color: #71767b; font-size: .78rem; font-weight: 600; }
+.x-barra__titolo { margin: 0; padding: 12px 16px 2px; color: #fff; font: 800 1.15rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; letter-spacing: -.01em; }
+.x-barra__titolo b { color: #b98cff; font-weight: 800; }
 .x-schede { display: grid; grid-template-columns: 1fr 1fr; }
 .x-schede button { position: relative; display: grid; place-items: center; height: 50px; padding: 0; border: 0; background: transparent; color: #71767b; font: 600 .95rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background .15s, color .15s; }
 .x-schede button:hover { background: rgba(231,233,234,.06); }
