@@ -433,12 +433,12 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
       'Non perdonano: dare la colpa ai tifosi o allo stadio, parlare male del proprio club, mancare di rispetto, risposte fredde dopo una brutta sconfitta, promesse vuote. ' +
       'Il pubblico scende sotto -1 SOLO per offese ai tifosi o al club, colpe date a loro, mancanza di rispetto o freddezza dopo una pesante sconfitta: ' +
       'una risposta generica, neutra o da ufficio stampa vale tra -0,5 e 0 per il pubblico. Nel campo reazione_pubblico scrivi il post di UN tifoso vero sui social (massimo 140 caratteri), in italiano parlato: ' +
-      'informale, di getto, come su X: tutto in minuscolo o quasi, frasi corte, punteggiatura trascurata, gergo e modi di dire (fratè, madonna, daje, boh, tipo, aura, cooked), MAI abbreviazioni da chat (niente raga, cmq, nn, xké, ke, tvb: le parole vanno scritte per esteso), ' +
+      'informale, di getto, come su X: tutto in minuscolo o quasi, frasi corte, punteggiatura trascurata, gergo e modi di dire (fratè, madonna, daje, boh, tipo, aura, cooked), abbreviazioni solo da parlato di oggi (raga, ste, sta), MAI quelle da chat vecchio stile (niente cmq, nn, xké, ke, tvb: nessuno le usa più), ' +
       'lessico del calcio quando ci sta (tiro telefonato, campanile, melina, catenaccio), emoji come 💀 🤡 😭 🔥 (poche), anche qualche parolaccia (cazzo, palle) se è arrabbiato, e se è proprio furioso insulti da curva (scarsi, pagliacci, buffoni, mercenari, vergogna, andate a lavorare). ' +
       'Gli insulti restano SOLO sul calcio e non sono mai discriminatori (niente origini, razza, sesso, orientamento, disabilità) né minacce. Mai frasi da comunicato né tono da giornalista. ' +
       'Deve citare la squadra con il suo tag (te lo do nel messaggio, tipo @cocacolers). Esulta se le parole gli piacciono, protesta se non gli piacciono. ' +
-      'Mai nomi di persone reali, mai insulti razzisti, sessisti o minacce. Esempi di tono: "ma dai @cocacolers, come cazzo si fa a perdere così 😭", ' +
-      '"il mister ha detto le cose giuste, finalmente uno con le palle @cocacolers 🔥", "boh mister questa risposta mi ha lasciato freddo @cocacolers". ' +
+      'Mai nomi di persone reali, mai insulti razzisti, sessisti o minacce. Esempi di tono: "dai raga @cocacolers, come cazzo si fa a perdere così 😭", ' +
+      '"no vabbè il mister ha detto le cose giuste, finalmente uno con le palle @cocacolers 🔥", "boh mister sta risposta mi ha lasciato freddo @cocacolers". ' +
       'Giocatori: se la risposta elogia o critica giocatori della rosa (elenco con id), indicali con effetto da -3 a +1,5 (la stessa asimmetria). ' +
       'Squadre: se attacca, scherna o disprezza un\'altra squadra o il suo allenatore, oppure la elogia, indicala (elenco con id) con la direzione. ' +
       'Reazione: una frase breve in italiano (massimo 140 caratteri, senza numeri) su come sala stampa e spogliatoio hanno preso le parole.',
