@@ -108,13 +108,21 @@ async function chiediGroq<T>(system: string, messaggio: string, strumento: Strum
 // libero da interpretare. Gemini prima, Groq se Gemini fallisce.
 async function chiediAI<T>(system: string, messaggio: string, strumento: Strumento): Promise<T> {
   const errori: string[] = []
-  if (CHIAVE_GEMINI) {
-    for (const modello of MODELLI_GEMINI) {
-      try { return await chiediGemini<T>(modello, system, messaggio, strumento) } catch (e) { errori.push(String(e)) }
+  // Due giri: se tutti i modelli sono sovraccarichi (429/503, quote al minuto) si aspetta qualche secondo e si
+  // riprova una volta, utile quando molti allenatori rispondono insieme.
+  for (let giro = 0; giro < 2; giro++) {
+    if (giro > 0) {
+      if (!errori.some((e) => /\b(429|503)\b/.test(e))) break
+      await new Promise((r) => setTimeout(r, 9000))
     }
-  }
-  if (CHIAVE_GROQ) {
-    try { return await chiediGroq<T>(system, messaggio, strumento) } catch (e) { errori.push(String(e)) }
+    if (CHIAVE_GEMINI) {
+      for (const modello of MODELLI_GEMINI) {
+        try { return await chiediGemini<T>(modello, system, messaggio, strumento) } catch (e) { errori.push(String(e)) }
+      }
+    }
+    if (CHIAVE_GROQ) {
+      try { return await chiediGroq<T>(system, messaggio, strumento) } catch (e) { errori.push(String(e)) }
+    }
   }
   throw new Error(errori.length ? errori.join(' | ') : 'Nessuna chiave AI (GEMINI_API_KEY / GROQ_API_KEY) nelle funzioni.')
 }

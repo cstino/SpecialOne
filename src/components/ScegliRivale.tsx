@@ -16,9 +16,12 @@ export function ScegliRivale({ membership, onFatto, onDopo }: Props) {
   const [invio, setInvio] = useState(false)
   const [errore, setErrore] = useState('')
 
+  // Nelle leghe a conferenze (Serie F) il rivale e' della propria conferenza: e' quella che si affronta.
+  const conferenzaDi = useMemo(() => new Map(dati.standings.map((r) => [r.team_id, r.conferenza ?? null])), [dati.standings])
   const squadre = useMemo(() => [...dati.teamById.values()]
     .filter((t) => t.id !== membership.id && t.attiva !== false)
-    .sort((a, b) => a.nome.localeCompare(b.nome)), [dati.teamById, membership.id])
+    .filter((t) => !conferenzaDi.get(membership.id) || conferenzaDi.get(t.id) === conferenzaDi.get(membership.id))
+    .sort((a, b) => a.nome.localeCompare(b.nome)), [dati.teamById, conferenzaDi, membership.id])
 
   async function conferma() {
     if (scelta == null) return

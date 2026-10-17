@@ -95,7 +95,6 @@ const RIGORE_ESITO_MS = 3200
 const DURATA_POPUP_GOL_MS = 2200
 // Card dei tiri in porta (prova in LegaBot): quanto dura l'azione prima
 // dell'esito, e quanto resta in scena una parata.
-const LEGA_TIRI_IN_PORTA = 62
 const DURATA_TIRO_MS = 2600
 const DURATA_PARATA_MS = 2000
 
@@ -132,7 +131,8 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const [inTimeline, setInTimeline] = useState<Set<EventoPartita>>(new Set())
   // Modalita' tiri in porta: ogni tiro in porta (gol o parata) va in scena in
   // una card che prima racconta l'azione e poi diventa verde (gol) o rossa.
-  const tiriInPorta = membership.league_id === LEGA_TIRI_IN_PORTA
+  // La nuova cronaca (ogni tiro in porta ha la sua scena) e' una delle novita' delle leghe con le conferenze stampa.
+  const tiriInPorta = Boolean(membership.league?.conferenze_stampa)
   const [popupTiro, setPopupTiro] = useState<{ riga: Riga; fase: 'tiro' | 'esito' } | null>(null)
   const codaTiriRef = useRef<Riga[]>([])
 
