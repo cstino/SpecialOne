@@ -331,14 +331,35 @@ function Feed({ post, dati, foto, onMiPiace, onCommenta }: { post: PostSocial[];
 //  Pagine
 // ------------------------------------------------------------
 
-type Props = { membership: Membership; onNavigate: (view: GameView) => void }
+type Props = { membership: Membership; onNavigate: (view: GameView) => void; revealedMatchIds: Set<number>; onRevealMatch: (matchId: number) => void }
 
-export function SocialOne({ membership, onNavigate }: Props) {
+// Niente spoiler: finche' non hai guardato il risultato della tua ultima partita (VEDI RISULTATO) i social restano
+// bloccati, perche' i tifosi e i giornalisti ne parlano. Nelle giornate prima del reveal della lega non si blocca.
+// Mentre i dati carichiamo restano bloccati, cosi' non c'e' nemmeno un lampo del feed.
+function useSocialBloccato(league: League, dati: ReturnType<typeof useSeasonData>, revealedMatchIds: Set<number>) {
+  if (dati.loading) return { bloccato: true, matchId: null as number | null, carica: true }
+  const attivo = Boolean(dati.lastFixture && dati.lastFixture.giornata >= (league.reveal_dalla_giornata ?? 1))
+  const ultima = dati.lastFixture ? dati.matchByFixture.get(dati.lastFixture.id) : undefined
+  return { bloccato: Boolean(attivo && ultima && !revealedMatchIds.has(ultima.id)), matchId: ultima?.id ?? null, carica: false }
+}
+
+function SocialBloccato({ carica, matchId, onRevealMatch }: { carica: boolean; matchId: number | null; onRevealMatch: (matchId: number) => void }) {
+  if (carica) return <div className="x-stato"><LoadingLogo compatto /><p>Carico…</p></div>
+  return <div className="x-stato x-bloccato">
+    <i aria-hidden="true">🔒</i>
+    <strong>SocialOne è bloccato</strong>
+    <p>I tifosi e i giornalisti stanno già parlando della tua ultima partita. Guarda prima il risultato, poi si sblocca.</p>
+    {matchId != null && <button className="button button--primary" type="button" onClick={() => onRevealMatch(matchId)}>Vedi risultato</button>}
+  </div>
+}
+
+export function SocialOne({ membership, onNavigate, revealedMatchIds, onRevealMatch }: Props) {
   const league = membership.league as League
   const dati = useSeasonData(membership)
   const [scheda, setScheda] = useState<'per-te' | 'lega'>('per-te')
   const { post, caricamento, altri, errore, mostraAltri, mettiMiPiace, commenta } = useSocialFeed(league.id, scheda === 'per-te')
   const foto = useFotoGiocatori(post)
+  const blocco = useSocialBloccato(league, dati, revealedMatchIds)
 
   return <main className="app-shell season-shell social-shell">
     <GameNav league={league} active="social" onNavigate={onNavigate} />
@@ -353,7 +374,8 @@ export function SocialOne({ membership, onNavigate }: Props) {
             </button>)}
         </nav>
       </header>
-      {caricamento ? <div className="x-stato"><LoadingLogo compatto /><p>Carico il feed…</p></div>
+      {blocco.bloccato ? <SocialBloccato carica={blocco.carica} matchId={blocco.matchId} onRevealMatch={onRevealMatch} />
+        : caricamento ? <div className="x-stato"><LoadingLogo compatto /><p>Carico il feed…</p></div>
         : errore ? <div className="x-stato"><p>{errore}</p></div>
         : post.length === 0 ? <div className="x-stato"><strong>Ancora nessun post</strong><p>Appena succede qualcosa nella lega, lo trovi qui.</p></div>
         : <>
@@ -370,9 +392,10 @@ const ETICHETTA_CARD: Record<PostSocial['autore_tipo'], string> = {
   lega: 'UFFICIALE', testata: 'STAMPA', allenatore: 'ALLENATORE', tifosi: 'TIFOSI', giocatore: 'GIOCATORE',
 }
 
-export function SocialCard({ membership, onNavigate }: Props) {
+export function SocialCard({ membership, onNavigate, revealedMatchIds, onRevealMatch }: Props) {
   const league = membership.league as League
   const dati = useSeasonData(membership)
+  const blocco = useSocialBloccato(league, dati, revealedMatchIds)
   const { post, caricamento } = useSocialFeed(league.id, true, 6)
   const radici = useMemo(() => post.filter((p) => p.in_risposta_a === null), [post])
   const foto = useFotoGiocatori(radici)
@@ -390,8 +413,9 @@ export function SocialCard({ membership, onNavigate }: Props) {
   return <article className="league-news league-news--social">
     <header className="league-news__heading"><div><p className="kicker">Social</p><h2>SocialOne</h2></div><span>LIVE</span></header>
     <div className="league-news__viewport">
-      <button className="league-news__story" type="button" onClick={() => onNavigate('social')}>
-        {caricamento ? <div className="league-news__copy"><small>SOCIALONE</small><p>Carico il feed…</p></div>
+      <button className="league-news__story" type="button" onClick={() => (blocco.bloccato && blocco.matchId != null ? onRevealMatch(blocco.matchId) : onNavigate('social'))}>
+        {blocco.bloccato ? <div className="league-news__copy"><small>SOCIALONE</small><strong>🔒 Bloccato fino al risultato</strong><p>Guarda prima la tua partita: poi si sblocca, senza spoiler.</p><em>{blocco.carica ? 'Carico…' : 'Vedi risultato →'}</em></div>
+          : caricamento ? <div className="league-news__copy"><small>SOCIALONE</small><p>Carico il feed…</p></div>
           : !attivo ? <div className="league-news__copy"><small>SOCIALONE</small><strong>Ancora nessun post</strong><p>Appena succede qualcosa nella lega, lo trovi qui.</p><em>Apri SocialOne →</em></div>
           : <>
             <div className="league-news__copy">

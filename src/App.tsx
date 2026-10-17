@@ -515,7 +515,7 @@ export default function App() {
       : gameView === 'tabellone' ? <Tabellone membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'tabellone' })} />
       : gameView === 'honors' ? <AlboDOro membership={active} onNavigate={navigateGame} />
       : gameView === 'notifications' ? <Avvisi membership={active} onNavigate={navigateGame} />
-      : gameView === 'social' ? <SocialOne membership={active} onNavigate={navigateGame} />
+      : gameView === 'social' ? <SocialOne membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} onRevealMatch={(id) => setRevealMatch({ id, from: 'social' })} />
       : gameView === 'rivalita' ? <Rivalita membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} onCambiaRivale={() => setCambiaRivale(true)} />
       : gameView === 'salastampa' ? <PaginaSalaStampa membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} />
       : gameView === 'spogliatoio' ? <PaginaSpogliatoio membership={active} onNavigate={navigateGame} />

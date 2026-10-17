@@ -155,7 +155,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
         </section>
 
         {league.conferenze_stampa
-          ? <SocialCard membership={membership} onNavigate={onNavigate} />
+          ? <SocialCard membership={membership} onNavigate={onNavigate} revealedMatchIds={revealedMatchIds} onRevealMatch={onRevealMatch} />
           : <LeagueNews leagueId={league.id} fixtures={data.fixtures} matches={data.matches} standings={data.standings} teamById={data.teamById} crestUrlByTeamId={data.crestUrlByTeamId} onOpenMatch={onOpenMatch} onOpenTeam={onOpenTeam} />}
 
         <section className="dash-sezione">

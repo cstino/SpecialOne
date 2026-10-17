@@ -5630,3 +5630,9 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .pubblico-grafico__punto { fill: #0d0c14; stroke: #7be3a0; stroke-width: 1.4; }
 .pubblico-grafico__ultimo { fill: #7be3a0; stroke: #0d0c14; stroke-width: 2; filter: drop-shadow(0 0 5px rgba(123,227,160,.7)); }
 .pubblico-grafico__valore { fill: #fff; font-size: 11px; font-weight: 800; }
+
+/* SocialOne bloccato finche' non si vede il risultato (niente spoiler) */
+.x-bloccato { gap: 10px; text-align: center; padding: 56px 24px; }
+.x-bloccato i { font-style: normal; font-size: 2.4rem; }
+.x-bloccato strong { font-size: 1.15rem; }
+.x-bloccato p { max-width: 320px; margin: 0; color: #b9b0cc; line-height: 1.45; }
