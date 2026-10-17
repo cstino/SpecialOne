@@ -563,8 +563,12 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     // Edge Function): azzera il fattore campo, non lo tocca per nessuno.
     // Flag opzionale, di default assente -> comportamento identico a prima
     // per ogni chiamata che non lo passa esplicitamente.
-    const bonusCasaAtt = opt.campoNeutro ? 0 : CFG.BONUS_CASA_ATT;
-    const bonusCasaMid = opt.campoNeutro ? 0 : CFG.BONUS_CASA_MID;
+    // Il pubblico (docs/decisioni-conferenze-stampa.md §2b): moltiplicatore 0-1 del bonus casa,
+    // 1 = bonus pieno (pubblico contento al massimo), 0 = nessun bonus (pubblico in rottura).
+    // Opzionale, di default 1: senza l'opzione il calcolo e' identico a prima (x * 1 = x).
+    const moltCasa = opt.moltiplicatoreCasa ?? 1;
+    const bonusCasaAtt = opt.campoNeutro ? 0 : CFG.BONUS_CASA_ATT * moltCasa;
+    const bonusCasaMid = opt.campoNeutro ? 0 : CFG.BONUS_CASA_MID * moltCasa;
     // Quello che i compiti comprano, in punti di linea: stessa forma additiva
     // della familiarita' e dello stile. Sta DENTRO il ciclo dei blocchi perche'
     // i compiti di corsa rendono in proporzione al fiato residuo, e il fiato
