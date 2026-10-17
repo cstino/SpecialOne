@@ -252,6 +252,12 @@ Extra campo, e le loro notifiche portano lì e accendono il pallino sulla voce d
   arrivano 3-42 minuti dopo il post (il feed non mostra i post "nel futuro"). **Mi piace dei tifosi** (separati dai
   cuori veri): numero calcolato una volta per post da tipo, importanza e umore del pubblico della squadra. Il
   feed si pagina per conversazioni intere. `private.social_risposte`, cron 5 minuti.
+- **Testi con lo slang dei social** (17 ottobre 2026, committente: "troppo da bot"): tutte le frasi di tifosi,
+  giocatori e compagni riscritte (800 circa: `frasi_tifosi` 140, `frasi_social` 150, `frasi_commenti` 510, più
+  i post di chi segna nella funzione): più corte, in minuscolo, con il gergo vero ("raga", "madonna", "no vabbè",
+  "daje", "aura", "cooked", 💀🤡😭), il lessico del calcio ("tiro telefonato", "campanile", "melina") e qualche
+  parolaccia dove ci sta. Anche l'AI che scrive il post dei tifosi dopo una conferenza ha le stesse istruzioni.
+  I post automatici precedenti sono stati rigenerati col tono nuovo.
 - **Commenti degli allenatori** (17 ottobre 2026): il fumetto sotto ogni post apre la risposta, che entra
   nella conversazione a filo con nome e stemma. Solo colore, nessun effetto su morale/pubblico/rivalità.
   Massimo 280 caratteri, uno ogni 20 secondi (`social_commenta`).
