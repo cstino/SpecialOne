@@ -22,5 +22,5 @@ export function useRivalitaMie(leagueId: number, teamId: number, attiva: boolean
   return gradi
 }
 
-// Da questo grado in su una partita e' un derby.
-export const SOGLIA_DERBY = 50
+// Una partita e' un derby solo se la rivalita' e' MAGGIORE di questo grado (deciso dal committente: oltre 90%).
+export const SOGLIA_DERBY = 90

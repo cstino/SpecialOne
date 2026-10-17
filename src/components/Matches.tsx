@@ -86,7 +86,7 @@ function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeam
           <TeamLabel team={teamById.get(fixture.home_team_id)} imageUrl={crestUrlByTeamId.get(fixture.home_team_id)} reversed onClick={() => onOpenTeam(fixture.home_team_id)} />
           <FixtureScore fixture={fixture} match={match} reveal={!giaVista} />
           <TeamLabel team={teamById.get(fixture.away_team_id)} imageUrl={crestUrlByTeamId.get(fixture.away_team_id)} onClick={() => onOpenTeam(fixture.away_team_id)} />
-          {mia && <small>LA TUA PARTITA{(rivalita?.get(fixture.home_team_id === membership.id ? fixture.away_team_id : fixture.home_team_id) ?? 0) >= SOGLIA_DERBY && <b className="fixture-derby">DERBY</b>}</small>}
+          {mia && <small>LA TUA PARTITA{(rivalita?.get(fixture.home_team_id === membership.id ? fixture.away_team_id : fixture.home_team_id) ?? 0) > SOGLIA_DERBY && <b className="fixture-derby">DERBY</b>}</small>}
         </article>
         })}
       </div>)}

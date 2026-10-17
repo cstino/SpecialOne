@@ -10,7 +10,7 @@ export function InfoProssimaPartita({ fixture, miaSquadraId, teamById, rivalita 
   const inCasa = fixture.home_team_id === miaSquadraId
   const avversariaId = inCasa ? fixture.away_team_id : fixture.home_team_id
   const grado = rivalita.get(avversariaId) ?? 0
-  const derby = grado >= SOGLIA_DERBY
+  const derby = grado > SOGLIA_DERBY
   const p = Number(casa?.pubblico ?? 100)
   const f = fascia(p)
   return <div className="info-partita">

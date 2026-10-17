@@ -142,8 +142,8 @@ e criticare un giocatore non converrebbe mai. Quindi:
   casa comincia a calare), sotto 40, e quando torna a 80 o più (bonus di nuovo pieno).
 - **Stadio nella card "Prossima partita"**: "Il tuo stadio: infuocato · bonus casa +2,0" oppure "Stadio di X: freddo ·
   loro bonus +0,6"; "Campo neutro: nessun bonus casa".
-- **Derby**: una partita contro una squadra con cui la rivalità è almeno 50% si segna "DERBY" (card della prossima
-  partita e calendario). Le frecciatine fra giocatori restano dal 70%.
+- **Derby**: una partita contro una squadra con cui la rivalità è **maggiore di 90%** si segna "DERBY" (card della
+  prossima partita e calendario); deciso il 17 ottobre, prima era 50%. Le frecciatine fra giocatori restano dal 70%.
 - **Scontri diretti accesi**: la rivalità nasce e cresce anche sul campo, con qualunque coppia: espulsione +6, gol
   decisivo dall'85' in poi (un solo gol di scarto, segnato dalla vincente) +4, le due cose +10.
 
