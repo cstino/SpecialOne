@@ -204,6 +204,8 @@ e criticare un giocatore non converrebbe mai. Quindi:
   Reagiscono alle conferenze (testo dall'AI) e a ogni risultato (frasi modello per vittoria larga,
   vittoria, pareggio, sconfitta, sconfitta pesante: nessun costo di AI). Avatar: iniziali su un colore
   proprio con il piccolo stemma della squadra; i tag @ sono evidenziati.
+  Le frasi sui risultati stanno nella tabella `private.frasi_tifosi` (135 al lancio, categorie goleada,
+  vittoria, pareggio, batosta, sconfitta; segnaposto {S} {O} {F} {G}): se ne aggiungono con un insert.
 - **Non ancora**: lo sfogo dei giocatori scontenti (da decidere: pubblico o solo un avviso privato).
 
 ---
