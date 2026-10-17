@@ -177,8 +177,10 @@ testo libero e l'AI valuta l'effetto sul **morale di quel giocatore** (solo suo,
 - **Tipi**: "schierami titolare nella prossima partita", "più spazio nelle prossime partite", "posso
   riposare?". Escluso: la fascia di capitano (cambiare capitano toglie morale all'ex capitano, sarebbe
   una richiesta troppo azzardata).
-- **Quando nascono** (`private.genera_richieste_giocatori`, cron 5 minuti): dopo una simulazione recente,
-  al massimo una richiesta per squadra umana e per giornata (circa 6 giornate su 10), da fatti veri:
+- **Quando nascono** (`private.genera_richieste_giocatori`, cron 5 minuti): **poche, 6-7 a stagione per squadra,
+  mai durante i playoff** (deciso il 17 ottobre 2026). Massimo 7 a stagione, almeno 3 giornate fra una e
+  l'altra, probabilità per giornata 14 / giornate della stagione regolare (in simulazione su 30 giornate:
+  media 6,6, massimo 7; i vincoli sui giocatori la abbassano un po'). Dopo una simulazione recente, da fatti veri:
   riposo = titolare con condizione sotto 55; titolare = chi sta fuori con poco impiego, morale sotto 80 e
   tra i 16 migliori; spazio = pochi minuti e morale sotto 65. Per lo stesso giocatore almeno 6 giorni di
   pausa. Il testo è un modello (nessun costo di AI); l'AI serve solo a valutare la risposta.
