@@ -4347,6 +4347,23 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .popup-morale__fasce li span { color: #8f86a3; font-variant-numeric: tabular-nums; }
 .popup-morale__fasce li em { margin-left: auto; color: #cabfd6; font-style: normal; }
 
+/* Rivalita' (prova in LegaBot). */
+.rivalita-lista { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.rivalita-riga { --rv: #6f6780; display: grid; grid-template-columns: 34px minmax(0, 1fr) 84px 52px; align-items: center; gap: 12px; width: 100%; padding: 11px 14px; border: 1px solid #2b2739; border-radius: 12px; background: #17151f; color: #fff; font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, background .15s; }
+.rivalita-riga:hover:not(:disabled) { border-color: color-mix(in srgb, var(--rv) 55%, #2b2739); }
+.rivalita-riga:disabled { cursor: default; }
+.rivalita-riga--bassa { --rv: #f0c44d; } .rivalita-riga--media { --rv: #ffa06b; } .rivalita-riga--alta { --rv: #ff6f7f; } .rivalita-riga--altissima { --rv: #ff3d5e; }
+.rivalita-riga--alta, .rivalita-riga--altissima { background: linear-gradient(90deg, color-mix(in srgb, var(--rv) 12%, #17151f), #17151f 70%); border-color: color-mix(in srgb, var(--rv) 35%, #2b2739); }
+.rivalita-riga__stemma .crest { width: 32px; height: 32px; object-fit: contain; }
+.rivalita-riga__nome { display: grid; gap: 2px; min-width: 0; }
+.rivalita-riga__nome strong { overflow: hidden; font-size: .94rem; text-overflow: ellipsis; white-space: nowrap; }
+.rivalita-riga__nome small { color: var(--rv); font-size: .66rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.rivalita-riga__barra { display: block; height: 8px; border-radius: 4px; background: #2b2739; overflow: hidden; }
+.rivalita-riga__barra i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, color-mix(in srgb, var(--rv) 60%, #fff 0%), var(--rv)); box-shadow: 0 0 8px color-mix(in srgb, var(--rv) 50%, transparent); }
+.rivalita-riga__grado { color: #fff; font: 900 1.25rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; font-variant-numeric: tabular-nums; text-align: right; }
+.rivalita-riga__grado small { margin-left: 1px; color: #8f86a3; font-size: .7rem; font-weight: 800; }
+@media (max-width: 380px) { .rivalita-riga { grid-template-columns: 30px minmax(0, 1fr) 54px 46px; gap: 9px; padding: 10px 11px; } }
+
 /* SocialOne: il feed social della lega (prova in LegaBot). */
 .social-feed { display: grid; gap: 0; border-top: 1px solid #2b2739; }
 .social-feed--anteprima { border-top: 0; border: 1px solid #2b2739; border-radius: 14px; background: #131119; overflow: hidden; }
@@ -4407,6 +4424,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .stampa__attesa, .stampa__nocomment { margin: 0; color: rgba(255,255,255,.6); font-size: .88rem; }
 .stampa__errore { margin: 0; color: #ff8a9e; font-size: .82rem; }
 
+.stampa__replica { margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: rgba(255,113,136,.16); color: #ff7188; font-size: .58rem; font-weight: 900; letter-spacing: .08em; }
 .stampa__tifoso { display: grid; gap: 3px; margin: 0; padding: 9px 12px; border-radius: 8px; background: rgba(255,255,255,.05); color: #e9e3f3; font-size: .86rem; line-height: 1.4; }
 .stampa__tifoso b { color: #65e69a; font-size: .6rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
 .stampa__tifoso.is-protesta b { color: #ff7188; }

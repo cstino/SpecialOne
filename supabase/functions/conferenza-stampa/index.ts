@@ -436,17 +436,28 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
     const giocatori = v.insensata ? [] : (v.giocatori ?? []).filter((g) => idRosa.has(Number(g.id)))
       .map((g) => ({ id: Number(g.id), effetto: Math.max(-3, Math.min(1.5, Math.round(Number(g.effetto || 0) * 2) / 2)) }))
     const squadreCitate = (v.squadre ?? []).filter((s) => idAltre.has(Number(s.id)))
+    // Rivalita': solo se la risposta ha senso. Il server decide di quanto (attacco +10, elogio -6)
+    // e crea la domanda di replica per chi viene attaccato (se umano).
+    const squadreValide = v.insensata ? [] : squadreCitate
+      .filter((s, i, tutte) => tutte.findIndex((x) => Number(x.id) === Number(s.id)) === i && (s.direzione === 'attacco' || s.direzione === 'elogio'))
+      .map((s) => ({ team_id: Number(s.id), direzione: s.direzione }))
     const reazione = String(v.reazione ?? '').slice(0, 160) || (voto >= 0 ? 'Parole accolte bene.' : 'Parole che non convincono.')
 
     const { data: effetto, error: errEffetto } = await admin.rpc('applica_conferenza', { p_domanda_id: domandaId, p_voto: voto, p_giocatori: giocatori })
     if (errEffetto) throw errEffetto
+    let rivalita: unknown = []
+    if (squadreValide.length) {
+      const { data, error: errRivalita } = await admin.rpc('applica_rivalita', { p_domanda_id: domandaId, p_squadre: squadreValide })
+      if (errRivalita) console.error('applica_rivalita', errRivalita)
+      else rivalita = data ?? []
+    }
     const { data: effettoPubblico, error: errPubblico } = await admin.rpc('applica_pubblico', { p_domanda_id: domandaId, p_voto: votoPubblico })
     if (errPubblico) throw errPubblico
     await admin.from('conferenze_domande').update({
       voto, reazione, effetto_morale: effetto, effetto_pubblico: effettoPubblico, reazione_pubblico: reazionePubblico || null,
-      valutazione: { insensata: Boolean(v.insensata), voto_ai: v.voto, ripetitiva, ripetitiva_parole: livelloParole, ripetitiva_ai: v.ripetitiva ?? null, penalita, voto_pubblico: votoPubblico, giocatori, squadre: squadreCitate },
+      valutazione: { insensata: Boolean(v.insensata), voto_ai: v.voto, ripetitiva, ripetitiva_parole: livelloParole, ripetitiva_ai: v.ripetitiva ?? null, penalita, voto_pubblico: votoPubblico, giocatori, squadre: squadreCitate, rivalita },
     }).eq('id', domandaId)
-    return json(200, { voto, reazione, effetto_morale: effetto, effetto_pubblico: effettoPubblico, reazione_pubblico: reazionePubblico, giocatori })
+    return json(200, { voto, reazione, effetto_morale: effetto, effetto_pubblico: effettoPubblico, reazione_pubblico: reazionePubblico, rivalita, giocatori })
   } catch (errore) {
     // Valutazione fallita: la risposta si libera, cosi' l'allenatore puo' riprovare.
     await admin.from('conferenze_domande').update({ risposta: null, risposta_il: null }).eq('id', domandaId).is('voto', null)

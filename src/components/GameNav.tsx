@@ -3,7 +3,7 @@ import { useNotificheContesto, useTornaAllaHome } from '../lib/navigazione'
 import type { League } from '../types'
 import { Icona as IconaTonda } from './Icona'
 
-export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'under' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse' | 'social'
+export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'under' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse' | 'social' | 'rivalita'
 type GameNavProps = { league: League; active: GameView; onNavigate?: (view: GameView) => void }
 
 // Icone disegnate a mano: i glifi Unicode di prima (▦ ♜ ♙ ◆ ◉ ≡) venivano resi dal
@@ -27,6 +27,7 @@ const ICONE: Record<string, ReactNode> = {
   risorse: <><path d="M12 3.5 5 9.5 12 20.5 19 9.5z" /><path d="M5 9.5h14M9 9.5l3-6 3 6" /></>,
   chevron: <path d="m8 10 4 4 4-4" />,
   social: <><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-6l-4.5 3.5V17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" /><path d="M8 9.5h8M8 12.5h5" /></>,
+  rivalita: <><path d="M13 3 5 13h5.5L9 21l8-11h-5.5z" /></>,
   menu: <><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></>,
 }
 
@@ -153,9 +154,9 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
   // per l'admin tranne in off-season, che ha gia' un pannello dedicato;
   // e' Admin.tsx a mostrare solo le azioni sensate per lo stato corrente.
   const eAdmin = league.admin_id === notifiche?.userId
-  // SocialOne (prova in LegaBot): subito dopo la prima voce (Overview / Off-season).
+  // SocialOne e Rivalità (prova in LegaBot): subito dopo la prima voce (Overview / Off-season).
   const conSocial: readonly NavEntry[] = league.conferenze_stampa && league.stato !== 'draft'
-    ? [baseItems[0], { view: 'social', label: 'SocialOne' }, ...baseItems.slice(1)]
+    ? [baseItems[0], { view: 'social', label: 'SocialOne' }, { view: 'rivalita', label: 'Rivalità' }, ...baseItems.slice(1)]
     : baseItems
   const items: readonly NavEntry[] = eAdmin && league.fase_carriera !== 'offseason'
     ? [...conSocial, { view: 'admin', label: 'Admin' }]

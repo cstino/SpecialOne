@@ -99,6 +99,19 @@ e criticare un giocatore non converrebbe mai. Quindi:
 - Aperti: di quanto sale/scende per una singola risposta, se uno scontro diretto acceso
   (espulsioni, gol nel finale) la alza da solo, quanto si raffredda col tempo.
 
+### Rivalità: implementata (17 ottobre 2026, in prova su LegaBot)
+- Tabella `rivalita`: una riga per coppia (**reciproca**), grado 0-100; ognuno vede **solo le proprie**
+  (le squadre della coppia). Menù **Rivalità** con tutte le squadre e il grado.
+- **Sale** di 10 se in conferenza si attacca, schernisce o disprezza l'altra squadra; **scende** di 6 se la
+  si elogia (decide il server; le risposte insensate non contano). Si **raffredda di 1 punto a giornata**.
+- **Scontri diretti**: a grado 100 chi vince guadagna fino a +4 di morale (e +2 di pubblico), chi perde
+  −4 (e −3), in proporzione al grado. Dentro il morale giornaliero.
+- **Diritto di replica**: chi viene attaccato (se umano) riceve una terza domanda sulla sua ultima partita
+  che cita le parole dell'avversario, con una notifica. In LegaBot c'e' un solo umano: la replica
+  scatterà quando ce ne saranno altri.
+- Non fatto: scontro diretto "acceso" (espulsioni, gol nel finale) che alza la rivalità da solo.
+- Migrazione `20261017180000_rivalita.sql`, schermata `Rivalita.tsx`.
+
 ## 2b. Rapporto con il pubblico (idea del 16 ottobre 2026, **non ancora implementata**)
 - Ogni squadra ha un **umore del pubblico da 0 a 100**. Le risposte in conferenza lo muovono
   (rispetto ai tifosi, promesse, scaricare le colpe, schernire gli avversari); i risultati lo

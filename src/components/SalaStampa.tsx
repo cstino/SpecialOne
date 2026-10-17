@@ -18,6 +18,7 @@ type Domanda = {
   effetto_morale: number | null
   effetto_pubblico: number | null
   reazione_pubblico: string | null
+  valutazione: { rivalita?: Array<{ nome: string; delta: number; grado: number }> } | null
 }
 
 const MAX = 1200
@@ -47,7 +48,7 @@ export function SalaStampa({ teamId, revealedMatchIds }: { teamId: number; revea
   const carica = useCallback(async () => {
     const tre = new Date(Date.now() - 3 * 86_400_000).toISOString()
     const { data } = await supabase.from('conferenze_domande')
-      .select('id, match_id, ordine, giornalista, domanda, scade_il, risposta, voto, reazione, effetto_morale, effetto_pubblico, reazione_pubblico')
+      .select('id, match_id, ordine, giornalista, domanda, scade_il, risposta, voto, reazione, effetto_morale, effetto_pubblico, reazione_pubblico, valutazione')
       .eq('team_id', teamId).gte('creata_il', tre)
       .order('match_id', { ascending: false }).order('ordine')
     setDomande((data ?? []) as Domanda[])
@@ -85,7 +86,7 @@ export function SalaStampa({ teamId, revealedMatchIds }: { teamId: number; revea
           const g = d.voto != null ? giudizio(Number(d.voto)) : null
           const bozza = bozze[d.id] ?? ''
           return <article className="stampa__voce" key={d.id}>
-            <p className="stampa__testata"><Microfono />{d.giornalista}</p>
+            <p className="stampa__testata"><Microfono />{d.giornalista}{d.ordine === 3 && <span className="stampa__replica">Diritto di replica</span>}</p>
             <p className="stampa__domanda">{d.domanda}</p>
             {d.risposta
               ? <>
@@ -95,6 +96,7 @@ export function SalaStampa({ teamId, revealedMatchIds }: { teamId: number; revea
                   {d.reazione && <span>{d.reazione}</span>}
                   {d.effetto_morale != null && <em>Morale della rosa {numero(Number(d.effetto_morale))}</em>}
                   {d.effetto_pubblico != null && <em>Pubblico {numero(Number(d.effetto_pubblico))}</em>}
+                  {(d.valutazione?.rivalita ?? []).map((r) => <em key={r.nome}>Rivalità con {r.nome} {r.delta > 0 ? '+' : '−'}{Math.abs(r.delta)}</em>)}
                 </div>}
                 {g && d.reazione_pubblico && <p className={`stampa__tifoso${Number(d.effetto_pubblico ?? 0) < 0 ? ' is-protesta' : ''}`}><b>Dai tifosi</b>{d.reazione_pubblico}</p>}
                 {!g && <p className="stampa__attesa">La sala stampa sta ascoltando…</p>}
