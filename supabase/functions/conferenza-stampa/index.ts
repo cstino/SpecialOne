@@ -154,7 +154,7 @@ async function genera(admin: any, matchId: number) {
   if (!m) return json(404, { errore: 'Partita non trovata.' })
   const { data: f } = await admin.from('fixtures')
     .select('id, season_id, league_id, giornata, home_team_id, away_team_id, bracket_tie_id').eq('id', m.fixture_id).single()
-  const { data: lega } = await admin.from('leagues').select('id, nome, conferenze_stampa').eq('id', f.league_id).single()
+  const { data: lega } = await admin.from('leagues').select('id, nome, conferenze_stampa, conferenze_attive').eq('id', f.league_id).single()
   if (!lega?.conferenze_stampa) return json(409, { errore: 'Conferenze stampa spente in questa lega.' })
 
   const { data: squadre } = await admin.from('teams').select('id, nome, user_id, controllata_da_pc').in('id', [f.home_team_id, f.away_team_id])
@@ -177,21 +177,37 @@ async function genera(admin: any, matchId: number) {
   const nome = new Map((istanze ?? []).map((i: { id: number; players: { nome: string } | null }) => [i.id, i.players?.nome ?? '?']))
 
   // Classifica e ultimi risultati di stagione.
-  const { data: classifica } = await admin.from('standings').select('team_id, posizione, punti, giocate').eq('season_id', f.season_id)
+  const { data: classifica } = await admin.from('standings').select('team_id, posizione, punti, giocate, conferenza').eq('season_id', f.season_id)
   const posizione = new Map((classifica ?? []).map((s: { team_id: number }) => [s.team_id, s]))
-  const nSquadre = (classifica ?? []).length
-  // Le squadre in testa e in coda: servono per le domande sul campionato (lotta al vertice, Title Playoff e Draft Playoff).
-  const ordinata = [...(classifica ?? [])].sort((a: { posizione: number }, b: { posizione: number }) => a.posizione - b.posizione) as Array<{ team_id: number; posizione: number; punti: number }>
-  const { data: tutte } = await admin.from('teams').select('id, nome').eq('league_id', f.league_id)
-  const nomeSquadra = new Map((tutte ?? []).map((x: { id: number; nome: string }) => [x.id, x.nome]))
-  const elenco = (v: typeof ordinata) => v.map((x) => `${nomeSquadra.get(x.team_id)} ${x.posizione}° (${x.punti} pt)`).join(', ')
-  const campionatoUtile = !f.bracket_tie_id && f.giornata >= 3 && nSquadre >= 6
-  // Niente retrocessione: le prime 8 vanno al Title Playoff, tutte le altre al Draft Playoff (che esiste solo con
-  // piu' di 8 squadre; l'ordine di scelta del mercato dipende da quei tabelloni).
-  const POSTI_TITLE = 8
-  const vertice = campionatoUtile ? ordinata.slice(0, 3) : []
-  const sulLimite = campionatoUtile && nSquadre > POSTI_TITLE ? ordinata.slice(POSTI_TITLE - 2, POSTI_TITLE + 2) : []
-  const zonaDraft = campionatoUtile && nSquadre > POSTI_TITLE ? ordinata.slice(POSTI_TITLE) : []
+  // Niente retrocessione. Lega a classifica unica: le prime 8 vanno al Title Playoff, le altre al Draft Playoff (che
+  // esiste solo con piu' di 8 squadre). Lega a due conferenze (Serie F): classifica per conferenza, le prime 6 di
+  // ognuna ai playoff e le ultime 6 ai Draft Playoffs. L'ordine di scelta nel mercato dipende da quei tabelloni.
+  const nomeSquadra = new Map<number, string>()
+  {
+    const { data: tutte } = await admin.from('teams').select('id, nome').eq('league_id', f.league_id)
+    for (const x of (tutte ?? []) as Array<{ id: number; nome: string }>) nomeSquadra.set(x.id, x.nome)
+  }
+  type Riga = { team_id: number; posizione: number; punti: number; conferenza: string | null }
+  const elenco = (v: Riga[]) => v.map((x) => `${nomeSquadra.get(x.team_id)} ${x.posizione}° (${x.punti} pt)`).join(', ')
+  const aConferenze = Boolean(lega.conferenze_attive)
+  const POSTI = aConferenze ? 6 : 8
+  const nelGruppo = (teamId: number): number => {
+    const mia = (classifica ?? []).find((x: Riga) => x.team_id === teamId) as Riga | undefined
+    return (classifica ?? []).filter((x: Riga) => !aConferenze || x.conferenza === mia?.conferenza).length
+  }
+  const campionatoDi = (teamId: number): string => {
+    if (f.bracket_tie_id || f.giornata < 3) return ''
+    const mia = (classifica ?? []).find((x: Riga) => x.team_id === teamId) as Riga | undefined
+    const gruppo = [...(classifica ?? [])]
+      .filter((x: Riga) => !aConferenze || x.conferenza === mia?.conferenza)
+      .sort((a: Riga, b: Riga) => a.posizione - b.posizione) as Riga[]
+    if (gruppo.length < 6) return ''
+    const dove = aConferenze ? ` della ${mia?.conferenza === 'ovest' ? 'Western' : 'Eastern'} Conference` : ''
+    const conDraft = gruppo.length > POSTI
+    return `Il campionato${dove}: in testa ${elenco(gruppo.slice(0, 3))}. ` + (conDraft
+      ? `Le prime ${POSTI} vanno ${aConferenze ? 'ai playoff per il titolo' : 'al Title Playoff (per il titolo)'}, le altre ${gruppo.length - POSTI} ai Draft Playoffs (per l'ordine di scelta nel mercato). Sul confine fra i due gruppi: ${elenco(gruppo.slice(POSTI - 2, POSTI + 2))}.`
+      : `Le ${gruppo.length} squadre vanno tutte al Title Playoff (per il titolo).`)
+  }
 
   const forma = (teamId: number) => formaRecente(admin, f.season_id, f.giornata, teamId)
 
@@ -239,12 +255,8 @@ async function genera(admin: any, matchId: number) {
       mie.filter((p: { voto: number }) => p.voto <= 5.5).length
         ? `Giocatori di ${t.nome} in grave difficoltà oggi: ${mie.filter((p: { voto: number }) => p.voto <= 5.5).map((p: { player_instance_id: number; voto: number }) => `${nome.get(p.player_instance_id)} (${prestazione(p.voto)})`).join(', ')}.` : '',
       mie.length ? `Fra i giocatori di ${t.nome}: il migliore è stato ${nome.get(mie[0].player_instance_id)} (${prestazione(mie[0].voto)}), il meno brillante ${nome.get(mie[mie.length - 1].player_instance_id)} (${prestazione(mie[mie.length - 1].voto)}).` : '',
-      pos ? `Classifica dopo questa partita: ${t.nome} ${pos.posizione}° su ${nSquadre} con ${pos.punti} punti in ${pos.giocate} partite${posAvv ? `; ${avversario} ${posAvv.posizione}° con ${posAvv.punti}` : ''}.` : '',
-      campionatoUtile
-        ? `Il campionato: in testa ${elenco(vertice)}. ${zonaDraft.length
-          ? `Le prime ${POSTI_TITLE} vanno al Title Playoff (per il titolo), le altre al Draft Playoff (per l'ordine di scelta nel mercato). Sul confine fra i due playoff: ${elenco(sulLimite)}.`
-          : `Le ${nSquadre} squadre vanno tutte al Title Playoff (per il titolo).`}`
-        : '',
+      pos ? `Classifica dopo questa partita: ${t.nome} ${pos.posizione}° su ${nelGruppo(t.id)} con ${pos.punti} punti in ${pos.giocate} partite${posAvv ? `; ${avversario} ${posAvv.posizione}° con ${posAvv.punti}` : ''}.` : '',
+      campionatoDi(t.id),
       obiettivi ? `Da inizio stagione (${pos ? `${t.nome} è ${pos.posizione}° con ${pos.punti} punti` : 'classifica ancora vuota'}): una domanda può chiedere all'allenatore gli obiettivi di stagione della squadra e fin dove pensa di arrivare.` : '',
       ultime.length ? `Risultati precedenti di ${t.nome} (dal più recente): ${ultime.join(' ')}${senzaVittorie === -1 ? ` — nessuna vittoria nelle ultime ${ultime.length}` : senzaVittorie >= 2 ? ` — senza vittorie da ${senzaVittorie} partite` : ''}.` : '',
     ].filter(Boolean).join('\n')
@@ -259,9 +271,9 @@ async function genera(admin: any, matchId: number) {
       'scegli gli spunti più forti (gol nel finale, rimonte, espulsioni, serie negative o positive, classifica, migliori e peggiori in campo). ' +
       'Se un giocatore della squadra è andato molto male o è stato espulso, una domanda può incalzare l\'allenatore proprio su di lui ("lo difende?", "lo rifarebbe giocare?"): è la domanda trappola, dove né difenderlo sempre né scaricarlo è la risposta ovvia. ' +
       'In questo campionato NON esiste la retrocessione: non parlare MAI di salvezza, retrocessione o zona retrocessione. ' +
-      'Se nel riepilogo c\'è la voce "Il campionato", una delle domande può allargarsi al torneo: la lotta al vertice e per il titolo, la corsa per entrare fra le prime del Title Playoff, la lotta per il Draft Playoff (chi ci finisce, l\'ordine di scelta nel mercato), o cosa ne pensa delle squadre che stanno davanti o dietro; ' +
-      'parla del Draft Playoff solo se il riepilogo lo cita; ' +
-      'scegli il tema in base alla posizione della squadra dell\'allenatore (in alto: corsa al titolo e rivali dirette; sul confine: la corsa per entrare nel Title Playoff; in basso: il Draft Playoff), e nomina le squadre reali del riepilogo, mai altre; varia il taglio da una domanda all\'altra, senza usare sempre la stessa formula. ' +
+      'Se nel riepilogo c\'è la voce "Il campionato", una delle domande può allargarsi al torneo: la lotta al vertice e per il titolo, la corsa per entrare fra le squadre dei playoff per il titolo, la lotta per i Draft Playoffs (chi ci finisce, l\'ordine di scelta nel mercato), o cosa ne pensa delle squadre che stanno davanti o dietro; ' +
+      'parla dei Draft Playoffs solo se il riepilogo li cita, e usa le stesse parole del riepilogo per i gruppi di squadre; ' +
+      'scegli il tema in base alla posizione della squadra dell\'allenatore (in alto: corsa al titolo e rivali dirette; sul confine: la corsa per entrare nei playoff per il titolo; in basso: i Draft Playoffs), e nomina le squadre reali del riepilogo, mai altre; varia il taglio da una domanda all\'altra, senza usare sempre la stessa formula. ' +
       'Se nel riepilogo c\'è la voce sugli obiettivi di stagione, una delle domande chiede quali sono gli obiettivi della squadra e fin dove pensa di arrivare (titolo, Title Playoff, crescita dei giovani, ecc.), senza dare per scontato un obiettivo. ' +
       'Fai 2 domande se la partita offre almeno due spunti diversi, altrimenti 1. ' +
       'La voce "giornalista" è il nome di una testata o di un programma sportivo italiano REALE, scelto fra questi: ' +
