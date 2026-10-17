@@ -4364,42 +4364,107 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .rivalita-riga__grado small { margin-left: 1px; color: #8f86a3; font-size: .7rem; font-weight: 800; }
 @media (max-width: 380px) { .rivalita-riga { grid-template-columns: 30px minmax(0, 1fr) 54px 46px; gap: 9px; padding: 10px 11px; } }
 
-/* SocialOne: il feed social della lega (prova in LegaBot). */
-.social-feed { display: grid; gap: 0; border-top: 1px solid #2b2739; }
-.social-feed--anteprima { border-top: 0; border: 1px solid #2b2739; border-radius: 14px; background: #131119; overflow: hidden; }
-.social-post { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; padding: 14px 4px; border-bottom: 1px solid #2b2739; color: #fff; }
-.social-feed--anteprima .social-post { padding: 12px 14px; }
-.social-feed--anteprima .social-post:last-child { border-bottom: 0; }
-.social-post.is-mio { background: linear-gradient(90deg, rgba(185,140,255,.10), transparent 70%); box-shadow: inset 3px 0 0 #b98cff; }
-.social-avatar { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; overflow: hidden; background: #241f30; border: 1px solid #3a3350; flex: none; }
-.social-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; }
-.social-avatar--lega { background: #17131f; } .social-avatar--lega img { width: 62%; height: 62%; object-fit: contain; }
-.social-avatar--giocatore { border-color: #e89935; }
-.social-avatar--testata { background: linear-gradient(135deg, #2a64e6, #0d2f85); border-color: #4d7bff; }
-.social-avatar--testata b, .social-avatar--giocatore b { color: #fff; font: 900 .95rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; letter-spacing: .02em; }
-.social-avatar--allenatore, .social-avatar--tifosi { background: #17131f; }
-.social-avatar--allenatore .crest, .social-avatar--tifosi .crest { width: 78%; height: 78%; object-fit: contain; }
-.social-avatar--tifosi { border-color: #65e69a; }
-.social-post__corpo { display: grid; gap: 5px; min-width: 0; }
-.social-post__corpo header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
-.social-post__corpo header strong { font-size: .92rem; font-weight: 800; }
-.social-post__tipo { padding: 1px 7px; border-radius: 999px; background: #241f30; color: #a99ec1; font-size: .58rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
-.social-post--lega .social-post__tipo { background: rgba(185,140,255,.18); color: #cdb0ff; }
-.social-post--tifosi .social-post__tipo { background: rgba(101,230,154,.16); color: #65e69a; }
-.social-post--testata .social-post__tipo { background: rgba(77,123,255,.18); color: #8fb0ff; }
-.social-post__squadra { color: #8f86a3; font-size: .72rem; }
-.social-post__corpo time { margin-left: auto; color: #6f6780; font-size: .7rem; }
-.social-post__risposta { margin: 0; color: #8f86a3; font-size: .72rem; }
-.social-post__risposta b { color: #cabfd6; font-weight: 700; }
-.social-post__testo { margin: 0; color: #ece7f5; font-size: .94rem; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
-.social-post__corpo footer { display: flex; align-items: center; gap: 12px; }
-.social-post__corpo footer em { color: #b98cff; font-size: .68rem; font-style: normal; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
-.social-post__cuore { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px 0 6px; margin-left: -6px; border: 0; border-radius: 999px; background: transparent; color: #8f86a3; font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; transition: color .15s, transform .12s; }
-.social-post__cuore:hover { color: #ff7188; }
-.social-post__cuore:active { transform: scale(.92); }
-.social-post__cuore.is-attivo { color: #ff4d6d; }
-.social-feed__altri { margin: 16px auto; }
-.social-anteprima__tutti { justify-self: center; }
+/* SocialOne in stile X (prova in LegaBot): colonna centrale, post a tutta larghezza separati da linee,
+   conversazioni a filo, card per risultati e scambi. Colori: fondo quasi nero dell'app, testo #e7e9ea,
+   grigio #71767b come X, accento viola dell'app, cuore rosa. */
+.social-shell { background: #050407; }
+.x-pagina { width: min(600px, 100%); margin: 0 auto; min-height: 100vh; border-inline: 1px solid #1f1c27; background: #050407; }
+.x-barra { position: sticky; top: 0; z-index: 20; background: rgba(5,4,7,.78); backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4); border-bottom: 1px solid #1f1c27; }
+.x-barra__titolo { display: flex; align-items: center; gap: 9px; padding: 12px 16px 6px; }
+.x-barra__titolo img { width: 26px; height: 26px; }
+.x-barra__titolo span { color: #fff; font: 800 1.22rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; letter-spacing: -.01em; }
+.x-barra__titolo span b { color: #b98cff; font-weight: 800; }
+.x-barra__titolo small { margin-left: auto; color: #71767b; font-size: .78rem; font-weight: 600; }
+.x-schede { display: grid; grid-template-columns: 1fr 1fr; }
+.x-schede button { position: relative; display: grid; place-items: center; height: 50px; padding: 0; border: 0; background: transparent; color: #71767b; font: 600 .95rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background .15s, color .15s; }
+.x-schede button:hover { background: rgba(231,233,234,.06); }
+.x-schede button.is-attiva { color: #e7e9ea; font-weight: 800; }
+.x-schede button.is-attiva span::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 56px; height: 4px; border-radius: 4px; background: #b98cff; transform: translateX(-50%); }
+.x-schede button:focus-visible { outline: 2px solid #b98cff; outline-offset: -4px; }
+
+.x-feed { display: grid; }
+.x-filo-gruppo { border-bottom: 1px solid #1f1c27; }
+.x-post { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; padding: 12px 16px 6px; color: #e7e9ea; transition: background .15s; }
+.x-post:hover { background: rgba(231,233,234,.025); }
+.x-filo-gruppo.is-conversazione .x-post:not(:last-child) { padding-bottom: 0; }
+.x-post__colonna { position: relative; display: flex; flex-direction: column; align-items: center; }
+.x-filo { display: block; width: 2px; background: #333040; }
+.x-filo--sopra { position: absolute; top: -12px; height: 12px; }
+.x-filo--sotto { flex: 1; min-height: 12px; margin-top: 4px; }
+
+.x-avatar { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 50%; overflow: hidden; background: #16131d; }
+.x-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 16%; }
+.x-avatar--lega { background: radial-gradient(circle at 30% 25%, #3b2363, #120c1d); box-shadow: inset 0 0 0 1px #4a3373; }
+.x-avatar--lega img { width: 60%; height: 60%; object-fit: contain; }
+.x-avatar--testata b, .x-avatar--giocatore b { color: #fff; font: 900 .86rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; letter-spacing: .02em; }
+.x-avatar--testata { border-radius: 10px; }
+.x-avatar--t0 { background: linear-gradient(135deg, #1d9bf0, #0b4f99); } .x-avatar--t1 { background: linear-gradient(135deg, #f0457a, #8f1440); }
+.x-avatar--t2 { background: linear-gradient(135deg, #2bbd7e, #0e5e3c); } .x-avatar--t3 { background: linear-gradient(135deg, #f2954a, #9c4a0e); }
+.x-avatar--allenatore, .x-avatar--tifosi { background: #0e0c13; box-shadow: inset 0 0 0 1px #2a2633; }
+.x-avatar--allenatore .crest, .x-avatar--tifosi .crest { width: 74%; height: 74%; object-fit: contain; }
+.x-avatar--giocatore { box-shadow: inset 0 0 0 1px #2a2633; }
+
+.x-post__corpo { display: grid; gap: 4px; min-width: 0; padding-bottom: 2px; }
+.x-post__testa { display: flex; align-items: center; gap: 4px; min-width: 0; font-size: .94rem; line-height: 1.25; white-space: nowrap; }
+.x-post__nome { overflow: hidden; color: #e7e9ea; font-weight: 800; text-overflow: ellipsis; }
+.x-post__handle { overflow: hidden; color: #71767b; text-overflow: ellipsis; min-width: 0; }
+.x-post__punto, .x-post__tempo { flex: none; color: #71767b; }
+.x-verificato { flex: none; width: 17px; height: 17px; }
+.x-verificato--lega { color: #e8b84a; } .x-verificato--testata, .x-verificato--giocatore { color: #1d9bf0; } .x-verificato--allenatore { color: #b98cff; }
+.x-post__contesto { margin: -2px 0 0; color: #71767b; font-size: .84rem; }
+.x-post__contesto b { color: #b98cff; font-weight: 600; }
+.x-post__testo { margin: 0; color: #e7e9ea; font-size: .97rem; line-height: 1.42; overflow-wrap: anywhere; white-space: pre-wrap; }
+.x-post__testo b { font-weight: 700; }
+.x-post__tua { justify-self: start; margin-top: 2px; padding: 2px 8px; border-radius: 999px; background: rgba(185,140,255,.14); color: #cdb0ff; font-size: .66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.x-herewego { display: inline-block; margin-right: 4px; padding: 1px 7px; border-radius: 4px; background: #e8b84a; color: #1b1405; font-size: .74rem; font-weight: 900; letter-spacing: .06em; }
+
+.x-card { margin-top: 8px; border: 1px solid #2a2633; border-radius: 16px; background: linear-gradient(180deg, #110e17, #0a0910); overflow: hidden; }
+.x-card--partita { display: grid; gap: 10px; padding: 12px 14px 14px; }
+.x-card__kicker { color: #71767b; font-size: .64rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.x-card__match { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; }
+.x-card__squadra { display: grid; justify-items: center; gap: 6px; min-width: 0; color: #a6a3b0; text-align: center; }
+.x-card__squadra b { max-width: 100%; overflow: hidden; font-size: .82rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.x-card__squadra.is-vince { color: #fff; }
+.x-card__stemma { display: grid; place-items: center; width: 40px; height: 40px; flex: none; }
+.x-card__stemma .crest { width: 100%; height: 100%; object-fit: contain; }
+.x-card__punteggio { color: #fff; font: 900 2rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.x-card__punteggio i { margin: 0 .12em; color: #4a4655; font-style: normal; }
+.x-card--scambio { display: grid; grid-template-columns: minmax(0, 1fr) 34px minmax(0, 1fr); align-items: center; gap: 6px; padding: 14px; }
+.x-card__lato { display: grid; justify-items: center; gap: 5px; min-width: 0; text-align: center; }
+.x-card__lato b { max-width: 100%; overflow: hidden; color: #fff; font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; }
+.x-card__lato small { color: #71767b; font-size: .74rem; line-height: 1.35; }
+.x-card__lato small em { color: #e7e9ea; font-style: normal; font-weight: 600; }
+.x-card__freccia { display: grid; place-items: center; color: #e8b84a; }
+.x-card__freccia svg { width: 24px; height: 24px; }
+
+.x-azioni { display: flex; align-items: center; gap: 4px; max-width: 360px; margin: 2px 0 0 -8px; }
+.x-azione { display: inline-flex; flex: 1; align-items: center; gap: 4px; min-height: 34px; padding: 0 8px 0 0; border: 0; background: transparent; color: #71767b; font: 500 .8rem/1 inherit; font-family: inherit; font-variant-numeric: tabular-nums; cursor: pointer; }
+.x-azione svg { width: 34px; height: 34px; padding: 8px; border-radius: 50%; transition: background .15s, color .15s; }
+.x-azione--risposte { cursor: default; }
+.x-azione--cuore:hover, .x-azione--cuore.is-attivo { color: #f91880; }
+.x-azione--cuore:hover svg { background: rgba(249,24,128,.12); }
+.x-azione--condividi:hover, .x-azione--condividi.is-attivo { color: #b98cff; }
+.x-azione--condividi:hover svg { background: rgba(185,140,255,.12); }
+.x-azione:focus-visible { outline: none; } .x-azione:focus-visible svg { box-shadow: 0 0 0 2px #b98cff; }
+.x-azione__icona { display: inline-flex; }
+.x-azione--cuore.is-attivo .x-azione__icona { animation: x-cuore .45s cubic-bezier(.2,.9,.3,1.5); }
+@keyframes x-cuore { 0% { transform: scale(.6); } 55% { transform: scale(1.25); } 100% { transform: scale(1); } }
+
+.x-stato { display: grid; justify-items: center; gap: 8px; padding: 40px 20px; color: #71767b; text-align: center; }
+.x-stato strong { color: #e7e9ea; font-size: 1.1rem; }
+.x-stato p { margin: 0; }
+.x-altri { display: block; width: 100%; padding: 16px; border: 0; border-bottom: 1px solid #1f1c27; background: transparent; color: #b98cff; font: 600 .92rem/1 inherit; font-family: inherit; cursor: pointer; }
+.x-altri:hover { background: rgba(185,140,255,.06); }
+
+.x-anteprima__riquadro { border: 1px solid #1f1c27; border-radius: 16px; background: #050407; overflow: hidden; }
+.x-anteprima__riquadro .x-filo-gruppo:last-of-type { border-bottom: 1px solid #1f1c27; }
+.x-anteprima__tutti { display: block; width: 100%; padding: 14px 16px; border: 0; background: transparent; color: #b98cff; font: 600 .9rem/1 inherit; font-family: inherit; text-align: left; cursor: pointer; }
+.x-anteprima__tutti:hover { background: rgba(185,140,255,.06); }
+
+@media (max-width: 600px) { .x-pagina { border-inline: 0; } }
+/* Sul telefono la barra dell'app (.game-mobilebar) e' fissa in alto: le schede si agganciano sotto di lei. */
+@media (max-width: 899px) { .x-barra { top: max(68px, calc(env(safe-area-inset-top) + 56px)); } }
+@media (prefers-reduced-motion: reduce) { .x-azione--cuore.is-attivo .x-azione__icona { animation: none; } }
 
 /* Sala stampa (conferenze post partita, prova in LegaBot). */
 .stampa { gap: 18px; }
