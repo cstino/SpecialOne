@@ -237,6 +237,10 @@ Extra campo, e le loro notifiche portano lì e accendono il pallino sulla voce d
   vado via con la coscienza a posto, un giorno la verità verrà a galla"), **sereno** negli altri casi. Il morale
   di prima si salva al passaggio (`private.trasferimenti_giocatori`) perché il trigger lo ricalcola. Frasi in
   `private.frasi_social` (50 al lancio).
+- **Frasi mai ripetute nello stesso giorno** (17 ottobre 2026): ogni post dei tifosi (risultati e scambi) e dei
+  giocatori (scambi) registra la frase da cui nasce (`social_posts.frase_origine`); nello stesso giorno e nella
+  stessa lega le frasi già usate si saltano finché ce ne sono di libere, e nello stesso giro ogni post prende una
+  frase diversa. Se le libere finiscono si ripesca da tutte.
 - **Commenti degli allenatori** (17 ottobre 2026): il fumetto sotto ogni post apre la risposta, che entra
   nella conversazione a filo con nome e stemma. Solo colore, nessun effetto su morale/pubblico/rivalità.
   Massimo 280 caratteri, uno ogni 20 secondi (`social_commenta`).
