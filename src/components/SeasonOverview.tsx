@@ -7,6 +7,7 @@ import { GameNav, type GameView } from './GameNav'
 import { Crest } from './Crest'
 import { FixtureScore, Forma, formaPerSquadra, formatMatchDate, SeasonState, TeamLabel, TitoloAdattivo } from './SeasonUI'
 import { LeagueNews } from './LeagueNews'
+import { SocialAnteprima } from './SocialOne'
 import { DraftLive } from './DraftLive'
 import { VettaConferenze } from './VettaConferenze'
 import { SalaStampa } from './SalaStampa'
@@ -152,7 +153,9 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
 
         {league.conferenze_stampa && <SalaStampa teamId={membership.id} revealedMatchIds={revealedMatchIds} />}
 
-        <LeagueNews leagueId={league.id} fixtures={data.fixtures} matches={data.matches} standings={data.standings} teamById={data.teamById} crestUrlByTeamId={data.crestUrlByTeamId} onOpenMatch={onOpenMatch} onOpenTeam={onOpenTeam} />
+        {league.conferenze_stampa
+          ? <SocialAnteprima membership={membership} onNavigate={onNavigate} />
+          : <LeagueNews leagueId={league.id} fixtures={data.fixtures} matches={data.matches} standings={data.standings} teamById={data.teamById} crestUrlByTeamId={data.crestUrlByTeamId} onOpenMatch={onOpenMatch} onOpenTeam={onOpenTeam} />}
 
         <section className="dash-sezione">
           <header className="dash-testa">

@@ -171,8 +171,18 @@ e criticare un giocatore non converrebbe mai. Quindi:
   scherno, partita decisiva).
 - Serve un archivio dei post nel database: oggi `LeagueNews.tsx` costruisce le notizie al
   volo e non salva niente.
-- Aperti: i post dei tifosi sono visibili a tutta la lega (proposta: sì, come il pubblico)?
-  I giocatori possono rispondere?
+- **Deciso il 17 ottobre 2026**: i post dei tifosi li vede tutta la lega; **"mi piace"** sì (uno per
+  utente e post); il feed **sostituisce** "Oggi nella lega" in home (anteprima con i primi post);
+  **un post per ogni evento**, e chi legge vede **per primi i post che riguardano la sua squadra**
+  (scheda "Per te"; "Tutta la lega" è in ordine di tempo).
+- **Implementato (prova in LegaBot)**: tabelle `social_posts` e `social_mi_piace`, cron ogni 5 minuti
+  `private.social_genera` (una sola volta per evento, chiave unica). Chi pubblica: la lega (risultati,
+  scambi "HERE WE GO", aste e UNDER), la testata (domanda), l'allenatore (risposta), i tifosi (post
+  della valutazione), i giocatori (il miglior marcatore di ogni squadra a fine partita, col tono del suo
+  carattere; il capitano che risponde ai tifosi dopo una protesta forte e calma il pubblico di 0-3 punti).
+  Migrazione `20261017170000_socialone.sql`, schermata `SocialOne.tsx`, voce di menu dopo Overview.
+- **Non ancora**: lo sfogo dei giocatori scontenti (da decidere: pubblico o solo un avviso privato),
+  commenti degli utenti, risposte fra rivali (si aggiungono con il menù Rivalità).
 
 ---
 

@@ -14,6 +14,7 @@ import { OffseasonLive } from './components/OffseasonLive'
 import { AnteprimaOffseason } from './components/AnteprimaOffseason'
 import { useAlboRivelazione } from './lib/useAlboRivelazione'
 import { Avvisi } from './components/Avvisi'
+import { SocialOne } from './components/SocialOne'
 import { AuthScreen } from './components/AuthScreen'
 import { Manutenzione } from './components/Manutenzione'
 import { useManutenzione } from './lib/useManutenzione'
@@ -497,6 +498,7 @@ export default function App() {
       : gameView === 'tabellone' ? <Tabellone membership={active} onNavigate={navigateGame} onOpenMatch={(id) => setOpenMatch({ id, from: 'tabellone' })} />
       : gameView === 'honors' ? <AlboDOro membership={active} onNavigate={navigateGame} />
       : gameView === 'notifications' ? <Avvisi membership={active} onNavigate={navigateGame} />
+      : gameView === 'social' ? <SocialOne membership={active} onNavigate={navigateGame} />
       : gameView === 'admin' ? <Admin membership={active} onNavigate={navigateGame} />
       : gameView === 'help' ? <Help membership={active} onNavigate={navigateGame} />
       : gameView === 'finanza' ? <Finanza membership={active} onNavigate={navigateGame} />

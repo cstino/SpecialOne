@@ -4347,6 +4347,43 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .popup-morale__fasce li span { color: #8f86a3; font-variant-numeric: tabular-nums; }
 .popup-morale__fasce li em { margin-left: auto; color: #cabfd6; font-style: normal; }
 
+/* SocialOne: il feed social della lega (prova in LegaBot). */
+.social-feed { display: grid; gap: 0; border-top: 1px solid #2b2739; }
+.social-feed--anteprima { border-top: 0; border: 1px solid #2b2739; border-radius: 14px; background: #131119; overflow: hidden; }
+.social-post { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; padding: 14px 4px; border-bottom: 1px solid #2b2739; color: #fff; }
+.social-feed--anteprima .social-post { padding: 12px 14px; }
+.social-feed--anteprima .social-post:last-child { border-bottom: 0; }
+.social-post.is-mio { background: linear-gradient(90deg, rgba(185,140,255,.10), transparent 70%); box-shadow: inset 3px 0 0 #b98cff; }
+.social-avatar { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; overflow: hidden; background: #241f30; border: 1px solid #3a3350; flex: none; }
+.social-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; }
+.social-avatar--lega { background: #17131f; } .social-avatar--lega img { width: 62%; height: 62%; object-fit: contain; }
+.social-avatar--giocatore { border-color: #e89935; }
+.social-avatar--testata { background: linear-gradient(135deg, #2a64e6, #0d2f85); border-color: #4d7bff; }
+.social-avatar--testata b, .social-avatar--giocatore b { color: #fff; font: 900 .95rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; letter-spacing: .02em; }
+.social-avatar--allenatore, .social-avatar--tifosi { background: #17131f; }
+.social-avatar--allenatore .crest, .social-avatar--tifosi .crest { width: 78%; height: 78%; object-fit: contain; }
+.social-avatar--tifosi { border-color: #65e69a; }
+.social-post__corpo { display: grid; gap: 5px; min-width: 0; }
+.social-post__corpo header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.social-post__corpo header strong { font-size: .92rem; font-weight: 800; }
+.social-post__tipo { padding: 1px 7px; border-radius: 999px; background: #241f30; color: #a99ec1; font-size: .58rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.social-post--lega .social-post__tipo { background: rgba(185,140,255,.18); color: #cdb0ff; }
+.social-post--tifosi .social-post__tipo { background: rgba(101,230,154,.16); color: #65e69a; }
+.social-post--testata .social-post__tipo { background: rgba(77,123,255,.18); color: #8fb0ff; }
+.social-post__squadra { color: #8f86a3; font-size: .72rem; }
+.social-post__corpo time { margin-left: auto; color: #6f6780; font-size: .7rem; }
+.social-post__risposta { margin: 0; color: #8f86a3; font-size: .72rem; }
+.social-post__risposta b { color: #cabfd6; font-weight: 700; }
+.social-post__testo { margin: 0; color: #ece7f5; font-size: .94rem; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
+.social-post__corpo footer { display: flex; align-items: center; gap: 12px; }
+.social-post__corpo footer em { color: #b98cff; font-size: .68rem; font-style: normal; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.social-post__cuore { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px 0 6px; margin-left: -6px; border: 0; border-radius: 999px; background: transparent; color: #8f86a3; font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; transition: color .15s, transform .12s; }
+.social-post__cuore:hover { color: #ff7188; }
+.social-post__cuore:active { transform: scale(.92); }
+.social-post__cuore.is-attivo { color: #ff4d6d; }
+.social-feed__altri { margin: 16px auto; }
+.social-anteprima__tutti { justify-self: center; }
+
 /* Sala stampa (conferenze post partita, prova in LegaBot). */
 .stampa { gap: 18px; }
 .stampa__voce { display: grid; gap: 8px; }
