@@ -306,6 +306,9 @@ type Valutazione = {
   voto: number
   // Quanto la risposta ripete la formula delle ultime conferenze: 0 = nuova, 3 = identica.
   ripetitiva?: number
+  // Come reagiscono i tifosi: voto -3..+1,5 e il loro post sui social.
+  pubblico?: number
+  reazione_pubblico?: string
   reazione: string
   giocatori?: Array<{ id: number; effetto: number }>
   squadre?: Array<{ id: number; direzione: 'attacco' | 'elogio' }>
@@ -384,6 +387,13 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
       'Nel campo ripetitiva indica da 0 a 3 quanto la risposta ripete la stessa formula o lo stesso schema delle conferenze precedenti DOPO LO STESSO TIPO DI RISULTATO ' +
       '(le conferenze dopo risultati diversi non contano: dire "è colpa mia" dopo una rara sconfitta di una squadra che di solito vince non è una frase fatta) ' +
       '(0 = nessuna conferenza simile dopo lo stesso risultato, 1 = simile a una, 2 = simile a due, 3 = identica a tre o più); a calcolare la penalità ci pensa il sistema. ' +
+      'PUBBLICO: oltre allo spogliatoio valuti come la prendono i TIFOSI (campo pubblico, da -3 a +1,5 come il voto, passi di 0,5; ' +
+      'in genere prudente, +1,5 e -3 sono rari). I tifosi apprezzano: rispetto e riconoscenza verso di loro, ambizione, orgoglio per la maglia, ' +
+      'difesa del club e dei suoi giocatori, e anche lo scherno verso le avversarie (lo adorano, purché sia sfottò e non insulto pesante). ' +
+      'Non perdonano: dare la colpa ai tifosi o allo stadio, parlare male del proprio club, mancare di rispetto, risposte fredde dopo una brutta sconfitta, promesse vuote. ' +
+      'Il pubblico scende sotto -1 SOLO per offese ai tifosi o al club, colpe date a loro, mancanza di rispetto o freddezza dopo una pesante sconfitta: ' +
+      'una risposta generica, neutra o da ufficio stampa vale tra -0,5 e 0 per il pubblico. Nel campo reazione_pubblico scrivi un messaggio breve (massimo 140 caratteri) di un tifoso sui social, in italiano, ' +
+      'che riflette il tono (esultanza se piace, protesta se non piace), senza nomi di persone reali e senza insulti pesanti. ' +
       'Giocatori: se la risposta elogia o critica giocatori della rosa (elenco con id), indicali con effetto da -3 a +1,5 (la stessa asimmetria). ' +
       'Squadre: se attacca, scherna o disprezza un\'altra squadra o il suo allenatore, oppure la elogia, indicala (elenco con id) con la direzione. ' +
       'Reazione: una frase breve in italiano (massimo 140 caratteri, senza numeri) su come sala stampa e spogliatoio hanno preso le parole.',
@@ -397,6 +407,8 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
             insensata: { type: 'boolean' },
             voto: { type: 'number', minimum: -3, maximum: 1.5 },
             ripetitiva: { type: 'integer', minimum: 0, maximum: 3 },
+            pubblico: { type: 'number', minimum: -3, maximum: 1.5 },
+            reazione_pubblico: { type: 'string' },
             reazione: { type: 'string' },
             giocatori: { type: 'array', items: { type: 'object', properties: { id: { type: 'integer' }, effetto: { type: 'number' } }, required: ['id', 'effetto'] } },
             squadre: { type: 'array', items: { type: 'object', properties: { id: { type: 'integer' }, direzione: { type: 'string', enum: ['attacco', 'elogio'] } }, required: ['id', 'direzione'] } },
@@ -418,6 +430,9 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
     const ripetitiva = Math.max(0, Math.min(3, livelloParole + (Number(v.ripetitiva || 0) >= 2 ? 1 : 0)))
     const penalita = ripetitiva * (serieNegativa ? 0.75 : 0.5)
     const voto = v.insensata ? -3 : Math.max(-3, Math.min(1.5, Math.round((Number(v.voto || 0) - penalita) * 2) / 2))
+    // Il pubblico: stessa regola (insensata = minimo) e stessa penalita' per le frasi fatte.
+    const votoPubblico = v.insensata ? -3 : Math.max(-3, Math.min(1.5, Math.round((Number(v.pubblico || 0) - penalita) * 2) / 2))
+    const reazionePubblico = String(v.reazione_pubblico ?? '').slice(0, 160)
     const giocatori = v.insensata ? [] : (v.giocatori ?? []).filter((g) => idRosa.has(Number(g.id)))
       .map((g) => ({ id: Number(g.id), effetto: Math.max(-3, Math.min(1.5, Math.round(Number(g.effetto || 0) * 2) / 2)) }))
     const squadreCitate = (v.squadre ?? []).filter((s) => idAltre.has(Number(s.id)))
@@ -425,11 +440,13 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
 
     const { data: effetto, error: errEffetto } = await admin.rpc('applica_conferenza', { p_domanda_id: domandaId, p_voto: voto, p_giocatori: giocatori })
     if (errEffetto) throw errEffetto
+    const { data: effettoPubblico, error: errPubblico } = await admin.rpc('applica_pubblico', { p_domanda_id: domandaId, p_voto: votoPubblico })
+    if (errPubblico) throw errPubblico
     await admin.from('conferenze_domande').update({
-      voto, reazione, effetto_morale: effetto,
-      valutazione: { insensata: Boolean(v.insensata), voto_ai: v.voto, ripetitiva, ripetitiva_parole: livelloParole, ripetitiva_ai: v.ripetitiva ?? null, penalita, giocatori, squadre: squadreCitate },
+      voto, reazione, effetto_morale: effetto, effetto_pubblico: effettoPubblico, reazione_pubblico: reazionePubblico || null,
+      valutazione: { insensata: Boolean(v.insensata), voto_ai: v.voto, ripetitiva, ripetitiva_parole: livelloParole, ripetitiva_ai: v.ripetitiva ?? null, penalita, voto_pubblico: votoPubblico, giocatori, squadre: squadreCitate },
     }).eq('id', domandaId)
-    return json(200, { voto, reazione, effetto_morale: effetto, giocatori })
+    return json(200, { voto, reazione, effetto_morale: effetto, effetto_pubblico: effettoPubblico, reazione_pubblico: reazionePubblico, giocatori })
   } catch (errore) {
     // Valutazione fallita: la risposta si libera, cosi' l'allenatore puo' riprovare.
     await admin.from('conferenze_domande').update({ risposta: null, risposta_il: null }).eq('id', domandaId).is('voto', null)

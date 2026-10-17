@@ -16,6 +16,8 @@ type Domanda = {
   voto: number | null
   reazione: string | null
   effetto_morale: number | null
+  effetto_pubblico: number | null
+  reazione_pubblico: string | null
 }
 
 const MAX = 1200
@@ -45,7 +47,7 @@ export function SalaStampa({ teamId, revealedMatchIds }: { teamId: number; revea
   const carica = useCallback(async () => {
     const tre = new Date(Date.now() - 3 * 86_400_000).toISOString()
     const { data } = await supabase.from('conferenze_domande')
-      .select('id, match_id, ordine, giornalista, domanda, scade_il, risposta, voto, reazione, effetto_morale')
+      .select('id, match_id, ordine, giornalista, domanda, scade_il, risposta, voto, reazione, effetto_morale, effetto_pubblico, reazione_pubblico')
       .eq('team_id', teamId).gte('creata_il', tre)
       .order('match_id', { ascending: false }).order('ordine')
     setDomande((data ?? []) as Domanda[])
@@ -92,7 +94,9 @@ export function SalaStampa({ teamId, revealedMatchIds }: { teamId: number; revea
                   <strong>{g.testo}</strong>
                   {d.reazione && <span>{d.reazione}</span>}
                   {d.effetto_morale != null && <em>Morale della rosa {numero(Number(d.effetto_morale))}</em>}
+                  {d.effetto_pubblico != null && <em>Pubblico {numero(Number(d.effetto_pubblico))}</em>}
                 </div>}
+                {g && d.reazione_pubblico && <p className={`stampa__tifoso${Number(d.effetto_pubblico ?? 0) < 0 ? ' is-protesta' : ''}`}><b>Dai tifosi</b>{d.reazione_pubblico}</p>}
                 {!g && <p className="stampa__attesa">La sala stampa sta ascoltando…</p>}
               </>
               : scaduta
