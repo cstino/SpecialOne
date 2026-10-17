@@ -181,7 +181,7 @@ async function genera(admin: any, matchId: number) {
   const posizione = new Map((classifica ?? []).map((s: { team_id: number }) => [s.team_id, s]))
   // Niente retrocessione. Lega a classifica unica: le prime 8 vanno al Title Playoff, le altre al Draft Playoff (che
   // esiste solo con piu' di 8 squadre). Lega a due conferenze (Serie F): classifica per conferenza, le prime 6 di
-  // ognuna ai playoff e le ultime 6 ai Draft Playoffs. L'ordine di scelta nel mercato dipende da quei tabelloni.
+  // ognuna ai Title Playoffs e le ultime 6 ai Draft Playoffs. L'ordine di scelta nel mercato dipende da quei tabelloni.
   const nomeSquadra = new Map<number, string>()
   {
     const { data: tutte } = await admin.from('teams').select('id, nome').eq('league_id', f.league_id)
@@ -205,7 +205,7 @@ async function genera(admin: any, matchId: number) {
     const dove = aConferenze ? ` della ${mia?.conferenza === 'ovest' ? 'Western' : 'Eastern'} Conference` : ''
     const conDraft = gruppo.length > POSTI
     return `Il campionato${dove}: in testa ${elenco(gruppo.slice(0, 3))}. ` + (conDraft
-      ? `Le prime ${POSTI} vanno ${aConferenze ? 'ai playoff per il titolo' : 'al Title Playoff (per il titolo)'}, le altre ${gruppo.length - POSTI} ai Draft Playoffs (per l'ordine di scelta nel mercato). Sul confine fra i due gruppi: ${elenco(gruppo.slice(POSTI - 2, POSTI + 2))}.`
+      ? `Le prime ${POSTI} vanno ${aConferenze ? 'ai Title Playoffs' : 'al Title Playoff'} (per il titolo), le altre ${gruppo.length - POSTI} ai Draft Playoffs (per l'ordine di scelta nel mercato). Sul confine fra i due gruppi: ${elenco(gruppo.slice(POSTI - 2, POSTI + 2))}.`
       : `Le ${gruppo.length} squadre vanno tutte al Title Playoff (per il titolo).`)
   }
 
@@ -271,9 +271,9 @@ async function genera(admin: any, matchId: number) {
       'scegli gli spunti più forti (gol nel finale, rimonte, espulsioni, serie negative o positive, classifica, migliori e peggiori in campo). ' +
       'Se un giocatore della squadra è andato molto male o è stato espulso, una domanda può incalzare l\'allenatore proprio su di lui ("lo difende?", "lo rifarebbe giocare?"): è la domanda trappola, dove né difenderlo sempre né scaricarlo è la risposta ovvia. ' +
       'In questo campionato NON esiste la retrocessione: non parlare MAI di salvezza, retrocessione o zona retrocessione. ' +
-      'Se nel riepilogo c\'è la voce "Il campionato", una delle domande può allargarsi al torneo: la lotta al vertice e per il titolo, la corsa per entrare fra le squadre dei playoff per il titolo, la lotta per i Draft Playoffs (chi ci finisce, l\'ordine di scelta nel mercato), o cosa ne pensa delle squadre che stanno davanti o dietro; ' +
+      'Se nel riepilogo c\'è la voce "Il campionato", una delle domande può allargarsi al torneo: la lotta al vertice e per il titolo, la corsa per entrare nel Title Playoff (o Title Playoffs), la lotta per i Draft Playoffs (chi ci finisce, l\'ordine di scelta nel mercato), o cosa ne pensa delle squadre che stanno davanti o dietro; ' +
       'parla dei Draft Playoffs solo se il riepilogo li cita, e usa le stesse parole del riepilogo per i gruppi di squadre; ' +
-      'scegli il tema in base alla posizione della squadra dell\'allenatore (in alto: corsa al titolo e rivali dirette; sul confine: la corsa per entrare nei playoff per il titolo; in basso: i Draft Playoffs), e nomina le squadre reali del riepilogo, mai altre; varia il taglio da una domanda all\'altra, senza usare sempre la stessa formula. ' +
+      'scegli il tema in base alla posizione della squadra dell\'allenatore (in alto: corsa al titolo e rivali dirette; sul confine: la corsa per entrare nel Title Playoff; in basso: il Draft Playoff o i Draft Playoffs, come scritto nel riepilogo), e nomina le squadre reali del riepilogo, mai altre; varia il taglio da una domanda all\'altra, senza usare sempre la stessa formula. ' +
       'Se nel riepilogo c\'è la voce sugli obiettivi di stagione, una delle domande chiede quali sono gli obiettivi della squadra e fin dove pensa di arrivare (titolo, Title Playoff, crescita dei giovani, ecc.), senza dare per scontato un obiettivo. ' +
       'Fai 2 domande se la partita offre almeno due spunti diversi, altrimenti 1. ' +
       'La voce "giornalista" è il nome di una testata o di un programma sportivo italiano REALE, scelto fra questi: ' +
