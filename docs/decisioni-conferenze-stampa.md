@@ -137,6 +137,16 @@ e criticare un giocatore non converrebbe mai. Quindi:
   poi si rilancia la suite di validazione e si confrontano i numeri con
   `docs/risultati-fase0.txt` (procedura del CLAUDE.md §4).
 
+### Pubblico e rivalità: avvisi, stadio e derby (17 ottobre 2026, in prova su LegaBot)
+- **Avvisi del pubblico**: notifica all'allenatore quando il pubblico della sua squadra scende sotto 80 (il bonus
+  casa comincia a calare), sotto 40, e quando torna a 80 o più (bonus di nuovo pieno).
+- **Stadio nella card "Prossima partita"**: "Il tuo stadio: infuocato · bonus casa +2,0" oppure "Stadio di X: freddo ·
+  loro bonus +0,6"; "Campo neutro: nessun bonus casa".
+- **Derby**: una partita contro una squadra con cui la rivalità è almeno 50% si segna "DERBY" (card della prossima
+  partita e calendario). Le frecciatine fra giocatori restano dal 70%.
+- **Scontri diretti accesi**: la rivalità nasce e cresce anche sul campo, con qualunque coppia: espulsione +6, gol
+  decisivo dall'85' in poi (un solo gol di scarto, segnato dalla vincente) +4, le due cose +10.
+
 ## 2c. Capitano a requisiti (deciso il 17 ottobre 2026, in prova su LegaBot)
 - Un capitano completo ha quattro requisiti, un punto ciascuno (idoneità da 0 a 4):
   1. **bandiera come ramo principale** (basta il sì/no, non conta quanto è alta);

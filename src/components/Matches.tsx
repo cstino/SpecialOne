@@ -3,6 +3,7 @@ import { useSeasonData } from '../lib/useSeasonData'
 import type { Fixture, League, Match, Membership, Team } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { FixtureScore, formatMatchDate, SeasonState, TeamLabel } from './SeasonUI'
+import { SOGLIA_DERBY, useRivalitaMie } from '../lib/useRivalita'
 import { ConferenceBadge } from './ConferenceBadge'
 import { FiltroConferenza, type FiltroConf } from './FiltroConferenza'
 import { NOME_CONFERENZA, type Conferenza } from '../lib/conferenze'
@@ -10,6 +11,8 @@ import { NOME_CONFERENZA, type Conferenza } from '../lib/conferenze'
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; revealedMatchIds: Set<number>; onOpenMatch: (matchId: number) => void; onRevealMatch: (matchId: number) => void; onOpenTeam: (teamId: number) => void }
 
 type CardProps = {
+  // Rivalita' della propria squadra (solo leghe con le novita'): le sue partite con grado >= 50 sono derby.
+  rivalita?: Map<number, number>
   giornata: number
   fixtures: Fixture[]
   membership: Membership
@@ -26,7 +29,7 @@ type CardProps = {
   filtro?: FiltroConf
 }
 
-function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeamId, matchByFixture, revealedMatchIds, onOpenMatch, onRevealMatch, onOpenTeam, evidenza = false, confDiSquadra, filtro = 'tutte' }: CardProps) {
+function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeamId, matchByFixture, revealedMatchIds, onOpenMatch, onRevealMatch, onOpenTeam, evidenza = false, confDiSquadra, filtro = 'tutte', rivalita }: CardProps) {
   const simulate = fixtures.filter((fixture) => fixture.stato === 'simulata').length
   const completata = fixtures.length > 0 && simulate === fixtures.length
 
@@ -83,7 +86,7 @@ function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeam
           <TeamLabel team={teamById.get(fixture.home_team_id)} imageUrl={crestUrlByTeamId.get(fixture.home_team_id)} reversed onClick={() => onOpenTeam(fixture.home_team_id)} />
           <FixtureScore fixture={fixture} match={match} reveal={!giaVista} />
           <TeamLabel team={teamById.get(fixture.away_team_id)} imageUrl={crestUrlByTeamId.get(fixture.away_team_id)} onClick={() => onOpenTeam(fixture.away_team_id)} />
-          {mia && <small>LA TUA PARTITA</small>}
+          {mia && <small>LA TUA PARTITA{(rivalita?.get(fixture.home_team_id === membership.id ? fixture.away_team_id : fixture.home_team_id) ?? 0) >= SOGLIA_DERBY && <b className="fixture-derby">DERBY</b>}</small>}
         </article>
         })}
       </div>)}
@@ -121,7 +124,9 @@ export function Matches({ membership, onNavigate, revealedMatchIds, onOpenMatch,
   const indice = Math.min(indiceScelto ?? completate.length - 1, completate.length - 1)
   const completataCorrente = completate[indice]
 
+  const rivalita = useRivalitaMie(league.id, membership.id, Boolean(league.conferenze_stampa))
   const proprieta = {
+    rivalita,
     membership,
     teamById: data.teamById,
     crestUrlByTeamId: data.crestUrlByTeamId,

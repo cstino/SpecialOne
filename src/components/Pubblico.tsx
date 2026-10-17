@@ -11,10 +11,10 @@ import { LoadingLogo } from './LoadingLogo'
 
 const BONUS_MAX = 2
 const moltiplicatore = (p: number) => Math.max(0, Math.min(1, (p - 10) / 70))
-const bonus = (p: number) => BONUS_MAX * moltiplicatore(p)
-const fmtBonus = (b: number) => `+${b.toFixed(1).replace('.', ',')}`
+export const bonus = (p: number) => BONUS_MAX * moltiplicatore(p)
+export const fmtBonus = (b: number) => `+${b.toFixed(1).replace('.', ',')}`
 
-function fascia(p: number) {
+export function fascia(p: number) {
   if (p >= 80) return { testo: 'Stadio infuocato', classe: 'ottimo' }
   if (p >= 60) return { testo: 'Stadio caldo', classe: 'buono' }
   if (p >= 40) return { testo: 'Ambiente teso', classe: 'medio' }

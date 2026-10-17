@@ -8,6 +8,8 @@ import { Crest } from './Crest'
 import { FixtureScore, Forma, formaPerSquadra, formatMatchDate, SeasonState, TeamLabel, TitoloAdattivo } from './SeasonUI'
 import { LeagueNews } from './LeagueNews'
 import { SocialCard } from './SocialOne'
+import { InfoProssimaPartita } from './InfoProssimaPartita'
+import { useRivalitaMie } from '../lib/useRivalita'
 import { DraftLive } from './DraftLive'
 import { VettaConferenze } from './VettaConferenze'
 
@@ -23,6 +25,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
   const forma = useMemo(() => formaPerSquadra(data.fixtures, data.matchByFixture), [data.fixtures, data.matchByFixture])
   const fase = useFaseSquadra(league.id, membership.id, data.season?.id)
   const miaSquadra = data.teamById.get(membership.id)
+  const rivalita = useRivalitaMie(league.id, membership.id, Boolean(league.conferenze_stampa))
   const miaClassifica = data.standings.find((riga) => riga.team_id === membership.id)
   // Con le conferenze «La vetta» mostra le due classifiche, a rotazione; senza, le prime quattro come sempre.
   const conConferenze = data.standings.some((riga) => riga.conferenza)
@@ -143,6 +146,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
                 <TeamLabel team={data.teamById.get(data.nextFixture.away_team_id)} imageUrl={data.crestUrlByTeamId.get(data.nextFixture.away_team_id)} reversed onClick={() => onOpenTeam(data.nextFixture!.away_team_id)} />
               </div>
             ) : <p className="dash-vuoto">Non ci sono altre partite programmate.</p>}
+            {league.conferenze_stampa && data.nextFixture && <InfoProssimaPartita fixture={data.nextFixture} miaSquadraId={membership.id} teamById={data.teamById} rivalita={rivalita} />}
             <div className="dash-azioni">
               <button className="overview-cta-button dash-cta" type="button" onClick={() => onNavigate('squad')}>Prepara formazione</button>
               <button className="dash-link" type="button" onClick={() => onNavigate('matches')}>Calendario ›</button>
