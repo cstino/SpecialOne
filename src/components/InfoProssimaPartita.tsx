@@ -14,7 +14,7 @@ export function InfoProssimaPartita({ fixture, miaSquadraId, teamById, rivalita 
   const p = Number(casa?.pubblico ?? 100)
   const f = fascia(p)
   return <div className="info-partita">
-    {derby && <span className="info-partita__derby">DERBY <i>rivalità {Math.round(grado)}%</i></span>}
+    {derby && <span className="info-partita__derby">DERBY</span>}
     {fixture.campo_neutro
       ? <span className="info-partita__stadio">Campo neutro: nessun bonus casa</span>
       : <span className={`info-partita__stadio info-partita__stadio--${f.classe}`}>
