@@ -241,6 +241,16 @@ Extra campo, e le loro notifiche portano lì e accendono il pallino sulla voce d
   giocatori (scambi) registra la frase da cui nasce (`social_posts.frase_origine`); nello stesso giorno e nella
   stessa lega le frasi già usate si saltano finché ce ne sono di libere, e nello stesso giro ogni post prende una
   frase diversa. Se le libere finiscono si ripesca da tutte.
+- **Risposte fra i personaggi e mi piace dei tifosi** (17 ottobre 2026): quasi tutti i post ricevono risposte a
+  fili, da frasi modello senza AI (`private.frasi_commenti`, 174 frasi, 14 categorie): sotto la domanda di una
+  testata 2 tifosi; sotto la risposta dell'allenatore 1 tifoso; sotto il risultato un tifoso di chi vince e uno di
+  chi perde; sotto uno scambio un tifoso per squadra; sotto un'asta 1 tifoso; sotto il gol di un giocatore un
+  compagno (chi ha fatto l'assist, se c'è), un suo tifoso e un tifoso rivale; sotto l'addio di un giocatore un ex
+  compagno e un tifoso della vecchia squadra (toni diversi se se n'è andato amaro). **Frecciatine fra rivali**:
+  con rivalità ≥ 70% il giocatore della squadra che ha perso risponde al marcatore e lui replica. Le risposte
+  arrivano 3-42 minuti dopo il post (il feed non mostra i post "nel futuro"). **Mi piace dei tifosi** (separati dai
+  cuori veri): numero calcolato una volta per post da tipo, importanza e umore del pubblico della squadra. Il
+  feed si pagina per conversazioni intere. `private.social_risposte`, cron 5 minuti.
 - **Commenti degli allenatori** (17 ottobre 2026): il fumetto sotto ogni post apre la risposta, che entra
   nella conversazione a filo con nome e stemma. Solo colore, nessun effetto su morale/pubblico/rivalità.
   Massimo 280 caratteri, uno ogni 20 secondi (`social_commenta`).

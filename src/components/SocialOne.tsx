@@ -47,14 +47,15 @@ export function useSocialFeed(leagueId: number, perTe: boolean, limite = PAGINA)
     if (error) { setErrore(error.message); setCaricamento(false); return }
     const righe = (data ?? []).map((r: PostSocial) => ({ ...r, n_mi_piace: Number(r.n_mi_piace) })) as PostSocial[]
     setPost((prima) => offset === 0 ? righe : [...prima, ...righe.filter((r) => !prima.some((p) => p.id === r.id))])
-    setAltri(righe.length === limite)
+    // Il limite e il punto di ripartenza contano le conversazioni (i post "radice"), non le risposte.
+    setAltri(righe.filter((r) => r.in_risposta_a === null).length === limite)
     setErrore(null)
     setCaricamento(false)
   }, [leagueId, perTe, limite])
 
   useEffect(() => { setCaricamento(true); void carica(0) }, [carica])
 
-  const mostraAltri = useCallback(() => void carica(post.length), [carica, post.length])
+  const mostraAltri = useCallback(() => void carica(post.filter((p) => p.in_risposta_a === null).length), [carica, post])
   const mettiMiPiace = useCallback(async (id: number) => {
     setPost((p) => p.map((x) => x.id === id ? { ...x, mio_mi_piace: !x.mio_mi_piace, n_mi_piace: x.n_mi_piace + (x.mio_mi_piace ? -1 : 1) } : x))
     const { data, error } = await supabase.rpc('social_mi_piace', { p_post_id: id })
@@ -366,7 +367,7 @@ export function SocialOne({ membership, onNavigate }: Props) {
 export function SocialAnteprima({ membership, onNavigate }: Props) {
   const league = membership.league as League
   const dati = useSeasonData(membership)
-  const { post, caricamento, mettiMiPiace, commenta } = useSocialFeed(league.id, true, 6)
+  const { post, caricamento, mettiMiPiace, commenta } = useSocialFeed(league.id, true, 3)
   const foto = useFotoGiocatori(post)
   return <section className="dash-sezione x-anteprima">
     <header className="dash-testa">
@@ -376,7 +377,7 @@ export function SocialAnteprima({ membership, onNavigate }: Props) {
     <div className="x-anteprima__riquadro">
       {caricamento ? <div className="x-stato"><p>Carico il feed…</p></div>
         : post.length === 0 ? <div className="x-stato"><p>Ancora nessun post: appena succede qualcosa nella lega, lo trovi qui.</p></div>
-        : <Feed post={post.slice(0, 4)} dati={dati} foto={foto} onMiPiace={(id) => void mettiMiPiace(id)} onCommenta={commenta} />}
+        : <Feed post={post} dati={dati} foto={foto} onMiPiace={(id) => void mettiMiPiace(id)} onCommenta={commenta} />}
       <button className="x-anteprima__tutti" type="button" onClick={() => onNavigate('social')}>Mostra tutto il feed</button>
     </div>
   </section>
