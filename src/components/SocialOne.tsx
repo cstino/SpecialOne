@@ -16,6 +16,7 @@ export type PostSocial = {
   id: number
   autore_tipo: 'lega' | 'testata' | 'allenatore' | 'tifosi' | 'giocatore'
   autore_nome: string
+  autore_handle: string | null
   team_id: number | null
   team2_id: number | null
   player_instance_id: number | null
@@ -116,9 +117,11 @@ function tempoBreve(iso: string) {
   return new Date(iso).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', timeZone: 'Europe/Rome' })
 }
 
-const slug = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 22)
+// Stessa regola di private.handle_squadra nel database: i tag @ delle squadre coincidono.
+const slug = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 22)
 
 function handle(p: PostSocial, dati: Dati) {
+  if (p.autore_handle) return p.autore_handle
   const squadra = p.team_id ? dati.teamById.get(p.team_id)?.nome ?? '' : ''
   switch (p.autore_tipo) {
     case 'lega': return 'SpecialOneLega'
@@ -159,9 +162,24 @@ function Avatar({ post, dati, foto }: { post: PostSocial; dati: Dati; foto: Map<
     return <span className={`x-avatar x-avatar--testata x-avatar--t${Math.abs([...post.autore_nome].reduce((h, c) => h * 31 + c.charCodeAt(0), 7)) % 4}`}><b>{sigla || '?'}</b></span>
   }
   const squadra = post.team_id ? dati.teamById.get(post.team_id) : undefined
+  if (post.autore_tipo === 'tifosi') {
+    // Un tifoso e' una persona: iniziali su un colore suo, e lo stemma della squadra piccolo nell'angolo.
+    const parole = post.autore_nome.replace(/[^A-Za-zÀ-ÿ ]/g, '').split(/\s+/).filter(Boolean)
+    const iniziali = (parole.length > 1 && !/^(Ultrà|Curva)$/.test(parole[0]) ? parole[0].charAt(0) + parole[1].charAt(0) : parole[parole.length - 1]?.charAt(0) ?? '?').toUpperCase()
+    const tinta = Math.abs([...(post.autore_handle ?? post.autore_nome)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 100003, 7)) % 360
+    return <span className="x-avatar-tifoso">
+      <span className="x-avatar x-avatar--persona" style={{ background: `linear-gradient(135deg, hsl(${tinta} 55% 46%), hsl(${(tinta + 40) % 360} 60% 28%))` }}><b>{iniziali}</b></span>
+      {post.team_id && <span className="x-avatar-tifoso__stemma"><Crest value={squadra?.stemma_url ?? null} stelle={0} imageUrl={dati.crestUrlByTeamId.get(post.team_id)} size="small" /></span>}
+    </span>
+  }
   return <span className={`x-avatar x-avatar--${post.autore_tipo}`}>
     {post.team_id && <Crest value={squadra?.stemma_url ?? null} stelle={squadra?.titoli_title} imageUrl={dati.crestUrlByTeamId.get(post.team_id)} size="small" />}
   </span>
+}
+
+// Il testo con i tag @ evidenziati, come su X.
+function ConTag({ testo }: { testo: string }) {
+  return <>{testo.split(/(@[a-z0-9_.]+)/gi).map((pezzo, i) => pezzo.startsWith('@') && pezzo.length > 1 ? <span className="x-tag" key={i}>{pezzo}</span> : pezzo)}</>
 }
 
 // Card del risultato: "FINALE · Casa 2-0 Ospite. commento"
@@ -260,7 +278,7 @@ export function PostX({ post, dati, foto, nRisposte, rispondeA, filoSopra, filoS
       </header>
       {post.autore_tipo === 'giocatore' && squadra && <p className="x-post__contesto">{squadra}</p>}
       {rispondeA && !filoSopra && <p className="x-post__contesto">In risposta a <b>@{handle(rispondeA, dati)}</b></p>}
-      {card ?? <p className="x-post__testo">{post.testo}</p>}
+      {card ?? <p className="x-post__testo"><ConTag testo={post.testo} /></p>}
       {post.riguarda_me && <span className="x-post__tua">La tua squadra</span>}
       <footer className="x-azioni">
         <button className={`x-azione x-azione--risposte${commento !== null ? ' is-attivo' : ''}`} type="button" onClick={() => { setCommento((c) => c === null ? '' : null); setErroreCommento(null) }}

@@ -297,6 +297,9 @@ function ripetizioni(nuova: string, precedenti: string[]) {
   }).length
 }
 
+// Il tag social di una squadra: stessa regola dell'app e di private.handle_squadra.
+const tagSquadra = (nome: string) => nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 22)
+
 // ------------------------------------------------------------
 //  RISPONDI
 // ------------------------------------------------------------
@@ -392,12 +395,15 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
       'difesa del club e dei suoi giocatori, e anche lo scherno verso le avversarie (lo adorano, purché sia sfottò e non insulto pesante). ' +
       'Non perdonano: dare la colpa ai tifosi o allo stadio, parlare male del proprio club, mancare di rispetto, risposte fredde dopo una brutta sconfitta, promesse vuote. ' +
       'Il pubblico scende sotto -1 SOLO per offese ai tifosi o al club, colpe date a loro, mancanza di rispetto o freddezza dopo una pesante sconfitta: ' +
-      'una risposta generica, neutra o da ufficio stampa vale tra -0,5 e 0 per il pubblico. Nel campo reazione_pubblico scrivi un messaggio breve (massimo 140 caratteri) di un tifoso sui social, in italiano, ' +
-      'che riflette il tono (esultanza se piace, protesta se non piace), senza nomi di persone reali e senza insulti pesanti. ' +
+      'una risposta generica, neutra o da ufficio stampa vale tra -0,5 e 0 per il pubblico. Nel campo reazione_pubblico scrivi il post di UN tifoso vero sui social (massimo 140 caratteri), in italiano parlato: ' +
+      'informale, di getto, come su X, anche con qualche parolaccia (cazzo, palle, vergogna) se è arrabbiato, niente frasi da comunicato. ' +
+      'Deve citare la squadra con il suo tag (te lo do nel messaggio, tipo @cocacolers). Esulta se le parole gli piacciono, protesta se non gli piacciono. ' +
+      'Mai nomi di persone reali, mai insulti razzisti, sessisti o minacce. Esempi di tono: "dai ragazzi @cocacolers, come cazzo si fa a perdere così?", ' +
+      '"mister ha detto le cose giuste, finalmente uno con le palle @cocacolers 🔥". ' +
       'Giocatori: se la risposta elogia o critica giocatori della rosa (elenco con id), indicali con effetto da -3 a +1,5 (la stessa asimmetria). ' +
       'Squadre: se attacca, scherna o disprezza un\'altra squadra o il suo allenatore, oppure la elogia, indicala (elenco con id) con la direzione. ' +
       'Reazione: una frase breve in italiano (massimo 140 caratteri, senza numeri) su come sala stampa e spogliatoio hanno preso le parole.',
-      `Domanda: ${d.domanda}\n\nMemoria dello spogliatoio:\n${memoria}\n\nRosa di ${d.teams?.nome}:\n${elencoRosa}\n\nAltre squadre della lega:\n${elencoAltre}\n\n<risposta>\n${testo}\n</risposta>`,
+      `Tag della squadra sui social: @${tagSquadra(d.teams?.nome ?? '')}\n\nDomanda: ${d.domanda}\n\nMemoria dello spogliatoio:\n${memoria}\n\nRosa di ${d.teams?.nome}:\n${elencoRosa}\n\nAltre squadre della lega:\n${elencoAltre}\n\n<risposta>\n${testo}\n</risposta>`,
       {
         name: 'valuta_risposta',
         description: 'La valutazione della risposta.',

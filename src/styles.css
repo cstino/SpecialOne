@@ -4398,6 +4398,11 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .x-avatar--t0 { background: linear-gradient(135deg, #1d9bf0, #0b4f99); } .x-avatar--t1 { background: linear-gradient(135deg, #f0457a, #8f1440); }
 .x-avatar--t2 { background: linear-gradient(135deg, #2bbd7e, #0e5e3c); } .x-avatar--t3 { background: linear-gradient(135deg, #f2954a, #9c4a0e); }
 .x-avatar--allenatore, .x-avatar--tifosi { background: #0e0c13; box-shadow: inset 0 0 0 1px #2a2633; }
+.x-avatar-tifoso { position: relative; display: block; width: 40px; height: 40px; flex: none; }
+.x-avatar--persona b { color: #fff; font: 800 .9rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; letter-spacing: .02em; text-shadow: 0 1px 2px rgba(0,0,0,.35); }
+.x-avatar-tifoso__stemma { position: absolute; right: -4px; bottom: -3px; display: grid; place-items: center; width: 19px; height: 19px; border-radius: 50%; background: #050407; box-shadow: 0 0 0 2px #050407; }
+.x-avatar-tifoso__stemma .crest { width: 100%; height: 100%; object-fit: contain; }
+.x-tag { color: #b98cff; }
 .x-avatar--allenatore .crest, .x-avatar--tifosi .crest { width: 74%; height: 74%; object-fit: contain; }
 .x-avatar--giocatore { box-shadow: inset 0 0 0 1px #2a2633; }
 

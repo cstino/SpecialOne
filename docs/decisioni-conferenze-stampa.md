@@ -197,6 +197,13 @@ e criticare un giocatore non converrebbe mai. Quindi:
 - **Commenti degli allenatori** (17 ottobre 2026): il fumetto sotto ogni post apre la risposta, che entra
   nella conversazione a filo con nome e stemma. Solo colore, nessun effetto su morale/pubblico/rivalità.
   Massimo 280 caratteri, uno ogni 20 secondi (`social_commenta`).
+- **Tifosi come persone vere** (17 ottobre 2026): ogni post dei tifosi lo firma una persona diversa, con
+  nome e @nome inventati e verosimili (`private.tifoso_finto`, sempre gli stessi per lo stesso post, mai
+  persone reali). Scrivono come sui social: informali, anche qualche parolaccia, e citano la squadra col
+  suo tag (`private.handle_squadra`, es. "dai ragazzi @cocacolers, come cazzo si fa a perdere così?").
+  Reagiscono alle conferenze (testo dall'AI) e a ogni risultato (frasi modello per vittoria larga,
+  vittoria, pareggio, sconfitta, sconfitta pesante: nessun costo di AI). Avatar: iniziali su un colore
+  proprio con il piccolo stemma della squadra; i tag @ sono evidenziati.
 - **Non ancora**: lo sfogo dei giocatori scontenti (da decidere: pubblico o solo un avviso privato).
 
 ---
