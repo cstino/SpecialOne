@@ -178,6 +178,8 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   // Capitano a requisiti (prova in LegaBot): i quattro requisiti di ogni giocatore e chi porta la fascia.
   type RequisitiCapitano = { bandiera: boolean; esperienza: boolean; anzianita: boolean; titolare: boolean; punti: number; designato: boolean; effettivo: boolean }
   const [requisitiCapitano, setRequisitiCapitano] = useState<Map<number, RequisitiCapitano>>(new Map())
+  // Richieste dei giocatori (prova in LegaBot): chi ha una richiesta aperta o una promessa da mantenere.
+  const [richiesteAttive, setRichiesteAttive] = useState<Map<number, 'aperta' | 'promessa'>>(new Map())
   const [nominaInCorso, setNominaInCorso] = useState(false)
   const [nominaErrore, setNominaErrore] = useState<string | null>(null)
   const caricaCapitano = useCallback(async () => {
@@ -226,6 +228,18 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const ownTeam = teamId === membership.id
   const giornataProssima = seasonData.nextFixture?.giornata
   useEffect(() => { if (ownTeam && league.conferenze_stampa) void caricaCapitano() }, [ownTeam, league.conferenze_stampa, caricaCapitano])
+  useEffect(() => {
+    if (!ownTeam || !league.conferenze_stampa) return
+    let vivo = true
+    void supabase.from('richieste_giocatori').select('player_instance_id, stato, scade_il').eq('team_id', membership.id).in('stato', ['aperta', 'promessa'])
+      .then(({ data }) => {
+        if (!vivo) return
+        setRichiesteAttive(new Map(((data ?? []) as Array<{ player_instance_id: number; stato: 'aperta' | 'promessa'; scade_il: string }>)
+          .filter((r) => r.stato === 'promessa' || new Date(r.scade_il).getTime() > Date.now())
+          .map((r) => [r.player_instance_id, r.stato])))
+      })
+    return () => { vivo = false }
+  }, [ownTeam, league.conferenze_stampa, membership.id])
   useEffect(() => {
     if (!ownTeam || !league.conferenze_stampa || seasonData.loading) return
     let vivo = true
@@ -883,6 +897,9 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       {player.fotoFirmata ? <img src={player.fotoFirmata} alt="" loading="lazy" /> : <b aria-hidden="true">{player.nome.charAt(0)}</b>}
                     </span>
                     <i className="team-roster-player__ruolo">{player.posizioni[0] ? ruoloIt(player.posizioni[0]) : '—'}</i>
+                    {ownTeam && richiesteAttive.has(player.id) && <i className={`team-roster-player__richiesta team-roster-player__richiesta--${richiesteAttive.get(player.id)}`}
+                      title={richiesteAttive.get(player.id) === 'aperta' ? 'Ha una richiesta: rispondi dalla home' : 'Gli hai fatto una promessa: a fine partita si controlla'}
+                      aria-label={richiesteAttive.get(player.id) === 'aperta' ? 'Richiesta aperta' : 'Promessa da mantenere'}>{richiesteAttive.get(player.id) === 'aperta' ? '!' : '★'}</i>}
                     {ownTeam && requisitiCapitano.get(player.id)?.effettivo && <i className="team-roster-player__fascia" title="Capitano" aria-label="Capitano">C</i>}
                     {ownTeam && typeof player.morale === 'number' && <FaccinaMorale morale={player.morale} className="faccina-morale--avatar" />}
                     {/* Al volo, chi sta lavorando e chi no. "Bilanciato" non conta:

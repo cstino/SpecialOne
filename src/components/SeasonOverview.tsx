@@ -11,6 +11,7 @@ import { SocialAnteprima } from './SocialOne'
 import { DraftLive } from './DraftLive'
 import { VettaConferenze } from './VettaConferenze'
 import { SalaStampa } from './SalaStampa'
+import { RichiesteGiocatori } from './RichiesteGiocatori'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; revealedMatchIds: Set<number>; onOpenMatch: (matchId: number) => void; onRevealMatch: (matchId: number) => void; onOpenTeam: (teamId: number) => void }
 
@@ -151,6 +152,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
           </article>
         </section>
 
+        {league.conferenze_stampa && <RichiesteGiocatori teamId={membership.id} />}
         {league.conferenze_stampa && <SalaStampa teamId={membership.id} revealedMatchIds={revealedMatchIds} />}
 
         {league.conferenze_stampa

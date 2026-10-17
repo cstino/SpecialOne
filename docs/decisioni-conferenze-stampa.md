@@ -170,39 +170,30 @@ e criticare un giocatore non converrebbe mai. Quindi:
 - Da guardare nei primi giorni: volatilità e spirale (una brutta serie abbassa il morale, che
   rende un filo meno). Altre leghe invariate finché non si decide di estenderlo.
 
-## 2e. Richieste dei giocatori (idea del 17 ottobre 2026, **proposta, non ancora implementata**)
-Durante l'anno alcuni giocatori scrivono al mister con una richiesta personale; l'allenatore risponde
-sempre a testo libero e l'AI valuta l'effetto sul **morale di quel giocatore**. Esempio: un giocatore che
-non trova spazio ("ehi mister, mi sono allenato bene ultimamente, nella prossima partita potrebbe
-schierarmi tra i titolari?"). **Se il mister gli promette la titolarità e poi non la mantiene, il giocatore
-perde molto morale.**
+## 2e. Richieste dei giocatori (deciso e costruito il 17 ottobre 2026, in prova su LegaBot)
+Durante l'anno un giocatore scrive al mister con una richiesta personale; l'allenatore risponde sempre a
+testo libero e l'AI valuta l'effetto sul **morale di quel giocatore** (solo suo, non della rosa).
 
-Come si integra con quello che c'è: il **minutaggio promesso** (gradini, `docs/decisioni-minutaggio.md`)
-resta il contratto di lungo periodo; i **richiami** automatici (morale < 30, ogni 5 giornate) restano come
-ultima rete. Le richieste sono un livello prima: nascono presto, sono personali e a breve termine.
-
-Proposta:
-- **Quando nascono**: dopo la simulazione, per le squadre umane, al massimo una richiesta per squadra a
-  giornata e un'attesa lunga per lo stesso giocatore. Nascono da fatti veri: poco impiego con buone pagelle
-  o morale in calo, assenza di minuti per più giornate, un veterano con la fascia che la chiede, ecc.
-  Il testo della richiesta è un modello (nessun costo di AI); l'AI serve solo a valutare la risposta.
-- **Tipi (primo giro)**: "schierami titolare nella prossima partita", "più spazio nelle prossime partite",
-  "vorrei la fascia di capitano", "posso riposare?" (giocatore stanco). Altri dopo.
-- **La risposta**: testo libero, entro la simulazione successiva. L'AI valuta il tono (rispetto, onestà,
-  coerenza, motivazione: stesse protezioni di sempre: insensata = minimo, voto limitato dal server) e
-  riconosce se c'è una **promessa esplicita**. Una promessa vaga non conta: la registra solo se è chiara, e
-  l'app la mostra subito ("Hai promesso a X il posto da titolare nella prossima partita").
-- **La promessa si verifica a fine partita**, in modo oggettivo (formazione titolare dei dati): mantenuta =
-  bonus morale; **non mantenuta = malus pesante**. Giocatore infortunato o squalificato: la promessa decade
-  senza penale.
-- **Dove si vede**: una sezione "Spogliatoio" con le richieste aperte, notifica push, e nella rosa
-  l'icona della promessa attiva.
-- **Social**: una promessa tradita potrebbe diventare lo sfogo del giocatore su SocialOne: lega questo
-  punto alla decisione ancora aperta sugli sfoghi.
-
-Da decidere: tipi di richiesta, entità di bonus e malus (idea di partenza: promessa mantenuta +8, tradita
--20 al giocatore), se una promessa tradita pesa anche un poco sul resto della rosa, e se partire in
-LegaBot.
+- **Tipi**: "schierami titolare nella prossima partita", "più spazio nelle prossime partite", "posso
+  riposare?". Escluso: la fascia di capitano (cambiare capitano toglie morale all'ex capitano, sarebbe
+  una richiesta troppo azzardata).
+- **Quando nascono** (`private.genera_richieste_giocatori`, cron 5 minuti): dopo una simulazione recente,
+  al massimo una richiesta per squadra umana e per giornata (circa 6 giornate su 10), da fatti veri:
+  riposo = titolare con condizione sotto 55; titolare = chi sta fuori con poco impiego, morale sotto 80 e
+  tra i 16 migliori; spazio = pochi minuti e morale sotto 65. Per lo stesso giocatore almeno 6 giorni di
+  pausa. Il testo è un modello (nessun costo di AI); l'AI serve solo a valutare la risposta.
+- **La risposta**: entro le 22:30 del giorno dopo. Voto da -3 a +1,5 (1 punto = 3 di morale al giocatore,
+  smorzato vicino agli estremi). Insensata = -3. Rifiuto motivato ≈ 0, rifiuto secco ≈ -1,5.
+- **La promessa**: l'AI la registra SOLO se è esplicita e inequivocabile; "vedremo", "ci penso" non sono
+  promesse. L'app mostra subito "Promessa registrata". Il voto NON premia la promessa.
+- **Verifica a fine partita** (`private.verifica_richieste`, sui dati): titolare = in campo dall'inizio;
+  spazio = almeno 30 minuti; riposo = fuori dai titolari. **Mantenuta +8, tradita -20**. Infortunato o
+  squalificato: la promessa decade senza penale. Nessuna risposta: scade senza effetti.
+- **Sfogo sul social**: una promessa tradita diventa un post pubblico del giocatore su SocialOne (anche
+  una mantenuta, di ringraziamento). Questo risolve il punto aperto sugli sfoghi per questo caso.
+- Dove: sezione "Spogliatoio" nella home (sotto la Sala stampa), icona "!" (richiesta aperta) o "★"
+  (promessa da mantenere) nella rosa. Migrazioni `20261017230000_richieste_giocatori.sql` e
+  `20261017235000_richieste_giocatori_cron.sql`, componente `RichiesteGiocatori.tsx`.
 
 ## 3. SocialOne — le notizie in stile social
 - **Deciso**: la sezione social si chiama **SocialOne**, per restare in tema col gioco.
@@ -240,7 +231,7 @@ LegaBot.
   proprio con il piccolo stemma della squadra; i tag @ sono evidenziati.
   Le frasi sui risultati stanno nella tabella `private.frasi_tifosi` (135 al lancio, categorie goleada,
   vittoria, pareggio, batosta, sconfitta; segnaposto {S} {O} {F} {G}): se ne aggiungono con un insert.
-- **Non ancora**: lo sfogo dei giocatori scontenti (da decidere: pubblico o solo un avviso privato).
+- **Sfogo dei giocatori**: avviene quando una promessa viene tradita (§2e); altri sfoghi non previsti.
 
 ---
 
