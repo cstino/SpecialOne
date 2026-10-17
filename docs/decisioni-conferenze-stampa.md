@@ -230,6 +230,13 @@ Extra campo, e le loro notifiche portano lì e accendono il pallino sulla voce d
   della valutazione), i giocatori (il miglior marcatore di ogni squadra a fine partita, col tono del suo
   carattere; il capitano che risponde ai tifosi dopo una protesta forte e calma il pubblico di 0-3 punti).
   Migrazione `20261017170000_socialone.sql`, schermata `SocialOne.tsx`, voce di menu dopo Overview.
+- **Scambi sul social** (17 ottobre 2026): dopo uno scambio ufficiale i tifosi di ciascuna squadra commentano
+  (bene se arriva un giocatore migliore di quello che parte, male se parte il migliore, con dubbi negli altri
+  casi) e i giocatori che cambiano squadra (i 2 migliori per lato) salutano: **amaro, con frecciatine**, se se
+  ne andavano scontenti (morale prima dello scambio sotto 45: es. "ho sempre dato tutto per questa maglia,
+  vado via con la coscienza a posto, un giorno la verità verrà a galla"), **sereno** negli altri casi. Il morale
+  di prima si salva al passaggio (`private.trasferimenti_giocatori`) perché il trigger lo ricalcola. Frasi in
+  `private.frasi_social` (50 al lancio).
 - **Commenti degli allenatori** (17 ottobre 2026): il fumetto sotto ogni post apre la risposta, che entra
   nella conversazione a filo con nome e stemma. Solo colore, nessun effetto su morale/pubblico/rivalità.
   Massimo 280 caratteri, uno ogni 20 secondi (`social_commenta`).
