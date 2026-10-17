@@ -40,6 +40,8 @@ export function Rivalita({ membership, onNavigate, onOpenTeam, onCambiaRivale }:
     return () => { vivo = false }
   }, [league.id, membership.id])
 
+  const sceltoDa = useMemo(() => [...dati.teamById.values()].filter((t) => t.rivale_id === membership.id), [dati.teamById, membership.id])
+
   const righe = useMemo(() => [...dati.teamById.values()]
     .filter((t) => t.id !== membership.id && t.attiva !== false)
     .map((t) => ({ team: t, grado: gradi?.get(t.id) ?? 0 }))
@@ -52,7 +54,8 @@ export function Rivalita({ membership, onNavigate, onOpenTeam, onCambiaRivale }:
       <section className="alerts-heading">
         <div><p className="kicker">{league.nome}</p><h1>Rivalità.</h1>
           <p>Il rapporto con ogni squadra, da 0 a 100%. Sale se in conferenza stampa schernisci, attacchi o disprezzi una squadra (qualsiasi, anche una che non affronti presto), scende se la elogi, e si raffredda di un punto a giornata. Ogni risposta vale +10 se la attacchi, −6 se la elogi. Negli scontri diretti il risultato pesa su morale e pubblico, in proporzione al grado. Lo vedi solo tu.</p>
-          {onCambiaRivale && <p>Il tuo derby: <strong>{membership.rivale_id ? dati.teamById.get(membership.rivale_id)?.nome ?? '—' : 'non ancora scelto'}</strong>. <button className="rivalita-cambia" type="button" onClick={onCambiaRivale}>{membership.rivale_id ? 'Cambia rivale' : 'Scegli il rivale'}</button></p>}</div>
+          {onCambiaRivale && <p>Il tuo derby: <strong>{membership.rivale_id ? dati.teamById.get(membership.rivale_id)?.nome ?? '—' : 'non ancora scelto'}</strong>. <button className="rivalita-cambia" type="button" onClick={onCambiaRivale}>{membership.rivale_id ? 'Cambia rivale' : 'Scegli il rivale'}</button></p>}
+          {sceltoDa.length > 0 && <p className="rivalita-scelto-da">{sceltoDa.map((t) => t.nome).join(', ')} {sceltoDa.length === 1 ? 'ti ha scelto' : 'ti hanno scelto'} come rivale: {sceltoDa.length === 1 ? 'la vostra partita è sempre un derby' : 'le vostre partite sono sempre derby'}.</p>}</div>
       </section>
       {dati.loading || gradi === null
         ? <section className="season-state is-caricamento"><LoadingLogo compatto /><h2>Carico le rivalità…</h2><span className="caricamento-barra" aria-hidden="true" /></section>
