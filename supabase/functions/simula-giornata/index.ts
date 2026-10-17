@@ -1,5 +1,6 @@
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { withSupabase } from '@supabase/server'
+import { jwtVerify } from 'jose'
 import { ovrEfficace, schiera, simulaPartita } from '../../../engine/engine.js'
 import { tiltTecnico, tiltRapido } from '../../../engine/tattiche.js'
 import { CFG, MODULI, PESI_SLOT } from '../../../engine/config.js'
@@ -16,6 +17,20 @@ import { pagelle, migliorInCampo } from '../../../engine/pagelle.js'
 // Serve per due cose insieme, ed e' la stessa mappa: autenticare il cron
 // (header `apikey`) e costruire il client amministrativo.
 const CHIAVE_SEGRETA = Deno.env.get('CHIAVE_SEGRETA_PROGETTO') ?? ''
+const SEGRETO_JWT = Deno.env.get('JWT_SECRET') ?? ''
+
+// L'utente lo identifica la funzione stessa: dal passaggio al Mac il login firma i token HS256 senza `kid`, e la
+// verifica "user" di @supabase/server li rifiuta (401 prima di arrivare qui: il tasto Admin non funzionava).
+// Si controlla la firma col segreto del progetto. Senza token valido l'utente e' null e le azioni da admin
+// restano vietate.
+async function utenteDalToken(req: Request): Promise<string | null> {
+  const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '')
+  if (!token || !SEGRETO_JWT) return null
+  try {
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(SEGRETO_JWT), { algorithms: ['HS256'] })
+    return payload.role === 'authenticated' && typeof payload.sub === 'string' ? payload.sub : null
+  } catch { return null }
+}
 
 type JsonMap = Record<string, unknown>
 type GolBlocco = { blocco: number; casa: number; ospite: number }
@@ -1163,7 +1178,8 @@ export function simulaAmichevoleCore(d: DatiAmichevole, seed: number) {
 
 // Gestisce la richiesta {amichevole_id}: puo' arrivare da uno dei due interessati o dal sistema.
 async function gestisciAmichevole(
-  ctx: { supabaseAdmin: any; authMode: string; userClaims?: { id?: string } | null }, // eslint-disable-line @typescript-eslint/no-explicit-any
+  ctx: { supabaseAdmin: any; authMode: string }, // eslint-disable-line @typescript-eslint/no-explicit-any
+  utenteId: string | null,
   amichevoleId: number,
 ): Promise<Response> {
   const admin = ctx.supabaseAdmin
@@ -1180,7 +1196,7 @@ async function gestisciAmichevole(
 
   if (ctx.authMode !== 'secret') {
     const { data: mie, error: mieError } = await admin.from('teams').select('id')
-      .eq('league_id', am.league_id).eq('user_id', ctx.userClaims?.id ?? '').in('id', [am.da_team_id, am.a_team_id])
+      .eq('league_id', am.league_id).eq('user_id', utenteId ?? '').in('id', [am.da_team_id, am.a_team_id])
     if (mieError) throw mieError
     if (!mie?.length) return Response.json({ error: 'Non sei una delle due squadre.' }, { status: 403 })
   }
@@ -1242,17 +1258,18 @@ export default {
   // Due chiamanti: l'amministratore dal browser (JWT utente) e il cron
   // notturno, che presenta la chiave segreta del progetto nell'header `apikey`.
   fetch: withSupabase({
-    auth: ['user', 'secret'],
+    auth: ['secret', 'none'],
     env: { secretKeys: CHIAVE_SEGRETA ? { default: CHIAVE_SEGRETA } : {} },
   }, async (req, ctx) => {
     try {
       if (req.method !== 'POST') return Response.json({ error: 'Metodo non consentito.' }, { status: 405 })
+      const utenteId = ctx.authMode === 'secret' ? null : await utenteDalToken(req)
       const body = await req.json().catch(() => ({})) as { league_id?: number; giornata?: number; amichevole_id?: number }
       // Amichevole (solo off-season): nessuna scrittura sui giocatori, vedi gestisciAmichevole.
       if (body.amichevole_id !== undefined) {
         const idAmichevole = Number(body.amichevole_id)
         if (!Number.isInteger(idAmichevole) || idAmichevole < 1) return Response.json({ error: 'amichevole_id non valido.' }, { status: 400 })
-        return await gestisciAmichevole(ctx, idAmichevole)
+        return await gestisciAmichevole(ctx, utenteId, idAmichevole)
       }
       const leagueId = Number(body.league_id)
       if (!Number.isInteger(leagueId) || leagueId < 1) return Response.json({ error: 'league_id non valido.' }, { status: 400 })
@@ -1264,7 +1281,7 @@ export default {
       const { data: league, error: leagueError } = await ctx.supabaseAdmin.from('leagues')
         .select('id, nome, admin_id, stato, giornate_totali, tattiche_attive').eq('id', leagueId).single()
       if (leagueError || !league) return Response.json({ error: 'Lega non trovata.' }, { status: 404 })
-      if (!chiamataDiSistema && league.admin_id !== ctx.userClaims?.id) {
+      if (!chiamataDiSistema && league.admin_id !== utenteId) {
         return Response.json({ error: 'Solo l’amministratore può simulare una giornata.' }, { status: 403 })
       }
       if (league.stato !== 'stagione') return Response.json({ error: 'La stagione non è in corso.' }, { status: 409 })
