@@ -258,6 +258,11 @@ Extra campo, e le loro notifiche portano lì e accendono il pallino sulla voce d
   "daje", "aura", "cooked", 💀🤡😭), il lessico del calcio ("tiro telefonato", "campanile", "melina") e qualche
   parolaccia dove ci sta. Anche l'AI che scrive il post dei tifosi dopo una conferenza ha le stesse istruzioni.
   I post automatici precedenti sono stati rigenerati col tono nuovo.
+- **Anche qualche insulto, da ultras** (17 ottobre 2026, committente): 95 frasi in più nelle categorie giuste
+  (batosta, sconfitta, sfottò agli avversari quando si vince, ultras che danno del traditore a chi se ne va
+  male, frecciate fra rivali, domande dei giornalisti, scambi, mister): scarsi, pagliacci, buffoni, mercenari,
+  "andate a lavorare", vergogna. **Limite fisso**: solo insulti calcistici, mai discriminatori (origine, razza,
+  sesso, orientamento, disabilità), mai minacce o inviti alla violenza. Vale anche per l'AI dei tifosi.
 - **Commenti degli allenatori** (17 ottobre 2026): il fumetto sotto ogni post apre la risposta, che entra
   nella conversazione a filo con nome e stemma. Solo colore, nessun effetto su morale/pubblico/rivalità.
   Massimo 280 caratteri, uno ogni 20 secondi (`social_commenta`).

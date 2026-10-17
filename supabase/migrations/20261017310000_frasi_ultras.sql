@@ -1,0 +1,113 @@
+-- ============================================================
+--  SOCIALONE: anche qualche insulto, come farebbero gli ultras (17 ottobre 2026, committente)
+--  95 frasi in piu', solo dove ci sta: tifosi arrabbiati dopo una batosta o una sconfitta, sfotto' agli avversari
+--  quando si vince, ultras che danno del traditore a chi se ne va male, frecciate fra rivali.
+--  Insulti da curva (scarsi, pagliacci, buffoni, mercenari, "andate a lavorare", vergogna), MAI discriminatori
+--  (nessuna origine, razza, sesso, orientamento, disabilita') e MAI minacce o inviti alla violenza.
+-- ============================================================
+begin;
+insert into private.frasi_tifosi (categoria, testo) values
+  ('batosta', '{S} siete dei pagliacci. tutti. {F}-{G} e non vi vergognate 🤡'),
+  ('batosta', 'buffoni!! vi pagano per questo?? {S} andate a lavorare'),
+  ('batosta', 'pezzi di merda, ecco cosa siete {S}. mercenari senza palle'),
+  ('batosta', '{S} fate cagare, punto. {F}-{G}, schifo totale 🤮'),
+  ('batosta', 'mercenari!!! la maglia non la meritate {S}'),
+  ('batosta', 'scarsi. scarsi. scarsi. {S} 🤡'),
+  ('batosta', '{S} andate a lavorare invece di prenderci in giro, buffoni'),
+  ('batosta', 'dirigenza vergognatevi, e anche voi in campo {S}'),
+  ('batosta', 'vi siete venduti, è chiaro. {F}-{G} non si fa così {S} 🤬'),
+  ('batosta', 'svegliatevi pagliacci {S}, la maglia pesa e voi pesate poco'),
+  ('batosta', '{S} meritate i fischi e li avrete. vergogna 👎'),
+  ('sconfitta', 'scarsi, ecco cosa siete oggi {S}. serve una svolta vera'),
+  ('sconfitta', '{S} la maglia pesa e voi non la reggete. vergogna'),
+  ('sconfitta', 'ma basta con ste partite da pippe {S} 🤦'),
+  ('sconfitta', 'giocatori senza palle. {S} la dirigenza ha le sue colpe'),
+  ('sconfitta', '{S} buffoni. e ve lo dice uno che vi ama'),
+  ('sconfitta', 'state buttando la stagione, pagliacci {S} 🤡'),
+  ('pareggio', 'pippe. punto. {S} dovevamo vincerla 😤'),
+  ('pareggio', '{S} cessi. vi addormentate anche contro {O}'),
+  ('pareggio', 'che squadra moscia. mercenari {S}'),
+  ('pareggio', '{S} un punto così è un insulto ai tifosi. vergogna'),
+  ('vittoria', '{O} pagliacci 🤡 tre punti a casa nostra {S}'),
+  ('vittoria', 'ahahah {O} scarsi, che godimento {S}'),
+  ('vittoria', '{O} vergogna, tornate a giocare all''oratorio. {S} 😂'),
+  ('vittoria', '{O} buffoni, ve l''ho sempre detto. {S}'),
+  ('vittoria', 'daje {S}, e {O} a casa con la coda tra le gambe 😂'),
+  ('goleada', '{O} pagliacci, {F}-{G} per voi. andate a lavorare 😂 {S}'),
+  ('goleada', '{O} scarsi come pochi. {S} oggi vi ha spianati 🤡'),
+  ('goleada', '{O} cessi. {F}-{G} e fine. {S}'),
+  ('goleada', '{O} state zitti e chiudete tutto, grazie {S} 🤡'),
+  ('goleada', 'umiliati {O}, a casa a piangere. {S} 🔥')
+on conflict (categoria, testo) do nothing;
+insert into private.frasi_social (categoria, testo) values
+  ('tifosi_male', 'dirigenza di merda. {OUT} non si vende, bastardi {S} 🤬'),
+  ('tifosi_male', 'mercenari!! vi siete venduti {OUT}. vergognatevi {S}'),
+  ('tifosi_male', 'buffoni al comando. {OUT} via?? pagliacci {S} 🤡'),
+  ('tifosi_male', '{S} la società è una barzelletta. cedere {OUT} è da deficienti'),
+  ('tifosi_male', '{OUT} ceduto. dirigenza da buttare {S} ❌'),
+  ('tifosi_male', 'chi ha firmato questo scambio vada a lavorare davvero {S} 🤬'),
+  ('tifosi_male', 'ennesima pagliacciata societaria. {OUT} {S}'),
+  ('tifosi_male', 'ma chi comanda qui, un branco di scarsi? {OUT} {S}')
+on conflict (categoria, testo) do nothing;
+insert into private.frasi_commenti (categoria, testo) values
+  ('rivale_gol', '{S} scarsi, vi è andata di culo e basta 😤'),
+  ('rivale_gol', 'gol di rapina {NOME}. {S} siete dei pagliacci'),
+  ('rivale_gol', '{S} buffoni. godetevi questo gol, è l''ultimo'),
+  ('rivale_gol', 'ridete ridete {S} mercenari, tra un mese piangete'),
+  ('rivale_gol', '{NOME} pippa, e anche tutta {S} 🤡'),
+  ('rivale_gol', '{S} cessi, gol fortunato e basta 💀'),
+  ('rivale_gol', 'che culo {S}. al ritorno vi facciamo a pezzi'),
+  ('rivale_gol', '{S} fate schifo anche quando segnate'),
+  ('rivale_gol', 'gol da {S}: un miracolo. pagliacci 🤡'),
+  ('rivale_gol', 'voi di {S} siete la fiera del fortunato. vergognatevi'),
+  ('fan_addio_amaro', 'mercenario!! vattene e non tornare {NOME} 🤬'),
+  ('fan_addio_amaro', '{NOME} traditore. la maglia di {V} la sporchi tu'),
+  ('fan_addio_amaro', 'buffone {NOME}, ciao. non ti rimpiange nessuno'),
+  ('fan_addio_amaro', 'vattene {NOME}, tanto eri scarso 🤡'),
+  ('fan_addio_amaro', '{NOME} hai preso i soldi e sei scappato. mercenario di merda'),
+  ('fan_addio_amaro', '{NOME} fai pena. i post li scrivi come giochi, male'),
+  ('fan_addio_amaro', 'a {X} auguri, avete preso un pagliaccio {NOME}'),
+  ('fan_addio_amaro', '{NOME} non tornare mai più da {V}. vergogna'),
+  ('sotto_risultato_vince', '{O} pagliacci 🤡 {S} {F}-{G}!'),
+  ('sotto_risultato_vince', 'ahahahah {O} fate pena, che goduria {S}'),
+  ('sotto_risultato_vince', '{O} scarsi, tornate a giocare all''oratorio. {S} 😂'),
+  ('sotto_risultato_vince', '{O} buffoni, vi abbiamo spianati. {S} 🔥'),
+  ('sotto_risultato_vince', 'andate a lavorare {O}, il calcio non fa per voi. {S}'),
+  ('sotto_risultato_vince', '{O} ve l''avevo detto. cessi. {S} 😂'),
+  ('sotto_risultato_perde', 'pagliacci! {S} fate schifo, {F}-{G} imbarazzante 🤡'),
+  ('sotto_risultato_perde', 'buffoni. {S} la maglia non la meritate'),
+  ('sotto_risultato_perde', '{S} scarsi!! altro che squadra'),
+  ('sotto_risultato_perde', 'dirigenza e giocatori: tutti da buttare. {S} 🤬'),
+  ('sotto_risultato_perde', '{S} mercenari, andate a lavorare 🤡'),
+  ('sotto_risultato_perde', '{S} merde, ecco cosa siete oggi'),
+  ('sotto_scambio', 'dirigenza di buffoni. solo pagliacciate {A} {B}'),
+  ('sotto_scambio', 'mercato da scarsi {A} {B} 🤡'),
+  ('sotto_scambio', '{A} {B} chi decide ste cose, un branco di incompetenti?'),
+  ('sotto_scambio', 'scambio da cretini. complimenti dirigenti {A} {B} 👏 (ironico)'),
+  ('sotto_allenatore', 'mister vattene, hai fatto il tuo tempo {S} 🤡'),
+  ('sotto_allenatore', 'parole parole parole. mister svegliati {S}'),
+  ('sotto_allenatore', 'il mister è un pagliaccio, scusate la sincerità {S}'),
+  ('sotto_allenatore', 'mister dimettiti, non ne azzecchi una {S}'),
+  ('sotto_allenatore', 'che risposta di merda mister. {S} 🤦'),
+  ('sotto_allenatore', 'il mister non capisce un cazzo di calcio {S} 😤'),
+  ('sotto_giornale', 'giornalai pagliacci, parlate di calcio {S} 🤡'),
+  ('sotto_giornale', 'pennivendoli, sempre i soliti. {S}'),
+  ('sotto_giornale', 'buffoni della stampa, fate la domanda giusta {S}'),
+  ('sotto_giornale', 'ma questi giornalisti sono scarsi quanto i giocatori 😂 {S}'),
+  ('sotto_giornale', 'giornalai! non capite un cazzo {S}'),
+  ('sotto_giornale', 'che domanda di merda. giornalai {S} 🤦'),
+  ('rival_frecciatina', 'scarso hai segnato per caso {NOME}. alla prossima ti fermo io 😤'),
+  ('rival_frecciatina', '{NOME} pippa, hai solo avuto culo oggi.'),
+  ('rival_frecciatina', 'bravo pagliaccio {NOME}. ti aspetto al ritorno 😏'),
+  ('rival_frecciatina', '{NOME} cesso, godi finché puoi 🤡'),
+  ('rival_frecciatina', 'che fortuna sfacciata {NOME}, scarso.'),
+  ('rival_frecciatina', '{NOME} segni oggi e piangi domani, buffone 😏'),
+  ('rival_replica', 'scarso tu {NOME}, io intanto ho segnato 😎'),
+  ('rival_replica', 'parla {NOME}, che a casa tua ti hanno già fischiato 😂'),
+  ('rival_replica', '{NOME} pagliaccio, il tabellino parla chiaro ⚽'),
+  ('rival_replica', 'zitto {NOME}, a casa tua si piange 😂')
+on conflict (categoria, testo) do nothing;
+delete from public.social_posts where chiave ~ '^(tifoso-partita|scambio-tifosi|scambio-giocatore|gol|r):';
+select private.social_genera();
+select private.social_risposte();
+commit;

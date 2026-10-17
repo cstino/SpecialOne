@@ -397,7 +397,8 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
       'Il pubblico scende sotto -1 SOLO per offese ai tifosi o al club, colpe date a loro, mancanza di rispetto o freddezza dopo una pesante sconfitta: ' +
       'una risposta generica, neutra o da ufficio stampa vale tra -0,5 e 0 per il pubblico. Nel campo reazione_pubblico scrivi il post di UN tifoso vero sui social (massimo 140 caratteri), in italiano parlato: ' +
       'informale, di getto, come su X: tutto in minuscolo o quasi, frasi corte, punteggiatura trascurata, abbreviazioni e gergo (raga, cmq, fratè, madonna, no vabbè, daje, boh, tipo, aura, cooked), ' +
-      'lessico del calcio quando ci sta (tiro telefonato, campanile, melina, catenaccio), emoji come 💀 🤡 😭 🔥 (poche), anche qualche parolaccia (cazzo, palle) se è arrabbiato. Mai frasi da comunicato né tono da giornalista. ' +
+      'lessico del calcio quando ci sta (tiro telefonato, campanile, melina, catenaccio), emoji come 💀 🤡 😭 🔥 (poche), anche qualche parolaccia (cazzo, palle) se è arrabbiato, e se è proprio furioso insulti da curva (scarsi, pagliacci, buffoni, mercenari, vergogna, andate a lavorare). ' +
+      'Gli insulti restano SOLO sul calcio e non sono mai discriminatori (niente origini, razza, sesso, orientamento, disabilità) né minacce. Mai frasi da comunicato né tono da giornalista. ' +
       'Deve citare la squadra con il suo tag (te lo do nel messaggio, tipo @cocacolers). Esulta se le parole gli piacciono, protesta se non gli piacciono. ' +
       'Mai nomi di persone reali, mai insulti razzisti, sessisti o minacce. Esempi di tono: "dai raga @cocacolers, come cazzo si fa a perdere così 😭", ' +
       '"no vabbè il mister ha detto le cose giuste, finalmente uno con le palle @cocacolers 🔥", "boh mister sta risposta mi ha lasciato freddo @cocacolers". ' +
