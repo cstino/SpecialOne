@@ -411,3 +411,9 @@ rigida: **non si possono cedere due proprie scelte consecutive nel tempo**. L'or
 quindi ON 2 + OFF 2 no, e nemmeno OFF 2 + ON 3. Prima valeva solo per due stagioni consecutive nella stessa finestra.
 Non e' retroattiva (chi ha gia' due scelte consecutive cedute non viene toccato) e scatta solo se lo scambio che si
 propone o si accetta cede una delle due scelte della coppia. Migrazione `20261016000000`.
+
+## 14. I non scelti restano in vetrina — 18 ottobre 2026
+
+Segnalato dal committente: i giocatori del pool non scelti in un draft devono finire nel mercato degli svincolati e restarci finché qualcuno non li prende. **Il §13 («a finestra risolta i non scelti tornano normali svincolati») era incompleto:** il pool è fatto di giocatori sopra 75 di overall, e l'estrazione giornaliera degli svincolati arriva solo a 75 (§3.3), quindi i non scelti restavano in un limbo fuori da ogni mercato (Serie F ON-Season 2: 9 giocatori fra 76 e 81).
+
+**Regola.** Alla chiusura della finestra i non scelti entrano in `private.vetrina_fissa` (trigger su `finestre_scelte.risolta_il`). `estrai_svincolati_lega` li mette in asta **ogni giorno**, in aggiunta all'estrazione normale, con l'ingaggio teorico di sempre, finché non entrano in una rosa (a quel punto escono dalla vetrina). Il pool aperto di una finestra resta riservato come prima (§13). Migrazione `20261018190000`; recuperate le ultime finestre già chiuse (Serie F ON-Season 2 e LegaBot ON-Season 5). I casi più vecchi non si recuperano.
