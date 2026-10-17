@@ -30,24 +30,31 @@ export function ScegliRivale({ membership, onFatto, onDopo }: Props) {
     onFatto()
   }
 
+  const scelta_ = squadre.find((x) => x.id === scelta)
+
   return (
     <main className="scegli-rivale">
-      <h1>{membership.rivale_id ? 'Cambia il tuo rivale' : 'Il tuo derby'}</h1>
-      <p>Qual è la squadra con cui hai la rivalità più sentita? La partita contro di lei sarà sempre un derby. Potrai cambiarla una volta a stagione. Con le altre squadre la rivalità cresce o scende in base a quello che dici in conferenza stampa.</p>
+      <header className="scegli-rivale__testa">
+        <p className="scegli-rivale__kicker">Rivalità</p>
+        <h1>{membership.rivale_id ? 'Cambia il tuo rivale' : 'Il tuo derby'}</h1>
+        <p>Scegli la squadra con cui hai la rivalità più sentita: la partita contro di lei sarà sempre un derby. Potrai cambiarla una volta a stagione. Con le altre squadre la rivalità cresce o scende in base a quello che dici in conferenza stampa.</p>
+      </header>
       <ul className="scegli-rivale__elenco">
         {squadre.map((s) => (
           <li key={s.id}>
-            <button type="button" className={scelta === s.id ? 'attiva' : ''} onClick={() => setScelta(s.id)}>
-              <Crest value={s.stemma_url ?? null} stelle={s.titoli_title} imageUrl={dati.crestUrlByTeamId.get(s.id)} size="small" />
-              <span>{s.nome}</span>
+            <button type="button" className={scelta === s.id ? 'attiva' : ''} aria-pressed={scelta === s.id} onClick={() => setScelta(s.id)}>
+              <span className="scegli-rivale__stemma"><Crest value={s.stemma_url ?? null} stelle={s.titoli_title} imageUrl={dati.crestUrlByTeamId.get(s.id)} size="small" /></span>
+              <span className="scegli-rivale__nome">{s.nome}</span>
+              {scelta === s.id && <i className="scegli-rivale__spunta" aria-hidden="true">✓</i>}
             </button>
           </li>
         ))}
       </ul>
-      {errore && <p className="scegli-rivale__errore" role="alert">{errore}</p>}
-      <div className="scegli-rivale__azioni">
-        <button type="button" className="primary" disabled={scelta == null || invio} onClick={() => void conferma()}>{invio ? 'Salvo…' : 'Conferma il rivale'}</button>
-        <button type="button" className="secondary" onClick={onDopo}>Scelgo dopo</button>
+      <div className="scegli-rivale__barra">
+        {errore && <p className="scegli-rivale__errore" role="alert">{errore}</p>}
+        <p className="scegli-rivale__riepilogo">{scelta_ ? <>Il tuo derby: <strong>{scelta_.nome}</strong></> : 'Tocca una squadra per sceglierla'}</p>
+        <button type="button" className="scegli-rivale__conferma" disabled={scelta == null || invio} onClick={() => void conferma()}>{invio ? 'Salvo…' : 'Conferma il rivale'}</button>
+        <button type="button" className="scegli-rivale__dopo" onClick={onDopo}>Scelgo dopo</button>
       </div>
     </main>
   )
