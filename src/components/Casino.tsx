@@ -28,8 +28,15 @@ function useSuoni(attivi: boolean) {
   const ctx = useRef<AudioContext | null>(null)
   const prendi = () => {
     if (!attivi) return null
-    if (!ctx.current) { try { ctx.current = new AudioContext() } catch { return null } }
-    if (ctx.current.state === 'suspended') void ctx.current.resume()
+    if (!ctx.current) {
+      // iPhone: con audioSession 'playback' i suoni si sentono anche con l'interruttore del silenzioso (iOS 17+).
+      try { (navigator as Navigator & { audioSession?: { type: string } }).audioSession!.type = 'playback' } catch { /* non supportato */ }
+      try { ctx.current = new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)() } catch { return null }
+      // Sblocco: un suono muto suonato dentro il tocco, cosi' il primo vero suono non si perde.
+      const b = ctx.current.createBuffer(1, 1, 22050), src = ctx.current.createBufferSource()
+      src.buffer = b; src.connect(ctx.current.destination); src.start(0)
+    }
+    if (ctx.current.state !== 'running') void ctx.current.resume()
     return ctx.current
   }
   const tono = (freq: number, durata: number, tipo: OscillatorType = 'square', volume = 0.06, ritardo = 0, scivola?: number) => {
@@ -42,6 +49,7 @@ function useSuoni(attivi: boolean) {
     o.connect(g).connect(c.destination); o.start(t); o.stop(t + durata + 0.02)
   }
   return {
+    sblocca: () => { prendi() },
     leva: () => { tono(180, 0.25, 'sawtooth', 0.05, 0, 520) },
     tick: (i: number) => tono(700 + (i % 4) * 60, 0.03, 'square', 0.02),
     stop: (i: number) => { tono(120 + i * 25, 0.12, 'triangle', 0.12); tono(60, 0.08, 'sine', 0.15) },
@@ -210,7 +218,7 @@ export function Casino({ leagueId, teamId, dati }: Props) {
 
   if (!stato) return <section className="slot-caricamento">{errore ? <p role="alert">{errore}</p> : <p>Accendo le luci del casinò…</p>}</section>
 
-  return <section className="slot">
+  return <section className="slot" onPointerDown={() => suoni.sblocca()}>
     <div className="slot-saldo">
       <div><small>I tuoi crediti</small><strong><Contatore valore={crediti} /></strong></div>
       {giriGratis > 0 ? <span className="slot-gratis">🏆 {giriGratis} giri gratis · ×2</span> : <span className="slot-ricarica">+1.000 gratis {ricarica}</span>}
