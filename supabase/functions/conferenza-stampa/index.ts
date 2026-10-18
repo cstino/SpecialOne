@@ -485,6 +485,9 @@ async function generaPre(admin: any, fixtureId: number) {
   return json(200, { domande: create })
 }
 
+// L'AI ogni tanto scivola in spagnolo/portoghese: "vestuario" invece di "spogliatoio". Si corregge a valle.
+const italiano = (t: string) => t.replace(/\bvestuarios?\b/gi, (m) => (m[0] === 'V' ? 'Spogliatoio' : 'spogliatoio'))
+
 // Quante delle risposte precedenti la nuova ripete, a parole: confronta gli insiemi di
 // parole (da 4 lettere in su) e conta le risposte con almeno il 35% di parole in comune.
 // Calcolo fisso e spiegabile ("se riscrivi le stesse parole, il tono non e' piu' nuovo"):
@@ -620,7 +623,7 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
       '"no vabbè il mister ha detto le cose giuste, finalmente uno con le palle @cocacolers 🔥", "boh mister sta risposta mi ha lasciato freddo @cocacolers". ' +
       'Giocatori: se la risposta elogia o critica giocatori della rosa (elenco con id), indicali con effetto da -3 a +1,5 (la stessa asimmetria). ' +
       'Squadre: se attacca, scherna o disprezza un\'altra squadra o il suo allenatore, oppure la elogia, indicala (elenco con id) con la direzione. ' +
-      'Reazione: una frase breve in italiano (massimo 140 caratteri, senza numeri) su come sala stampa e spogliatoio hanno preso le parole.',
+      'Reazione: una frase breve in italiano (massimo 140 caratteri, senza numeri) su come sala stampa e spogliatoio hanno preso le parole. Scrivi in italiano corretto: per lo spogliatoio usa sempre "spogliatoio", mai "vestuario" né parole di altre lingue.',
       `Tag della squadra sui social: @${tagSquadra(d.teams?.nome ?? '')}\n\nDomanda: ${d.domanda}\n\nMemoria dello spogliatoio:\n${memoria}\n\nRosa di ${d.teams?.nome}:\n${elencoRosa}\n\nAltre squadre della lega:\n${elencoAltre}\n\n<risposta>\n${testo}\n</risposta>`,
       {
         name: 'valuta_risposta',
@@ -656,7 +659,7 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
     const voto = v.insensata ? -3 : Math.max(-3, Math.min(1.5, Math.round((Number(v.voto || 0) - penalita) * 2) / 2))
     // Il pubblico: stessa regola (insensata = minimo) e stessa penalita' per le frasi fatte.
     const votoPubblico = v.insensata ? -3 : Math.max(-3, Math.min(1.5, Math.round((Number(v.pubblico || 0) - penalita) * 2) / 2))
-    const reazionePubblico = String(v.reazione_pubblico ?? '').slice(0, 160)
+    const reazionePubblico = italiano(String(v.reazione_pubblico ?? '')).slice(0, 160)
     const giocatori = v.insensata ? [] : (v.giocatori ?? []).filter((g) => idRosa.has(Number(g.id)))
       .map((g) => ({ id: Number(g.id), effetto: Math.max(-3, Math.min(1.5, Math.round(Number(g.effetto || 0) * 2) / 2)) }))
     const squadreCitate = (v.squadre ?? []).filter((s) => idAltre.has(Number(s.id)))
@@ -665,7 +668,7 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
     const squadreValide = v.insensata ? [] : squadreCitate
       .filter((s, i, tutte) => tutte.findIndex((x) => Number(x.id) === Number(s.id)) === i && (s.direzione === 'attacco' || s.direzione === 'elogio'))
       .map((s) => ({ team_id: Number(s.id), direzione: s.direzione }))
-    const reazione = String(v.reazione ?? '').slice(0, 160) || (voto >= 0 ? 'Parole accolte bene.' : 'Parole che non convincono.')
+    const reazione = italiano(String(v.reazione ?? '')).slice(0, 160) || (voto >= 0 ? 'Parole accolte bene.' : 'Parole che non convincono.')
 
     const { data: effetto, error: errEffetto } = await admin.rpc('applica_conferenza', { p_domanda_id: domandaId, p_voto: voto, p_giocatori: giocatori })
     if (errEffetto) throw errEffetto
@@ -761,7 +764,7 @@ async function rispondiRichiesta(admin: any, userId: string, richiestaId: number
     // Il server decide: insensata = minimo e nessuna promessa; voto limitato al mezzo punto.
     const voto = v.insensata ? -3 : Math.max(-3, Math.min(1.5, Math.round(Number(v.voto || 0) * 2) / 2))
     const promessa = !v.insensata && v.promessa === true
-    const reazione = String(v.reazione ?? '').slice(0, 160) || (voto >= 0 ? 'Grazie mister.' : 'Non è la risposta che speravo.')
+    const reazione = italiano(String(v.reazione ?? '')).slice(0, 160) || (voto >= 0 ? 'Grazie mister.' : 'Non è la risposta che speravo.')
     const { data: effetto, error } = await admin.rpc('applica_richiesta', {
       p_id: richiestaId, p_voto: voto, p_promessa: promessa, p_reazione: reazione,
       p_valutazione: { insensata: Boolean(v.insensata), voto_ai: v.voto, promessa_ai: v.promessa ?? null },
