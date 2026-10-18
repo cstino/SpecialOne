@@ -5769,3 +5769,8 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .bet-barra__salva { height: 52px; border: 0; border-radius: 14px; background: linear-gradient(180deg, #ffd978, var(--bet-oro)); color: #1a1205; font-size: 1rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; cursor: pointer; box-shadow: 0 8px 22px rgba(246,196,83,.35); }
 .bet-barra__salva:disabled { background: rgba(255,255,255,.1); box-shadow: none; color: rgba(255,255,255,.4); cursor: default; }
 @media (prefers-reduced-motion: reduce) { .bet-segno, .bet-tab button { transition: none; } }
+
+/* BetOne: centratura esplicita dei tasti (l'app non applica le impostazioni standard dei pulsanti) */
+.bet-segno, .bet-x2, .bet-barra__salva { display: grid; place-items: center; padding: 0; text-align: center; line-height: 1; }
+.bet-segno { font-variant-numeric: tabular-nums; }
+.bet-regole__tasto { text-align: left; }
