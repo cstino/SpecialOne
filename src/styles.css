@@ -5774,3 +5774,5 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .bet-segno, .bet-x2, .bet-barra__salva { display: grid; place-items: center; padding: 0; text-align: center; line-height: 1; }
 .bet-segno { font-variant-numeric: tabular-nums; }
 .bet-regole__tasto { text-align: left; }
+.bet-ticket__avviso { margin: 0; padding: 10px 18px; border-bottom: 1px dashed var(--bet-linea); color: #b9b0cc; font-size: .8rem; line-height: 1.4; }
+.bet-ticket__avviso b { color: var(--bet-oro); }

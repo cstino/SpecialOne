@@ -250,6 +250,7 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
                 </div>
               </header>
 
+              <p className="bet-ticket__avviso">Come al totocalcio vanno giocate <b>tutte le {partiteAttivo.length} partite</b>: la scommessa si piazza solo a schedina completa.</p>
               <ol className="bet-righe">
                 {partiteAttivo.map((f, i) => {
                   const casa = team(f.home_team_id), ospite = team(f.away_team_id)
@@ -369,11 +370,11 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
     {caricato && giornata != null && partiteAttivo.length > 0 && !chiusa && <div className="bet-barra">
       {errore && <p className="bet-barra__errore" role="alert">{errore}</p>}
       <p className="bet-barra__stato">
-        {salvata ? <>Schedina salvata ✓ Puoi modificarla fino alle {oraChiusura}.</>
+        {salvata ? <>Scommessa piazzata ✓ Puoi modificarla fino alle {oraChiusura}.</>
           : <>{compilate(attivo)}/{partiteAttivo.length} partite · doppie {nDoppie(attivo)}/{MAX_DOPPIE}{mia && !modificata ? ' · schedina giocata' : ''}</>}
       </p>
       <button type="button" className="bet-barra__salva" disabled={!pronta || invio || !modificata} onClick={() => void salva(attivo)}>
-        {invio ? 'Salvo…' : mia && !modificata ? 'Schedina giocata ✓' : mia ? 'Aggiorna la schedina' : 'Gioca la schedina'}
+        {invio ? 'Piazzo…' : mia && !modificata ? 'Scommessa piazzata ✓' : mia ? 'Aggiorna la scommessa' : pronta ? 'Piazza la scommessa' : `Mancano ${partiteAttivo.length - compilate(attivo)} partite`}
       </button>
     </div>}
   </main>
