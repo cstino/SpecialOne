@@ -5894,3 +5894,7 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 }
 .slot-sim .crest-stellato { display: grid; place-items: center; width: 78%; height: 78%; }
 .slot-sim .crest-stellato .crest { width: 100%; height: 100%; }
+/* Il tasto GIRA ha la scritta scura: la regola generale dei pulsanti della pagina la faceva bianca */
+.slot .slot-gira, .slot .slot-gira span, .slot .slot-gira small { color: #2a1500; }
+.slot-premi b { color: #f4f1fb; }
+.slot-premi__valori b { color: #b9b0cc; font-weight: 700; }

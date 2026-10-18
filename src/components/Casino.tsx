@@ -279,14 +279,14 @@ export function Casino({ leagueId, teamId, dati }: Props) {
     <section className="slot-pannello">
       <button type="button" className="slot-pannello__tasto" aria-expanded={tabella} onClick={() => setTabella((v) => !v)}>Tabella dei premi <span aria-hidden="true">{tabella ? '−' : '+'}</span></button>
       {tabella && <div className="slot-premi">
-        <p>Premi per una linea (la puntata si divide sulle 10 linee): 3, 4 o 5 simboli uguali da sinistra.</p>
+        <p>Vinci quando su una <b>linea</b> escono <b>3, 4 o 5 stemmi uguali</b> consecutivi, partendo dal <b>primo rullo a sinistra</b>. I premi qui sotto sono in crediti <b>con la tua puntata di {puntata}</b>: se cambi puntata cambiano anche loro. Se escono più linee vincenti, si sommano.</p>
         {([['alto', [6, 7]], ['medio', [3, 4, 5]], ['basso', [0, 1, 2]]] as Array<[string, number[]]>).map(([fascia, idx]) => <div key={fascia} className="slot-premi__riga">
           <span className="slot-premi__simboli">{idx.map((i) => <span key={i}><Simbolo s={i} simboli={simboli} dati={dati} /></span>)}</span>
-          <span className="slot-premi__valori">{PAGA[fascia].map((v, k) => <b key={k}>{k + 3}× <i>{v}</i></b>)}</span>
+          <span className="slot-premi__valori">{PAGA[fascia].map((v, k) => <b key={k}>{k + 3} uguali <i>{fmt(v * puntata / 10)}</i></b>)}</span>
         </div>)}
-        <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={8} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo">Jolly: sostituisce qualsiasi stemma. Cinque jolly su una linea: 400.</span></div>
-        <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={9} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo">Coppe ovunque: 3 = 2× la puntata e 8 giri gratis, 4 = 5× e 12, 5 = 20× e 20. Nei giri gratis le vincite valgono doppio.</span></div>
-        <p>Gli stemmi cambiano a ogni giornata: pagano di più le squadre meglio piazzate. Ogni giro lo estrae il server.</p>
+        <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={8} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo"><b>Jolly</b>: vale come qualsiasi stemma e aiuta a completare le linee. Cinque jolly sulla stessa linea: <b>{fmt(400 * puntata / 10)}</b> crediti.</span></div>
+        <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={9} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo"><b>Coppa</b>: conta in qualsiasi posizione, anche fuori dalle linee. 3 coppe: <b>{fmt(2 * puntata)}</b> crediti e <b>8 giri gratis</b>; 4 coppe: {fmt(5 * puntata)} e 12 giri; 5 coppe: {fmt(20 * puntata)} e 20 giri. Nei giri gratis non paghi e le vincite valgono doppio.</span></div>
+        <p>Le <b>linee</b> sono 10: le tre righe orizzontali più sette percorsi a zig-zag. Quando vinci, la linea si illumina sui rulli. Gli stemmi cambiano a ogni giornata e pagano di più le squadre meglio piazzate in classifica (prima riga). Ogni giro lo estrae il server.</p>
       </div>}
     </section>
 
