@@ -91,7 +91,6 @@ const gruppoExtra: NavGroup = {
     { view: 'social', label: 'SocialOne' },
     { view: 'rivalita', label: 'Rivalità' },
     { view: 'pubblico', label: 'Pubblico' },
-    { view: 'betone', label: 'BetOne' },
     { view: 'salastampa', label: 'Sala stampa' },
   ],
 }
@@ -187,9 +186,13 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
   const conExtra: readonly NavEntry[] = league.conferenze_stampa && league.stato !== 'draft'
     ? conSpogliatoio.flatMap((voce) => !eGruppo(voce) && voce.view === 'notifications' ? [gruppoExtra, voce] : [voce])
     : conSpogliatoio
-  const items: readonly NavEntry[] = eAdmin && league.fase_carriera !== 'offseason'
+  const conAdmin: readonly NavEntry[] = eAdmin && league.fase_carriera !== 'offseason'
     ? [...conExtra, { view: 'admin', label: 'Admin' }]
     : conExtra
+  // BetOne (schedina e casino'): voce a parte, ultima del menu, nelle leghe con le novita'.
+  const items: readonly NavEntry[] = league.conferenze_stampa && league.stato === 'stagione' && league.fase_carriera !== 'offseason'
+    ? [...conAdmin, { view: 'betone', label: 'BetOne' }]
+    : conAdmin
   const [menuMobileAperto, setMenuMobileAperto] = useState(false)
   // Ogni argomento si apre da solo quando si e' su una delle sue pagine (link diretto, tab interno).
   const gruppoDi = (view: GameView) => items.find((v): v is NavGroup => eGruppo(v) && v.children.some((c) => c.view === view))?.group
