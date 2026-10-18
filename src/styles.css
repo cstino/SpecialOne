@@ -5780,3 +5780,117 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 /* BetOne: i colori valgono anche per la barra in basso, che sta fuori dalla pagina */
 .bet-shell { --bet-oro: #f6c453; --bet-oro-scuro: #c9962a; --bet-carta: #181426; --bet-linea: rgba(255,255,255,.1); }
 .bet-barra__salva:not(:disabled) { background: linear-gradient(180deg, #ffd978, #f6c453); color: #1a1205; }
+
+/* ============================================================
+   BetOne: schede Pronostici / Casino'
+   ============================================================ */
+.bet-sezioni { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.bet-sezioni button { display: flex; align-items: center; justify-content: center; gap: 8px; height: 48px; border: 1px solid var(--bet-linea); border-radius: 14px; background: rgba(255,255,255,.03); color: #b9b0cc; font-size: .95rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.bet-sezioni button.is-attiva { border-color: transparent; background: linear-gradient(145deg, #ffd978, var(--bet-oro)); color: #1a1205; box-shadow: 0 6px 18px rgba(246,196,83,.3); }
+
+/* ============================================================
+   SLOT: cabinet al neon, rulli, linee, vincite
+   ============================================================ */
+.slot { --cella: min(16.5vw, 88px); --neon: #ff3df2; --neon2: #3de8ff; display: grid; gap: 14px; padding-bottom: 24px; }
+.slot-caricamento { padding: 30px; text-align: center; color: #b9b0cc; }
+.slot-saldo { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid rgba(246,196,83,.35); border-radius: 16px; background: linear-gradient(135deg, rgba(246,196,83,.16), rgba(255,61,242,.06)); }
+.slot-saldo > div { flex: 1; display: grid; }
+.slot-saldo small { color: #b9b0cc; font-size: .68rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.slot-saldo strong { color: var(--bet-oro); font-size: 1.8rem; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 0 14px rgba(246,196,83,.5); }
+.slot-ricarica, .slot-gratis { padding: 6px 10px; border-radius: 99px; background: rgba(0,0,0,.35); color: #cfc6e0; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.slot-gratis { background: linear-gradient(145deg, #ffd978, var(--bet-oro)); color: #1a1205; animation: slot-pulsa 1s ease-in-out infinite; }
+.slot-audio { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,.06); font-size: 1.1rem; cursor: pointer; }
+
+.slot-macchina { position: relative; padding: 14px 12px 16px; border-radius: 26px; background: linear-gradient(180deg, #2a0f3d, #13081f 55%, #0c0614); border: 2px solid #4a1f63;
+  box-shadow: 0 0 0 4px #1a0a26, 0 0 34px rgba(255,61,242,.28), inset 0 0 40px rgba(61,232,255,.06); overflow: hidden; }
+.slot-luci { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; margin-bottom: 10px; }
+.slot-luci i { height: 8px; border-radius: 99px; background: #ffd84d; box-shadow: 0 0 8px #ffd84d; animation: slot-lampeggia 1.4s ease-in-out infinite; }
+.slot-luci i:nth-child(odd) { background: var(--neon); box-shadow: 0 0 8px var(--neon); }
+.slot-macchina.is-in-corsa .slot-luci i { animation-duration: .35s; }
+.slot-insegna { display: flex; justify-content: center; align-items: baseline; gap: 6px; margin-bottom: 10px; font-weight: 900; letter-spacing: .14em; }
+.slot-insegna span { color: var(--neon2); font-size: 1.05rem; text-shadow: 0 0 10px var(--neon2), 0 0 22px rgba(61,232,255,.6); }
+.slot-insegna b { color: var(--neon); font-size: 1.45rem; text-shadow: 0 0 10px var(--neon), 0 0 26px rgba(255,61,242,.7); animation: slot-sfarfalla 4s linear infinite; }
+
+.slot-finestra { position: relative; padding: 8px; border-radius: 18px; background: linear-gradient(180deg, #0a0710, #160d22); box-shadow: inset 0 6px 18px rgba(0,0,0,.8), inset 0 -6px 18px rgba(0,0,0,.6), 0 0 0 2px #ffd84d33; }
+.slot-rulli { position: relative; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; height: calc(var(--cella) * 3); }
+.slot-rullo { position: relative; height: calc(var(--cella) * 3); overflow: hidden; border-radius: 12px; background: linear-gradient(180deg, #1d1530, #2b2043 50%, #1d1530); }
+.slot-rullo::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(0,0,0,.55), transparent 22%, transparent 78%, rgba(0,0,0,.55)); }
+.slot-nastro { display: grid; grid-auto-rows: var(--cella); will-change: transform; }
+.slot-nastro.is-corre { animation: slot-corsa var(--durata, 1s) cubic-bezier(.15,.62,.18,1.04) forwards; }
+.slot-rullo.is-gira .slot-sim { filter: blur(1.4px) brightness(1.1); }
+@keyframes slot-corsa { from { transform: translateY(0); } to { transform: translateY(calc(var(--passi) * var(--cella) * -1)); } }
+.slot-cella { display: grid; place-items: center; height: var(--cella); padding: 6px; transition: opacity .25s, transform .25s; }
+.slot-cella.is-spenta { opacity: .35; }
+.slot-cella.is-vincente { animation: slot-vincente .7s ease-in-out infinite alternate; }
+.slot-cella.is-vincente .slot-sim { box-shadow: 0 0 0 2px #ffd84d, 0 0 18px rgba(255,216,77,.8); }
+.slot-sim { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 12px; background: rgba(255,255,255,.04); }
+.slot-sim > * { max-width: 78%; max-height: 78%; }
+.slot-sim .crest, .slot-sim img, .slot-sim svg { width: 78%; height: 78%; object-fit: contain; }
+.slot-sim--alto { background: radial-gradient(circle, rgba(255,216,77,.22), transparent 70%); }
+.slot-sim--medio { background: radial-gradient(circle, rgba(61,232,255,.14), transparent 70%); }
+.slot-sim--jolly { background: radial-gradient(circle, rgba(255,61,242,.35), transparent 70%); }
+.slot-sim--jolly img { filter: drop-shadow(0 0 6px rgba(255,61,242,.9)); }
+.slot-sim--coppa { background: radial-gradient(circle, rgba(255,204,51,.35), transparent 70%); }
+.slot-linea { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.slot-linea polyline { fill: none; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; opacity: .9; filter: drop-shadow(0 0 6px currentColor); vector-effect: non-scaling-stroke; animation: slot-traccia .5s ease-out; }
+
+.slot-vinto { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 2px; padding: 10px 22px; border-radius: 18px; background: rgba(10,6,16,.82); border: 2px solid #ffd84d; box-shadow: 0 0 30px rgba(255,216,77,.55); pointer-events: none; animation: slot-scoppia .45s cubic-bezier(.2,1.6,.4,1); }
+.slot-vinto strong { color: #ffd84d; font-size: 2rem; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 0 14px rgba(255,216,77,.8); }
+.slot-vinto em { font-style: normal; font-size: 1.35rem; font-weight: 900; letter-spacing: .12em; background: linear-gradient(90deg, #ffd84d, #ff3df2, #3de8ff, #ffd84d); background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: slot-arcobaleno 1.2s linear infinite; }
+.slot-vinto span { color: #fff; font-size: .8rem; font-weight: 700; }
+.slot-vinto--piccola { padding: 6px 16px; }
+.slot-vinto--piccola strong { font-size: 1.5rem; }
+.slot-vinto--mega strong { font-size: 2.5rem; }
+.slot-macchina--grande, .slot-macchina--mega { animation: slot-trema .5s ease-in-out 2; }
+.slot-macchina--mega { box-shadow: 0 0 0 4px #1a0a26, 0 0 60px rgba(255,216,77,.6), inset 0 0 40px rgba(255,216,77,.12); }
+.slot-festa { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+.slot-messaggio { margin: -4px 0 0; min-height: 1.3em; text-align: center; color: #cfc6e0; font-size: .86rem; }
+.slot-errore { color: #ff8b8b; }
+.slot-comandi { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
+.slot-puntate { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.slot-puntate button { display: grid; place-items: center; height: 48px; padding: 0; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(255,255,255,.04); font-weight: 800; font-size: 1rem; text-align: center; cursor: pointer; font-variant-numeric: tabular-nums; }
+.slot-puntate button.is-scelta { border-color: #ffd84d; background: rgba(255,216,77,.16); color: #ffd84d; box-shadow: 0 0 12px rgba(255,216,77,.3); }
+.slot-puntate button:disabled { opacity: .5; cursor: default; }
+.slot-gira { display: grid; place-items: center; align-content: center; width: 96px; height: 96px; padding: 0; border-radius: 50%; border: 3px solid #fff2b0; text-align: center; cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, #fff2b0, #ffcc33 40%, #d88a10 75%, #8a4f05); color: #2a1500; box-shadow: 0 8px 0 #6b3c03, 0 12px 26px rgba(255,180,40,.45); transition: transform .08s, box-shadow .08s; }
+.slot-gira span { font-size: 1.25rem; font-weight: 900; letter-spacing: .06em; line-height: 1; }
+.slot-gira small { font-size: .62rem; font-weight: 800; opacity: .8; }
+.slot-gira:active:not(:disabled) { transform: translateY(6px); box-shadow: 0 2px 0 #6b3c03, 0 6px 14px rgba(255,180,40,.35); }
+.slot-gira:disabled { filter: grayscale(.8) brightness(.6); cursor: default; }
+.slot-gira:not(:disabled) { animation: slot-respira 2.2s ease-in-out infinite; }
+
+.slot-pannello { border: 1px solid var(--bet-linea); border-radius: 16px; background: rgba(255,255,255,.03); }
+.slot-pannello__tasto { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border: 0; background: none; font-weight: 700; text-align: left; cursor: pointer; }
+.slot-premi { display: grid; gap: 10px; padding: 0 14px 14px; }
+.slot-premi p { margin: 0; color: #9b92b0; font-size: .78rem; line-height: 1.4; }
+.slot-premi__riga { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 12px; background: rgba(255,255,255,.03); }
+.slot-premi__simboli { display: flex; gap: 4px; }
+.slot-premi__simboli > span { width: 38px; height: 38px; }
+.slot-premi__valori { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-left: auto; }
+.slot-premi__valori b { color: #b9b0cc; font-size: .78rem; }
+.slot-premi__valori i { color: #ffd84d; font-style: normal; font-weight: 800; }
+.slot-premi__testo { color: #cfc6e0; font-size: .78rem; line-height: 1.35; }
+.slot-classifica { display: grid; gap: 10px; }
+.slot-classifica h2 { margin: 6px 0 0; font-size: 1.2rem; }
+.slot-classifica ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.slot-classifica li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--bet-linea); border-radius: 14px; background: rgba(255,255,255,.03); }
+.slot-classifica li.is-mia { border-color: rgba(246,196,83,.55); background: rgba(246,196,83,.08); }
+.slot-classifica__crediti { display: grid; justify-items: end; }
+.slot-classifica__crediti b { color: #ffd84d; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.slot-classifica__crediti small { color: #8f86a3; font-size: .62rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+
+@keyframes slot-lampeggia { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+@keyframes slot-sfarfalla { 0%, 92%, 96%, 100% { opacity: 1; } 94%, 98% { opacity: .4; } }
+@keyframes slot-pulsa { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+@keyframes slot-vincente { from { transform: scale(1); } to { transform: scale(1.08); } }
+@keyframes slot-traccia { from { stroke-dasharray: 0 2000; } to { stroke-dasharray: 2000 0; } }
+@keyframes slot-scoppia { from { transform: translate(-50%, -50%) scale(.4); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+@keyframes slot-arcobaleno { to { background-position: 300% 0; } }
+@keyframes slot-trema { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px) rotate(-.4deg); } 75% { transform: translateX(4px) rotate(.4deg); } }
+@keyframes slot-respira { 0%, 100% { box-shadow: 0 8px 0 #6b3c03, 0 12px 26px rgba(255,180,40,.45); } 50% { box-shadow: 0 8px 0 #6b3c03, 0 12px 40px rgba(255,180,40,.8); } }
+@media (prefers-reduced-motion: reduce) {
+  .slot-luci i, .slot-insegna b, .slot-gratis, .slot-cella.is-vincente, .slot-gira:not(:disabled), .slot-macchina--grande, .slot-macchina--mega, .slot-vinto, .slot-vinto em { animation: none; }
+}
+.slot-sim .crest-stellato { display: grid; place-items: center; width: 78%; height: 78%; }
+.slot-sim .crest-stellato .crest { width: 100%; height: 100%; }

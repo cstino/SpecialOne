@@ -5,6 +5,7 @@ import type { League, Membership } from '../types'
 import { Crest } from './Crest'
 import { GameNav, type GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
+import { Casino } from './Casino'
 
 // BetOne (menu Extra campo, docs/decisioni-conferenze-stampa.md §BetOne): la schedina stile totocalcio della
 // prossima giornata. 1, X o 2 per ogni partita, solo 2 doppie per schedina, una schedina per conferenza (East e
@@ -65,6 +66,7 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
   const [tabClassifica, setTabClassifica] = useState<'tot' | Gruppo>('tot')
   const [aperte, setAperte] = useState<Record<number, boolean>>({})
   const [regole, setRegole] = useState(false)
+  const [sezione, setSezione] = useState<'pronostici' | 'casino'>('pronostici')
 
   // --- La giornata a cui si gioca: la prima ancora da giocare del campionato.
   const giornata = useMemo(() => {
@@ -222,6 +224,12 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
           </div>
         </section>
 
+        <div className="bet-sezioni" role="tablist" aria-label="Sezione di BetOne">
+          <button type="button" role="tab" aria-selected={sezione === 'pronostici'} className={sezione === 'pronostici' ? 'is-attiva' : ''} onClick={() => setSezione('pronostici')}><span aria-hidden="true">🎟️</span>Pronostici</button>
+          <button type="button" role="tab" aria-selected={sezione === 'casino'} className={sezione === 'casino' ? 'is-attiva' : ''} onClick={() => setSezione('casino')}><span aria-hidden="true">🎰</span>Casinò</button>
+        </div>
+
+        {sezione === 'casino' ? <Casino leagueId={league.id} teamId={membership.id} dati={dati} /> : <>
         {giornata == null
           ? <section className="bet-vuoto"><strong>Nessuna giornata da giocare</strong><p>La prossima schedina si apre appena c'è una nuova giornata di campionato.</p></section>
           : <>
@@ -364,10 +372,11 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
             <li>Una schedina con <b>tutti i pronostici giusti</b> vale una <b>WIN</b>. In classifica contano le WIN e, a parità, le partite azzeccate.</li>
           </ul>}
         </section>
+        </>}
       </>}
     </div>
 
-    {caricato && giornata != null && partiteAttivo.length > 0 && !chiusa && <div className="bet-barra">
+    {sezione === 'pronostici' && caricato && giornata != null && partiteAttivo.length > 0 && !chiusa && <div className="bet-barra">
       {errore && <p className="bet-barra__errore" role="alert">{errore}</p>}
       <p className="bet-barra__stato">
         {salvata ? <>Scommessa piazzata ✓ Puoi modificarla fino alle {oraChiusura}.</>
