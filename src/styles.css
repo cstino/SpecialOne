@@ -5643,3 +5643,129 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 /* Sala stampa: sezioni prima/dopo la partita */
 .stampa__sezione { margin: 0 0 10px; color: #9b92b0; font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 .stampa + .stampa { margin-top: 12px; }
+
+/* ============================================================
+   BetOne: la schedina stile totocalcio. Oro su viola notte, biglietto con bordi perforati, tasti grandi (mobile-first).
+   ============================================================ */
+.bet-page { --bet-oro: #f6c453; --bet-oro-scuro: #c9962a; --bet-carta: #181426; --bet-linea: rgba(255,255,255,.1); display: grid; gap: 16px; padding-bottom: calc(170px + env(safe-area-inset-bottom)); color: #f4f1fb; }
+.bet-page button { font: inherit; color: inherit; }
+
+.bet-hero { display: flex; align-items: center; gap: 14px; padding: 18px 16px; border: 1px solid var(--bet-linea); border-radius: 22px; background: radial-gradient(120% 140% at 0% 0%, rgba(246,196,83,.2), transparent 60%), linear-gradient(180deg, #1b1630, #120f1d); }
+.bet-hero__marchio { flex: none; display: grid; place-items: center; width: 62px; height: 62px; border-radius: 18px; background: linear-gradient(145deg, var(--bet-oro), var(--bet-oro-scuro)); color: #1a1205; box-shadow: 0 8px 24px rgba(246,196,83,.35); transform: rotate(-6deg); }
+.bet-hero__testo { display: grid; gap: 4px; min-width: 0; }
+.bet-kicker { margin: 0; color: var(--bet-oro); font-size: .7rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+.bet-hero h1 { margin: 0; font-size: 2.3rem; line-height: .95; letter-spacing: -.03em; }
+.bet-hero h1 b { color: var(--bet-oro); }
+.bet-sottotitolo { margin: 4px 0 0; color: #b9b0cc; font-size: .85rem; line-height: 1.4; }
+
+.bet-stato { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border: 1px solid rgba(246,196,83,.35); border-radius: 16px; background: rgba(246,196,83,.08); }
+.bet-stato small { display: block; color: #b9b0cc; font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.bet-stato strong { font-size: 1.02rem; }
+.bet-stato.is-chiusa { border-color: rgba(255,90,110,.45); background: rgba(255,90,110,.09); }
+.bet-conto { padding: 6px 12px; border-radius: 99px; background: rgba(0,0,0,.35); color: var(--bet-oro); font-size: .92rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.bet-conto--chiusa { color: #ff8b97; font-size: .74rem; }
+
+.bet-tab { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; padding: 5px; border: 1px solid var(--bet-linea); border-radius: 16px; background: rgba(255,255,255,.03); }
+.bet-tab button { display: grid; justify-items: center; gap: 1px; padding: 9px 6px; border: 0; border-radius: 12px; background: none; color: #b9b0cc; cursor: pointer; transition: background .15s, color .15s; }
+.bet-tab button span { font-size: .95rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.bet-tab button i { font-style: normal; font-size: .7rem; opacity: .8; }
+.bet-tab button.is-attiva { background: linear-gradient(145deg, var(--bet-oro), var(--bet-oro-scuro)); color: #1a1205; box-shadow: 0 4px 14px rgba(246,196,83,.3); }
+.bet-tab--piccola button { padding: 7px 6px; }
+.bet-tab--piccola button span { font-size: .8rem; }
+
+/* Il biglietto */
+.bet-ticket { position: relative; border: 1px solid var(--bet-linea); border-radius: 22px; background: linear-gradient(180deg, #1c1730, var(--bet-carta)); box-shadow: 0 18px 40px rgba(0,0,0,.35); overflow: hidden; }
+.bet-ticket::before, .bet-ticket::after { content: ''; position: absolute; top: 62px; width: 22px; height: 22px; border-radius: 50%; background: #0d0c14; border: 1px solid var(--bet-linea); }
+.bet-ticket::before { left: -12px; }
+.bet-ticket::after { right: -12px; }
+.bet-ticket__testa { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px 20px; border-bottom: 2px dashed rgba(246,196,83,.35); background: linear-gradient(180deg, rgba(246,196,83,.14), transparent); }
+.bet-ticket__testa small { display: block; color: var(--bet-oro); font-size: .68rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+.bet-ticket__testa strong { font-size: 1.3rem; letter-spacing: -.01em; }
+.bet-ticket__doppie { display: grid; justify-items: end; gap: 5px; }
+.bet-ticket__doppie span { display: flex; gap: 5px; }
+.bet-ticket__doppie i { width: 22px; height: 12px; border-radius: 99px; background: rgba(255,255,255,.12); transition: background .2s; }
+.bet-ticket__doppie i.is-usata { background: var(--bet-oro); box-shadow: 0 0 8px rgba(246,196,83,.6); }
+
+.bet-righe { list-style: none; margin: 0; padding: 0; }
+.bet-riga { display: grid; gap: 10px; padding: 14px 16px 16px; border-bottom: 1px dashed var(--bet-linea); }
+.bet-riga:last-child { border-bottom: 0; }
+.bet-riga.is-mia { background: linear-gradient(90deg, rgba(246,196,83,.08), transparent); }
+.bet-riga__squadre { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
+.bet-riga__n { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,.08); color: #b9b0cc; font-size: .72rem; font-weight: 800; }
+.bet-riga.is-fatta .bet-riga__n { background: var(--bet-oro); color: #1a1205; }
+.bet-squadra { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 700; font-size: .92rem; line-height: 1.15; }
+.bet-squadra--ospite { justify-content: flex-end; text-align: right; }
+.bet-squadra > span { display: grid; min-width: 0; overflow-wrap: anywhere; }
+.bet-squadra em { color: #8f86a3; font-style: normal; font-size: .68rem; font-weight: 700; }
+.bet-vs { color: #6f6684; font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.bet-riga__mia { margin: -4px 0 0 30px; color: var(--bet-oro); font-size: .68rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.bet-riga__aiuto { margin: -2px 0 0; color: var(--bet-oro); font-size: .76rem; }
+
+.bet-segni { display: grid; grid-template-columns: repeat(3, 1fr) 58px; gap: 8px; }
+.bet-segno { height: 50px; border: 1px solid rgba(255,255,255,.14); border-radius: 14px; background: rgba(255,255,255,.04); font-size: 1.35rem; font-weight: 800; cursor: pointer; transition: transform .1s, background .15s, border-color .15s, box-shadow .15s; }
+.bet-segno:active:not(:disabled) { transform: scale(.95); }
+.bet-segno.is-scelto { background: linear-gradient(145deg, #ffd978, var(--bet-oro)); border-color: #ffe29a; color: #1a1205; box-shadow: 0 6px 18px rgba(246,196,83,.4), inset 0 1px 0 rgba(255,255,255,.5); }
+.bet-segno.is-doppio { background: linear-gradient(145deg, #ffe9b0, #f6c453); box-shadow: 0 0 0 2px rgba(246,196,83,.5), 0 6px 18px rgba(246,196,83,.4); }
+.bet-segno:disabled, .bet-x2:disabled { cursor: default; opacity: .55; }
+.bet-segno.is-scelto:disabled { opacity: 1; }
+.bet-x2 { height: 50px; border: 1.5px dashed rgba(246,196,83,.55); border-radius: 14px; background: none; color: var(--bet-oro); font-size: .95rem; font-weight: 800; cursor: pointer; transition: background .15s; }
+.bet-x2.is-attiva { border-style: solid; background: rgba(246,196,83,.18); }
+.bet-vuoto-int { margin: 0; padding: 18px; color: #9b92b0; text-align: center; }
+.bet-vuoto { display: grid; gap: 6px; padding: 28px 18px; border: 1px dashed var(--bet-linea); border-radius: 18px; text-align: center; }
+.bet-vuoto p { margin: 0; color: #9b92b0; }
+
+/* Sezioni: risultati e classifica */
+.bet-sezione { display: grid; gap: 12px; }
+.bet-sezione h2 { margin: 6px 0 0; font-size: 1.2rem; }
+.bet-sezione h3 { margin: 0; color: var(--bet-oro); font-size: .8rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.bet-nota { margin: 0; color: #8f86a3; font-size: .8rem; line-height: 1.4; }
+.bet-esito-gruppo { display: grid; gap: 10px; }
+.bet-esito-mia { display: flex; align-items: baseline; gap: 12px; padding: 14px 16px; border: 1px solid var(--bet-linea); border-radius: 16px; background: rgba(255,255,255,.04); }
+.bet-esito-mia strong { font-size: 2rem; font-variant-numeric: tabular-nums; }
+.bet-esito-mia span { color: #b9b0cc; }
+.bet-esito-mia.is-win { border-color: rgba(246,196,83,.7); background: linear-gradient(135deg, rgba(246,196,83,.28), rgba(246,196,83,.06)); box-shadow: 0 0 28px rgba(246,196,83,.25); }
+.bet-esito-mia.is-win strong { color: var(--bet-oro); letter-spacing: .08em; }
+.bet-giocatori, .bet-classifica { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.bet-giocatori > li > button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--bet-linea); border-radius: 14px; background: rgba(255,255,255,.03); text-align: left; cursor: pointer; }
+.bet-giocatori > li.is-mia > button { border-color: rgba(246,196,83,.55); background: rgba(246,196,83,.08); }
+.bet-giocatori__stemma { flex: none; display: grid; place-items: center; width: 40px; }
+.bet-giocatori__nome { flex: 1; min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
+.bet-punteggio { font-size: 1.25rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.bet-punteggio small { color: #8f86a3; font-size: .8rem; font-weight: 700; }
+.bet-win { padding: 3px 9px; border-radius: 99px; background: linear-gradient(145deg, #ffd978, var(--bet-oro)); color: #1a1205; font-size: .68rem; font-weight: 800; letter-spacing: .1em; }
+.bet-pos { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,.08); font-size: .8rem; font-weight: 800; }
+.bet-pos--1 { background: var(--bet-oro); color: #1a1205; }
+.bet-pos--2 { background: #d6d3e0; color: #1a1625; }
+.bet-pos--3 { background: #d39a63; color: #1f1205; }
+.bet-dettaglio { list-style: none; margin: 6px 0 2px; padding: 0 4px; display: grid; gap: 4px; }
+.bet-dettaglio li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 10px; background: rgba(255,255,255,.03); font-size: .8rem; }
+.bet-dettaglio li.is-giusta i { color: #7be3a0; }
+.bet-dettaglio li.is-sbagliata i { color: #ff8b97; }
+.bet-dettaglio b { color: #b9b0cc; font-variant-numeric: tabular-nums; }
+.bet-dettaglio i { font-style: normal; font-weight: 800; }
+
+.bet-classifica li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--bet-linea); border-radius: 14px; background: rgba(255,255,255,.03); }
+.bet-classifica li.is-mia { border-color: rgba(246,196,83,.55); background: rgba(246,196,83,.08); }
+.bet-classifica__nome { flex: 1; min-width: 0; display: grid; }
+.bet-classifica__nome strong { overflow-wrap: anywhere; }
+.bet-classifica__nome small { color: #8f86a3; font-size: .72rem; }
+.bet-classifica__win { display: grid; justify-items: center; min-width: 46px; }
+.bet-classifica__win b { color: var(--bet-oro); font-size: 1.5rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.bet-classifica__win small { color: #8f86a3; font-size: .6rem; font-weight: 800; letter-spacing: .12em; }
+
+.bet-bloccato { display: grid; gap: 8px; justify-items: center; padding: 28px 20px; border: 1px dashed var(--bet-linea); border-radius: 18px; text-align: center; }
+.bet-bloccato i { font-style: normal; font-size: 2rem; }
+.bet-bloccato p { margin: 0; max-width: 320px; color: #b9b0cc; line-height: 1.45; }
+
+.bet-regole { border: 1px solid var(--bet-linea); border-radius: 16px; background: rgba(255,255,255,.03); }
+.bet-regole__tasto { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border: 0; background: none; font-weight: 700; cursor: pointer; }
+.bet-regole ul { margin: 0; padding: 0 18px 16px 34px; display: grid; gap: 8px; color: #b9b0cc; font-size: .86rem; line-height: 1.45; }
+.bet-regole b { color: #f4f1fb; }
+
+/* Barra fissa in basso: stato e tasto di salvataggio */
+.bet-barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; gap: 6px; max-width: 560px; margin: 0 auto; padding: 22px 16px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(13,12,20,0), #0d0c14 30%); }
+.bet-barra__stato { margin: 0; text-align: center; color: #b9b0cc; font-size: .82rem; }
+.bet-barra__errore { margin: 0; text-align: center; color: #ff8b8b; font-size: .82rem; }
+.bet-barra__salva { height: 52px; border: 0; border-radius: 14px; background: linear-gradient(180deg, #ffd978, var(--bet-oro)); color: #1a1205; font-size: 1rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; cursor: pointer; box-shadow: 0 8px 22px rgba(246,196,83,.35); }
+.bet-barra__salva:disabled { background: rgba(255,255,255,.1); box-shadow: none; color: rgba(255,255,255,.4); cursor: default; }
+@media (prefers-reduced-motion: reduce) { .bet-segno, .bet-tab button { transition: none; } }

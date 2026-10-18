@@ -45,6 +45,7 @@ import { LoadingLogo } from './components/LoadingLogo'
 import { MenuIniziale } from './components/MenuIniziale'
 import { NomeAllenatoreObbligatorio, useNomeAllenatoreObbligatorio } from './components/NomeAllenatoreObbligatorio'
 import { ScegliRivale } from './components/ScegliRivale'
+import { BetOne } from './components/BetOne'
 import { NovitaBenvenuto, useNovitaBenvenuto } from './components/NovitaBenvenuto'
 import { Onboarding } from './components/Onboarding'
 import { ContestoHome, ContestoNotifiche } from './lib/navigazione'
@@ -160,7 +161,7 @@ export default function App() {
     // Ogni notifica legata a una proposta (proposta ricevuta, esito, HERE WE GO) porta a quella proposta in Scambi.
     const proposta = notifica.dati?.proposta_id
     const versoScambi = notifica.dati?.view === 'scambi' || typeof proposta === 'number'
-    const viaDiretta = notifica.dati?.view === 'salastampa' || notifica.dati?.view === 'spogliatoio' || notifica.dati?.view === 'social' || notifica.dati?.view === 'rivalita'
+    const viaDiretta = notifica.dati?.view === 'salastampa' || notifica.dati?.view === 'spogliatoio' || notifica.dati?.view === 'social' || notifica.dati?.view === 'rivalita' || notifica.dati?.view === 'betone'
     setGameView(viaDiretta ? notifica.dati?.view as GameView : notifica.dati?.view === 'squad' ? 'squad' : versoScambi ? 'scambi' : 'overview')
     if (typeof proposta === 'number') setPropostaDaMostrare((p) => ({ id: proposta, n: (p?.n ?? 0) + 1 }))
     else if (notifica.dati?.view === 'scambi') setScorriScambi((n) => n + 1)
@@ -519,6 +520,7 @@ export default function App() {
       : gameView === 'rivalita' ? <Rivalita membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} onCambiaRivale={() => setCambiaRivale(true)} />
       : gameView === 'salastampa' ? <PaginaSalaStampa membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} />
       : gameView === 'spogliatoio' ? <PaginaSpogliatoio membership={active} onNavigate={navigateGame} />
+      : gameView === 'betone' ? <BetOne membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} onRevealMatch={(id) => setRevealMatch({ id, from: 'betone' })} />
       : gameView === 'pubblico' ? <PaginaPubblico membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
       : gameView === 'admin' ? <Admin membership={active} onNavigate={navigateGame} />
       : gameView === 'help' ? <Help membership={active} onNavigate={navigateGame} />
