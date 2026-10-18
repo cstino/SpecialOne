@@ -1,6 +1,6 @@
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { withSupabase } from '@supabase/server'
-import { jwtVerify } from 'jose'
+import { jwtVerify, SignJWT } from 'jose'
 import { ovrEfficace, schiera, simulaPartita } from '../../../engine/engine.js'
 import { tiltTecnico, tiltRapido } from '../../../engine/tattiche.js'
 import { CFG, MODULI, PESI_SLOT } from '../../../engine/config.js'
@@ -1254,6 +1254,84 @@ async function gestisciAmichevole(
   return Response.json({ amichevole_id: am.id, stato: 'giocata', gol_da: esito.golCasa, gol_a: esito.golOspite })
 }
 
+// ------------------------------------------------------------
+//  ALLENATORE AUTOMATICO di Atletico Neurale (Serie F, squadra affidata a Claude): prima di ogni partita compila la
+//  formazione. Regole di gioco pulito: usa SOLO i dati della propria rosa (come un allenatore normale), salva con la
+//  stessa funzione degli altri (salva_formazione, come l'utente della squadra) e scrive cosa ha fatto in azioni_claude.
+//  Il modulo e tutte le scelte tattiche restano quelle dell'ultima formazione salvata (cambiare modulo fa perdere
+//  familiarita'); cambiano i giocatori: i migliori disponibili per ogni posizione, fuori infortunati e squalificati.
+// ------------------------------------------------------------
+
+// deno-lint-ignore no-explicit-any
+async function formazioneClaude(ctx: { supabaseAdmin: any; authMode: string }, leagueId: number, teamId: number): Promise<Response> {
+  if (ctx.authMode !== 'secret') return Response.json({ error: 'Solo il sistema.' }, { status: 403 })
+  const admin = ctx.supabaseAdmin
+  const { data: team } = await admin.from('teams').select('id, nome, user_id, gestita_da_claude').eq('id', teamId).eq('league_id', leagueId).single()
+  if (!team?.gestita_da_claude) return Response.json({ error: 'Squadra non affidata a Claude.' }, { status: 403 })
+  const { data: fx } = await admin.from('fixtures').select('giornata, data_sim')
+    .eq('league_id', leagueId).eq('stato', 'programmata').or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`).order('giornata').limit(1).maybeSingle()
+  if (!fx) return Response.json({ ok: true, messaggio: 'Nessuna partita in programma.' })
+
+  const [instR, linR] = await Promise.all([
+    admin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, specializzazione_attiva, morale')
+      .eq('league_id', leagueId).eq('team_id', teamId).eq('ritirato', false),
+    admin.from('lineups').select('giornata, modulo, titolari, panchina, tribuna, stile_gioco, disposizione, ruoli, compiti, focus_corsia, linea_difensiva, ampiezza, ruolo_portiere, velocita_manovra')
+      .eq('team_id', teamId).order('giornata', { ascending: false }).limit(1),
+  ])
+  if (instR.error) throw instR.error
+  if (linR.error) throw linR.error
+  const instances = (instR.data ?? []) as Instance[]
+  const ultima = ((linR.data ?? [])[0] ?? null) as (DbLineup & { tribuna?: number[] }) | null
+  if (ultima?.disposizione) {
+    await admin.from('azioni_claude').insert({ league_id: leagueId, team_id: teamId, tipo: 'formazione', dettaglio: { giornata: fx.giornata, esito: 'nessuna modifica: schema personalizzato' } })
+    return Response.json({ ok: true, messaggio: 'Schema personalizzato: nessuna modifica automatica.' })
+  }
+  const { data: playersData } = await admin.from('players').select('id, nome, posizioni, piede').in('id', [...new Set(instances.map((i) => i.player_id))])
+  const { data: attributiData } = await admin.rpc('attributi_correnti', { p_instance_ids: instances.map((i) => i.id) })
+  const catalogo = new Map(((playersData ?? []) as DbPlayer[]).map((x) => [x.id, x]))
+  const attributi = new Map(((attributiData ?? []) as Array<{ instance_id: number; attributi: Record<string, number> }>).map((r) => [r.instance_id, r.attributi]))
+  const giocatori = instances.map((i) => adaptPlayer(i, catalogo.get(i.player_id)!, attributi.get(i.id)))
+  const modulo = ultima?.modulo ?? '4-3-3'
+  const disponibili = giocatori.filter((g) => g.infortunatoFinoA <= 0 && g.squalificatoFinoA <= 0)
+  const roster: EngineRoster = { nome: team.nome, giocatori: disponibili, esperienzaModulo: {}, esperienzaStile: {} }
+  const sch = schiera(roster, modulo)
+  const titolari = (sch.titolari as Array<EnginePlayer | null>).map((g) => g?.id).filter((id): id is number => id != null)
+  if (titolari.length !== 11) throw new Error('Non ci sono 11 giocatori disponibili.')
+  const panchina = (sch.panchina as EnginePlayer[]).map((g) => g.id)
+  const usati = new Set([...titolari, ...panchina])
+  const tribuna = giocatori.filter((g) => !usati.has(g.id)).map((g) => g.id)
+
+  // Salva come l'allenatore della squadra: stessa funzione, token firmato per il suo utente.
+  const urlSb = Deno.env.get('SUPABASE_URL') ?? ''
+  const anon = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+  const token = await new SignJWT({ role: 'authenticated', aud: 'authenticated' })
+    .setProtectedHeader({ alg: 'HS256', typ: 'JWT' }).setSubject(team.user_id).setIssuedAt().setExpirationTime('2m')
+    .sign(new TextEncoder().encode(SEGRETO_JWT))
+  const risp = await fetch(`${urlSb}/rest/v1/rpc/salva_formazione`, {
+    method: 'POST',
+    headers: { apikey: anon, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      p_league_id: leagueId, p_giornata: fx.giornata, p_modulo: modulo, p_titolari: titolari, p_panchina: panchina, p_tribuna: tribuna,
+      p_stile_gioco: ultima?.stile_gioco ?? 'equilibrato', p_disposizione: null, p_ruoli: ultima?.ruoli ?? null, p_compiti: ultima?.compiti ?? null,
+      p_focus_corsia: ultima?.focus_corsia ?? null, p_linea: ultima?.linea_difensiva ?? null, p_ampiezza: ultima?.ampiezza ?? null,
+      p_portiere: ultima?.ruolo_portiere ?? null, p_velocita: ultima?.velocita_manovra ?? null,
+    }),
+  })
+  if (!risp.ok) throw new Error(`salva_formazione: ${risp.status} ${(await risp.text()).slice(0, 200)}`)
+  const nome = (id: number) => giocatori.find((g) => g.id === id)?.nome ?? String(id)
+  const prima = new Set(ultima?.titolari ?? [])
+  const dopo = new Set(titolari)
+  await admin.from('azioni_claude').insert({
+    league_id: leagueId, team_id: teamId, tipo: 'formazione',
+    dettaglio: {
+      giornata: fx.giornata, modulo, titolari: titolari.map(nome),
+      entrano: titolari.filter((id) => !prima.has(id)).map(nome), escono: [...prima].filter((id) => !dopo.has(id as number)).map((id) => nome(id as number)),
+      infortunati: giocatori.filter((g) => g.infortunatoFinoA > 0).map((g) => g.nome), squalificati: giocatori.filter((g) => g.squalificatoFinoA > 0).map((g) => g.nome),
+    },
+  })
+  return Response.json({ ok: true, giornata: fx.giornata, modulo, titolari: titolari.map(nome) })
+}
+
 export default {
   // Due chiamanti: l'amministratore dal browser (JWT utente) e il cron
   // notturno, che presenta la chiave segreta del progetto nell'header `apikey`.
@@ -1265,6 +1343,9 @@ export default {
       if (req.method !== 'POST') return Response.json({ error: 'Metodo non consentito.' }, { status: 405 })
       const utenteId = ctx.authMode === 'secret' ? null : await utenteDalToken(req)
       const body = await req.json().catch(() => ({})) as { league_id?: number; giornata?: number; amichevole_id?: number }
+      if ((body as { azione?: string }).azione === 'formazione_claude') {
+        return await formazioneClaude(ctx, Number(body.league_id), Number((body as { team_id?: number }).team_id))
+      }
       // Amichevole (solo off-season): nessuna scrittura sui giocatori, vedi gestisciAmichevole.
       if (body.amichevole_id !== undefined) {
         const idAmichevole = Number(body.amichevole_id)
