@@ -5636,3 +5636,6 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .x-bloccato i { font-style: normal; font-size: 2.4rem; }
 .x-bloccato strong { font-size: 1.15rem; }
 .x-bloccato p { max-width: 320px; margin: 0; color: #b9b0cc; line-height: 1.45; }
+
+/* Rivalita': niente filo sotto l'intestazione, finirebbe attaccato alla prima card */
+.rivalita-page .alerts-heading { border-bottom: 0; padding-bottom: 8px; }
