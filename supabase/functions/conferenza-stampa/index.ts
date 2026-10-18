@@ -494,6 +494,77 @@ const italiano = (t: string) => t
   })
   .replace(/\bvestuarios?\b/gi, (m) => (m[0] === 'V' ? 'Spogliatoio' : 'spogliatoio'))
 
+// ------------------------------------------------------------
+//  CLAUDE RANIERI: le risposte automatiche dell'allenatore dell'Atletico Neurale (squadra affidata a Claude).
+//  Un'AI scrive la risposta in persona; poi passa dallo stesso percorso delle risposte umane (rispondi /
+//  rispondiRichiesta): stessa valutazione, stessi effetti. Lo lancia il cron ogni minuto, con un ritardo casuale.
+// ------------------------------------------------------------
+
+const PERSONA_CLAUDE = 'Sei Claude Ranieri, allenatore dell\'Atletico Neurale in un gioco manageriale di calcio in italiano giocato fra amici. ' +
+  'Parli da allenatore vero, in tutto e per tutto: diretto, sicuro di te, con un tocco di ironia, con carattere. NON dire mai di essere un\'intelligenza artificiale, un programma o un bot: in conferenza sei un allenatore e basta. ' +
+  'Rispondi SEMPRE alla domanda in modo chiaro e pertinente, anche quando è scomoda (una sconfitta, il fondo della classifica): riconosci i fatti, assumiti la responsabilità e indica cosa cambierai. ' +
+  'Parli in prima persona, in italiano parlato, senza elenchi. Usa SOLO i fatti forniti: non inventare risultati, giocatori, infortuni o numeri. ' +
+  'Mostra ambizione e rispetto per i tifosi e per il gruppo senza esagerare; puoi sfottere un avversario con garbo. ' +
+  'Varia tono e struttura da una risposta all\'altra: non riusare le parole e le frasi delle risposte precedenti. ' +
+  'Non nominare mai voti, morale, punti di valutazione o pubblico come numeri, e non parlare di retrocessione o salvezza (non esistono). '
+
+// deno-lint-ignore no-explicit-any
+async function rispondiClaude(admin: any, tipo: string, id: number) {
+  const schemaRisposta = {
+    name: 'scrivi_risposta', description: 'La risposta dell\'allenatore.',
+    input_schema: { type: 'object', properties: { risposta: { type: 'string' } }, required: ['risposta'] },
+  }
+  if (tipo === 'domanda') {
+    const { data: d } = await admin.from('conferenze_domande')
+      .select('id, league_id, team_id, tipo, domanda, risposta, fixture_id, match_id, teams(nome, user_id, gestita_da_claude)').eq('id', id).single()
+    if (!d || !d.teams?.gestita_da_claude) return json(403, { errore: 'Squadra non affidata a Claude.' })
+    if (d.risposta) return json(409, { errore: 'Gia\' risposta.' })
+    const { data: lg } = await admin.from('leagues').select('stagione_corrente, nome').eq('id', d.league_id).single()
+    const { data: se } = await admin.from('seasons').select('id').eq('league_id', d.league_id).eq('numero', lg?.stagione_corrente).maybeSingle()
+    const { data: cl } = se ? await admin.from('standings').select('team_id, posizione, punti, giocate').eq('season_id', se.id) : { data: [] }
+    const pos = (cl ?? []).find((x: { team_id: number }) => x.team_id === d.team_id)
+    const forma = se ? await formaRecente(admin, se.id, 999, d.team_id) : []
+    let momento = ''
+    if (d.tipo === 'dopo' && d.match_id) {
+      const { data: m } = await admin.from('matches').select('gol_home, gol_away, fixtures(home_team_id, away_team_id)').eq('id', d.match_id).single()
+      const fx = Array.isArray(m?.fixtures) ? m.fixtures[0] : m?.fixtures
+      if (m && fx) {
+        const [mie, lor] = fx.home_team_id === d.team_id ? [m.gol_home, m.gol_away] : [m.gol_away, m.gol_home]
+        momento = `La partita è finita ${mie}-${lor} per l'Atletico Neurale (${mie > lor ? 'vittoria' : mie < lor ? 'sconfitta' : 'pareggio'}).`
+      }
+    } else if (d.tipo === 'pre') momento = 'La partita di stasera non è ancora stata giocata.'
+    const { data: prec } = await admin.from('conferenze_domande').select('risposta').eq('team_id', d.team_id).not('risposta', 'is', null).order('id', { ascending: false }).limit(3)
+    const scheda = [
+      `Lega: ${lg?.nome ?? ''}. Squadra: Atletico Neurale.`, momento,
+      pos ? `Classifica: ${pos.posizione}° con ${pos.punti} punti in ${pos.giocate} partite.` : '',
+      forma.length ? `Ultimi risultati (dal più recente): ${forma.join(' ')}.` : '',
+      (prec ?? []).length ? `Le tue ultime risposte (NON ripeterne le parole):\n${(prec ?? []).map((x: { risposta: string }) => '- ' + String(x.risposta).slice(0, 240)).join('\n')}` : '',
+      `Domanda del giornalista: ${d.domanda}`,
+    ].filter(Boolean).join('\n')
+    const out = await chiediAI<{ risposta: string }>(PERSONA_CLAUDE + 'Rispondi al giornalista in 2-4 frasi, al massimo 400 caratteri.', scheda, schemaRisposta)
+    const testo = String(out.risposta ?? '').trim().slice(0, 1100)
+    if (!testo) return json(502, { errore: 'Risposta vuota.' })
+    return await rispondi(admin, d.teams.user_id, id, testo)
+  }
+  if (tipo === 'richiesta') {
+    const { data: r } = await admin.from('richieste_giocatori')
+      .select('id, team_id, player_instance_id, tipo, testo, stato, teams(nome, user_id, gestita_da_claude)').eq('id', id).single()
+    if (!r || !r.teams?.gestita_da_claude) return json(403, { errore: 'Squadra non affidata a Claude.' })
+    if (r.stato !== 'aperta') return json(409, { errore: 'Gia\' risposta.' })
+    const { data: g } = await admin.from('player_instances').select('overall_corrente, players(nome, posizioni)').eq('id', r.player_instance_id).single()
+    const gp = Array.isArray(g?.players) ? g.players[0] : g?.players
+    const scheda = [
+      `Un tuo giocatore dell'Atletico Neurale, ${gp?.nome ?? 'un giocatore'}, ti scrive una richiesta personale.`,
+      `Richiesta: ${r.testo}`,
+    ].join('\n')
+    const out = await chiediAI<{ risposta: string }>(PERSONA_CLAUDE + 'Rispondi al giocatore in 1-3 frasi, al massimo 300 caratteri: rispettoso e concreto; se rifiuti, motivalo; non promettere nulla che non sei sicuro di mantenere.', scheda, schemaRisposta)
+    const testo = String(out.risposta ?? '').trim().slice(0, 600)
+    if (!testo) return json(502, { errore: 'Risposta vuota.' })
+    return await rispondiRichiesta(admin, r.teams.user_id, id, testo)
+  }
+  return json(400, { errore: 'Tipo non valido.' })
+}
+
 // Quante delle risposte precedenti la nuova ripete, a parole: confronta gli insiemi di
 // parole (da 4 lettere in su) e conta le risposte con almeno il 35% di parole in comune.
 // Calcolo fisso e spiegabile ("se riscrivi le stesse parole, il tono non e' piu' nuovo"):
@@ -794,6 +865,11 @@ export default {
     if (req.method !== 'POST') return json(405, { errore: 'Metodo non ammesso.' })
     const body = await req.json().catch(() => ({})) as { azione?: string; match_id?: number; domanda_id?: number; richiesta_id?: number; risposta?: string }
     try {
+      if (body.azione === 'rispondi_claude') {
+        if (ctx.authMode !== 'secret') return json(403, { errore: 'Solo il sistema.' })
+        const b = body as { tipo?: string; id?: number }
+        return await rispondiClaude(ctx.supabaseAdmin, String(b.tipo ?? ''), Number(b.id))
+      }
       if (body.azione === 'genera_pre') {
         if (ctx.authMode !== 'secret') return json(403, { errore: 'Solo il sistema genera le domande.' })
         return await generaPre(ctx.supabaseAdmin, Number((body as { fixture_id?: number }).fixture_id))
