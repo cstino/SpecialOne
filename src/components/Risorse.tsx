@@ -40,7 +40,7 @@ const RAMI: readonly { id: Ramo; nome: string; descrizione: string; immagine: st
   {
     id: 'medico',
     nome: 'Reparto medico',
-    descrizione: 'Quanto resistono i tuoi giocatori agli infortuni e quanta più condizione recuperano a fine partita.',
+    descrizione: 'Quanto resistono i tuoi giocatori agli infortuni, quanta più condizione recuperano a fine partita e quanto in fretta guariscono.',
     immagine: '/risorse/medico.jpg',
   },
 ]
@@ -57,6 +57,7 @@ const ETICHETTE: Record<string, { testo: string; formato: (v: number) => string 
   riduzione_tempi_ruolo_pct: { testo: 'Tempi cambio ruolo', formato: (v) => (v === 0 ? 'pieni' : `−${v}%`) },
   riduzione_infortuni_pct: { testo: 'Rischio infortuni', formato: (v) => (v === 0 ? 'pieno' : `−${v}%`) },
   riduzione_calo_residuo_pct: { testo: 'Recupero post-partita', formato: (v) => (v === 0 ? 'nessun bonus' : `+${v}% recuperato`) },
+  recupero_infortuni_pct: { testo: 'Guarigione', formato: (v) => (v === 0 ? 'tempi pieni' : `${v}% a giornata di rientrare prima`) },
 }
 
 function livelloDi(risorse: Risorse, ramo: Ramo) {
