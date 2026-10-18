@@ -149,6 +149,49 @@ async function formaRecente(admin: any, seasonId: number, giornata: number, team
   })
 }
 
+// I numeri li calcola il server, mai l'AI: differenze di punti e serie di risultati, scritti gia' pronti nel riepilogo.
+// (L'AI aveva scritto "dieci punti di vantaggio sulla seconda" con 3 punti reali.)
+function fattiNumerici(opts: {
+  nome: string
+  gruppo: Array<{ team_id: number; posizione: number; punti: number }>
+  teamId: number
+  nomi: Map<number, string>
+  forma: string[]
+  avversarioId?: number
+}): string {
+  const out: string[] = []
+  const { gruppo, teamId, nomi } = opts
+  const mia = gruppo.find((x) => x.team_id === teamId)
+  if (mia && gruppo.length >= 2) {
+    if (mia.posizione === 1) {
+      const seconda = gruppo.find((x) => x.posizione === 2)
+      if (seconda) out.push(`Il vantaggio di ${opts.nome} sulla seconda (${nomi.get(seconda.team_id)}) è di ${mia.punti - seconda.punti} punti.`)
+    } else {
+      const prima = gruppo.find((x) => x.posizione === 1)
+      if (prima) out.push(`${opts.nome} è a ${prima.punti - mia.punti} punti dalla prima (${nomi.get(prima.team_id)}).`)
+    }
+    if (opts.avversarioId) {
+      const av = gruppo.find((x) => x.team_id === opts.avversarioId)
+      if (av) {
+        const d = mia.punti - av.punti
+        out.push(d === 0 ? `${opts.nome} e l'avversario hanno gli stessi punti.` : `${opts.nome} ha ${Math.abs(d)} punti ${d > 0 ? 'più' : 'in meno'} dell'avversario.`)
+      }
+    }
+  }
+  // Serie di risultati dall'ultima partita (V vittoria, P pareggio, S sconfitta)
+  if (opts.forma.length) {
+    const cont = (c: string) => opts.forma.filter((x) => x === c).length
+    out.push(`Nelle ultime ${opts.forma.length} partite: ${cont('V')} vittorie, ${cont('P')} pareggi, ${cont('S')} sconfitte.`)
+    let n = 0
+    while (n < opts.forma.length && opts.forma[n] === opts.forma[0]) n++
+    if (n >= 3) out.push(`Serie in corso: ${n} ${opts.forma[0] === 'V' ? 'vittorie' : opts.forma[0] === 'S' ? 'sconfitte' : 'pareggi'} consecutive.`)
+  }
+  return out.join(' ')
+}
+
+const REGOLA_NUMERI = 'NUMERI: non fare calcoli e non inventare cifre. Cita punti, differenze, serie e posizioni SOLO se sono scritti esattamente nel riepilogo; ' +
+  'se un numero non c\'è, parla a parole senza cifre. '
+
 // L'ultima partita giocata da una squadra prima di questa giornata, a parole ("ha vinto 2-0 contro X").
 // deno-lint-ignore no-explicit-any
 async function ultimoRisultato(admin: any, seasonId: number, giornata: number, teamId: number, nomi: Map<number, string>): Promise<string> {
@@ -219,6 +262,10 @@ async function genera(admin: any, matchId: number) {
   const nelGruppo = (teamId: number): number => {
     const mia = (classifica ?? []).find((x: Riga) => x.team_id === teamId) as Riga | undefined
     return (classifica ?? []).filter((x: Riga) => !aConferenze || x.conferenza === mia?.conferenza).length
+  }
+  const gruppoDi = (teamId: number): Riga[] => {
+    const mia = (classifica ?? []).find((x: Riga) => x.team_id === teamId) as Riga | undefined
+    return ([...(classifica ?? [])] as Riga[]).filter((x) => !aConferenze || x.conferenza === mia?.conferenza).sort((a, b) => a.posizione - b.posizione)
   }
   const campionatoDi = (teamId: number): string => {
     if (f.bracket_tie_id || f.giornata < 3) return ''
@@ -317,6 +364,7 @@ async function genera(admin: any, matchId: number) {
       mie.length ? `Fra i giocatori di ${t.nome}: il migliore è stato ${nome.get(mie[0].player_instance_id)} (${prestazione(mie[0].voto)}), il meno brillante ${nome.get(mie[mie.length - 1].player_instance_id)} (${prestazione(mie[mie.length - 1].voto)}).` : '',
       pos ? `Classifica dopo questa partita: ${t.nome} ${pos.posizione}° su ${nelGruppo(t.id)} con ${pos.punti} punti in ${pos.giocate} partite${posAvv ? `; ${avversario} ${posAvv.posizione}° con ${posAvv.punti}` : ''}.` : '',
       campionatoDi(t.id),
+      fattiNumerici({ nome: t.nome, gruppo: gruppoDi(t.id), teamId: t.id, nomi: nomeSquadra, forma: ultime, avversarioId: avvId }),
       derby ? `Questa partita è un DERBY: ${avversario} è il grande rivale di ${t.nome} (o ${t.nome} lo è per ${avversario}).` : '',
       rivaleScheda,
       obiettivi ? `Da inizio stagione (${pos ? `${t.nome} è ${pos.posizione}° con ${pos.punti} punti` : 'classifica ancora vuota'}): una domanda può chiedere all'allenatore gli obiettivi di stagione della squadra e fin dove pensa di arrivare.` : '',
@@ -326,6 +374,7 @@ async function genera(admin: any, matchId: number) {
     const out = await chiediAI<{ domande: Array<{ giornalista: string; domanda: string }> }>(
       'Sei la sala stampa di un gioco manageriale di calcio in italiano, giocato fra amici. ' +
       'Dopo la partita scrivi le domande che i giornalisti fanno all\'allenatore in conferenza stampa. ' +
+      REGOLA_NUMERI +
       'Regole: usa SOLO i fatti forniti, non inventarne altri; dai del lei e inizia con "Mister"; ' +
       'NON citare mai voti, pagelle o numeri di valutazione dei giocatori: parla della prestazione a parole ("qualche errore di troppo", "una partita sottotono", "è parso incerto", "ha deciso la partita"); ' +
       'tono da conferenza vera, diretto, a volte pungente quando il risultato o la serie lo giustificano, mai offensivo; ' +
@@ -441,6 +490,7 @@ async function generaPre(admin: any, fixtureId: number) {
       mie.length ? `Ultimi risultati di ${t.nome} (dal più recente): ${mie.join(' ')}.` : '',
       loro.length ? `Ultimi risultati di ${avv.nome} (dal più recente): ${loro.join(' ')}.` : '',
       campionato,
+      fattiNumerici({ nome: t.nome, gruppo, teamId: t.id, nomi: new Map(Array.from(squadra.values()).map((x) => [x.id, x.nome])), forma: mie, avversarioId: avvId }),
       derby ? `Questa partita è un DERBY: ${avv.nome} è il grande rivale di ${t.nome} (o ${t.nome} lo è per ${avv.nome}).` : '',
       infortunati.length ? `Infortunati di ${t.nome}: ${infortunati.join(', ')}.` : '',
     ].filter(Boolean).join('\n')
@@ -448,6 +498,7 @@ async function generaPre(admin: any, fixtureId: number) {
     const out = await chiediAI<{ domanda: string; giornalista: string }>(
       'Sei la sala stampa di un gioco manageriale di calcio in italiano, giocato fra amici. ' +
       'PRIMA della partita di stasera scrivi UNA domanda che un giornalista fa all\'allenatore in conferenza stampa. ' +
+      REGOLA_NUMERI +
       'Regole: usa SOLO i fatti forniti, non inventarne altri; la partita NON è ancora stata giocata, quindi non parlare mai di risultato, gol, prestazioni o pagelle; ' +
       'dai del lei e inizia con "Mister"; tono da conferenza vera, diretto, a volte pungente, mai offensivo; al massimo 280 caratteri, una sola domanda (niente elenchi). ' +
       'Scegli lo spunto più forte fra: l\'avversario e la sua forma, cosa si gioca la squadra in classifica, la serie di risultati, ' +
