@@ -486,7 +486,13 @@ async function generaPre(admin: any, fixtureId: number) {
 }
 
 // L'AI ogni tanto scivola in spagnolo/portoghese: "vestuario" invece di "spogliatoio". Si corregge a valle.
-const italiano = (t: string) => t.replace(/\bvestuarios?\b/gi, (m) => (m[0] === 'V' ? 'Spogliatoio' : 'spogliatoio'))
+const italiano = (t: string) => t
+  .replace(/\b(il|del|al|dal|nel|sul|col)\s+vestuarios?\b/gi, (m, art: string) => {
+    const mappa: Record<string, string> = { il: 'lo', del: 'dello', al: 'allo', dal: 'dallo', nel: 'nello', sul: 'sullo', col: 'con lo' }
+    const nuovo = mappa[art.toLowerCase()]
+    return (art[0] === art[0].toUpperCase() ? nuovo[0].toUpperCase() + nuovo.slice(1) : nuovo) + ' spogliatoio'
+  })
+  .replace(/\bvestuarios?\b/gi, (m) => (m[0] === 'V' ? 'Spogliatoio' : 'spogliatoio'))
 
 // Quante delle risposte precedenti la nuova ripete, a parole: confronta gli insiemi di
 // parole (da 4 lettere in su) e conta le risposte con almeno il 35% di parole in comune.
