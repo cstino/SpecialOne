@@ -67,6 +67,9 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
   const [aperte, setAperte] = useState<Record<number, boolean>>({})
   const [regole, setRegole] = useState(false)
   const [sezione, setSezione] = useState<'pronostici' | 'casino'>('pronostici')
+  // Il casino' per ora lo vede solo il committente (lo decide il server: casino_visibile).
+  const [casinoVisibile, setCasinoVisibile] = useState(false)
+  useEffect(() => { void supabase.rpc('casino_visibile').then(({ data }) => setCasinoVisibile(data === true)) }, [])
 
   // --- La giornata a cui si gioca: la prima ancora da giocare del campionato.
   const giornata = useMemo(() => {
@@ -224,12 +227,12 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
           </div>
         </section>
 
-        <div className="bet-sezioni" role="tablist" aria-label="Sezione di BetOne">
+        {casinoVisibile && <div className="bet-sezioni" role="tablist" aria-label="Sezione di BetOne">
           <button type="button" role="tab" aria-selected={sezione === 'pronostici'} className={sezione === 'pronostici' ? 'is-attiva' : ''} onClick={() => setSezione('pronostici')}><span aria-hidden="true">🎟️</span>Pronostici</button>
           <button type="button" role="tab" aria-selected={sezione === 'casino'} className={sezione === 'casino' ? 'is-attiva' : ''} onClick={() => setSezione('casino')}><span aria-hidden="true">🎰</span>Casinò</button>
-        </div>
+        </div>}
 
-        {sezione === 'casino' ? <Casino leagueId={league.id} teamId={membership.id} dati={dati} /> : <>
+        {casinoVisibile && sezione === 'casino' ? <Casino leagueId={league.id} teamId={membership.id} dati={dati} /> : <>
         {giornata == null
           ? <section className="bet-vuoto"><strong>Nessuna giornata da giocare</strong><p>La prossima schedina si apre appena c'è una nuova giornata di campionato.</p></section>
           : <>
