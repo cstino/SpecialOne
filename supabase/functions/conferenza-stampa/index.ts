@@ -149,6 +149,23 @@ async function formaRecente(admin: any, seasonId: number, giornata: number, team
   })
 }
 
+// L'ultima partita giocata da una squadra prima di questa giornata, a parole ("ha vinto 2-0 contro X").
+// deno-lint-ignore no-explicit-any
+async function ultimoRisultato(admin: any, seasonId: number, giornata: number, teamId: number, nomi: Map<number, string>): Promise<string> {
+  const { data } = await admin.from('fixtures')
+    .select('home_team_id, away_team_id, matches(gol_home, gol_away)')
+    .eq('season_id', seasonId).lt('giornata', giornata).eq('stato', 'simulata')
+    .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
+    .order('giornata', { ascending: false }).limit(1)
+  const x = (data ?? [])[0] as { home_team_id: number; away_team_id: number; matches: Array<{ gol_home: number; gol_away: number }> | { gol_home: number; gol_away: number } | null } | undefined
+  const r = x ? (Array.isArray(x.matches) ? x.matches[0] : x.matches) : null
+  if (!x || !r) return ''
+  const inCasa = x.home_team_id === teamId
+  const [miei, loro] = inCasa ? [r.gol_home, r.gol_away] : [r.gol_away, r.gol_home]
+  const altra = nomi.get(inCasa ? x.away_team_id : x.home_team_id) ?? 'un\'avversaria'
+  return `${miei > loro ? 'ha vinto' : miei < loro ? 'ha perso' : 'ha pareggiato'} ${miei}-${loro} contro ${altra}`
+}
+
 // ------------------------------------------------------------
 //  GENERA
 // ------------------------------------------------------------
@@ -165,7 +182,7 @@ async function genera(admin: any, matchId: number) {
   const { data: lega } = await admin.from('leagues').select('id, nome, conferenze_stampa, conferenze_attive').eq('id', f.league_id).single()
   if (!lega?.conferenze_stampa) return json(409, { errore: 'Conferenze stampa spente in questa lega.' })
 
-  const { data: squadre } = await admin.from('teams').select('id, nome, user_id, controllata_da_pc').in('id', [f.home_team_id, f.away_team_id])
+  const { data: squadre } = await admin.from('teams').select('id, nome, user_id, controllata_da_pc, rivale_id').in('id', [f.home_team_id, f.away_team_id])
   const teamById = new Map((squadre ?? []).map((t: { id: number }) => [t.id, t]))
   const umani = (squadre ?? []).filter((t: { user_id: string | null; controllata_da_pc: boolean }) => t.user_id && !t.controllata_da_pc)
   if (!umani.length) return json(200, { domande: 0 })
@@ -219,6 +236,22 @@ async function genera(admin: any, matchId: number) {
 
   const forma = (teamId: number) => formaRecente(admin, f.season_id, f.giornata, teamId)
 
+  // Rivalita' della lega: serve per il derby (grado oltre 90, o rivale dichiarato) e per le domande sul rivale.
+  const { data: rivRighe } = await admin.from('rivalita').select('team_a, team_b, grado').eq('league_id', f.league_id)
+  const gradoRiv = new Map<string, number>()
+  for (const x of (rivRighe ?? []) as Array<{ team_a: number; team_b: number; grado: number }>) gradoRiv.set(`${x.team_a}-${x.team_b}`, Number(x.grado))
+  const gradoCon = (a: number, b: number) => gradoRiv.get(a < b ? `${a}-${b}` : `${b}-${a}`) ?? 0
+  // Il rivale di una squadra: quello dichiarato, altrimenti la squadra con la rivalita' piu' alta (almeno 50).
+  const rivaleDi = (teamId: number, dichiarato: number | null | undefined): number | null => {
+    if (dichiarato) return dichiarato
+    let best: number | null = null, bg = 49
+    for (const [k, g] of gradoRiv) {
+      const [a, b] = k.split('-').map(Number)
+      if ((a === teamId || b === teamId) && g > bg) { bg = g; best = a === teamId ? b : a }
+    }
+    return best
+  }
+
   // La storia della partita: i gol in ordine col punteggio progressivo.
   const casa = teamById.get(f.home_team_id) as { nome: string }
   const ospite = teamById.get(f.away_team_id) as { nome: string }
@@ -251,6 +284,25 @@ async function genera(admin: any, matchId: number) {
     const obiettivi = !f.bracket_tie_id && (f.giornata === 1 || Math.random() < 0.2)
     const senzaVittorie = ultime.findIndex((r) => r === 'V')
 
+    // Derby (il rivale dichiarato da uno dei due o rivalita' oltre 90) e domande sul rivale: una conferenza su
+    // quattro, sempre se la partita e' un derby.
+    const avvId = inCasa ? f.away_team_id : f.home_team_id
+    let derby = false
+    let rivaleScheda = ''
+    try {
+      const avvDichiarato = (teamById.get(avvId) as { rivale_id?: number | null } | undefined)?.rivale_id
+      derby = gradoCon(t.id, avvId) > 90 || (t as { rivale_id?: number | null }).rivale_id === avvId || avvDichiarato === t.id
+      const rivaleId = rivaleDi(t.id, (t as { rivale_id?: number | null }).rivale_id)
+      if (!derby && rivaleId && rivaleId !== avvId && Math.random() < 0.25) {
+        const rp = (classifica ?? []).find((x: Riga) => x.team_id === rivaleId) as Riga | undefined
+        const ult = await ultimoRisultato(admin, f.season_id, f.giornata, rivaleId, nomeSquadra)
+        rivaleScheda = `Il grande rivale di ${t.nome} è ${nomeSquadra.get(rivaleId)}${rp ? `, ${rp.posizione}° in classifica con ${rp.punti} punti` : ''}${ult ? `; nell'ultima giornata ${ult}` : ''}.`
+      }
+    } catch (errore) {
+      // Le domande sul rivale sono un di piu': se qualcosa va storto escono le domande di sempre.
+      console.error('conferenza-stampa: derby/rivale non calcolati', errore)
+    }
+
     const scheda = [
       `Lega: ${lega.nome}. Giornata ${f.giornata}${f.bracket_tie_id ? ' (playoff)' : ''}.`,
       `Squadra dell'allenatore: ${t.nome} (${inCasa ? 'in casa' : 'in trasferta'}). Avversario: ${avversario}.`,
@@ -265,6 +317,8 @@ async function genera(admin: any, matchId: number) {
       mie.length ? `Fra i giocatori di ${t.nome}: il migliore è stato ${nome.get(mie[0].player_instance_id)} (${prestazione(mie[0].voto)}), il meno brillante ${nome.get(mie[mie.length - 1].player_instance_id)} (${prestazione(mie[mie.length - 1].voto)}).` : '',
       pos ? `Classifica dopo questa partita: ${t.nome} ${pos.posizione}° su ${nelGruppo(t.id)} con ${pos.punti} punti in ${pos.giocate} partite${posAvv ? `; ${avversario} ${posAvv.posizione}° con ${posAvv.punti}` : ''}.` : '',
       campionatoDi(t.id),
+      derby ? `Questa partita è un DERBY: ${avversario} è il grande rivale di ${t.nome} (o ${t.nome} lo è per ${avversario}).` : '',
+      rivaleScheda,
       obiettivi ? `Da inizio stagione (${pos ? `${t.nome} è ${pos.posizione}° con ${pos.punti} punti` : 'classifica ancora vuota'}): una domanda può chiedere all'allenatore gli obiettivi di stagione della squadra e fin dove pensa di arrivare.` : '',
       ultime.length ? `Risultati precedenti di ${t.nome} (dal più recente): ${ultime.join(' ')}${senzaVittorie === -1 ? ` — nessuna vittoria nelle ultime ${ultime.length}` : senzaVittorie >= 2 ? ` — senza vittorie da ${senzaVittorie} partite` : ''}.` : '',
     ].filter(Boolean).join('\n')
@@ -282,6 +336,7 @@ async function genera(admin: any, matchId: number) {
       'Se nel riepilogo c\'è la voce "Il campionato", una delle domande può allargarsi al torneo: la lotta al vertice e per il titolo, la corsa per entrare nel Title Playoff (o Title Playoffs), la lotta per i Draft Playoffs (chi ci finisce, l\'ordine di scelta nel mercato), o cosa ne pensa delle squadre che stanno davanti o dietro; ' +
       'parla dei Draft Playoffs solo se il riepilogo li cita, e usa le stesse parole del riepilogo per i gruppi di squadre; ' +
       'scegli il tema in base alla posizione della squadra dell\'allenatore (in alto: corsa al titolo e rivali dirette; sul confine: la corsa per entrare nel Title Playoff; in basso: il Draft Playoff o i Draft Playoffs, come scritto nel riepilogo), e nomina le squadre reali del riepilogo, mai altre; varia il taglio da una domanda all\'altra, senza usare sempre la stessa formula. ' +
+      'Se nel riepilogo c\'è la voce DERBY, una delle domande riguarda proprio il derby (la rivalità, la partita, cosa significa per i tifosi); se c\'è la voce sul grande rivale, una delle domande lo riguarda (come sta andando, il confronto in classifica, cosa ne pensa): mai numeri o percentuali di rivalità. ' +
       'Se nel riepilogo c\'è la voce sugli obiettivi di stagione, una delle domande chiede quali sono gli obiettivi della squadra e fin dove pensa di arrivare (titolo, Title Playoff, crescita dei giovani, ecc.), senza dare per scontato un obiettivo. ' +
       'Fai 2 domande se la partita offre almeno due spunti diversi, altrimenti 1. ' +
       'La voce "giornalista" è il nome di una testata o di un programma sportivo italiano REALE, scelto fra questi: ' +
