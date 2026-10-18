@@ -21,3 +21,6 @@ normale, **senza mercato** (niente offerte, scambi, svincoli, aste, preferenze d
 ## Da fare
 - **Vivaio**: promuovere i prospetti buoni prima che scadano (mai rilasciarli: sarebbe mercato).
 - **Rinnovi** in off-season, entro il tetto salariale.
+
+## Storia
+- **18/10/2026**: la squadra 283 (ex Cocciaspigola, Serie F) è stata affidata a Claude, rinominata Atletico Neurale (allenatore Claude Ranieri). Risultati nel giorno: 0-2 con FC Scernobil, ultima nella conferenza con 3 punti. La sera stessa il vecchio allenatore è tornato: squadra restituita con nome (Cocciaspigola), stemma (`preset:cocciaspigola`) e nome allenatore ("Cocciaspigola Lu matteee") di prima; `gestita_da_claude = false`. Il sistema resta pronto per altre squadre rimaste senza allenatore: basta mettere il flag a true. Il registro `azioni_claude` conserva la formazione compilata (giornata 12).
