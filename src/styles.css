@@ -5639,3 +5639,7 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 
 /* Rivalita': niente filo sotto l'intestazione, finirebbe attaccato alla prima card */
 .rivalita-page .alerts-heading { border-bottom: 0; padding-bottom: 8px; }
+
+/* Sala stampa: sezioni prima/dopo la partita */
+.stampa__sezione { margin: 0 0 10px; color: #9b92b0; font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.stampa + .stampa { margin-top: 12px; }

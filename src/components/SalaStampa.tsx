@@ -7,7 +7,10 @@ import { supabase } from '../lib/supabase'
 
 type Domanda = {
   id: number
-  match_id: number
+  fixture_id?: number | null
+  // Le domande 'pre' (prima della partita) non hanno ancora un risultato: match_id nullo.
+  tipo: 'pre' | 'dopo'
+  match_id: number | null
   ordine: number
   giornalista: string
   domanda: string
@@ -48,19 +51,23 @@ export function SalaStampa({ teamId, revealedMatchIds, senzaTitolo = false, quan
   const carica = useCallback(async () => {
     const tre = new Date(Date.now() - 3 * 86_400_000).toISOString()
     const { data } = await supabase.from('conferenze_domande')
-      .select('id, match_id, ordine, giornalista, domanda, scade_il, risposta, voto, reazione, effetto_morale, effetto_pubblico, reazione_pubblico, valutazione')
+      .select('id, tipo, fixture_id, match_id, ordine, giornalista, domanda, scade_il, risposta, voto, reazione, effetto_morale, effetto_pubblico, reazione_pubblico, valutazione')
       .eq('team_id', teamId).gte('creata_il', tre)
-      .order('match_id', { ascending: false }).order('ordine')
+      .order('ordine')
     setDomande((data ?? []) as Domanda[])
   }, [teamId])
 
   useEffect(() => { void carica() }, [carica])
 
-  // Solo l'ultima partita con domande: le conferenze vecchie non servono qui.
-  const ultimaPartita = domande[0]?.match_id
-  const correnti = domande.filter((d) => d.match_id === ultimaPartita)
-  if (!correnti.length) return <>{quandoVuota}</>
-  const vista = revealedMatchIds.has(ultimaPartita)
+  // DOPO la partita: solo l'ultima partita con domande, le conferenze vecchie non servono qui.
+  const dopo = domande.filter((d) => d.tipo !== 'pre').sort((a, b) => (b.match_id ?? 0) - (a.match_id ?? 0) || a.ordine - b.ordine)
+  const ultimaPartita = dopo[0]?.match_id ?? null
+  const correnti = dopo.filter((d) => d.match_id === ultimaPartita)
+  // PRIMA della partita: la domanda di stasera, finche' e' aperta e per un'ora dopo la chiusura (si vede il giudizio).
+  const pre = domande.filter((d) => d.tipo === 'pre' && Date.now() < new Date(d.scade_il).getTime() + 3_600_000)
+    .sort((a, b) => (b.fixture_id ?? 0) - (a.fixture_id ?? 0)).slice(0, 2)
+  if (!correnti.length && !pre.length) return <>{quandoVuota}</>
+  const vista = ultimaPartita != null && revealedMatchIds.has(ultimaPartita)
 
   async function rispondi(d: Domanda) {
     const testo = (bozze[d.id] ?? '').trim()
@@ -76,12 +83,7 @@ export function SalaStampa({ teamId, revealedMatchIds, senzaTitolo = false, quan
     await carica()
   }
 
-  return <section className="dash-sezione">
-    {!senzaTitolo && <header className="dash-testa"><h2 className="dash-linguetta">Sala stampa</h2></header>}
-    <div className="dash-card stampa">
-      {!vista
-        ? <p className="stampa__attesa">I giornalisti ti aspettano dopo la partita: guardala prima, poi passa in sala stampa.</p>
-        : correnti.map((d) => {
+  const voce = (d: Domanda) => {
           const scaduta = new Date(d.scade_il).getTime() < Date.now()
           const g = d.voto != null ? giudizio(Number(d.voto)) : null
           const bozza = bozze[d.id] ?? ''
@@ -122,8 +124,20 @@ export function SalaStampa({ teamId, revealedMatchIds, senzaTitolo = false, quan
                   {errori[d.id] && <p className="stampa__errore" role="alert">{errori[d.id]}</p>}
                 </div>}
           </article>
-        })}
-    </div>
+  }
+
+  return <section className="dash-sezione">
+    {!senzaTitolo && <header className="dash-testa"><h2 className="dash-linguetta">Sala stampa</h2></header>}
+    {pre.length > 0 && <div className="dash-card stampa">
+      <h3 className="stampa__sezione">Prima della partita</h3>
+      {pre.map(voce)}
+    </div>}
+    {correnti.length > 0 && <div className="dash-card stampa">
+      {pre.length > 0 && <h3 className="stampa__sezione">Dopo la partita</h3>}
+      {!vista
+        ? <p className="stampa__attesa">I giornalisti ti aspettano dopo la partita: guardala prima, poi passa in sala stampa.</p>
+        : correnti.map(voce)}
+    </div>}
   </section>
 }
 

@@ -380,6 +380,111 @@ async function genera(admin: any, matchId: number) {
   return json(200, { domande: create })
 }
 
+// ------------------------------------------------------------
+//  GENERA PRE PARTITA: una domanda prima della partita di stasera (partita ancora in calendario, nessun risultato).
+//  Verso le 13-18, a orari diversi per partita (lo decide il cron); vale fino a mezz'ora prima della simulazione.
+// ------------------------------------------------------------
+
+// deno-lint-ignore no-explicit-any
+async function generaPre(admin: any, fixtureId: number) {
+  const { data: f } = await admin.from('fixtures')
+    .select('id, season_id, league_id, giornata, home_team_id, away_team_id, bracket_tie_id, data_sim, stato').eq('id', fixtureId).single()
+  if (!f) return json(404, { errore: 'Partita non trovata.' })
+  if (f.stato !== 'programmata') return json(409, { errore: 'La partita non e’ piu’ in programma.' })
+  const { data: lega } = await admin.from('leagues').select('id, nome, conferenze_stampa, conferenze_attive').eq('id', f.league_id).single()
+  if (!lega?.conferenze_stampa) return json(409, { errore: 'Conferenze stampa spente in questa lega.' })
+
+  const { data: tutte } = await admin.from('teams').select('id, nome, user_id, controllata_da_pc, rivale_id').eq('league_id', f.league_id)
+  const squadra = new Map((tutte ?? []).map((x: { id: number }) => [x.id, x])) as Map<number, { id: number; nome: string; user_id: string | null; controllata_da_pc: boolean; rivale_id: number | null }>
+  const umani = [f.home_team_id, f.away_team_id].map((id: number) => squadra.get(id)).filter((t) => t && t.user_id && !t.controllata_da_pc) as Array<{ id: number; nome: string; rivale_id: number | null }>
+  if (!umani.length) return json(200, { domande: 0 })
+
+  const { data: gia } = await admin.from('conferenze_domande').select('team_id').eq('fixture_id', fixtureId)
+  const giaFatte = new Set((gia ?? []).map((d: { team_id: number }) => d.team_id))
+
+  const { data: classifica } = await admin.from('standings').select('team_id, posizione, punti, giocate, conferenza').eq('season_id', f.season_id)
+  type Riga = { team_id: number; posizione: number; punti: number; giocate: number; conferenza: string | null }
+  const righe = (classifica ?? []) as Riga[]
+  const aConferenze = Boolean(lega.conferenze_attive)
+  const POSTI = aConferenze ? 6 : 8
+  const posDi = (id: number) => righe.find((x) => x.team_id === id)
+  const gruppoDi = (id: number) => righe.filter((x) => !aConferenze || x.conferenza === posDi(id)?.conferenza).sort((a, b) => a.posizione - b.posizione)
+  const { data: rivRighe } = await admin.from('rivalita').select('team_a, team_b, grado').eq('league_id', f.league_id)
+  const gradoCon = (a: number, b: number) => Number(((rivRighe ?? []) as Array<{ team_a: number; team_b: number; grado: number }>).find((x) => x.team_a === Math.min(a, b) && x.team_b === Math.max(a, b))?.grado ?? 0)
+  const ora = new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }).format(new Date(f.data_sim))
+  const scade = new Date(new Date(f.data_sim).getTime() - 30 * 60 * 1000).toISOString()
+
+  let create = 0
+  for (const t of umani) {
+    if (giaFatte.has(t.id)) continue
+    const inCasa = t.id === f.home_team_id
+    const avvId = inCasa ? f.away_team_id : f.home_team_id
+    const avv = squadra.get(avvId)
+    if (!avv) continue
+    const pos = posDi(t.id), posAvv = posDi(avvId)
+    const gruppo = gruppoDi(t.id)
+    const mie = await formaRecente(admin, f.season_id, f.giornata, t.id)
+    const loro = await formaRecente(admin, f.season_id, f.giornata, avvId)
+    const derby = gradoCon(t.id, avvId) > 90 || t.rivale_id === avvId || avv.rivale_id === t.id
+    // Infortunati della propria squadra (fatto pubblico per l'allenatore): i piu' forti, per nome.
+    const { data: inf } = await admin.from('player_instances').select('overall_corrente, players(nome)')
+      .eq('team_id', t.id).eq('ritirato', false).gt('infortunato_fino_a', 0).order('overall_corrente', { ascending: false }).limit(3)
+    const infortunati = (inf ?? []).map((x: { players: { nome: string } | { nome: string }[] | null }) => (Array.isArray(x.players) ? x.players[0] : x.players)?.nome).filter(Boolean)
+    const conDraft = gruppo.length > POSTI
+    const campionato = gruppo.length >= 6 && f.giornata >= 3 && !f.bracket_tie_id
+      ? `Il campionato${aConferenze ? ` (${posDi(t.id)?.conferenza === 'ovest' ? 'Western' : 'Eastern'} Conference)` : ''}: in testa ${gruppo.slice(0, 3).map((x) => `${squadra.get(x.team_id)?.nome} ${x.posizione}° (${x.punti} pt)`).join(', ')}. ${conDraft ? `Le prime ${POSTI} vanno ${aConferenze ? 'ai Title Playoffs' : 'al Title Playoff'}, le altre ai Draft Playoffs.` : 'Tutte le squadre vanno al Title Playoff.'}`
+      : ''
+    const scheda = [
+      `Lega: ${lega.nome}. Giornata ${f.giornata}${f.bracket_tie_id ? ' (playoff)' : ''}. La partita si gioca stasera alle ${ora}: NON e' ancora stata giocata, non c'e' nessun risultato.`,
+      `Squadra dell'allenatore: ${t.nome} (${inCasa ? 'in casa' : 'in trasferta'}). Avversario: ${avv.nome}.`,
+      pos ? `Classifica: ${t.nome} ${pos.posizione}° con ${pos.punti} punti in ${pos.giocate} partite${posAvv ? `; ${avv.nome} ${posAvv.posizione}° con ${posAvv.punti}` : ''}.` : '',
+      mie.length ? `Ultimi risultati di ${t.nome} (dal più recente): ${mie.join(' ')}.` : '',
+      loro.length ? `Ultimi risultati di ${avv.nome} (dal più recente): ${loro.join(' ')}.` : '',
+      campionato,
+      derby ? `Questa partita è un DERBY: ${avv.nome} è il grande rivale di ${t.nome} (o ${t.nome} lo è per ${avv.nome}).` : '',
+      infortunati.length ? `Infortunati di ${t.nome}: ${infortunati.join(', ')}.` : '',
+    ].filter(Boolean).join('\n')
+
+    const out = await chiediAI<{ domanda: string; giornalista: string }>(
+      'Sei la sala stampa di un gioco manageriale di calcio in italiano, giocato fra amici. ' +
+      'PRIMA della partita di stasera scrivi UNA domanda che un giornalista fa all\'allenatore in conferenza stampa. ' +
+      'Regole: usa SOLO i fatti forniti, non inventarne altri; la partita NON è ancora stata giocata, quindi non parlare mai di risultato, gol, prestazioni o pagelle; ' +
+      'dai del lei e inizia con "Mister"; tono da conferenza vera, diretto, a volte pungente, mai offensivo; al massimo 280 caratteri, una sola domanda (niente elenchi). ' +
+      'Scegli lo spunto più forte fra: l\'avversario e la sua forma, cosa si gioca la squadra in classifica, la serie di risultati, ' +
+      'gli infortunati citati, le scelte di formazione e la tattica (in generale, senza inventare chi gioca), le aspettative dei tifosi. ' +
+      'Se nel riepilogo c\'è la voce DERBY, la domanda riguarda proprio il derby (la rivalità, cosa significa per i tifosi, come lo prepara): mai numeri o percentuali di rivalità. ' +
+      'In questo campionato NON esiste la retrocessione: non parlare MAI di salvezza o retrocessione; parla di Title Playoff/Title Playoffs o Draft Playoffs solo se il riepilogo li cita, con le stesse parole. ' +
+      'Nomina solo squadre e giocatori presenti nel riepilogo. ' +
+      'La voce "giornalista" è il nome di una testata o di un programma sportivo italiano REALE, scelto fra questi: ' +
+      'Sky Sport, Sky Sport 24, DAZN, Rai Sport, 90° minuto, Tutto il calcio minuto per minuto, Sport Mediaset, Mediaset Infinity, ' +
+      'La Gazzetta dello Sport, Corriere dello Sport, Tuttosport, Il Corriere della Sera, La Repubblica, Radio 24, Radio Rai, TMW Radio, Calciomercato.com, Il Processo. ' +
+      'Scrivi SOLO il nome della testata o del programma: MAI il nome di un giornalista vero o inventato.',
+      scheda,
+      {
+        name: 'scrivi_domanda',
+        description: 'La domanda pre partita della conferenza stampa.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            giornalista: { type: 'string', description: 'Solo il nome della testata o del programma, es. "Sky Sport"' },
+            domanda: { type: 'string' },
+          },
+          required: ['giornalista', 'domanda'],
+        },
+      },
+    )
+    const domanda = String(out.domanda ?? '').slice(0, 600).trim()
+    if (!domanda) continue
+    const { error } = await admin.from('conferenze_domande').insert({
+      league_id: f.league_id, tipo: 'pre', fixture_id: fixtureId, match_id: null, team_id: t.id, ordine: 1,
+      giornalista: String(out.giornalista ?? 'Sala stampa').slice(0, 80) || 'Sala stampa', domanda, scade_il: scade,
+    })
+    if (error) throw error
+    create += 1
+  }
+  return json(200, { domande: create })
+}
+
 // Quante delle risposte precedenti la nuova ripete, a parole: confronta gli insiemi di
 // parole (da 4 lettere in su) e conta le risposte con almeno il 35% di parole in comune.
 // Calcolo fisso e spiegabile ("se riscrivi le stesse parole, il tono non e' piu' nuovo"):
@@ -424,7 +529,7 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
   if (testo.length > MAX_RISPOSTA) return json(400, { errore: `La risposta può avere al massimo ${MAX_RISPOSTA} caratteri.` })
 
   const { data: d } = await admin.from('conferenze_domande')
-    .select('id, league_id, match_id, team_id, domanda, risposta, scade_il, teams(nome, user_id)').eq('id', domandaId).single()
+    .select('id, league_id, match_id, fixture_id, tipo, team_id, domanda, risposta, scade_il, teams(nome, user_id)').eq('id', domandaId).single()
   if (!d || d.teams?.user_id !== userId) return json(404, { errore: 'Domanda non trovata.' })
   if (d.risposta) return json(409, { errore: 'Hai già risposto a questa domanda.' })
   if (new Date(d.scade_il).getTime() < Date.now()) return json(409, { errore: 'La conferenza è chiusa: il tempo per rispondere è scaduto.' })
@@ -441,11 +546,11 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
     // conferenze e come sono andate le ultime partite. Senza, "e' colpa mia"
     // sarebbe sempre la risposta migliore.
     const { data: storico } = await admin.from('conferenze_domande')
-      .select('match_id, domanda, risposta, voto').eq('team_id', d.team_id).not('risposta', 'is', null).not('voto', 'is', null)
+      .select('match_id, tipo, domanda, risposta, voto').eq('team_id', d.team_id).not('risposta', 'is', null).not('voto', 'is', null)
       .neq('id', domandaId).order('id', { ascending: false }).limit(5)
     // Come era finita la partita di ciascuna conferenza passata: l'AI confronta
     // la risposta solo con quelle dopo lo stesso tipo di risultato.
-    const idPartite = (storico ?? []).map((x: { match_id: number }) => x.match_id)
+    const idPartite = (storico ?? []).map((x: { match_id: number | null }) => x.match_id).filter((id: number | null) => id != null)
     const { data: partitePassate } = idPartite.length
       ? await admin.from('matches').select('id, gol_home, gol_away, fixtures(home_team_id)').in('id', idPartite)
       : { data: [] }
@@ -454,16 +559,20 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
       const [miei, loro] = fx0?.home_team_id === d.team_id ? [m.gol_home, m.gol_away] : [m.gol_away, m.gol_home]
       return [m.id, miei > loro ? 'vittoria' : miei < loro ? 'sconfitta' : 'pareggio']
     }))
-    const { data: fx } = await admin.from('matches').select('gol_home, gol_away, fixtures(season_id, giornata, home_team_id)').eq('id', d.match_id).single()
-    const fixt = Array.isArray(fx?.fixtures) ? fx.fixtures[0] : fx?.fixtures
-    const [mieiOra, loroOra] = fixt?.home_team_id === d.team_id ? [fx?.gol_home, fx?.gol_away] : [fx?.gol_away, fx?.gol_home]
-    const esitoOra = mieiOra == null ? '' : mieiOra > loroOra ? 'vittoria' : mieiOra < loroOra ? 'sconfitta' : 'pareggio'
-    const ultime = fixt ? await formaRecente(admin, fixt.season_id, fixt.giornata + 1, d.team_id) : []
+    const pre = d.tipo === 'pre'
+    // Domanda PRIMA della partita: non c'e' un risultato, solo la partita in calendario.
+    const { data: fxPre } = pre ? await admin.from('fixtures').select('season_id, giornata, home_team_id, away_team_id').eq('id', d.fixture_id).single() : { data: null }
+    const { data: fx } = pre ? { data: null } : await admin.from('matches').select('gol_home, gol_away, fixtures(season_id, giornata, home_team_id)').eq('id', d.match_id).single()
+    const fixt = pre ? fxPre : (Array.isArray(fx?.fixtures) ? fx.fixtures[0] : fx?.fixtures)
+    const [mieiOra, loroOra] = pre ? [null, null] : fixt?.home_team_id === d.team_id ? [fx?.gol_home, fx?.gol_away] : [fx?.gol_away, fx?.gol_home]
+    const esitoOra = pre ? 'prepartita' : mieiOra == null ? '' : mieiOra > loroOra ? 'vittoria' : mieiOra < loroOra ? 'sconfitta' : 'pareggio'
+    const esitoDi = (x: { match_id: number | null; tipo?: string }) => x.tipo === 'pre' ? 'prepartita' : esitoPartita.get(x.match_id as number)
+    const ultime = fixt ? await formaRecente(admin, fixt.season_id, pre ? fixt.giornata : fixt.giornata + 1, d.team_id) : []
     const memoria = [
-      esitoOra ? `Questa conferenza viene dopo una ${esitoOra} (${mieiOra}-${loroOra}).` : '',
+      pre ? 'Questa conferenza viene PRIMA della partita di stasera: non c\'è ancora nessun risultato da commentare.' : esitoOra ? `Questa conferenza viene dopo una ${esitoOra} (${mieiOra}-${loroOra}).` : '',
       ultime.length ? `Ultimi risultati della squadra (dal più recente): ${ultime.join(' ')}.` : '',
       (storico ?? []).length
-        ? `Le sue ultime conferenze (dalla più recente):\n${(storico ?? []).map((x: { match_id: number; domanda: string; risposta: string; voto: number }, n: number) => `${n + 1}. [dopo una ${esitoPartita.get(x.match_id) ?? 'partita'}] Domanda: ${x.domanda.slice(0, 160)}\n   Risposta: ${x.risposta.slice(0, 280)}\n   Esito: ${x.voto}`).join('\n')}`
+        ? `Le sue ultime conferenze (dalla più recente):\n${(storico ?? []).map((x: { match_id: number | null; tipo?: string; domanda: string; risposta: string; voto: number }, n: number) => `${n + 1}. [${x.tipo === 'pre' ? 'prima di una partita' : `dopo una ${esitoPartita.get(x.match_id as number) ?? 'partita'}`}] Domanda: ${x.domanda.slice(0, 160)}\n   Risposta: ${x.risposta.slice(0, 280)}\n   Esito: ${x.voto}`).join('\n')}`
         : 'È la sua prima conferenza.',
     ].filter(Boolean).join('\n')
     const idRosa = new Set((rosa ?? []).map((g: { id: number }) => g.id))
@@ -532,7 +641,7 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
     // sono deludenti (almeno 3 non vittorie nelle ultime 4). Cosi' "e' colpa mia"
     // ripetuto dopo una serie negativa non e' piu' la risposta sicura.
     const serieNegativa = ultime.slice(0, 4).filter((r) => r !== 'V').length >= 3
-    const stessoRisultato = (storico ?? []).filter((x: { match_id: number }) => esitoPartita.get(x.match_id) === esitoOra).map((x: { risposta: string }) => x.risposta)
+    const stessoRisultato = (storico ?? []).filter((x: { match_id: number | null; tipo?: string }) => esitoDi(x) === esitoOra).map((x: { risposta: string }) => x.risposta)
     const livelloParole = Math.min(3, ripetizioni(testo, stessoRisultato))
     // L'AI puo' solo aggiungere un livello (riconosce le parafrasi, che a parole sfuggono).
     const ripetitiva = Math.max(0, Math.min(3, livelloParole + (Number(v.ripetitiva || 0) >= 2 ? 1 : 0)))
@@ -668,6 +777,10 @@ export default {
     if (req.method !== 'POST') return json(405, { errore: 'Metodo non ammesso.' })
     const body = await req.json().catch(() => ({})) as { azione?: string; match_id?: number; domanda_id?: number; richiesta_id?: number; risposta?: string }
     try {
+      if (body.azione === 'genera_pre') {
+        if (ctx.authMode !== 'secret') return json(403, { errore: 'Solo il sistema genera le domande.' })
+        return await generaPre(ctx.supabaseAdmin, Number((body as { fixture_id?: number }).fixture_id))
+      }
       if (body.azione === 'genera') {
         if (ctx.authMode !== 'secret') return json(403, { errore: 'Solo il sistema genera le domande.' })
         return await genera(ctx.supabaseAdmin, Number(body.match_id))
