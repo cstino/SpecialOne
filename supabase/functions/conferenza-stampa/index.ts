@@ -533,6 +533,12 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
   if (!d || d.teams?.user_id !== userId) return json(404, { errore: 'Domanda non trovata.' })
   if (d.risposta) return json(409, { errore: 'Hai già risposto a questa domanda.' })
   if (new Date(d.scade_il).getTime() < Date.now()) return json(409, { errore: 'La conferenza è chiusa: il tempo per rispondere è scaduto.' })
+  // La domanda PRIMA della partita aspetta che si sia risposto alle domande della partita passata (ancora aperte).
+  if (d.tipo === 'pre') {
+    const { data: arretrate } = await admin.from('conferenze_domande').select('id')
+      .eq('team_id', d.team_id).eq('tipo', 'dopo').is('risposta', null).gt('scade_il', new Date().toISOString()).limit(1)
+    if (arretrate?.length) return json(409, { errore: 'Prima rispondi alle domande sulla partita di ieri sera: poi potrai rispondere a questa.' })
+  }
 
   // Prenota la risposta (un secondo invio trova gia' la risposta e si ferma).
   const { data: presa } = await admin.from('conferenze_domande')

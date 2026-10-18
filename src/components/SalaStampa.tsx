@@ -68,6 +68,8 @@ export function SalaStampa({ teamId, revealedMatchIds, senzaTitolo = false, quan
     .sort((a, b) => (b.fixture_id ?? 0) - (a.fixture_id ?? 0)).slice(0, 2)
   if (!correnti.length && !pre.length) return <>{quandoVuota}</>
   const vista = ultimaPartita != null && revealedMatchIds.has(ultimaPartita)
+  // La domanda prima della partita aspetta che si sia risposto a quelle della partita passata (ancora aperte).
+  const arretrate = correnti.some((d) => !d.risposta && new Date(d.scade_il).getTime() > Date.now())
 
   async function rispondi(d: Domanda) {
     const testo = (bozze[d.id] ?? '').trim()
@@ -105,6 +107,8 @@ export function SalaStampa({ teamId, revealedMatchIds, senzaTitolo = false, quan
               </>
               : scaduta
                 ? <p className="stampa__nocomment">Nessuna risposta: «no comment».</p>
+                : d.tipo === 'pre' && arretrate
+                  ? <p className="stampa__attesa">Prima rispondi alle domande sulla partita di ieri sera{vista ? '' : ' (guarda prima il risultato)'}: poi potrai rispondere a questa.</p>
                 : <div className="stampa__form">
                   <textarea
                     value={bozza}
