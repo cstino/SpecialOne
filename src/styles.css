@@ -5776,3 +5776,7 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .bet-regole__tasto { text-align: left; }
 .bet-ticket__avviso { margin: 0; padding: 10px 18px; border-bottom: 1px dashed var(--bet-linea); color: #b9b0cc; font-size: .8rem; line-height: 1.4; }
 .bet-ticket__avviso b { color: var(--bet-oro); }
+
+/* BetOne: i colori valgono anche per la barra in basso, che sta fuori dalla pagina */
+.bet-shell { --bet-oro: #f6c453; --bet-oro-scuro: #c9962a; --bet-carta: #181426; --bet-linea: rgba(255,255,255,.1); }
+.bet-barra__salva:not(:disabled) { background: linear-gradient(180deg, #ffd978, #f6c453); color: #1a1205; }
