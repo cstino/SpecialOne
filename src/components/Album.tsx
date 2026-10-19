@@ -22,36 +22,126 @@ const ridotto = () => typeof window !== 'undefined' && window.matchMedia?.('(pre
 const fmt = (n: number) => new Intl.NumberFormat('it-IT').format(n)
 
 // ---------- Una figurina ----------
+// Cornice argento (oro olografico per le ultrarare), voto nello scudo, foto con luce dietro, targhetta inclinata col
+// nome, stemma e numero. Una lucentezza scorre sulla carta; l'ultrarara ha anche riflesso arcobaleno e scintille.
 function Carta({ f, ana, dati, ultra, vuota, numero, piccola }: { f: Figurina; ana?: Anagrafica; dati: Dati; ultra: boolean; vuota?: boolean; numero?: number; piccola?: boolean }) {
   const team = f.team_id != null ? dati.teamById.get(f.team_id) : undefined
-  const classe = `fig${ultra ? ' fig--ultra' : ''}${vuota ? ' fig--vuota' : ''}${piccola ? ' fig--piccola' : ''} fig--${f.tipo}`
-  if (vuota) return <div className={classe} aria-label={`Figurina ${numero ?? ''} mancante`}><span className="fig__numero">{numero}</span></div>
+  const crestUrl = f.team_id != null ? dati.crestUrlByTeamId.get(f.team_id) : undefined
+  const ruoloMacro = macroRuolo(ana?.posizioni ?? []).toLowerCase()
+  const classe = `fig${ultra ? ' fig--ultra' : ''}${piccola ? ' fig--piccola' : ''} fig--${f.tipo}${f.tipo === 'giocatore' ? ` fig--${ruoloMacro}` : ''}`
+  if (vuota) return <div className="fig fig--vuota" aria-label={`Figurina ${numero ?? ''} mancante`}><span className="fig__numero">{numero}</span></div>
+  const extra = <>
+    <span className="fig__lucido" aria-hidden="true" />
+    {ultra && <><span className="fig__olo" aria-hidden="true" /><span className="fig__scintille" aria-hidden="true"><i /><i /><i /><i /><i /></span></>}
+    {numero != null && <span className="fig__num" aria-hidden="true">{numero}</span>}
+  </>
   if (f.tipo === 'conferenza') {
-    return <div className={classe} aria-label={`Figurina ultrarara ${f.conferenza === 'est' ? 'Eastern' : 'Western'} Conference`}>
-      <div className="fig__olo" aria-hidden="true" />
-      <div className="fig__conf"><img src={f.conferenza === 'est' ? '/loghi-conferenza/east.svg' : '/loghi-conferenza/west.svg'} alt="" /></div>
-      <div className="fig__piede"><strong>{f.conferenza === 'est' ? 'EASTERN' : 'WESTERN'}</strong><small>Conference</small></div>
+    const est = f.conferenza === 'est'
+    return <div className={classe} aria-label={`Figurina ultrarara ${est ? 'Eastern' : 'Western'} Conference`}>
+      <div className="fig__dentro">
+        <div className="fig__raggi" aria-hidden="true" />
+        <div className="fig__conf"><img src={est ? '/loghi-conferenza/east.svg' : '/loghi-conferenza/west.svg'} alt="" /></div>
+        <div className="fig__targa"><strong>{est ? 'EASTERN' : 'WESTERN'}</strong><small>Conference</small></div>
+      </div>
+      {extra}
     </div>
   }
   if (f.tipo === 'stemma') {
     return <div className={classe} aria-label={`Stemma ${team?.nome ?? ''}`}>
-      {ultra && <div className="fig__olo" aria-hidden="true" />}
-      <div className="fig__stemma"><Crest value={team?.stemma_url ?? null} imageUrl={f.team_id != null ? dati.crestUrlByTeamId.get(f.team_id) : undefined} size="large" eager /></div>
-      <div className="fig__piede"><strong>{team?.nome ?? '—'}</strong><small>Stemma</small></div>
+      <div className="fig__dentro">
+        <div className="fig__raggi" aria-hidden="true" />
+        <div className="fig__stemma"><Crest value={team?.stemma_url ?? null} imageUrl={crestUrl} size="large" eager /></div>
+        <div className="fig__targa"><strong>{team?.nome ?? '—'}</strong><small>Stemma ufficiale</small></div>
+      </div>
+      {extra}
     </div>
   }
-  const ruolo = ana?.posizioni?.[0] ?? ''
   const foto = urlFotoGiocatore(ana?.foto_url)
-  return <div className={`${classe} fig--${macroRuolo(ana?.posizioni ?? []).toLowerCase()}`} aria-label={`${ana?.nome ?? 'Giocatore'}${ultra ? ', ultrarara' : ''}`}>
-    {ultra && <div className="fig__olo" aria-hidden="true" />}
-    <div className="fig__testa"><b>{f.overall ?? ''}</b><span>{ruoloIt(ruolo)}</span></div>
-    <div className="fig__foto">{foto ? <img src={foto} alt="" loading="lazy" /> : <span>👤</span>}</div>
-    <div className="fig__piede">
-      <strong>{ana ? cognome(ana.nome) : '—'}</strong>
-      <span className="fig__club"><Crest value={team?.stemma_url ?? null} imageUrl={f.team_id != null ? dati.crestUrlByTeamId.get(f.team_id) : undefined} size="small" />{team?.nome ?? ''}</span>
+  return <div className={classe} aria-label={`${ana?.nome ?? 'Giocatore'}${ultra ? ', ultrarara' : ''}`}>
+    <div className="fig__dentro">
+      <div className="fig__raggi" aria-hidden="true" />
+      <div className="fig__scudo"><b>{f.overall ?? ''}</b><span>{ruoloIt(ana?.posizioni?.[0] ?? '')}</span></div>
+      <div className="fig__club"><Crest value={team?.stemma_url ?? null} imageUrl={crestUrl} size="small" /></div>
+      <div className="fig__foto">{foto ? <img src={foto} alt="" loading="lazy" /> : <span>👤</span>}</div>
+      <div className="fig__targa"><strong>{ana ? cognome(ana.nome) : '—'}</strong><small>{team?.nome ?? ''}</small></div>
+      {f.aggiornamento && <em className="fig__agg">AGG.</em>}
     </div>
-    {f.aggiornamento && <em className="fig__agg">AGG.</em>}
-    {ultra && <em className="fig__stella">★</em>}
+    {extra}
+  </div>
+}
+
+// ---------- La bustina: 3D, si inclina col dito e si apre strappando la linea in alto ----------
+function suonoStrappo(forte: boolean) {
+  try {
+    const ctx = new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+    const durata = forte ? 0.35 : 0.06
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * durata), ctx.sampleRate)
+    const d = buf.getChannelData(0)
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length) * (forte ? 0.6 : 0.25)
+    const src = ctx.createBufferSource(); src.buffer = buf
+    const filtro = ctx.createBiquadFilter(); filtro.type = 'highpass'; filtro.frequency.value = forte ? 900 : 2400
+    src.connect(filtro).connect(ctx.destination); src.start()
+    window.setTimeout(() => void ctx.close(), 600)
+  } catch { /* audio non disponibile */ }
+}
+
+function Bustina({ stagione, onAperta }: { stagione: number; onAperta: () => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [tilt, setTilt] = useState({ x: 0, y: 0, lx: 50, ly: 30 })
+  const [strappo, setStrappo] = useState(0)
+  const [aperta, setAperta] = useState(false)
+  const trascina = useRef<{ attivo: boolean; ultimoSuono: number }>({ attivo: false, ultimoSuono: 0 })
+
+  function posizione(e: React.PointerEvent) {
+    const r = ref.current!.getBoundingClientRect()
+    return { px: (e.clientX - r.left) / r.width, py: (e.clientY - r.top) / r.height }
+  }
+  function giu(e: React.PointerEvent) {
+    if (aperta) return
+    const { py } = posizione(e)
+    if (py < 0.3) { trascina.current.attivo = true; (e.target as Element).setPointerCapture?.(e.pointerId) }
+  }
+  function muovi(e: React.PointerEvent) {
+    if (aperta) return
+    const { px, py } = posizione(e)
+    setTilt({ x: (0.5 - py) * 18, y: (px - 0.5) * 24, lx: px * 100, ly: py * 100 })
+    if (trascina.current.attivo) {
+      const p = Math.max(strappo, Math.min(1, px))
+      if (p > strappo) {
+        setStrappo(p)
+        const ora = performance.now()
+        if (ora - trascina.current.ultimoSuono > 70) { suonoStrappo(false); trascina.current.ultimoSuono = ora }
+        if (p >= 0.92) {
+          trascina.current.attivo = false
+          setStrappo(1); setAperta(true); suonoStrappo(true)
+          try { navigator.vibrate?.(40) } catch { /* niente vibrazione */ }
+          window.setTimeout(onAperta, ridotto() ? 0 : 700)
+        }
+      }
+    }
+  }
+  function su() { trascina.current.attivo = false; if (!aperta) setTilt((t) => ({ ...t, x: 0, y: 0 })) }
+
+  return <div className={`pack-scena${aperta ? ' is-aperta' : ''}`}>
+    <div ref={ref} className="pack" style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`, ['--lx' as string]: `${tilt.lx}%`, ['--ly' as string]: `${tilt.ly}%` }}
+      onPointerDown={giu} onPointerMove={muovi} onPointerUp={su} onPointerCancel={su} onPointerLeave={su}>
+      <div className="pack__testa" style={{ ['--strappo' as string]: strappo }}>
+        <span className="pack__seghetto pack__seghetto--su" aria-hidden="true" />
+        <span className="pack__linea" aria-hidden="true"><i style={{ width: `${strappo * 100}%` }} /></span>
+      </div>
+      <div className="pack__corpo">
+        <div className="pack__foil" aria-hidden="true" />
+        <div className="pack__luce" aria-hidden="true" />
+        <div className="pack__fascia"><span>FIGURINE UFFICIALI</span></div>
+        <img className="pack__logo" src="/specialone-mark.svg" alt="SpecialOne" />
+        <div className="pack__titolo"><b>SPECIAL</b><span>ONE</span></div>
+        <div className="pack__stagione">STAGIONE {stagione}</div>
+        <div className="pack__bollino"><b>3</b><small>figurine</small></div>
+        <span className="pack__seghetto pack__seghetto--giu" aria-hidden="true" />
+      </div>
+    </div>
+    {!aperta && <p className="pack-aiuto"><span className="pack-aiuto__dito" aria-hidden="true">👆</span>Scorri il dito sulla linea in alto per aprire</p>}
+    {!aperta && <button type="button" className="pack-salta" onClick={() => { setStrappo(1); setAperta(true); suonoStrappo(true); window.setTimeout(onAperta, ridotto() ? 0 : 500) }}>Apri subito</button>}
   </div>
 }
 
@@ -66,7 +156,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   const [errore, setErrore] = useState('')
   const [pagina, setPagina] = useState<number | 'conf' | null>(null)
   const [busta, setBusta] = useState<Uscita[] | null>(null)
-  const [girate, setGirate] = useState(0)
+  const [scoperte, setScoperte] = useState<Set<number>>(new Set())
   const [strappo, setStrappo] = useState(false)
   const [compro, setCompro] = useState(false)
   const [avviso, setAvviso] = useState('')
@@ -123,11 +213,18 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     if (error) { setErrore(error.message); return }
     const r = data as { figurine: Uscita[]; premi: Array<{ pagina?: number; album?: boolean }>; crediti: number }
     setCrediti(r.crediti)
-    setGirate(0); setStrappo(false); setBusta(r.figurine)
-    window.setTimeout(() => setStrappo(true), ridotto() ? 0 : 650)
+    setScoperte(new Set()); setStrappo(false); setBusta(r.figurine)
     const premi = r.premi.map((p) => p.album ? '📒 Album completato!' : `Pagina di ${dati.teamById.get(p.pagina ?? 0)?.nome ?? 'una squadra'} completa: +200 crediti`)
     if (premi.length) setAvviso(premi.join(' · '))
     void carica()
+  }
+
+  function scopri(i: number, ultra: boolean) {
+    setScoperte((prev) => {
+      if (prev.has(i)) return prev
+      if (ultra) { try { navigator.vibrate?.([30, 40, 60]) } catch { /* niente */ } }
+      const n = new Set(prev); n.add(i); return n
+    })
   }
 
   async function ricicla() {
@@ -220,29 +317,32 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
       </ol>}
     </section>
 
-    {busta && <div className="alb-apertura" role="dialog" aria-modal="true" aria-label="Bustina aperta">
-      <div className={`alb-busta${strappo ? ' is-strappata' : ''}`} aria-hidden="true"><span>SPECIAL<b>ONE</b></span><i /></div>
-      {strappo && <div className="alb-carte">
-        {busta.map((u, i) => {
-          const f = figurine.find((x) => x.id === u.figurina_id) ?? { id: u.figurina_id, tipo: u.tipo, team_id: null, player_id: null, conferenza: null, overall: null, aggiornamento: false } as Figurina
-          const girata = i < girate
-          return <button key={i} type="button" className={`alb-carta${girata ? ' is-girata' : ''}${u.ultra ? ' is-ultra' : ''}`} style={{ animationDelay: `${i * 0.12}s` }}
-            onClick={() => setGirate((g) => Math.max(g, i + 1))} aria-label={girata ? 'Figurina' : 'Tocca per girare'}>
-            <span className="alb-carta__retro" aria-hidden="true"><b>S1</b></span>
-            <span className="alb-carta__fronte">
-              <Carta f={f} ana={f.player_id != null ? ana.get(f.player_id) : undefined} dati={dati} ultra={u.ultra} />
-              {girata && <em className={`alb-carta__etichetta${u.ultra ? ' is-ultra' : ''}`}>{u.ultra ? 'ULTRARARA!' : u.nuova ? 'NUOVA' : 'DOPPIONE'}</em>}
-            </span>
-          </button>
-        })}
-      </div>}
-      {strappo && <div className="alb-apertura__azioni">
-        {girate < busta.length ? <button type="button" className="button button--secondary" onClick={() => setGirate(busta.length)}>Gira tutte</button>
-          : <>
-            <button type="button" className="button button--secondary" onClick={() => setBusta(null)}>Chiudi</button>
-            <button type="button" className="alb-compra alb-compra--piccola" disabled={compro || crediti < PREZZO} onClick={() => void compra()}><span><b>Un'altra</b><small>{PREZZO} crediti</small></span></button>
-          </>}
-      </div>}
+    {busta && <div className="alb-apertura" role="dialog" aria-modal="true" aria-label="Apertura della bustina">
+      <button type="button" className="alb-chiudi" aria-label="Chiudi" onClick={() => setBusta(null)}>✕</button>
+      {!strappo ? <Bustina stagione={stagione} onAperta={() => setStrappo(true)} /> : <>
+        <div className="alb-carte">
+          {busta.map((u, i) => {
+            const f = figurine.find((x) => x.id === u.figurina_id) ?? { id: u.figurina_id, tipo: u.tipo, team_id: null, player_id: null, conferenza: null, overall: null, aggiornamento: false } as Figurina
+            const girata = scoperte.has(i)
+            return <button key={i} type="button" className={`alb-carta${girata ? ' is-girata' : ''}${u.ultra ? ' is-ultra' : ''}`} style={{ ['--i' as string]: i }}
+              onClick={() => scopri(i, u.ultra)} aria-label={girata ? 'Figurina scoperta' : 'Tocca per scoprire'}>
+              <span className="alb-carta__retro" aria-hidden="true"><img src="/specialone-mark.svg" alt="" /><i /></span>
+              <span className="alb-carta__fronte">
+                <Carta f={f} ana={f.player_id != null ? ana.get(f.player_id) : undefined} dati={dati} ultra={u.ultra} numero={numeri.get(f.id)} />
+                {girata && u.ultra && <span className="alb-carta__boom" aria-hidden="true" />}
+              </span>
+              {girata && <em className={`alb-carta__etichetta${u.ultra ? ' is-ultra' : u.nuova ? ' is-nuova' : ''}`}>{u.ultra ? '✦ ULTRARARA ✦' : u.nuova ? 'NUOVA' : 'DOPPIONE'}</em>}
+            </button>
+          })}
+        </div>
+        <div className="alb-apertura__azioni">
+          {scoperte.size < busta.length ? <button type="button" className="button button--secondary" onClick={() => busta.forEach((u, i) => scopri(i, u.ultra))}>Scopri tutte</button>
+            : <>
+              <button type="button" className="button button--secondary" onClick={() => setBusta(null)}>Chiudi</button>
+              <button type="button" className="alb-compra alb-compra--piccola" disabled={compro || crediti < PREZZO} onClick={() => void compra()}><span><b>Un'altra</b><small>{PREZZO} crediti</small></span></button>
+            </>}
+        </div>
+      </>}
     </div>}
   </section>
 }
