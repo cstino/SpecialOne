@@ -6281,3 +6281,6 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .stampa-card.is-aperta .stampa-card__freccia { transform: rotate(90deg); }
 .stampa-card__dettaglio { display: grid; gap: 12px; padding: 0 14px 16px; }
 .stampa-card__dettaglio .stampa__domanda { margin: 0; }
+/* Sala stampa: niente contenitore attorno alle card delle domande */
+.dash-card.stampa { padding: 0; border: 0; background: none; box-shadow: none; }
+.dash-card.stampa + .dash-card.stampa { margin-top: 18px; }
