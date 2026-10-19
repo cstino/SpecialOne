@@ -17,7 +17,7 @@ type Anagrafica = { id: number; nome: string; posizioni: string[]; foto_url: str
 type Uscita = { figurina_id: number; tipo: Figurina['tipo']; ultra: boolean; nuova: boolean }
 type RigaClassifica = { team_id: number; attaccate: number; totale: number; ultra: number; pagine: number }
 
-const PREZZO = 500
+const PREZZO = 250
 const ridotto = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 const fmt = (n: number) => new Intl.NumberFormat('it-IT').format(n)
 
