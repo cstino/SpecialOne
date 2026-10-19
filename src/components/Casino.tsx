@@ -292,14 +292,15 @@ export function Casino({ leagueId, teamId, dati }: Props) {
 
     <section className="slot-classifica">
       <h2>Classifica del casinò</h2>
+      <p className="bet-nota">Conta la vincita più alta ottenuta in un solo giro.</p>
       {classifica.length === 0 ? <p className="bet-nota">Ancora nessuno al tavolo.</p> : <ol>
         {classifica.map((r, i) => {
           const t = dati.teamById.get(r.team_id)
           return <li key={r.team_id} className={r.team_id === teamId ? 'is-mia' : ''}>
             <span className={`bet-pos${i < 3 ? ` bet-pos--${i + 1}` : ''}`}>{i + 1}</span>
             <span className="bet-giocatori__stemma"><Crest value={t?.stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(r.team_id)} size="small" /></span>
-            <span className="bet-classifica__nome"><strong>{t?.nome ?? '—'}</strong><small>Colpo migliore {fmt(r.max_vincita)} · {fmt(r.giri)} giri</small></span>
-            <span className="slot-classifica__crediti"><b>{fmt(r.crediti)}</b><small>crediti</small></span>
+            <span className="bet-classifica__nome"><strong>{t?.nome ?? '—'}</strong><small>{fmt(r.crediti)} crediti · {fmt(r.giri)} giri</small></span>
+            <span className="slot-classifica__crediti"><b>{fmt(r.max_vincita)}</b><small>miglior colpo</small></span>
           </li>
         })}
       </ol>}
