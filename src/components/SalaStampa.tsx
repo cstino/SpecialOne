@@ -47,6 +47,8 @@ export function SalaStampa({ teamId, revealedMatchIds, senzaTitolo = false, quan
   const [bozze, setBozze] = useState<Record<number, string>>({})
   const [invio, setInvio] = useState<number | null>(null)
   const [errori, setErrori] = useState<Record<number, string>>({})
+  // Card che si aprono: chiuse si vede l'inizio della domanda e lo stato; aperte domanda intera e risposta.
+  const [aperte, setAperte] = useState<Record<number, boolean>>({})
 
   const carica = useCallback(async () => {
     const tre = new Date(Date.now() - 3 * 86_400_000).toISOString()
@@ -89,8 +91,25 @@ export function SalaStampa({ teamId, revealedMatchIds, senzaTitolo = false, quan
           const scaduta = new Date(d.scade_il).getTime() < Date.now()
           const g = d.voto != null ? giudizio(Number(d.voto)) : null
           const bozza = bozze[d.id] ?? ''
-          return <article className="stampa__voce" key={d.id}>
-            <p className="stampa__testata"><Microfono />{d.giornalista}{d.ordine === 3 && <span className="stampa__replica">Diritto di replica</span>}</p>
+          // Da rispondere: azzurro elettrico. Risposta data: neutra con la spunta verde. Chiusa senza risposta: grigia.
+          const daRispondere = !d.risposta && !scaduta
+          const bloccata = daRispondere && d.tipo === 'pre' && arretrate
+          const stato = d.risposta ? 'risposta' : scaduta ? 'scaduta' : 'aperta'
+          const aperta = aperte[d.id] ?? false
+          return <article className={`stampa__voce stampa-card stampa-card--${stato}${aperta ? ' is-aperta' : ''}`} key={d.id}>
+            <button type="button" className="stampa-card__testa" aria-expanded={aperta} onClick={() => setAperte((a) => ({ ...a, [d.id]: !aperta }))}>
+              <span className="stampa-card__icona" aria-hidden="true">{d.risposta ? '✓' : scaduta ? '–' : <Microfono />}</span>
+              <span className="stampa-card__corpo">
+                <span className="stampa-card__riga">
+                  <b>{d.giornalista}</b>
+                  {d.ordine === 3 && <span className="stampa__replica">Diritto di replica</span>}
+                  <em>{d.risposta ? 'Risposta data' : scaduta ? 'Chiusa' : bloccata ? 'In attesa' : 'Da rispondere'}</em>
+                </span>
+                <span className="stampa-card__anteprima">{d.domanda}</span>
+              </span>
+              <span className="stampa-card__freccia" aria-hidden="true">›</span>
+            </button>
+            {aperta && <div className="stampa-card__dettaglio">
             <p className="stampa__domanda">{d.domanda}</p>
             {d.risposta
               ? <>
@@ -127,6 +146,7 @@ export function SalaStampa({ teamId, revealedMatchIds, senzaTitolo = false, quan
                   <p className="stampa__suggerimento">Puoi parlare di qualsiasi squadra della lega, anche una che non affronti: schernirla o attaccarla fa salire la rivalità (e il pubblico), elogiarla la fa scendere.</p>
                   {errori[d.id] && <p className="stampa__errore" role="alert">{errori[d.id]}</p>}
                 </div>}
+            </div>}
           </article>
   }
 

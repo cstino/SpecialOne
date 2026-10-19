@@ -6259,3 +6259,25 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 /* Vivaio: foto e nome del prospetto aprono la scheda giocatore (il bottone non cambia la griglia della riga) */
 .vivaio-apri-scheda { cursor: pointer; }
 strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: rgba(255,255,255,.25); text-underline-offset: 3px; }
+
+/* Sala stampa a card che si aprono: azzurro elettrico se c'e' da rispondere, neutra con la spunta verde se risposta */
+.stampa-card { padding: 0 !important; border-radius: 16px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); overflow: hidden; transition: background .2s, border-color .2s; }
+.stampa-card + .stampa-card { margin-top: 10px; }
+.stampa-card--aperta { border-color: rgba(0,200,255,.65); background: linear-gradient(135deg, rgba(0,180,255,.22), rgba(0,120,255,.1)); box-shadow: 0 0 22px rgba(0,190,255,.18); }
+.stampa-card--scaduta { opacity: .65; }
+.stampa-card__testa { width: 100%; display: grid; grid-template-columns: 36px minmax(0, 1fr) 18px; gap: 12px; align-items: center; padding: 14px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.stampa-card__icona { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.08); font-weight: 900; }
+.stampa-card--aperta .stampa-card__icona { background: rgba(0,200,255,.3); color: #e6f9ff; }
+.stampa-card--risposta .stampa-card__icona { background: rgba(123,227,160,.18); color: #7be3a0; font-size: 1.1rem; }
+.stampa-card__corpo { display: grid; gap: 4px; min-width: 0; }
+.stampa-card__riga { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.stampa-card__riga b { font-size: .74rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.stampa-card__riga em { font-style: normal; font-size: .66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #8f86a3; }
+.stampa-card--aperta .stampa-card__riga em { color: #5fdcff; }
+.stampa-card--risposta .stampa-card__riga em { color: #7be3a0; }
+.stampa-card__anteprima { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: .92rem; font-weight: 600; line-height: 1.35; }
+.stampa-card.is-aperta .stampa-card__anteprima { display: none; }
+.stampa-card__freccia { color: #8f86a3; font-size: 1.4rem; transition: transform .2s; }
+.stampa-card.is-aperta .stampa-card__freccia { transform: rotate(90deg); }
+.stampa-card__dettaglio { display: grid; gap: 12px; padding: 0 14px 16px; }
+.stampa-card__dettaglio .stampa__domanda { margin: 0; }
