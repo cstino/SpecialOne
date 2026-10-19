@@ -6238,3 +6238,21 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .alb-indice__stemma .crest, .alb-indice__stemma img, .alb-indice__stemma .crest-stellato { width: 30px !important; height: 30px !important; object-fit: contain; }
 .bet-ticket__premi { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin: 0; padding: 10px 14px; border-bottom: 1px dashed var(--bet-linea); background: rgba(246,196,83,.07); color: #cfc6e0; font-size: .76rem; text-align: center; }
 .bet-ticket__premi b { color: var(--bet-oro); }
+/* Schedina a puntata: moltiplicatori e selettore della puntata */
+.bet-quote { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 1px; border-bottom: 1px dashed var(--bet-linea); background: var(--bet-linea); }
+.bet-quote span { display: grid; justify-items: center; gap: 1px; padding: 8px 4px; background: #1a1529; }
+.bet-quote span.is-top { background: linear-gradient(180deg, rgba(246,196,83,.2), #1a1529); }
+.bet-quote small { color: #8f86a3; font-size: .6rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.bet-quote b { color: var(--bet-oro); font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.bet-quote em { color: #cfc6e0; font-style: normal; font-size: .68rem; font-variant-numeric: tabular-nums; }
+.bet-ticket__nota { margin: 0; padding: 6px 14px; border-bottom: 1px dashed var(--bet-linea); color: #ffb3d6; font-size: .72rem; text-align: center; }
+.bet-puntata { display: flex; align-items: center; gap: 6px; }
+.bet-puntata > span { color: #b9b0cc; font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.bet-puntata button { flex: 1; display: grid; place-items: center; height: 36px; padding: 0; border: 1px solid rgba(255,255,255,.14); border-radius: 10px; background: rgba(255,255,255,.05); font-weight: 800; font-variant-numeric: tabular-nums; text-align: center; cursor: pointer; }
+.bet-puntata button.is-scelta { border-color: var(--bet-oro); background: rgba(246,196,83,.18); color: var(--bet-oro); }
+.bet-puntata button:disabled { opacity: .35; cursor: default; }
+.bet-puntata small { color: var(--bet-oro); font-size: .7rem; font-weight: 800; white-space: nowrap; }
+.bet-barra__stato b { color: var(--bet-oro); }
+.bet-esito-mia__vinto { margin-left: auto; color: #ff8b97; font-size: 1rem; }
+.bet-esito-mia__vinto.is-positivo { color: #7be3a0; }
+.bet-page { padding-bottom: calc(220px + env(safe-area-inset-bottom)); }

@@ -17,11 +17,19 @@ type Segno = '1' | 'X' | '2'
 const SEGNI: Segno[] = ['1', 'X', '2']
 const MAX_DOPPIE = 2
 const MINUTI_CHIUSURA = 15
+const PUNTATE = [50, 100, 250, 500]
+// Stessa formula di private.betone_moltiplicatore: errori -> moltiplicatore, ogni doppia lo dimezza.
+function moltiplicatore(partite: number, errori: number, doppie: number) {
+  const k = Math.max(0, partite - 6)
+  const base = errori === 0 ? 20 * 1.6 ** k : errori === 1 ? 4 * 1.4 ** k : errori === 2 ? 1.5 * 1.2 ** k : errori === 3 && partite >= 8 ? 1 : 0
+  return Math.round(base * 0.5 ** Math.max(0, doppie) * 100) / 100
+}
+const fmtN = (n: number) => new Intl.NumberFormat('it-IT', { maximumFractionDigits: 2 }).format(n)
 
 type Prono = { fixture_id: number; scelta: string; giusta: boolean | null }
 type Schedina = {
   id: number; giornata: number; gruppo: Gruppo; team_id: number; user_id: string
-  risolta_il: string | null; giuste: number | null; totale: number | null; perfetta: boolean | null
+  risolta_il: string | null; giuste: number | null; totale: number | null; perfetta: boolean | null; puntata: number; vinto: number | null
   betone_pronostici: Prono[]
 }
 type RigaClassifica = { team_id: number; wins: number; giuste: number; totale: number; schedine: number }
@@ -66,6 +74,9 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
   const [tabClassifica, setTabClassifica] = useState<'tot' | Gruppo>('tot')
   const [aperte, setAperte] = useState<Record<number, boolean>>({})
   const [regole, setRegole] = useState(false)
+  const [puntata, setPuntata] = useState(100)
+  const [crediti, setCrediti] = useState<number | null>(null)
+  useEffect(() => { void supabase.rpc('casino_stato', { p_league_id: league.id }).then(({ data }) => setCrediti(Number((data as { crediti?: number } | null)?.crediti ?? 0))) }, [league.id, salvata])
   const [sezione, setSezione] = useState<'pronostici' | 'casino'>('pronostici')
   // Il casino' per ora lo vede solo il committente (lo decide il server: casino_visibile).
   const [casinoVisibile, setCasinoVisibile] = useState(false)
@@ -106,7 +117,7 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
     if (!dati.season) return
     const da = Math.max(1, (giornata ?? dati.giornateStagione) - 2)
     const { data } = await supabase.from('betone_schedine')
-      .select('id, giornata, gruppo, team_id, user_id, risolta_il, giuste, totale, perfetta, betone_pronostici(fixture_id, scelta, giusta)')
+      .select('id, giornata, gruppo, team_id, user_id, risolta_il, giuste, totale, perfetta, puntata, vinto, betone_pronostici(fixture_id, scelta, giusta)')
       .eq('league_id', league.id).eq('season_id', dati.season.id).gte('giornata', da)
     setSchedine((data ?? []) as unknown as Schedina[])
     const tab: Array<'tot' | Gruppo> = ['tot', ...gruppi]
@@ -133,6 +144,8 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
       for (const p of salvataCorrente?.betone_pronostici ?? []) { s[p.fixture_id] = p.scelta.split(''); d[p.fixture_id] = p.scelta.length === 2 }
     }
     setScelte(s); setDoppia(d)
+    const giocata = gruppi.map((g) => miaCorrente(g)).find((x) => x && x.puntata > 0)
+    if (giocata) setPuntata(giocata.puntata)
   }, [giornata, gruppi, miaCorrente])
   useEffect(() => { if (gruppoAttivo == null) setGruppoAttivo(gruppi[0]) }, [gruppi, gruppoAttivo])
 
@@ -175,7 +188,8 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
   async function salva(g: Gruppo) {
     setInvio(true); setErrore('')
     const pronostici = (partite[g] ?? []).map((f) => ({ fixture_id: f.id, scelta: ordina(scelte[f.id] ?? []).join('') }))
-    const { error } = await supabase.rpc('betone_salva', { p_league_id: league.id, p_gruppo: g, p_pronostici: pronostici })
+    const { data: esitoSalva, error } = await supabase.rpc('betone_salva', { p_league_id: league.id, p_gruppo: g, p_pronostici: pronostici, p_puntata: puntata })
+    if (!error) setCrediti(Number((esitoSalva as { crediti?: number } | null)?.crediti ?? crediti ?? 0))
     setInvio(false)
     if (error) { setErrore(error.message); return }
     setSalvata(Date.now())
@@ -202,11 +216,17 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
   const pronta = completa(attivo)
   const modificata = (() => {
     if (!mia) return true
+    if ((mia.puntata ?? 0) !== puntata) return true
     return partiteAttivo.some((f) => {
       const p = mia.betone_pronostici.find((x) => x.fixture_id === f.id)
       return !p || p.scelta !== ordina(scelte[f.id] ?? []).join('')
     })
   })()
+
+  // La puntata della schedina gia' giocata si ricarica nel selettore; quanto si puo' spendere tiene conto di quella gia' scalata.
+  const disponibili = (crediti ?? 0) + (mia?.puntata ?? 0)
+  const doppieOra = nDoppie(attivo)
+  const scala = [0, 1, 2, 3].map((e) => ({ e, m: moltiplicatore(partiteAttivo.length, e, doppieOra) })).filter((x) => x.m > 0)
 
   return <main className="app-shell season-shell bet-shell">
     <GameNav league={league} active="betone" onNavigate={onNavigate} />
@@ -261,7 +281,10 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
                 </div>
               </header>
 
-              <p className="bet-ticket__premi"><span>Giocare è <b>gratis</b></span><span><b>+20</b> crediti per ogni pronostico giusto</span><span><b>+300</b> con la schedina perfetta</span></p>
+              <div className="bet-quote" aria-label="Moltiplicatori">
+                {scala.map((x) => <span key={x.e} className={x.e === 0 ? 'is-top' : ''}><small>{x.e === 0 ? 'Tutte giuste' : `${partiteAttivo.length - x.e} su ${partiteAttivo.length}`}</small><b>×{fmtN(x.m)}</b><em>{fmtN(Math.round(puntata * x.m))}</em></span>)}
+              </div>
+              {doppieOra > 0 && <p className="bet-ticket__nota">Con {doppieOra} {doppieOra === 1 ? 'doppia' : 'doppie'} i moltiplicatori sono {doppieOra === 1 ? 'dimezzati' : 'divisi per 4'}.</p>}
               <p className="bet-ticket__avviso">Come al totocalcio vanno giocate <b>tutte le {partiteAttivo.length} partite</b>: la scommessa si piazza solo a schedina completa.</p>
               <ol className="bet-righe">
                 {partiteAttivo.map((f, i) => {
@@ -307,6 +330,7 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
               {gruppi.length > 1 && <h3>{NOME_GRUPPO[g]}</h3>}
               {miaRis ? <div className={`bet-esito-mia${miaRis.perfetta ? ' is-win' : ''}`}>
                 <strong>{miaRis.perfetta ? 'WIN' : `${miaRis.giuste}/${miaRis.totale}`}</strong>
+                {miaRis.vinto != null && <b className={`bet-esito-mia__vinto${(miaRis.vinto ?? 0) > 0 ? ' is-positivo' : ''}`}>{(miaRis.vinto ?? 0) > 0 ? `+${fmtN(miaRis.vinto)}` : `−${fmtN(miaRis.puntata)}`} crediti</b>}
                 <span>{miaRis.perfetta ? 'Schedina perfetta!' : 'La tua schedina'}</span>
               </div> : <p className="bet-nota">Non hai giocato questa schedina.</p>}
               <ol className="bet-giocatori">
@@ -374,7 +398,8 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
             <li>{gruppi.length > 1 ? 'Ci sono due schedine, East e West: puoi giocarle entrambe.' : 'Una sola schedina con tutte le partite della giornata.'}</li>
             <li>Puoi modificarla fino a {MINUTI_CHIUSURA} minuti prima della simulazione. Quelle degli altri restano nascoste finché non sono valutate.</li>
             <li>Una schedina con <b>tutti i pronostici giusti</b> vale una <b>WIN</b>. In classifica contano le WIN e, a parità, le partite azzeccate.</li>
-            <li>Giocare la schedina è <b>gratis</b>. Si vincono <b>20 crediti per ogni pronostico giusto</b> e <b>300 in più</b> per la schedina perfetta: con 6 partite, 4 giuste valgono 80 crediti, tutte e 6 valgono 420. I crediti servono al casinò e per le bustine dell'album.</li>
+            <li>Si gioca sempre con i <b>crediti</b>: scegli quanto puntare (50, 100, 250 o 500). La puntata si scala subito; finché la schedina è aperta puoi cambiarla e la differenza ti viene restituita o scalata.</li>
+            <li>La vincita è <b>puntata × moltiplicatore</b>, secondo quanti pronostici azzecchi (la tabella è sulla schedina). Con 6 partite: tutte giuste ×20, 5 su 6 ×4, 4 su 6 ×1,5, meno perdi la puntata. Ogni <b>doppia dimezza</b> i moltiplicatori.</li>
           </ul>}
         </section>
         </>}
@@ -383,12 +408,17 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
 
     {sezione === 'pronostici' && caricato && giornata != null && partiteAttivo.length > 0 && !chiusa && <div className="bet-barra">
       {errore && <p className="bet-barra__errore" role="alert">{errore}</p>}
+      <div className="bet-puntata" role="group" aria-label="Puntata">
+        <span>Punta</span>
+        {PUNTATE.map((p) => <button key={p} type="button" className={puntata === p ? 'is-scelta' : ''} aria-pressed={puntata === p} disabled={p > disponibili} onClick={() => { setPuntata(p); setSalvata(null) }}>{p}</button>)}
+        <small>{fmtN(crediti ?? 0)} crediti</small>
+      </div>
       <p className="bet-barra__stato">
         {salvata ? <>Scommessa piazzata ✓ Puoi modificarla fino alle {oraChiusura}.</>
-          : <>{compilate(attivo)}/{partiteAttivo.length} partite · doppie {nDoppie(attivo)}/{MAX_DOPPIE}{mia && !modificata ? ' · schedina giocata' : ''}</>}
+          : <>{compilate(attivo)}/{partiteAttivo.length} partite · doppie {nDoppie(attivo)}/{MAX_DOPPIE} · vinci fino a <b>{fmtN(Math.round(puntata * (scala[0]?.m ?? 0)))}</b></>}
       </p>
-      <button type="button" className="bet-barra__salva" disabled={!pronta || invio || !modificata} onClick={() => void salva(attivo)}>
-        {invio ? 'Piazzo…' : mia && !modificata ? 'Scommessa piazzata ✓' : mia ? 'Aggiorna la scommessa' : pronta ? 'Piazza la scommessa' : `Mancano ${partiteAttivo.length - compilate(attivo)} partite`}
+      <button type="button" className="bet-barra__salva" disabled={!pronta || invio || !modificata || puntata > disponibili} onClick={() => void salva(attivo)}>
+        {invio ? 'Piazzo…' : mia && !modificata ? `Scommessa piazzata ✓ · ${mia.puntata}` : mia ? 'Aggiorna la scommessa' : pronta ? (puntata > disponibili ? 'Crediti insufficienti' : `Punta ${puntata} crediti`) : `Mancano ${partiteAttivo.length - compilate(attivo)} partite`}
       </button>
     </div>}
   </main>
