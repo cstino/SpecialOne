@@ -330,8 +330,9 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
               <span className="alb-carta__fronte">
                 <Carta f={f} ana={f.player_id != null ? ana.get(f.player_id) : undefined} dati={dati} ultra={u.ultra} numero={numeri.get(f.id)} />
                 {girata && u.ultra && <span className="alb-carta__boom" aria-hidden="true" />}
+                {/* Dentro il fronte (gia' girato di 180 gradi): cosi' la scritta si legge dritta */}
+                {girata && <em className={`alb-carta__etichetta${u.ultra ? ' is-ultra' : u.nuova ? ' is-nuova' : ''}`}>{u.ultra ? '✦ ULTRARARA ✦' : u.nuova ? 'NUOVA' : 'DOPPIONE'}</em>}
               </span>
-              {girata && <em className={`alb-carta__etichetta${u.ultra ? ' is-ultra' : u.nuova ? ' is-nuova' : ''}`}>{u.ultra ? '✦ ULTRARARA ✦' : u.nuova ? 'NUOVA' : 'DOPPIONE'}</em>}
             </button>
           })}
         </div>
