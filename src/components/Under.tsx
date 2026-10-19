@@ -196,7 +196,7 @@ export function Under({ membership, onNavigate }: Props) {
               <b>{g?.overall ?? '—'}</b>
               <span><strong>{g?.nome ?? `#${a.player_id}`}</strong><small>{a.giorno}</small></span>
               <em className={a.stato === 'assegnata' ? 'e-presa' : ''}>
-                {a.stato === 'assegnata' ? `Assegnato · ${milioni(a.ingaggio_finale ?? 0)}` : a.stato === 'deserta' ? 'Deserta' : 'Aperta'}
+                {a.stato === 'assegnata' ? `${a.vincitore_team_id != null ? `${dati.teamById.get(a.vincitore_team_id)?.nome ?? 'Una squadra'}${a.vincitore_team_id === membership.id ? ' (tu)' : ''}` : 'Assegnato'} · ${milioni(a.ingaggio_finale ?? 0)}` : a.stato === 'deserta' ? 'Deserta' : 'Aperta'}
               </em>
             </li>
           })}
