@@ -6137,3 +6137,46 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 /* Pagina dell'album: titolo scuro sulla carta chiara; numero della figurina mancante al centro del riquadro */
 .alb-pagina__testa strong { color: #2a2216; }
 .fig--vuota { grid-template-rows: none; place-items: center; }
+
+/* ============================================================
+   BUSTINA v3: una bustina vera ha la curvatura (bordi scuri, bande di luce verticali), le saldature dentellate con le
+   righe della pressatura e la grafica in colonna (niente scritte sopra il logo).
+   ============================================================ */
+.pk { --vio1: #2a0b5e; --vio2: #6d21c9; --mag: #e93bd0; --oro: #ffd84d; --oro2: #c99319;
+  position: relative; display: grid; grid-template-rows: 11% 1fr 7%; width: min(64vw, 250px); aspect-ratio: 5 / 8;
+  transform-style: preserve-3d; transition: transform .12s ease-out; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none;
+  filter: drop-shadow(0 26px 34px rgba(0,0,0,.65)) drop-shadow(0 0 26px rgba(233,59,208,.3)); }
+.pk__sald { position: relative; overflow: visible;
+  background: linear-gradient(90deg, #8a6612, #ffe9a0 18%, #c99319 34%, #fff2c2 50%, #b8851a 66%, #ffe08a 82%, #7a5a10); }
+.pk__sald--su { border-radius: 4px 4px 0 0; transition: transform .75s cubic-bezier(.3,1.2,.4,1), opacity .75s; z-index: 2; }
+.pk__sald--giu { border-radius: 0 0 4px 4px; }
+.pk__righe { position: absolute; inset: 18% 0; background: repeating-linear-gradient(90deg, rgba(0,0,0,.22) 0 1px, rgba(255,255,255,.18) 1px 2px, transparent 2px 4px); }
+.pk__dentelli { position: absolute; left: 0; right: 0; top: -7px; height: 8px; background: conic-gradient(from -45deg at 50% 100%, #d9ae3c 90deg, transparent 0) 0 0 / 10px 100%; }
+.pk__dentelli--giu { top: auto; bottom: -7px; transform: rotate(180deg); }
+.pk__taglio { position: absolute; left: 5%; right: 5%; bottom: -1px; height: 2px; background: repeating-linear-gradient(90deg, rgba(40,20,0,.75) 0 5px, transparent 5px 9px); z-index: 3; }
+.pk__taglio i { position: absolute; left: 0; top: -2px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #fff, var(--oro)); box-shadow: 0 0 10px var(--oro), 0 0 18px #fff; }
+.pk__corpo { position: relative; overflow: hidden; background: linear-gradient(170deg, var(--vio1) 0%, var(--vio2) 38%, var(--mag) 72%, #ff9a5a 100%); }
+.pk__arte { position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 36%, rgba(255,216,77,.35), transparent 42%),
+              repeating-conic-gradient(from 0deg at 50% 36%, rgba(255,255,255,.07) 0 5deg, transparent 5deg 15deg),
+              repeating-linear-gradient(118deg, rgba(255,255,255,.05) 0 2px, transparent 2px 10px); }
+.pk__contenuto { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4%; padding: 8% 10% 22%; text-align: center; }
+.pk__sopra { margin: 0; padding: 4px 12px; border-radius: 99px; background: rgba(0,0,0,.35); color: var(--oro); font-size: .58rem; font-weight: 900; letter-spacing: .24em; text-transform: uppercase; }
+.pk__emblema { display: grid; place-items: center; width: 54%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.18), rgba(255,255,255,0) 70%); }
+.pk__emblema img { width: 78%; filter: drop-shadow(0 0 12px rgba(255,216,77,.75)) drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
+.pk__marchio { margin: 0; display: flex; gap: 4px; font-size: 1.5rem; font-weight: 900; letter-spacing: .04em; line-height: 1; text-shadow: 0 2px 8px rgba(0,0,0,.45); }
+.pk__marchio b { color: #fff; }
+.pk__marchio span { color: var(--oro); }
+.pk__stagione { margin: 0; color: rgba(255,255,255,.88); font-size: .62rem; font-weight: 800; letter-spacing: .32em; text-transform: uppercase; }
+.pk__bollino { position: absolute; bottom: 5%; left: 50%; transform: translateX(-50%) rotate(-6deg); display: grid; place-items: center; align-content: center; width: 52px; height: 52px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff2b0, var(--oro) 50%, var(--oro2)); color: #2a1500; box-shadow: 0 4px 10px rgba(0,0,0,.45), inset 0 0 0 2px rgba(255,255,255,.4); }
+.pk__bollino b { font-size: 1.25rem; font-weight: 900; line-height: 1; }
+.pk__bollino small { font-size: .46rem; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
+/* Curvatura: bordi scuri e due bande di luce verticali, come una bustina gonfia */
+.pk__curva { position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 10%, rgba(255,255,255,.22) 20%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 66%, rgba(255,255,255,.14) 78%, rgba(0,0,0,0) 88%, rgba(0,0,0,.6) 100%),
+              linear-gradient(180deg, rgba(0,0,0,.3), transparent 8%, transparent 92%, rgba(0,0,0,.35)); }
+.pk__luce { position: absolute; inset: -25%; pointer-events: none; background: radial-gradient(circle at var(--lx, 50%) var(--ly, 30%), rgba(255,255,255,.55), transparent 30%); mix-blend-mode: overlay; }
+.pack-scena.is-aperta .pk__sald--su { transform: translate3d(28%, -180%, 40px) rotate(-22deg); opacity: 0; }
+.pack-scena.is-aperta .pk { animation: pack-sobbalzo .5s ease-out; }
+@media (prefers-reduced-motion: reduce) { .pk, .pk__sald--su { transition: none; } }

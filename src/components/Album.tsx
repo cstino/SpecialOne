@@ -123,21 +123,30 @@ function Bustina({ stagione, onAperta }: { stagione: number; onAperta: () => voi
   function su() { trascina.current.attivo = false; if (!aperta) setTilt((t) => ({ ...t, x: 0, y: 0 })) }
 
   return <div className={`pack-scena${aperta ? ' is-aperta' : ''}`}>
-    <div ref={ref} className="pack" style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`, ['--lx' as string]: `${tilt.lx}%`, ['--ly' as string]: `${tilt.ly}%` }}
+    <div ref={ref} className="pk" style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`, ['--lx' as string]: `${tilt.lx}%`, ['--ly' as string]: `${tilt.ly}%` }}
       onPointerDown={giu} onPointerMove={muovi} onPointerUp={su} onPointerCancel={su} onPointerLeave={su}>
-      <div className="pack__testa" style={{ ['--strappo' as string]: strappo }}>
-        <span className="pack__seghetto pack__seghetto--su" aria-hidden="true" />
-        <span className="pack__linea" aria-hidden="true"><i style={{ width: `${strappo * 100}%` }} /></span>
+      {/* Saldatura in alto: e' la parte che si strappa */}
+      <div className="pk__sald pk__sald--su">
+        <span className="pk__dentelli" aria-hidden="true" />
+        <span className="pk__righe" aria-hidden="true" />
+        <span className="pk__taglio" aria-hidden="true"><i style={{ width: `${strappo * 100}%` }} /></span>
       </div>
-      <div className="pack__corpo">
-        <div className="pack__foil" aria-hidden="true" />
-        <div className="pack__luce" aria-hidden="true" />
-        <div className="pack__fascia"><span>FIGURINE UFFICIALI</span></div>
-        <img className="pack__logo" src="/specialone-mark.svg" alt="SpecialOne" />
-        <div className="pack__titolo"><b>SPECIAL</b><span>ONE</span></div>
-        <div className="pack__stagione">STAGIONE {stagione}</div>
-        <div className="pack__bollino"><b>3</b><small>figurine</small></div>
-        <span className="pack__seghetto pack__seghetto--giu" aria-hidden="true" />
+      {/* Corpo: grafica ordinata in colonna, con curvatura e riflessi sopra */}
+      <div className="pk__corpo">
+        <div className="pk__arte" aria-hidden="true" />
+        <div className="pk__contenuto">
+          <p className="pk__sopra">Figurine ufficiali</p>
+          <div className="pk__emblema"><img src="/specialone-mark.svg" alt="" /></div>
+          <p className="pk__marchio"><b>SPECIAL</b><span>ONE</span></p>
+          <p className="pk__stagione">Stagione {stagione}</p>
+        </div>
+        <div className="pk__bollino" aria-hidden="true"><b>3</b><small>figurine</small></div>
+        <div className="pk__curva" aria-hidden="true" />
+        <div className="pk__luce" aria-hidden="true" />
+      </div>
+      <div className="pk__sald pk__sald--giu">
+        <span className="pk__righe" aria-hidden="true" />
+        <span className="pk__dentelli pk__dentelli--giu" aria-hidden="true" />
       </div>
     </div>
     {!aperta && <p className="pack-aiuto"><span className="pack-aiuto__dito" aria-hidden="true">👆</span>Scorri il dito sulla linea in alto per aprire</p>}
