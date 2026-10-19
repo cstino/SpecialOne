@@ -43,6 +43,8 @@ type Props = {
 // I ruoli cercabili, nell'ordine del campo (codici del database, sigle in italiano a schermo).
 const RUOLI_RICERCA = ['GK', 'CB', 'RB', 'LB', 'CDM', 'CM', 'RM', 'LM', 'CAM', 'RW', 'LW', 'ST']
 const LIMITE_RISULTATI = 30
+// I voti di equilibrio degli scambi conclusi sono nascosti (19/10/2026). Il calcolo resta: per mostrarli basta true.
+const MOSTRA_VOTI = false
 const soloCifre = (v: string) => v.replace(/\D/g, '').slice(0, 3)
 const numeroOppure = (v: string): number | null => (v === '' ? null : Number(v))
 
@@ -749,8 +751,9 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
             </label>
           </div>
 
+          {(nPacchettoOfferto > 0) !== (nPacchettoChiesto > 0) && <p className="scambi-vuoto">{nPacchettoOfferto === 0 ? 'Scegli anche cosa offri: non si chiedono asset senza dare niente in cambio.' : 'Scegli anche cosa chiedi: non si regalano asset.'}</p>}
           <button className="button button--primary scambi-invia" type="button"
-            disabled={inCorso || !aperto || (nPacchettoOfferto === 0 && nPacchettoChiesto === 0)}
+            disabled={inCorso || !aperto || nPacchettoOfferto === 0 || nPacchettoChiesto === 0}
             onClick={() => void invia()}>
             {inCorso ? 'Invio…' : contropropostaOrigine ? 'Invia la controfferta' : 'Invia la proposta'}
           </button>
@@ -905,7 +908,8 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
                   {stemma(p.a_team_id)}
                 </div>
                 <em>{ETICHETTE_STATO[p.stato]} · {p.risolta_il ? dataBreve(p.risolta_il) : ''}</em>
-                {valutazioni.get(p.id) && <VotoScambio voto={valutazioni.get(p.id)!.voto} onClick={() => setBilanciaAperta(p.id)} />}
+                {/* Voti degli scambi nascosti (19/10/2026, richiesta del committente). */}
+                {MOSTRA_VOTI && valutazioni.get(p.id) && <VotoScambio voto={valutazioni.get(p.id)!.voto} onClick={() => setBilanciaAperta(p.id)} />}
               </li>)}
             </ul>}
       </section>
