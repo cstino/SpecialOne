@@ -17,7 +17,7 @@ type Anagrafica = { id: number; nome: string; posizioni: string[]; foto_url: str
 type Uscita = { figurina_id: number; tipo: Figurina['tipo']; ultra: boolean; nuova: boolean }
 type RigaClassifica = { team_id: number; attaccate: number; totale: number; ultra: number; pagine: number }
 
-const PREZZO = 100
+const PREZZO = 500
 const ridotto = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 const fmt = (n: number) => new Intl.NumberFormat('it-IT').format(n)
 
@@ -273,7 +273,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
         <b>{doppioni}</b><small>doppioni</small><em>{doppioni ? `+${fmt(valoreDoppioni)}` : 'ricicla'}</em>
       </button>
     </div>
-    {crediti < PREZZO && <p className="bet-nota">Servono {PREZZO} crediti: si vincono con le schedine e al casinò, e ogni lunedì ne arrivano 1.000.</p>}
+    {crediti < PREZZO && <p className="bet-nota">Servono {PREZZO} crediti: si vincono con le schedine e al casinò, e ogni giorno ne arrivano 1.000.</p>}
     {(avviso || errore) && <p className={errore ? 'alb-errore' : 'alb-avviso'} role="status">{errore || avviso}</p>}
 
     {pagina == null && esempioUltra && <section className="alb-esempio" aria-label="Esempio di figurina ultrarara">

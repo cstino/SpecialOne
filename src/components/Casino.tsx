@@ -6,7 +6,7 @@ import { Crest } from './Crest'
 // BetOne Casino' (docs/decisioni-conferenze-stampa.md §BetOne): una slot a tema SpecialOne, minigioco interno senza
 // effetti sul gioco vero. Ogni giro lo estrae il SERVER (casino_gira): qui si anima soltanto il risultato.
 // Simboli 0-7 = gli stemmi della giornata (0-2 pagano poco, 3-5 medio, 6-7 molto), 8 = logo SpecialOne (jolly),
-// 9 = coppa (3 o piu' ovunque: giri gratis con vincite doppie). 10 linee, 1.000 crediti gratis ogni lunedi'.
+// 9 = coppa (3 o piu' ovunque: giri gratis con vincite doppie). 10 linee, 1.000 crediti gratis ogni giorno.
 
 type Dati = ReturnType<typeof useSeasonData>
 type Vincita = { linea: number; simbolo: number; n: number; vinto: number }
@@ -213,7 +213,6 @@ export function Casino({ leagueId, teamId, dati }: Props) {
   }, [esito, lineaVista])
 
   const livello = esito ? (esito.vinto >= esito.puntata * 100 ? 'mega' : esito.vinto >= esito.puntata * 20 ? 'grande' : esito.vinto > 0 ? 'piccola' : 'nulla') : 'nulla'
-  const ricarica = stato ? new Intl.DateTimeFormat('it-IT', { weekday: 'long', timeZone: 'Europe/Rome' }).format(new Date(stato.prossima_ricarica)) : ''
   const lineaAttiva = esito?.vincite[lineaVista]
 
   if (!stato) return <section className="slot-caricamento">{errore ? <p role="alert">{errore}</p> : <p>Accendo le luci del casinò…</p>}</section>
@@ -221,7 +220,7 @@ export function Casino({ leagueId, teamId, dati }: Props) {
   return <section className="slot" onPointerDown={() => suoni.sblocca()}>
     <div className="slot-saldo">
       <div><small>I tuoi crediti</small><strong><Contatore valore={crediti} /></strong></div>
-      {giriGratis > 0 ? <span className="slot-gratis">🏆 {giriGratis} giri gratis · ×2</span> : <span className="slot-ricarica">+1.000 gratis {ricarica}</span>}
+      {giriGratis > 0 ? <span className="slot-gratis">🏆 {giriGratis} giri gratis · ×2</span> : <span className="slot-ricarica">+1.000 gratis domani</span>}
       <button type="button" className="slot-audio" aria-pressed={audio} aria-label={audio ? 'Togli i suoni' : 'Attiva i suoni'} onClick={() => setAudio((a) => !a)}>{audio ? '🔊' : '🔇'}</button>
     </div>
 
