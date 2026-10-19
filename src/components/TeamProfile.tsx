@@ -212,6 +212,9 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const [vivaioLoading, setVivaioLoading] = useState(true)
   const [vivaioErrore, setVivaioErrore] = useState<string | null>(null)
   const [vivaioSlotMassimi, setVivaioSlotMassimi] = useState(1)
+  // Scheda di un prospetto del vivaio (19/10/2026): attributi, ruoli e training come per la rosa.
+  type SchedaVivaio = { posizioni: string[]; attributi: Record<string, number | null>; specializzazione_attiva: string | null; cambio: { id: number; ruolo_precedente: string; ruolo_target: string; avviato_giornata: number; completa_giornata: number } | null }
+  const [vivaioAperto, setVivaioAperto] = useState<{ prospetto: VivaioProspetto; scheda: SchedaVivaio } | null>(null)
   const [vivaioAzioneInCorso, setVivaioAzioneInCorso] = useState<number | null>(null)
   const [vivaioConferma, setVivaioConferma] = useState<number | null>(null)
   const [vivaioTrattativa, setVivaioTrattativa] = useState<{
@@ -533,6 +536,28 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     const programmate = seasonData.fixtures.filter((f) => f.stato === 'programmata').map((f) => f.giornata)
     return programmate.length ? Math.min(...programmate) : null
   }, [seasonData.fixtures])
+
+  async function apriSchedaVivaio(prospetto: VivaioProspetto) {
+    const { data, error } = await supabase.rpc('vivaio_scheda', { p_vivaio_id: prospetto.id })
+    if (error || !data) { setVivaioErrore(error?.message ?? 'Scheda non disponibile.'); return }
+    setVivaioAperto({ prospetto, scheda: data as SchedaVivaio })
+  }
+  async function ricaricaSchedaVivaio() {
+    if (!vivaioAperto) return
+    const { data } = await supabase.rpc('vivaio_scheda', { p_vivaio_id: vivaioAperto.prospetto.id })
+    if (data) setVivaioAperto((v) => (v ? { ...v, scheda: data as SchedaVivaio } : v))
+  }
+  async function caricaOpzioniSpecVivaio(vivaioId: number) {
+    const { data, error } = await supabase.rpc('specializzazioni_disponibili_vivaio', { p_vivaio_id: vivaioId })
+    if (error) throw new Error(error.message)
+    const catalogo = (data ?? {}) as Record<string, { etichetta: string; crescita_pct: Record<string, number>; attivo: boolean }>
+    const ordine = (voce: { chiave: string; attivo: boolean }) => (voce.attivo ? 0 : voce.chiave === 'bilanciato' ? 2 : 1)
+    return Object.entries(catalogo).map(([chiave, valore]) => ({
+      chiave, etichetta: valore.etichetta, attivo: valore.attivo,
+      crescita: Object.entries(valore.crescita_pct ?? {}).sort((a, b) => b[1] - a[1]) as Array<[string, number]>,
+    })).filter((voce) => !(voce.chiave === 'bilanciato' && voce.attivo))
+      .sort((a, b) => ordine(a) - ordine(b) || a.etichetta.localeCompare(b.etichetta, 'it'))
+  }
 
   async function caricaTargetCambioRuolo(instanceId: number) {
     const { data, error } = await supabase.rpc('ruoli_target_cambio', { p_instance_id: instanceId })
@@ -976,6 +1001,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                 const inCorso = vivaioAzioneInCorso === prospetto.id
                 return (
                   <div className={`team-roster-player team-roster-player--${department(g.posizioni[0])}`} key={prospetto.id}>
+                    <button type="button" className="vivaio-apri-scheda" onClick={() => void apriSchedaVivaio(prospetto)} aria-label={`Apri la scheda di ${g.nome}`}>
                     <span className="team-roster-player__avatar">
                       <span className="team-roster-player__portrait">
                         {prospetto.fotoFirmata ? <img src={prospetto.fotoFirmata} alt="" loading="lazy" /> : <b aria-hidden="true">{g.nome.charAt(0)}</b>}
@@ -986,6 +1012,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       <strong>{g.nome}</strong>
                       <small>{ruoliIt(g.posizioni)} · {g.eta} anni · <em>{money(prospetto.ingaggio)}/stagione</em></small>
                     </div>
+                    </button>
                     <div className="vivaio-overall">
                       <span className="vivaio-ovr-riga">
                       <small className="vivaio-pot" title="Potenziale del giovane: la forbice si restringe con i livelli del Vivaio">({prospetto.potenziale_min === prospetto.potenziale_max ? prospetto.potenziale_min : `${prospetto.potenziale_min}-${prospetto.potenziale_max}`})</small>
@@ -1077,6 +1104,56 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
               })}
             </div>}
       </section>}
+
+      {vivaioAperto && <SchedaGiocatore
+        fase={fase}
+        tatticheAttive={Boolean(league.tattiche_attive)}
+        userId={membership.user_id}
+        giocatore={{
+          nome: vivaioAperto.prospetto.giocatore.nome,
+          nazionalita: vivaioAperto.prospetto.giocatore.nazionalita,
+          club: `Vivaio · ${vivaioAperto.prospetto.giornate_rimanenti} giornate per la promozione · potenziale ${vivaioAperto.prospetto.potenziale_min === vivaioAperto.prospetto.potenziale_max ? vivaioAperto.prospetto.potenziale_min : `${vivaioAperto.prospetto.potenziale_min}-${vivaioAperto.prospetto.potenziale_max}`}`,
+          posizioni: vivaioAperto.scheda.posizioni,
+          overall: vivaioAperto.prospetto.giocatore.overall,
+          eta: vivaioAperto.prospetto.giocatore.eta,
+          ingaggio: vivaioAperto.prospetto.ingaggio,
+          attributi: vivaioAperto.scheda.attributi,
+        }}
+        fotoUrl={vivaioAperto.prospetto.fotoFirmata}
+        cambioRuolo={ownTeam && league.stato === 'stagione' ? {
+          inCorso: vivaioAperto.scheda.cambio ? { ruoloPrecedente: vivaioAperto.scheda.cambio.ruolo_precedente, ruoloTarget: vivaioAperto.scheda.cambio.ruolo_target, avviatoGiornata: vivaioAperto.scheda.cambio.avviato_giornata, completaGiornata: vivaioAperto.scheda.cambio.completa_giornata } : null,
+          prossimaGiornata,
+          onCaricaTarget: async () => {
+            const { data, error } = await supabase.rpc('ruoli_target_cambio_vivaio', { p_vivaio_id: vivaioAperto.prospetto.id })
+            if (error) throw new Error(error.message)
+            return (data ?? []) as string[]
+          },
+          onAvvia: async (ruoloTarget) => {
+            const { error } = await supabase.rpc('avvia_cambio_ruolo_vivaio', { p_vivaio_id: vivaioAperto.prospetto.id, p_ruolo_target: ruoloTarget })
+            if (error) throw new Error(error.message)
+            await ricaricaSchedaVivaio()
+          },
+          onAnnulla: async () => {
+            if (!vivaioAperto.scheda.cambio) return
+            const { error } = await supabase.rpc('annulla_cambio_ruolo', { p_id: vivaioAperto.scheda.cambio.id })
+            if (error) throw new Error(error.message)
+            await ricaricaSchedaVivaio()
+          },
+        } : undefined}
+        specializzazione={ownTeam && league.stato === 'stagione' ? {
+          attiva: vivaioAperto.scheda.specializzazione_attiva ? specEtichette.get(vivaioAperto.scheda.specializzazione_attiva) ?? vivaioAperto.scheda.specializzazione_attiva : null,
+          inCorso: null,
+          prossimaGiornata,
+          onCaricaOpzioni: () => caricaOpzioniSpecVivaio(vivaioAperto.prospetto.id),
+          onAvvia: async (specializzazione) => {
+            const { error } = await supabase.rpc('avvia_specializzazione_vivaio', { p_vivaio_id: vivaioAperto.prospetto.id, p_specializzazione: specializzazione })
+            if (error) throw new Error(error.message)
+            await ricaricaSchedaVivaio()
+          },
+          onAnnulla: async () => {},
+        } : undefined}
+        onClose={() => { setVivaioAperto(null); void caricaVivaio() }}
+      />}
 
       {schedaAperta && <SchedaGiocatore
         fase={fase}
