@@ -6233,3 +6233,6 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .alb-sc-squadre button { display: grid; place-items: center; width: 48px; height: 48px; padding: 6px; border: 1px solid var(--bet-linea); border-radius: 12px; background: rgba(255,255,255,.03); cursor: pointer; }
 .alb-sc-squadre button.is-scelta { border-color: #f6c453; background: rgba(246,196,83,.14); }
 .alb-sc-squadre .crest, .alb-sc-squadre img { width: 100% !important; height: 100% !important; object-fit: contain; }
+/* Indice dell'album: stemmi contenuti nella loro colonna (alcuni stemmi caricati uscivano piu' grandi) */
+.alb-indice__stemma { width: 34px; height: 34px; overflow: hidden; }
+.alb-indice__stemma .crest, .alb-indice__stemma img, .alb-indice__stemma .crest-stellato { width: 30px !important; height: 30px !important; object-fit: contain; }
