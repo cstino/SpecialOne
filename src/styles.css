@@ -5898,3 +5898,126 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .slot .slot-gira, .slot .slot-gira span, .slot .slot-gira small { color: #2a1500; }
 .slot-premi b { color: #f4f1fb; }
 .slot-premi__valori b { color: #b9b0cc; font-weight: 700; }
+
+/* ============================================================
+   ALBUM DELLE FIGURINE
+   ============================================================ */
+.bet-sezioni { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
+.alb { --fig-w: 100%; display: grid; gap: 14px; padding-bottom: 24px; }
+.alb-vuoto { padding: 30px; text-align: center; color: #b9b0cc; }
+.alb-testa { display: flex; gap: 14px; align-items: center; padding: 14px; border: 1px solid var(--bet-linea); border-radius: 18px; background: linear-gradient(135deg, rgba(246,196,83,.12), rgba(255,255,255,.02)); }
+.alb-testa__copertina { flex: none; display: grid; place-items: center; align-content: center; width: 66px; height: 88px; border-radius: 8px 12px 12px 8px; background: linear-gradient(160deg, #ffd978, #c9962a); color: #1a1205; box-shadow: inset 6px 0 0 rgba(0,0,0,.18), 0 8px 20px rgba(246,196,83,.3); transform: rotate(-4deg); }
+.alb-testa__copertina span { font-size: .62rem; font-weight: 900; letter-spacing: .18em; }
+.alb-testa__copertina b { font-size: 1.8rem; line-height: 1; }
+.alb-testa__dati { flex: 1; display: grid; gap: 4px; min-width: 0; }
+.alb-testa__dati small { color: var(--bet-oro); font-size: .68rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.alb-testa__dati strong { font-size: 1.9rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.alb-testa__dati strong span { color: #8f86a3; font-size: 1rem; }
+.alb-testa__dati p { margin: 0; color: #b9b0cc; font-size: .8rem; }
+.alb-barra, .alb-indice__barra { height: 8px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+.alb-barra i, .alb-indice__barra i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #f6c453, #ffe9a8); transition: width .6s ease; }
+
+.alb-azioni { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+.alb-compra { display: flex; align-items: center; gap: 12px; padding: 10px 16px; min-height: 64px; border: 0; border-radius: 16px; background: linear-gradient(180deg, #ffd978, #f6c453); color: #1a1205; text-align: left; cursor: pointer; box-shadow: 0 8px 22px rgba(246,196,83,.35); }
+.alb-compra > span:last-child { display: grid; }
+.alb-compra b { font-size: 1.02rem; font-weight: 900; text-transform: uppercase; letter-spacing: .03em; }
+.alb-compra small { font-size: .74rem; font-weight: 700; opacity: .75; }
+.alb-compra:disabled { background: rgba(255,255,255,.1); color: rgba(255,255,255,.45); box-shadow: none; cursor: default; }
+.alb-compra__busta { flex: none; width: 30px; height: 40px; border-radius: 5px; background: linear-gradient(135deg, #7a2bd6, #ff3df2 60%, #ffd84d); box-shadow: inset 0 3px 0 rgba(255,255,255,.4), 0 3px 8px rgba(0,0,0,.35); transform: rotate(-8deg); }
+.alb-compra--piccola { min-height: 48px; padding: 8px 18px; }
+.alb-ricicla { display: grid; justify-items: center; align-content: center; gap: 0; min-width: 86px; padding: 6px 10px; border: 1px solid var(--bet-linea); border-radius: 16px; background: rgba(255,255,255,.04); cursor: pointer; text-align: center; }
+.alb-ricicla b { font-size: 1.3rem; line-height: 1; }
+.alb-ricicla small { color: #8f86a3; font-size: .62rem; text-transform: uppercase; letter-spacing: .08em; }
+.alb-ricicla em { color: var(--bet-oro); font-style: normal; font-size: .72rem; font-weight: 800; }
+.alb-ricicla:disabled { opacity: .5; cursor: default; }
+.alb-avviso { margin: 0; padding: 10px 14px; border-radius: 12px; background: rgba(123,227,160,.12); color: #7be3a0; font-size: .85rem; font-weight: 700; }
+.alb-errore { margin: 0; color: #ff8b8b; font-size: .85rem; }
+.alb-titolo { margin: 4px 0 0; font-size: 1.15rem; }
+
+.alb-indice { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.alb-indice button { position: relative; width: 100%; display: grid; grid-template-columns: 34px minmax(0, 1fr); grid-template-rows: auto auto; gap: 4px 8px; align-items: center; padding: 10px; border: 1px solid var(--bet-linea); border-radius: 14px; background: rgba(255,255,255,.03); text-align: left; cursor: pointer; }
+.alb-indice button.is-mia { border-color: rgba(246,196,83,.45); }
+.alb-indice button.is-completa { border-color: rgba(123,227,160,.6); background: rgba(123,227,160,.08); }
+.alb-indice__stemma { grid-row: span 2; display: grid; place-items: center; font-size: 1.3rem; }
+.alb-indice__nome { display: grid; min-width: 0; }
+.alb-indice__nome strong { font-size: .8rem; line-height: 1.15; overflow-wrap: anywhere; }
+.alb-indice__nome small { color: #8f86a3; font-size: .68rem; font-variant-numeric: tabular-nums; }
+.alb-indice__barra { height: 4px; }
+.alb-indice button em { position: absolute; top: 6px; right: 8px; color: #7be3a0; font-style: normal; font-weight: 900; }
+.alb-indice__conf { border-color: rgba(255,61,242,.5) !important; background: linear-gradient(135deg, rgba(255,61,242,.14), rgba(61,232,255,.08)) !important; }
+
+.alb-pagina { display: grid; gap: 12px; padding: 14px; border-radius: 18px; background: linear-gradient(180deg, #f3ecd8, #e7dcc0); color: #2a2216; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08), 0 14px 30px rgba(0,0,0,.35); scroll-margin-top: 90px; }
+.alb-pagina__testa { display: flex; align-items: center; gap: 10px; }
+.alb-pagina__testa strong { flex: 1; font-size: 1.1rem; text-transform: uppercase; letter-spacing: .04em; }
+.alb-pagina__testa span { font-weight: 800; font-variant-numeric: tabular-nums; }
+.alb-indietro { padding: 6px 10px; border: 1px solid rgba(0,0,0,.15); border-radius: 10px; background: rgba(255,255,255,.5); color: #2a2216 !important; font-weight: 700; cursor: pointer; }
+.alb-griglia { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.alb-griglia li { position: relative; }
+.alb-doppio { position: absolute; top: -6px; right: -6px; z-index: 2; padding: 2px 7px; border-radius: 99px; background: #2a2216; color: #ffd978; font-size: .66rem; font-weight: 900; }
+
+/* La figurina */
+.fig { position: relative; aspect-ratio: 5 / 7; display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; border-radius: 10px; background: linear-gradient(180deg, #ffffff, #e9e4f2); border: 3px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,.25); color: #1b1630; isolation: isolate; }
+.fig--gk { background: linear-gradient(180deg, #fff3d6, #f3c46b); }
+.fig--def { background: linear-gradient(180deg, #e3f1ff, #8cc4f5); }
+.fig--mid { background: linear-gradient(180deg, #e2fbe8, #87dc9f); }
+.fig--att { background: linear-gradient(180deg, #ffe4e7, #f58c98); }
+.fig__testa { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px 0; }
+.fig__testa b { font-size: 1.05rem; font-weight: 900; line-height: 1; }
+.fig__testa span { font-size: .55rem; font-weight: 800; text-transform: uppercase; opacity: .7; }
+.fig__foto { display: grid; place-items: end center; overflow: hidden; }
+.fig__foto img { width: 92%; height: 100%; object-fit: contain; object-position: bottom; }
+.fig__foto span { font-size: 2rem; opacity: .3; }
+.fig__piede { display: grid; gap: 1px; padding: 4px 5px 5px; background: rgba(27,22,48,.92); color: #fff; text-align: center; }
+.fig__piede strong { font-size: .7rem; font-weight: 900; text-transform: uppercase; letter-spacing: .02em; line-height: 1.1; overflow-wrap: anywhere; }
+.fig__piede small { font-size: .55rem; opacity: .7; text-transform: uppercase; letter-spacing: .08em; }
+.fig__club { display: flex; align-items: center; justify-content: center; gap: 3px; font-size: .5rem; opacity: .8; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.fig__club .crest, .fig__club img { width: 11px !important; height: 11px !important; }
+.fig--stemma { background: radial-gradient(circle at 50% 40%, #ffffff, #d9d2ea); }
+.fig__stemma { grid-row: span 2; display: grid; place-items: center; padding: 10%; }
+.fig__stemma .crest, .fig__stemma img { width: 100% !important; height: auto !important; max-height: 100%; object-fit: contain; }
+.fig__agg { position: absolute; top: 24px; left: -18px; padding: 1px 20px; background: #ff3d6e; color: #fff; font-style: normal; font-size: .45rem; font-weight: 900; transform: rotate(-35deg); }
+.fig__stella { position: absolute; top: 3px; right: 50%; transform: translateX(50%); color: #ffd84d; font-style: normal; font-size: .8rem; text-shadow: 0 0 6px rgba(255,216,77,.9); }
+.fig--vuota { display: grid; place-items: center; background: repeating-linear-gradient(45deg, rgba(0,0,0,.05) 0 6px, rgba(0,0,0,.02) 6px 12px); border: 2px dashed rgba(42,34,22,.3); box-shadow: none; }
+.fig__numero { font-size: 1.3rem; font-weight: 900; color: rgba(42,34,22,.35); font-variant-numeric: tabular-nums; }
+
+/* Ultrarara: olografica, con riflesso che scorre e bordo oro */
+.fig--ultra { border-color: #ffd84d; box-shadow: 0 0 0 1px #b8801a, 0 0 18px rgba(255,216,77,.6), 0 4px 10px rgba(0,0,0,.3); }
+.fig__olo { position: absolute; inset: 0; z-index: 3; pointer-events: none; mix-blend-mode: color-dodge; opacity: .55;
+  background: linear-gradient(115deg, transparent 20%, rgba(255,61,242,.7) 32%, rgba(61,232,255,.7) 42%, rgba(255,216,77,.8) 52%, transparent 64%), repeating-linear-gradient(45deg, rgba(255,255,255,.12) 0 2px, transparent 2px 6px);
+  background-size: 250% 100%, auto; animation: fig-olo 2.8s linear infinite; }
+.fig--conferenza { background: radial-gradient(circle at 50% 35%, #2b1b4a, #0e0a1c); color: #fff; }
+.fig__conf { grid-row: span 2; display: grid; place-items: center; padding: 12%; }
+.fig__conf img { width: 100%; height: auto; filter: drop-shadow(0 0 10px rgba(255,216,77,.6)); }
+.fig--conferenza .fig__piede { background: linear-gradient(90deg, #b8801a, #ffd84d, #b8801a); color: #1a1205; }
+@keyframes fig-olo { from { background-position: 150% 0, 0 0; } to { background-position: -150% 0, 0 0; } }
+
+/* Apertura della bustina */
+.alb-apertura { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; align-content: center; gap: 22px; padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); background: radial-gradient(circle at 50% 40%, rgba(122,43,214,.55), rgba(8,5,14,.96) 65%); backdrop-filter: blur(4px); }
+.alb-busta { position: relative; display: grid; place-items: center; width: 150px; height: 210px; border-radius: 12px; background: linear-gradient(135deg, #7a2bd6, #ff3df2 55%, #ffd84d); box-shadow: inset 0 6px 0 rgba(255,255,255,.35), 0 20px 50px rgba(255,61,242,.45); animation: alb-scuoti .6s ease-in-out; }
+.alb-busta span { color: #fff; font-size: 1.1rem; font-weight: 900; letter-spacing: .12em; text-shadow: 0 2px 6px rgba(0,0,0,.4); }
+.alb-busta span b { color: #ffd84d; }
+.alb-busta i { position: absolute; top: 22px; left: 0; right: 0; height: 2px; background: repeating-linear-gradient(90deg, rgba(255,255,255,.8) 0 6px, transparent 6px 10px); }
+.alb-busta.is-strappata { display: none; }
+.alb-carte { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; width: min(100%, 460px); perspective: 900px; }
+.alb-carta { position: relative; aspect-ratio: 5 / 7; padding: 0; border: 0; background: none; cursor: pointer; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.3,1.3,.5,1); animation: alb-esci .5s cubic-bezier(.2,1.4,.4,1) both; }
+.alb-carta.is-girata { transform: rotateY(180deg); }
+.alb-carta__retro, .alb-carta__fronte { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 10px; }
+.alb-carta__retro { display: grid; place-items: center; background: linear-gradient(135deg, #2b1b4a, #12081f); border: 3px solid #ffd84d; box-shadow: 0 8px 20px rgba(0,0,0,.5); }
+.alb-carta__retro b { color: #ffd84d; font-size: 1.6rem; font-weight: 900; }
+.alb-carta.is-ultra .alb-carta__retro { box-shadow: 0 0 24px rgba(255,216,77,.8), 0 8px 20px rgba(0,0,0,.5); animation: alb-brilla 1s ease-in-out infinite alternate; }
+.alb-carta__fronte { transform: rotateY(180deg); }
+.alb-carta__fronte .fig { height: 100%; }
+.alb-carta__etichetta { position: absolute; left: 50%; bottom: -14px; z-index: 4; transform: translateX(-50%); padding: 3px 9px; border-radius: 99px; background: #7be3a0; color: #0e2416; font-style: normal; font-size: .6rem; font-weight: 900; letter-spacing: .06em; white-space: nowrap; }
+.alb-carta__etichetta.is-ultra { background: linear-gradient(90deg, #ffd84d, #ff3df2, #3de8ff); color: #1a1205; animation: alb-pulsa .8s ease-in-out infinite alternate; }
+.alb-apertura__azioni { display: flex; gap: 10px; justify-content: center; }
+@keyframes alb-scuoti { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-6deg) scale(1.04); } 75% { transform: rotate(6deg) scale(1.04); } }
+@keyframes alb-esci { from { opacity: 0; transform: translateY(40px) scale(.7); } to { opacity: 1; transform: none; } }
+@keyframes alb-brilla { to { box-shadow: 0 0 40px rgba(255,61,242,.9), 0 8px 20px rgba(0,0,0,.5); } }
+@keyframes alb-pulsa { to { transform: translateX(-50%) scale(1.12); } }
+
+.alb-classifica { display: grid; gap: 10px; }
+.alb-classifica h2 { margin: 6px 0 0; font-size: 1.2rem; }
+.alb-classifica ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.alb-classifica li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--bet-linea); border-radius: 14px; background: rgba(255,255,255,.03); }
+.alb-classifica li.is-mia { border-color: rgba(246,196,83,.55); background: rgba(246,196,83,.08); }
+@media (prefers-reduced-motion: reduce) { .fig__olo, .alb-busta, .alb-carta, .alb-carta.is-ultra .alb-carta__retro, .alb-carta__etichetta.is-ultra { animation: none; } .alb-carta { transition: none; } }
