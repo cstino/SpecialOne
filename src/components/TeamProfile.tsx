@@ -1001,18 +1001,18 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                 const inCorso = vivaioAzioneInCorso === prospetto.id
                 return (
                   <div className={`team-roster-player team-roster-player--${department(g.posizioni[0])}`} key={prospetto.id}>
-                    <button type="button" className="vivaio-apri-scheda" onClick={() => void apriSchedaVivaio(prospetto)} aria-label={`Apri la scheda di ${g.nome}`}>
-                    <span className="team-roster-player__avatar">
+                    <span className="team-roster-player__avatar vivaio-apri-scheda" role="button" tabIndex={0} aria-label={`Apri la scheda di ${g.nome}`}
+                      onClick={() => void apriSchedaVivaio(prospetto)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void apriSchedaVivaio(prospetto) } }}>
                       <span className="team-roster-player__portrait">
                         {prospetto.fotoFirmata ? <img src={prospetto.fotoFirmata} alt="" loading="lazy" /> : <b aria-hidden="true">{g.nome.charAt(0)}</b>}
                       </span>
                       <i className="team-roster-player__ruolo">{g.posizioni[0] ? ruoloIt(g.posizioni[0]) : '—'}</i>
                     </span>
                     <div>
-                      <strong>{g.nome}</strong>
+                      <strong className="vivaio-apri-scheda" role="button" tabIndex={0} onClick={() => void apriSchedaVivaio(prospetto)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void apriSchedaVivaio(prospetto) } }}>{g.nome}</strong>
                       <small>{ruoliIt(g.posizioni)} · {g.eta} anni · <em>{money(prospetto.ingaggio)}/stagione</em></small>
                     </div>
-                    </button>
                     <div className="vivaio-overall">
                       <span className="vivaio-ovr-riga">
                       <small className="vivaio-pot" title="Potenziale del giovane: la forbice si restringe con i livelli del Vivaio">({prospetto.potenziale_min === prospetto.potenziale_max ? prospetto.potenziale_min : `${prospetto.potenziale_min}-${prospetto.potenziale_max}`})</small>

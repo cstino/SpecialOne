@@ -6257,6 +6257,5 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .bet-esito-mia__vinto.is-positivo { color: #7be3a0; }
 .bet-page { padding-bottom: calc(220px + env(safe-area-inset-bottom)); }
 /* Vivaio: foto e nome del prospetto aprono la scheda giocatore (il bottone non cambia la griglia della riga) */
-.vivaio-apri-scheda { display: contents; cursor: pointer; text-align: left; }
-.vivaio-apri-scheda > * { cursor: pointer; }
-.vivaio-apri-scheda strong { text-decoration: underline; text-decoration-color: rgba(255,255,255,.25); text-underline-offset: 3px; }
+.vivaio-apri-scheda { cursor: pointer; }
+strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: rgba(255,255,255,.25); text-underline-offset: 3px; }
