@@ -344,7 +344,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
         <b>{doppioni}</b><small>doppioni</small><em>{doppioni ? `+${fmt(valoreDoppioni)}` : 'ricicla'}</em>
       </button>
     </div>
-    {crediti < PREZZO && <p className="bet-nota">Servono {PREZZO} crediti: si vincono con le schedine e al casinò, e ogni giorno alle 23:30 ne arrivano 1.000.</p>}
+    {crediti < PREZZO && <p className="bet-nota">Servono {PREZZO} crediti: si vincono con le schedine e al casinò, e ogni giorno alle 23:00 ne arrivano 1.000.</p>}
     {(avviso || errore) && <p className={errore ? 'alb-errore' : 'alb-avviso'} role="status">{errore || avviso}</p>}
 
     <div className="alb-viste" role="tablist">

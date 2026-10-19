@@ -6236,3 +6236,5 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 /* Indice dell'album: stemmi contenuti nella loro colonna (alcuni stemmi caricati uscivano piu' grandi) */
 .alb-indice__stemma { width: 34px; height: 34px; overflow: hidden; }
 .alb-indice__stemma .crest, .alb-indice__stemma img, .alb-indice__stemma .crest-stellato { width: 30px !important; height: 30px !important; object-fit: contain; }
+.bet-ticket__premi { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin: 0; padding: 10px 14px; border-bottom: 1px dashed var(--bet-linea); background: rgba(246,196,83,.07); color: #cfc6e0; font-size: .76rem; text-align: center; }
+.bet-ticket__premi b { color: var(--bet-oro); }

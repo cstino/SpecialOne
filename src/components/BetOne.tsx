@@ -261,6 +261,7 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
                 </div>
               </header>
 
+              <p className="bet-ticket__premi"><span>Giocare è <b>gratis</b></span><span><b>+20</b> crediti per ogni pronostico giusto</span><span><b>+300</b> con la schedina perfetta</span></p>
               <p className="bet-ticket__avviso">Come al totocalcio vanno giocate <b>tutte le {partiteAttivo.length} partite</b>: la scommessa si piazza solo a schedina completa.</p>
               <ol className="bet-righe">
                 {partiteAttivo.map((f, i) => {
@@ -373,6 +374,7 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
             <li>{gruppi.length > 1 ? 'Ci sono due schedine, East e West: puoi giocarle entrambe.' : 'Una sola schedina con tutte le partite della giornata.'}</li>
             <li>Puoi modificarla fino a {MINUTI_CHIUSURA} minuti prima della simulazione. Quelle degli altri restano nascoste finché non sono valutate.</li>
             <li>Una schedina con <b>tutti i pronostici giusti</b> vale una <b>WIN</b>. In classifica contano le WIN e, a parità, le partite azzeccate.</li>
+            <li>Giocare la schedina è <b>gratis</b>. Si vincono <b>20 crediti per ogni pronostico giusto</b> e <b>300 in più</b> per la schedina perfetta: con 6 partite, 4 giuste valgono 80 crediti, tutte e 6 valgono 420. I crediti servono al casinò e per le bustine dell'album.</li>
           </ul>}
         </section>
         </>}
