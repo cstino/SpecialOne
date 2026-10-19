@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { etichettaMorale } from './FaccinaMorale'
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from 'recharts'
@@ -533,6 +533,22 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
   const haTraining = Boolean(cambioRuolo || specializzazione)
   const [pagina, setPagina] = useState<'scheda' | 'training'>('scheda')
   const pagerRef = useRef<HTMLDivElement>(null)
+  // Cognomi lunghi: si rimpicciolisce il font finche' la parola non entra nella sua colonna
+  const cognomeRef = useRef<HTMLHeadingElement>(null)
+  const cognome = nomeSuDueRighe(giocatore.nome, giocatore.nomeEsteso).cognome
+  useLayoutEffect(() => {
+    const el = cognomeRef.current
+    if (!el) return
+    const adatta = () => {
+      el.style.fontSize = ''
+      let px = parseFloat(getComputedStyle(el).fontSize)
+      while (el.scrollWidth > el.clientWidth + 1 && px > 14) { px -= 1; el.style.fontSize = `${px}px` }
+    }
+    adatta()
+    const ro = new ResizeObserver(adatta)
+    ro.observe(el.parentElement ?? el)
+    return () => ro.disconnect()
+  }, [cognome])
   const modaleRef = useRef<HTMLElement>(null)
   // Altezza fissa: cambiando scheda il contenuto riparte dall'alto.
   useEffect(() => { modaleRef.current?.scrollTo({ top: 0 }) }, [pagina])
@@ -867,7 +883,7 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
               <p className="kicker">Scheda giocatore</p>
               {nomeSuDueRighe(giocatore.nome, giocatore.nomeEsteso).nome && <span className="player-modal__nome-proprio">{nomeSuDueRighe(giocatore.nome, giocatore.nomeEsteso).nome}</span>}
               <div className="player-modal__nome-riga">
-                <h2 id="player-modal-title">{nomeSuDueRighe(giocatore.nome, giocatore.nomeEsteso).cognome}</h2>
+                <h2 id="player-modal-title" ref={cognomeRef}>{cognome}</h2>
                 {giocatore.posizioni[0] && <span className={`role-pill role-pill--${rep.toLowerCase()}`}>{ruoloIt(giocatore.posizioni[0])}</span>}
               </div>
               <p>{giocatore.nazionalita || '—'}</p>

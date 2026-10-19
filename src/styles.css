@@ -1707,7 +1707,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .player-modal__hero { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; align-items: center; gap: 18px; padding: 10px 42px 20px 0; border-bottom: 1px solid #342b40; }
 .player-modal__hero h2 { margin: 4px 0; font-size: clamp(1.55rem, 5vw, 2.35rem); line-height: .96; }
 .player-modal__nome-riga { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.player-modal__nome-riga h2 { margin: 4px 0; }
+.player-modal__nome-riga h2 { margin: 4px 0; min-width: 0; max-width: 100%; overflow: hidden; }
 .player-modal__nome-riga .role-pill { flex: none; }
 .player-modal__hero p:last-child { margin: 0; color: #a69aaf; font-size: .78rem; }
 .player-modal__photo { position: relative; width: 112px; aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; border: 3px solid #5dd17b; border-radius: 50%; color: #fff; background: radial-gradient(circle at 50% 35%, #71647e, #2f2440 72%); font-size: 1.25rem; font-weight: 950; box-shadow: 0 0 0 6px rgba(93,209,123,.1), 0 13px 28px rgba(0,0,0,.42); }
