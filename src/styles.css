@@ -6021,3 +6021,4 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .alb-classifica li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--bet-linea); border-radius: 14px; background: rgba(255,255,255,.03); }
 .alb-classifica li.is-mia { border-color: rgba(246,196,83,.55); background: rgba(246,196,83,.08); }
 @media (prefers-reduced-motion: reduce) { .fig__olo, .alb-busta, .alb-carta, .alb-carta.is-ultra .alb-carta__retro, .alb-carta__etichetta.is-ultra { animation: none; } .alb-carta { transition: none; } }
+.alb-pagina-intera { padding-bottom: 40px; }

@@ -46,6 +46,7 @@ import { MenuIniziale } from './components/MenuIniziale'
 import { NomeAllenatoreObbligatorio, useNomeAllenatoreObbligatorio } from './components/NomeAllenatoreObbligatorio'
 import { ScegliRivale } from './components/ScegliRivale'
 import { BetOne } from './components/BetOne'
+import { PaginaAlbum } from './components/PaginaAlbum'
 import { NovitaBenvenuto, useNovitaBenvenuto } from './components/NovitaBenvenuto'
 import { Onboarding } from './components/Onboarding'
 import { ContestoHome, ContestoNotifiche } from './lib/navigazione'
@@ -520,6 +521,7 @@ export default function App() {
       : gameView === 'rivalita' ? <Rivalita membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} onCambiaRivale={() => setCambiaRivale(true)} />
       : gameView === 'salastampa' ? <PaginaSalaStampa membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} />
       : gameView === 'spogliatoio' ? <PaginaSpogliatoio membership={active} onNavigate={navigateGame} />
+      : gameView === 'album' ? <PaginaAlbum membership={active} onNavigate={navigateGame} />
       : gameView === 'betone' ? <BetOne membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} onRevealMatch={(id) => setRevealMatch({ id, from: 'betone' })} />
       : gameView === 'pubblico' ? <PaginaPubblico membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
       : gameView === 'admin' ? <Admin membership={active} onNavigate={navigateGame} />
