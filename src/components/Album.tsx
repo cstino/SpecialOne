@@ -159,6 +159,7 @@ type Props = { leagueId: number; teamId: number; dati: Dati; conferenze: boolean
 export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   const [stagione, setStagione] = useState<number | null>(null)
   const [crediti, setCrediti] = useState(0)
+  const [gratis, setGratis] = useState(0)
   const [figurine, setFigurine] = useState<Figurina[]>([])
   const [possesso, setPossesso] = useState<Map<number, Possesso>>(new Map())
   const [ana, setAna] = useState<Map<number, Anagrafica>>(new Map())
@@ -177,6 +178,8 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     if (error) { setErrore(error.message); return }
     const st = (a as { stagione: number; crediti: number }).stagione
     setStagione(st); setCrediti((a as { crediti: number }).crediti)
+    const { data: cs } = await supabase.rpc('casino_stato', { p_league_id: leagueId })
+    setGratis(Number((cs as { bustine_gratis?: number } | null)?.bustine_gratis ?? 0))
     const [{ data: f }, { data: p }, { data: cl }] = await Promise.all([
       supabase.from('album_figurine').select('id, tipo, team_id, player_id, conferenza, overall, aggiornamento').eq('league_id', leagueId).eq('stagione', st).order('id'),
       supabase.from('album_possesso').select('figurina_id, normali, ultra').eq('league_id', leagueId),
@@ -216,14 +219,15 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   const doppioni = [...possesso.values()].reduce((s, p) => s + Math.max(0, p.normali - 1) + Math.max(0, p.ultra - 1), 0)
   const valoreDoppioni = [...possesso.values()].reduce((s, p) => s + Math.max(0, p.normali - 1) * 10 + Math.max(0, p.ultra - 1) * 50, 0)
 
-  async function compra() {
+  async function compra(conGratis = false) {
     if (compro) return
     setCompro(true); setErrore(''); setAvviso('')
-    const { data, error } = await supabase.rpc('album_compra_bustina', { p_league_id: leagueId })
+    const { data, error } = await supabase.rpc('album_compra_bustina', { p_league_id: leagueId, p_gratis: conGratis })
     setCompro(false)
     if (error) { setErrore(error.message); return }
-    const r = data as { figurine: Uscita[]; premi: Array<{ pagina?: number; album?: boolean }>; crediti: number }
+    const r = data as { figurine: Uscita[]; premi: Array<{ pagina?: number; album?: boolean }>; crediti: number; bustine_gratis?: number }
     setCrediti(r.crediti)
+    if (r.bustine_gratis != null) setGratis(r.bustine_gratis)
     setScoperte(new Set()); setStrappo(false); setBusta(r.figurine)
     const premi = r.premi.map((p) => p.album ? '📒 Album completato!' : `Pagina di ${dati.teamById.get(p.pagina ?? 0)?.nome ?? 'una squadra'} completa: +200 crediti`)
     if (premi.length) setAvviso(premi.join(' · '))
@@ -265,10 +269,15 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     </div>
 
     <div className="alb-azioni">
-      <button type="button" className="alb-compra" disabled={compro || crediti < PREZZO} onClick={() => void compra()}>
-        <span className="alb-compra__busta" aria-hidden="true" />
-        <span><b>{compro ? 'Apro…' : 'Compra una bustina'}</b><small>{PREZZO} crediti · 3 figurine</small></span>
-      </button>
+      {gratis > 0
+        ? <button type="button" className="alb-compra alb-compra--gratis" disabled={compro} onClick={() => void compra(true)}>
+          <span className="alb-compra__busta" aria-hidden="true" />
+          <span><b>{compro ? 'Apro…' : 'Apri una bustina gratis'}</b><small>🎁 {gratis} {gratis === 1 ? 'bustina vinta' : 'bustine vinte'} al casinò</small></span>
+        </button>
+        : <button type="button" className="alb-compra" disabled={compro || crediti < PREZZO} onClick={() => void compra()}>
+          <span className="alb-compra__busta" aria-hidden="true" />
+          <span><b>{compro ? 'Apro…' : 'Compra una bustina'}</b><small>{PREZZO} crediti · 3 figurine</small></span>
+        </button>}
       <button type="button" className="alb-ricicla" disabled={doppioni === 0} onClick={() => void ricicla()}>
         <b>{doppioni}</b><small>doppioni</small><em>{doppioni ? `+${fmt(valoreDoppioni)}` : 'ricicla'}</em>
       </button>
@@ -363,7 +372,9 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
           {scoperte.size < busta.length ? <button type="button" className="button button--secondary" onClick={() => busta.forEach((u, i) => scopri(i, u.ultra))}>Scopri tutte</button>
             : <>
               <button type="button" className="button button--secondary" onClick={() => setBusta(null)}>Chiudi</button>
-              <button type="button" className="alb-compra alb-compra--piccola" disabled={compro || crediti < PREZZO} onClick={() => void compra()}><span><b>Un'altra</b><small>{PREZZO} crediti</small></span></button>
+              {gratis > 0
+                ? <button type="button" className="alb-compra alb-compra--piccola" disabled={compro} onClick={() => void compra(true)}><span><b>Un'altra</b><small>🎁 gratis ({gratis})</small></span></button>
+                : <button type="button" className="alb-compra alb-compra--piccola" disabled={compro || crediti < PREZZO} onClick={() => void compra()}><span><b>Un'altra</b><small>{PREZZO} crediti</small></span></button>}
             </>}
         </div>
       </>}

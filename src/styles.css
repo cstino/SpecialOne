@@ -6196,3 +6196,11 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .alb-esempio__kicker { margin: 0; background: linear-gradient(90deg, #ffd84d, #ff3df2, #3de8ff); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: .72rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
 .alb-esempio__testo h3 { margin: 0; font-size: 1.05rem; }
 .alb-esempio__testo p:last-child { margin: 0; color: #b9b0cc; font-size: .8rem; line-height: 1.4; }
+/* Simbolo bustina sui rulli e vincita della bustina */
+.slot-sim--bustina { background: radial-gradient(circle, rgba(233,59,208,.35), transparent 70%); }
+.mini-busta { position: relative; display: grid; place-items: center; width: 56%; height: 80%; border-radius: 3px; background: linear-gradient(170deg, #2a0b5e, #6d21c9 40%, #e93bd0 75%, #ff9a5a); box-shadow: 0 3px 8px rgba(0,0,0,.5), inset 3px 0 6px rgba(0,0,0,.35), inset -3px 0 6px rgba(0,0,0,.35); overflow: hidden; }
+.mini-busta img { width: 62% !important; height: auto !important; filter: drop-shadow(0 0 4px rgba(255,216,77,.8)); }
+.mini-busta__sald { position: absolute; top: 0; left: 0; right: 0; height: 12%; background: linear-gradient(90deg, #8a6612, #ffe9a0 30%, #c99319 60%, #ffe08a 85%, #7a5a10); }
+.mini-busta__sald--giu { top: auto; bottom: 0; }
+.slot-vinto__bustina { color: #fff; font-size: .95rem !important; font-weight: 900 !important; letter-spacing: .04em; background: linear-gradient(90deg, #ffd84d, #ff3df2); -webkit-background-clip: text; background-clip: text; color: transparent !important; }
+.alb-compra--gratis { background: linear-gradient(180deg, #ff9ae8, #e93bd0) !important; box-shadow: 0 8px 22px rgba(233,59,208,.45) !important; animation: slot-respira 2.2s ease-in-out infinite; }

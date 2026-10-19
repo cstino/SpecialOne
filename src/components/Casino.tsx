@@ -10,17 +10,19 @@ import { Crest } from './Crest'
 
 type Dati = ReturnType<typeof useSeasonData>
 type Vincita = { linea: number; simbolo: number; n: number; vinto: number }
-type Esito = { griglia: number[]; vincite: Vincita[]; coppe: number; scatter: number; vinto: number; gratis: boolean; molt: number; puntata: number; nuovi_gratis: number; crediti: number; giri_gratis: number; max_vincita: number }
-type Stato = { crediti: number; giri_gratis: number; puntata_gratis: number | null; simboli: number[]; max_vincita: number; giri: number; prossima_ricarica: string }
+type Esito = { griglia: number[]; vincite: Vincita[]; coppe: number; scatter: number; vinto: number; gratis: boolean; molt: number; puntata: number; nuovi_gratis: number; crediti: number; giri_gratis: number; max_vincita: number; bustine?: number; bustine_vinte?: number; bustine_gratis?: number }
+type Stato = { crediti: number; giri_gratis: number; puntata_gratis: number | null; simboli: number[]; max_vincita: number; giri: number; prossima_ricarica: string; bustine_gratis?: number; album?: boolean }
 type RigaClassifica = { team_id: number; crediti: number; max_vincita: number; giri: number }
 
 const PUNTATE = [10, 20, 50, 100]
 const LINEE = [[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,0,0,1],[1,2,2,2,1],[0,1,1,1,0]]
-const PESI = [9, 9, 9, 7, 7, 7, 4, 4, 3, 2]
-const PAGA: Record<string, number[]> = { basso: [8, 26, 100], medio: [14, 52, 200], alto: [26, 125, 500] }
+const PESI = [9, 9, 9, 7, 7, 7, 4, 4, 3, 2, 0]
+const PAGA_BASE: Record<string, number[]> = { basso: [8, 26, 100], medio: [14, 52, 200], alto: [26, 125, 500] }
+// Dove c'e' l'album (e quindi la bustina sui rulli) gli stemmi pagano un po' di piu'.
+const PAGA_ALBUM: Record<string, number[]> = { basso: [9, 29, 110], medio: [16, 56, 222], alto: [29, 136, 550] }
 const COLORI_LINEE = ['#ffd84d', '#ff5ad1', '#4de2ff', '#7dff6b', '#ff8a3d', '#b78bff', '#ff4d6d', '#3dffb5', '#ffe9a8', '#6bb7ff']
 const fmt = (n: number) => new Intl.NumberFormat('it-IT').format(Math.round(n))
-const pescaSimbolo = () => { let x = Math.random() * 61; for (let i = 0; i < 10; i++) { x -= PESI[i]; if (x < 0) return i } return 0 }
+const pescaSimbolo = () => { let x = Math.random() * 61; for (let i = 0; i < 11; i++) { x -= PESI[i]; if (x < 0) return i } return 0 }
 const ridotto = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
 // ---------- Suoni sintetizzati (nessun file audio) ----------
@@ -113,6 +115,9 @@ function Contatore({ valore }: { valore: number }) {
 
 function Simbolo({ s, simboli, dati }: { s: number; simboli: number[]; dati: Dati }) {
   if (s === 8) return <span className="slot-sim slot-sim--jolly"><img src="/specialone-mark.svg" alt="Jolly SpecialOne" /></span>
+  if (s === 10) return <span className="slot-sim slot-sim--bustina" aria-label="Bustina">
+    <span className="mini-busta"><span className="mini-busta__sald" /><img src="/specialone-mark.svg" alt="" /><span className="mini-busta__sald mini-busta__sald--giu" /></span>
+  </span>
   if (s === 9) return <span className="slot-sim slot-sim--coppa" aria-label="Coppa">
     <svg viewBox="0 0 48 48" width="100%" height="100%"><defs><linearGradient id="coppaOro" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff2b0" /><stop offset=".5" stopColor="#ffcc33" /><stop offset="1" stopColor="#b8801a" /></linearGradient></defs>
       <path d="M15 8h18v8c0 7-4 12-9 12s-9-5-9-12z" fill="url(#coppaOro)" stroke="#7a5310" strokeWidth="1.5" /><path d="M15 11H9c0 6 3 9 7 9M33 11h6c0 6-3 9-7 9" fill="none" stroke="#ffcc33" strokeWidth="2.5" strokeLinecap="round" />
@@ -194,8 +199,8 @@ export function Casino({ leagueId, teamId, dati }: Props) {
         window.clearInterval(ticker)
         setGriglia(r.griglia); setStrisce(null); setInCorsa(false); setEsito(r)
         setCrediti(r.crediti)
-        setStato((s) => (s ? { ...s, crediti: r.crediti, giri_gratis: r.giri_gratis, max_vincita: r.max_vincita } : s))
-        if (r.coppe >= 3) suoni.coppe()
+        setStato((s) => (s ? { ...s, crediti: r.crediti, giri_gratis: r.giri_gratis, max_vincita: r.max_vincita, bustine_gratis: r.bustine_gratis ?? s.bustine_gratis } : s))
+        if (r.coppe >= 3 || (r.bustine_vinte ?? 0) > 0) suoni.coppe()
         if (r.vinto >= r.puntata * 20) { suoni.grande(); setFesta((n) => n + 1); for (let i = 0; i < 18; i++) window.setTimeout(() => suoni.moneta(i), 400 + i * 60) }
         else if (r.vinto > 0) suoni.vincita()
         void supabase.rpc('casino_classifica', { p_league_id: leagueId }).then(({ data: cl }) => setClassifica((cl ?? []) as RigaClassifica[]))
@@ -209,6 +214,7 @@ export function Casino({ leagueId, teamId, dati }: Props) {
     const v = esito.vincite[lineaVista]
     if (v) LINEE[v.linea].slice(0, v.n).forEach((riga, rullo) => set.add(rullo * 3 + riga))
     if (esito.coppe >= 3) esito.griglia.forEach((s, i) => { if (s === 9) set.add(i) })
+    if ((esito.bustine ?? 0) >= 3) esito.griglia.forEach((s, i) => { if (s === 10) set.add(i) })
     return set
   }, [esito, lineaVista])
 
@@ -250,9 +256,10 @@ export function Casino({ leagueId, teamId, dati }: Props) {
               stroke={COLORI_LINEE[lineaAttiva.linea]} />
           </svg>}
         </div>
-        {esito && esito.vinto > 0 && !inCorsa && <div className={`slot-vinto slot-vinto--${livello}`} role="status">
+        {esito && (esito.vinto > 0 || (esito.bustine_vinte ?? 0) > 0) && !inCorsa && <div className={`slot-vinto slot-vinto--${livello}`} role="status">
           {livello === 'mega' && <em>MEGA WIN</em>}{livello === 'grande' && <em>BIG WIN</em>}
-          <strong>+<Contatore valore={esito.vinto} /></strong>
+          {esito.vinto > 0 && <strong>+<Contatore valore={esito.vinto} /></strong>}
+          {(esito.bustine_vinte ?? 0) > 0 && <span className="slot-vinto__bustina">🎁 {esito.bustine_vinte === 1 ? 'BUSTINA IN REGALO!' : `${esito.bustine_vinte} BUSTINE IN REGALO!`}</span>}
           {esito.nuovi_gratis > 0 && <span>🏆 {esito.nuovi_gratis} giri gratis!</span>}
         </div>}
       </div>
@@ -262,6 +269,7 @@ export function Casino({ leagueId, teamId, dati }: Props) {
     <p className="slot-messaggio" role="status">
       {errore ? <span className="slot-errore">{errore}</span>
         : inCorsa ? 'Buona fortuna…'
+        : esito && (esito.bustine_vinte ?? 0) > 0 ? `Hai vinto ${esito.bustine_vinte === 1 ? 'una bustina' : `${esito.bustine_vinte} bustine`} per l'album: la trovi in Altro › Album.`
         : esito ? (esito.vinto > 0 ? (lineaAttiva ? `Linea ${lineaAttiva.linea + 1}: ${lineaAttiva.n} simboli, +${fmt(lineaAttiva.vinto)}` : `Coppe: +${fmt(esito.scatter)}`) : 'Niente stavolta. Ritenta!')
         : giriGratis > 0 ? 'Hai dei giri gratis: tutte le vincite valgono doppio.' : 'Scegli la puntata e tira la leva.'}
     </p>
@@ -281,9 +289,10 @@ export function Casino({ leagueId, teamId, dati }: Props) {
         <p>Vinci quando su una <b>linea</b> escono <b>3, 4 o 5 stemmi uguali</b> consecutivi, partendo dal <b>primo rullo a sinistra</b>. I premi qui sotto sono in crediti <b>con la tua puntata di {puntata}</b>: se cambi puntata cambiano anche loro. Se escono più linee vincenti, si sommano.</p>
         {([['alto', [6, 7]], ['medio', [3, 4, 5]], ['basso', [0, 1, 2]]] as Array<[string, number[]]>).map(([fascia, idx]) => <div key={fascia} className="slot-premi__riga">
           <span className="slot-premi__simboli">{idx.map((i) => <span key={i}><Simbolo s={i} simboli={simboli} dati={dati} /></span>)}</span>
-          <span className="slot-premi__valori">{PAGA[fascia].map((v, k) => <b key={k}>{k + 3} uguali <i>{fmt(v * puntata / 10)}</i></b>)}</span>
+          <span className="slot-premi__valori">{(stato.album ? PAGA_ALBUM : PAGA_BASE)[fascia].map((v, k) => <b key={k}>{k + 3} uguali <i>{fmt(v * puntata / 10)}</i></b>)}</span>
         </div>)}
         <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={8} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo"><b>Jolly</b>: vale come qualsiasi stemma e aiuta a completare le linee. Cinque jolly sulla stessa linea: <b>{fmt(400 * puntata / 10)}</b> crediti.</span></div>
+        {stato.album && <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={10} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo"><b>Bustina</b>: conta ovunque, come la coppa. 3 bustine: <b>una bustina gratis</b> per l'album; 4: due; 5: tre. Le trovi in Altro › Album.</span></div>}
         <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={9} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo"><b>Coppa</b>: conta in qualsiasi posizione, anche fuori dalle linee. 3 coppe: <b>{fmt(2 * puntata)}</b> crediti e <b>8 giri gratis</b>; 4 coppe: {fmt(5 * puntata)} e 12 giri; 5 coppe: {fmt(20 * puntata)} e 20 giri. Nei giri gratis non paghi e le vincite valgono doppio.</span></div>
         <p>Le <b>linee</b> sono 10: le tre righe orizzontali più sette percorsi a zig-zag. Quando vinci, la linea si illumina sui rulli. Gli stemmi cambiano a ogni giornata e pagano di più le squadre meglio piazzate in classifica (prima riga). Ogni giro lo estrae il server.</p>
       </div>}
