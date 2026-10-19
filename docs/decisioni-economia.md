@@ -273,3 +273,4 @@ Deciso con il committente. I prospetti del vivaio si possono inserire negli scam
 - le squadre del PC non trattano prospetti;
 - un prospetto promosso in prima squadra resta un giocatore normale.
 Colonne `trade_proposals.vivaio_offerti` / `vivaio_richiesti`; `proponi_scambio` e `controproponi` con due parametri in più (default vuoti). Migrazioni `20261019160000`, `20261019161000`.
+- **Annunci e SocialOne (19/10/2026).** L'annuncio «HERE WE GO» elenca anche i prospetti del vivaio ("Mats Almeida (vivaio)") e le scelte ("1 scelta di draft"). Gli scambi senza giocatori della rosa (solo prospetti o sole scelte) hanno frasi dei tifosi dedicate: categorie `tifosi_vivaio` e `tifosi_scelte` (16 frasi ciascuna). La notifica HERE WE GO parte per ogni scambio accettato, qualunque sia il contenuto. Migrazione `20261019170000`.
