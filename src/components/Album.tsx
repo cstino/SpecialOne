@@ -16,6 +16,9 @@ type Possesso = { figurina_id: number; normali: number; ultra: number }
 type Anagrafica = { id: number; nome: string; posizioni: string[]; foto_url: string | null }
 type Uscita = { figurina_id: number; tipo: Figurina['tipo']; ultra: boolean; nuova: boolean }
 type RigaClassifica = { team_id: number; attaccate: number; totale: number; ultra: number; pagine: number }
+type Voce = { figurina_id: number; ultra: boolean }
+type Doppione = Voce & { copie: number }
+type ScambioFig = { id: number; da_team_id: number; a_team_id: number; offerte: Voce[]; richieste: Voce[]; stato: string; scade_il: string; da_user: string }
 
 const PREZZO = 250
 const ridotto = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -172,6 +175,16 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   const [avviso, setAvviso] = useState('')
   const [classifica, setClassifica] = useState<RigaClassifica[]>([])
   const scheda = useRef<HTMLDivElement>(null)
+  // Scambi di figurine (solo doppioni, almeno una per parte, 24 ore).
+  const [vista, setVista] = useState<'album' | 'scambi'>('album')
+  const [scambi, setScambi] = useState<ScambioFig[]>([])
+  const [controparte, setControparte] = useState<number | null>(null)
+  const [miei, setMiei] = useState<Doppione[]>([])
+  const [suoi, setSuoi] = useState<Doppione[]>([])
+  const [offro, setOffro] = useState<Voce[]>([])
+  const [chiedo, setChiedo] = useState<Voce[]>([])
+  const [contro, setContro] = useState<number | null>(null)
+  const [lavoro, setLavoro] = useState(false)
 
   const carica = useCallback(async () => {
     const { data: a, error } = await supabase.rpc('album_apri', { p_league_id: leagueId })
@@ -189,6 +202,10 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     setFigurine(figs)
     setPossesso(new Map(((p ?? []) as Possesso[]).map((x) => [x.figurina_id, x])))
     setClassifica((cl ?? []) as RigaClassifica[])
+    const { data: sc } = await supabase.from('album_scambi').select('id, da_team_id, a_team_id, offerte, richieste, stato, scade_il, da_user').eq('league_id', leagueId).eq('stato', 'in_attesa').order('id', { ascending: false })
+    setScambi(((sc ?? []) as ScambioFig[]).filter((x) => new Date(x.scade_il).getTime() > Date.now()))
+    const { data: md } = await supabase.rpc('album_doppioni', { p_league_id: leagueId, p_team_id: teamId })
+    setMiei((md ?? []) as Doppione[])
     const ids = [...new Set(figs.filter((x) => x.player_id != null).map((x) => x.player_id as number))]
     const mappa = new Map<number, Anagrafica>()
     for (let i = 0; i < ids.length; i += 300) {
@@ -196,8 +213,12 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
       for (const x of (g ?? []) as Anagrafica[]) mappa.set(x.id, x)
     }
     setAna(mappa)
-  }, [leagueId])
+  }, [leagueId, teamId])
   useEffect(() => { void carica() }, [carica])
+  useEffect(() => {
+    if (controparte == null) { setSuoi([]); return }
+    void supabase.rpc('album_doppioni', { p_league_id: leagueId, p_team_id: controparte }).then(({ data }) => setSuoi((data ?? []) as Doppione[]))
+  }, [controparte, leagueId])
 
   const perSquadra = useMemo(() => {
     const m = new Map<number, Figurina[]>()
@@ -242,6 +263,47 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     })
   }
 
+  const chiave = (v: Voce) => `${v.figurina_id}:${v.ultra ? 1 : 0}`
+  const alterna = (lista: Voce[], set: (v: Voce[]) => void, v: Voce) => set(lista.some((x) => chiave(x) === chiave(v)) ? lista.filter((x) => chiave(x) !== chiave(v)) : [...lista, v])
+  async function proponi() {
+    if (controparte == null) return
+    setLavoro(true); setErrore(''); setAvviso('')
+    const { error } = await supabase.rpc('album_proponi_scambio', { p_league_id: leagueId, p_a_team_id: controparte, p_offerte: offro, p_richieste: chiedo, p_controproposta_di: contro })
+    setLavoro(false)
+    if (error) { setErrore(error.message); return }
+    setAvviso('Proposta inviata: l\'altro ha 24 ore per rispondere.')
+    setOffro([]); setChiedo([]); setContro(null); setControparte(null)
+    void carica()
+  }
+  async function rispondi(id: number, accetta: boolean) {
+    setLavoro(true); setErrore(''); setAvviso('')
+    const { error } = await supabase.rpc('album_rispondi_scambio', { p_id: id, p_accetta: accetta })
+    setLavoro(false)
+    if (error) { setErrore(error.message); return }
+    setAvviso(accetta ? 'Scambio fatto: le figurine sono nel tuo album.' : 'Proposta rifiutata.')
+    void carica()
+  }
+  async function ritira(id: number) {
+    const { error } = await supabase.rpc('album_ritira_scambio', { p_id: id })
+    if (error) { setErrore(error.message); return }
+    void carica()
+  }
+  function controproposta(sc: ScambioFig) {
+    setContro(sc.id); setControparte(sc.da_team_id)
+    setOffro(sc.richieste); setChiedo(sc.offerte)
+    window.requestAnimationFrame(() => document.querySelector('.alb-sc-componi')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+  const fig = (id: number) => figurine.find((x) => x.id === id)
+  const miniCarta = (v: Voce, scelta?: boolean, onClick?: () => void, nota?: string) => {
+    const f = fig(v.figurina_id)
+    if (!f) return null
+    return <button key={chiave(v)} type="button" className={`alb-sc-mini${scelta ? ' is-scelta' : ''}`} onClick={onClick} disabled={!onClick} aria-pressed={scelta}>
+      <Carta f={f} ana={f.player_id != null ? ana.get(f.player_id) : undefined} dati={dati} ultra={v.ultra || f.tipo === 'conferenza'} piccola />
+      {nota && <em>{nota}</em>}
+      {scelta && <i aria-hidden="true">✓</i>}
+    </button>
+  }
+
   async function ricicla() {
     const { data, error } = await supabase.rpc('album_ricicla_doppioni', { p_league_id: leagueId })
     if (error) { setErrore(error.message); return }
@@ -284,6 +346,58 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     </div>
     {crediti < PREZZO && <p className="bet-nota">Servono {PREZZO} crediti: si vincono con le schedine e al casinò, e ogni giorno ne arrivano 1.000.</p>}
     {(avviso || errore) && <p className={errore ? 'alb-errore' : 'alb-avviso'} role="status">{errore || avviso}</p>}
+
+    <div className="alb-viste" role="tablist">
+      <button type="button" role="tab" aria-selected={vista === 'album'} className={vista === 'album' ? 'is-attiva' : ''} onClick={() => setVista('album')}>Le pagine</button>
+      <button type="button" role="tab" aria-selected={vista === 'scambi'} className={vista === 'scambi' ? 'is-attiva' : ''} onClick={() => setVista('scambi')}>Scambi{scambi.some((x) => x.a_team_id === teamId) ? <b>{scambi.filter((x) => x.a_team_id === teamId).length}</b> : null}</button>
+    </div>
+
+    {vista === 'scambi' ? <section className="alb-sc">
+      {scambi.filter((x) => x.a_team_id === teamId).length > 0 && <div className="alb-sc-blocco"><h3>Proposte ricevute</h3>
+        {scambi.filter((x) => x.a_team_id === teamId).map((sc) => <article key={sc.id} className="alb-sc-card">
+          <header><Crest value={dati.teamById.get(sc.da_team_id)?.stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(sc.da_team_id)} size="small" /><strong>{dati.teamById.get(sc.da_team_id)?.nome}</strong><small>scade {new Intl.DateTimeFormat('it-IT', { weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }).format(new Date(sc.scade_il))}</small></header>
+          <div className="alb-sc-lato"><small>Ti dà</small><div>{sc.offerte.map((v) => miniCarta(v, false, undefined, ce(v.figurina_id) ? undefined : 'ti manca'))}</div></div>
+          <div className="alb-sc-lato"><small>Ti chiede</small><div>{sc.richieste.map((v) => miniCarta(v))}</div></div>
+          <footer>
+            <button type="button" className="button button--secondary" disabled={lavoro} onClick={() => void rispondi(sc.id, false)}>Rifiuta</button>
+            <button type="button" className="button button--secondary" disabled={lavoro} onClick={() => controproposta(sc)}>Controproposta</button>
+            <button type="button" className="alb-compra alb-compra--piccola" disabled={lavoro} onClick={() => void rispondi(sc.id, true)}><span><b>Accetta</b></span></button>
+          </footer>
+        </article>)}
+      </div>}
+      {scambi.filter((x) => x.da_team_id === teamId).length > 0 && <div className="alb-sc-blocco"><h3>Proposte inviate</h3>
+        {scambi.filter((x) => x.da_team_id === teamId).map((sc) => <article key={sc.id} className="alb-sc-card">
+          <header><Crest value={dati.teamById.get(sc.a_team_id)?.stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(sc.a_team_id)} size="small" /><strong>A {dati.teamById.get(sc.a_team_id)?.nome}</strong><small>in attesa</small></header>
+          <div className="alb-sc-lato"><small>Dai</small><div>{sc.offerte.map((v) => miniCarta(v))}</div></div>
+          <div className="alb-sc-lato"><small>Chiedi</small><div>{sc.richieste.map((v) => miniCarta(v))}</div></div>
+          <footer><button type="button" className="button button--secondary" onClick={() => void ritira(sc.id)}>Ritira</button></footer>
+        </article>)}
+      </div>}
+
+      <div className="alb-sc-blocco alb-sc-componi"><h3>{contro ? 'Controproposta' : 'Nuovo scambio'}</h3>
+        <p className="bet-nota">Si scambiano solo i doppioni, almeno una figurina per parte. La proposta vale 24 ore.</p>
+        <div className="alb-sc-squadre">
+          {dati.teams.filter((t) => t.id !== teamId && t.attiva !== false && t.user_id && !t.controllata_da_pc).map((t) => <button key={t.id} type="button" className={controparte === t.id ? 'is-scelta' : ''} title={t.nome} aria-label={t.nome}
+            onClick={() => { setControparte(t.id); setChiedo([]); setContro(null) }}>
+            <Crest value={t.stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(t.id)} size="small" />
+          </button>)}
+        </div>
+        {controparte != null && <>
+          <h4>Chiedi a {dati.teamById.get(controparte)?.nome} <span>i suoi doppioni</span></h4>
+          {suoi.length === 0 ? <p className="bet-nota">Non ha doppioni da scambiare.</p> : <div className="alb-sc-griglia">
+            {[...suoi].sort((a, b) => Number(ce(a.figurina_id)) - Number(ce(b.figurina_id))).map((d) => miniCarta(d, chiedo.some((x) => chiave(x) === chiave(d)), () => alterna(chiedo, setChiedo, { figurina_id: d.figurina_id, ultra: d.ultra }), ce(d.figurina_id) ? undefined : 'ti manca'))}
+          </div>}
+          <h4>Offri <span>i tuoi doppioni</span></h4>
+          {miei.length === 0 ? <p className="bet-nota">Non hai doppioni da scambiare.</p> : <div className="alb-sc-griglia">
+            {miei.map((d) => miniCarta(d, offro.some((x) => chiave(x) === chiave(d)), () => alterna(offro, setOffro, { figurina_id: d.figurina_id, ultra: d.ultra })))}
+          </div>}
+          <button type="button" className="alb-compra" disabled={lavoro || offro.length === 0 || chiedo.length === 0} onClick={() => void proponi()}>
+            <span><b>{lavoro ? 'Invio…' : contro ? 'Invia la controproposta' : 'Proponi lo scambio'}</b><small>dai {offro.length} · ricevi {chiedo.length}</small></span>
+          </button>
+          {(offro.length === 0) !== (chiedo.length === 0) && <p className="bet-nota">{offro.length === 0 ? 'Scegli anche cosa offri.' : 'Scegli anche cosa chiedi.'}</p>}
+        </>}
+      </div>
+    </section> : <>
 
     {pagina == null && esempioUltra && <section className="alb-esempio" aria-label="Esempio di figurina ultrarara">
       <div className="alb-esempio__carta">
@@ -333,6 +447,8 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
         </li>)}
       </ul>
     </div>}
+
+    </>}
 
     <section className="alb-classifica">
       <h2>Collezionisti</h2>

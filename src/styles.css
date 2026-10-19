@@ -6204,3 +6204,32 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .mini-busta__sald--giu { top: auto; bottom: 0; }
 .slot-vinto__bustina { color: #fff; font-size: .95rem !important; font-weight: 900 !important; letter-spacing: .04em; background: linear-gradient(90deg, #ffd84d, #ff3df2); -webkit-background-clip: text; background-clip: text; color: transparent !important; }
 .alb-compra--gratis { background: linear-gradient(180deg, #ff9ae8, #e93bd0) !important; box-shadow: 0 8px 22px rgba(233,59,208,.45) !important; animation: slot-respira 2.2s ease-in-out infinite; }
+
+/* Album: schede Pagine / Scambi e scambi di figurine */
+.alb-viste { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; border: 1px solid var(--bet-linea); border-radius: 14px; background: rgba(255,255,255,.03); }
+.alb-viste button { display: flex; align-items: center; justify-content: center; gap: 6px; height: 40px; border: 0; border-radius: 10px; background: none; color: #b9b0cc; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; font-size: .82rem; cursor: pointer; }
+.alb-viste button.is-attiva { background: linear-gradient(145deg, #ffd978, #f6c453); color: #1a1205; }
+.alb-viste b { display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 99px; background: #e93bd0; color: #fff; font-size: .7rem; }
+.alb-sc { display: grid; gap: 14px; }
+.alb-sc-blocco { display: grid; gap: 10px; }
+.alb-sc-blocco h3 { margin: 4px 0 0; font-size: 1.05rem; }
+.alb-sc-blocco h4 { margin: 6px 0 0; font-size: .92rem; }
+.alb-sc-blocco h4 span { color: #8f86a3; font-weight: 600; font-size: .78rem; }
+.alb-sc-card { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--bet-linea); border-radius: 16px; background: rgba(255,255,255,.03); }
+.alb-sc-card header { display: flex; align-items: center; gap: 8px; }
+.alb-sc-card header strong { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.alb-sc-card header small { color: #8f86a3; font-size: .72rem; }
+.alb-sc-card footer { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.alb-sc-lato { display: grid; gap: 6px; }
+.alb-sc-lato > small { color: var(--bet-oro); font-size: .66rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.alb-sc-lato > div, .alb-sc-griglia { display: flex; flex-wrap: wrap; gap: 8px; }
+.alb-sc-mini { position: relative; width: 72px; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 12px; transition: transform .12s; }
+.alb-sc-mini:disabled { cursor: default; }
+.alb-sc-mini.is-scelta { transform: translateY(-4px); }
+.alb-sc-mini.is-scelta .fig { box-shadow: 0 0 0 3px #7be3a0, 0 6px 14px rgba(0,0,0,.4); }
+.alb-sc-mini em { position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); padding: 1px 6px; border-radius: 99px; background: #e93bd0; color: #fff; font-style: normal; font-size: .52rem; font-weight: 900; white-space: nowrap; }
+.alb-sc-mini i { position: absolute; top: -6px; right: -6px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #7be3a0; color: #0e2416; font-style: normal; font-weight: 900; font-size: .7rem; }
+.alb-sc-squadre { display: flex; flex-wrap: wrap; gap: 8px; }
+.alb-sc-squadre button { display: grid; place-items: center; width: 48px; height: 48px; padding: 6px; border: 1px solid var(--bet-linea); border-radius: 12px; background: rgba(255,255,255,.03); cursor: pointer; }
+.alb-sc-squadre button.is-scelta { border-color: #f6c453; background: rgba(246,196,83,.14); }
+.alb-sc-squadre .crest, .alb-sc-squadre img { width: 100% !important; height: 100% !important; object-fit: contain; }
