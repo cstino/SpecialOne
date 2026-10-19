@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { firmaFoto } from './RosaElenco'
+import { ruoloIt } from '../lib/ruoli'
 
 // Le richieste dei giocatori (docs/decisioni-conferenze-stampa.md §2e): un giocatore scrive al mister,
 // l'allenatore risponde a testo libero, l'AI valuta l'effetto sul morale di quel giocatore e registra
@@ -53,14 +54,19 @@ export function RichiesteGiocatori({ teamId, onCambio, senzaTitolo = false, quan
     setRichieste(righe)
     const ids = [...new Set(righe.map((r) => r.player_instance_id))].filter((id) => !giocatori.has(id))
     if (!ids.length) return
-    const { data: istanze } = await supabase.from('player_instances').select('id, player_id').in('id', ids)
+    // Il ruolo vero: quello dopo un eventuale cambio ruolo (posizioni_override), non quello del catalogo.
+    const { data: istanze } = await supabase.from('player_instances').select('id, player_id, posizioni_override').in('id', ids)
     const playerIds = [...new Set((istanze ?? []).map((i) => i.player_id))]
     const { data: players } = playerIds.length ? await supabase.from('players').select('id, nome, foto_url, posizioni').in('id', playerIds) : { data: [] }
     const firmate = await Promise.all((players ?? []).map(async (p) => [p.id, { nome: p.nome as string, ruolo: ((p.posizioni ?? [])[0] ?? '') as string, foto: await firmaFoto(p.foto_url) }] as const))
     const perPlayer = new Map(firmate)
     setGiocatori((prima) => {
       const nuovo = new Map(prima)
-      for (const i of istanze ?? []) { const g = perPlayer.get(i.player_id); if (g) nuovo.set(i.id, g) }
+      for (const i of istanze ?? []) {
+        const g = perPlayer.get(i.player_id)
+        const override = (i as { posizioni_override?: string[] | null }).posizioni_override
+        if (g) nuovo.set(i.id, { ...g, ruolo: override?.[0] ?? g.ruolo })
+      }
       return nuovo
     })
   }, [teamId, giocatori])
@@ -90,7 +96,7 @@ export function RichiesteGiocatori({ teamId, onCambio, senzaTitolo = false, quan
         return <article className="richiesta" key={r.id}>
           <header className="richiesta__testa">
             <span className="richiesta__foto">{g?.foto ? <img src={g.foto} alt="" loading="lazy" /> : <b>{(g?.nome ?? '?').charAt(0)}</b>}</span>
-            <span><strong>{g?.nome ?? 'Giocatore'}</strong><small>{g?.ruolo} · {CHIEDE[r.tipo]}</small></span>
+            <span><strong>{g?.nome ?? 'Giocatore'}</strong><small>{ruoloIt(g?.ruolo)} · {CHIEDE[r.tipo]}</small></span>
           </header>
           <p className="richiesta__messaggio">{r.testo}</p>
           {aperta
