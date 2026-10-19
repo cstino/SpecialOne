@@ -162,7 +162,7 @@ export default function App() {
     // Ogni notifica legata a una proposta (proposta ricevuta, esito, HERE WE GO) porta a quella proposta in Scambi.
     const proposta = notifica.dati?.proposta_id
     const versoScambi = notifica.dati?.view === 'scambi' || typeof proposta === 'number'
-    const viaDiretta = notifica.dati?.view === 'salastampa' || notifica.dati?.view === 'spogliatoio' || notifica.dati?.view === 'social' || notifica.dati?.view === 'rivalita' || notifica.dati?.view === 'betone'
+    const viaDiretta = notifica.dati?.view === 'salastampa' || notifica.dati?.view === 'spogliatoio' || notifica.dati?.view === 'social' || notifica.dati?.view === 'rivalita' || notifica.dati?.view === 'betone' || notifica.dati?.view === 'album'
     setGameView(viaDiretta ? notifica.dati?.view as GameView : notifica.dati?.view === 'squad' ? 'squad' : versoScambi ? 'scambi' : 'overview')
     if (typeof proposta === 'number') setPropostaDaMostrare((p) => ({ id: proposta, n: (p?.n ?? 0) + 1 }))
     else if (notifica.dati?.view === 'scambi') setScorriScambi((n) => n + 1)
