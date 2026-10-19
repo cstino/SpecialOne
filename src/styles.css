@@ -6134,3 +6134,6 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 /* L'uscita non deve bloccare la rotazione: finita l'animazione vale di nuovo il transform della carta (girata o no) */
 .alb-carta { animation-fill-mode: backwards; }
 .alb-carta.is-ultra:not(.is-girata) { animation-fill-mode: backwards, none; }
+/* Pagina dell'album: titolo scuro sulla carta chiara; numero della figurina mancante al centro del riquadro */
+.alb-pagina__testa strong { color: #2a2216; }
+.fig--vuota { grid-template-rows: none; place-items: center; }
