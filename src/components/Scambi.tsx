@@ -56,6 +56,8 @@ type Proposta = {
   giocatori_richiesti: number[]
   scelte_offerte: number[]
   scelte_richieste: number[]
+  vivaio_offerti?: number[]
+  vivaio_richiesti?: number[]
   messaggio: string | null
   stato: StatoProposta
   creata_il: string
@@ -86,6 +88,9 @@ type Giocatore = {
   ritiroAnnunciato?: boolean
   sulMercato?: boolean
 }
+
+// Un prospetto del vivaio (scambiabile dal 19/10/2026: finisce nel vivaio di chi lo riceve, se ha uno slot libero).
+type Prospetto = { id: number; team_id: number; player_id: number; nome: string; overall: number; eta: number; ruolo: string; posizioni: string[]; giornate: number; ingaggio: number; potMin: number | null; potMax: number | null }
 
 type StatoScelta = 'futura' | 'determinata' | 'usata' | 'vuota'
 type Scelta = {
@@ -176,6 +181,9 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
   const [offerti, setOfferti] = useState<number[]>([])
   const [scelteChieste, setScelteChieste] = useState<number[]>([])
   const [scelteOfferte, setScelteOfferte] = useState<number[]>([])
+  const [vivaioChiesti, setVivaioChiesti] = useState<number[]>([])
+  const [vivaioOfferti, setVivaioOfferti] = useState<number[]>([])
+  const [vivai, setVivai] = useState<Prospetto[]>([])
   const [messaggio, setMessaggio] = useState('')
   const [sceltaRifiutoId, setSceltaRifiutoId] = useState<number | null>(null)
   const [contropropostaOrigine, setContropropostaOrigine] = useState<Proposta | null>(null)
@@ -204,7 +212,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
     setAttributiScheda(attributi)
     setSchedaApertaId(id)
   }
-  const [tabComposer, setTabComposer] = useState<'giocatori' | 'scelte'>('giocatori')
+  const [tabComposer, setTabComposer] = useState<'giocatori' | 'scelte' | 'vivaio'>('giocatori')
   const compositoreRef = useRef<HTMLElement>(null)
 
   const carica = useCallback(async (silenzioso = false) => {
@@ -271,8 +279,25 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
       ritiroAnnunciato: i.ritiro_annunciato,
       sulMercato: i.sul_mercato,
     }}))
+    // Vivai di tutta la lega (leggibili ai membri): nome e ruolo dal catalogo, potenziale con la propria scouting.
+    const { data: prospettiDb } = await supabase.from('vivaio_prospetti').select('id, team_id, player_id, giornate_rimanenti, ingaggio').eq('league_id', league.id)
+    const idPros = [...new Set((prospettiDb ?? []).map((v) => v.player_id))]
+    const [anaPros, fascePros] = idPros.length
+      ? await Promise.all([
+          supabase.from('players').select('id, nome, overall, eta, posizioni').in('id', idPros),
+          supabase.rpc('fascia_potenziale_giocatori', { p_player_ids: idPros, p_team_id: membership.id }),
+        ])
+      : [{ data: [] }, { data: [] }]
+    const anaPerId = new Map(((anaPros.data ?? []) as Array<{ id: number; nome: string; overall: number; eta: number; posizioni: string[] }>).map((x) => [x.id, x]))
+    const fasciaPerId = new Map(((fascePros.data ?? []) as Array<{ player_id: number; potenziale_min: number; potenziale_max: number }>).map((x) => [x.player_id, x]))
+    setVivai((prospettiDb ?? []).map((v) => {
+      const a = anaPerId.get(v.player_id); const f = fasciaPerId.get(v.player_id)
+      return { id: v.id, team_id: v.team_id, player_id: v.player_id, nome: a?.nome ?? 'Prospetto', overall: a?.overall ?? 0, eta: a?.eta ?? 0,
+        ruolo: a?.posizioni?.[0] ?? '—', posizioni: a?.posizioni ?? [], giornate: v.giornate_rimanenti, ingaggio: v.ingaggio,
+        potMin: f?.potenziale_min ?? null, potMax: f?.potenziale_max ?? null }
+    }))
     setCaricamento(false)
-  }, [league.id])
+  }, [league.id, membership.id])
 
   useEffect(() => { void carica() }, [carica])
 
@@ -332,6 +357,9 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
   const rosaAvversaria = useMemo(() => rose.filter((g) => g.team_id === avversaria).sort((a, b) => b.overall - a.overall), [rose, avversaria])
   const mieScelte = useMemo(() => scelte.filter((s) => s.team_proprietario_id === membership.id)
     .sort(perCalendario), [scelte, membership.id])
+  const mioVivaio = useMemo(() => vivai.filter((v) => v.team_id === membership.id).sort((a, b) => b.overall - a.overall), [vivai, membership.id])
+  const vivaioAvversaria = useMemo(() => vivai.filter((v) => v.team_id === avversaria).sort((a, b) => b.overall - a.overall), [vivai, avversaria])
+  const prospetto = useCallback((id: number) => vivai.find((v) => v.id === id), [vivai])
   const scelteAvversaria = useMemo(() => scelte.filter((s) => s.team_proprietario_id === avversaria)
     .sort(perCalendario), [scelte, avversaria])
 
@@ -390,11 +418,13 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
         p_scelte_offerte: scelteOfferte,
         p_scelte_richieste: scelteChieste,
         p_messaggio: messaggio.trim() || null,
+        p_vivaio_offerti: vivaioOfferti,
+        p_vivaio_richiesti: vivaioChiesti,
       }),
       contropropostaOrigine ? 'Controfferta inviata.' : 'Proposta inviata.',
     )
     if (riuscita) {
-      setChiesti([]); setOfferti([]); setScelteChieste([]); setScelteOfferte([]); setMessaggio('')
+      setChiesti([]); setOfferti([]); setScelteChieste([]); setScelteOfferte([]); setVivaioChiesti([]); setVivaioOfferti([]); setMessaggio('')
       setContropropostaOrigine(null)
     }
   }
@@ -406,17 +436,19 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
     setChiesti([...p.giocatori_offerti])
     setScelteOfferte([...p.scelte_richieste])
     setScelteChieste([...p.scelte_offerte])
+    setVivaioOfferti([...(p.vivaio_richiesti ?? [])])
+    setVivaioChiesti([...(p.vivaio_offerti ?? [])])
     setMessaggio('Controfferta')
     setSceltaRifiutoId(null)
     window.requestAnimationFrame(() => compositoreRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
   function annullaControfferta() {
     setContropropostaOrigine(null); setAvversaria(null)
-    setChiesti([]); setOfferti([]); setScelteChieste([]); setScelteOfferte([]); setMessaggio('')
+    setChiesti([]); setOfferti([]); setScelteChieste([]); setScelteOfferte([]); setVivaioChiesti([]); setVivaioOfferti([]); setMessaggio('')
   }
 
-  const nPacchettoOfferto = offerti.length + scelteOfferte.length
-  const nPacchettoChiesto = chiesti.length + scelteChieste.length
+  const nPacchettoOfferto = offerti.length + scelteOfferte.length + vivaioOfferti.length
+  const nPacchettoChiesto = chiesti.length + scelteChieste.length + vivaioChiesti.length
 
   const listaGiocatori = (elenco: Giocatore[], selezionati: number[], imposta: (v: number[]) => void, vuoto: string) =>
     elenco.length === 0
@@ -449,6 +481,24 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
           </li>)}
         </ul>
 
+  const listaVivaio = (elenco: Prospetto[], selezionati: number[], imposta: (v: number[]) => void, vuoto: string) =>
+    elenco.length === 0
+      ? <p className="scambi-vuoto">{vuoto}</p>
+      : <ul className="scambi-asset-grid">
+          {elenco.map((v) => <li key={v.id}>
+            <button type="button" className={`scambi-asset-card scambi-asset-card--player ${selezionati.includes(v.id) ? 'is-scelto' : ''}`}
+              onClick={() => alterna(selezionati, v.id, imposta)} aria-pressed={selezionati.includes(v.id)}>
+              <span className={`scambi-asset-card__ovr role-pill--${macroRuolo(v.posizioni.length ? v.posizioni : [v.ruolo]).toLowerCase()}`}>{v.overall}</span>
+              <span className="scambi-asset-card__info"><strong>{cognome(v.nome)}</strong>
+                <small>{ruoloIt(v.ruolo)} · {v.eta} anni{v.potMin != null ? ` · pot. ${v.potMin === v.potMax ? v.potMin : `${v.potMin}-${v.potMax}`}` : ''} · {v.giornate} giornate · {milioni(v.ingaggio)}</small></span>
+              {selezionati.includes(v.id) && <span className="scambi-asset-card__check" aria-hidden="true">✓</span>}
+            </button>
+          </li>)}
+        </ul>
+
+  const chipVivaio = (id: number) => <span key={`v${id}`} className="scambi-chip scambi-chip--player">🌱 {prospetto(id) ? cognome(prospetto(id)!.nome) : 'Prospetto'}</span>
+  const tuttiChip = (g: number[], sc: number[], v: number[] | undefined) => <>{g.map((id) => pacchettoChip(id, 'g'))}{sc.map((id) => pacchettoChip(id, 's'))}{(v ?? []).map(chipVivaio)}</>
+
   const pacchettoChip = (id: number, tipo: 'g' | 's') => tipo === 'g'
     ? <button key={`g${id}`} type="button" className="scambi-chip scambi-chip--player" onClick={() => void apriScheda(id)}>
         {giocatore(id)?.nome ?? `#${id}`}
@@ -462,18 +512,18 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
       <div className="scambi-riepilogo__lato">
         <small>{p.da_team_id === membership.id ? 'Offri' : 'Ti offre'}</small>
         <div className="scambi-riepilogo__chips">
-          {p.giocatori_offerti.length + p.scelte_offerte.length === 0
+          {p.giocatori_offerti.length + p.scelte_offerte.length + (p.vivaio_offerti?.length ?? 0) === 0
             ? <span className="scambi-nessuno">niente</span>
-            : <>{p.giocatori_offerti.map((id) => pacchettoChip(id, 'g'))}{p.scelte_offerte.map((id) => pacchettoChip(id, 's'))}</>}
+            : tuttiChip(p.giocatori_offerti, p.scelte_offerte, p.vivaio_offerti)}
         </div>
       </div>
       <i className="scambi-riepilogo__freccia" aria-hidden="true">⇄</i>
       <div className="scambi-riepilogo__lato">
         <small>{p.da_team_id === membership.id ? 'Chiedi' : 'Ti chiede'}</small>
         <div className="scambi-riepilogo__chips">
-          {p.giocatori_richiesti.length + p.scelte_richieste.length === 0
+          {p.giocatori_richiesti.length + p.scelte_richieste.length + (p.vivaio_richiesti?.length ?? 0) === 0
             ? <span className="scambi-nessuno">niente</span>
-            : <>{p.giocatori_richiesti.map((id) => pacchettoChip(id, 'g'))}{p.scelte_richieste.map((id) => pacchettoChip(id, 's'))}</>}
+            : tuttiChip(p.giocatori_richiesti, p.scelte_richieste, p.vivaio_richiesti)}
         </div>
       </div>
     </div>
@@ -517,7 +567,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
   function preparaScambio(g: Giocatore) {
     setContropropostaOrigine(null)
     setAvversaria(g.team_id)
-    setChiesti([g.id]); setOfferti([]); setScelteChieste([]); setScelteOfferte([])
+    setChiesti([g.id]); setOfferti([]); setScelteChieste([]); setScelteOfferte([]); setVivaioChiesti([]); setVivaioOfferti([])
     setTabComposer('giocatori')
     setSchedaApertaId(null)
     setEsito(null)
@@ -639,7 +689,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
         {!contropropostaOrigine && <div className="scambi-scelta-squadra">
           {dati.teams.filter((s) => s.id !== membership.id).map((s) => <button key={s.id} type="button"
             className={avversaria === s.id ? 'is-scelto' : ''}
-            onClick={() => { setAvversaria(s.id); setChiesti([]); setScelteChieste([]) }}
+            onClick={() => { setAvversaria(s.id); setChiesti([]); setScelteChieste([]); setVivaioChiesti([]) }}
             aria-label={s.nome} aria-pressed={avversaria === s.id} title={s.nome}>
             {stemma(s.id)}
           </button>)}
@@ -647,7 +697,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
 
         {avversaria && <>
           <UnderlineTabs
-            tabs={[{ value: 'giocatori', label: 'Giocatori' }, { value: 'scelte', label: 'Scelte di draft' }] as const}
+            tabs={[{ value: 'giocatori', label: 'Giocatori' }, { value: 'scelte', label: 'Scelte di draft' }, { value: 'vivaio', label: 'Vivaio' }] as const}
             value={tabComposer}
             onChange={setTabComposer}
             layoutId="scambi-composer-indicator"
@@ -659,13 +709,18 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
               <h3>Cosa chiedi a {nomeSquadra(avversaria)}</h3>
               {tabComposer === 'giocatori'
                 ? listaGiocatori(rosaAvversaria, chiesti, setChiesti, 'Rosa non disponibile.')
+                : tabComposer === 'vivaio'
+                ? listaVivaio(vivaioAvversaria, vivaioChiesti, setVivaioChiesti, 'Nessun giocatore nel vivaio.')
                 : listaScelte(scelteAvversaria, scelteChieste, setScelteChieste, 'Nessuna scelta scambiabile.')}
             </div>
             <div>
               <h3>Cosa offri</h3>
               {tabComposer === 'giocatori'
                 ? listaGiocatori(miaRosa, offerti, setOfferti, 'La tua rosa è vuota.')
+                : tabComposer === 'vivaio'
+                ? listaVivaio(mioVivaio, vivaioOfferti, setVivaioOfferti, 'Il tuo vivaio è vuoto.')
                 : listaScelte(mieScelte, scelteOfferte, setScelteOfferte, 'Nessuna scelta scambiabile.')}
+              {tabComposer === 'vivaio' && <p className="scambi-vuoto">I giocatori del vivaio passano nel vivaio di chi li riceve, che deve avere uno slot libero. Mantengono le giornate rimaste e l'ingaggio.</p>}
             </div>
           </div>
 
@@ -675,7 +730,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
               <small>Offri</small>
               <div className="scambi-anteprima__chips">{nPacchettoOfferto === 0
                 ? <span className="scambi-nessuno">niente</span>
-                : <>{offerti.map((id) => pacchettoChip(id, 'g'))}{scelteOfferte.map((id) => pacchettoChip(id, 's'))}</>}</div>
+                : tuttiChip(offerti, scelteOfferte, vivaioOfferti)}</div>
             </div>
             <i aria-hidden="true">⇄</i>
             <div className="scambi-anteprima__lato">
@@ -683,7 +738,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
               <small>Chiedi</small>
               <div className="scambi-anteprima__chips">{nPacchettoChiesto === 0
                 ? <span className="scambi-nessuno">niente</span>
-                : <>{chiesti.map((id) => pacchettoChip(id, 'g'))}{scelteChieste.map((id) => pacchettoChip(id, 's'))}</>}</div>
+                : tuttiChip(chiesti, scelteChieste, vivaioChiesti)}</div>
             </div>
           </div>}
 
@@ -842,11 +897,11 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
               {concluseStagione.map((p) => <li className={`scambi-operazione${propostaEvidenziata === p.id ? ' is-evidenziata' : ''}`} data-proposta={p.id} key={p.id}>
                 <div className="scambi-operazione__lato">
                   {stemma(p.da_team_id)}
-                  <div className="scambi-operazione__chips">{p.giocatori_offerti.map((id) => pacchettoChip(id, 'g'))}{p.scelte_offerte.map((id) => pacchettoChip(id, 's'))}</div>
+                  <div className="scambi-operazione__chips">{tuttiChip(p.giocatori_offerti, p.scelte_offerte, p.vivaio_offerti)}</div>
                 </div>
                 <i aria-hidden="true">⇄</i>
                 <div className="scambi-operazione__lato scambi-operazione__lato--destra">
-                  <div className="scambi-operazione__chips">{p.giocatori_richiesti.map((id) => pacchettoChip(id, 'g'))}{p.scelte_richieste.map((id) => pacchettoChip(id, 's'))}</div>
+                  <div className="scambi-operazione__chips">{tuttiChip(p.giocatori_richiesti, p.scelte_richieste, p.vivaio_richiesti)}</div>
                   {stemma(p.a_team_id)}
                 </div>
                 <em>{ETICHETTE_STATO[p.stato]} · {p.risolta_il ? dataBreve(p.risolta_il) : ''}</em>

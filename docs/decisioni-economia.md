@@ -265,3 +265,11 @@ alla prima estrazione dopo la riapertura del mercato. I **contratti scaduti e no
 automatici per il tetto ingaggi) restavano solo senza squadra: nel mercato comparivano per sorteggio, e solo se fino a 75 di overall.
 Ora `finalizza_offseason` li mette nella coda: entrano tutti nella prima estrazione (alle 23:30 del giorno in cui parte la stagione).
 Provato: 48 contratti in scadenza + 30 gia' in coda = 78 free agent alla prima estrazione, coda svuotata. Migrazione `20261007130000`.
+
+## Scambi con i giocatori del vivaio (19/10/2026)
+Deciso con il committente. I prospetti del vivaio si possono inserire negli scambi (terza scheda «Vivaio» nella pagina Scambi):
+- il prospetto scambiato finisce nel **vivaio** di chi lo riceve, che deve avere uno slot libero (`private.vivaio_slot_massimi`); il controllo si fa alla proposta e all'accettazione, contando lo slot che si libera se lo scambio ne prevede in entrambe le direzioni;
+- mantiene le **giornate rimaste** per la promozione (non si allunga la vita scambiandolo) e l'**ingaggio**, che passa sul monte ingaggi di chi lo riceve (conta sul tetto, come già oggi);
+- le squadre del PC non trattano prospetti;
+- un prospetto promosso in prima squadra resta un giocatore normale.
+Colonne `trade_proposals.vivaio_offerti` / `vivaio_richiesti`; `proponi_scambio` e `controproponi` con due parametri in più (default vuoti). Migrazioni `20261019160000`, `20261019161000`.
