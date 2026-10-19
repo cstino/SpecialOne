@@ -33,7 +33,11 @@ async function utenteDalToken(req: Request): Promise<string | null> {
 // AI gratuite: Gemini (Google AI Studio) prima, Groq come riserva se Gemini
 // e' irraggiungibile o ha finito la quota del giorno. Le chiavi stanno solo
 // nel .env del Mac, mai nel codice.
-const CHIAVE_GEMINI = Deno.env.get('GEMINI_API_KEY') ?? ''
+// Una o piu' chiavi (separate da virgola, account Google diversi): si usano a turno, cosi' le quote al minuto si sommano.
+const CHIAVI_GEMINI = (Deno.env.get('GEMINI_API_KEY') ?? '').split(',').map((k) => k.trim()).filter(Boolean)
+let giroChiave = 0
+// Il modello che ha scritto l'ultimo testo (si salva con domande e valutazioni, per capire da dove arrivano gli errori).
+let ultimoModello = ''
 // Provati il 16 ottobre 2026: 3.5 Flash scrive le domande migliori (col
 // ragionamento al minimo risponde in 2-10 s); se e' sovraccarico (503) si passa
 // al 2.5 Flash, poi a Groq. La Lite usava testate vere: scartata.
@@ -65,10 +69,10 @@ function schemaGemini(nodo: unknown): unknown {
   return out
 }
 
-async function chiediGemini<T>(modello: string, system: string, messaggio: string, strumento: Strumento): Promise<T> {
+async function chiediGemini<T>(modello: string, chiave: string, system: string, messaggio: string, strumento: Strumento): Promise<T> {
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modello}:generateContent`, {
     method: 'POST',
-    headers: { 'x-goog-api-key': CHIAVE_GEMINI, 'content-type': 'application/json' },
+    headers: { 'x-goog-api-key': chiave, 'content-type': 'application/json' },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: system }] },
       contents: [{ role: 'user', parts: [{ text: messaggio }] }],
@@ -115,13 +119,19 @@ async function chiediAI<T>(system: string, messaggio: string, strumento: Strumen
       if (!errori.some((e) => /\b(429|503)\b/.test(e))) break
       await new Promise((r) => setTimeout(r, 9000))
     }
-    if (CHIAVE_GEMINI) {
+    if (CHIAVI_GEMINI.length) {
+      // Per ogni modello si provano tutte le chiavi, partendo da una diversa a ogni chiamata: Gemini 3.5 resta il
+      // primo finche' almeno una chiave ha quota, si scende al 2.5 e poi a Groq solo se sono esaurite tutte.
       for (const modello of MODELLI_GEMINI) {
-        try { return await chiediGemini<T>(modello, system, messaggio, strumento) } catch (e) { errori.push(String(e)) }
+        const partenza = giroChiave++ % CHIAVI_GEMINI.length
+        for (let k = 0; k < CHIAVI_GEMINI.length; k++) {
+          const chiave = CHIAVI_GEMINI[(partenza + k) % CHIAVI_GEMINI.length]
+          try { const out = await chiediGemini<T>(modello, chiave, system, messaggio, strumento); ultimoModello = modello; return out } catch (e) { errori.push(String(e)) }
+        }
       }
     }
     if (CHIAVE_GROQ) {
-      try { return await chiediGroq<T>(system, messaggio, strumento) } catch (e) { errori.push(String(e)) }
+      try { const out = await chiediGroq<T>(system, messaggio, strumento); ultimoModello = 'groq:' + MODELLO_GROQ; return out } catch (e) { errori.push(String(e)) }
     }
   }
   throw new Error(errori.length ? errori.join(' | ') : 'Nessuna chiave AI (GEMINI_API_KEY / GROQ_API_KEY) nelle funzioni.')
@@ -417,7 +427,7 @@ async function genera(admin: any, matchId: number) {
       },
     )
     const righe = (out.domande ?? []).slice(0, 2).map((d, i) => ({
-      league_id: f.league_id, match_id: matchId, team_id: t.id, ordine: i + 1,
+      league_id: f.league_id, match_id: matchId, team_id: t.id, ordine: i + 1, modello: ultimoModello || null,
       giornalista: String(d.giornalista ?? 'Sala stampa').slice(0, 80) || 'Sala stampa',
       domanda: String(d.domanda ?? '').slice(0, 600),
     })).filter((d) => d.domanda.trim())
@@ -527,7 +537,7 @@ async function generaPre(admin: any, fixtureId: number) {
     const domanda = String(out.domanda ?? '').slice(0, 600).trim()
     if (!domanda) continue
     const { error } = await admin.from('conferenze_domande').insert({
-      league_id: f.league_id, tipo: 'pre', fixture_id: fixtureId, match_id: null, team_id: t.id, ordine: 1,
+      league_id: f.league_id, tipo: 'pre', fixture_id: fixtureId, match_id: null, team_id: t.id, ordine: 1, modello: ultimoModello || null,
       giornalista: String(out.giornalista ?? 'Sala stampa').slice(0, 80) || 'Sala stampa', domanda, scade_il: scade,
     })
     if (error) throw error
@@ -810,7 +820,7 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
     if (errPubblico) throw errPubblico
     await admin.from('conferenze_domande').update({
       voto, reazione, effetto_morale: effetto, effetto_pubblico: effettoPubblico, reazione_pubblico: reazionePubblico || null,
-      valutazione: { insensata: Boolean(v.insensata), voto_ai: v.voto, ripetitiva, ripetitiva_parole: livelloParole, ripetitiva_ai: v.ripetitiva ?? null, penalita, voto_pubblico: votoPubblico, giocatori, squadre: squadreCitate, rivalita },
+      valutazione: { modello: ultimoModello || null, insensata: Boolean(v.insensata), voto_ai: v.voto, ripetitiva, ripetitiva_parole: livelloParole, ripetitiva_ai: v.ripetitiva ?? null, penalita, voto_pubblico: votoPubblico, giocatori, squadre: squadreCitate, rivalita },
     }).eq('id', domandaId)
     return json(200, { voto, reazione, effetto_morale: effetto, effetto_pubblico: effettoPubblico, reazione_pubblico: reazionePubblico, rivalita, giocatori })
   } catch (errore) {
