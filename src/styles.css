@@ -6188,3 +6188,11 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .fig__club .crest, .fig__club img { width: 100% !important; height: 100% !important; filter: drop-shadow(0 2px 3px rgba(0,0,0,.55)); }
 /* Tasto "Un'altra": scritta scura sul giallo (la regola generale dei pulsanti della pagina la faceva bianca) */
 .alb .alb-compra:not(:disabled), .alb .alb-compra:not(:disabled) b, .alb .alb-compra:not(:disabled) small { color: #1a1205; }
+/* Esempio di ultrarara nell'album */
+.alb-esempio { display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 14px; align-items: center; padding: 14px; border: 1px solid rgba(255,216,77,.4); border-radius: 18px; background: radial-gradient(120% 120% at 0% 50%, rgba(255,216,77,.16), transparent 60%), linear-gradient(135deg, rgba(255,61,242,.08), rgba(61,232,255,.05)); }
+.alb-esempio__carta { position: relative; transform: rotate(-4deg); }
+.alb-esempio__carta em { position: absolute; left: 50%; bottom: -10px; transform: translateX(-50%); padding: 2px 9px; border-radius: 99px; background: linear-gradient(90deg, #ffd84d, #ff3df2, #3de8ff); color: #1a1205; font-style: normal; font-size: .58rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.alb-esempio__testo { display: grid; gap: 4px; }
+.alb-esempio__kicker { margin: 0; background: linear-gradient(90deg, #ffd84d, #ff3df2, #3de8ff); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: .72rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
+.alb-esempio__testo h3 { margin: 0; font-size: 1.05rem; }
+.alb-esempio__testo p:last-child { margin: 0; color: #b9b0cc; font-size: .8rem; line-height: 1.4; }

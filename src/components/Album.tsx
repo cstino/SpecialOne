@@ -205,6 +205,8 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   const squadre = useMemo(() => [...perSquadra.keys()].sort((a, b) => (dati.teamById.get(a)?.nome ?? '').localeCompare(dati.teamById.get(b)?.nome ?? '')), [perSquadra, dati.teamById])
   const numeri = useMemo(() => { const m = new Map<number, number>(); let n = 1; for (const t of squadre) for (const f of perSquadra.get(t) ?? []) m.set(f.id, n++); for (const f of figurine.filter((x) => x.tipo === 'conferenza')) m.set(f.id, n++); return m }, [squadre, perSquadra, figurine])
   const conf = figurine.filter((f) => f.tipo === 'conferenza')
+  // Figurina di esempio per far vedere com'e' un'ultrarara: il giocatore con l'overall piu' alto dell'album.
+  const esempioUltra = useMemo(() => figurine.filter((f) => f.tipo === 'giocatore').sort((a, b) => (b.overall ?? 0) - (a.overall ?? 0))[0], [figurine])
 
   const ce = (id: number) => { const p = possesso.get(id); return Boolean(p && p.normali + p.ultra > 0) }
   const ceUltra = (id: number) => (possesso.get(id)?.ultra ?? 0) > 0
@@ -273,6 +275,18 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     </div>
     {crediti < PREZZO && <p className="bet-nota">Servono {PREZZO} crediti: si vincono con le schedine e al casinò, e ogni lunedì ne arrivano 1.000.</p>}
     {(avviso || errore) && <p className={errore ? 'alb-errore' : 'alb-avviso'} role="status">{errore || avviso}</p>}
+
+    {pagina == null && esempioUltra && <section className="alb-esempio" aria-label="Esempio di figurina ultrarara">
+      <div className="alb-esempio__carta">
+        <Carta f={esempioUltra} ana={esempioUltra.player_id != null ? ana.get(esempioUltra.player_id) : undefined} dati={dati} ultra numero={numeri.get(esempioUltra.id)} />
+        <em>Esempio</em>
+      </div>
+      <div className="alb-esempio__testo">
+        <p className="alb-esempio__kicker">✦ Ultrarara</p>
+        <h3>La figurina più ambita</h3>
+        <p>Esce circa una volta ogni 50 figurine: cornice d'oro, riflesso olografico arcobaleno e scintille. Si attacca sopra la versione normale.{conferenze ? ' In questa lega ci sono anche le due figurine delle Conference, solo ultrarare.' : ''}</p>
+      </div>
+    </section>}
 
     {pagina == null ? <>
       <h2 className="alb-titolo">Le pagine</h2>
