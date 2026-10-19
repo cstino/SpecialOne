@@ -71,6 +71,9 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
   // Il casino' per ora lo vede solo il committente (lo decide il server: casino_visibile).
   const [casinoVisibile, setCasinoVisibile] = useState(false)
   useEffect(() => { void supabase.rpc('casino_visibile').then(({ data }) => setCasinoVisibile(data === true)) }, [])
+  // L'album per ora solo dove il server lo attiva (LegaBot, per le prove).
+  const [albumAttivo, setAlbumAttivo] = useState(false)
+  useEffect(() => { void supabase.rpc('album_attivo', { p_league_id: league.id }).then(({ data }) => setAlbumAttivo(data === true)) }, [league.id])
 
   // --- La giornata a cui si gioca: la prima ancora da giocare del campionato.
   const giornata = useMemo(() => {
@@ -231,10 +234,10 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
         <div className="bet-sezioni" role="tablist" aria-label="Sezione di BetOne">
           <button type="button" role="tab" aria-selected={sezione === 'pronostici'} className={sezione === 'pronostici' ? 'is-attiva' : ''} onClick={() => setSezione('pronostici')}><span aria-hidden="true">🎟️</span>Pronostici</button>
           {casinoVisibile && <button type="button" role="tab" aria-selected={sezione === 'casino'} className={sezione === 'casino' ? 'is-attiva' : ''} onClick={() => setSezione('casino')}><span aria-hidden="true">🎰</span>Casinò</button>}
-          <button type="button" role="tab" aria-selected={sezione === 'album'} className={sezione === 'album' ? 'is-attiva' : ''} onClick={() => setSezione('album')}><span aria-hidden="true">📒</span>Album</button>
+          {albumAttivo && <button type="button" role="tab" aria-selected={sezione === 'album'} className={sezione === 'album' ? 'is-attiva' : ''} onClick={() => setSezione('album')}><span aria-hidden="true">📒</span>Album</button>}
         </div>
 
-        {sezione === 'album' ? <Album leagueId={league.id} teamId={membership.id} dati={dati} conferenze={Boolean(league.conferenze_attive)} />
+        {albumAttivo && sezione === 'album' ? <Album leagueId={league.id} teamId={membership.id} dati={dati} conferenze={Boolean(league.conferenze_attive)} />
           : casinoVisibile && sezione === 'casino' ? <Casino leagueId={league.id} teamId={membership.id} dati={dati} /> : <>
         {giornata == null
           ? <section className="bet-vuoto"><strong>Nessuna giornata da giocare</strong><p>La prossima schedina si apre appena c'è una nuova giornata di campionato.</p></section>
