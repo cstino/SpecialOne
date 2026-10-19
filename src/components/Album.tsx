@@ -98,13 +98,15 @@ function Bustina({ stagione, onAperta }: { stagione: number; onAperta: () => voi
   }
   function giu(e: React.PointerEvent) {
     if (aperta) return
-    const { py } = posizione(e)
-    if (py < 0.3) { trascina.current.attivo = true; (e.target as Element).setPointerCapture?.(e.pointerId) }
+    // Lo strappo puo' partire anche da fuori, a sinistra della bustina, all'altezza della saldatura in alto.
+    const { px, py } = posizione(e)
+    if (py > -0.12 && py < 0.3 && px < 0.6) { trascina.current.attivo = true; (e.currentTarget as Element).setPointerCapture?.(e.pointerId) }
   }
   function muovi(e: React.PointerEvent) {
     if (aperta) return
     const { px, py } = posizione(e)
-    setTilt({ x: (0.5 - py) * 18, y: (px - 0.5) * 24, lx: px * 100, ly: py * 100 })
+    const dentro = px >= 0 && px <= 1 && py >= 0 && py <= 1
+    if (dentro || trascina.current.attivo) setTilt({ x: (0.5 - Math.min(1, Math.max(0, py))) * 18, y: (Math.min(1, Math.max(0, px)) - 0.5) * 24, lx: px * 100, ly: py * 100 })
     if (trascina.current.attivo) {
       const p = Math.max(strappo, Math.min(1, px))
       if (p > strappo) {
@@ -122,12 +124,11 @@ function Bustina({ stagione, onAperta }: { stagione: number; onAperta: () => voi
   }
   function su() { trascina.current.attivo = false; if (!aperta) setTilt((t) => ({ ...t, x: 0, y: 0 })) }
 
-  return <div className={`pack-scena${aperta ? ' is-aperta' : ''}`}>
-    <div ref={ref} className="pk" style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`, ['--lx' as string]: `${tilt.lx}%`, ['--ly' as string]: `${tilt.ly}%` }}
-      onPointerDown={giu} onPointerMove={muovi} onPointerUp={su} onPointerCancel={su} onPointerLeave={su}>
+  return <div className={`pack-scena${aperta ? ' is-aperta' : ''}`}
+    onPointerDown={giu} onPointerMove={muovi} onPointerUp={su} onPointerCancel={su}>
+    <div ref={ref} className="pk" style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`, ['--lx' as string]: `${tilt.lx}%`, ['--ly' as string]: `${tilt.ly}%` }}>
       {/* Saldatura in alto: e' la parte che si strappa */}
       <div className="pk__sald pk__sald--su">
-        <span className="pk__dentelli" aria-hidden="true" />
         <span className="pk__righe" aria-hidden="true" />
         <span className="pk__taglio" aria-hidden="true"><i style={{ width: `${strappo * 100}%` }} /></span>
       </div>
@@ -146,7 +147,6 @@ function Bustina({ stagione, onAperta }: { stagione: number; onAperta: () => voi
       </div>
       <div className="pk__sald pk__sald--giu">
         <span className="pk__righe" aria-hidden="true" />
-        <span className="pk__dentelli pk__dentelli--giu" aria-hidden="true" />
       </div>
     </div>
     {!aperta && <p className="pack-aiuto"><span className="pack-aiuto__dito" aria-hidden="true">👆</span>Scorri il dito sulla linea in alto per aprire</p>}

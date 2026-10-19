@@ -6180,3 +6180,6 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .pack-scena.is-aperta .pk__sald--su { transform: translate3d(28%, -180%, 40px) rotate(-22deg); opacity: 0; }
 .pack-scena.is-aperta .pk { animation: pack-sobbalzo .5s ease-out; }
 @media (prefers-reduced-motion: reduce) { .pk, .pk__sald--su { transition: none; } }
+/* La zona di strappo e' tutta la scena (anche fuori dalla bustina): il dito puo' partire da sinistra, fuori dal bordo */
+.pack-scena { width: 100%; padding: 0 0 4px; touch-action: none; }
+.pk { touch-action: none; }
