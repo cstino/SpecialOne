@@ -178,6 +178,11 @@ Fase 1 chiamalo con `{ usaCondizione: false }`. Non rimuovere quel codice.
   o inglese purché coerenti nel file. Commenti in italiano.
 - **Migrazioni**: ogni modifica allo schema è un file in `supabase/migrations/`,
   mai una modifica manuale dalla dashboard.
+- **Permessi espliciti sulle tabelle nuove** (dal 20/10/2026): ogni migrazione che crea una tabella in
+  `public` aggiunge subito `grant select on public.x to anon; grant select, insert, update, delete on public.x
+  to authenticated, service_role;`. Il database sul Mac li dà ancora in automatico, ma Supabase dal 30/10/2026
+  non lo fa più sui progetti nuovi: senza grant, un database ricreato da zero dalle migrazioni renderebbe le
+  tabelle irraggiungibili dall'app. Chi legge cosa resta deciso dalla RLS, come sempre.
 - **Row Level Security attiva su tutte le tabelle.** Un partecipante non deve poter
   leggere le formazioni altrui prima che la giornata sia simulata, né le offerte a
   busta chiusa prima della rivelazione. Questo è il requisito di sicurezza principale

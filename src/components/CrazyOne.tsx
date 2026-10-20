@@ -152,7 +152,7 @@ function CoinFlip({ bonus, molt, puntata, vinto, suoni, onFine }: { bonus: Bonus
       suoni.coppe(); setFase('esito')
     })()
     return () => { vivo = false }
-  }, [bonus])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- una volta sola per giro (componente con key = giro)
   return <Palco esito="cf" molt={molt} puntata={puntata}>
     <div className="ct-cf">
       <div className={`ct-cf__lato ct-cf__lato--rosso${fase === 'esito' && bonus.lato === 'rosso' ? ' is-vince' : ''}${fase === 'esito' && bonus.lato !== 'rosso' ? ' is-perde' : ''}`}><b>{bonus.rosso}×</b><small><img src="/specialone-mark.svg" alt="" />Testa</small></div>
@@ -234,7 +234,7 @@ function Pachinko({ bonus, molt, puntata, vinto, suoni, onFine }: { bonus: Bonus
       await aspetta(500); suoni.vincita(); setFine(true)
     })()
     return () => { vivo = false }
-  }, [bonus])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- una volta sola per giro (componente con key = giro)
   return <Palco esito="pa" molt={molt} puntata={puntata}>
     <div className={`ct-pa${flash ? ' is-double' : ''}`}>
       <svg viewBox={`-4 0 ${16 * PA_L + 8} ${altezza}`} className="ct-pa__svg" aria-hidden="true">
@@ -266,7 +266,7 @@ function CashHuntLive({ giro, mia, molt, vinto, trascorso, dati, scegli, suoni, 
 }) {
   const puntata = mia?.puntate?.ch ?? 0
   const [fase, setFase] = useState<'mostra' | 'mescola' | 'scegli' | 'rivela' | 'tutti'>(trascorso > 4500 ? 'scegli' : 'mostra')
-  const anteprima = useMemo(() => [...(giro.valori ?? [])].sort(() => Math.random() - 0.5), [giro.valori])
+  const anteprima = useMemo(() => [...(giro.valori ?? [])].sort(() => Math.random() - 0.5), [giro.id]) // eslint-disable-line react-hooks/exhaustive-deps
   const audio = useRef(suoni); audio.current = suoni
   useEffect(() => {
     if (fase !== 'mostra') return
@@ -454,6 +454,13 @@ export function CrazyOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
     } else if (!prima) {
       const mie = s.giocate.find((q) => q.mia)?.puntate
       if (mie) setPuntate({ ...VUOTE(), ...mie } as Record<Casella, number>)
+    }
+    // I dati del bonus, una volta rivelati, non cambiano piu': si tiene lo stesso oggetto tra un aggiornamento e
+    // l'altro, altrimenti le animazioni li scambiano per dati nuovi e ripartono (pallone che spariva a meta').
+    if (prima && prima.giro.id === s.giro.id) {
+      for (const k of ['bonus', 'valori', 'tavola', 'ruota', 'rotazioni'] as const) {
+        if (prima.giro[k] != null && s.giro[k] != null) (s.giro as Record<string, unknown>)[k] = prima.giro[k]
+      }
     }
     statoRef.current = s; setStato(s)
   }, [])
@@ -660,8 +667,8 @@ export function CrazyOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
       </div>}
     </section>
 
-    {inBonus && g.esito === 'cf' && g.bonus && <CoinFlip bonus={g.bonus as BonusCf} molt={moltBonus} puntata={mia?.puntate?.cf ?? 0} vinto={mia?.vinto ?? 0} suoni={suoni} onFine={() => setBonusChiuso(g.id)} />}
-    {inBonus && g.esito === 'pa' && g.bonus && <Pachinko bonus={g.bonus as BonusPa} molt={moltBonus} puntata={mia?.puntate?.pa ?? 0} vinto={mia?.vinto ?? 0} suoni={suoni} onFine={() => setBonusChiuso(g.id)} />}
+    {inBonus && g.esito === 'cf' && g.bonus && <CoinFlip key={g.id} bonus={g.bonus as BonusCf} molt={moltBonus} puntata={mia?.puntate?.cf ?? 0} vinto={mia?.vinto ?? 0} suoni={suoni} onFine={() => setBonusChiuso(g.id)} />}
+    {inBonus && g.esito === 'pa' && g.bonus && <Pachinko key={g.id} bonus={g.bonus as BonusPa} molt={moltBonus} puntata={mia?.puntate?.pa ?? 0} vinto={mia?.vinto ?? 0} suoni={suoni} onFine={() => setBonusChiuso(g.id)} />}
     {inBonus && g.esito === 'ch' && g.valori && <CashHuntLive key={g.id} giro={g} mia={mia} molt={moltBonus} vinto={g.regolato ? mia?.vinto ?? 0 : null} trascorso={adesso - g.esito_il - 2000} dati={dati} scegli={(n) => void scegli(n)} suoni={suoni} onChiudi={() => setBonusChiuso(g.id)} />}
     {inBonus && g.esito === 'ct' && g.ruota && <CrazyBonusLive key={g.id} giro={g} mia={mia} molt={moltBonus} vinto={g.regolato ? mia?.vinto ?? 0 : null} scegli={(n) => void scegli(n)} suoni={suoni} onChiudi={() => setBonusChiuso(g.id)} />}
   </section>
