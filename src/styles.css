@@ -6605,3 +6605,6 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .ct-scadenza { color: #ffd84d; font-variant-numeric: tabular-nums; }
 .ct-crazy__scelta button.is-scelta { background: var(--col); color: #12051c; box-shadow: 0 0 0 3px #fff, 0 0 18px var(--col); }
 .ct-esito-bonus small + small { max-width: 280px; text-align: center; text-transform: none; letter-spacing: 0; font-size: .74rem; }
+/* CrazyOne: la fiche scelta si ingrandisce e ha l'alone oro, serve un po' di spazio attorno (era tagliata dal bordo) */
+.ct-fiche { padding: 6px 0 4px 6px; gap: 10px; }
+.bet-page .ct-azioni button { text-align: center; }
