@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { Contatore, Festa, fmt, ridotto, useSuoni } from './Casino'
 
 // BetOne Casino' › AviatOne, l'Aviator a tema SpecialOne (supabase/migrations/20261020110000_casino_aviatone.sql).
-// Volo personale: fino a 2 puntate, ognuna con incasso automatico opzionale. Il moltiplicatore dipende solo dal tempo
+// Volo personale: una puntata, con incasso automatico opzionale (la seconda puntata dell'Aviator e' stata tolta il 20/10/2026). Il moltiplicatore dipende solo dal tempo
 // sull'orologio del SERVER (m = e^(0,075·t)); il punto in cui l'aereo vola via e' segreto e lo scopre il server.
 // Qui si disegna soltanto: il client chiede al server ogni 0,4 s come sta andando il volo.
 
@@ -38,7 +38,6 @@ export function AviatOne({ leagueId }: { leagueId: number }) {
   const [storia, setStoria] = useState<number[]>([])
   const [pannelli, setPannelli] = useState<Pannello[]>([
     { attivo: true, puntata: 50, autoOn: false, auto: 2 },
-    { attivo: false, puntata: 50, autoOn: true, auto: 1.5 },
   ])
   const [fase, setFase] = useState<Fase>('pronto')
   const [volo, setVolo] = useState<Volo | null>(null)
@@ -102,7 +101,6 @@ export function AviatOne({ leagueId }: { leagueId: number }) {
       const pv = s.volo.puntate
       setPannelli((ps) => [
         { ...ps[0], attivo: true, puntata: pv[0].puntata, autoOn: pv[0].auto != null, auto: pv[0].auto ?? ps[0].auto },
-        pv[1] ? { ...ps[1], attivo: true, puntata: pv[1].puntata, autoOn: pv[1].auto != null, auto: pv[1].auto ?? ps[1].auto } : { ...ps[1], attivo: false },
       ])
       allinea(s.volo.trascorso, t0, t1); setVolo(s.volo); voloRef.current = s.volo; faseRef.current = 'volo'; setFase('volo'); setMessaggio('Il tuo aereo è ancora in volo!')
     }
@@ -173,7 +171,7 @@ export function AviatOne({ leagueId }: { leagueId: number }) {
 
       let testo = '', colore = '#fff'
       if (f === 'pronto') {
-        disegnaAereo(sinistra + 40, base - 6, 0, adesso)
+        disegnaAereo(sinistra + Math.min(96, W * 0.24) * 0.95, base - 6, 0, adesso)
         testo = ''
       } else {
         const t = f === 'volo' ? (adesso - inizio.current) / 1000 : Math.log(Math.max(1, crashRef.current ?? 1)) / K
@@ -296,10 +294,7 @@ export function AviatOne({ leagueId }: { leagueId: number }) {
         const g = giocataDi(i)
         const inVolo = fase !== 'pronto'
         return <div key={i} className={`av-pannello${p.attivo ? ' is-attivo' : ''}`}>
-          <div className="av-pannello__testa">
-            <button type="button" role="switch" aria-checked={p.attivo} className="av-interruttore" disabled={inVolo} onClick={() => cambia(i, (x) => ({ ...x, attivo: !x.attivo }))}><i /></button>
-            <span>Puntata {i + 1}</span>
-          </div>
+          <div className="av-pannello__testa"><span>La tua puntata</span></div>
           <div className="av-pannello__corpo">
             <div className="av-importo">
               <button type="button" aria-label="Meno" disabled={inVolo || p.puntata <= 10} onClick={() => cambia(i, (x) => ({ ...x, puntata: Math.max(10, x.puntata - 10) }))}>−</button>
@@ -330,7 +325,7 @@ export function AviatOne({ leagueId }: { leagueId: number }) {
     {fase === 'volo'
       ? <button type="button" className="av-decolla av-decolla--salta" disabled={!tutteIncassate} onClick={() => void salta()}>{tutteIncassate ? 'Fallo volare via' : 'In volo…'}</button>
       : <button type="button" className="av-decolla" disabled={!puoiPartire} onClick={() => void decolla()}>
-        <span>DECOLLA</span><small>{scelte.length === 0 ? 'attiva almeno una puntata' : `${fmt(totale)} crediti`}</small>
+        <span>DECOLLA</span><small>{fmt(totale)} crediti</small>
       </button>}
 
     <section className="slot-pannello">
@@ -344,8 +339,8 @@ function AviatOneRegole() {
   return <>
     <button type="button" className="slot-pannello__tasto" aria-expanded={aperte} onClick={() => setAperte((v) => !v)}>Come si gioca <span aria-hidden="true">{aperte ? '−' : '+'}</span></button>
     {aperte && <div className="slot-premi">
-      <p>Attiva una o due puntate (da 10 a 500 crediti l'una) e premi <b>DECOLLA</b>. L'aereo parte e il moltiplicatore sale: 1,00×, 1,50×, 2×… finché a un certo punto l'aereo <b>vola via</b>.</p>
-      <p>Premi <b>INCASSA</b> quando vuoi: vinci la puntata per il moltiplicatore di quel momento. Se l'aereo vola via prima che incassi, la puntata è persa. Le due puntate sono indipendenti: per esempio una la incassi presto, l'altra la lasci volare.</p>
+      <p>Scegli quanto puntare (da 10 a 500 crediti) e premi <b>DECOLLA</b>. L'aereo parte e il moltiplicatore sale: 1,00×, 1,50×, 2×… finché a un certo punto l'aereo <b>vola via</b>.</p>
+      <p>Premi <b>INCASSA</b> quando vuoi: vinci la puntata per il moltiplicatore di quel momento. Se l'aereo vola via prima che incassi, la puntata è persa.</p>
       <p><b>Incasso automatico</b>: se lo accendi, la puntata si incassa da sola appena il moltiplicatore arriva al valore scelto (se l'aereo ci arriva).</p>
       <p>Il moltiplicatore cresce sempre alla stessa velocità (2× dopo circa 9 secondi, 10× dopo circa 31). Il punto in cui l'aereo vola via lo estrae il server al decollo e nessuno lo vede prima: a volte esplode subito, a volte arriva a 100× e oltre. Qualunque strategia tu usi, in media si recupera circa il 94% di quello che si punta.</p>
       <p>In alto ci sono i tuoi ultimi voli: in azzurro sotto 2×, in viola fino a 10×, in rosa sopra.</p>
