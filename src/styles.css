@@ -6608,3 +6608,11 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 /* CrazyOne: la fiche scelta si ingrandisce e ha l'alone oro, serve un po' di spazio attorno (era tagliata dal bordo) */
 .ct-fiche { padding: 6px 0 4px 6px; gap: 10px; }
 .bet-page .ct-azioni button { text-align: center; }
+
+/* Premi partita nel casino' */
+.cas-premi { display: grid; gap: 6px; padding: 12px 14px; border: 1px solid rgba(47,210,122,.45); border-radius: 16px; background: linear-gradient(135deg, rgba(47,210,122,.16), rgba(246,196,83,.08)); animation: ct-entra .35s ease; }
+.cas-premi__testa { display: flex; align-items: center; justify-content: space-between; }
+.cas-premi__testa b { color: #7dffb5; font-size: .74rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.bet-page .cas-premi__testa button { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 8px; background: rgba(255,255,255,.08); font-size: .8rem; cursor: pointer; }
+.cas-premi p { display: flex; justify-content: space-between; gap: 10px; margin: 0; font-size: .86rem; }
+.cas-premi p strong { color: var(--bet-oro); font-variant-numeric: tabular-nums; }

@@ -12,6 +12,7 @@ import { AviatOne } from './AviatOne'
 type Dati = ReturnType<typeof useSeasonData>
 type RigaClassifica = { team_id: number; crediti: number; max_vincita: number; giri: number }
 type Gioco = 'slot' | 'crazy' | 'aviat'
+type Premio = { esito: 'vittoria' | 'pareggio' | 'sconfitta'; crediti: number; avversario_id: number }
 
 // Le locandine (public/casino/*.webp, 540×810) le ha disegnate il committente; il nome del gioco e' gia' nell'immagine.
 const GIOCHI: Array<{ id: Gioco; titolo: string; sotto: string; nuovo?: boolean }> = [
@@ -29,6 +30,7 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
   const [errore, setErrore] = useState('')
   const [crazyone, setCrazyone] = useState(false)
   const [aviatone, setAviatone] = useState(false)
+  const [premi, setPremi] = useState<Premio[]>([])
 
   const carica = useCallback(async () => {
     const { data, error } = await supabase.rpc('casino_stato', { p_league_id: leagueId })
@@ -36,6 +38,9 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
     setCrediti((data as { crediti: number }).crediti)
     setCrazyone((data as { crazyone?: boolean }).crazyone === true)
     setAviatone((data as { aviatone?: boolean }).aviatone === true)
+    // Premi partita appena pagati (solo partite gia' viste o vecchie di 24 ore: niente spoiler). Restano a schermo finche' non si chiudono.
+    const nuovi = ((data as { premi?: Premio[] }).premi ?? [])
+    if (nuovi.length) setPremi((p) => [...p, ...nuovi])
     const { data: cl } = await supabase.rpc('casino_classifica', { p_league_id: leagueId })
     setClassifica((cl ?? []) as RigaClassifica[])
   }, [leagueId])
@@ -75,6 +80,10 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
       <span className="slot-ricarica">+1.000 gratis alle 23:00</span>
     </div>
     {errore && <p className="slot-errore" role="alert">{errore}</p>}
+    {premi.length > 0 && <div className="cas-premi" role="status">
+      <div className="cas-premi__testa"><b>Premi partita</b><button type="button" aria-label="Chiudi" onClick={() => setPremi([])}>✕</button></div>
+      {premi.map((p, i) => <p key={i}><span>{p.esito === 'vittoria' ? 'Vittoria' : p.esito === 'pareggio' ? 'Pareggio' : 'Sconfitta'} contro {dati.teamById.get(p.avversario_id)?.nome ?? '—'}</span><strong>+{fmt(p.crediti)}</strong></p>)}
+    </div>}
 
     <section className="cas-fila">
       <h2>Giochi</h2>
