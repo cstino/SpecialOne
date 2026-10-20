@@ -6529,3 +6529,8 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .av-decolla:disabled { filter: grayscale(.8) brightness(.6); cursor: default; }
 .bet-page .av-decolla--salta { background: rgba(255,255,255,.06); color: #fff; box-shadow: none; border: 1px solid var(--bet-linea); font-weight: 800; }
 @media (prefers-reduced-motion: reduce) { .av-incassa { animation: none; } }
+
+/* AviatOne: gli interruttori dentro la riga dell'incasso auto non devono prendere lo stile dei tasti −/+ */
+.bet-page .av-auto .av-interruttore { width: 32px; height: 18px; background: rgba(255,255,255,.18); border-radius: 99px; }
+.bet-page .av-auto .av-interruttore[aria-checked="true"] { background: #2fd27a; }
+.bet-page .av-fiche button, .bet-page .av-importo button, .bet-page .av-auto button { text-align: center; }

@@ -128,6 +128,8 @@ export function AviatOne({ leagueId }: { leagueId: number }) {
   }, [fase, leagueId, applica])
 
   // ---------- Disegno ----------
+  // Parte quando la tela esiste davvero (durante il caricamento c'e' solo la scritta "Accendo i motori").
+  const caricato = crediti != null
   useEffect(() => {
     const cv = tela.current; if (!cv) return
     const c = cv.getContext('2d'); if (!c) return
@@ -217,7 +219,7 @@ export function AviatOne({ leagueId }: { leagueId: number }) {
     }
     raf = requestAnimationFrame(passo)
     return () => { cancelAnimationFrame(raf); ro.disconnect() }
-  }, [])
+  }, [caricato])
 
   // ---------- Azioni ----------
   const scelte = pannelli.filter((p) => p.attivo)
