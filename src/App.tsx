@@ -327,6 +327,31 @@ export default function App() {
     return () => { attivo = false }
   }, [session])
 
+  // Niente spoiler (20/10/2026): dalle 23, quando la partita della mia squadra e' stata giocata e non l'ho ancora
+  // vista, entrando nella lega si apre subito l'intro della partita, prima di qualsiasi pagina con risultati o
+  // classifica. Chiusa o guardata conta come vista (match_reveals) e non si riapre; una volta per partita per sessione.
+  const introAperte = useRef<Set<number>>(new Set())
+  useEffect(() => {
+    if (!session || nelMenu || revealMatch || openMatch) return
+    const m = memberships.find((item) => item.league_id === activeLeagueId) ?? memberships[0]
+    if (!m?.id || !m.user_id || m.league?.stato !== 'stagione') return
+    let vivo = true
+    void (async () => {
+      const { data } = await supabase.from('fixtures').select('id, matches(id, simulata_il)')
+        .eq('league_id', m.league_id).eq('stato', 'simulata').or(`home_team_id.eq.${m.id},away_team_id.eq.${m.id}`)
+        .order('data_sim', { ascending: false }).limit(1).maybeSingle()
+      const rel = (data as { matches?: { id: number; simulata_il: string } | Array<{ id: number; simulata_il: string }> } | null)?.matches
+      const partita = Array.isArray(rel) ? rel[0] : rel
+      if (!vivo || !partita || introAperte.current.has(partita.id)) return
+      if (Date.now() - new Date(partita.simulata_il).getTime() > 24 * 3600 * 1000) return   // solo l'ultima giornata
+      const { data: vista } = await supabase.from('match_reveals').select('match_id').eq('match_id', partita.id).maybeSingle()
+      if (!vivo || vista) return
+      introAperte.current.add(partita.id)
+      setRevealMatch({ id: partita.id, from: 'overview' })
+    })()
+    return () => { vivo = false }
+  }, [session, nelMenu, activeLeagueId, memberships]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const segnaPartitaVista = useCallback(async (matchId: number) => {
     // La UI passa subito allo stato "visto"; il database lo rende poi
     // persistente tra refresh e dispositivi appena la migrazione e' attiva.
