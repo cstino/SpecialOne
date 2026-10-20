@@ -158,14 +158,14 @@ function CoinFlip({ bonus, molt, puntata, vinto, suoni, onFine }: { bonus: Bonus
   }, [bonus])
   return <Palco esito="cf" molt={molt} puntata={puntata}>
     <div className="ct-cf">
-      <div className={`ct-cf__lato ct-cf__lato--rosso${fase === 'esito' && bonus.lato === 'rosso' ? ' is-vince' : ''}${fase === 'esito' && bonus.lato !== 'rosso' ? ' is-perde' : ''}`}><b>{bonus.rosso}×</b><small>Rosso</small></div>
+      <div className={`ct-cf__lato ct-cf__lato--rosso${fase === 'esito' && bonus.lato === 'rosso' ? ' is-vince' : ''}${fase === 'esito' && bonus.lato !== 'rosso' ? ' is-perde' : ''}`}><b>{bonus.rosso}×</b><small><img src="/specialone-mark.svg" alt="" />Testa</small></div>
       <div className="ct-cf__arena"><div ref={moneta} className={`ct-cf__moneta${fase !== 'valori' ? ' is-lanciata' : ''}`}>
         <span className="ct-cf__faccia ct-cf__faccia--rosso"><img src="/specialone-mark.svg" alt="" /><b>{bonus.rosso}×</b></span>
-        <span className="ct-cf__faccia ct-cf__faccia--blu"><img src="/specialone-mark.svg" alt="" /><b>{bonus.blu}×</b></span>
+        <span className="ct-cf__faccia ct-cf__faccia--blu"><svg className="ct-cf__pallone" viewBox="-10 -10 20 20" aria-hidden="true"><circle r="9.2" fill="#fff" stroke="#111" strokeWidth=".9" /><path d="M0,-3.6 L3.42,-1.11 L2.11,2.91 L-2.11,2.91 L-3.42,-1.11 Z" fill="#111" /><path d="M0,-3.6 L0,-9 M3.42,-1.11 L8.6,-2.8 M2.11,2.91 L5.3,7.3 M-2.11,2.91 L-5.3,7.3 M-3.42,-1.11 L-8.6,-2.8" stroke="#111" strokeWidth=".9" /></svg><b>{bonus.blu}×</b></span>
       </div></div>
-      <div className={`ct-cf__lato ct-cf__lato--blu${fase === 'esito' && bonus.lato === 'blu' ? ' is-vince' : ''}${fase === 'esito' && bonus.lato !== 'blu' ? ' is-perde' : ''}`}><b>{bonus.blu}×</b><small>Blu</small></div>
+      <div className={`ct-cf__lato ct-cf__lato--blu${fase === 'esito' && bonus.lato === 'blu' ? ' is-vince' : ''}${fase === 'esito' && bonus.lato !== 'blu' ? ' is-perde' : ''}`}><b>{bonus.blu}×</b><small><svg className="ct-cf__pallone" viewBox="-10 -10 20 20" aria-hidden="true"><circle r="9.2" fill="#fff" stroke="#111" strokeWidth=".9" /><path d="M0,-3.6 L3.42,-1.11 L2.11,2.91 L-2.11,2.91 L-3.42,-1.11 Z" fill="#111" /><path d="M0,-3.6 L0,-9 M3.42,-1.11 L8.6,-2.8 M2.11,2.91 L5.3,7.3 M-2.11,2.91 L-5.3,7.3 M-3.42,-1.11 L-8.6,-2.8" stroke="#111" strokeWidth=".9" /></svg>Croce</small></div>
     </div>
-    {fase === 'esito' ? <EsitoBonus valore={bonus.valore} molt={molt} vinto={vinto} onFine={onFine} /> : <p className="ct-palco__nota">{fase === 'valori' ? 'Due moltiplicatori: uno rosso, uno blu…' : 'L\'arbitro lancia la monetina!'}</p>}
+    {fase === 'esito' ? <EsitoBonus valore={bonus.valore} molt={molt} vinto={vinto} onFine={onFine} /> : <p className="ct-palco__nota">{fase === 'valori' ? 'Due moltiplicatori: uno su testa, uno su croce…' : 'L\'arbitro lancia la monetina!'}</p>}
   </Palco>
 }
 
@@ -533,7 +533,7 @@ export function CrazyOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
         <p><b>Top slot.</b> Prima di ogni giro la top slot può accendere un moltiplicatore da 2× a 50× su una casella: se la ruota si ferma proprio lì, la vincita si moltiplica.</p>
         <p><b>Bonus.</b> Se esce un bonus su cui hai puntato parte il minigioco, e vinci la puntata moltiplicata per il premio del minigioco (più la puntata indietro):</p>
         <ul>
-          <li><b>Testa o Croce</b> (4 spicchi): due moltiplicatori, uno rosso e uno blu; la monetina dell'arbitro decide quale vinci.</li>
+          <li><b>Testa o Croce</b> (4 spicchi): due moltiplicatori, uno su <b>testa</b> (faccia rossa col logo SpecialOne) e uno su <b>croce</b> (faccia blu col pallone); la monetina dell'arbitro decide quale vinci.</li>
           <li><b>Mischia</b> (2 spicchi): il pallone rimbalza in area tra i difensori e finisce in una porta. Se è DOUBLE, tutti i premi raddoppiano e si rimette il pallone in area.</li>
           <li><b>Caccia allo Stemma</b> (2 spicchi): 108 premi si coprono con gli stemmi della lega e si mescolano; tocchi uno stemma e prendi quello che c'è dietro.</li>
           <li><b>CrazyOne</b> (1 spicchio): scegli una bandierina e la ruota gigante gira; DOUBLE e TRIPLE moltiplicano tutti i premi e si rigira.</li>
