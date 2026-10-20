@@ -6690,19 +6690,3 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .bj-distribuisci small { font-size: .64rem; font-weight: 800; opacity: .75; }
 .bj-distribuisci:disabled { filter: grayscale(.8) brightness(.6); cursor: default; }
 @media (prefers-reduced-motion: reduce) { .bj-carta, .bj-esito { animation: none; } }
-/* locandina provvisoria */
-.cas-poster__arte--bj { background: radial-gradient(90% 60% at 50% 35%, #6a2a9a, #2a0d45 60%, #12051c); }
-.cas-bj__titolo { position: absolute; top: 9%; left: 0; right: 0; display: grid; justify-items: center; gap: 2px; text-align: center; }
-.cas-bj__titolo img { width: 30px; height: 30px; }
-.cas-bj__titolo b { color: #fff; font: 900 1.05rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .1em; text-shadow: 0 2px 10px rgba(0,0,0,.6); }
-.cas-bj__titolo span { color: var(--bet-oro, #f6c453); font: 900 1.5rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .2em; }
-.cas-bj__carte { position: absolute; left: 50%; top: 40%; width: 70%; height: 40%; transform: translateX(-50%); }
-.cas-bj__carta { position: absolute; top: 0; width: 56%; aspect-ratio: 5 / 7; border-radius: 8px; background: linear-gradient(160deg, #fff, #ece6f5); color: #1a0b22; box-shadow: 0 8px 18px rgba(0,0,0,.5); display: grid; place-items: center; }
-.cas-bj__carta:first-child { left: 0; transform: rotate(-12deg); }
-.cas-bj__carta:last-child { right: 0; transform: rotate(10deg); }
-.cas-bj__carta.is-rossa { color: #d11f3a; }
-.cas-bj__carta b { position: absolute; top: 6px; left: 7px; font: 900 1rem/1 "Bai Jamjuree", sans-serif; }
-.cas-bj__carta i { position: absolute; top: 24px; left: 8px; font-style: normal; font-size: .8rem; }
-.cas-bj__carta em { font-style: normal; font-size: 2.4rem; }
-.cas-bj__carta img { width: 44%; filter: brightness(0) saturate(100%) invert(18%) sepia(89%) saturate(4000%) hue-rotate(340deg); }
-.cas-bj__21 { position: absolute; left: 50%; bottom: 22%; transform: translateX(-50%); padding: 2px 12px; border-radius: 10px; background: linear-gradient(#fff1b0, #e7b23a); color: #3a2600; font: 900 1.3rem/1.1 "Bai Jamjuree", sans-serif; box-shadow: 0 0 18px rgba(231,178,58,.6); }

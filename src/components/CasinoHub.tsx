@@ -23,18 +23,6 @@ const GIOCHI: Array<{ id: Gioco; titolo: string; sotto: string; nuovo?: boolean 
   { id: 'slot', titolo: 'SlotOne', sotto: '5 rulli · 10 linee' },
 ]
 
-// Locandina provvisoria di BlackjackOne (finche' non arriva quella disegnata): tavolo viola con asso e re SpecialOne.
-function CopertinaBJ() {
-  return <div className="cas-poster__arte cas-poster__arte--bj" aria-hidden="true">
-    <div className="cas-bj__titolo"><img src="/specialone-mark.svg" alt="" /><b>BLACKJACK</b><span>ONE</span></div>
-    <div className="cas-bj__carte">
-      <span className="cas-bj__carta"><b>A</b><i>♠</i><em>♠</em></span>
-      <span className="cas-bj__carta is-rossa"><b>K</b><i>♥</i><img src="/specialone-mark.svg" alt="" /></span>
-    </div>
-    <span className="cas-bj__21">21</span>
-  </div>
-}
-
 type Props = { leagueId: number; teamId: number; dati: Dati }
 
 export function CasinoHub({ leagueId, teamId, dati }: Props) {
@@ -105,7 +93,7 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
       <h2>Giochi</h2>
       <div className="cas-fila__scorri">
         {GIOCHI.filter((g) => (g.id !== 'crazy' || crazyone) && (g.id !== 'aviat' || aviatone) && (g.id !== 'bj' || blackjack)).map((g) => <button key={g.id} type="button" className={`cas-poster cas-poster--${g.id}`} aria-label={`${g.titolo}: ${g.sotto}`} onClick={() => setGioco(g.id)}>
-          {g.id === 'bj' ? <CopertinaBJ /> : <img className="cas-poster__locandina" src={`/casino/${{ slot: 'slotone', crazy: 'crazyone', aviat: 'aviatone' }[g.id as 'slot' | 'crazy' | 'aviat']}.webp`} alt="" decoding="async" />}
+          <img className="cas-poster__locandina" src={`/casino/${{ slot: 'slotone', crazy: 'crazyone', aviat: 'aviatone', bj: 'blackjackone' }[g.id]}.webp`} alt="" decoding="async" />
           {g.nuovo && <span className="cas-poster__nuovo">Nuovo</span>}
           <span className="cas-poster__titolo"><small>{g.sotto}</small></span>
         </button>)}
