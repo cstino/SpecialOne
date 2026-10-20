@@ -258,7 +258,14 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
     setInvio(true); await chiedi('casino_av_punta', { p_puntata: puntata, p_auto: autoOn ? auto : null }); setInvio(false)
   }
   async function ritira() { if (invio) return; setInvio(true); await chiedi('casino_av_ritira'); setInvio(false) }
-  async function incassa() { if (invio) return; setInvio(true); await chiedi('casino_av_incassa_live'); setInvio(false) }
+  // Il tocco arriva sia come pointerdown sia come click: una sola richiesta per volo.
+  const incassoMandato = useRef<number | null>(null)
+  async function incassa() {
+    const id = statoRef.current?.giro.id ?? null
+    if (incassoMandato.current === id) return
+    incassoMandato.current = id
+    setInvio(true); await chiedi('casino_av_incassa_live'); setInvio(false)
+  }
 
   if (!stato) return <section className="slot-caricamento">{errore ? <p role="alert">{errore}</p> : <p>Accendo i motori…</p>}</section>
 
@@ -273,7 +280,7 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
 
   let azione: ReactNode
   if (fase === 'puntate' && mia) azione = <button type="button" className="av-azione av-azione--annulla" disabled={invio} onClick={() => void ritira()}><small>A BORDO</small><b>Annulla</b></button>
-  else if (fase === 'volo' && mia && mia.incassato == null) azione = <button type="button" className="av-azione av-azione--incassa" disabled={invio} onClick={() => void incassa()}><small>INCASSA</small><b><span ref={valoreIncassa}>{fmt(mia.puntata)}</span></b>{mia.auto != null && <i>auto a {fx(mia.auto)}</i>}</button>
+  else if (fase === 'volo' && mia && mia.incassato == null) azione = <button type="button" className="av-azione av-azione--incassa" disabled={invio} onPointerDown={(e) => { e.preventDefault(); void incassa() }} onClick={() => void incassa()}><small>INCASSA</small><b><span ref={valoreIncassa}>{fmt(mia.puntata)}</span></b>{mia.auto != null && <i>auto a {fx(mia.auto)}</i>}</button>
   else if (mia && mia.incassato != null) azione = <div className="av-azione av-azione--vinto"><small>INCASSATA</small><b>{fx(mia.incassato)}</b><i>+{fmt(mia.vinto)}</i></div>
   else if (fase === 'esploso' && mia) azione = <div className="av-azione av-azione--perso"><small>VOLATO VIA</small><b>Persa</b></div>
   else if (prenotata) azione = <button type="button" className="av-azione av-azione--annulla" onClick={() => setPrenotata(null)}><small>PRENOTATA</small><b>Annulla</b></button>

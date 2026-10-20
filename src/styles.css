@@ -6616,3 +6616,11 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .bet-page .cas-premi__testa button { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 8px; background: rgba(255,255,255,.08); font-size: .8rem; cursor: pointer; }
 .cas-premi p { display: flex; justify-content: space-between; gap: 10px; margin: 0; font-size: .86rem; }
 .cas-premi p strong { color: var(--bet-oro); font-variant-numeric: tabular-nums; }
+/* AviatOne: il bottone d'azione sta sempre sopra a tutto. La fiche scelta (ingrandita, quindi "sollevata") su telefoni
+   stretti debordava sotto il bottone e, spenta durante il volo, si prendeva il tocco: con 100 INCASSA non funzionava. */
+.av-pannello > .av-azione { position: relative; z-index: 3; }
+.av-pannello__corpo { position: relative; z-index: 1; }
+.av-fiche { gap: 4px; padding: 6px 4px 2px; }
+.bet-page .av-fiche .fiche-casino { flex: 0 1 42px; width: auto; min-width: 0; max-width: 42px; height: auto; aspect-ratio: 1; }
+.av-fiche .fiche-casino span { font-size: .72rem; }
+.av-fiche .fiche-casino--100 span { font-size: .64rem; }
