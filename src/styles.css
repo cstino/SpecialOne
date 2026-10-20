@@ -6291,7 +6291,7 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .cas-indietro span { font-size: 1.3rem; line-height: 1; color: var(--bet-oro); }
 .cas-fila { display: grid; gap: 10px; }
 .cas-fila h2 { margin: 0; font-size: 1.05rem; font-weight: 800; letter-spacing: .02em; }
-.cas-fila__scorri { display: grid; grid-auto-flow: column; grid-auto-columns: min(42vw, 168px); gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 4px 16px 10px; scrollbar-width: none; }
+.cas-fila__scorri { display: grid; grid-auto-flow: column; grid-auto-columns: min(42vw, 168px); gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0; padding: 4px 0 10px; scrollbar-width: none; }
 .cas-fila__scorri::-webkit-scrollbar { display: none; }
 .bet-page .cas-poster { position: relative; aspect-ratio: 2 / 3; display: block; padding: 0; border: 0; border-radius: 16px; overflow: hidden; isolation: isolate; -webkit-mask-image: -webkit-radial-gradient(white, black); transform: translateZ(0); scroll-snap-align: start; cursor: pointer; text-align: left; color: #fff; box-shadow: 0 10px 24px rgba(0,0,0,.45); transition: transform .18s ease; }
 .bet-page .cas-poster:active { transform: translateZ(0) scale(.97); }
