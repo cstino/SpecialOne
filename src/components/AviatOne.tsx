@@ -162,6 +162,14 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
     const c = cv.getContext('2d'); if (!c) return
     const aereo = new Image(); aereo.src = AEREO_URL
     const logo = new Image(); logo.src = '/specialone-mark.svg'
+    // Logo scuro per la coda oro (il logo originale e' bianco e non si leggeva): lo si ricolora una volta su una tela a parte.
+    let logoScuro: HTMLCanvasElement | null = null
+    logo.onload = () => {
+      const t = document.createElement('canvas'); t.width = t.height = 96
+      const x = t.getContext('2d'); if (!x) return
+      x.drawImage(logo, 0, 0, 96, 96); x.globalCompositeOperation = 'source-in'; x.fillStyle = '#3a1670'; x.fillRect(0, 0, 96, 96)
+      logoScuro = t
+    }
     let raf = 0, W = 0, H = 0
     const misura = () => { const dpr = devicePixelRatio || 1; W = cv.offsetWidth; H = cv.offsetHeight; cv.width = W * dpr; cv.height = H * dpr; c.setTransform(dpr, 0, 0, dpr, 0, 0) }
     misura()
@@ -172,7 +180,8 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
       const w = Math.min(96, W * 0.24), h = w / 2
       c.save(); c.translate(x, y); c.rotate(ang)
       if (aereo.complete && aereo.naturalWidth) c.drawImage(aereo, -w * 0.9, -h * 0.55, w, h)
-      if (logo.complete && logo.naturalWidth) c.drawImage(logo, -w * 0.9 + w * 0.045, -h * 0.55 + h * 0.2, w * 0.12, w * 0.12)
+      // centrato sulla deriva di coda (nel disegno 120×60 sta intorno a x 15, y 19)
+      if (logoScuro) { const l = w * 0.085; c.drawImage(logoScuro, -w * 0.9 + w * 0.13 - l / 2, -h * 0.55 + h * 0.33 - l / 2, l, l) }
       const s = Math.abs(Math.sin(t / 30))
       c.fillStyle = 'rgba(255,241,176,.75)'
       c.beginPath(); c.ellipse(-w * 0.9 + w * 0.93, -h * 0.55 + h * 0.54, 1.6, h * 0.42 * (0.3 + 0.7 * s), 0, 0, Math.PI * 2); c.fill()
