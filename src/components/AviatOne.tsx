@@ -8,10 +8,11 @@ import { Crest } from './Crest'
 // BetOne Casino' › AviatOne LIVE, l'Aviator a tema SpecialOne (supabase/migrations/20261020140000_aviatone_live.sql).
 // Un solo aereo per lega, uguale per tutti: 7 s per puntare, volo, crash, 3 s di pausa, giro successivo.
 // Il moltiplicatore dipende solo dall'orologio del SERVER (m = e^(0,2·t), velocita' dell'Aviator vero); il crash e' segreto finche' l'aereo non
-// vola via. La pagina chiede lo stato ogni mezzo secondo e disegna; incassi e crash li decide il server.
+// vola via. La pagina chiede lo stato (ogni 0,25 s in volo) e disegna con 0,3 s di ritardo da diretta; incassi e crash li decide il server.
 
 type Dati = ReturnType<typeof useSeasonData>
 const K = 0.2
+const RITARDO = 300   // ms di "ritardo da diretta" dello schermo rispetto al server
 const moltAl = (secondi: number) => Math.min(1000, Math.floor(Math.exp(K * Math.max(0, secondi)) * 100) / 100)
 const fx = (m: number) => `${m.toFixed(2)}×`
 const AUTO = [1.1, 1.2, 1.3, 1.5, 1.75, 2, 2.5, 3, 4, 5, 7.5, 10, 15, 20, 25, 50, 100, 250, 500, 1000]
@@ -70,6 +71,11 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
   useEffect(() => { prenotataRef.current = prenotata }, [prenotata])
   useEffect(() => { try { localStorage.setItem('slot-audio', audio ? '1' : '0') } catch { /* preferenza solo locale */ } }, [audio])
   const oraServer = () => Date.now() + scarto.current
+  // "Ritardo da diretta": l'aereo sullo schermo e' RITARDO ms indietro rispetto al server, cosi' la notizia del crash
+  // (controllo ogni 0,25 s) arriva prima che lo schermo ci arrivi e l'aereo esplode esattamente al valore giusto.
+  // L'incasso manda l'orario dello schermo, quindi si incassa il moltiplicatore che si vede.
+  const oraSchermo = () => oraServer() - RITARDO
+  const crashAl = (g: Giro) => (g.crash != null ? g.parte + (Math.log(Math.max(1, Number(g.crash))) / K) * 1000 : Infinity)
 
   const esplodi = () => { esplosoAl.current = performance.now(); faseRef.current = 'esploso'; setFase('esploso'); suoniRef.current.stop(0) }
 
@@ -78,7 +84,7 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
     scarto.current = arrivato.adesso - (t0 + t1) / 2
     const prima = statoRef.current
     const nuovoGiro = !prima || prima.giro.id !== arrivato.giro.id
-    // Una risposta partita prima del crash non deve cancellare il crash gia' avvisato da aviatone-volo.
+    // Una risposta partita prima del crash non deve cancellare un crash gia' noto.
     const s = !nuovoGiro && prima && prima.giro.crash != null && arrivato.giro.crash == null ? { ...arrivato, giro: prima.giro } : arrivato
     const miaPrima = prima && !nuovoGiro ? prima.giocate.find((q) => q.mia) : undefined
     const mia = s.giocate.find((q) => q.mia)
@@ -90,7 +96,8 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
       const nuoviIncassi = s.giocate.filter((q) => !q.mia && q.incassato != null).length - prima.giocate.filter((q) => !q.mia && q.incassato != null).length
       if (nuoviIncassi > 0) suoniRef.current.moneta(nuoviIncassi)
     }
-    if (s.giro.crash != null && faseRef.current !== 'esploso') {
+    // Il crash si mostra quando lo schermo arriva al momento dell'esplosione (subito, se e' gia' passato).
+    if (s.giro.crash != null && faseRef.current !== 'esploso' && oraSchermo() >= crashAl(s.giro)) {
       esplodi()
     } else if (s.giro.crash == null && nuovoGiro) {
       faseRef.current = 'puntate'; setFase('puntate')
@@ -122,9 +129,11 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
         await chiedi('casino_av_punta', { p_puntata: p.puntata, p_auto: p.auto })
       }
     }
-    void giro()
-    const t = window.setInterval(() => void giro(), 500)
-    return () => { vivo = false; window.clearInterval(t) }
+    // Ogni 0,25 s durante il volo, ogni 0,5 s il resto del tempo.
+    let t = 0
+    const ciclo = async () => { await giro(); if (vivo) t = window.setTimeout(ciclo, faseRef.current === 'volo' ? 250 : 500) }
+    void ciclo()
+    return () => { vivo = false; window.clearTimeout(t) }
   }, [chiedi])
 
   // Decollo: la fase passa a "volo" sull'orologio (allineato al server), senza aspettare la risposta successiva.
@@ -133,29 +142,6 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
     const resto = stato.giro.parte - oraServer()
     const t = window.setTimeout(() => { if (faseRef.current === 'puntate' && statoRef.current?.giro.id === stato.giro.id) { faseRef.current = 'volo'; setFase('volo'); suoniRef.current.leva() } }, Math.max(0, resto))
     return () => window.clearTimeout(t)
-  }, [fase, stato?.giro.id]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Durante il volo si aspetta l'avviso del crash dalla funzione aviatone-volo, che risponde nell'istante esatto in cui
-  // l'aereo vola via (il controllo ogni mezzo secondo arriverebbe fino a 0,6 s dopo e il numero salirebbe oltre il crash).
-  useEffect(() => {
-    if (fase !== 'volo' || !stato) return
-    const id = stato.giro.id
-    let vivo = true
-    void (async () => {
-      for (let tentativi = 0; vivo && tentativi < 20; tentativi++) {
-        const { data, error } = await supabase.functions.invoke('aviatone-volo', { body: { giro: id } })
-        if (!vivo || error || !data) return   // in caso di problemi resta il controllo ogni mezzo secondo
-        if (data.finito) {
-          const s = statoRef.current
-          if (s && s.giro.id === id && faseRef.current !== 'esploso') {
-            const nuovo = { ...s, giro: { ...s.giro, finito: true, crash: Number(data.crash) } }
-            statoRef.current = nuovo; setStato(nuovo); esplodi()
-          }
-          return
-        }
-      }
-    })()
-    return () => { vivo = false }
   }, [fase, stato?.giro.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------- Disegno ----------
@@ -217,7 +203,8 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
         }
       } else {
         const crash = s.giro.crash
-        const t = f === 'volo' ? (oraServer() - s.giro.parte) / 1000 : Math.log(Math.max(1, crash ?? 1)) / K
+        if (f === 'volo' && crash != null && oraSchermo() >= crashAl(s.giro)) esplodi()
+        const t = faseRef.current === 'volo' ? Math.max(0, oraSchermo() - s.giro.parte) / 1000 : Math.log(Math.max(1, crash ?? 1)) / K
         const m = f === 'volo' ? moltAl(t) : (crash ?? 1)
         const maxT = Math.max(9, t * 1.18), maxM = Math.max(1.8, m * 1.22)
         const px = (x: number) => sinistra + (x / maxT) * (W - sinistra - pad)
@@ -267,7 +254,7 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
     const id = statoRef.current?.giro.id ?? null
     if (incassoMandato.current === id) return
     incassoMandato.current = id
-    const tocco = Math.round(oraServer())   // solo per misurare il ritardo di rete: il server paga all'orario di arrivo
+    const tocco = Math.round(oraSchermo())   // l'orario dello schermo: si incassa il moltiplicatore che si vede
     setInvio(true)
     const r = await chiedi('casino_av_incassa_live', { p_tocco: tocco })
     setInvio(false)
