@@ -3,8 +3,8 @@ import { supabase } from '../lib/supabase'
 import type { useSeasonData } from '../lib/useSeasonData'
 import { Crest } from './Crest'
 import { Casino, Contatore, fmt } from './Casino'
-import { CrazyOne, RUOTA, CASELLE } from './CrazyOne'
-import { AviatOne, AEREO_URL } from './AviatOne'
+import { CrazyOne } from './CrazyOne'
+import { AviatOne } from './AviatOne'
 
 // Pagina iniziale del BetOne Casino': una fila di copertine verticali (stile home di Netflix), una per gioco.
 // I crediti sono gli stessi per tutti i giochi; la classifica e' unica (miglior colpo in un solo giro, qualsiasi gioco).
@@ -13,36 +13,12 @@ type Dati = ReturnType<typeof useSeasonData>
 type RigaClassifica = { team_id: number; crediti: number; max_vincita: number; giri: number }
 type Gioco = 'slot' | 'crazy' | 'aviat'
 
+// Le locandine (public/casino/*.webp, 540×810) le ha disegnate il committente; il nome del gioco e' gia' nell'immagine.
 const GIOCHI: Array<{ id: Gioco; titolo: string; sotto: string; nuovo?: boolean }> = [
   { id: 'aviat', titolo: 'AviatOne', sotto: 'Incassa prima che voli via', nuovo: true },
   { id: 'crazy', titolo: 'CrazyOne', sotto: 'Ruota · 4 bonus' },
   { id: 'slot', titolo: 'SlotOne', sotto: '5 rulli · 10 linee' },
 ]
-
-function CopertinaSlot() {
-  return <div className="cas-poster__arte cas-poster__arte--slot" aria-hidden="true">
-    <div className="cas-poster__luci">{Array.from({ length: 10 }, (_, i) => <i key={i} style={{ animationDelay: `${(i % 5) * 0.15}s` }} />)}</div>
-    <div className="cas-poster__rulli"><span>7</span><span><img src="/specialone-mark.svg" alt="" /></span><span>7</span></div>
-  </div>
-}
-
-function CopertinaCrazy() {
-  const passo = 360 / RUOTA.length
-  const sfondo = `conic-gradient(from ${-passo / 2}deg, ${RUOTA.map((c, i) => `${CASELLE[c].colore} ${i * passo}deg ${(i + 1) * passo}deg`).join(', ')})`
-  return <div className="cas-poster__arte cas-poster__arte--crazy" aria-hidden="true">
-    <div className="cas-poster__raggi" />
-    <div className="cas-poster__ruota" style={{ background: sfondo }}><span><img src="/specialone-mark.svg" alt="" /></span></div>
-  </div>
-}
-
-function CopertinaAviat() {
-  return <div className="cas-poster__arte cas-poster__arte--aviat" aria-hidden="true">
-    <div className="cas-poster__raggi cas-poster__raggi--aviat" />
-    <svg className="cas-poster__curva" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 100 C45 98 70 80 92 22 L92 100 Z" fill="rgba(155,92,255,.45)" /><path d="M0 100 C45 98 70 80 92 22" fill="none" stroke="#f6c453" strokeWidth="2.4" /></svg>
-    <img className="cas-poster__aereo" src={AEREO_URL} alt="" />
-    <span className="cas-poster__x">2.47×</span>
-  </div>
-}
 
 type Props = { leagueId: number; teamId: number; dati: Dati }
 
@@ -103,10 +79,10 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
     <section className="cas-fila">
       <h2>Giochi</h2>
       <div className="cas-fila__scorri">
-        {GIOCHI.filter((g) => (g.id !== 'crazy' || crazyone) && (g.id !== 'aviat' || aviatone)).map((g) => <button key={g.id} type="button" className={`cas-poster cas-poster--${g.id}`} onClick={() => setGioco(g.id)}>
-          {g.id === 'slot' ? <CopertinaSlot /> : g.id === 'aviat' ? <CopertinaAviat /> : <CopertinaCrazy />}
+        {GIOCHI.filter((g) => (g.id !== 'crazy' || crazyone) && (g.id !== 'aviat' || aviatone)).map((g) => <button key={g.id} type="button" className={`cas-poster cas-poster--${g.id}`} aria-label={`${g.titolo}: ${g.sotto}`} onClick={() => setGioco(g.id)}>
+          <img className="cas-poster__locandina" src={`/casino/${{ slot: 'slotone', crazy: 'crazyone', aviat: 'aviatone' }[g.id]}.webp`} alt="" decoding="async" />
           {g.nuovo && <span className="cas-poster__nuovo">Nuovo</span>}
-          <span className="cas-poster__titolo"><b>{g.titolo}</b><small>{g.sotto}</small></span>
+          <span className="cas-poster__titolo"><small>{g.sotto}</small></span>
         </button>)}
         <div className="cas-poster cas-poster--presto" aria-label="Altri giochi in arrivo">
           <span className="cas-poster__presto">Prossimamente</span>

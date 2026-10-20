@@ -6588,3 +6588,7 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 @media (prefers-reduced-motion: reduce) { .av-azione--incassa, .av-dal-vivo i { animation: none; } }
 .av-storia__vuota { color: #8f86a3; font-weight: 700 !important; }
 .av-molt--volo b { text-shadow: 0 0 22px currentColor, 0 4px 18px rgba(0,0,0,.6); }
+
+/* Locandine dei giochi (immagini del committente) */
+.cas-poster__locandina { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cas-poster .cas-poster__titolo { padding: 22px 10px 9px; background: linear-gradient(transparent, rgba(0,0,0,.78) 60%); }
