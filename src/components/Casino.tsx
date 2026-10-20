@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useMusica } from '../lib/musicaCasino'
 import type { useSeasonData } from '../lib/useSeasonData'
 import { Crest } from './Crest'
 
@@ -148,6 +149,7 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
   const [audio, setAudio] = useState(() => { try { return localStorage.getItem('slot-audio') !== '0' } catch { return true } })
   const [tabella, setTabella] = useState(false)
   const suoni = useSuoni(audio)
+  const sbloccaMusica = useMusica('slot', audio)
 
   const carica = useCallback(async () => {
     const { data, error } = await supabase.rpc('casino_stato', { p_league_id: leagueId })
@@ -222,7 +224,7 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
 
   if (!stato) return <section className="slot-caricamento">{errore ? <p role="alert">{errore}</p> : <p>Accendo le luci del casinò…</p>}</section>
 
-  return <section className="slot" onPointerDown={() => suoni.sblocca()}>
+  return <section className="slot" onPointerDown={() => { suoni.sblocca(); sbloccaMusica() }}>
     <div className="slot-saldo">
       <div><small>I tuoi crediti</small><strong><Contatore valore={crediti} /></strong></div>
       {giriGratis > 0 ? <span className="slot-gratis">🏆 {giriGratis} giri gratis · ×2</span> : <span className="slot-ricarica">+1.000 gratis alle 23:00</span>}

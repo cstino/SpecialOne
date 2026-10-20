@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
+import { useMusica } from '../lib/musicaCasino'
 import type { useSeasonData } from '../lib/useSeasonData'
 import { Contatore, Festa, fmt, ridotto, useSuoni } from './Casino'
 import { Crest } from './Crest'
@@ -51,6 +52,7 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
   const [festa, setFesta] = useState(0)
   const [audio, setAudio] = useState(() => { try { return localStorage.getItem('slot-audio') !== '0' } catch { return true } })
   const suoni = useSuoni(audio)
+  const sbloccaMusica = useMusica('aviat', audio)
   const suoniRef = useRef(suoni); suoniRef.current = suoni
 
   const tela = useRef<HTMLCanvasElement>(null)
@@ -279,7 +281,7 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
     <small>{fase === 'puntate' ? 'PUNTA' : 'PROSSIMO VOLO'}</small><b>{fmt(puntata)}</b>
   </button>
 
-  return <section className="av" onPointerDown={() => suoni.sblocca()}>
+  return <section className="av" onPointerDown={() => { suoni.sblocca(); sbloccaMusica() }}>
     <div className="slot-saldo">
       <div><small>I tuoi crediti</small><strong><Contatore valore={crediti} /></strong></div>
       <span className="slot-ricarica av-dal-vivo"><i aria-hidden="true" />LIVE</span>

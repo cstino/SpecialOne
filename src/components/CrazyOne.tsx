@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
+import { useMusica } from '../lib/musicaCasino'
 import type { useSeasonData } from '../lib/useSeasonData'
 import { Contatore, Festa, fmt, ridotto, useSuoni } from './Casino'
 import { Crest } from './Crest'
@@ -431,6 +432,7 @@ export function CrazyOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
   const [regole, setRegole] = useState(false)
   const [audio, setAudio] = useState(() => { try { return localStorage.getItem('slot-audio') !== '0' } catch { return true } })
   const suoni = useSuoni(audio)
+  const sbloccaMusica = useMusica('crazy', audio)
   const suoniRef = useRef(suoni); suoniRef.current = suoni
   const ruotaRef = useRef<HTMLDivElement>(null)
   const angolo = useRef(0)
@@ -581,7 +583,7 @@ export function CrazyOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
               : mia ? ((mia.vinto ?? 0) > 0 ? `È uscito ${nome}: +${fmt(mia.vinto ?? 0)} crediti!` : `È uscito ${nome}. Niente stavolta.`) : `È uscito ${nome}.`
   const vincitori = g.regolato ? stato.giocate.filter((q) => (q.vinto ?? 0) > 0) : []
 
-  return <section className="ct" onPointerDown={() => suoni.sblocca()}>
+  return <section className="ct" onPointerDown={() => { suoni.sblocca(); sbloccaMusica() }}>
     <div className="slot-saldo">
       <div><small>I tuoi crediti</small><strong><Contatore valore={stato.crediti} /></strong></div>
       <span className="slot-ricarica av-dal-vivo"><i aria-hidden="true" />LIVE</span>
