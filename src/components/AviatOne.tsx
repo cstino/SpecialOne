@@ -68,11 +68,15 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
   useEffect(() => { try { localStorage.setItem('slot-audio', audio ? '1' : '0') } catch { /* preferenza solo locale */ } }, [audio])
   const oraServer = () => Date.now() + scarto.current
 
+  const esplodi = () => { esplosoAl.current = performance.now(); faseRef.current = 'esploso'; setFase('esploso'); suoniRef.current.stop(0) }
+
   // Nuovo stato dal server: fasi del giro, suoni, incassi, prenotazione per il volo successivo.
-  const applica = useCallback((s: Stato, t0: number, t1: number) => {
-    scarto.current = s.adesso - (t0 + t1) / 2
+  const applica = useCallback((arrivato: Stato, t0: number, t1: number) => {
+    scarto.current = arrivato.adesso - (t0 + t1) / 2
     const prima = statoRef.current
-    const nuovoGiro = !prima || prima.giro.id !== s.giro.id
+    const nuovoGiro = !prima || prima.giro.id !== arrivato.giro.id
+    // Una risposta partita prima del crash non deve cancellare il crash gia' avvisato da aviatone-volo.
+    const s = !nuovoGiro && prima && prima.giro.crash != null && arrivato.giro.crash == null ? { ...arrivato, giro: prima.giro } : arrivato
     const miaPrima = prima && !nuovoGiro ? prima.giocate.find((q) => q.mia) : undefined
     const mia = s.giocate.find((q) => q.mia)
     if (mia?.incassato != null && miaPrima && miaPrima.incassato == null) {
@@ -84,7 +88,7 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
       if (nuoviIncassi > 0) suoniRef.current.moneta(nuoviIncassi)
     }
     if (s.giro.crash != null && faseRef.current !== 'esploso') {
-      esplosoAl.current = performance.now(); faseRef.current = 'esploso'; setFase('esploso'); suoniRef.current.stop(0)
+      esplodi()
     } else if (s.giro.crash == null && nuovoGiro) {
       faseRef.current = 'puntate'; setFase('puntate')
     }
@@ -126,6 +130,29 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
     const resto = stato.giro.parte - oraServer()
     const t = window.setTimeout(() => { if (faseRef.current === 'puntate' && statoRef.current?.giro.id === stato.giro.id) { faseRef.current = 'volo'; setFase('volo'); suoniRef.current.leva() } }, Math.max(0, resto))
     return () => window.clearTimeout(t)
+  }, [fase, stato?.giro.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Durante il volo si aspetta l'avviso del crash dalla funzione aviatone-volo, che risponde nell'istante esatto in cui
+  // l'aereo vola via (il controllo ogni mezzo secondo arriverebbe fino a 0,6 s dopo e il numero salirebbe oltre il crash).
+  useEffect(() => {
+    if (fase !== 'volo' || !stato) return
+    const id = stato.giro.id
+    let vivo = true
+    void (async () => {
+      for (let tentativi = 0; vivo && tentativi < 20; tentativi++) {
+        const { data, error } = await supabase.functions.invoke('aviatone-volo', { body: { giro: id } })
+        if (!vivo || error || !data) return   // in caso di problemi resta il controllo ogni mezzo secondo
+        if (data.finito) {
+          const s = statoRef.current
+          if (s && s.giro.id === id && faseRef.current !== 'esploso') {
+            const nuovo = { ...s, giro: { ...s.giro, finito: true, crash: Number(data.crash) } }
+            statoRef.current = nuovo; setStato(nuovo); esplodi()
+          }
+          return
+        }
+      }
+    })()
+    return () => { vivo = false }
   }, [fase, stato?.giro.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------- Disegno ----------
