@@ -306,7 +306,7 @@ export function AviatOne({ leagueId }: { leagueId: number }) {
               <b>{fmt(p.puntata)}</b>
               <button type="button" aria-label="Più" disabled={inVolo || p.puntata >= 500} onClick={() => cambia(i, (x) => ({ ...x, puntata: Math.min(500, x.puntata + 10) }))}>+</button>
             </div>
-            <div className="av-fiche">{FICHE.map((f) => <button key={f} type="button" disabled={inVolo} className={p.puntata === f ? 'is-scelta' : ''} onClick={() => cambia(i, (x) => ({ ...x, puntata: f }))}>{f}</button>)}</div>
+            <div className="av-fiche">{FICHE.map((f) => <button key={f} type="button" disabled={inVolo} aria-pressed={p.puntata === f} className={`fiche-casino fiche-casino--${f}${p.puntata === f ? ' is-scelta' : ''}`} onClick={() => cambia(i, (x) => ({ ...x, puntata: f }))}><span>{f}</span></button>)}</div>
             <div className="av-auto">
               <button type="button" role="switch" aria-checked={p.autoOn} className="av-interruttore av-interruttore--piccolo" disabled={inVolo} onClick={() => cambia(i, (x) => ({ ...x, autoOn: !x.autoOn }))}><i /></button>
               <span>Incasso auto</span>

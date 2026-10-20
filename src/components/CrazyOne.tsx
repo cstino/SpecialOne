@@ -513,7 +513,7 @@ export function CrazyOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
 
     <div className="ct-comandi">
       <div className="ct-fiche" role="group" aria-label="Valore della fiche">
-        {FICHE.map((f) => <button key={f} type="button" className={`ct-fiche__f ct-fiche__f--${f}${fiche === f ? ' is-scelta' : ''}`} aria-pressed={fiche === f} onClick={() => setFiche(f)}>{f}</button>)}
+        {FICHE.map((f) => <button key={f} type="button" className={`fiche-casino fiche-casino--${f}${fiche === f ? ' is-scelta' : ''}`} aria-pressed={fiche === f} onClick={() => setFiche(f)}><span>{f}</span></button>)}
       </div>
       <div className="ct-azioni">
         <button type="button" disabled={inCorsa || mosse.length === 0} onClick={annulla}>Annulla</button>
