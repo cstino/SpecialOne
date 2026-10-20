@@ -6791,3 +6791,7 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .qz-oggi li p { margin: 0; font-size: .82rem; color: #cfc6e0; }
 .qz-oggi li b { color: #7dffb5; font-size: .84rem; }
 @media (prefers-reduced-motion: reduce) { .qz-studio::before, .qz-risposta.is-giusta { animation: none; } }
+
+/* QuizOne: sotto ogni scelta, quanto si vince indovinando */
+.bet-page .qz-tasto { display: grid; place-content: center; gap: 3px; height: 62px; }
+.qz-tasto small { font: 800 .7rem/1 "Bai Jamjuree", sans-serif; letter-spacing: 0; text-transform: none; opacity: .85; }

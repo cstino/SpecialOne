@@ -108,11 +108,11 @@ export function Quizzone({ leagueId, dati }: { leagueId: number; dati: Dati }) {
         <small>Domanda delle {hh(d.ora)}</small>
         <Anello resto={10_000 - dt} totale={10_000} />
         {mia ? <p className="qz-dentro">Sei dentro {mia.puntata > 0 ? <>con <b>{fmt(mia.puntata)}</b> crediti</> : <b>gratis</b>}. La domanda sta per arrivare…</p> : <>
-          <p>Giochi gratis o punti? Se indovini vinci <b>100</b> crediti{puntata > 0 ? <>, più <b>{fmt(puntata * 2)}</b> se punti {fmt(puntata)}</> : ''}.</p>
+          <p>Gratis o con puntata, se indovini vinci sempre <b>100 crediti</b>. Puntando vinci anche il doppio della puntata (se sbagli, perdi solo la puntata).</p>
           <div className="qz-puntate">{PUNTATE.map((p) => <button key={p} type="button" className={`fiche-casino fiche-casino--${p >= 100 ? 100 : p === 50 ? 50 : 10}${puntata === p ? ' is-scelta' : ''}`} disabled={p > st.crediti} onClick={() => setPuntata(p)}><span>{p}</span></button>)}</div>
           <div className="qz-scelta">
-            <button type="button" className="qz-tasto qz-tasto--gratis" disabled={invio} onClick={() => void entra(0)}>Gioca gratis</button>
-            <button type="button" className="qz-tasto qz-tasto--punta" disabled={invio || puntata > st.crediti} onClick={() => void entra(puntata)}>Punta {fmt(puntata)}</button>
+            <button type="button" className="qz-tasto qz-tasto--gratis" disabled={invio} onClick={() => void entra(0)}><span>Gioca gratis</span><small>se indovini +100</small></button>
+            <button type="button" className="qz-tasto qz-tasto--punta" disabled={invio || puntata > st.crediti} onClick={() => void entra(puntata)}><span>Punta {fmt(puntata)}</span><small>se indovini +{fmt(100 + puntata * 2)}</small></button>
           </div>
         </>}
         <p className="qz-giocatori">{d.giocatori} {d.giocatori === 1 ? 'giocatore dentro' : 'giocatori dentro'}</p>
