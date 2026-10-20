@@ -19,6 +19,8 @@ const PESI = [9, 9, 9, 7, 7, 7, 4, 4, 3, 2, 0]
 const PAGA_BASE: Record<string, number[]> = { basso: [8, 26, 100], medio: [14, 52, 200], alto: [26, 125, 500] }
 // Dove c'e' l'album (e quindi la bustina sui rulli) gli stemmi pagano un po' di piu'.
 const PAGA_ALBUM: Record<string, number[]> = { basso: [9, 29, 110], medio: [16, 56, 222], alto: [29, 136, 550] }
+// 20/10/2026: tutte le vincite in crediti moltiplicate per questa scala (ritorno 97% invece di 94%), come in casino_gira.
+const SCALA_ALBUM = 1.033, SCALA_BASE = 1.024
 const COLORI_LINEE = ['#ffd84d', '#ff5ad1', '#4de2ff', '#7dff6b', '#ff8a3d', '#b78bff', '#ff4d6d', '#3dffb5', '#ffe9a8', '#6bb7ff']
 export const fmt = (n: number) => new Intl.NumberFormat('it-IT').format(Math.round(n))
 const pescaSimbolo = () => { let x = Math.random() * 61; for (let i = 0; i < 11; i++) { x -= PESI[i]; if (x < 0) return i } return 0 }
@@ -164,6 +166,7 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
   }, [esito])
 
   const simboli = stato?.simboli ?? []
+  const scala = stato?.album ? SCALA_ALBUM : SCALA_BASE
   const giriGratis = stato?.giri_gratis ?? 0
   const puoiGirare = !inCorsa && stato != null && (giriGratis > 0 || crediti >= puntata)
 
@@ -285,11 +288,11 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
         <p>Vinci quando su una <b>linea</b> escono <b>3, 4 o 5 stemmi uguali</b> consecutivi, partendo dal <b>primo rullo a sinistra</b>. I premi qui sotto sono in crediti <b>con la tua puntata di {puntata}</b>: se cambi puntata cambiano anche loro. Se escono più linee vincenti, si sommano.</p>
         {([['alto', [6, 7]], ['medio', [3, 4, 5]], ['basso', [0, 1, 2]]] as Array<[string, number[]]>).map(([fascia, idx]) => <div key={fascia} className="slot-premi__riga">
           <span className="slot-premi__simboli">{idx.map((i) => <span key={i}><Simbolo s={i} simboli={simboli} dati={dati} /></span>)}</span>
-          <span className="slot-premi__valori">{(stato.album ? PAGA_ALBUM : PAGA_BASE)[fascia].map((v, k) => <b key={k}>{k + 3} uguali <i>{fmt(v * puntata / 10)}</i></b>)}</span>
+          <span className="slot-premi__valori">{(stato.album ? PAGA_ALBUM : PAGA_BASE)[fascia].map((v, k) => <b key={k}>{k + 3} uguali <i>{fmt(v * puntata / 10 * scala)}</i></b>)}</span>
         </div>)}
-        <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={8} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo"><b>Jolly</b>: vale come qualsiasi stemma e aiuta a completare le linee. Cinque jolly sulla stessa linea: <b>{fmt(400 * puntata / 10)}</b> crediti.</span></div>
+        <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={8} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo"><b>Jolly</b>: vale come qualsiasi stemma e aiuta a completare le linee. Cinque jolly sulla stessa linea: <b>{fmt(400 * puntata / 10 * scala)}</b> crediti.</span></div>
         {stato.album && <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={10} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo"><b>Bustina</b>: conta ovunque, come la coppa. 3 bustine: <b>una bustina gratis</b> per l'album; 4: due; 5: tre. Le trovi in Altro › Album.</span></div>}
-        <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={9} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo"><b>Coppa</b>: conta in qualsiasi posizione, anche fuori dalle linee. 3 coppe: <b>{fmt(2 * puntata)}</b> crediti e <b>8 giri gratis</b>; 4 coppe: {fmt(5 * puntata)} e 12 giri; 5 coppe: {fmt(20 * puntata)} e 20 giri. Nei giri gratis non paghi e le vincite valgono doppio.</span></div>
+        <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={9} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo"><b>Coppa</b>: conta in qualsiasi posizione, anche fuori dalle linee. 3 coppe: <b>{fmt(2 * puntata * scala)}</b> crediti e <b>8 giri gratis</b>; 4 coppe: {fmt(5 * puntata * scala)} e 12 giri; 5 coppe: {fmt(20 * puntata * scala)} e 20 giri. Nei giri gratis non paghi e le vincite valgono doppio.</span></div>
         <p>Le <b>linee</b> sono 10: le tre righe orizzontali più sette percorsi a zig-zag. Quando vinci, la linea si illumina sui rulli. Gli stemmi cambiano a ogni giornata e pagano di più le squadre meglio piazzate in classifica (prima riga). Ogni giro lo estrae il server.</p>
       </div>}
     </section>

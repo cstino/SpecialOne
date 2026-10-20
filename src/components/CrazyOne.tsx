@@ -538,7 +538,7 @@ export function CrazyOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
           <li><b>Caccia allo Stemma</b> (2 spicchi): 108 premi si coprono con gli stemmi della lega e si mescolano; tocchi uno stemma e prendi quello che c'è dietro.</li>
           <li><b>CrazyOne</b> (1 spicchio): scegli una bandierina e la ruota gigante gira; DOUBLE e TRIPLE moltiplicano tutti i premi e si rigira.</li>
         </ul>
-        <p>Se il bonus esce ma non ci avevi puntato, non vinci niente. Se chiudi l'app durante un bonus, lo ritrovi qui. Ogni giro lo estrae il server; in media la ruota restituisce circa il 94% di quello che si punta.</p>
+        <p>Se il bonus esce ma non ci avevi puntato, non vinci niente. Se chiudi l'app durante un bonus, lo ritrovi qui. Ogni giro lo estrae il server; in media la ruota restituisce circa il 97% di quello che si punta.</p>
       </div>}
     </section>
 
