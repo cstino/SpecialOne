@@ -6284,3 +6284,167 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 /* Sala stampa: niente contenitore attorno alle card delle domande */
 .dash-card.stampa { padding: 0; border: 0; background: none; box-shadow: none; }
 .dash-card.stampa + .dash-card.stampa { margin-top: 18px; }
+
+/* ===== BetOne Casino': pagina iniziale con le copertine (stile Netflix) ===== */
+.cas-hub, .cas-gioco { display: grid; gap: 16px; }
+.cas-indietro { justify-self: start; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px 7px 10px; border: 1px solid var(--bet-linea); border-radius: 99px; background: rgba(255,255,255,.05); font-weight: 800; cursor: pointer; }
+.cas-indietro span { font-size: 1.3rem; line-height: 1; color: var(--bet-oro); }
+.cas-fila { display: grid; gap: 10px; }
+.cas-fila h2 { margin: 0; font-size: 1.05rem; font-weight: 800; letter-spacing: .02em; }
+.cas-fila__scorri { display: grid; grid-auto-flow: column; grid-auto-columns: min(42vw, 168px); gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 4px 16px 10px; scrollbar-width: none; }
+.cas-fila__scorri::-webkit-scrollbar { display: none; }
+.bet-page .cas-poster { position: relative; aspect-ratio: 2 / 3; display: block; padding: 0; border: 0; border-radius: 10px; overflow: hidden; scroll-snap-align: start; cursor: pointer; text-align: left; color: #fff; box-shadow: 0 10px 24px rgba(0,0,0,.45); transition: transform .18s ease; }
+.cas-poster:active { transform: scale(.97); }
+.cas-poster:focus-visible { outline: 3px solid var(--bet-oro); outline-offset: 2px; }
+.cas-poster__arte { position: absolute; inset: 0; }
+.cas-poster__titolo { position: absolute; left: 0; right: 0; bottom: 0; display: grid; gap: 2px; padding: 34px 10px 10px; background: linear-gradient(transparent, rgba(0,0,0,.85) 55%); }
+.cas-poster__titolo b { font: 900 1.15rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; letter-spacing: .02em; text-transform: uppercase; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
+.cas-poster__titolo small { color: rgba(255,255,255,.7); font-size: .68rem; font-weight: 700; }
+.cas-poster__nuovo { position: absolute; top: 0; left: 10px; padding: 5px 7px 4px; border-radius: 0 0 5px 5px; background: #e5262b; font-size: .58rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.cas-poster--presto { display: grid; place-items: center; border: 1.5px dashed rgba(255,255,255,.18); background: rgba(255,255,255,.03); box-shadow: none; cursor: default; }
+.cas-poster__presto { color: rgba(255,255,255,.45); font-size: .78rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+/* copertina slot */
+.cas-poster__arte--slot { background: radial-gradient(90% 60% at 50% 30%, #6a1f8f, #22092f 70%), #13081f; }
+.cas-poster__luci { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; }
+.cas-poster__luci i { width: 7px; height: 7px; border-radius: 50%; background: #ffd84d; box-shadow: 0 0 8px #ffd84d; animation: slot-lampeggia 1.4s ease-in-out infinite; }
+.cas-poster__rulli { position: absolute; left: 10%; right: 10%; top: 28%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 6px; border: 2px solid #e7b23a; border-radius: 10px; background: #0c0614; box-shadow: 0 0 22px rgba(255,61,242,.45); }
+.cas-poster__rulli span { display: grid; place-items: center; aspect-ratio: 3 / 4; border-radius: 6px; background: linear-gradient(#fff, #d9d2e6); color: #e5262b; font: 900 1.8rem/1 "Bai Jamjuree", sans-serif; }
+.cas-poster__rulli img { width: 70%; }
+/* copertina crazy time */
+.cas-poster__arte--crazy { background: radial-gradient(80% 50% at 50% 38%, #ff3d8b, #5a0f6e 60%, #1a0624); overflow: hidden; }
+.cas-poster__raggi { position: absolute; inset: -40%; background: repeating-conic-gradient(rgba(255,255,255,.09) 0 8deg, transparent 8deg 22deg); animation: ct-ruota-lenta 30s linear infinite; }
+.cas-poster__ruota { position: absolute; left: 50%; top: 36%; width: 92%; aspect-ratio: 1; border-radius: 50%; border: 5px solid #e7b23a; box-shadow: 0 0 0 2px #7a4a0c, 0 10px 30px rgba(0,0,0,.5); transform: translate(-50%, -50%); animation: ct-ruota-lenta 24s linear infinite; }
+.cas-poster__ruota span { position: absolute; left: 50%; top: 50%; display: grid; place-items: center; width: 28%; aspect-ratio: 1; border-radius: 50%; background: #1a0b22; border: 3px solid #e7b23a; transform: translate(-50%, -50%); }
+.cas-poster__ruota img { width: 68%; }
+@keyframes ct-ruota-lenta { to { transform: translate(-50%, -50%) rotate(360deg); } }
+.cas-poster__raggi { animation-name: ct-raggi; }
+@keyframes ct-raggi { to { transform: rotate(-360deg); } }
+@media (prefers-reduced-motion: reduce) { .cas-poster__ruota, .cas-poster__raggi { animation: none; } }
+
+/* ===== Crazy Time ===== */
+.ct { display: grid; gap: 14px; padding-bottom: 24px; }
+.ct-studio { position: relative; display: grid; justify-items: center; gap: 10px; padding: 14px 10px 12px; border: 2px solid #5a1f6e; border-radius: 26px; background: radial-gradient(90% 60% at 50% 55%, #4a1366, #1a0726 70%), #12051c; overflow: hidden; }
+.ct-studio::before { content: ''; position: absolute; inset: -30%; background: repeating-conic-gradient(rgba(255,255,255,.05) 0 7deg, transparent 7deg 20deg); pointer-events: none; }
+.ct-insegna { position: relative; display: flex; gap: 8px; font: 900 1.6rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .06em; }
+.ct-insegna span { color: #fff; text-shadow: 0 0 10px #ff3df2, 0 0 22px #ff3df2; }
+.ct-insegna b { color: #ffd84d; text-shadow: 0 0 10px #ffb02e, 0 0 22px #ff7a00; }
+.ct-top { position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; width: min(100%, 320px); padding: 6px 8px; border: 2px solid #e7b23a; border-radius: 14px; background: linear-gradient(#2a0d38, #12051c); box-shadow: inset 0 0 14px rgba(0,0,0,.6); }
+.ct-top__etichetta { color: #ffd84d; font-size: .58rem; font-weight: 900; letter-spacing: .14em; writing-mode: vertical-rl; transform: rotate(180deg); }
+.ct-top__finestra { display: grid; place-items: center; height: 40px; border-radius: 9px; background: #07020b; box-shadow: inset 0 2px 8px rgba(0,0,0,.8); overflow: hidden; }
+.ct-top__finestra--molt { min-width: 74px; padding: 0 8px; }
+.ct-top__finestra--molt b { color: #ffd84d; font: 900 1.5rem/1 "Bai Jamjuree", sans-serif; font-variant-numeric: tabular-nums; }
+.ct-top__casella { padding: 5px 10px; border-radius: 6px; font: 900 .82rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .04em; white-space: nowrap; }
+.ct-top__vuoto { color: rgba(255,255,255,.35); font-weight: 900; font-size: 1.2rem; }
+.ct-top.is-gira .ct-top__finestra > * { filter: blur(1px); transform: translateY(-2px); }
+.ct-top.is-preso { animation: ct-top-preso .5s ease 3; }
+@keyframes ct-top-preso { 50% { box-shadow: 0 0 24px #ffd84d, inset 0 0 14px rgba(0,0,0,.6); } }
+.ct-ruota { position: relative; width: min(100%, 360px); aspect-ratio: 1; }
+.ct-ruota__giro, .ct-crazy__giro { position: absolute; inset: 0; will-change: transform; }
+.ct-ruota__svg { display: block; width: 100%; height: 100%; filter: drop-shadow(0 12px 22px rgba(0,0,0,.55)); }
+.ct-ruota__num { font: 900 10px/1 "Bai Jamjuree", sans-serif; text-anchor: middle; dominant-baseline: central; paint-order: stroke; stroke: rgba(0,0,0,.25); stroke-width: .6px; }
+.ct-ruota__nome { font: 900 6px/1 "Bai Jamjuree", sans-serif; letter-spacing: .3px; text-anchor: middle; dominant-baseline: central; }
+.ct-ruota__lampadina { fill: #fff6c8; animation: ct-lampadina .75s ease-in-out infinite alternate; }
+@keyframes ct-lampadina { from { fill: #fff6c8; } to { fill: #9a6a14; } }
+.ct-ruota__svg .is-evidenziato path { filter: brightness(1.35); stroke: #fff; stroke-width: 1.6; }
+.ct-ruota__lancetta { position: absolute; z-index: 2; left: 50%; top: -6px; width: 26px; height: 32px; transform: translateX(-50%); background: linear-gradient(#fff1b0, #e7b23a 60%, #8a5a12); clip-path: polygon(0 0, 100% 0, 50% 100%); filter: drop-shadow(0 3px 4px rgba(0,0,0,.6)); }
+.ct-ruota__centro { position: absolute; left: 50%; top: 50%; display: grid; place-items: center; width: 20%; aspect-ratio: 1; transform: translate(-50%, -50%); pointer-events: none; }
+.ct-ruota__centro img { width: 70%; }
+.ct-storia { position: relative; display: flex; gap: 4px; max-width: 100%; margin: 0; padding: 0; list-style: none; overflow-x: auto; scrollbar-width: none; }
+.ct-storia li { flex: none; display: grid; place-items: center; min-width: 26px; height: 22px; padding: 0 5px; border-radius: 6px; font-size: .68rem; font-weight: 900; }
+.ct-storia li:first-child { outline: 2px solid #fff; outline-offset: 1px; }
+.ct .slot-festa { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.ct-tavolo { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+.bet-page .ct-casella { position: relative; display: grid; align-content: center; justify-items: center; gap: 3px; min-height: 66px; padding: 8px 4px; border: 2px solid color-mix(in srgb, var(--col) 70%, #fff); border-radius: 14px; background: linear-gradient(160deg, var(--col), var(--scuro)); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 6px 14px rgba(0,0,0,.35); cursor: pointer; transition: transform .1s; }
+.ct-casella:active:not(:disabled) { transform: scale(.95); }
+.ct-casella:disabled { cursor: default; }
+.ct-casella b { font: 900 1.5rem/1 "Bai Jamjuree", sans-serif; }
+.ct-casella--bonus b { font-size: .78rem; line-height: 1.05; text-align: center; text-transform: uppercase; letter-spacing: .02em; }
+.ct-casella small { font-size: .6rem; font-weight: 800; opacity: .8; text-transform: uppercase; letter-spacing: .06em; }
+.ct-casella__fiche { position: absolute; top: -8px; right: -6px; display: grid; place-items: center; min-width: 30px; height: 30px; padding: 0 4px; border: 3px dashed #fff; border-radius: 50%; background: #1d1a26; color: #ffd84d; font-size: .66rem; font-weight: 900; box-shadow: 0 3px 8px rgba(0,0,0,.5); }
+.ct-casella__molt { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); padding: 2px 7px; border-radius: 99px; background: linear-gradient(#fff1b0, #e7b23a); color: #3a2600; font-size: .7rem; font-weight: 900; box-shadow: 0 0 12px rgba(255,216,77,.8); animation: ct-molt-pulsa 1s ease-in-out infinite; }
+@keyframes ct-molt-pulsa { 50% { transform: translateX(-50%) scale(1.1); } }
+.ct-casella.is-uscita { box-shadow: 0 0 0 3px #fff, 0 0 22px var(--col); }
+.ct-comandi { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+.ct-fiche { display: flex; gap: 8px; }
+.bet-page .ct-fiche__f { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 4px dashed rgba(255,255,255,.85); border-radius: 50%; color: #fff; font-size: .8rem; font-weight: 900; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,.4); transition: transform .12s; }
+.ct-fiche__f--10 { background: #2f9bea; } .ct-fiche__f--20 { background: #1fb85a; } .ct-fiche__f--50 { background: #e5262b; } .ct-fiche__f--100 { background: #1d1a26; }
+.bet-page .ct-fiche__f.is-scelta { transform: translateY(-4px) scale(1.08); box-shadow: 0 0 0 3px #ffd84d, 0 8px 16px rgba(0,0,0,.5); }
+.ct-azioni { grid-column: 1 / -1; grid-row: 2; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.bet-page .ct-azioni button { height: 36px; border: 1px solid var(--bet-linea); border-radius: 10px; background: rgba(255,255,255,.05); font-size: .78rem; font-weight: 800; cursor: pointer; }
+.ct-azioni button:disabled { opacity: .4; cursor: default; }
+.ct-comandi .slot-gira { grid-column: 2; grid-row: 1; }
+.ct-regole ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+/* palco dei bonus */
+.ct-palco { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 12px; background: rgba(5,2,9,.86); backdrop-filter: blur(4px); color: #fff; overflow-y: auto; }
+.ct-palco__scena { width: min(100%, 440px); display: grid; gap: 12px; padding: 16px 12px; border: 2px solid #e7b23a; border-radius: 24px; background: radial-gradient(100% 60% at 50% 0%, var(--palco, #4a1366), #12051c 75%); box-shadow: 0 20px 60px rgba(0,0,0,.6); animation: ct-entra .35s ease; }
+.ct-palco__scena--cf { --palco: #1f4fb0; } .ct-palco__scena--pa { --palco: #8a1f9c; } .ct-palco__scena--ch { --palco: #127a3c; } .ct-palco__scena--ct { --palco: #a5181c; }
+@keyframes ct-entra { from { transform: scale(.9); opacity: 0; } }
+.ct-palco__testa { display: grid; justify-items: center; gap: 4px; text-align: center; }
+.ct-palco__testa h2 { margin: 0; font: 900 1.7rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #ffd84d; text-shadow: 0 0 16px rgba(255,176,46,.7); }
+.ct-palco__testa span { display: flex; gap: 8px; align-items: center; color: rgba(255,255,255,.7); font-size: .78rem; font-weight: 700; }
+.ct-palco__molt { padding: 2px 8px; border-radius: 99px; background: linear-gradient(#fff1b0, #e7b23a); color: #3a2600; }
+.ct-palco__nota { margin: 0; min-height: 2.6em; text-align: center; color: rgba(255,255,255,.8); font-size: .88rem; font-weight: 600; }
+.ct-esito-bonus { display: grid; justify-items: center; gap: 4px; animation: ct-entra .4s ease; }
+.ct-esito-bonus__molt { color: #ffd84d; font: 900 1.3rem/1 "Bai Jamjuree", sans-serif; }
+.ct-esito-bonus__molt i { font-style: normal; font-size: .8rem; color: rgba(255,255,255,.7); }
+.ct-esito-bonus strong { font: 900 2.6rem/1 "Bai Jamjuree", sans-serif; color: #fff; text-shadow: 0 0 20px rgba(255,216,77,.8); font-variant-numeric: tabular-nums; }
+.ct-esito-bonus small { color: rgba(255,255,255,.6); font-weight: 800; text-transform: uppercase; letter-spacing: .14em; font-size: .66rem; }
+.ct-tasto-oro { margin-top: 8px; min-width: 160px; height: 46px; border: 0; border-radius: 12px; background: linear-gradient(#ffe48a, #e7b23a); color: #2a1a00; font: 900 1rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; box-shadow: 0 8px 20px rgba(231,178,58,.4); }
+/* coin flip */
+.ct-cf { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+.ct-cf__lato { display: grid; justify-items: center; gap: 2px; padding: 12px 4px; border-radius: 14px; transition: transform .3s, opacity .3s; animation: ct-entra .4s ease both; }
+.ct-cf__lato b { font: 900 1.8rem/1 "Bai Jamjuree", sans-serif; }
+.ct-cf__lato small { font-size: .62rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; opacity: .8; }
+.ct-cf__lato--rosso { background: linear-gradient(#e5262b, #7a0d10); }
+.ct-cf__lato--blu { background: linear-gradient(#1f5fd6, #0d2f73); animation-delay: .3s; }
+.ct-cf__lato.is-vince { transform: scale(1.12); box-shadow: 0 0 0 3px #ffd84d, 0 0 26px #ffd84d; }
+.ct-cf__lato.is-perde { opacity: .35; }
+.ct-cf__arena { width: 116px; height: 116px; perspective: 600px; }
+.ct-cf__moneta { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 2.8s cubic-bezier(.2,.7,.2,1); }
+.ct-cf__moneta.is-lanciata { animation: ct-salto 2.8s cubic-bezier(.3,.7,.3,1); }
+@keyframes ct-salto { 40% { translate: 0 -60px; } 100% { translate: 0 0; } }
+.ct-cf__faccia { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 50%; border: 6px solid #e7b23a; backface-visibility: hidden; box-shadow: inset 0 0 0 3px #8a5a12, 0 6px 16px rgba(0,0,0,.5); }
+.ct-cf__faccia b { font: 900 1.7rem/1 "Bai Jamjuree", sans-serif; }
+.ct-cf__faccia--rosso { background: radial-gradient(circle at 35% 30%, #ff6b6f, #b5161b); }
+.ct-cf__faccia--blu { background: radial-gradient(circle at 35% 30%, #6b9dff, #163fa0); transform: rotateY(180deg); }
+/* pachinko */
+.ct-pa { position: relative; }
+.ct-pa__svg { display: block; width: 100%; }
+.ct-pa__fondo { fill: #2a0b33; stroke: #e7b23a; stroke-width: 2; }
+.ct-pa__chiodo { fill: #f4e6ff; filter: drop-shadow(0 0 2px rgba(255,255,255,.6)); }
+.ct-pa__buca rect { fill: #4a1366; stroke: #c93bdc; stroke-width: 1; }
+.ct-pa__buca text { fill: #fff; font: 900 8.5px/1 "Bai Jamjuree", sans-serif; text-anchor: middle; dominant-baseline: central; }
+.ct-pa__buca.is-double rect { fill: #f7d04a; stroke: #fff1b0; }
+.ct-pa__buca.is-double text { fill: #3a2600; font-size: 7px; }
+.ct-pa__buca.is-presa rect { fill: #fff; stroke: #ffd84d; stroke-width: 2; }
+.ct-pa__buca.is-presa text { fill: #6c1679; }
+.ct-pa__disco { fill: #ffd84d; stroke: #8a5a12; stroke-width: 1.5; filter: drop-shadow(0 0 6px #ffd84d); }
+.ct-pa.is-double .ct-pa__fondo { animation: ct-flash .35s ease 2; }
+@keyframes ct-flash { 50% { fill: #8a6410; } }
+.ct-pa__doppi { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); padding: 3px 10px; border-radius: 99px; background: linear-gradient(#fff1b0, #e7b23a); color: #3a2600; font-size: .78rem; font-weight: 900; }
+/* cash hunt */
+.ct-ch { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 3px; }
+.bet-page .ct-ch__bersaglio, .ct-ch__bersaglio { display: grid; place-items: center; aspect-ratio: 1; padding: 0; border: 1px solid rgba(255,255,255,.15); border-radius: 6px; background: linear-gradient(#1f8f4a, #0b4a24); color: #fff; cursor: pointer; transition: transform .25s, opacity .3s; }
+.ct-ch__bersaglio b { font: 900 .62rem/1 "Bai Jamjuree", sans-serif; }
+.ct-ch__bersaglio img { width: 62%; opacity: .9; }
+.ct-ch__bersaglio.is-scoperto { background: linear-gradient(#ffe48a, #c9962a); color: #2a1a00; }
+.ct-ch__bersaglio.is-coperto { animation: ct-gira-tessera .4s ease both; }
+.ct-ch__bersaglio:disabled { cursor: default; }
+.ct-ch__bersaglio:not(:disabled):active { transform: scale(.9); }
+.ct-ch.is-mescola .ct-ch__bersaglio { animation: ct-mescola .5s ease-in-out 3 alternate; }
+@keyframes ct-gira-tessera { from { transform: rotateY(90deg); } }
+@keyframes ct-mescola { 0% { transform: translate(0,0); } 50% { transform: translate(3px,-3px) rotate(6deg); } 100% { transform: translate(-3px,2px) rotate(-6deg); } }
+.ct-ch__bersaglio.is-scelto { position: relative; z-index: 1; transform: scale(1.35); box-shadow: 0 0 0 2px #fff, 0 0 20px #ffd84d; }
+.ct-ch__bersaglio.is-altro { opacity: .45; }
+/* bonus crazy time */
+.ct-crazy { position: relative; display: grid; justify-items: center; }
+.ct-crazy__ruota { position: relative; width: min(100%, 360px); aspect-ratio: 1; margin: 14px 0; }
+.ct-crazy .ct-ruota__nome { font-size: 5.2px; }
+.ct-crazy__bandiera { position: absolute; z-index: 2; inset: 0; transform: rotate(var(--ang)); pointer-events: none; }
+.ct-crazy__bandiera::before { content: ''; position: absolute; left: calc(50% - 11px); top: -14px; width: 22px; height: 28px; background: var(--col); clip-path: polygon(0 0, 100% 0, 50% 100%); filter: drop-shadow(0 0 6px var(--col)); }
+.ct-crazy__bandiera.is-mia::before { width: 28px; left: calc(50% - 14px); height: 34px; top: -18px; filter: drop-shadow(0 0 12px var(--col)) drop-shadow(0 0 2px #fff); }
+.ct-crazy__bandiera.is-spenta::before { opacity: .3; }
+.ct-crazy__annuncio { position: absolute; top: 50%; left: 50%; z-index: 3; width: 90%; margin: 0; padding: 10px; border-radius: 14px; transform: translate(-50%, -50%); background: rgba(0,0,0,.75); color: #ffd84d; text-align: center; font: 900 1.05rem/1.2 "Bai Jamjuree", sans-serif; text-transform: uppercase; animation: ct-entra .3s ease; }
+.ct-crazy__scelta { display: grid; gap: 10px; }
+.ct-crazy__scelta > div { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ct-crazy__scelta button { height: 48px; border: 2px solid var(--col); border-radius: 12px; background: color-mix(in srgb, var(--col) 22%, transparent); color: #fff; font: 900 .95rem/1 "Bai Jamjuree", sans-serif; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 14px color-mix(in srgb, var(--col) 50%, transparent); }

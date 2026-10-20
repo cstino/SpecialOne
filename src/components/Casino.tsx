@@ -12,7 +12,6 @@ type Dati = ReturnType<typeof useSeasonData>
 type Vincita = { linea: number; simbolo: number; n: number; vinto: number }
 type Esito = { griglia: number[]; vincite: Vincita[]; coppe: number; scatter: number; vinto: number; gratis: boolean; molt: number; puntata: number; nuovi_gratis: number; crediti: number; giri_gratis: number; max_vincita: number; bustine?: number; bustine_vinte?: number; bustine_gratis?: number }
 type Stato = { crediti: number; giri_gratis: number; puntata_gratis: number | null; simboli: number[]; max_vincita: number; giri: number; prossima_ricarica: string; bustine_gratis?: number; album?: boolean }
-type RigaClassifica = { team_id: number; crediti: number; max_vincita: number; giri: number }
 
 const PUNTATE = [10, 20, 50, 100]
 const LINEE = [[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,0,0,1],[1,2,2,2,1],[0,1,1,1,0]]
@@ -21,12 +20,12 @@ const PAGA_BASE: Record<string, number[]> = { basso: [8, 26, 100], medio: [14, 5
 // Dove c'e' l'album (e quindi la bustina sui rulli) gli stemmi pagano un po' di piu'.
 const PAGA_ALBUM: Record<string, number[]> = { basso: [9, 29, 110], medio: [16, 56, 222], alto: [29, 136, 550] }
 const COLORI_LINEE = ['#ffd84d', '#ff5ad1', '#4de2ff', '#7dff6b', '#ff8a3d', '#b78bff', '#ff4d6d', '#3dffb5', '#ffe9a8', '#6bb7ff']
-const fmt = (n: number) => new Intl.NumberFormat('it-IT').format(Math.round(n))
+export const fmt = (n: number) => new Intl.NumberFormat('it-IT').format(Math.round(n))
 const pescaSimbolo = () => { let x = Math.random() * 61; for (let i = 0; i < 11; i++) { x -= PESI[i]; if (x < 0) return i } return 0 }
-const ridotto = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+export const ridotto = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
 // ---------- Suoni sintetizzati (nessun file audio) ----------
-function useSuoni(attivi: boolean) {
+export function useSuoni(attivi: boolean) {
   const ctx = useRef<AudioContext | null>(null)
   const prendi = () => {
     if (!attivi) return null
@@ -63,7 +62,7 @@ function useSuoni(attivi: boolean) {
 }
 
 // ---------- Coriandoli e monete per le vincite grosse ----------
-function Festa({ attiva }: { attiva: boolean }) {
+export function Festa({ attiva }: { attiva: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     if (!attiva || ridotto()) return
@@ -94,7 +93,7 @@ function Festa({ attiva }: { attiva: boolean }) {
 }
 
 // ---------- Contatore che sale ----------
-function Contatore({ valore }: { valore: number }) {
+export function Contatore({ valore }: { valore: number }) {
   const [mostrato, setMostrato] = useState(valore)
   const da = useRef(valore)
   useEffect(() => {
@@ -130,9 +129,9 @@ function Simbolo({ s, simboli, dati }: { s: number; simboli: number[]; dati: Dat
   </span>
 }
 
-type Props = { leagueId: number; teamId: number; dati: Dati }
+type Props = { leagueId: number; dati: Dati }
 
-export function Casino({ leagueId, teamId, dati }: Props) {
+export function Casino({ leagueId, dati }: Props) {
   const [stato, setStato] = useState<Stato | null>(null)
   const [errore, setErrore] = useState('')
   const [puntata, setPuntata] = useState(10)
@@ -145,7 +144,6 @@ export function Casino({ leagueId, teamId, dati }: Props) {
   const [crediti, setCrediti] = useState(0)
   const [festa, setFesta] = useState(0)
   const [audio, setAudio] = useState(() => { try { return localStorage.getItem('slot-audio') !== '0' } catch { return true } })
-  const [classifica, setClassifica] = useState<RigaClassifica[]>([])
   const [tabella, setTabella] = useState(false)
   const suoni = useSuoni(audio)
 
@@ -154,8 +152,6 @@ export function Casino({ leagueId, teamId, dati }: Props) {
     if (error) { setErrore(error.message); return }
     const s = data as Stato
     setStato(s); setCrediti(s.crediti)
-    const { data: cl } = await supabase.rpc('casino_classifica', { p_league_id: leagueId })
-    setClassifica((cl ?? []) as RigaClassifica[])
   }, [leagueId])
   useEffect(() => { void carica() }, [carica])
   useEffect(() => { try { localStorage.setItem('slot-audio', audio ? '1' : '0') } catch { /* preferenza solo locale */ } }, [audio])
@@ -203,7 +199,6 @@ export function Casino({ leagueId, teamId, dati }: Props) {
         if (r.coppe >= 3 || (r.bustine_vinte ?? 0) > 0) suoni.coppe()
         if (r.vinto >= r.puntata * 20) { suoni.grande(); setFesta((n) => n + 1); for (let i = 0; i < 18; i++) window.setTimeout(() => suoni.moneta(i), 400 + i * 60) }
         else if (r.vinto > 0) suoni.vincita()
-        void supabase.rpc('casino_classifica', { p_league_id: leagueId }).then(({ data: cl }) => setClassifica((cl ?? []) as RigaClassifica[]))
       }
     }, d))
   }
@@ -298,20 +293,5 @@ export function Casino({ leagueId, teamId, dati }: Props) {
       </div>}
     </section>
 
-    <section className="slot-classifica">
-      <h2>Classifica del casinò</h2>
-      <p className="bet-nota">Conta la vincita più alta ottenuta in un solo giro.</p>
-      {classifica.length === 0 ? <p className="bet-nota">Ancora nessuno al tavolo.</p> : <ol>
-        {classifica.map((r, i) => {
-          const t = dati.teamById.get(r.team_id)
-          return <li key={r.team_id} className={r.team_id === teamId ? 'is-mia' : ''}>
-            <span className={`bet-pos${i < 3 ? ` bet-pos--${i + 1}` : ''}`}>{i + 1}</span>
-            <span className="bet-giocatori__stemma"><Crest value={t?.stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(r.team_id)} size="small" /></span>
-            <span className="bet-classifica__nome"><strong>{t?.nome ?? '—'}</strong><small>{fmt(r.crediti)} crediti · {fmt(r.giri)} giri</small></span>
-            <span className="slot-classifica__crediti"><b>{fmt(r.max_vincita)}</b><small>miglior colpo</small></span>
-          </li>
-        })}
-      </ol>}
-    </section>
   </section>
 }

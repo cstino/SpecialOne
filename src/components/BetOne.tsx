@@ -5,7 +5,7 @@ import type { League, Membership } from '../types'
 import { Crest } from './Crest'
 import { GameNav, type GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
-import { Casino } from './Casino'
+import { CasinoHub } from './CasinoHub'
 
 // BetOne (menu Extra campo, docs/decisioni-conferenze-stampa.md §BetOne): la schedina stile totocalcio della
 // prossima giornata. 1, X o 2 per ogni partita, solo 2 doppie per schedina, una schedina per conferenza (East e
@@ -252,7 +252,7 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
           {casinoVisibile && <button type="button" role="tab" aria-selected={sezione === 'casino'} className={sezione === 'casino' ? 'is-attiva' : ''} onClick={() => setSezione('casino')}><span aria-hidden="true">🎰</span>Casinò</button>}
         </div>
 
-        {casinoVisibile && sezione === 'casino' ? <Casino leagueId={league.id} teamId={membership.id} dati={dati} /> : <>
+        {casinoVisibile && sezione === 'casino' ? <CasinoHub leagueId={league.id} teamId={membership.id} dati={dati} /> : <>
         {giornata == null
           ? <section className="bet-vuoto"><strong>Nessuna giornata da giocare</strong><p>La prossima schedina si apre appena c'è una nuova giornata di campionato.</p></section>
           : <>
