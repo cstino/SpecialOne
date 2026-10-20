@@ -15,7 +15,7 @@ type Gioco = 'slot' | 'crazy' | 'aviat'
 
 // Le locandine (public/casino/*.webp, 540×810) le ha disegnate il committente; il nome del gioco e' gia' nell'immagine.
 const GIOCHI: Array<{ id: Gioco; titolo: string; sotto: string; nuovo?: boolean }> = [
-  { id: 'aviat', titolo: 'AviatOne', sotto: 'Incassa prima che voli via', nuovo: true },
+  { id: 'aviat', titolo: 'AviatOne', sotto: 'Incassa prima che voli via' },
   { id: 'crazy', titolo: 'CrazyOne', sotto: 'Ruota · 4 bonus' },
   { id: 'slot', titolo: 'SlotOne', sotto: '5 rulli · 10 linee' },
 ]
