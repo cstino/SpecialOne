@@ -36,7 +36,7 @@ export const AEREO_URL = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
 
 type Giocata = { team_id: number; puntata: number; incassato: number | null; vinto: number; mia: boolean; auto: number | null }
 type Giro = { id: number; apre: number; parte: number; finito: boolean; crash: number | null }
-type Stato = { adesso: number; giro: Giro; giocate: Giocata[]; crediti: number; storia: number[] }
+type Stato = { adesso: number; giro: Giro; giocate: Giocata[]; crediti: number; storia: number[]; mio_incasso?: { giro: number; molt: number; vinto: number } | null }
 type Fase = 'puntate' | 'volo' | 'esploso'
 type Prenotata = { puntata: number; auto: number | null }
 
@@ -50,6 +50,7 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
   const [errore, setErrore] = useState('')
   const [invio, setInvio] = useState(false)
   const [festa, setFesta] = useState(0)
+  const [avviso, setAvviso] = useState('')
   const [audio, setAudio] = useState(() => { try { return localStorage.getItem('slot-audio') !== '0' } catch { return true } })
   const suoni = useSuoni(audio)
   const sbloccaMusica = useMusica('aviat', audio)
@@ -267,7 +268,17 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
     if (incassoMandato.current === id) return
     incassoMandato.current = id
     const tocco = Math.round(oraServer())   // solo per misurare il ritardo di rete: il server paga all'orario di arrivo
-    setInvio(true); await chiedi('casino_av_incassa_live', { p_tocco: tocco }); setInvio(false)
+    setInvio(true)
+    const r = await chiedi('casino_av_incassa_live', { p_tocco: tocco })
+    setInvio(false)
+    // Incasso valido al momento del tocco: se la risposta arriva a volo gia' finito, l'esito si mostra qui.
+    const inc = r?.mio_incasso
+    if (inc && inc.giro !== r?.giro.id) {
+      suoni.vincita(); setAvviso(`Incassata a ${fx(inc.molt)}: +${fmt(inc.vinto)} crediti!`)
+      window.setTimeout(() => setAvviso(''), 5000)
+    } else if (!inc && r && id === r.giro.id && r.giro.crash != null && r.giocate.find((q) => q.mia)?.incassato == null) {
+      setAvviso('Troppo tardi: l\'aereo era già volato via quando hai toccato.'); window.setTimeout(() => setAvviso(''), 5000)
+    }
   }
 
   if (!stato) return <section className="slot-caricamento">{errore ? <p role="alert">{errore}</p> : <p>Accendo i motori…</p>}</section>
@@ -277,6 +288,7 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
   const bloccati = fase !== 'puntate' || mia != null
   const puntatoTot = stato.giocate.reduce((t, q) => t + q.puntata, 0)
   const messaggio = errore ? <span className="slot-errore">{errore}</span>
+    : avviso ? avviso
     : fase === 'puntate' ? (mia ? `Sei a bordo con ${fmt(mia.puntata)} crediti${mia.auto ? `, incasso automatico a ${fx(mia.auto)}` : ''}.` : 'Puntate aperte: sali a bordo prima del decollo!')
       : fase === 'volo' ? (mia ? (mia.incassato != null ? `Incassato a ${fx(mia.incassato)}: +${fmt(mia.vinto)} crediti!` : 'Incassa prima che voli via!') : prenotata ? 'Puntata prenotata per il prossimo volo.' : 'Volo in corso: puoi prenotare la puntata per il prossimo.')
         : (mia ? (mia.incassato != null ? `Volato via a ${fx(stato.giro.crash ?? 1)}. Hai incassato +${fmt(mia.vinto)} crediti.` : `Volato via a ${fx(stato.giro.crash ?? 1)}! Puntata persa.`) : `Volato via a ${fx(stato.giro.crash ?? 1)}.`)
@@ -285,6 +297,7 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
   if (fase === 'puntate' && mia) azione = <button type="button" className="av-azione av-azione--annulla" disabled={invio} onClick={() => void ritira()}><small>A BORDO</small><b>Annulla</b></button>
   else if (fase === 'volo' && mia && mia.incassato == null) azione = <button type="button" className="av-azione av-azione--incassa" disabled={invio} onPointerDown={(e) => { e.preventDefault(); void incassa() }} onClick={() => void incassa()}><small>INCASSA</small><b><span ref={valoreIncassa}>{fmt(mia.puntata)}</span></b>{mia.auto != null && <i>auto a {fx(mia.auto)}</i>}</button>
   else if (mia && mia.incassato != null) azione = <div className="av-azione av-azione--vinto"><small>INCASSATA</small><b>{fx(mia.incassato)}</b><i>+{fmt(mia.vinto)}</i></div>
+  else if (fase === 'esploso' && mia && invio) azione = <div className="av-azione av-azione--perso"><small>INCASSO</small><b>Verifico…</b></div>
   else if (fase === 'esploso' && mia) azione = <div className="av-azione av-azione--perso"><small>VOLATO VIA</small><b>Persa</b></div>
   else if (prenotata) azione = <button type="button" className="av-azione av-azione--annulla" onClick={() => setPrenotata(null)}><small>PRENOTATA</small><b>Annulla</b></button>
   else azione = <button type="button" className="av-azione av-azione--punta" disabled={puntata > crediti} onClick={() => void punta()}>
@@ -365,7 +378,7 @@ function AviatOneRegole() {
     {aperte && <div className="slot-premi">
       <p>AviatOne è <b>live</b>: l'aereo è uno solo per tutta la lega e tutti vedono lo stesso volo. I voli si susseguono senza sosta: <b>7 secondi per puntare</b>, poi il decollo, poi l'aereo vola via e dopo 3 secondi si riparte.</p>
       <p>Scegli quanto puntare (da 10 a 500 crediti) e premi <b>PUNTA</b> prima del decollo; finché le puntate sono aperte puoi annullare. Se il volo è già partito, puoi <b>prenotare</b> la puntata per il volo successivo.</p>
-      <p>Durante il volo il moltiplicatore sale: premi <b>INCASSA</b> quando vuoi e vinci la puntata per il moltiplicatore di quel momento. Se l'aereo vola via prima, la puntata è persa. Con l'<b>incasso automatico</b> la puntata si incassa da sola appena il moltiplicatore arriva al valore scelto.</p>
+      <p>Durante il volo il moltiplicatore sale: premi <b>INCASSA</b> quando vuoi e vinci la puntata per il moltiplicatore del momento in cui hai toccato (vale il tocco, anche se la connessione è lenta). Se l'aereo vola via prima del tuo tocco, la puntata è persa. Con l'<b>incasso automatico</b> la puntata si incassa da sola appena il moltiplicatore arriva al valore scelto.</p>
       <p>Il moltiplicatore cresce sempre alla stessa velocità (2× dopo circa 3,5 secondi, 10× dopo circa 11, 100× dopo circa 23). Il punto in cui l'aereo vola via lo estrae il server prima che si chiudano le puntate e nessuno lo vede prima. In media si recupera circa il 97% di quello che si punta.</p>
       <p>Sotto vedi chi è a bordo, quanto ha puntato e a che moltiplicatore incassa. In alto gli ultimi voli della lega: in azzurro sotto 2×, in viola fino a 10×, in rosa sopra.</p>
     </div>}
