@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
+import type { useSeasonData } from '../lib/useSeasonData'
 import { Contatore, Festa, fmt, ridotto, useSuoni } from './Casino'
+import { Crest } from './Crest'
 
-// BetOne Casino' › Crazy Time (supabase/migrations/20261020100000_casino_crazy_time.sql).
-// Ruota a 54 spicchi: 1 (21), 2 (13), 5 (7), 10 (4), Coin Flip (4), Pachinko (2), Cash Hunt (2), Crazy Time (1).
+// BetOne Casino' › CrazyOne, il Crazy Time a tema SpecialOne (supabase/migrations/20261020100000_casino_crazy_time.sql).
+// Ruota a 54 spicchi: 1 (21), 2 (13), 5 (7), 10 (4), Testa o Croce (4), Mischia (2), Caccia allo Stemma (2), CrazyOne (1).
+// I codici interni restano quelli del gioco originale: cf = coin flip, pa = pachinko, ch = cash hunt, ct = crazy time.
 // Prima di ogni giro la top slot puo' accendere un moltiplicatore (×2-×50) su una casella.
 // Tutto lo estrae il SERVER (casino_ct_gira / casino_ct_scegli): qui si anima soltanto il risultato.
 
@@ -12,15 +15,16 @@ export type Casella = '1' | '2' | '5' | '10' | 'cf' | 'pa' | 'ch' | 'ct'
 // Stesso ordine di private.ct_ruota() nel database.
 export const RUOTA: Casella[] = ['ct', '1', '2', '1', '5', '1', 'cf', '1', '2', '1', '2', '1', 'pa', '2', '5', '10', '5', '2', 'cf', '1', '5', '1', '2', '1',
   'ch', '1', '10', '1', '2', '1', 'cf', '1', '2', '1', '5', '1', 'pa', '2', '10', '2', '5', '2', 'cf', '1', '2', '1', '10', '1', 'ch', '1', '5', '1', '2', '1']
-export const CASELLE: Record<Casella, { nome: string; corto: string; colore: string; scuro: string; testo: string; paga?: number }> = {
-  '1': { nome: '1', corto: '1', colore: '#2f9bea', scuro: '#13548a', testo: '#fff', paga: 1 },
-  '2': { nome: '2', corto: '2', colore: '#ffc93c', scuro: '#a7790b', testo: '#3a2600', paga: 2 },
-  '5': { nome: '5', corto: '5', colore: '#ff5fa8', scuro: '#a3245f', testo: '#fff', paga: 5 },
-  '10': { nome: '10', corto: '10', colore: '#8a5cff', scuro: '#4a24a8', testo: '#fff', paga: 10 },
-  cf: { nome: 'Coin Flip', corto: 'COIN FLIP', colore: '#1f5fd6', scuro: '#0d2f73', testo: '#fff' },
-  pa: { nome: 'Pachinko', corto: 'PACHINKO', colore: '#c93bdc', scuro: '#6c1679', testo: '#fff' },
-  ch: { nome: 'Cash Hunt', corto: 'CASH HUNT', colore: '#1fb85a', scuro: '#0b6430', testo: '#fff' },
-  ct: { nome: 'Crazy Time', corto: 'CRAZY TIME', colore: '#e5262b', scuro: '#7a0d10', testo: '#fff' },
+type Dati = ReturnType<typeof useSeasonData>
+export const CASELLE: Record<Casella, { nome: string; corto: string; sigla: string; colore: string; scuro: string; testo: string; paga?: number }> = {
+  '1': { nome: '1', corto: '1', sigla: '1', colore: '#2f9bea', scuro: '#13548a', testo: '#fff', paga: 1 },
+  '2': { nome: '2', corto: '2', sigla: '2', colore: '#ffc93c', scuro: '#a7790b', testo: '#3a2600', paga: 2 },
+  '5': { nome: '5', corto: '5', sigla: '5', colore: '#ff5fa8', scuro: '#a3245f', testo: '#fff', paga: 5 },
+  '10': { nome: '10', corto: '10', sigla: '10', colore: '#8a5cff', scuro: '#4a24a8', testo: '#fff', paga: 10 },
+  cf: { nome: 'Testa o Croce', corto: 'TESTA CROCE', sigla: 'TC', colore: '#1f5fd6', scuro: '#0d2f73', testo: '#fff' },
+  pa: { nome: 'Mischia', corto: 'MISCHIA', sigla: 'MI', colore: '#c93bdc', scuro: '#6c1679', testo: '#fff' },
+  ch: { nome: 'Caccia allo Stemma', corto: 'CACCIA', sigla: 'CS', colore: '#1fb85a', scuro: '#0b6430', testo: '#fff' },
+  ct: { nome: 'CrazyOne', corto: 'CRAZYONE', sigla: 'C1', colore: '#e5262b', scuro: '#7a0d10', testo: '#fff' },
 }
 const ORDINE: Casella[] = ['1', '2', '5', '10', 'cf', 'pa', 'ch', 'ct']
 const FICHE = [10, 20, 50, 100]
@@ -156,12 +160,12 @@ function CoinFlip({ bonus, molt, puntata, vinto, suoni, onFine }: { bonus: Bonus
     <div className="ct-cf">
       <div className={`ct-cf__lato ct-cf__lato--rosso${fase === 'esito' && bonus.lato === 'rosso' ? ' is-vince' : ''}${fase === 'esito' && bonus.lato !== 'rosso' ? ' is-perde' : ''}`}><b>{bonus.rosso}×</b><small>Rosso</small></div>
       <div className="ct-cf__arena"><div ref={moneta} className={`ct-cf__moneta${fase !== 'valori' ? ' is-lanciata' : ''}`}>
-        <span className="ct-cf__faccia ct-cf__faccia--rosso"><b>{bonus.rosso}×</b></span>
-        <span className="ct-cf__faccia ct-cf__faccia--blu"><b>{bonus.blu}×</b></span>
+        <span className="ct-cf__faccia ct-cf__faccia--rosso"><img src="/specialone-mark.svg" alt="" /><b>{bonus.rosso}×</b></span>
+        <span className="ct-cf__faccia ct-cf__faccia--blu"><img src="/specialone-mark.svg" alt="" /><b>{bonus.blu}×</b></span>
       </div></div>
       <div className={`ct-cf__lato ct-cf__lato--blu${fase === 'esito' && bonus.lato === 'blu' ? ' is-vince' : ''}${fase === 'esito' && bonus.lato !== 'blu' ? ' is-perde' : ''}`}><b>{bonus.blu}×</b><small>Blu</small></div>
     </div>
-    {fase === 'esito' ? <EsitoBonus valore={bonus.valore} molt={molt} vinto={vinto} onFine={onFine} /> : <p className="ct-palco__nota">{fase === 'valori' ? 'Due moltiplicatori: uno rosso, uno blu…' : 'Lancio della moneta!'}</p>}
+    {fase === 'esito' ? <EsitoBonus valore={bonus.valore} molt={molt} vinto={vinto} onFine={onFine} /> : <p className="ct-palco__nota">{fase === 'valori' ? 'Due moltiplicatori: uno rosso, uno blu…' : 'L\'arbitro lancia la monetina!'}</p>}
   </Palco>
 }
 
@@ -192,7 +196,7 @@ function Pachinko({ bonus, molt, puntata, vinto, suoni, onFine }: { bonus: Bonus
   const [buca, setBuca] = useState<number | null>(null)
   const [flash, setFlash] = useState(false)
   const [fine, setFine] = useState(false)
-  const disco = useRef<SVGCircleElement>(null)
+  const disco = useRef<SVGGElement>(null)
   const altezza = PA_Y0 + PA_RIGHE * PA_DY + 70
   const audio = useRef(suoni); audio.current = suoni
   useEffect(() => {
@@ -212,8 +216,7 @@ function Pachinko({ bonus, molt, puntata, vinto, suoni, onFine }: { bonus: Bonus
             const t0 = performance.now(), d = ridotto() ? 10 : k === 0 ? 1 : 150
             const f = (t: number) => {
               const e = Math.min(1, (t - t0) / d)
-              disco.current?.setAttribute('cx', String(x0 + (x1 - x0) * e))
-              disco.current?.setAttribute('cy', String(y0 + (y1 - y0) * e - Math.sin(Math.PI * e) * 7))
+              disco.current?.setAttribute('transform', `translate(${x0 + (x1 - x0) * e} ${y0 + (y1 - y0) * e - Math.sin(Math.PI * e) * 7}) rotate(${(k + e) * 70})`)
               if (e < 1) requestAnimationFrame(f); else ok()
             }
             requestAnimationFrame(f)
@@ -221,7 +224,7 @@ function Pachinko({ bonus, molt, puntata, vinto, suoni, onFine }: { bonus: Bonus
           if (k > 0) suoni.tick(k)
         }
         // Caduta nella buca.
-        disco.current?.setAttribute('cy', String(PA_Y0 + PA_RIGHE * PA_DY + 34))
+        disco.current?.setAttribute('transform', `translate(${(arrivo + 0.5) * PA_L} ${PA_Y0 + PA_RIGHE * PA_DY + 34})`)
         setBuca(arrivo); suoni.stop(2)
         if (bonus.tavola[arrivo] === -2 && n < bonus.lanci.length - 1) {
           suoni.coppe(); setFlash(true)
@@ -245,16 +248,20 @@ function Pachinko({ bonus, molt, puntata, vinto, suoni, onFine }: { bonus: Bonus
           <rect x={i * PA_L + 1} y={PA_Y0 + PA_RIGHE * PA_DY + 14} width={PA_L - 2} height="52" rx="3" />
           <text x={i * PA_L + PA_L / 2} y={PA_Y0 + PA_RIGHE * PA_DY + 40} transform={`rotate(-90 ${i * PA_L + PA_L / 2} ${PA_Y0 + PA_RIGHE * PA_DY + 40})`}>{v === -2 ? 'DOUBLE' : `${v * doppi}×`}</text>
         </g>)}
-        <circle ref={disco} className="ct-pa__disco" cx={8 * PA_L} cy={6} r="7" />
+        <g ref={disco} className="ct-pa__pallone" transform={`translate(${8 * PA_L} 6)`}>
+          <circle r="7.5" fill="#fff" stroke="#111" strokeWidth=".8" />
+          <path d="M0,-3 L2.85,-0.93 L1.76,2.43 L-1.76,2.43 L-2.85,-0.93 Z" fill="#111" />
+          <path d="M0,-3 L0,-7.2 M2.85,-0.93 L6.8,-2.2 M1.76,2.43 L4.2,5.8 M-1.76,2.43 L-4.2,5.8 M-2.85,-0.93 L-6.8,-2.2" stroke="#111" strokeWidth=".8" />
+        </g>
       </svg>
       {doppi > 1 && <span className="ct-pa__doppi">Tutto ×{doppi}</span>}
     </div>
-    {fine ? <EsitoBonus valore={bonus.valore} molt={molt} vinto={vinto} onFine={onFine} /> : <p className="ct-palco__nota">{flash ? 'DOUBLE! Tutti i premi raddoppiano, si rilancia.' : 'Il disco scende…'}</p>}
+    {fine ? <EsitoBonus valore={bonus.valore} molt={molt} vinto={vinto} onFine={onFine} /> : <p className="ct-palco__nota">{flash ? 'DOUBLE! Tutti i premi raddoppiano, si rimette il pallone in area.' : 'Mischia in area: il pallone rimbalza tra i difensori…'}</p>}
   </Palco>
 }
 
 // ---------- Cash Hunt ----------
-function CashHunt({ attesa, scegli, suoni, onFine }: { attesa: Attesa; scegli: (n: number) => Promise<Scelta | null>; suoni: ReturnType<typeof useSuoni>; onFine: (f: Fine) => void }) {
+function CashHunt({ attesa, dati, scegli, suoni, onFine }: { attesa: Attesa; dati: Dati; scegli: (n: number) => Promise<Scelta | null>; suoni: ReturnType<typeof useSuoni>; onFine: (f: Fine) => void }) {
   const [fase, setFase] = useState<'mostra' | 'mescola' | 'scegli' | 'attendi' | 'rivela' | 'tutti'>('mostra')
   const anteprima = useMemo(() => [...(attesa.valori ?? [])].sort(() => Math.random() - 0.5), [attesa])
   const [esito, setEsito] = useState<Scelta | null>(null)
@@ -273,6 +280,7 @@ function CashHunt({ attesa, scegli, suoni, onFine }: { attesa: Attesa; scegli: (
     await aspetta(1300); setFase('tutti')
   }
   const coperte = fase === 'mescola' || fase === 'scegli' || fase === 'attendi'
+  const squadre = dati.teams
   return <Palco esito="ch" molt={attesa.molt} puntata={attesa.puntata}>
     <div className={`ct-ch${fase === 'mescola' ? ' is-mescola' : ''}`}>
       {Array.from({ length: 108 }, (_, i) => {
@@ -282,12 +290,12 @@ function CashHunt({ attesa, scegli, suoni, onFine }: { attesa: Attesa; scegli: (
         return <button key={i} type="button" disabled={fase !== 'scegli'} onClick={() => void tocca(i)}
           className={`ct-ch__bersaglio${visibile ? ' is-scoperto' : ''}${coperte ? ' is-coperto' : ''}${scelto ? ' is-scelto' : ''}${fase === 'tutti' && !scelto ? ' is-altro' : ''}`}
           style={{ animationDelay: `${(i % 9) * 0.03 + Math.floor(i / 9) * 0.02}s` }} aria-label={visibile ? `${valore}×` : `Bersaglio ${i + 1}`}>
-          {visibile ? <b>{valore}×</b> : <img src="/specialone-mark.svg" alt="" />}
+          {visibile ? <b>{valore}×</b> : squadre.length ? <Crest value={squadre[i % squadre.length].stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(squadre[i % squadre.length].id)} size="small" /> : <img src="/specialone-mark.svg" alt="" />}
         </button>
       })}
     </div>
     {fase === 'tutti' && esito ? <EsitoBonus valore={esito.valore} molt={esito.molt} vinto={esito.vinto} onFine={() => onFine({ vinto: esito.vinto, crediti: esito.crediti })} />
-      : <p className="ct-palco__nota">{fase === 'mostra' ? 'Ecco i premi in palio: guardali bene…' : fase === 'mescola' ? 'Si coprono e si mescolano…' : fase === 'scegli' ? 'Tocca un bersaglio: dietro c\'è il tuo premio.' : fase === 'attendi' ? 'Mira…' : ''}</p>}
+      : <p className="ct-palco__nota">{fase === 'mostra' ? 'Ecco i premi in palio: guardali bene…' : fase === 'mescola' ? 'Gli stemmi coprono i premi e si mescolano…' : fase === 'scegli' ? 'Tocca uno stemma: dietro c\'è il tuo premio.' : fase === 'attendi' ? 'Mira…' : ''}</p>}
   </Palco>
 }
 
@@ -337,6 +345,7 @@ function CrazyBonus({ attesa, scegli, suoni, onFine }: { attesa: Attesa; scegli:
     <div className="ct-crazy">
       <div className="ct-crazy__ruota">
         <div className="ct-crazy__giro" ref={giro}><RuotaSvg spicchi={spicchi} evidenzia={evidenzia} /></div>
+        <span className="ct-ruota__centro" aria-hidden="true"><img src="/specialone-mark.svg" alt="" /></span>
         {OFFSET_BANDIERE.map((o, f) => <span key={f} className={`ct-crazy__bandiera${bandiera === f ? ' is-mia' : ''}${bandiera != null && bandiera !== f ? ' is-spenta' : ''}`}
           style={{ ['--ang' as string]: `${o * 360 / 64}deg`, ['--col' as string]: BANDIERE[f].colore }} />)}
       </div>
@@ -352,7 +361,7 @@ function CrazyBonus({ attesa, scegli, suoni, onFine }: { attesa: Attesa; scegli:
 }
 
 // ---------- Gioco ----------
-export function CrazyTime({ leagueId }: { leagueId: number }) {
+export function CrazyOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
   const [crediti, setCrediti] = useState<number | null>(null)
   const [storia, setStoria] = useState<Casella[]>([])
   const [puntate, setPuntate] = useState<Record<Casella, number>>(VUOTE)
@@ -473,7 +482,7 @@ export function CrazyTime({ leagueId }: { leagueId: number }) {
     </div>
 
     <div className="ct-studio">
-      <div className="ct-insegna"><span>CRAZY</span><b>TIME</b></div>
+      <div className="ct-insegna"><img src="/specialone-mark.svg" alt="" /><span>CRAZY</span><b>ONE</b></div>
       <TopSlot gira={topGira} casella={top ? top.casella : undefined} molt={top?.molt ?? null} />
       <div className="ct-ruota">
         <span className="ct-ruota__lancetta" aria-hidden="true" />
@@ -481,7 +490,7 @@ export function CrazyTime({ leagueId }: { leagueId: number }) {
         <span className="ct-ruota__centro" aria-hidden="true"><img src="/specialone-mark.svg" alt="" /></span>
       </div>
       {storia.length > 0 && <ol className="ct-storia" aria-label="Ultimi risultati">
-        {storia.map((c, i) => <li key={i} style={{ background: CASELLE[c].colore, color: CASELLE[c].testo }}>{CASELLE[c].paga != null ? c : CASELLE[c].corto.split(' ').map((p) => p[0]).join('')}</li>)}
+        {storia.map((c, i) => <li key={i} style={{ background: CASELLE[c].colore, color: CASELLE[c].testo }}>{CASELLE[c].sigla}</li>)}
       </ol>}
       <Festa key={festa} attiva={festa > 0} />
     </div>
@@ -524,16 +533,16 @@ export function CrazyTime({ leagueId }: { leagueId: number }) {
         <p><b>Top slot.</b> Prima di ogni giro la top slot può accendere un moltiplicatore da 2× a 50× su una casella: se la ruota si ferma proprio lì, la vincita si moltiplica.</p>
         <p><b>Bonus.</b> Se esce un bonus su cui hai puntato parte il minigioco, e vinci la puntata moltiplicata per il premio del minigioco (più la puntata indietro):</p>
         <ul>
-          <li><b>Coin Flip</b> (4 spicchi): due moltiplicatori, uno rosso e uno blu; la moneta decide quale vinci.</li>
-          <li><b>Pachinko</b> (2 spicchi): un disco cade tra i chiodi e finisce in una buca. Se è DOUBLE, tutti i premi raddoppiano e si rilancia.</li>
-          <li><b>Cash Hunt</b> (2 spicchi): 108 premi si coprono e si mescolano; tocchi un bersaglio e prendi quello che c'è dietro.</li>
-          <li><b>Crazy Time</b> (1 spicchio): scegli una bandierina e la ruota gigante gira; DOUBLE e TRIPLE moltiplicano tutti i premi e si rigira.</li>
+          <li><b>Testa o Croce</b> (4 spicchi): due moltiplicatori, uno rosso e uno blu; la monetina dell'arbitro decide quale vinci.</li>
+          <li><b>Mischia</b> (2 spicchi): il pallone rimbalza in area tra i difensori e finisce in una porta. Se è DOUBLE, tutti i premi raddoppiano e si rimette il pallone in area.</li>
+          <li><b>Caccia allo Stemma</b> (2 spicchi): 108 premi si coprono con gli stemmi della lega e si mescolano; tocchi uno stemma e prendi quello che c'è dietro.</li>
+          <li><b>CrazyOne</b> (1 spicchio): scegli una bandierina e la ruota gigante gira; DOUBLE e TRIPLE moltiplicano tutti i premi e si rigira.</li>
         </ul>
         <p>Se il bonus esce ma non ci avevi puntato, non vinci niente. Se chiudi l'app durante un bonus, lo ritrovi qui. Ogni giro lo estrae il server; in media la ruota restituisce circa il 94% di quello che si punta.</p>
       </div>}
     </section>
 
-    {bonusAperto && attesa?.esito === 'ch' && <CashHunt attesa={attesa} scegli={scegli} suoni={suoni} onFine={fineBonus} />}
+    {bonusAperto && attesa?.esito === 'ch' && <CashHunt attesa={attesa} dati={dati} scegli={scegli} suoni={suoni} onFine={fineBonus} />}
     {bonusAperto && attesa?.esito === 'ct' && <CrazyBonus attesa={attesa} scegli={scegli} suoni={suoni} onFine={fineBonus} />}
     {bonusAperto && !attesa && giro?.esito === 'cf' && giro.bonus && <CoinFlip bonus={giro.bonus as BonusCf} molt={moltBonus} puntata={giro.puntate.cf ?? 0} vinto={giro.vinto} suoni={suoni} onFine={() => fineBonus({ vinto: giro.vinto, crediti: giro.crediti })} />}
     {bonusAperto && !attesa && giro?.esito === 'pa' && giro.bonus && <Pachinko bonus={giro.bonus as BonusPa} molt={moltBonus} puntata={giro.puntate.pa ?? 0} vinto={giro.vinto} suoni={suoni} onFine={() => fineBonus({ vinto: giro.vinto, crediti: giro.crediti })} />}

@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import type { useSeasonData } from '../lib/useSeasonData'
 import { Crest } from './Crest'
 import { Casino, Contatore, fmt } from './Casino'
-import { CrazyTime, RUOTA, CASELLE } from './CrazyTime'
+import { CrazyOne, RUOTA, CASELLE } from './CrazyOne'
 
 // Pagina iniziale del BetOne Casino': una fila di copertine verticali (stile home di Netflix), una per gioco.
 // I crediti sono gli stessi per tutti i giochi; la classifica e' unica (miglior colpo in un solo giro, qualsiasi gioco).
@@ -13,7 +13,7 @@ type RigaClassifica = { team_id: number; crediti: number; max_vincita: number; g
 type Gioco = 'slot' | 'crazy'
 
 const GIOCHI: Array<{ id: Gioco; titolo: string; sotto: string; nuovo?: boolean }> = [
-  { id: 'crazy', titolo: 'Crazy Time', sotto: 'Ruota · 4 bonus', nuovo: true },
+  { id: 'crazy', titolo: 'CrazyOne', sotto: 'Ruota · 4 bonus', nuovo: true },
   { id: 'slot', titolo: 'Special Slot', sotto: '5 rulli · 10 linee' },
 ]
 
@@ -40,24 +40,49 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
   const [crediti, setCrediti] = useState<number | null>(null)
   const [classifica, setClassifica] = useState<RigaClassifica[]>([])
   const [errore, setErrore] = useState('')
+  const [crazyone, setCrazyone] = useState(false)
 
   const carica = useCallback(async () => {
     const { data, error } = await supabase.rpc('casino_stato', { p_league_id: leagueId })
     if (error) { setErrore(error.message); return }
     setCrediti((data as { crediti: number }).crediti)
+    setCrazyone((data as { crazyone?: boolean }).crazyone === true)
     const { data: cl } = await supabase.rpc('casino_classifica', { p_league_id: leagueId })
     setClassifica((cl ?? []) as RigaClassifica[])
   }, [leagueId])
   useEffect(() => { if (gioco == null) void carica() }, [carica, gioco])
 
+  const aggiornaClassifica = () => { void supabase.rpc('casino_classifica', { p_league_id: leagueId }).then(({ data: cl }) => setClassifica((cl ?? []) as RigaClassifica[])) }
+  const tabellaClassifica = <>
+  <section className="slot-classifica">
+    <h2>Classifica del casinò</h2>
+    <p className="bet-nota">Conta la vincita più alta ottenuta in un solo giro{crazyone ? ', in qualsiasi gioco' : ''}.</p>
+    {classifica.length === 0 ? <p className="bet-nota">Ancora nessuno al tavolo.</p> : <ol>
+      {classifica.map((r, i) => {
+        const t = dati.teamById.get(r.team_id)
+        return <li key={r.team_id} className={r.team_id === teamId ? 'is-mia' : ''}>
+          <span className={`bet-pos${i < 3 ? ` bet-pos--${i + 1}` : ''}`}>{i + 1}</span>
+          <span className="bet-giocatori__stemma"><Crest value={t?.stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(r.team_id)} size="small" /></span>
+          <span className="bet-classifica__nome"><strong>{t?.nome ?? '—'}</strong><small>{fmt(r.crediti)} crediti · {fmt(r.giri)} giri</small></span>
+          <span className="slot-classifica__crediti"><b>{fmt(r.max_vincita)}</b><small>miglior colpo</small></span>
+        </li>
+      })}
+    </ol>}
+  </section>
+  </>
+
+  if (crediti == null) return <section className="slot-caricamento">{errore ? <p role="alert">{errore}</p> : <p>Accendo le luci del casinò…</p>}</section>
+  // Dove CrazyOne e' spento il casino' resta com'era: la slot subito, con la classifica sotto.
+  if (!crazyone) return <section className="cas-hub"><Casino leagueId={leagueId} dati={dati} onGiro={aggiornaClassifica} />{tabellaClassifica}</section>
+
   if (gioco) return <section className="cas-gioco">
     <button type="button" className="cas-indietro" onClick={() => setGioco(null)}><span aria-hidden="true">‹</span> Casinò</button>
-    {gioco === 'slot' ? <Casino leagueId={leagueId} dati={dati} /> : <CrazyTime leagueId={leagueId} />}
+    {gioco === 'slot' ? <Casino leagueId={leagueId} dati={dati} /> : <CrazyOne leagueId={leagueId} dati={dati} />}
   </section>
 
   return <section className="cas-hub">
     <div className="slot-saldo">
-      <div><small>I tuoi crediti</small><strong>{crediti == null ? '…' : <Contatore valore={crediti} />}</strong></div>
+      <div><small>I tuoi crediti</small><strong><Contatore valore={crediti} /></strong></div>
       <span className="slot-ricarica">+1.000 gratis alle 23:00</span>
     </div>
     {errore && <p className="slot-errore" role="alert">{errore}</p>}
@@ -65,7 +90,7 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
     <section className="cas-fila">
       <h2>Giochi</h2>
       <div className="cas-fila__scorri">
-        {GIOCHI.map((g) => <button key={g.id} type="button" className={`cas-poster cas-poster--${g.id}`} onClick={() => setGioco(g.id)}>
+        {GIOCHI.filter((g) => g.id !== 'crazy' || crazyone).map((g) => <button key={g.id} type="button" className={`cas-poster cas-poster--${g.id}`} onClick={() => setGioco(g.id)}>
           {g.id === 'slot' ? <CopertinaSlot /> : <CopertinaCrazy />}
           {g.nuovo && <span className="cas-poster__nuovo">Nuovo</span>}
           <span className="cas-poster__titolo"><b>{g.titolo}</b><small>{g.sotto}</small></span>
@@ -76,20 +101,6 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
       </div>
     </section>
 
-    <section className="slot-classifica">
-      <h2>Classifica del casinò</h2>
-      <p className="bet-nota">Conta la vincita più alta ottenuta in un solo giro, in qualsiasi gioco.</p>
-      {classifica.length === 0 ? <p className="bet-nota">Ancora nessuno al tavolo.</p> : <ol>
-        {classifica.map((r, i) => {
-          const t = dati.teamById.get(r.team_id)
-          return <li key={r.team_id} className={r.team_id === teamId ? 'is-mia' : ''}>
-            <span className={`bet-pos${i < 3 ? ` bet-pos--${i + 1}` : ''}`}>{i + 1}</span>
-            <span className="bet-giocatori__stemma"><Crest value={t?.stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(r.team_id)} size="small" /></span>
-            <span className="bet-classifica__nome"><strong>{t?.nome ?? '—'}</strong><small>{fmt(r.crediti)} crediti · {fmt(r.giri)} giri</small></span>
-            <span className="slot-classifica__crediti"><b>{fmt(r.max_vincita)}</b><small>miglior colpo</small></span>
-          </li>
-        })}
-      </ol>}
-    </section>
+    {tabellaClassifica}
   </section>
 }

@@ -129,9 +129,9 @@ function Simbolo({ s, simboli, dati }: { s: number; simboli: number[]; dati: Dat
   </span>
 }
 
-type Props = { leagueId: number; dati: Dati }
+type Props = { leagueId: number; dati: Dati; onGiro?: () => void }
 
-export function Casino({ leagueId, dati }: Props) {
+export function Casino({ leagueId, dati, onGiro }: Props) {
   const [stato, setStato] = useState<Stato | null>(null)
   const [errore, setErrore] = useState('')
   const [puntata, setPuntata] = useState(10)
@@ -199,6 +199,7 @@ export function Casino({ leagueId, dati }: Props) {
         if (r.coppe >= 3 || (r.bustine_vinte ?? 0) > 0) suoni.coppe()
         if (r.vinto >= r.puntata * 20) { suoni.grande(); setFesta((n) => n + 1); for (let i = 0; i < 18; i++) window.setTimeout(() => suoni.moneta(i), 400 + i * 60) }
         else if (r.vinto > 0) suoni.vincita()
+        onGiro?.()
       }
     }, d))
   }

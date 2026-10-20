@@ -1,8 +1,12 @@
--- BetOne Casino': secondo gioco, Crazy Time (ruota a 54 spicchi + top slot + 4 bonus).
+-- BetOne Casino': secondo gioco, CrazyOne (stile Crazy Time: ruota a 54 spicchi + top slot + 4 bonus).
 -- Giro personale: ognuno punta e fa girare quando vuole. Tutto lo estrae il SERVER; il client anima soltanto.
 -- Tarato al ~94% di ritorno medio per ogni casella (stessa taratura della slot).
 -- Cash Hunt e Crazy Time chiedono una scelta al giocatore (bersaglio / bandierina): il risultato e' gia' deciso
 -- al momento del giro e sta nascosto nella riga del giro finche' il giocatore non sceglie (tabella senza policy).
+
+-- Acceso lega per lega (per ora solo LegaBot, per provarlo).
+alter table public.leagues add column if not exists casino_crazyone boolean not null default false;
+update public.leagues set casino_crazyone = true where id = 62;
 
 create table if not exists public.casino_ct_giri (
   id bigint generated always as identity primary key,
@@ -81,7 +85,7 @@ begin
     select nome into v_nome from public.teams where id = g.team_id;
     insert into public.social_posts (league_id, chiave, autore_tipo, autore_nome, team_id, testo, creato_il)
     values (g.league_id, 'crazytime:' || g.id, 'lega', 'BetOne Casinò', g.team_id,
-            '🎡 CRAZY TIME! ' || v_nome || ' vince ' || to_char(g.vinto, 'FM999G999G999') || ' crediti con un solo giro di ruota 🤑', now())
+            '🎡 CRAZYONE! ' || v_nome || ' vince ' || to_char(g.vinto, 'FM999G999G999') || ' crediti con un solo giro di ruota 🤑', now())
     on conflict do nothing;
   end if;
   return v;
@@ -100,8 +104,8 @@ declare v_utente uuid := (select auth.uid()); v public.casino_saldi; g public.ca
 begin
   if v_utente is null then raise exception using errcode = '42501', message = 'Devi accedere.'; end if;
   if not private.casino_visibile(v_utente) then raise exception using errcode = '42501', message = 'Il casinò non è ancora aperto.'; end if;
-  if not exists (select 1 from public.leagues l where l.id = p_league_id and l.conferenze_stampa) then
-    raise exception using errcode = '55000', message = 'Il casinò non è attivo in questa lega.';
+  if not exists (select 1 from public.leagues l where l.id = p_league_id and l.conferenze_stampa and l.casino_crazyone) then
+    raise exception using errcode = '55000', message = 'CrazyOne non è attivo in questa lega.';
   end if;
   v := private.casino_saldo(p_league_id, v_utente);
   select * into g from public.casino_ct_giri where league_id = p_league_id and user_id = v_utente and in_attesa;
@@ -129,8 +133,8 @@ declare
 begin
   if v_utente is null then raise exception using errcode = '42501', message = 'Devi accedere.'; end if;
   if not private.casino_visibile(v_utente) then raise exception using errcode = '42501', message = 'Il casinò non è ancora aperto.'; end if;
-  if not exists (select 1 from public.leagues l where l.id = p_league_id and l.conferenze_stampa) then
-    raise exception using errcode = '55000', message = 'Il casinò non è attivo in questa lega.';
+  if not exists (select 1 from public.leagues l where l.id = p_league_id and l.conferenze_stampa and l.casino_crazyone) then
+    raise exception using errcode = '55000', message = 'CrazyOne non è attivo in questa lega.';
   end if;
   v := private.casino_saldo(p_league_id, v_utente);
   if exists (select 1 from public.casino_ct_giri where league_id = p_league_id and user_id = v_utente and in_attesa) then
@@ -246,3 +250,23 @@ end $$;
 revoke all on function public.casino_ct_stato(bigint), public.casino_ct_gira(bigint, jsonb), public.casino_ct_scegli(bigint, int) from public, anon;
 grant execute on function public.casino_ct_stato(bigint), public.casino_ct_gira(bigint, jsonb), public.casino_ct_scegli(bigint, int) to authenticated;
 revoke all on function private.ct_chiudi(bigint, bigint) from public, anon, authenticated;
+
+-- La pagina iniziale del casino' deve sapere se mostrare la copertina di CrazyOne.
+create or replace function public.casino_stato(p_league_id bigint)
+ returns jsonb language plpgsql security definer set search_path to ''
+as $function$
+declare
+  v_utente uuid := (select auth.uid());
+  v public.casino_saldi;
+begin
+  if v_utente is null then raise exception using errcode = '42501', message = 'Devi accedere.'; end if;
+  if not private.casino_visibile(v_utente) then raise exception using errcode = '42501', message = 'Il casinò non è ancora aperto.'; end if;
+  if not exists (select 1 from public.leagues l where l.id = p_league_id and l.conferenze_stampa) then
+    raise exception using errcode = '55000', message = 'Il casinò non è attivo in questa lega.';
+  end if;
+  v := private.casino_saldo(p_league_id, v_utente);
+  return jsonb_build_object('crediti', v.crediti, 'giri_gratis', v.giri_gratis, 'puntata_gratis', v.puntata_gratis,
+    'simboli', private.casino_simboli(p_league_id), 'max_vincita', v.max_vincita, 'giri', v.giri, 'bustine_gratis', v.bustine_gratis, 'album', private.album_attivo(p_league_id),
+    'crazyone', (select l.casino_crazyone from public.leagues l where l.id = p_league_id),
+    'prossima_ricarica', ((v.settimana::timestamp + interval '23 hours') at time zone 'Europe/Rome'));
+end $function$;
