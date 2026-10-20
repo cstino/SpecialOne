@@ -17,7 +17,7 @@ type Segno = '1' | 'X' | '2'
 const SEGNI: Segno[] = ['1', 'X', '2']
 const MAX_DOPPIE = 2
 const MINUTI_CHIUSURA = 15
-const PUNTATE = [50, 100, 250, 500]
+const PUNTATE_RAPIDE = [10, 50, 100, 500]
 // Stessa formula di private.betone_moltiplicatore: errori -> moltiplicatore, ogni doppia lo dimezza.
 function moltiplicatore(partite: number, errori: number, doppie: number) {
   const k = Math.max(0, partite - 6)
@@ -398,7 +398,7 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
             <li>{gruppi.length > 1 ? 'Ci sono due schedine, East e West: puoi giocarle entrambe.' : 'Una sola schedina con tutte le partite della giornata.'}</li>
             <li>Puoi modificarla fino a {MINUTI_CHIUSURA} minuti prima della simulazione. Quelle degli altri restano nascoste finché non sono valutate.</li>
             <li>Una schedina con <b>tutti i pronostici giusti</b> vale una <b>WIN</b>. In classifica contano le WIN e, a parità, le partite azzeccate.</li>
-            <li>Si gioca sempre con i <b>crediti</b>: scegli quanto puntare (50, 100, 250 o 500). La puntata si scala subito; finché la schedina è aperta puoi cambiarla e la differenza ti viene restituita o scalata.</li>
+            <li>Si gioca sempre con i <b>crediti</b>: scegli quanto puntare, da 1 credito in su (quanto vuoi, entro i crediti che hai). La puntata si scala subito; finché la schedina è aperta puoi cambiarla e la differenza ti viene restituita o scalata.</li>
             <li>La vincita è <b>puntata × moltiplicatore</b>, secondo quanti pronostici azzecchi (la tabella è sulla schedina). Con 6 partite: tutte giuste ×20, 5 su 6 ×4, 4 su 6 ×1,5, meno perdi la puntata. Ogni <b>doppia dimezza</b> i moltiplicatori.</li>
           </ul>}
         </section>
@@ -410,15 +410,21 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
       {errore && <p className="bet-barra__errore" role="alert">{errore}</p>}
       <div className="bet-puntata" role="group" aria-label="Puntata">
         <span>Punta</span>
-        {PUNTATE.map((p) => <button key={p} type="button" className={puntata === p ? 'is-scelta' : ''} aria-pressed={puntata === p} disabled={p > disponibili} onClick={() => { setPuntata(p); setSalvata(null) }}>{p}</button>)}
-        <small>{fmtN(crediti ?? 0)} crediti</small>
+        <div className="bet-puntata__campo">
+          <button type="button" aria-label="Meno" disabled={puntata <= 1} onClick={() => { setPuntata((p) => Math.max(1, p - (p > 10 ? 10 : 1))); setSalvata(null) }}>−</button>
+          <input type="text" inputMode="numeric" aria-label="Crediti da puntare" value={puntata > 0 ? String(puntata) : ''} placeholder="0"
+            onChange={(e) => { const n = Number(e.target.value.replace(/\D/g, '').slice(0, 8)); setPuntata(n); setSalvata(null) }} />
+          <button type="button" aria-label="Più" disabled={puntata + (puntata >= 10 ? 10 : 1) > disponibili} onClick={() => { setPuntata((p) => p + (p >= 10 ? 10 : 1)); setSalvata(null) }}>+</button>
+        </div>
+        {PUNTATE_RAPIDE.map((p) => <button key={p} type="button" className={`bet-puntata__rapida${puntata === p ? ' is-scelta' : ''}`} aria-pressed={puntata === p} disabled={p > disponibili} onClick={() => { setPuntata(p); setSalvata(null) }}>{p}</button>)}
+        <small>{fmtN(crediti ?? 0)}<br />crediti</small>
       </div>
       <p className="bet-barra__stato">
         {salvata ? <>Scommessa piazzata ✓ Puoi modificarla fino alle {oraChiusura}.</>
           : <>{compilate(attivo)}/{partiteAttivo.length} partite · doppie {nDoppie(attivo)}/{MAX_DOPPIE} · vinci fino a <b>{fmtN(Math.round(puntata * (scala[0]?.m ?? 0)))}</b></>}
       </p>
-      <button type="button" className="bet-barra__salva" disabled={!pronta || invio || !modificata || puntata > disponibili} onClick={() => void salva(attivo)}>
-        {invio ? 'Piazzo…' : mia && !modificata ? `Scommessa piazzata ✓ · ${mia.puntata}` : mia ? 'Aggiorna la scommessa' : pronta ? (puntata > disponibili ? 'Crediti insufficienti' : `Punta ${puntata} crediti`) : `Mancano ${partiteAttivo.length - compilate(attivo)} partite`}
+      <button type="button" className="bet-barra__salva" disabled={!pronta || invio || !modificata || puntata < 1 || puntata > disponibili} onClick={() => void salva(attivo)}>
+        {invio ? 'Piazzo…' : mia && !modificata ? `Scommessa piazzata ✓ · ${mia.puntata}` : mia ? 'Aggiorna la scommessa' : pronta ? (puntata < 1 ? 'Scegli quanto puntare' : puntata > disponibili ? 'Crediti insufficienti' : `Punta ${fmtN(puntata)} ${puntata === 1 ? 'credito' : 'crediti'}`) : `Mancano ${partiteAttivo.length - compilate(attivo)} partite`}
       </button>
     </div>}
   </main>
