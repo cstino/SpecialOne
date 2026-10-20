@@ -416,8 +416,10 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
             onChange={(e) => { const n = Number(e.target.value.replace(/\D/g, '').slice(0, 8)); setPuntata(n); setSalvata(null) }} />
           <button type="button" aria-label="Più" disabled={puntata + (puntata >= 10 ? 10 : 1) > disponibili} onClick={() => { setPuntata((p) => p + (p >= 10 ? 10 : 1)); setSalvata(null) }}>+</button>
         </div>
-        {PUNTATE_RAPIDE.map((p) => <button key={p} type="button" className={`bet-puntata__rapida${puntata === p ? ' is-scelta' : ''}`} aria-pressed={puntata === p} disabled={p > disponibili} onClick={() => { setPuntata(p); setSalvata(null) }}>{p}</button>)}
-        <small>{fmtN(crediti ?? 0)}<br />crediti</small>
+        <small>Hai <b>{fmtN(crediti ?? 0)}</b> crediti</small>
+        <div className="bet-puntata__rapide">
+          {PUNTATE_RAPIDE.map((p) => <button key={p} type="button" className={`bet-puntata__rapida${puntata === p ? ' is-scelta' : ''}`} aria-pressed={puntata === p} disabled={p > disponibili} onClick={() => { setPuntata(p); setSalvata(null) }}>{p}</button>)}
+        </div>
       </div>
       <p className="bet-barra__stato">
         {salvata ? <>Scommessa piazzata ✓ Puoi modificarla fino alle {oraChiusura}.</>
