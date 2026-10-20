@@ -6,7 +6,7 @@ import { Crest } from './Crest'
 import { GameNav, type GameView } from './GameNav'
 import { useSeasonData } from '../lib/useSeasonData'
 
-// QUIZZONE (supabase/migrations/20261020280000_quizzone.sql): una domanda ogni ora piena, uguale per tutti.
+// QUIZONE, scritto QuizOne (internamente "quizzone": supabase/migrations/20261020280000_quizzone.sql): una domanda ogni ora piena, uguale per tutti.
 // :00-:10 si entra (gratis o puntando 10-500), :10-:25 domanda con 4 risposte, poi risultato. Risposta giusta = 100
 // crediti, piu' il doppio della puntata. Le domande e le risposte giuste le decide il server dai dati della stagione.
 
@@ -95,7 +95,7 @@ export function Quizzone({ leagueId, dati }: { leagueId: number; dati: Dati }) {
     </div>
 
     <div className={`qz-studio qz-studio--${fase}`}>
-      <div className="qz-insegna"><img src="/specialone-mark.svg" alt="" /><span>QUIZ</span><b>ZONE</b></div>
+      <div className="qz-insegna"><img src="/specialone-mark.svg" alt="" /><span>QUIZ</span><b>ONE</b></div>
 
       {fase === 'attesa' && <div className="qz-attesa">
         <small>Prossima domanda</small>
@@ -169,18 +169,18 @@ export function Quizzone({ leagueId, dati }: { leagueId: number; dati: Dati }) {
   </section>
 }
 
-// Pagina del Quizzone nel menu Altro.
+// Pagina di QuizOne (internamente "quizzone") nel menu Altro.
 export function PaginaQuizzone({ membership, onNavigate }: { membership: Membership; onNavigate: (view: GameView) => void }) {
   const league = membership.league as League
   const dati = useSeasonData(membership)
   return <main className="app-shell season-shell bet-shell">
     <GameNav league={league} active="quizzone" onNavigate={onNavigate} />
-    <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>Quizzone</span></header>
+    <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>QuizOne</span></header>
     <div className="season-page season-page--narrow bet-page">
       <section className="bet-hero">
         <div className="bet-hero__testo">
           <p className="bet-kicker">{league.nome}</p>
-          <h1>Quiz<b>zone</b></h1>
+          <h1>Quiz<b>One</b></h1>
           <p className="bet-sottotitolo">Il quiz di SpecialOne: una domanda ogni ora sulla stagione. 100 crediti a chi indovina, e chi punta raddoppia la puntata.</p>
         </div>
       </section>

@@ -205,7 +205,7 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
   const gruppoAltro: NavGroup = { group: 'altro', label: 'Altro', children: [
     { view: 'betone', label: 'BetOne' },
     ...(albumAttivo ? [{ view: 'album' as GameView, label: 'Album' }] : []),
-    ...(quizAttivo ? [{ view: 'quizzone' as GameView, label: 'Quizzone' }] : []),
+    ...(quizAttivo ? [{ view: 'quizzone' as GameView, label: 'QuizOne' }] : []),
   ] }
   const items: readonly NavEntry[] = league.conferenze_stampa && league.stato === 'stagione' && league.fase_carriera !== 'offseason'
     ? [...conAdmin, gruppoAltro]
