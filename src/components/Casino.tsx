@@ -228,7 +228,7 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
 
     <div className={`slot-macchina slot-macchina--${livello}${inCorsa ? ' is-in-corsa' : ''}`}>
       <div className="slot-luci" aria-hidden="true">{Array.from({ length: 14 }, (_, i) => <i key={i} style={{ animationDelay: `${(i % 7) * 0.12}s` }} />)}</div>
-      <div className="slot-insegna"><span>SPECIAL</span><b>SLOT</b></div>
+      <div className="slot-insegna"><span>SLOT</span><b>ONE</b></div>
       <div className="slot-finestra">
         <div className="slot-rulli">
           {[0, 1, 2, 3, 4].map((c) => {

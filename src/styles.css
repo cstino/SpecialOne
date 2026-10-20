@@ -5895,7 +5895,7 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .slot-sim .crest-stellato { display: grid; place-items: center; width: 78%; height: 78%; }
 .slot-sim .crest-stellato .crest { width: 100%; height: 100%; }
 /* Il tasto GIRA ha la scritta scura: la regola generale dei pulsanti della pagina la faceva bianca */
-.slot .slot-gira, .slot .slot-gira span, .slot .slot-gira small { color: #2a1500; }
+.slot .slot-gira, .slot .slot-gira span, .slot .slot-gira small, .ct .slot-gira, .ct .slot-gira span, .ct .slot-gira small { color: #2a1500; }
 .slot-premi b { color: #f4f1fb; }
 .slot-premi__valori b { color: #b9b0cc; font-weight: 700; }
 
@@ -6293,14 +6293,15 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .cas-fila h2 { margin: 0; font-size: 1.05rem; font-weight: 800; letter-spacing: .02em; }
 .cas-fila__scorri { display: grid; grid-auto-flow: column; grid-auto-columns: min(42vw, 168px); gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 4px 16px 10px; scrollbar-width: none; }
 .cas-fila__scorri::-webkit-scrollbar { display: none; }
-.bet-page .cas-poster { position: relative; aspect-ratio: 2 / 3; display: block; padding: 0; border: 0; border-radius: 10px; overflow: hidden; scroll-snap-align: start; cursor: pointer; text-align: left; color: #fff; box-shadow: 0 10px 24px rgba(0,0,0,.45); transition: transform .18s ease; }
-.cas-poster:active { transform: scale(.97); }
+.bet-page .cas-poster { position: relative; aspect-ratio: 2 / 3; display: block; padding: 0; border: 0; border-radius: 16px; overflow: hidden; isolation: isolate; -webkit-mask-image: -webkit-radial-gradient(white, black); transform: translateZ(0); scroll-snap-align: start; cursor: pointer; text-align: left; color: #fff; box-shadow: 0 10px 24px rgba(0,0,0,.45); transition: transform .18s ease; }
+.bet-page .cas-poster:active { transform: translateZ(0) scale(.97); }
 .cas-poster:focus-visible { outline: 3px solid var(--bet-oro); outline-offset: 2px; }
 .cas-poster__arte { position: absolute; inset: 0; }
 .cas-poster__titolo { position: absolute; left: 0; right: 0; bottom: 0; display: grid; gap: 2px; padding: 34px 10px 10px; background: linear-gradient(transparent, rgba(0,0,0,.85) 55%); }
 .cas-poster__titolo b { font: 900 1.15rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; letter-spacing: .02em; text-transform: uppercase; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
 .cas-poster__titolo small { color: rgba(255,255,255,.7); font-size: .68rem; font-weight: 700; }
 .cas-poster__nuovo { position: absolute; top: 0; left: 10px; padding: 5px 7px 4px; border-radius: 0 0 5px 5px; background: #e5262b; font-size: .58rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.bet-page .cas-poster--presto { border-radius: 16px; }
 .cas-poster--presto { display: grid; place-items: center; border: 1.5px dashed rgba(255,255,255,.18); background: rgba(255,255,255,.03); box-shadow: none; cursor: default; }
 .cas-poster__presto { color: rgba(255,255,255,.45); font-size: .78rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 /* copertina slot */
@@ -6309,7 +6310,7 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .cas-poster__luci i { width: 7px; height: 7px; border-radius: 50%; background: #ffd84d; box-shadow: 0 0 8px #ffd84d; animation: slot-lampeggia 1.4s ease-in-out infinite; }
 .cas-poster__rulli { position: absolute; left: 10%; right: 10%; top: 28%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 6px; border: 2px solid #e7b23a; border-radius: 10px; background: #0c0614; box-shadow: 0 0 22px rgba(255,61,242,.45); }
 .cas-poster__rulli span { display: grid; place-items: center; aspect-ratio: 3 / 4; border-radius: 6px; background: linear-gradient(#fff, #d9d2e6); color: #e5262b; font: 900 1.8rem/1 "Bai Jamjuree", sans-serif; }
-.cas-poster__rulli img { width: 70%; }
+.cas-poster__rulli img { width: 70%; filter: brightness(0) opacity(.82); }
 /* copertina crazy time */
 .cas-poster__arte--crazy { background: radial-gradient(80% 50% at 50% 38%, #ff3d8b, #5a0f6e 60%, #1a0624); overflow: hidden; }
 .cas-poster__raggi { position: absolute; inset: -40%; background: repeating-conic-gradient(rgba(255,255,255,.09) 0 8deg, transparent 8deg 22deg); animation: ct-ruota-lenta 30s linear infinite; }
@@ -6349,8 +6350,8 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 @keyframes ct-lampadina { from { fill: #fff6c8; } to { fill: #9a6a14; } }
 .ct-ruota__svg .is-evidenziato path { filter: brightness(1.35); stroke: #fff; stroke-width: 1.6; }
 .ct-ruota__lancetta { position: absolute; z-index: 2; left: 50%; top: -6px; width: 26px; height: 32px; transform: translateX(-50%); background: linear-gradient(#fff1b0, #e7b23a 60%, #8a5a12); clip-path: polygon(0 0, 100% 0, 50% 100%); filter: drop-shadow(0 3px 4px rgba(0,0,0,.6)); }
-.ct-ruota__centro { position: absolute; left: 50%; top: 50%; display: grid; place-items: center; width: 20%; aspect-ratio: 1; transform: translate(-50%, -50%); pointer-events: none; }
-.ct-ruota__centro img { width: 70%; }
+.ct-ruota__centro { position: absolute; left: 50%; top: 50%; display: grid; place-items: center; width: 15%; aspect-ratio: 1; transform: translate(-50%, -50%); pointer-events: none; }
+.ct-ruota__centro img { width: 64%; }
 .ct-storia { position: relative; display: flex; gap: 4px; max-width: 100%; margin: 0; padding: 0; list-style: none; overflow-x: auto; scrollbar-width: none; }
 .ct-storia li { flex: none; display: grid; place-items: center; min-width: 26px; height: 22px; padding: 0 5px; border-radius: 6px; font-size: .68rem; font-weight: 900; }
 .ct-storia li:first-child { outline: 2px solid #fff; outline-offset: 1px; }
@@ -6462,3 +6463,5 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .ct-cf__pallone { width: 34px; height: 34px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
 .ct-cf__lato small { display: inline-flex; align-items: center; gap: 4px; }
 .ct-cf__lato small img, .ct-cf__lato small .ct-cf__pallone { width: 14px; height: 14px; }
+
+.bet-page { overflow-x: clip; }

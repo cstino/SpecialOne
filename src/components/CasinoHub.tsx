@@ -14,7 +14,7 @@ type Gioco = 'slot' | 'crazy'
 
 const GIOCHI: Array<{ id: Gioco; titolo: string; sotto: string; nuovo?: boolean }> = [
   { id: 'crazy', titolo: 'CrazyOne', sotto: 'Ruota · 4 bonus', nuovo: true },
-  { id: 'slot', titolo: 'Special Slot', sotto: '5 rulli · 10 linee' },
+  { id: 'slot', titolo: 'SlotOne', sotto: '5 rulli · 10 linee' },
 ]
 
 function CopertinaSlot() {
