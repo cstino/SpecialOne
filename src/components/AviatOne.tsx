@@ -173,7 +173,7 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
       logoScuro = t
     }
     let raf = 0, W = 0, H = 0
-    const misura = () => { const dpr = devicePixelRatio || 1; W = cv.offsetWidth; H = cv.offsetHeight; cv.width = W * dpr; cv.height = H * dpr; c.setTransform(dpr, 0, 0, dpr, 0, 0) }
+    const misura = () => { const dpr = Math.min(2, devicePixelRatio || 1); W = cv.offsetWidth; H = cv.offsetHeight; cv.width = W * dpr; cv.height = H * dpr; c.setTransform(dpr, 0, 0, dpr, 0, 0) }
     misura()
     const ro = new ResizeObserver(misura); ro.observe(cv)
     const fermo = ridotto()
@@ -227,7 +227,9 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
         curva(); c.lineTo(xt, base); c.lineTo(px(0), base); c.closePath()
         const ga = c.createLinearGradient(0, yt, 0, base); ga.addColorStop(0, 'rgba(155,92,255,.55)'); ga.addColorStop(1, 'rgba(155,92,255,.05)')
         c.fillStyle = ga; c.fill()
-        curva(); c.strokeStyle = '#f6c453'; c.lineWidth = 3.5; c.lineJoin = 'round'; c.shadowColor = 'rgba(246,196,83,.6)'; c.shadowBlur = 10; c.stroke(); c.shadowBlur = 0
+        // bagliore finto con una seconda linea larga e trasparente (lo shadowBlur pesava troppo sui telefoni meno potenti)
+        curva(); c.lineJoin = 'round'; c.strokeStyle = 'rgba(246,196,83,.22)'; c.lineWidth = 9; c.stroke()
+        c.strokeStyle = '#f6c453'; c.lineWidth = 3.5; c.stroke()
         const pend = Math.atan2(py(Math.exp(K * Math.max(0, t - 0.3))) - yt, xt - px(Math.max(0, t - 0.3)))
         if (f === 'volo') {
           disegnaAereo(xt, yt + (fermo ? 0 : Math.sin(adesso / 400) * 3), Math.max(-0.6, Math.min(0, pend)), adesso)
@@ -264,7 +266,8 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
     const id = statoRef.current?.giro.id ?? null
     if (incassoMandato.current === id) return
     incassoMandato.current = id
-    setInvio(true); await chiedi('casino_av_incassa_live'); setInvio(false)
+    const tocco = Math.round(oraServer())   // solo per misurare il ritardo di rete: il server paga all'orario di arrivo
+    setInvio(true); await chiedi('casino_av_incassa_live', { p_tocco: tocco }); setInvio(false)
   }
 
   if (!stato) return <section className="slot-caricamento">{errore ? <p role="alert">{errore}</p> : <p>Accendo i motori…</p>}</section>
