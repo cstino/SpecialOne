@@ -75,7 +75,7 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
 
   if (gioco) return <section className="cas-gioco">
     <button type="button" className="cas-indietro" onClick={() => setGioco(null)}><span aria-hidden="true">‹</span> Casinò</button>
-    {gioco === 'slot' ? <Casino leagueId={leagueId} dati={dati} /> : gioco === 'aviat' ? <AviatOne leagueId={leagueId} dati={dati} /> : gioco === 'bj' ? <BlackjackOne leagueId={leagueId} /> : <CrazyOne leagueId={leagueId} dati={dati} />}
+    {gioco === 'slot' ? <Casino leagueId={leagueId} dati={dati} /> : gioco === 'aviat' ? <AviatOne leagueId={leagueId} dati={dati} /> : gioco === 'bj' ? <BlackjackOne leagueId={leagueId} dati={dati} /> : <CrazyOne leagueId={leagueId} dati={dati} />}
   </section>
 
   return <section className="cas-hub">

@@ -6690,3 +6690,46 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .bj-distribuisci small { font-size: .64rem; font-weight: 800; opacity: .75; }
 .bj-distribuisci:disabled { filter: grayscale(.8) brightness(.6); cursor: default; }
 @media (prefers-reduced-motion: reduce) { .bj-carta, .bj-esito { animation: none; } }
+
+/* BlackjackOne live: sala e tavolo condiviso */
+.bj-sala { display: grid; gap: 12px; justify-items: center; padding: 18px 14px; border: 2px solid #5a1f8a; border-radius: 24px; background: radial-gradient(100% 70% at 50% 0%, #4a1673, #170726 70%); }
+.bj-sala .bet-nota { text-align: center; margin: 0; }
+.bet-page .bj-siediti { width: min(100%, 280px); }
+.bj-tavoli { display: grid; gap: 8px; width: 100%; margin: 0; padding: 0; list-style: none; }
+.bj-tavoli li { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--bet-linea); border-radius: 14px; background: rgba(255,255,255,.04); }
+.bj-tavoli li > div { display: grid; }
+.bj-tavoli li small { color: #b9b0cc; font-size: .7rem; }
+.bj-tavoli__posti { display: flex; gap: 4px; }
+.bj-tavoli__posti > span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 1.5px dashed rgba(255,255,255,.2); }
+.bj-tavoli__posti > span.is-pieno { border: 0; }
+.bj-tavoli__posti .crest { width: 26px; height: 26px; }
+.bj-fase { display: flex; align-items: center; gap: 8px; padding: 5px 14px; border-radius: 99px; background: rgba(0,0,0,.4); color: #fff; font-size: .8rem; font-weight: 800; }
+.bj-conto { min-width: 30px; padding: 2px 8px; border-radius: 99px; background: linear-gradient(#fff1b0, #e7b23a); color: #3a2600; font-size: .78rem; text-align: center; font-variant-numeric: tabular-nums; }
+.bj-posti { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; }
+.bj-sedia { position: relative; display: grid; align-content: start; justify-items: center; gap: 6px; min-height: 150px; padding: 8px 6px 10px; border: 1.5px solid rgba(231,178,58,.25); border-radius: 16px; background: rgba(0,0,0,.25); }
+.bj-sedia.is-vuota { place-content: center; border-style: dashed; color: rgba(255,255,255,.35); font-size: .72rem; font-weight: 700; }
+.bj-sedia.is-mia { border-color: var(--bet-oro); background: rgba(246,196,83,.07); }
+.bj-sedia.is-turno { border-color: #2fd27a; box-shadow: 0 0 0 2px rgba(47,210,122,.35), 0 0 18px rgba(47,210,122,.35); }
+.bj-sedia.is-assente { opacity: .6; }
+.bj-sedia__testa { display: flex; align-items: center; gap: 6px; max-width: 100%; }
+.bj-sedia__testa .crest { width: 22px; height: 22px; flex: none; }
+.bj-sedia__testa b { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: .74rem; }
+.bj-sedia__fiche { flex: none; padding: 1px 6px; border-radius: 99px; background: #d92a30; color: #fff; font-size: .62rem; font-weight: 900; }
+.bj-sedia__stato { color: #b9b0cc; font-size: .7rem; }
+.bj-sedia__mani { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.bj-sedia__vinto { color: #ff8a96; font-size: .74rem; font-weight: 900; }
+.bj-sedia__vinto.is-positivo { color: #7dffb5; }
+.bj-mano--piccola { padding: 4px 4px 4px; gap: 4px; }
+.bj-mano--piccola .bj-carte { min-height: 56px; }
+.bj-mano--piccola .bj-carte > * + * { margin-left: -22px; }
+.bj-mano--piccola .bj-carta { width: 40px; height: 56px; border-radius: 5px; }
+.bj-mano--piccola .bj-carta__fronte, .bj-mano--piccola .bj-carta__dorso { border-radius: 5px; }
+.bj-mano--piccola .bj-carta__angolo b { font-size: .66rem; }
+.bj-mano--piccola .bj-carta__angolo i { font-size: .56rem; }
+.bj-mano--piccola .bj-carta__centro i { font-size: 1.1rem; }
+.bj-mano--piccola .bj-carta__centro em { font-size: 1.5rem; }
+.bj-mano--piccola .bj-carta__centro img { width: 20px; height: 20px; }
+.bj-mano--piccola .bj-carta__centro b { font-size: .5rem; }
+.bj-mano--piccola .bj-carta__angolo--giu { display: none; }
+.bj-mano--piccola .bj-totale { font-size: .66rem; padding: 2px 7px; }
+.bj-mano--piccola .bj-esito { font-size: .62rem; padding: 3px 6px; }

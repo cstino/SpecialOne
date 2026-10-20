@@ -1,15 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import type { useSeasonData } from '../lib/useSeasonData'
 import { useMusica } from '../lib/musicaCasino'
 import { Contatore, Festa, fmt, useSuoni } from './Casino'
+import { Crest } from './Crest'
 
-// BetOne Casino' › BlackjackOne (supabase/migrations/20261020260000_casino_blackjackone.sql).
-// Blackjack online classico contro il banco: 6 mazzi rimescolati a ogni mano dal SERVER, blackjack 3:2, il banco sta
-// su tutti i 17, raddoppio, divisione fino a 4 mani, assicurazione. Qui si disegna soltanto: ogni carta la da' il server.
+// BetOne Casino' › BlackjackOne LIVE (supabase/migrations/20261020270000_blackjackone_tavoli_live.sql).
+// Tavoli condivisi da massimo 4 giocatori contro un solo banco: puntate 15 s, distribuzione, assicurazione, turni da
+// 15 s per decisione, banco, risultati. 6 mazzi rimescolati a ogni giro dal SERVER, blackjack 3:2, banco su tutti i 17.
+// Qui si disegna soltanto: carte, turni e scadenze li decide il server.
 
 type Mano = { carte: number[]; puntata: number; fatto?: boolean; raddoppiata?: boolean; da_split?: boolean; assi_divisi?: boolean; vinto?: number; blackjack?: boolean }
-type Tavolo = { id: number; stato: 'assicurazione' | 'gioca' | 'finita'; attiva: number; puntata: number; assicurazione: number; vinto: number; mani: Mano[]; banco: Array<number | null>; puo_raddoppiare: boolean; puo_dividere: boolean }
-type Stato = { crediti: number; mano: Tavolo | null }
+type Dati = ReturnType<typeof useSeasonData>
+type Posto = { posto: number; team_id: number; mio: boolean; puntata: number; mani: Mano[]; assicurazione: number; assicurazione_decisa: boolean; vinto: number | null; assente: boolean }
+type Tavolo = { id: number; numero: number; fase: 'attesa' | 'puntate' | 'assicurazione' | 'turni' | 'risultato'; giro: number; scadenza: number | null; turno_posto: number | null; turno_mano: number | null; banco: Array<number | null> }
+type StatoTavolo = { seduto: boolean; adesso?: number; tavolo?: Tavolo; posti?: Posto[]; crediti?: number }
+type Sala = { crediti: number; mio_tavolo: number | null; tavoli: Array<{ id: number; numero: number; fase: string; posti: Array<{ posto: number; team_id: number }> }> }
 
 const FICHE = [10, 20, 50, 100]
 const SEMI = ['♠', '♥', '♦', '♣']
@@ -45,9 +51,19 @@ function esitoMano(m: Mano) {
   return { testo: 'Persa', tipo: 'perso' }
 }
 
-export function BlackjackOne({ leagueId }: { leagueId: number }) {
-  const [stato, setStato] = useState<Stato | null>(null)
-  const [puntata, setPuntata] = useState(0)
+let scarto = 0
+const oraServer = () => Date.now() + scarto
+
+function Conto({ fino }: { fino: number | null }) {
+  const [, aggiorna] = useState(0)
+  useEffect(() => { const t = window.setInterval(() => aggiorna((n) => n + 1), 250); return () => window.clearInterval(t) }, [])
+  if (!fino) return null
+  return <b className="bj-conto">{Math.max(0, Math.ceil((fino - oraServer()) / 1000))}s</b>
+}
+
+export function BlackjackOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
+  const [sala, setSala] = useState<Sala | null>(null)
+  const [st, setSt] = useState<StatoTavolo | null>(null)
   const [ultima, setUltima] = useState(0)
   const [errore, setErrore] = useState('')
   const [invio, setInvio] = useState(false)
@@ -55,124 +71,188 @@ export function BlackjackOne({ leagueId }: { leagueId: number }) {
   const [regole, setRegole] = useState(false)
   const [audio, setAudio] = useState(() => { try { return localStorage.getItem('slot-audio') !== '0' } catch { return true } })
   const suoni = useSuoni(audio)
+  const suoniRef = useRef(suoni); suoniRef.current = suoni
   const sbloccaMusica = useMusica('bj', audio)
-  const prima = useRef<Tavolo | null>(null)
+  const prima = useRef<StatoTavolo | null>(null)
+  const inAttesa = useRef(false)
 
   useEffect(() => { try { localStorage.setItem('slot-audio', audio ? '1' : '0') } catch { /* preferenza solo locale */ } }, [audio])
 
-  const applica = useCallback((s: Stato) => {
-    const vecchia = prima.current, nuova = s.mano
-    // Suoni: una carta nuova = fruscio; fine mano = vincita.
-    const contaCarte = (t: Tavolo | null) => (t ? t.mani.reduce((n, m) => n + m.carte.length, 0) + t.banco.filter((c) => c != null).length : 0)
-    const nuove = vecchia && nuova && vecchia.id === nuova.id ? contaCarte(nuova) - contaCarte(vecchia) : contaCarte(nuova)
-    for (let i = 0; i < Math.min(nuove, 8); i++) window.setTimeout(() => suoni.tick(i), i * 140)
-    if (nuova?.stato === 'finita' && vecchia?.stato !== 'finita' || (nuova?.stato === 'finita' && vecchia?.id !== nuova?.id)) {
-      const giocato = nuova.mani.reduce((t, m) => t + m.puntata, 0) + nuova.assicurazione
-      window.setTimeout(() => {
-        if (nuova.mani.some((m) => m.blackjack && (m.vinto ?? 0) > m.puntata)) { suoni.grande(); setFesta((n) => n + 1) }
-        else if (nuova.vinto > giocato) suoni.vincita()
-      }, Math.min(nuove, 8) * 140 + 200)
+  const conta = (s: StatoTavolo | null) => (s?.posti ?? []).reduce((n, p) => n + p.mani.reduce((k, m) => k + m.carte.length, 0), 0) + (s?.tavolo?.banco ?? []).filter((c) => c != null).length
+
+  const applica = useCallback((s: StatoTavolo, t0: number, t1: number) => {
+    if (s.adesso) scarto = s.adesso - (t0 + t1) / 2
+    const vecchio = prima.current
+    const stessoGiro = vecchio?.tavolo?.giro === s.tavolo?.giro
+    const nuove = stessoGiro ? conta(s) - conta(vecchio) : conta(s)
+    for (let i = 0; i < Math.min(Math.max(0, nuove), 10); i++) window.setTimeout(() => suoniRef.current.tick(i), i * 130)
+    // Fine giro: suono della mia vincita.
+    if (s.tavolo?.fase === 'risultato' && vecchio?.tavolo?.fase !== 'risultato') {
+      const mio = s.posti?.find((p) => p.mio)
+      if (mio && mio.puntata > 0 && mio.vinto != null) {
+        const giocato = mio.mani.reduce((t, m) => t + m.puntata, 0) + mio.assicurazione
+        window.setTimeout(() => {
+          if (mio.mani.some((m) => m.blackjack && (m.vinto ?? 0) > m.puntata)) { suoniRef.current.grande(); setFesta((n) => n + 1) }
+          else if ((mio.vinto ?? 0) > giocato) suoniRef.current.vincita()
+        }, 600)
+      }
     }
-    prima.current = nuova
-    setStato(s)
-  }, [suoni])
+    // Tocca a me: un piccolo avviso.
+    const mioPosto = s.posti?.find((p) => p.mio)?.posto
+    if (s.tavolo?.fase === 'turni' && s.tavolo.turno_posto === mioPosto && !(vecchio?.tavolo?.fase === 'turni' && vecchio.tavolo.turno_posto === mioPosto)) suoniRef.current.coppe()
+    prima.current = s
+    setSt(s)
+  }, [])
 
   const chiedi = useCallback(async (rpc: string, args: Record<string, unknown> = {}) => {
-    if (invio) return null
-    setInvio(true); setErrore('')
+    const t0 = Date.now()
     const { data, error } = await supabase.rpc(rpc, { p_league_id: leagueId, ...args })
-    setInvio(false)
+    const t1 = Date.now()
     if (error) { setErrore(error.message); return null }
-    applica(data as Stato)
-    return data as Stato
-  }, [leagueId, applica, invio])
+    setErrore('')
+    const d = data as StatoTavolo & Partial<Sala>
+    if ('tavoli' in d) { setSala(d as unknown as Sala); setSt({ seduto: false }); prima.current = null }
+    else applica({ ...d, seduto: d.seduto ?? 'tavolo' in d }, t0, t1)   // siedi risponde con il tavolo, senza 'seduto'
+    return d
+  }, [leagueId, applica])
 
+  // Seduto: stato del tavolo ogni secondo. In sala: elenco dei tavoli ogni 3 secondi.
   useEffect(() => {
-    void (async () => {
-      const { data, error } = await supabase.rpc('casino_bj_stato', { p_league_id: leagueId })
-      if (error) { setErrore(error.message); return }
-      prima.current = (data as Stato).mano
-      setStato(data as Stato)
-    })()
-  }, [leagueId])
+    let vivo = true
+    const giro = async () => {
+      if (!vivo || inAttesa.current || document.hidden) return
+      inAttesa.current = true
+      const s = await chiedi('casino_bjl_stato')
+      if (s && !s.seduto) await chiedi('casino_bjl_sala')
+      inAttesa.current = false
+    }
+    void giro()
+    const t = window.setInterval(() => void giro(), st?.seduto ? 1000 : 3000)
+    return () => { vivo = false; window.clearInterval(t) }
+  }, [chiedi, st?.seduto])
 
-  if (!stato) return <section className="slot-caricamento">{errore ? <p role="alert">{errore}</p> : <p>Preparo il tavolo…</p>}</section>
+  async function azione(rpc: string, args: Record<string, unknown> = {}) {
+    if (invio) return
+    setInvio(true); await chiedi(rpc, args); setInvio(false)
+  }
 
-  const t = stato.mano
-  const inCorso = t != null && t.stato !== 'finita'
-  const crediti = stato.crediti
-  const aggiungi = (f: number) => { if (puntata + f > 500) { setErrore('Al massimo 500 crediti a mano.'); return } if (puntata + f > crediti) { setErrore('Crediti insufficienti.'); return } setErrore(''); setPuntata((p) => p + f); suoni.moneta(f) }
-  const distribuisci = async () => { const p = puntata || ultima; if (!p) return; const r = await chiedi('casino_bj_punta', { p_puntata: p }); if (r) { setUltima(p); setPuntata(0) } }
-  const banco = t?.banco ?? []
-  const totBanco = t ? totale(banco.filter((c): c is number => c != null)) : null
-  const attiva = t?.mani[t.attiva]
-  const messaggio = errore ? <span className="slot-errore">{errore}</span>
-    : !t || t.stato === 'finita' ? (t ? (t.vinto > 0 ? `Hai portato a casa ${fmt(t.vinto)} crediti.` : 'Il banco vince questa mano.') : 'Scegli la puntata e distribuisci le carte.')
-      : t.stato === 'assicurazione' ? `Il banco mostra un asso: vuoi assicurarti per ${fmt(Math.floor(t.puntata / 2))} crediti?`
-        : t.mani.length > 1 ? `Mano ${t.attiva + 1} di ${t.mani.length}: carta o stai?` : 'Carta o stai?'
+  // ---------- Sala ----------
+  if (!st || (!st.seduto && !sala)) return <section className="slot-caricamento">{errore ? <p role="alert">{errore}</p> : <p>Preparo i tavoli…</p>}</section>
+
+  if (!st.seduto) {
+    const s = sala!
+    return <section className="bj" onPointerDown={() => { suoni.sblocca(); sbloccaMusica() }}>
+      <div className="slot-saldo">
+        <div><small>I tuoi crediti</small><strong><Contatore valore={s.crediti} /></strong></div>
+        <span className="slot-ricarica av-dal-vivo"><i aria-hidden="true" />LIVE</span>
+        <button type="button" className="slot-audio" aria-pressed={audio} aria-label={audio ? 'Togli i suoni' : 'Attiva i suoni'} onClick={() => setAudio((a) => !a)}>{audio ? '🔊' : '🔇'}</button>
+      </div>
+      <div className="bj-sala">
+        <div className="bj-insegna"><img src="/specialone-mark.svg" alt="" /><span>BLACKJACK</span><b>ONE</b></div>
+        <p className="bet-nota">Tavoli da massimo 4 giocatori contro un solo banco. Siediti dove vuoi o al primo posto libero.</p>
+        <button type="button" className="bj-distribuisci bj-siediti" disabled={invio} onClick={() => void azione('casino_bjl_siedi')}><span>SIEDITI</span><small>al primo posto libero</small></button>
+        {errore && <p className="slot-errore" role="alert">{errore}</p>}
+        {s.tavoli.length === 0 ? <p className="bet-nota">Nessun tavolo aperto: sedendoti ne apri uno.</p> : <ol className="bj-tavoli">
+          {s.tavoli.map((t) => <li key={t.id}>
+            <div><b>Tavolo {t.numero}</b><small>{t.posti.length}/4 giocatori</small></div>
+            <span className="bj-tavoli__posti">{[1, 2, 3, 4].map((n) => { const p = t.posti.find((x) => x.posto === n); return <span key={n} className={p ? 'is-pieno' : ''}>{p ? <Crest value={dati.teamById.get(p.team_id)?.stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(p.team_id)} size="small" /> : null}</span> })}</span>
+            <button type="button" className="bj-mossa bj-mossa--piccola" disabled={invio || t.posti.length >= 4} onClick={() => void azione('casino_bjl_siedi', { p_tavolo: t.id })}>{t.posti.length >= 4 ? 'Pieno' : 'Siediti'}</button>
+          </li>)}
+        </ol>}
+      </div>
+    </section>
+  }
+
+  // ---------- Tavolo ----------
+  const t = st.tavolo!, posti = st.posti ?? [], crediti = st.crediti ?? 0
+  const mio = posti.find((p) => p.mio)
+  const banco = t.banco ?? []
+  const totBanco = totale(banco.filter((c): c is number => c != null))
+  const mioTurno = t.fase === 'turni' && t.turno_posto === mio?.posto
+  const manoMia = mioTurno && mio ? mio.mani[t.turno_mano ?? 0] : undefined
+  const puoRaddoppiare = !!manoMia && manoMia.carte.length === 2 && crediti >= manoMia.puntata
+  const puoDividere = !!manoMia && !!mio && manoMia.carte.length === 2 && valore(manoMia.carte[0]) === valore(manoMia.carte[1]) && mio.mani.length < 4 && crediti >= manoMia.puntata
+  const inGioco = !!mio && mio.puntata > 0 && (t.fase === 'assicurazione' || t.fase === 'turni')
+  const nomeDi = (teamId: number) => dati.teamById.get(teamId)?.nome ?? '—'
+  const diTurno = posti.find((p) => p.posto === t.turno_posto)
+  const punta = async (nuova: number) => { if (nuova > 500) { setErrore('Al massimo 500 crediti a mano.'); return } await azione('casino_bjl_punta', { p_puntata: nuova }); if (nuova > 0) setUltima(nuova) }
+  const fraseFase = t.fase === 'attesa' ? 'In attesa di giocatori…'
+    : t.fase === 'puntate' ? (mio?.puntata ? `Puntata registrata: ${fmt(mio.puntata)}. Le carte tra poco.` : 'Puntate aperte: scegli le fiche.')
+      : t.fase === 'assicurazione' ? 'Il banco mostra un asso: assicurazione?'
+        : t.fase === 'turni' ? (mioTurno ? 'Tocca a te!' : `Tocca a ${diTurno ? nomeDi(diTurno.team_id) : '…'}`)
+          : 'Risultati'
 
   return <section className="bj" onPointerDown={() => { suoni.sblocca(); sbloccaMusica() }}>
     <div className="slot-saldo">
       <div><small>I tuoi crediti</small><strong><Contatore valore={crediti} /></strong></div>
-      <span className="slot-ricarica">+1.000 gratis alle 23:00</span>
+      <button type="button" className="bj-mossa bj-mossa--piccola" disabled={invio || inGioco} onClick={() => void azione('casino_bjl_alzati')}>Alzati</button>
       <button type="button" className="slot-audio" aria-pressed={audio} aria-label={audio ? 'Togli i suoni' : 'Attiva i suoni'} onClick={() => setAudio((a) => !a)}>{audio ? '🔊' : '🔇'}</button>
     </div>
 
     <div className="bj-tavolo">
-      <div className="bj-insegna"><img src="/specialone-mark.svg" alt="" /><span>BLACKJACK</span><b>ONE</b></div>
+      <div className="bj-insegna"><img src="/specialone-mark.svg" alt="" /><span>TAVOLO</span><b>{t.numero}</b></div>
       <p className="bj-regola">Il blackjack paga 3 a 2 · Il banco sta su tutti i 17</p>
-
+      <div className="bj-fase"><span>{fraseFase}</span>{t.fase !== 'risultato' && t.fase !== 'attesa' && <Conto fino={t.scadenza} />}</div>
       <div className="bj-zona bj-zona--banco">
-        <div className="bj-carte">{t ? banco.map((c, i) => <Carta key={`${t.id}-b${i}-${c ?? 'x'}`} c={c} ritardo={i * 140} />) : <><span className="bj-posto" /><span className="bj-posto" /></>}</div>
-        {t && totBanco && <span className="bj-totale">Banco {totBanco.tot}{t.stato !== 'finita' ? '' : totBanco.tot > 21 ? ' · sballa' : ''}</span>}
+        <div className="bj-carte">{banco.length ? banco.map((c, i) => <Carta key={`${t.giro}-b${i}-${c ?? 'x'}`} c={c} ritardo={i * 130} />) : <><span className="bj-posto" /><span className="bj-posto" /></>}</div>
+        {banco.length > 0 && <span className="bj-totale">Banco {totBanco.tot}{t.fase === 'risultato' && totBanco.tot > 21 ? ' · sballa' : ''}</span>}
       </div>
-
-      <div className={`bj-zona bj-zona--giocatore${t && t.mani.length > 1 ? ' is-divise' : ''}`}>
-        {t ? t.mani.map((m, i) => {
-          const tt = totale(m.carte), es = esitoMano(m)
-          return <div key={i} className={`bj-mano${inCorso && i === t.attiva ? ' is-attiva' : ''}${es ? ` is-${es.tipo}` : ''}`}>
-            <div className="bj-carte">{m.carte.map((c, k) => <Carta key={`${t.id}-${i}-${k}`} c={c} ritardo={k * 140} />)}</div>
-            <span className="bj-totale">{tt.morbida && tt.tot < 21 ? `${tt.tot - 10}/${tt.tot}` : tt.tot}{m.raddoppiata ? ' · ×2' : ''}</span>
-            <span className="bj-fiche-mano">{fmt(m.puntata)}</span>
-            {es && <span className={`bj-esito bj-esito--${es.tipo}`}>{es.testo}{(m.vinto ?? 0) > 0 ? ` +${fmt(m.vinto ?? 0)}` : ''}</span>}
+      <div className="bj-posti">
+        {[1, 2, 3, 4].map((n) => {
+          const p = posti.find((x) => x.posto === n)
+          if (!p) return <div key={n} className="bj-sedia is-vuota"><span>Posto libero</span></div>
+          const diTurnoQui = t.fase === 'turni' && t.turno_posto === n
+          return <div key={n} className={`bj-sedia${p.mio ? ' is-mia' : ''}${diTurnoQui ? ' is-turno' : ''}${p.assente ? ' is-assente' : ''}`}>
+            <div className="bj-sedia__testa">
+              <Crest value={dati.teamById.get(p.team_id)?.stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(p.team_id)} size="small" />
+              <b>{p.mio ? 'Tu' : nomeDi(p.team_id)}</b>
+              {p.puntata > 0 && <span className="bj-sedia__fiche">{fmt(p.mani.reduce((x, m) => x + m.puntata, 0) || p.puntata)}</span>}
+            </div>
+            {p.mani.length === 0 ? <small className="bj-sedia__stato">{t.fase === 'puntate' ? (p.puntata ? 'Ha puntato' : 'Sceglie…') : 'Non gioca'}</small>
+              : <div className="bj-sedia__mani">{p.mani.map((m, i) => {
+                const tt = totale(m.carte), es = esitoMano(m)
+                return <div key={i} className={`bj-mano bj-mano--piccola${diTurnoQui && t.turno_mano === i ? ' is-attiva' : ''}${es ? ` is-${es.tipo}` : ''}`}>
+                  <div className="bj-carte">{m.carte.map((c, k) => <Carta key={`${t.giro}-${n}-${i}-${k}`} c={c} ritardo={k * 130} />)}</div>
+                  <span className="bj-totale">{tt.morbida && tt.tot < 21 ? `${tt.tot - 10}/${tt.tot}` : tt.tot}{m.raddoppiata ? ' ×2' : ''}</span>
+                  {es && <span className={`bj-esito bj-esito--${es.tipo}`}>{es.testo}</span>}
+                </div>
+              })}</div>}
+            {p.vinto != null && p.puntata > 0 && t.fase === 'risultato' && <small className={`bj-sedia__vinto${p.vinto > 0 ? ' is-positivo' : ''}`}>{p.vinto > 0 ? `+${fmt(p.vinto)}` : 'nulla'}</small>}
           </div>
-        }) : <div className="bj-mano"><div className="bj-carte"><span className="bj-posto" /><span className="bj-posto" /></div></div>}
+        })}
       </div>
-      {t && t.assicurazione > 0 && <p className="bj-assicurazione">Assicurazione: {fmt(t.assicurazione)}</p>}
       <Festa key={festa} attiva={festa > 0} />
     </div>
 
-    <p className="slot-messaggio" role="status">{messaggio}</p>
+    <p className="slot-messaggio" role="status">{errore ? <span className="slot-errore">{errore}</span> : mioTurno ? 'Carta o stai? Hai 15 secondi, poi stai automaticamente.' : t.fase === 'puntate' ? 'Le fiche si sommano; puoi cambiare la puntata finché il tempo non scade.' : ' '}</p>
 
-    {t?.stato === 'assicurazione' ? <div className="bj-mosse">
-      <button type="button" className="bj-mossa bj-mossa--si" disabled={invio || crediti < Math.floor(t.puntata / 2)} onClick={() => void chiedi('casino_bj_assicura', { p_si: true })}>Assicurati</button>
-      <button type="button" className="bj-mossa" disabled={invio} onClick={() => void chiedi('casino_bj_assicura', { p_si: false })}>No grazie</button>
+    {t.fase === 'assicurazione' && mio && mio.puntata > 0 && !mio.assicurazione_decisa ? <div className="bj-mosse">
+      <button type="button" className="bj-mossa bj-mossa--si" disabled={invio || crediti < Math.floor(mio.puntata / 2)} onClick={() => void azione('casino_bjl_assicura', { p_si: true })}>Assicurati ({fmt(Math.floor(mio.puntata / 2))})</button>
+      <button type="button" className="bj-mossa" disabled={invio} onClick={() => void azione('casino_bjl_assicura', { p_si: false })}>No grazie</button>
     </div>
-      : inCorso && attiva ? <div className="bj-mosse">
-        <button type="button" className="bj-mossa bj-mossa--carta" disabled={invio} onClick={() => void chiedi('casino_bj_azione', { p_azione: 'carta' })}>Carta</button>
-        <button type="button" className="bj-mossa bj-mossa--stai" disabled={invio} onClick={() => void chiedi('casino_bj_azione', { p_azione: 'stai' })}>Stai</button>
-        <button type="button" className="bj-mossa" disabled={invio || !t.puo_raddoppiare || crediti < attiva.puntata} onClick={() => void chiedi('casino_bj_azione', { p_azione: 'raddoppia' })}>Raddoppia</button>
-        <button type="button" className="bj-mossa" disabled={invio || !t.puo_dividere || crediti < attiva.puntata} onClick={() => void chiedi('casino_bj_azione', { p_azione: 'dividi' })}>Dividi</button>
+      : mioTurno ? <div className="bj-mosse">
+        <button type="button" className="bj-mossa bj-mossa--carta" disabled={invio} onClick={() => void azione('casino_bjl_azione', { p_azione: 'carta' })}>Carta</button>
+        <button type="button" className="bj-mossa bj-mossa--stai" disabled={invio} onClick={() => void azione('casino_bjl_azione', { p_azione: 'stai' })}>Stai</button>
+        <button type="button" className="bj-mossa" disabled={invio || !puoRaddoppiare} onClick={() => void azione('casino_bjl_azione', { p_azione: 'raddoppia' })}>Raddoppia</button>
+        <button type="button" className="bj-mossa" disabled={invio || !puoDividere} onClick={() => void azione('casino_bjl_azione', { p_azione: 'dividi' })}>Dividi</button>
       </div>
-        : <div className="bj-puntata">
-          <div className="ct-fiche">{FICHE.map((f) => <button key={f} type="button" className={`fiche-casino fiche-casino--${f}`} disabled={invio} onClick={() => aggiungi(f)}><span>{f}</span></button>)}</div>
+        : (t.fase === 'puntate' || t.fase === 'attesa') && mio ? <div className="bj-puntata">
+          <div className="ct-fiche">{FICHE.map((f) => <button key={f} type="button" className={`fiche-casino fiche-casino--${f}`} disabled={invio || mio.puntata + f > Math.min(500, crediti + mio.puntata)} onClick={() => void punta(mio.puntata + f)}><span>{f}</span></button>)}</div>
           <div className="bj-puntata__riga">
-            <button type="button" className="bj-mossa bj-mossa--piccola" disabled={puntata === 0} onClick={() => setPuntata(0)}>Azzera</button>
-            <div className="ct-totale"><small>Puntata</small><b>{fmt(puntata || ultima)}</b></div>
-            <button type="button" className="bj-distribuisci" disabled={invio || !(puntata || ultima) || (puntata || ultima) > crediti} onClick={() => void distribuisci()}>
-              <span>DISTRIBUISCI</span><small>{puntata ? 'nuova puntata' : ultima ? 'stessa puntata' : 'scegli le fiche'}</small>
-            </button>
+            <button type="button" className="bj-mossa bj-mossa--piccola" disabled={invio || mio.puntata === 0} onClick={() => void punta(0)}>Azzera</button>
+            <div className="ct-totale"><small>La tua puntata</small><b>{fmt(mio.puntata)}</b></div>
+            <button type="button" className="bj-mossa bj-mossa--piccola" disabled={invio || !ultima || mio.puntata === ultima || ultima > crediti + mio.puntata} onClick={() => void punta(ultima)}>Ripeti {ultima ? fmt(ultima) : ''}</button>
           </div>
-        </div>}
+        </div> : null}
 
     <section className="slot-pannello">
       <button type="button" className="slot-pannello__tasto" aria-expanded={regole} onClick={() => setRegole((v) => !v)}>Come si gioca <span aria-hidden="true">{regole ? '−' : '+'}</span></button>
       {regole && <div className="slot-premi">
-        <p>Scopo: fare più punti del banco senza superare 21. Le figure valgono 10, l'asso 1 o 11, le altre carte il loro numero.</p>
-        <p>Scegli la puntata con le fiche (da 10 a 500) e premi <b>DISTRIBUISCI</b>: due carte a te, due al banco (una coperta). Poi <b>Carta</b> per pescarne un'altra, <b>Stai</b> per fermarti. <b>Raddoppia</b>: raddoppi la puntata e ricevi una sola carta. <b>Dividi</b>: con due carte dello stesso valore le separi in due mani (fino a 4; gli assi divisi ricevono una carta sola).</p>
-        <p>Il banco scopre la sua carta e pesca finché non arriva almeno a 17, poi si ferma. Vinci 1 a 1 se fai più punti del banco o se il banco supera 21; pareggio = puntata restituita. <b>Blackjack</b> (asso + figura o 10 con le prime due carte) paga 3 a 2.</p>
-        <p><b>Assicurazione</b>: se il banco mostra un asso puoi assicurarti per metà puntata; se il banco ha blackjack l'assicurazione paga 2 a 1.</p>
-        <p>Le carte le distribuisce il server da 6 mazzi rimescolati a ogni mano.</p>
+        <p>BlackjackOne è <b>live</b>: fino a 4 giocatori allo stesso tavolo contro un solo banco, e tutti vedono le carte di tutti.</p>
+        <p><b>Puntate</b> (15 secondi): tocca le fiche, si sommano (da 10 a 500); puoi cambiare o azzerare finché il tempo non scade. Chi non punta salta il giro ma resta seduto.</p>
+        <p><b>Turni</b>: si gioca un posto alla volta. Quando tocca a te hai 15 secondi per ogni decisione, poi stai automaticamente. <b>Carta</b> per pescare, <b>Stai</b> per fermarti, <b>Raddoppia</b> (raddoppi e ricevi una carta sola), <b>Dividi</b> (due carte dello stesso valore diventano due mani, fino a 4; gli assi divisi ricevono una carta sola).</p>
+        <p>Scopo: fare più punti del banco senza superare 21 (figure 10, asso 1 o 11). Il banco gioca una volta sola per tutti e pesca fino ad almeno 17. Vinci 1 a 1, pareggio = puntata indietro, <b>blackjack</b> 3 a 2. <b>Assicurazione</b> se il banco mostra un asso: metà puntata, paga 2 a 1 se il banco ha blackjack.</p>
+        <p>Se non ti colleghi per un minuto perdi il posto a fine mano. Le carte le distribuisce il server da 6 mazzi rimescolati a ogni giro.</p>
       </div>}
     </section>
   </section>
