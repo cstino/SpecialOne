@@ -1,12 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
+import type { useSeasonData } from '../lib/useSeasonData'
 import { Contatore, Festa, fmt, ridotto, useSuoni } from './Casino'
+import { Crest } from './Crest'
 
-// BetOne Casino' › AviatOne, l'Aviator a tema SpecialOne (supabase/migrations/20261020110000_casino_aviatone.sql).
-// Volo personale: una puntata, con incasso automatico opzionale (la seconda puntata dell'Aviator e' stata tolta il 20/10/2026). Il moltiplicatore dipende solo dal tempo
-// sull'orologio del SERVER (m = e^(0,075·t)); il punto in cui l'aereo vola via e' segreto e lo scopre il server.
-// Qui si disegna soltanto: il client chiede al server ogni 0,4 s come sta andando il volo.
+// BetOne Casino' › AviatOne LIVE, l'Aviator a tema SpecialOne (supabase/migrations/20261020140000_aviatone_live.sql).
+// Un solo aereo per lega, uguale per tutti: 7 s per puntare, volo, crash, 3 s di pausa, giro successivo.
+// Il moltiplicatore dipende solo dall'orologio del SERVER (m = e^(0,075·t)); il crash e' segreto finche' l'aereo non
+// vola via. La pagina chiede lo stato ogni mezzo secondo e disegna; incassi e crash li decide il server.
 
+type Dati = ReturnType<typeof useSeasonData>
 const K = 0.075
 const moltAl = (secondi: number) => Math.min(1000, Math.floor(Math.exp(K * Math.max(0, secondi)) * 100) / 100)
 const fx = (m: number) => `${m.toFixed(2)}×`
@@ -28,21 +31,21 @@ export const AEREO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1
 </svg>`
 export const AEREO_URL = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(AEREO_SVG)}`
 
-type Puntata = { puntata: number; auto: number | null; incassato: number | null }
-type Volo = { id: number; puntate: Puntata[]; totale: number; vinto: number; finito: boolean; trascorso: number; molt: number; crash: number | null; crediti?: number }
-type Pannello = { attivo: boolean; puntata: number; autoOn: boolean; auto: number }
-type Fase = 'pronto' | 'volo' | 'esploso'
+type Giocata = { team_id: number; puntata: number; incassato: number | null; vinto: number; mia: boolean; auto: number | null }
+type Giro = { id: number; apre: number; parte: number; finito: boolean; crash: number | null }
+type Stato = { adesso: number; giro: Giro; giocate: Giocata[]; crediti: number; storia: number[] }
+type Fase = 'puntate' | 'volo' | 'esploso'
+type Prenotata = { puntata: number; auto: number | null }
 
-export function AviatOne({ leagueId }: { leagueId: number }) {
-  const [crediti, setCrediti] = useState<number | null>(null)
-  const [storia, setStoria] = useState<number[]>([])
-  const [pannelli, setPannelli] = useState<Pannello[]>([
-    { attivo: true, puntata: 50, autoOn: false, auto: 2 },
-  ])
-  const [fase, setFase] = useState<Fase>('pronto')
-  const [volo, setVolo] = useState<Volo | null>(null)
+export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
+  const [stato, setStato] = useState<Stato | null>(null)
+  const [fase, setFase] = useState<Fase>('puntate')
+  const [puntata, setPuntata] = useState(50)
+  const [autoOn, setAutoOn] = useState(false)
+  const [auto, setAuto] = useState(2)
+  const [prenotata, setPrenotata] = useState<Prenotata | null>(null)
   const [errore, setErrore] = useState('')
-  const [messaggio, setMessaggio] = useState('Scegli le puntate e fai decollare l\'aereo.')
+  const [invio, setInvio] = useState(false)
   const [festa, setFesta] = useState(0)
   const [audio, setAudio] = useState(() => { try { return localStorage.getItem('slot-audio') !== '0' } catch { return true } })
   const suoni = useSuoni(audio)
@@ -50,84 +53,81 @@ export function AviatOne({ leagueId }: { leagueId: number }) {
 
   const tela = useRef<HTMLCanvasElement>(null)
   const scritta = useRef<HTMLDivElement>(null)
-  const valoriIncassa = useRef<Array<HTMLSpanElement | null>>([])
-  const faseRef = useRef<Fase>('pronto')
-  const inizio = useRef(0)               // performance.now() del decollo (allineato all'orologio del server)
-  const crashRef = useRef<number | null>(null)
+  const barra = useRef<HTMLDivElement>(null)
+  const valoreIncassa = useRef<HTMLSpanElement | null>(null)
+  const scarto = useRef(0)               // orologio del server - orologio del telefono (ms)
+  const statoRef = useRef<Stato | null>(null)
+  const faseRef = useRef<Fase>('puntate')
   const esplosoAl = useRef(0)
-  const voloRef = useRef<Volo | null>(null)
+  const prenotataRef = useRef<Prenotata | null>(null)
   const inAttesa = useRef(false)
 
-  useEffect(() => { faseRef.current = fase }, [fase])
-  useEffect(() => { voloRef.current = volo }, [volo])
+  useEffect(() => { prenotataRef.current = prenotata }, [prenotata])
   useEffect(() => { try { localStorage.setItem('slot-audio', audio ? '1' : '0') } catch { /* preferenza solo locale */ } }, [audio])
+  const oraServer = () => Date.now() + scarto.current
 
-  // Allinea l'orologio locale a quello del server: trascorso = secondi di volo quando il server ha risposto.
-  const allinea = (trascorso: number, t0: number, t1: number) => { inizio.current = t1 - trascorso * 1000 - (t1 - t0) / 2 }
-
-  const applica = useCallback((v: Volo) => {
-    const prima = voloRef.current
-    // Incassi nuovi (anche quelli automatici scoperti dal controllo).
-    v.puntate.forEach((p, i) => {
-      if (p.incassato != null && prima?.puntate[i]?.incassato == null) {
-        suoniRef.current.vincita()
-        setMessaggio(`Puntata ${i + 1} incassata a ${fx(p.incassato)}: +${fmt(Math.floor(p.puntata * p.incassato))} crediti!`)
-      }
-    })
-    setVolo(v); voloRef.current = v
-    if (v.crediti != null) setCrediti(v.crediti)
-    if (v.finito && v.crash != null && faseRef.current === 'volo') {
-      crashRef.current = v.crash; esplosoAl.current = performance.now()
-      faseRef.current = 'esploso'; setFase('esploso')
-      setStoria((s) => [v.crash as number, ...s].slice(0, 20))
-      const aperte = v.puntate.some((p) => p.incassato == null)
-      suoniRef.current.stop(0)
-      if (aperte) setMessaggio(v.vinto > 0 ? `Volato via a ${fx(v.crash)}. In tutto +${fmt(v.vinto)} crediti.` : `Volato via a ${fx(v.crash)}!`)
-      else setMessaggio(`Volato via a ${fx(v.crash)}. Hai incassato +${fmt(v.vinto)} crediti.`)
-      if (v.vinto >= v.totale * 20) { suoniRef.current.grande(); setFesta((n) => n + 1) }
-      window.setTimeout(() => { if (faseRef.current === 'esploso') { faseRef.current = 'pronto'; setFase('pronto') } }, ridotto() ? 600 : 2600)
+  // Nuovo stato dal server: fasi del giro, suoni, incassi, prenotazione per il volo successivo.
+  const applica = useCallback((s: Stato, t0: number, t1: number) => {
+    scarto.current = s.adesso - (t0 + t1) / 2
+    const prima = statoRef.current
+    const nuovoGiro = !prima || prima.giro.id !== s.giro.id
+    const miaPrima = prima && !nuovoGiro ? prima.giocate.find((q) => q.mia) : undefined
+    const mia = s.giocate.find((q) => q.mia)
+    if (mia?.incassato != null && miaPrima && miaPrima.incassato == null) {
+      suoniRef.current.vincita()
+      if (mia.vinto >= mia.puntata * 20) { suoniRef.current.grande(); setFesta((n) => n + 1) }
     }
+    if (prima && !nuovoGiro) {
+      const nuoviIncassi = s.giocate.filter((q) => !q.mia && q.incassato != null).length - prima.giocate.filter((q) => !q.mia && q.incassato != null).length
+      if (nuoviIncassi > 0) suoniRef.current.moneta(nuoviIncassi)
+    }
+    if (s.giro.crash != null && faseRef.current !== 'esploso') {
+      esplosoAl.current = performance.now(); faseRef.current = 'esploso'; setFase('esploso'); suoniRef.current.stop(0)
+    } else if (s.giro.crash == null && nuovoGiro) {
+      faseRef.current = 'puntate'; setFase('puntate')
+    }
+    statoRef.current = s; setStato(s)
   }, [])
 
-  const carica = useCallback(async () => {
-    const t0 = performance.now()
-    const { data, error } = await supabase.rpc('casino_av_stato', { p_league_id: leagueId })
-    const t1 = performance.now()
-    if (error) { setErrore(error.message); return }
-    const s = data as { crediti: number; volo: Volo | null; storia: number[] }
-    setCrediti(s.crediti); setStoria((s.storia ?? []).map(Number))
-    // Volo lasciato in aria (app chiusa): si riprende da dove e'.
-    if (s.volo) {
-      const pv = s.volo.puntate
-      setPannelli((ps) => [
-        { ...ps[0], attivo: true, puntata: pv[0].puntata, autoOn: pv[0].auto != null, auto: pv[0].auto ?? ps[0].auto },
-      ])
-      allinea(s.volo.trascorso, t0, t1); setVolo(s.volo); voloRef.current = s.volo; faseRef.current = 'volo'; setFase('volo'); setMessaggio('Il tuo aereo è ancora in volo!')
-    }
-  }, [leagueId])
-  useEffect(() => { void carica() }, [carica])
+  const chiedi = useCallback(async (rpc: string, args: Record<string, unknown> = {}) => {
+    const t0 = Date.now()
+    const { data, error } = await supabase.rpc(rpc, { p_league_id: leagueId, ...args })
+    const t1 = Date.now()
+    if (error) { setErrore(error.message); return null }
+    applica(data as Stato, t0, t1)
+    return data as Stato
+  }, [leagueId, applica])
 
-  // Controllo del volo ogni 0,4 s (incassi automatici e crash li decide il server).
+  // Il giro della lega si segue chiedendo lo stato ogni mezzo secondo (si ferma se l'app e' in secondo piano).
   useEffect(() => {
-    if (fase !== 'volo') return
-    const t = window.setInterval(async () => {
-      if (inAttesa.current) return
+    let vivo = true
+    const giro = async () => {
+      if (!vivo || inAttesa.current || document.hidden) return
       inAttesa.current = true
-      const t0 = performance.now()
-      const { data, error } = await supabase.rpc('casino_av_controlla', { p_league_id: leagueId, p_salta: false })
-      const t1 = performance.now()
+      const s = await chiedi('casino_av_live')
       inAttesa.current = false
-      if (error) return
-      const v = data as Volo
-      if (!v.finito) allinea(v.trascorso, t0, t1)
-      applica(v)
-    }, 400)
-    return () => window.clearInterval(t)
-  }, [fase, leagueId, applica])
+      // Puntata prenotata durante il volo: si piazza appena si aprono le puntate del giro dopo.
+      const p = prenotataRef.current
+      if (s && p && !s.giro.finito && s.adesso < s.giro.parte - 400 && !s.giocate.some((q) => q.mia)) {
+        setPrenotata(null); prenotataRef.current = null
+        await chiedi('casino_av_punta', { p_puntata: p.puntata, p_auto: p.auto })
+      }
+    }
+    void giro()
+    const t = window.setInterval(() => void giro(), 500)
+    return () => { vivo = false; window.clearInterval(t) }
+  }, [chiedi])
+
+  // Decollo: la fase passa a "volo" sull'orologio (allineato al server), senza aspettare la risposta successiva.
+  useEffect(() => {
+    if (fase !== 'puntate' || !stato) return
+    const resto = stato.giro.parte - oraServer()
+    const t = window.setTimeout(() => { if (faseRef.current === 'puntate' && statoRef.current?.giro.id === stato.giro.id) { faseRef.current = 'volo'; setFase('volo'); suoniRef.current.leva() } }, Math.max(0, resto))
+    return () => window.clearTimeout(t)
+  }, [fase, stato?.giro.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------- Disegno ----------
-  // Parte quando la tela esiste davvero (durante il caricamento c'e' solo la scritta "Accendo i motori").
-  const caricato = crediti != null
+  const caricato = stato != null
   useEffect(() => {
     const cv = tela.current; if (!cv) return
     const c = cv.getContext('2d'); if (!c) return
@@ -144,7 +144,6 @@ export function AviatOne({ leagueId }: { leagueId: number }) {
       c.save(); c.translate(x, y); c.rotate(ang)
       if (aereo.complete && aereo.naturalWidth) c.drawImage(aereo, -w * 0.9, -h * 0.55, w, h)
       if (logo.complete && logo.naturalWidth) c.drawImage(logo, -w * 0.9 + w * 0.045, -h * 0.55 + h * 0.2, w * 0.12, w * 0.12)
-      // elica che gira
       const s = Math.abs(Math.sin(t / 30))
       c.fillStyle = 'rgba(255,241,176,.75)'
       c.beginPath(); c.ellipse(-w * 0.9 + w * 0.93, -h * 0.55 + h * 0.54, 1.6, h * 0.42 * (0.3 + 0.7 * s), 0, 0, Math.PI * 2); c.fill()
@@ -152,9 +151,8 @@ export function AviatOne({ leagueId }: { leagueId: number }) {
     }
 
     const passo = (adesso: number) => {
-      const f = faseRef.current
+      const f = faseRef.current, s = statoRef.current
       c.clearRect(0, 0, W, H)
-      // Raggi che ruotano dal basso a sinistra (come la pista di Aviator), viola SpecialOne.
       const g = c.createRadialGradient(0, H, 0, 0, H, Math.max(W, H) * 1.3)
       g.addColorStop(0, '#3a1466'); g.addColorStop(1, '#0d0518')
       c.fillStyle = g; c.fillRect(0, 0, W, H)
@@ -164,38 +162,37 @@ export function AviatOne({ leagueId }: { leagueId: number }) {
       c.restore()
 
       const pad = 14, base = H - 18, sinistra = 18
-      // puntini degli assi
       c.fillStyle = 'rgba(255,255,255,.25)'
       for (let i = 0; i < 10; i++) { c.beginPath(); c.arc(sinistra + i * (W - sinistra - pad) / 9, H - 7, 1.5, 0, Math.PI * 2); c.fill() }
       for (let i = 0; i < 6; i++) { c.beginPath(); c.arc(7, base - i * (base - pad) / 5, 1.5, 0, Math.PI * 2); c.fill() }
 
-      let testo = '', colore = '#fff'
-      if (f === 'pronto') {
+      let testo = '', colore = '#fff', avanzamento = -1
+      if (!s || f === 'puntate') {
         disegnaAereo(sinistra + Math.min(96, W * 0.24) * 0.95, base - 6, 0, adesso)
-        testo = ''
+        if (s) {
+          const resto = Math.max(0, s.giro.parte - oraServer())
+          testo = `${Math.ceil(resto / 1000)}`
+          avanzamento = 1 - resto / Math.max(1, s.giro.parte - s.giro.apre)
+        }
       } else {
-        const t = f === 'volo' ? (adesso - inizio.current) / 1000 : Math.log(Math.max(1, crashRef.current ?? 1)) / K
-        const m = f === 'volo' ? moltAl(t) : (crashRef.current ?? 1)
+        const crash = s.giro.crash
+        const t = f === 'volo' ? (oraServer() - s.giro.parte) / 1000 : Math.log(Math.max(1, crash ?? 1)) / K
+        const m = f === 'volo' ? moltAl(t) : (crash ?? 1)
         const maxT = Math.max(9, t * 1.18), maxM = Math.max(1.8, m * 1.22)
-        const px = (s: number) => sinistra + (s / maxT) * (W - sinistra - pad)
+        const px = (x: number) => sinistra + (x / maxT) * (W - sinistra - pad)
         const py = (mm: number) => base - ((mm - 1) / (maxM - 1)) * (base - pad)
-        // curva e area sotto
-        c.beginPath(); c.moveTo(px(0), py(1))
         const n = 60
-        for (let i = 1; i <= n; i++) { const s = t * i / n; c.lineTo(px(s), py(Math.min(m, Math.exp(K * s)))) }
+        const curva = () => { c.beginPath(); c.moveTo(px(0), py(1)); for (let i = 1; i <= n; i++) { const x = t * i / n; c.lineTo(px(x), py(Math.min(m, Math.exp(K * x)))) } }
         const xt = px(t), yt = py(m)
-        c.lineTo(xt, base); c.lineTo(px(0), base); c.closePath()
+        curva(); c.lineTo(xt, base); c.lineTo(px(0), base); c.closePath()
         const ga = c.createLinearGradient(0, yt, 0, base); ga.addColorStop(0, 'rgba(155,92,255,.55)'); ga.addColorStop(1, 'rgba(155,92,255,.05)')
         c.fillStyle = ga; c.fill()
-        c.beginPath(); c.moveTo(px(0), py(1))
-        for (let i = 1; i <= n; i++) { const s = t * i / n; c.lineTo(px(s), py(Math.min(m, Math.exp(K * s)))) }
-        c.strokeStyle = '#f6c453'; c.lineWidth = 3.5; c.lineJoin = 'round'; c.shadowColor = 'rgba(246,196,83,.6)'; c.shadowBlur = 10; c.stroke(); c.shadowBlur = 0
-        // aereo in punta (in volo ondeggia un po'; quando esplode scappa in alto a destra)
+        curva(); c.strokeStyle = '#f6c453'; c.lineWidth = 3.5; c.lineJoin = 'round'; c.shadowColor = 'rgba(246,196,83,.6)'; c.shadowBlur = 10; c.stroke(); c.shadowBlur = 0
         const pend = Math.atan2(py(Math.exp(K * Math.max(0, t - 0.3))) - yt, xt - px(Math.max(0, t - 0.3)))
         if (f === 'volo') {
-          const dondola = fermo ? 0 : Math.sin(adesso / 400) * 3
-          disegnaAereo(xt, yt + dondola, Math.max(-0.6, Math.min(0, pend)), adesso)
+          disegnaAereo(xt, yt + (fermo ? 0 : Math.sin(adesso / 400) * 3), Math.max(-0.6, Math.min(0, pend)), adesso)
           testo = fx(m)
+          if (valoreIncassa.current) valoreIncassa.current.textContent = fmt(Math.floor((s.giocate.find((q) => q.mia)?.puntata ?? 0) * m))
         } else {
           const dt = adesso - esplosoAl.current
           if (dt < 900) disegnaAereo(xt + dt * 0.7, yt - dt * 0.45, -0.5, adesso)
@@ -203,16 +200,10 @@ export function AviatOne({ leagueId }: { leagueId: number }) {
         }
       }
       if (scritta.current) {
-        scritta.current.dataset.fase = f
         const numero = scritta.current.querySelector('b'); if (numero && numero.textContent !== testo) numero.textContent = testo
         scritta.current.style.color = colore
       }
-      // valori sui bottoni INCASSA
-      const v = voloRef.current
-      if (f === 'volo' && v) {
-        const m = moltAl((adesso - inizio.current) / 1000)
-        v.puntate.forEach((p, i) => { const el = valoriIncassa.current[i]; if (el && p.incassato == null) el.textContent = fmt(Math.floor(p.puntata * m)) })
-      }
+      if (barra.current) barra.current.style.transform = `scaleX(${Math.max(0, Math.min(1, avanzamento))})`
       raf = requestAnimationFrame(passo)
     }
     raf = requestAnimationFrame(passo)
@@ -220,113 +211,95 @@ export function AviatOne({ leagueId }: { leagueId: number }) {
   }, [caricato])
 
   // ---------- Azioni ----------
-  const scelte = pannelli.filter((p) => p.attivo)
-  const totale = scelte.reduce((s, p) => s + p.puntata, 0)
-  const puoiPartire = fase === 'pronto' && crediti != null && scelte.length > 0 && totale <= crediti
-
-  const cambia = (i: number, f: (p: Pannello) => Pannello) => setPannelli((ps) => ps.map((p, k) => (k === i ? f(p) : p)))
-
-  async function decolla() {
-    if (!puoiPartire || crediti == null) return
-    setErrore(''); suoni.leva()
-    const t0 = performance.now()
-    const { data, error } = await supabase.rpc('casino_av_parti', { p_league_id: leagueId, p_puntate: scelte.map((p) => ({ puntata: p.puntata, auto: p.autoOn ? p.auto : null })) })
-    const t1 = performance.now()
-    if (error) { setErrore(error.message); return }
-    const v = data as Volo
-    allinea(v.trascorso, t0, t1)
-    crashRef.current = null
-    setVolo(v); voloRef.current = v
-    if (v.crediti != null) setCrediti(v.crediti)
-    faseRef.current = 'volo'; setFase('volo')
-    setMessaggio('Decollo! Incassa prima che voli via.')
+  async function punta() {
+    if (invio) return
+    setErrore('')
+    if (fase !== 'puntate') { setPrenotata({ puntata, auto: autoOn ? auto : null }); return }
+    setInvio(true); await chiedi('casino_av_punta', { p_puntata: puntata, p_auto: autoOn ? auto : null }); setInvio(false)
   }
+  async function ritira() { if (invio) return; setInvio(true); await chiedi('casino_av_ritira'); setInvio(false) }
+  async function incassa() { if (invio) return; setInvio(true); await chiedi('casino_av_incassa_live'); setInvio(false) }
 
-  async function incassa(i: number) {
-    const v = voloRef.current
-    if (fase !== 'volo' || !v || v.puntate[i]?.incassato != null) return
-    const { data, error } = await supabase.rpc('casino_av_incassa', { p_league_id: leagueId, p_indice: i })
-    if (error) { setErrore(error.message); return }
-    applica(data as Volo)
-  }
+  if (!stato) return <section className="slot-caricamento">{errore ? <p role="alert">{errore}</p> : <p>Accendo i motori…</p>}</section>
 
-  async function salta() {
-    const { data, error } = await supabase.rpc('casino_av_controlla', { p_league_id: leagueId, p_salta: true })
-    if (!error) applica(data as Volo)
-  }
+  const mia = stato.giocate.find((q) => q.mia)
+  const crediti = stato.crediti
+  const bloccati = fase !== 'puntate' || mia != null
+  const puntatoTot = stato.giocate.reduce((t, q) => t + q.puntata, 0)
+  const messaggio = errore ? <span className="slot-errore">{errore}</span>
+    : fase === 'puntate' ? (mia ? `Sei a bordo con ${fmt(mia.puntata)} crediti${mia.auto ? `, incasso automatico a ${fx(mia.auto)}` : ''}.` : 'Puntate aperte: sali a bordo prima del decollo!')
+      : fase === 'volo' ? (mia ? (mia.incassato != null ? `Incassato a ${fx(mia.incassato)}: +${fmt(mia.vinto)} crediti!` : 'Incassa prima che voli via!') : prenotata ? 'Puntata prenotata per il prossimo volo.' : 'Volo in corso: puoi prenotare la puntata per il prossimo.')
+        : (mia ? (mia.incassato != null ? `Volato via a ${fx(stato.giro.crash ?? 1)}. Hai incassato +${fmt(mia.vinto)} crediti.` : `Volato via a ${fx(stato.giro.crash ?? 1)}! Puntata persa.`) : `Volato via a ${fx(stato.giro.crash ?? 1)}.`)
 
-  if (crediti == null) return <section className="slot-caricamento">{errore ? <p role="alert">{errore}</p> : <p>Accendo i motori…</p>}</section>
-
-  const tutteIncassate = fase === 'volo' && volo != null && volo.puntate.every((p) => p.incassato != null)
-  // Durante il volo i pannelli mostrano le puntate davvero giocate (nell'ordine dei pannelli attivi).
-  const giocataDi = (i: number) => {
-    if (!volo || fase === 'pronto') return null
-    const k = pannelli.slice(0, i + 1).filter((p) => p.attivo).length - 1
-    return pannelli[i].attivo ? { indice: k, p: volo.puntate[k] } : null
-  }
+  let azione: ReactNode
+  if (fase === 'puntate' && mia) azione = <button type="button" className="av-azione av-azione--annulla" disabled={invio} onClick={() => void ritira()}><small>A BORDO</small><b>Annulla</b></button>
+  else if (fase === 'volo' && mia && mia.incassato == null) azione = <button type="button" className="av-azione av-azione--incassa" disabled={invio} onClick={() => void incassa()}><small>INCASSA</small><b><span ref={valoreIncassa}>{fmt(mia.puntata)}</span></b>{mia.auto != null && <i>auto a {fx(mia.auto)}</i>}</button>
+  else if (mia && mia.incassato != null) azione = <div className="av-azione av-azione--vinto"><small>INCASSATA</small><b>{fx(mia.incassato)}</b><i>+{fmt(mia.vinto)}</i></div>
+  else if (fase === 'esploso' && mia) azione = <div className="av-azione av-azione--perso"><small>VOLATO VIA</small><b>Persa</b></div>
+  else if (prenotata) azione = <button type="button" className="av-azione av-azione--annulla" onClick={() => setPrenotata(null)}><small>PRENOTATA</small><b>Annulla</b></button>
+  else azione = <button type="button" className="av-azione av-azione--punta" disabled={puntata > crediti} onClick={() => void punta()}>
+    <small>{fase === 'puntate' ? 'PUNTA' : 'PROSSIMO VOLO'}</small><b>{fmt(puntata)}</b>
+  </button>
 
   return <section className="av" onPointerDown={() => suoni.sblocca()}>
     <div className="slot-saldo">
       <div><small>I tuoi crediti</small><strong><Contatore valore={crediti} /></strong></div>
-      <span className="slot-ricarica">+1.000 gratis alle 23:00</span>
+      <span className="slot-ricarica av-dal-vivo"><i aria-hidden="true" />LIVE</span>
       <button type="button" className="slot-audio" aria-pressed={audio} aria-label={audio ? 'Togli i suoni' : 'Attiva i suoni'} onClick={() => setAudio((a) => !a)}>{audio ? '🔊' : '🔇'}</button>
     </div>
 
-    {storia.length > 0 && <ol className="av-storia" aria-label="Ultimi voli">
-      {storia.map((c, i) => <li key={i} style={{ color: coloreCrash(c) }}>{fx(c)}</li>)}
+    {stato.storia.length > 0 && <ol className="av-storia" aria-label="Ultimi voli della lega">
+      {stato.storia.map((c, i) => <li key={i} style={{ color: coloreCrash(Number(c)) }}>{fx(Number(c))}</li>)}
     </ol>}
 
     <div className="av-cielo">
       <div className="av-insegna"><img src="/specialone-mark.svg" alt="" /><span>AVIAT</span><b>ONE</b></div>
       <canvas ref={tela} className="av-tela" aria-hidden="true" />
-      <div ref={scritta} className="av-molt" aria-live="off">
+      <div ref={scritta} className={`av-molt av-molt--${fase}`} aria-live="off">
         {fase === 'esploso' && <em>VOLATO VIA!</em>}
+        {fase === 'puntate' && <em className="av-molt__pronto">Decollo tra</em>}
         <b />
-        {fase === 'pronto' && <span className="av-molt__pronto">Pronto al decollo</span>}
+        {fase === 'puntate' && <div className="av-molt__barra"><div ref={barra} /></div>}
       </div>
       <Festa key={festa} attiva={festa > 0} />
     </div>
 
-    <p className="slot-messaggio" role="status">{errore ? <span className="slot-errore">{errore}</span> : messaggio}</p>
+    <p className="slot-messaggio" role="status">{messaggio}</p>
 
-    <div className="av-pannelli">
-      {pannelli.map((p, i) => {
-        const g = giocataDi(i)
-        const inVolo = fase !== 'pronto'
-        return <div key={i} className={`av-pannello${p.attivo ? ' is-attivo' : ''}`}>
-          <div className="av-pannello__testa"><span>La tua puntata</span></div>
-          <div className="av-pannello__corpo">
-            <div className="av-importo">
-              <button type="button" aria-label="Meno" disabled={inVolo || p.puntata <= 10} onClick={() => cambia(i, (x) => ({ ...x, puntata: Math.max(10, x.puntata - 10) }))}>−</button>
-              <b>{fmt(p.puntata)}</b>
-              <button type="button" aria-label="Più" disabled={inVolo || p.puntata >= 500} onClick={() => cambia(i, (x) => ({ ...x, puntata: Math.min(500, x.puntata + 10) }))}>+</button>
-            </div>
-            <div className="av-fiche">{FICHE.map((f) => <button key={f} type="button" disabled={inVolo} aria-pressed={p.puntata === f} className={`fiche-casino fiche-casino--${f}${p.puntata === f ? ' is-scelta' : ''}`} onClick={() => cambia(i, (x) => ({ ...x, puntata: f }))}><span>{f}</span></button>)}</div>
-            <div className="av-auto">
-              <button type="button" role="switch" aria-checked={p.autoOn} className="av-interruttore av-interruttore--piccolo" disabled={inVolo} onClick={() => cambia(i, (x) => ({ ...x, autoOn: !x.autoOn }))}><i /></button>
-              <span>Incasso auto</span>
-              <button type="button" aria-label="Meno" disabled={inVolo || !p.autoOn || p.auto <= AUTO[0]} onClick={() => cambia(i, (x) => ({ ...x, auto: AUTO[Math.max(0, AUTO.indexOf(x.auto) - 1)] }))}>−</button>
-              <b className={p.autoOn ? '' : 'is-spento'}>{fx(p.auto)}</b>
-              <button type="button" aria-label="Più" disabled={inVolo || !p.autoOn || p.auto >= 1000} onClick={() => cambia(i, (x) => ({ ...x, auto: AUTO[Math.min(AUTO.length - 1, AUTO.indexOf(x.auto) + 1)] }))}>+</button>
-            </div>
-          </div>
-          {g && (g.p?.incassato != null
-            ? <div className="av-esito av-esito--vinto">Incassata a {fx(g.p.incassato)} · +{fmt(Math.floor(g.p.puntata * g.p.incassato))}</div>
-            : fase === 'volo'
-              ? <button type="button" className="av-incassa" onClick={() => void incassa(g.indice)}>
-                <small>INCASSA</small><b><span ref={(el) => { valoriIncassa.current[g.indice] = el }}>{fmt(g.p?.puntata ?? 0)}</span></b>
-                {g.p?.auto != null && <i>auto a {fx(g.p.auto)}</i>}
-              </button>
-              : <div className="av-esito av-esito--perso">Persa</div>)}
+    <div className="av-pannello is-attivo">
+      <div className="av-pannello__corpo">
+        <div className="av-importo">
+          <button type="button" aria-label="Meno" disabled={bloccati || puntata <= 10} onClick={() => setPuntata((x) => Math.max(10, x - 10))}>−</button>
+          <b>{fmt(puntata)}</b>
+          <button type="button" aria-label="Più" disabled={bloccati || puntata >= 500} onClick={() => setPuntata((x) => Math.min(500, x + 10))}>+</button>
         </div>
-      })}
+        <div className="av-fiche">{FICHE.map((f) => <button key={f} type="button" disabled={bloccati} aria-pressed={puntata === f} className={`fiche-casino fiche-casino--${f}${puntata === f ? ' is-scelta' : ''}`} onClick={() => setPuntata(f)}><span>{f}</span></button>)}</div>
+        <div className="av-auto">
+          <button type="button" role="switch" aria-checked={autoOn} className="av-interruttore av-interruttore--piccolo" disabled={bloccati} onClick={() => setAutoOn((x) => !x)}><i /></button>
+          <span>Incasso auto</span>
+          <button type="button" aria-label="Meno" disabled={bloccati || !autoOn || auto <= AUTO[0]} onClick={() => setAuto((x) => AUTO[Math.max(0, AUTO.indexOf(x) - 1)])}>−</button>
+          <b className={autoOn ? '' : 'is-spento'}>{fx(auto)}</b>
+          <button type="button" aria-label="Più" disabled={bloccati || !autoOn || auto >= 1000} onClick={() => setAuto((x) => AUTO[Math.min(AUTO.length - 1, AUTO.indexOf(x) + 1)])}>+</button>
+        </div>
+      </div>
+      {azione}
     </div>
 
-    {fase === 'volo'
-      ? <button type="button" className="av-decolla av-decolla--salta" disabled={!tutteIncassate} onClick={() => void salta()}>{tutteIncassate ? 'Fallo volare via' : 'In volo…'}</button>
-      : <button type="button" className="av-decolla" disabled={!puoiPartire} onClick={() => void decolla()}>
-        <span>DECOLLA</span><small>{fmt(totale)} crediti</small>
-      </button>}
+    <section className="av-giocate">
+      <header><h2>Puntate del volo</h2><span>{stato.giocate.length} a bordo · {fmt(puntatoTot)} crediti</span></header>
+      {stato.giocate.length === 0 ? <p className="bet-nota">Nessuno a bordo per ora.</p> : <ol>
+        {stato.giocate.map((q, i) => {
+          const t = dati.teamById.get(q.team_id)
+          const persa = fase === 'esploso' && q.incassato == null
+          return <li key={`${q.team_id}-${i}`} className={`${q.mia ? 'is-mia' : ''}${q.incassato != null ? ' is-incassata' : ''}${persa ? ' is-persa' : ''}`}>
+            <span className="bet-giocatori__stemma"><Crest value={t?.stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(q.team_id)} size="small" /></span>
+            <span className="av-giocate__nome">{t?.nome ?? '—'}</span>
+            <span className="av-giocate__puntata">{fmt(q.puntata)}</span>
+            <span className="av-giocate__esito">{q.incassato != null ? <><b>{fx(q.incassato)}</b><i>+{fmt(q.vinto)}</i></> : persa ? '—' : ''}</span>
+          </li>
+        })}
+      </ol>}
+    </section>
 
     <section className="slot-pannello">
       <AviatOneRegole />
@@ -339,11 +312,11 @@ function AviatOneRegole() {
   return <>
     <button type="button" className="slot-pannello__tasto" aria-expanded={aperte} onClick={() => setAperte((v) => !v)}>Come si gioca <span aria-hidden="true">{aperte ? '−' : '+'}</span></button>
     {aperte && <div className="slot-premi">
-      <p>Scegli quanto puntare (da 10 a 500 crediti) e premi <b>DECOLLA</b>. L'aereo parte e il moltiplicatore sale: 1,00×, 1,50×, 2×… finché a un certo punto l'aereo <b>vola via</b>.</p>
-      <p>Premi <b>INCASSA</b> quando vuoi: vinci la puntata per il moltiplicatore di quel momento. Se l'aereo vola via prima che incassi, la puntata è persa.</p>
-      <p><b>Incasso automatico</b>: se lo accendi, la puntata si incassa da sola appena il moltiplicatore arriva al valore scelto (se l'aereo ci arriva).</p>
-      <p>Il moltiplicatore cresce sempre alla stessa velocità (2× dopo circa 9 secondi, 10× dopo circa 31). Il punto in cui l'aereo vola via lo estrae il server al decollo e nessuno lo vede prima: a volte esplode subito, a volte arriva a 100× e oltre. Qualunque strategia tu usi, in media si recupera circa il 94% di quello che si punta.</p>
-      <p>In alto ci sono i tuoi ultimi voli: in azzurro sotto 2×, in viola fino a 10×, in rosa sopra.</p>
+      <p>AviatOne è <b>live</b>: l'aereo è uno solo per tutta la lega e tutti vedono lo stesso volo. I voli si susseguono senza sosta: <b>7 secondi per puntare</b>, poi il decollo, poi l'aereo vola via e dopo 3 secondi si riparte.</p>
+      <p>Scegli quanto puntare (da 10 a 500 crediti) e premi <b>PUNTA</b> prima del decollo; finché le puntate sono aperte puoi annullare. Se il volo è già partito, puoi <b>prenotare</b> la puntata per il volo successivo.</p>
+      <p>Durante il volo il moltiplicatore sale: premi <b>INCASSA</b> quando vuoi e vinci la puntata per il moltiplicatore di quel momento. Se l'aereo vola via prima, la puntata è persa. Con l'<b>incasso automatico</b> la puntata si incassa da sola appena il moltiplicatore arriva al valore scelto.</p>
+      <p>Il moltiplicatore cresce sempre alla stessa velocità (2× dopo circa 9 secondi, 10× dopo circa 31). Il punto in cui l'aereo vola via lo estrae il server prima che si chiudano le puntate e nessuno lo vede prima. In media si recupera circa il 94% di quello che si punta.</p>
+      <p>Sotto vedi chi è a bordo, quanto ha puntato e a che moltiplicatore incassa. In alto gli ultimi voli della lega: in azzurro sotto 2×, in viola fino a 10×, in rosa sopra.</p>
     </div>}
   </>
 }
