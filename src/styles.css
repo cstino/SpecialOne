@@ -6586,3 +6586,5 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .av-giocate__esito b { color: #7dffb5; }
 .av-giocate__esito i { font-style: normal; color: #f6c453; font-weight: 800; }
 @media (prefers-reduced-motion: reduce) { .av-azione--incassa, .av-dal-vivo i { animation: none; } }
+.av-storia__vuota { color: #8f86a3; font-weight: 700 !important; }
+.av-molt--volo b { text-shadow: 0 0 22px currentColor, 0 4px 18px rgba(0,0,0,.6); }

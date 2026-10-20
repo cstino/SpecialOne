@@ -6,16 +6,18 @@ import { Crest } from './Crest'
 
 // BetOne Casino' › AviatOne LIVE, l'Aviator a tema SpecialOne (supabase/migrations/20261020140000_aviatone_live.sql).
 // Un solo aereo per lega, uguale per tutti: 7 s per puntare, volo, crash, 3 s di pausa, giro successivo.
-// Il moltiplicatore dipende solo dall'orologio del SERVER (m = e^(0,075·t)); il crash e' segreto finche' l'aereo non
+// Il moltiplicatore dipende solo dall'orologio del SERVER (m = e^(0,13·t), velocita' simile all'Aviator vero); il crash e' segreto finche' l'aereo non
 // vola via. La pagina chiede lo stato ogni mezzo secondo e disegna; incassi e crash li decide il server.
 
 type Dati = ReturnType<typeof useSeasonData>
-const K = 0.075
+const K = 0.13
 const moltAl = (secondi: number) => Math.min(1000, Math.floor(Math.exp(K * Math.max(0, secondi)) * 100) / 100)
 const fx = (m: number) => `${m.toFixed(2)}×`
 const AUTO = [1.1, 1.2, 1.3, 1.5, 1.75, 2, 2.5, 3, 4, 5, 7.5, 10, 15, 20, 25, 50, 100, 250, 500, 1000]
 const FICHE = [10, 20, 50, 100]
 const coloreCrash = (c: number) => (c < 2 ? '#3fb4ff' : c < 10 ? '#9b5cff' : '#e8399a')
+// Il numero grande in volo prende gli stessi colori dello storico (piu' chiari, per leggerli sul viola).
+const coloreMolt = (m: number) => (m < 2 ? '#5cc4ff' : m < 10 ? '#c49bff' : '#ff5cb8')
 
 // L'aereo (anche per la copertina): fusoliera viola SpecialOne, ali oro, muso verso destra.
 export const AEREO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60">
@@ -191,7 +193,7 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
         const pend = Math.atan2(py(Math.exp(K * Math.max(0, t - 0.3))) - yt, xt - px(Math.max(0, t - 0.3)))
         if (f === 'volo') {
           disegnaAereo(xt, yt + (fermo ? 0 : Math.sin(adesso / 400) * 3), Math.max(-0.6, Math.min(0, pend)), adesso)
-          testo = fx(m)
+          testo = fx(m); colore = coloreMolt(m)
           if (valoreIncassa.current) valoreIncassa.current.textContent = fmt(Math.floor((s.giocate.find((q) => q.mia)?.puntata ?? 0) * m))
         } else {
           const dt = adesso - esplosoAl.current
@@ -248,9 +250,10 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
       <button type="button" className="slot-audio" aria-pressed={audio} aria-label={audio ? 'Togli i suoni' : 'Attiva i suoni'} onClick={() => setAudio((a) => !a)}>{audio ? '🔊' : '🔇'}</button>
     </div>
 
-    {stato.storia.length > 0 && <ol className="av-storia" aria-label="Ultimi voli della lega">
-      {stato.storia.map((c, i) => <li key={i} style={{ color: coloreCrash(Number(c)) }}>{fx(Number(c))}</li>)}
-    </ol>}
+    <ol className="av-storia" aria-label="Ultimi voli della lega">
+      {stato.storia.length === 0 ? <li className="av-storia__vuota">Ancora nessun volo precedente</li>
+        : stato.storia.map((c, i) => <li key={i} style={{ color: coloreCrash(Number(c)) }}>{fx(Number(c))}</li>)}
+    </ol>
 
     <div className="av-cielo">
       <div className="av-insegna"><img src="/specialone-mark.svg" alt="" /><span>AVIAT</span><b>ONE</b></div>
@@ -315,7 +318,7 @@ function AviatOneRegole() {
       <p>AviatOne è <b>live</b>: l'aereo è uno solo per tutta la lega e tutti vedono lo stesso volo. I voli si susseguono senza sosta: <b>7 secondi per puntare</b>, poi il decollo, poi l'aereo vola via e dopo 3 secondi si riparte.</p>
       <p>Scegli quanto puntare (da 10 a 500 crediti) e premi <b>PUNTA</b> prima del decollo; finché le puntate sono aperte puoi annullare. Se il volo è già partito, puoi <b>prenotare</b> la puntata per il volo successivo.</p>
       <p>Durante il volo il moltiplicatore sale: premi <b>INCASSA</b> quando vuoi e vinci la puntata per il moltiplicatore di quel momento. Se l'aereo vola via prima, la puntata è persa. Con l'<b>incasso automatico</b> la puntata si incassa da sola appena il moltiplicatore arriva al valore scelto.</p>
-      <p>Il moltiplicatore cresce sempre alla stessa velocità (2× dopo circa 9 secondi, 10× dopo circa 31). Il punto in cui l'aereo vola via lo estrae il server prima che si chiudano le puntate e nessuno lo vede prima. In media si recupera circa il 94% di quello che si punta.</p>
+      <p>Il moltiplicatore cresce sempre alla stessa velocità (2× dopo circa 5 secondi, 10× dopo circa 18, 100× dopo circa 35). Il punto in cui l'aereo vola via lo estrae il server prima che si chiudano le puntate e nessuno lo vede prima. In media si recupera circa il 94% di quello che si punta.</p>
       <p>Sotto vedi chi è a bordo, quanto ha puntato e a che moltiplicatore incassa. In alto gli ultimi voli della lega: in azzurro sotto 2×, in viola fino a 10×, in rosa sopra.</p>
     </div>}
   </>
