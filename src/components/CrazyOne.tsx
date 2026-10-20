@@ -518,13 +518,16 @@ export function CrazyOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
   // Le fiche si mandano al server mezzo secondo dopo l'ultimo tocco (sostituiscono quelle registrate).
   function manda(nuove: Record<Casella, number>) {
     if (invio.current) window.clearTimeout(invio.current)
+    // Negli ultimi 2 secondi le fiche partono subito, altrimenti arriverebbero a puntate chiuse.
+    const giroOra = statoRef.current?.giro
+    const subito = giroOra != null && giroOra.chiude - oraServer() < 2000
     invio.current = window.setTimeout(async () => {
       invio.current = null
       const mappa = Object.fromEntries(ORDINE.filter((c) => nuove[c] > 0).map((c) => [c, nuove[c]]))
       const r = await chiedi('casino_ctl_punta', { p_puntate: mappa })
       if (!r) { const reg = statoRef.current?.giocate.find((q) => q.mia)?.puntate; setPuntate({ ...VUOTE(), ...(reg ?? {}) } as Record<Casella, number>) }
       else setErrore('')
-    }, 450)
+    }, subito ? 0 : 450)
   }
   function cambia(nuove: Record<Casella, number>) { setMosse((m) => [...m, puntateRef.current]); setPuntate(nuove); manda(nuove) }
 
