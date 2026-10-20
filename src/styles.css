@@ -6246,19 +6246,17 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .bet-quote b { color: var(--bet-oro); font-size: 1.05rem; font-variant-numeric: tabular-nums; }
 .bet-quote em { color: #cfc6e0; font-style: normal; font-size: .68rem; font-variant-numeric: tabular-nums; }
 .bet-ticket__nota { margin: 0; padding: 6px 14px; border-bottom: 1px dashed var(--bet-linea); color: #ffb3d6; font-size: .72rem; text-align: center; }
-.bet-puntata { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px 10px; }
-.bet-puntata > span { color: #b9b0cc; font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
-.bet-puntata > small { color: #b9b0cc; font-size: .72rem; font-weight: 700; white-space: nowrap; text-align: right; }
-.bet-puntata > small b { color: var(--bet-oro); font-size: .86rem; font-variant-numeric: tabular-nums; }
-.bet-puntata__campo { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; height: 44px; border: 1.5px solid var(--bet-oro); border-radius: 12px; background: rgba(246,196,83,.1); overflow: hidden; }
-.bet-page .bet-puntata__campo button { height: 100%; padding: 0; border: 0; background: rgba(246,196,83,.12); color: var(--bet-oro); font-size: 1.3rem; font-weight: 900; line-height: 1; text-align: center; cursor: pointer; }
-.bet-page .bet-puntata__campo button:disabled { opacity: .3; cursor: default; }
-/* reset dello stile generale dei campi di testo (altezza minima, bordo, sfondo) */
-.bet-page .bet-puntata__campo input[type="text"] { width: 100%; min-width: 0; min-height: 0; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none; -webkit-appearance: none; appearance: none; background: transparent; color: #fff; font-family: inherit; font-size: 18px !important; font-weight: 900; line-height: 1; text-align: center; font-variant-numeric: tabular-nums; outline: none; }
-.bet-puntata__rapide { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.bet-puntata .bet-puntata__rapida { display: grid; place-items: center; height: 34px; padding: 0; border: 1px solid rgba(255,255,255,.14); border-radius: 10px; background: rgba(255,255,255,.05); font-size: .8rem; font-weight: 800; font-variant-numeric: tabular-nums; text-align: center; cursor: pointer; }
-.bet-puntata .bet-puntata__rapida.is-scelta { border-color: var(--bet-oro); background: rgba(246,196,83,.18); color: var(--bet-oro); }
-.bet-puntata .bet-puntata__rapida:disabled { opacity: .35; cursor: default; }
+.bet-puntata { display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px; border: 1.5px solid rgba(246,196,83,.55); border-radius: 14px; background: #17141f; cursor: text; transition: border-color .15s; }
+.bet-puntata:focus-within { border-color: var(--bet-oro); box-shadow: 0 0 0 3px rgba(246,196,83,.15); }
+.bet-puntata > span { flex: none; color: #b9b0cc; font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
+/* reset completo dello stile generale dei campi di testo */
+.bet-page .bet-puntata input[type="text"], .bet-page .bet-puntata input[type="text"]:hover, .bet-page .bet-puntata input[type="text"]:focus { flex: 1; width: 100%; min-width: 0; min-height: 0; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none; outline: none; -webkit-appearance: none; appearance: none; background: transparent; color: #fff; font-family: inherit; font-size: 22px !important; font-weight: 900; line-height: 1; text-align: right; font-variant-numeric: tabular-nums; caret-color: var(--bet-oro); }
+.bet-puntata input::placeholder { color: rgba(255,255,255,.25); }
+.bet-puntata > small { flex: none; color: #8f86a3; font-size: .74rem; font-weight: 700; white-space: nowrap; }
+.bet-puntata > small b { color: #cfc6e0; font-variant-numeric: tabular-nums; }
+.bet-puntata.is-troppo { border-color: #ff4d5e; }
+.bet-page .bet-puntata.is-troppo input[type="text"] { color: #ff4d5e; }
+.bet-puntata.is-troppo > small { color: #ff4d5e; }
 .bet-barra__stato b { color: var(--bet-oro); }
 .bet-esito-mia__vinto { margin-left: auto; color: #ff8b97; font-size: 1rem; }
 .bet-esito-mia__vinto.is-positivo { color: #7be3a0; }

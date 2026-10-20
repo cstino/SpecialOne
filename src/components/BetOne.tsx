@@ -17,7 +17,6 @@ type Segno = '1' | 'X' | '2'
 const SEGNI: Segno[] = ['1', 'X', '2']
 const MAX_DOPPIE = 2
 const MINUTI_CHIUSURA = 15
-const PUNTATE_RAPIDE = [10, 50, 100, 500]
 // Stessa formula di private.betone_moltiplicatore: errori -> moltiplicatore, ogni doppia lo dimezza.
 function moltiplicatore(partite: number, errori: number, doppie: number) {
   const k = Math.max(0, partite - 6)
@@ -408,19 +407,12 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
 
     {sezione === 'pronostici' && caricato && giornata != null && partiteAttivo.length > 0 && !chiusa && <div className="bet-barra">
       {errore && <p className="bet-barra__errore" role="alert">{errore}</p>}
-      <div className="bet-puntata" role="group" aria-label="Puntata">
-        <span>Punta</span>
-        <div className="bet-puntata__campo">
-          <button type="button" aria-label="Meno" disabled={puntata <= 1} onClick={() => { setPuntata((p) => Math.max(1, p - (p > 10 ? 10 : 1))); setSalvata(null) }}>−</button>
-          <input type="text" inputMode="numeric" aria-label="Crediti da puntare" value={puntata > 0 ? String(puntata) : ''} placeholder="0"
-            onChange={(e) => { const n = Number(e.target.value.replace(/\D/g, '').slice(0, 8)); setPuntata(n); setSalvata(null) }} />
-          <button type="button" aria-label="Più" disabled={puntata + (puntata >= 10 ? 10 : 1) > disponibili} onClick={() => { setPuntata((p) => p + (p >= 10 ? 10 : 1)); setSalvata(null) }}>+</button>
-        </div>
-        <small>Hai <b>{fmtN(crediti ?? 0)}</b> crediti</small>
-        <div className="bet-puntata__rapide">
-          {PUNTATE_RAPIDE.map((p) => <button key={p} type="button" className={`bet-puntata__rapida${puntata === p ? ' is-scelta' : ''}`} aria-pressed={puntata === p} disabled={p > disponibili} onClick={() => { setPuntata(p); setSalvata(null) }}>{p}</button>)}
-        </div>
-      </div>
+      <label className={`bet-puntata${puntata > disponibili ? ' is-troppo' : ''}`}>
+        <span>Puntata</span>
+        <input type="text" inputMode="numeric" enterKeyHint="done" autoComplete="off" value={puntata > 0 ? String(puntata) : ''} placeholder="0"
+          onChange={(e) => { setPuntata(Number(e.target.value.replace(/\D/g, '').slice(0, 8))); setSalvata(null) }} />
+        <small>{puntata > disponibili ? 'crediti insufficienti' : <>di <b>{fmtN(disponibili)}</b></>}</small>
+      </label>
       <p className="bet-barra__stato">
         {salvata ? <>Scommessa piazzata ✓ Puoi modificarla fino alle {oraChiusura}.</>
           : <>{compilate(attivo)}/{partiteAttivo.length} partite · doppie {nDoppie(attivo)}/{MAX_DOPPIE} · vinci fino a <b>{fmtN(Math.round(puntata * (scala[0]?.m ?? 0)))}</b></>}
