@@ -6624,3 +6624,85 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .bet-page .av-fiche .fiche-casino { flex: 0 1 42px; width: auto; min-width: 0; max-width: 42px; height: auto; aspect-ratio: 1; }
 .av-fiche .fiche-casino span { font-size: .72rem; }
 .av-fiche .fiche-casino--100 span { font-size: .64rem; }
+
+/* ===== BlackjackOne ===== */
+.bj { display: grid; gap: 12px; padding-bottom: 24px; }
+.bj-tavolo { position: relative; display: grid; gap: 14px; justify-items: center; padding: 16px 12px 18px; border: 3px solid #8a5a12; border-radius: 120px 120px 26px 26px / 70px 70px 26px 26px; background: radial-gradient(120% 80% at 50% 0%, #5a1f8a, #2a0d45 55%, #170726); box-shadow: inset 0 0 0 2px #e7b23a, inset 0 0 40px rgba(0,0,0,.55), 0 14px 30px rgba(0,0,0,.45); overflow: hidden; }
+.bj-insegna { display: flex; align-items: center; gap: 6px; font: 900 1.2rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .08em; }
+.bj-insegna img { width: 22px; height: 22px; }
+.bj-insegna span { color: #fff; }
+.bj-insegna b { color: var(--bet-oro); }
+.bj-regola { margin: -8px 0 0; padding: 3px 12px; border-top: 1px solid rgba(231,178,58,.5); border-bottom: 1px solid rgba(231,178,58,.5); color: rgba(246,196,83,.85); font-size: .62rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.bj-zona { display: grid; justify-items: center; gap: 6px; width: 100%; }
+.bj-zona--giocatore { grid-auto-flow: column; justify-content: center; gap: 10px; }
+.bj-zona--giocatore.is-divise { justify-content: start; overflow-x: auto; padding-bottom: 4px; }
+.bj-mano { position: relative; display: grid; justify-items: center; gap: 6px; padding: 8px 8px 22px; border-radius: 14px; border: 1.5px dashed transparent; }
+.bj-mano.is-attiva { border-color: var(--bet-oro); background: rgba(246,196,83,.08); }
+.bj-carte { display: flex; min-height: 92px; }
+.bj-carte > * + * { margin-left: -30px; }
+.bj-posto { width: 64px; height: 90px; border: 2px dashed rgba(231,178,58,.35); border-radius: 8px; }
+.bj-posto + .bj-posto { margin-left: 8px !important; }
+.bj-totale { padding: 3px 10px; border-radius: 99px; background: rgba(0,0,0,.45); color: #fff; font-size: .8rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+.bj-fiche-mano { position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%); display: grid; place-items: center; min-width: 30px; height: 30px; padding: 0 5px; border: 3px dashed #fff; border-radius: 50%; background: #d92a30; color: #fff; font-size: .62rem; font-weight: 900; box-shadow: 0 3px 8px rgba(0,0,0,.5); }
+.bj-esito { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) rotate(-8deg); padding: 4px 10px; border-radius: 8px; font: 900 .82rem/1.1 "Bai Jamjuree", sans-serif; text-transform: uppercase; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,.5); animation: bj-timbro .35s cubic-bezier(.2,1.6,.4,1) both; animation-delay: .5s; z-index: 2; }
+.bj-esito--vinto { background: #2fd27a; color: #052a14; }
+.bj-esito--bj { background: linear-gradient(#fff1b0, #e7b23a); color: #3a2600; }
+.bj-esito--pari { background: #cfc6e0; color: #1a0b22; }
+.bj-esito--perso { background: #ff4d5e; color: #fff; }
+@keyframes bj-timbro { from { opacity: 0; transform: translate(-50%, -50%) rotate(-8deg) scale(2); } }
+.bj-mano.is-perso .bj-carte { opacity: .55; }
+.bj-assicurazione { margin: 0; color: #ffd84d; font-size: .74rem; font-weight: 800; }
+.bj .slot-festa { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+/* carte */
+.bj-carta { position: relative; flex: none; width: 64px; height: 90px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,.45); animation: bj-arriva .38s cubic-bezier(.2,.8,.3,1) both; }
+@keyframes bj-arriva { from { opacity: 0; transform: translate(60px, -90px) rotate(-14deg) rotateY(90deg); } 60% { opacity: 1; } }
+.bj-carta__fronte, .bj-carta__dorso { position: absolute; inset: 0; border-radius: 8px; overflow: hidden; }
+.bj-carta__fronte { background: linear-gradient(160deg, #fff, #ece6f5); color: #1a0b22; border: 1px solid #cfc3e0; }
+.bj-carta__fronte.is-rossa { color: #d11f3a; }
+.bj-carta__angolo { position: absolute; top: 4px; left: 5px; display: grid; justify-items: center; line-height: .95; }
+.bj-carta__angolo b { font: 900 .92rem/1 "Bai Jamjuree", sans-serif; }
+.bj-carta__angolo i { font-style: normal; font-size: .78rem; }
+.bj-carta__angolo--giu { top: auto; left: auto; bottom: 4px; right: 5px; transform: rotate(180deg); }
+.bj-carta__centro { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; }
+.bj-carta__centro i { font-style: normal; font-size: 1.9rem; }
+.bj-carta__centro em { font-style: normal; font-size: 2.6rem; }
+.bj-carta__centro img { width: 34px; height: 34px; filter: brightness(0) saturate(100%) invert(19%) sepia(53%) saturate(2800%) hue-rotate(262deg); }
+.bj-carta__fronte.is-rossa .bj-carta__centro img { filter: brightness(0) saturate(100%) invert(18%) sepia(89%) saturate(4000%) hue-rotate(340deg); }
+.bj-carta__centro b { font: 900 .8rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .1em; margin-top: 2px; }
+.bj-carta__dorso { display: grid; place-items: center; border: 3px solid #fff; background: repeating-linear-gradient(45deg, #5a1f8a 0 6px, #4a1673 6px 12px); box-shadow: inset 0 0 0 2px #e7b23a; }
+.bj-carta__dorso img { width: 30px; height: 30px; filter: drop-shadow(0 0 4px rgba(231,178,58,.8)); }
+/* mosse */
+.bj-mosse { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.bj-mosse:has(.bj-mossa--si) { grid-template-columns: 1fr 1fr; }
+.bet-page .bj-mossa { height: 52px; padding: 0 4px; border: 1px solid var(--bet-linea); border-radius: 14px; background: rgba(255,255,255,.06); color: #fff; font: 800 .86rem/1 "Bai Jamjuree", sans-serif; text-align: center; cursor: pointer; }
+.bet-page .bj-mossa--carta { background: linear-gradient(#5ff09a, #1fa85a); color: #052a14; border: 0; box-shadow: 0 4px 0 #0d6b35; }
+.bet-page .bj-mossa--stai { background: linear-gradient(#ff6b78, #c3202f); color: #fff; border: 0; box-shadow: 0 4px 0 #7a0d18; }
+.bet-page .bj-mossa--si { background: linear-gradient(#ffe48a, #e7b23a); color: #2a1a00; border: 0; }
+.bj-mossa:disabled { opacity: .35; cursor: default; }
+.bj-mossa:active:not(:disabled) { transform: translateY(3px); }
+.bet-page .bj-mossa--piccola { height: 40px; padding: 0 12px; font-size: .78rem; }
+.bj-puntata { display: grid; gap: 10px; }
+.bj-puntata .ct-fiche { justify-content: center; }
+.bj-puntata__riga { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; }
+.bj-puntata__riga .ct-totale { grid-column: auto; grid-row: auto; justify-items: center; }
+.bet-page .bj-distribuisci { display: grid; justify-items: center; align-content: center; gap: 2px; min-width: 150px; height: 56px; padding: 0 14px; border: 0; border-radius: 16px; background: linear-gradient(#ffe48a, #e7b23a); color: #2a1a00; cursor: pointer; box-shadow: 0 5px 0 #8a5a12, 0 10px 22px rgba(231,178,58,.35); }
+.bj-distribuisci span { font: 900 1rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .08em; }
+.bj-distribuisci small { font-size: .64rem; font-weight: 800; opacity: .75; }
+.bj-distribuisci:disabled { filter: grayscale(.8) brightness(.6); cursor: default; }
+@media (prefers-reduced-motion: reduce) { .bj-carta, .bj-esito { animation: none; } }
+/* locandina provvisoria */
+.cas-poster__arte--bj { background: radial-gradient(90% 60% at 50% 35%, #6a2a9a, #2a0d45 60%, #12051c); }
+.cas-bj__titolo { position: absolute; top: 9%; left: 0; right: 0; display: grid; justify-items: center; gap: 2px; text-align: center; }
+.cas-bj__titolo img { width: 30px; height: 30px; }
+.cas-bj__titolo b { color: #fff; font: 900 1.05rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .1em; text-shadow: 0 2px 10px rgba(0,0,0,.6); }
+.cas-bj__titolo span { color: var(--bet-oro, #f6c453); font: 900 1.5rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .2em; }
+.cas-bj__carte { position: absolute; left: 50%; top: 40%; width: 70%; height: 40%; transform: translateX(-50%); }
+.cas-bj__carta { position: absolute; top: 0; width: 56%; aspect-ratio: 5 / 7; border-radius: 8px; background: linear-gradient(160deg, #fff, #ece6f5); color: #1a0b22; box-shadow: 0 8px 18px rgba(0,0,0,.5); display: grid; place-items: center; }
+.cas-bj__carta:first-child { left: 0; transform: rotate(-12deg); }
+.cas-bj__carta:last-child { right: 0; transform: rotate(10deg); }
+.cas-bj__carta.is-rossa { color: #d11f3a; }
+.cas-bj__carta b { position: absolute; top: 6px; left: 7px; font: 900 1rem/1 "Bai Jamjuree", sans-serif; }
+.cas-bj__carta i { position: absolute; top: 24px; left: 8px; font-style: normal; font-size: .8rem; }
+.cas-bj__carta em { font-style: normal; font-size: 2.4rem; }
+.cas-bj__carta img { width: 44%; filter: brightness(0) saturate(100%) invert(18%) sepia(89%) saturate(4000%) hue-rotate(340deg); }
+.cas-bj__21 { position: absolute; left: 50%; bottom: 22%; transform: translateX(-50%); padding: 2px 12px; border-radius: 10px; background: linear-gradient(#fff1b0, #e7b23a); color: #3a2600; font: 900 1.3rem/1.1 "Bai Jamjuree", sans-serif; box-shadow: 0 0 18px rgba(231,178,58,.6); }

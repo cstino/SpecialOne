@@ -5,21 +5,35 @@ import { Crest } from './Crest'
 import { Casino, Contatore, fmt } from './Casino'
 import { CrazyOne } from './CrazyOne'
 import { AviatOne } from './AviatOne'
+import { BlackjackOne } from './BlackjackOne'
 
 // Pagina iniziale del BetOne Casino': una fila di copertine verticali (stile home di Netflix), una per gioco.
 // I crediti sono gli stessi per tutti i giochi; la classifica e' unica (miglior colpo in un solo giro, qualsiasi gioco).
 
 type Dati = ReturnType<typeof useSeasonData>
 type RigaClassifica = { team_id: number; crediti: number; max_vincita: number; giri: number }
-type Gioco = 'slot' | 'crazy' | 'aviat'
+type Gioco = 'slot' | 'crazy' | 'aviat' | 'bj'
 type Premio = { esito: 'vittoria' | 'pareggio' | 'sconfitta'; crediti: number; avversario_id: number }
 
 // Le locandine (public/casino/*.webp, 540×810) le ha disegnate il committente; il nome del gioco e' gia' nell'immagine.
 const GIOCHI: Array<{ id: Gioco; titolo: string; sotto: string; nuovo?: boolean }> = [
   { id: 'aviat', titolo: 'AviatOne', sotto: 'Incassa prima che voli via' },
+  { id: 'bj', titolo: 'BlackjackOne', sotto: 'Batti il banco senza sballare' },
   { id: 'crazy', titolo: 'CrazyOne', sotto: 'Ruota · 4 bonus' },
   { id: 'slot', titolo: 'SlotOne', sotto: '5 rulli · 10 linee' },
 ]
+
+// Locandina provvisoria di BlackjackOne (finche' non arriva quella disegnata): tavolo viola con asso e re SpecialOne.
+function CopertinaBJ() {
+  return <div className="cas-poster__arte cas-poster__arte--bj" aria-hidden="true">
+    <div className="cas-bj__titolo"><img src="/specialone-mark.svg" alt="" /><b>BLACKJACK</b><span>ONE</span></div>
+    <div className="cas-bj__carte">
+      <span className="cas-bj__carta"><b>A</b><i>♠</i><em>♠</em></span>
+      <span className="cas-bj__carta is-rossa"><b>K</b><i>♥</i><img src="/specialone-mark.svg" alt="" /></span>
+    </div>
+    <span className="cas-bj__21">21</span>
+  </div>
+}
 
 type Props = { leagueId: number; teamId: number; dati: Dati }
 
@@ -30,6 +44,7 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
   const [errore, setErrore] = useState('')
   const [crazyone, setCrazyone] = useState(false)
   const [aviatone, setAviatone] = useState(false)
+  const [blackjack, setBlackjack] = useState(false)
   const [premi, setPremi] = useState<Premio[]>([])
 
   const carica = useCallback(async () => {
@@ -38,6 +53,7 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
     setCrediti((data as { crediti: number }).crediti)
     setCrazyone((data as { crazyone?: boolean }).crazyone === true)
     setAviatone((data as { aviatone?: boolean }).aviatone === true)
+    setBlackjack((data as { blackjack?: boolean }).blackjack === true)
     // Premi partita appena pagati (solo partite gia' viste o vecchie di 24 ore: niente spoiler). Restano a schermo finche' non si chiudono.
     const nuovi = ((data as { premi?: Premio[] }).premi ?? [])
     if (nuovi.length) setPremi((p) => [...p, ...nuovi])
@@ -67,11 +83,11 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
 
   if (crediti == null) return <section className="slot-caricamento">{errore ? <p role="alert">{errore}</p> : <p>Accendo le luci del casinò…</p>}</section>
   // Dove CrazyOne e' spento il casino' resta com'era: la slot subito, con la classifica sotto.
-  if (!crazyone && !aviatone) return <section className="cas-hub"><Casino leagueId={leagueId} dati={dati} onGiro={aggiornaClassifica} />{tabellaClassifica}</section>
+  if (!crazyone && !aviatone && !blackjack) return <section className="cas-hub"><Casino leagueId={leagueId} dati={dati} onGiro={aggiornaClassifica} />{tabellaClassifica}</section>
 
   if (gioco) return <section className="cas-gioco">
     <button type="button" className="cas-indietro" onClick={() => setGioco(null)}><span aria-hidden="true">‹</span> Casinò</button>
-    {gioco === 'slot' ? <Casino leagueId={leagueId} dati={dati} /> : gioco === 'aviat' ? <AviatOne leagueId={leagueId} dati={dati} /> : <CrazyOne leagueId={leagueId} dati={dati} />}
+    {gioco === 'slot' ? <Casino leagueId={leagueId} dati={dati} /> : gioco === 'aviat' ? <AviatOne leagueId={leagueId} dati={dati} /> : gioco === 'bj' ? <BlackjackOne leagueId={leagueId} /> : <CrazyOne leagueId={leagueId} dati={dati} />}
   </section>
 
   return <section className="cas-hub">
@@ -88,8 +104,8 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
     <section className="cas-fila">
       <h2>Giochi</h2>
       <div className="cas-fila__scorri">
-        {GIOCHI.filter((g) => (g.id !== 'crazy' || crazyone) && (g.id !== 'aviat' || aviatone)).map((g) => <button key={g.id} type="button" className={`cas-poster cas-poster--${g.id}`} aria-label={`${g.titolo}: ${g.sotto}`} onClick={() => setGioco(g.id)}>
-          <img className="cas-poster__locandina" src={`/casino/${{ slot: 'slotone', crazy: 'crazyone', aviat: 'aviatone' }[g.id]}.webp`} alt="" decoding="async" />
+        {GIOCHI.filter((g) => (g.id !== 'crazy' || crazyone) && (g.id !== 'aviat' || aviatone) && (g.id !== 'bj' || blackjack)).map((g) => <button key={g.id} type="button" className={`cas-poster cas-poster--${g.id}`} aria-label={`${g.titolo}: ${g.sotto}`} onClick={() => setGioco(g.id)}>
+          {g.id === 'bj' ? <CopertinaBJ /> : <img className="cas-poster__locandina" src={`/casino/${{ slot: 'slotone', crazy: 'crazyone', aviat: 'aviatone' }[g.id as 'slot' | 'crazy' | 'aviat']}.webp`} alt="" decoding="async" />}
           {g.nuovo && <span className="cas-poster__nuovo">Nuovo</span>}
           <span className="cas-poster__titolo"><small>{g.sotto}</small></span>
         </button>)}

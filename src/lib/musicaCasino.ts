@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react'
 
 // Musica di sottofondo del BetOne Casino', generata dal telefono (Web Audio): nessun file da scaricare.
-// Tre stili, uno per gioco: 'slot' lounge jazz, 'crazy' chill tropicale, 'aviat' lo-fi arioso.
+// Uno stile per gioco: 'slot' lounge jazz, 'crazy' chill tropicale, 'aviat' lo-fi arioso, 'bj' jazz notturno da tavolo verde.
 // Sequencer con anticipo (si programmano le note 0,15 s prima): 4 battute di accordi in loop, con piccole
 // variazioni casuali della melodia a ogni giro. Volume basso, sotto gli effetti delle vincite.
 
-export type Stile = 'slot' | 'crazy' | 'aviat'
+export type Stile = 'slot' | 'crazy' | 'aviat' | 'bj'
 
 type Brano = {
   bpm: number
@@ -21,6 +21,8 @@ const BRANI: Record<Stile, Brano> = {
   // Fmaj7 - G6 - Em7 - Am7
   crazy: { bpm: 100, swing: 0.08, accordi: [[57, 60, 64, 65], [55, 59, 62, 64], [55, 59, 62, 64], [55, 57, 60, 64]], bassi: [41, 43, 40, 45], scala: [69, 72, 74, 76, 79, 81, 84] },
   // Ebmaj7 - Cm9 - Abmaj7 - Bbsus
+  // Am9 - D9 - Gmaj9 - E7(b9): jazz notturno, piano e contrabbasso che cammina, piatto ride
+  bj: { bpm: 92, swing: 0.25, accordi: [[55, 59, 60, 64], [54, 57, 60, 64], [54, 57, 59, 62], [56, 59, 62, 65]], bassi: [45, 38, 43, 40], scala: [69, 71, 72, 74, 76, 79, 81] },
   aviat: { bpm: 74, swing: 0.12, accordi: [[55, 58, 62, 63], [55, 58, 62, 63], [55, 60, 63, 67], [53, 58, 60, 65]], bassi: [39, 36, 44, 46], scala: [63, 65, 67, 70, 72, 75, 77, 79] },
 }
 
@@ -99,6 +101,16 @@ class Motore {
       if (nel % 4 === 2 || (nel % 2 === 1 && v > 0.7)) this.spazzola(t, nel % 4 === 2 ? 0.05 : 0.025)
       if (nel === 4 || nel === 12) this.spazzola(t, 0.035, 0.18)
       if ((nel === 6 || nel === 14 || nel === 3) && v > 0.55) this.epiano(freq(b.scala[Math.floor(v * 97) % b.scala.length]), t, sed * 3, 0.04)
+    } else if (this.stile === 'bj') {
+      // Piano a "comping" in levare, contrabbasso che cammina sui quarti, ride swing e rim leggero.
+      if (nel === 2 || nel === 7 || (nel === 11 && v > 0.4)) acc.forEach((m, i) => this.epiano(freq(m), t + i * 0.01, sed * 2.5, 0.038))
+      if (nel % 4 === 0) {
+        const passo = [0, 3, 7, 10][nel / 4] + (v > 0.6 ? 2 : 0)
+        this.basso(freq(basso + passo - (nel === 12 && v > 0.5 ? 1 : 0)), t, sed * 3.6, 0.17)
+      }
+      if (nel % 4 === 0 || nel % 4 === 3) this.colpoRumore(t, nel % 4 === 0 ? 0.03 : 0.018, 'highpass', 9000, 0.22)
+      if (nel === 4 || nel === 12) this.rim(t, 0.03)
+      if ((nel === 1 || nel === 9 || nel === 14) && v > 0.62) this.epiano(freq(b.scala[Math.floor(v * 79) % b.scala.length]), t, sed * 3, 0.04)
     } else if (this.stile === 'crazy') {
       // Marimba in arpeggio, cassa morbida sui quarti, charleston in levare, basso pulsante.
       if (nel % 2 === 0) { const m = acc[(nel / 2 + battuta) % acc.length] + (nel % 8 === 6 ? 12 : 0); this.marimba(freq(m), t, 0.045) }
