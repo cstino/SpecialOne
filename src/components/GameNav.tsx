@@ -4,7 +4,7 @@ import type { League } from '../types'
 import { Icona as IconaTonda } from './Icona'
 import { supabase } from '../lib/supabase'
 
-export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'under' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse' | 'social' | 'rivalita' | 'salastampa' | 'spogliatoio' | 'pubblico' | 'betone' | 'album'
+export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'under' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse' | 'social' | 'rivalita' | 'salastampa' | 'spogliatoio' | 'pubblico' | 'betone' | 'album' | 'quizzone'
 type GameNavProps = { league: League; active: GameView; onNavigate?: (view: GameView) => void }
 
 // Icone disegnate a mano: i glifi Unicode di prima (▦ ♜ ♙ ◆ ◉ ≡) venivano resi dal
@@ -33,6 +33,7 @@ const ICONE: Record<string, ReactNode> = {
   gestione: <><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z" /><path d="M7 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1" /><path d="M8.5 12h7M8.5 16h4.5" /></>,
   risultati: <><path d="M4 20V10M10 20V4M16 20v-8M21 20H3" /><path d="m3.5 7 4-3 4 2 4-4" /></>,
   altro: <><circle cx="5.5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="18.5" cy="12" r="1.8" /></>,
+  quizzone: <><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6" /><path d="M12 17h.01" /></>,
   album: <><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z" /><path d="M5 17a3 3 0 0 1 3-3h11" /><path d="M9.5 7.5h5v4h-5z" /></>,
   extra: <><path d="m12 3 2.2 5.2L20 9l-4.3 3.8L17 18.5 12 15.6 7 18.5l1.3-5.7L4 9l5.8-.8z" /></>,
   betone: <><path d="M4 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2.2a2 2 0 0 0 0 3.6V16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2.2a2 2 0 0 0 0-3.6z" /><path d="M10 8v8" strokeDasharray="1.6 2.4" /><path d="m13.5 11 1.5 1.5L17.5 10" /></>,
@@ -180,9 +181,11 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
   // e' Admin.tsx a mostrare solo le azioni sensate per lo stato corrente.
   const eAdmin = league.admin_id === notifiche?.userId
   const [albumAttivo, setAlbumAttivo] = useState(false)
+  const [quizAttivo, setQuizAttivo] = useState(false)
   useEffect(() => {
     if (!league.conferenze_stampa) return
     void supabase.rpc('album_attivo', { p_league_id: league.id }).then(({ data }) => setAlbumAttivo(data === true))
+    void supabase.rpc('quizzone_attivo', { p_league_id: league.id }).then(({ data }) => setQuizAttivo(data === true))
   }, [league.id, league.conferenze_stampa])
   // Extra campo (prova in LegaBot): prima di Avvisi.
   // Spogliatoio sta in Gestione (richieste dei giocatori): solo nelle leghe con le novita'.
@@ -202,6 +205,7 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
   const gruppoAltro: NavGroup = { group: 'altro', label: 'Altro', children: [
     { view: 'betone', label: 'BetOne' },
     ...(albumAttivo ? [{ view: 'album' as GameView, label: 'Album' }] : []),
+    ...(quizAttivo ? [{ view: 'quizzone' as GameView, label: 'Quizzone' }] : []),
   ] }
   const items: readonly NavEntry[] = league.conferenze_stampa && league.stato === 'stagione' && league.fase_carriera !== 'offseason'
     ? [...conAdmin, gruppoAltro]

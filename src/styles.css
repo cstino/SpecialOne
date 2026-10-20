@@ -6733,3 +6733,61 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .bj-mano--piccola .bj-carta__angolo--giu { display: none; }
 .bj-mano--piccola .bj-totale { font-size: .66rem; padding: 2px 7px; }
 .bj-mano--piccola .bj-esito { font-size: .62rem; padding: 3px 6px; }
+
+/* ===== Quizzone ===== */
+.qz { display: grid; gap: 14px; padding-bottom: 24px; }
+.qz-studio { position: relative; display: grid; justify-items: center; gap: 14px; min-height: 340px; padding: 18px 14px 20px; border: 2px solid #5a1f8a; border-radius: 26px; background: radial-gradient(110% 70% at 50% 0%, #5a1f8a, #1e0933 60%, #12051c); overflow: hidden; }
+.qz-studio::before { content: ''; position: absolute; inset: -40%; background: repeating-conic-gradient(rgba(246,196,83,.06) 0 6deg, transparent 6deg 18deg); animation: ct-raggi 40s linear infinite; pointer-events: none; }
+.qz-studio--domanda::before { animation-duration: 8s; }
+.qz-insegna { position: relative; display: flex; align-items: center; gap: 6px; font: 900 1.5rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .08em; }
+.qz-insegna img { width: 26px; height: 26px; }
+.qz-insegna span { color: #fff; text-shadow: 0 0 12px #b57bff; }
+.qz-insegna b { color: var(--bet-oro); text-shadow: 0 0 12px rgba(246,196,83,.7); }
+.qz-attesa, .qz-entra, .qz-domanda { position: relative; display: grid; justify-items: center; gap: 10px; width: 100%; text-align: center; }
+.qz-attesa small, .qz-entra > small, .qz-domanda__testa small { color: #cfc6e0; font-size: .7rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.qz-attesa strong { color: #fff; font: 900 3.2rem/1 "Bai Jamjuree", sans-serif; text-shadow: 0 0 22px rgba(181,123,255,.7); }
+.qz-attesa span { color: var(--bet-oro); font-weight: 900; font-variant-numeric: tabular-nums; }
+.qz-attesa p, .qz-entra p { max-width: 320px; margin: 0; color: rgba(255,255,255,.75); font-size: .86rem; line-height: 1.4; }
+.qz-anello { position: relative; width: 96px; height: 96px; }
+.qz-anello svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.qz-anello__fondo { fill: rgba(0,0,0,.35); stroke: rgba(255,255,255,.12); stroke-width: 8; }
+.qz-anello__arco { fill: none; stroke: var(--bet-oro); stroke-width: 8; stroke-linecap: round; transition: stroke-dasharray .25s linear; }
+.qz-anello b { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font: 900 2.2rem/1 "Bai Jamjuree", sans-serif; }
+.qz-domanda__testa .qz-anello { width: 64px; height: 64px; }
+.qz-domanda__testa .qz-anello b { font-size: 1.5rem; }
+.qz-domanda__testa { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.qz-dentro { color: #7dffb5 !important; font-weight: 700; }
+.qz-puntate { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 4px; }
+.qz-puntate .fiche-casino { width: 44px; height: 44px; }
+.qz-scelta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+.bet-page .qz-tasto { height: 54px; border: 0; border-radius: 16px; font: 900 .95rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .04em; text-transform: uppercase; cursor: pointer; }
+.bet-page .qz-tasto--gratis { background: rgba(255,255,255,.1); color: #fff; border: 1.5px solid rgba(255,255,255,.3); }
+.bet-page .qz-tasto--punta { background: linear-gradient(#ffe48a, #e7b23a); color: #2a1a00; box-shadow: 0 5px 0 #8a5a12; }
+.qz-tasto:disabled { opacity: .45; cursor: default; }
+.qz-giocatori { margin: 0; color: rgba(255,255,255,.55); font-size: .74rem; font-weight: 700; }
+.qz-domanda h2 { margin: 2px 0 4px; color: #fff; font: 800 1.15rem/1.3 "Bai Jamjuree", sans-serif; text-wrap: balance; }
+.qz-risposte { display: grid; gap: 8px; width: 100%; }
+.bet-page .qz-risposta { display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 10px; min-height: 52px; padding: 8px 12px; border: 1.5px solid rgba(181,123,255,.45); border-radius: 14px; background: rgba(90,31,138,.45); color: #fff; font-weight: 800; text-align: left; cursor: pointer; transition: transform .1s, background .2s, border-color .2s; }
+.qz-risposta i { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: rgba(0,0,0,.35); color: var(--bet-oro); font-style: normal; font-weight: 900; }
+.qz-risposta:active:not(:disabled) { transform: scale(.98); }
+.qz-risposta:disabled { cursor: default; }
+.bet-page .qz-risposta.is-mia { border-color: var(--bet-oro); background: rgba(246,196,83,.18); }
+.bet-page .qz-risposta.is-giusta { border-color: #2fd27a; background: rgba(47,210,122,.25); animation: qz-giusta .6s ease 2; }
+.bet-page .qz-risposta.is-sbagliata { border-color: #ff4d5e; background: rgba(255,77,94,.22); }
+@keyframes qz-giusta { 50% { box-shadow: 0 0 22px rgba(47,210,122,.7); } }
+.qz-esito { margin: 0; min-height: 1.4em; color: #fff; font-weight: 800; }
+.qz-esito b { color: var(--bet-oro); }
+.qz-esiti { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.qz-esiti li { display: flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 99px; background: rgba(0,0,0,.35); font-size: .72rem; font-weight: 700; }
+.qz-esiti li .crest { width: 18px; height: 18px; }
+.qz-esiti li.is-giusta b { color: #7dffb5; }
+.qz-esiti li.is-sbagliata b { color: #ff8a96; }
+.qz .slot-festa { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.qz-oggi { display: grid; gap: 8px; }
+.qz-oggi h2 { margin: 0; font-size: 1rem; font-weight: 800; }
+.qz-oggi ol { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.qz-oggi li { display: grid; grid-template-columns: 44px 1fr; gap: 2px 10px; padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,.04); }
+.qz-oggi li small { grid-row: span 2; color: var(--bet-oro); font-weight: 900; font-variant-numeric: tabular-nums; }
+.qz-oggi li p { margin: 0; font-size: .82rem; color: #cfc6e0; }
+.qz-oggi li b { color: #7dffb5; font-size: .84rem; }
+@media (prefers-reduced-motion: reduce) { .qz-studio::before, .qz-risposta.is-giusta { animation: none; } }
