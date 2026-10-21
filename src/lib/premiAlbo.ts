@@ -5,7 +5,7 @@ import { firmaStemma } from './stemmiFirmati'
 
 export type Premio = {
   stagioneId: number
-  fase: 'regular' | 'title'
+  fase: 'regular' | 'title' | 'totale'   // dal 21/10/2026 il server restituisce solo 'totale' (campionato + playoff)
   // 'totale' = stagione regolare; nei playoff un premio per torneo: 'champions' (o Title Playoff), 'europa', 'draft'.
   ambito: 'totale' | 'champions' | 'europa' | 'draft'
   premio: 'marcatore' | 'assistman' | 'portiere'

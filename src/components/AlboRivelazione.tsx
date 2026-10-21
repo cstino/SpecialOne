@@ -37,7 +37,7 @@ const LOGO_UEFA = {
 } as const
 
 // «Regular Season» o il nome del torneo del premio.
-const etichettaFase = (premio: Premio, conferenze: boolean) => premio.fase === 'regular' ? 'Regular Season' : NOME_TORNEO(premio.ambito as Torneo['chiave'], conferenze)
+const etichettaFase = (premio: Premio, conferenze: boolean) => premio.fase === 'totale' ? 'Stagione' : premio.fase === 'regular' ? 'Regular Season' : NOME_TORNEO(premio.ambito as Torneo['chiave'], conferenze)
 const ORDINE_TORNEI: Array<Torneo['chiave']> = ['draft', 'europa', 'champions']
 const FRASE_PREMIO = {
   marcatore: 'Il miglior marcatore',
@@ -118,7 +118,7 @@ export function AlboRivelazione({ membership, stagioneId, onFine }: Props) {
       })
       if (idChampions != null) lista.push({
         chiave: 'champions', titolo: NOME_TORNEO('champions', conConferenze),
-        sottotitolo: conConferenze ? 'Vincitori della Champions League' : daPlayoff ? 'Campioni del Title Playoff' : 'Campioni della stagione',
+        sottotitolo: daPlayoff ? 'Campioni del Title Playoff' : 'Campioni della stagione',
         ...aspettoTorneo('champions', conConferenze),
         squadra: perId.get(idChampions) ?? null, stemma: stemmi.get(idChampions), posizione: pos(idChampions),
       })
@@ -138,15 +138,12 @@ export function AlboRivelazione({ membership, stagioneId, onFine }: Props) {
   // Draft Playoffs, Europa League e, per ultima, la Champions League (il gran finale con i coriandoli).
   const battute = useMemo<Battuta[]>(() => {
     const lista: Battuta[] = []
+    // I tre premi individuali della stagione (campionato + playoff insieme, dal 21/10/2026), poi i vincitori dei tornei.
     for (const { chiave } of PREMI) {
-      const premio = premi.find((voce) => voce.fase === 'regular' && voce.premio === chiave)
+      const premio = premi.find((voce) => (voce.fase === 'totale' || voce.fase === 'regular') && voce.premio === chiave)
       if (premio) lista.push({ tipo: 'premio', premio })
     }
     for (const chiaveTorneo of ORDINE_TORNEI) {
-      for (const { chiave } of PREMI) {
-        const premio = premi.find((voce) => voce.fase === 'title' && voce.ambito === chiaveTorneo && voce.premio === chiave)
-        if (premio) lista.push({ tipo: 'premio', premio })
-      }
       const torneo = tornei.find((voce) => voce.chiave === chiaveTorneo)
       if (torneo) lista.push({ tipo: 'torneo', torneo })
     }

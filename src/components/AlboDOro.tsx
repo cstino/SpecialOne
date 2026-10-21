@@ -129,7 +129,8 @@ export function AlboDOro({ membership, onNavigate }: Props) {
   const ultimoCampione = campioni[0]
   const stagioneInVista = campioni.find((campione) => campione.stagione.id === stagionePremi) ?? campioni[0]
   const premiInVista = stagioneInVista ? premi.filter((premio) => premio.stagioneId === stagioneInVista.stagione.id) : []
-  const fasiInVista = (['regular', 'title'] as const).filter((fase) => fase === 'regular' || premiInVista.some((premio) => premio.fase === fase))
+  // Un solo blocco: i premi della stagione contano campionato e playoff insieme (21/10/2026).
+  const fasiInVista = ['totale'] as const
   return <main className="app-shell season-shell honors-shell">
     <GameNav league={league} active="honors" onNavigate={onNavigate} />
     <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>Storia della lega</span></header>
@@ -187,7 +188,7 @@ export function AlboDOro({ membership, onNavigate }: Props) {
         </div>}
         <div className="honors-premi__fasi">
           {fasiInVista.map((fase) => <div className={`honors-premi__fase honors-premi__fase--${fase}`} key={fase}>
-            <h3>{fase === 'regular' ? 'Regular Season' : 'Title Playoffs'}</h3>
+            <h3>Premi della stagione</h3>
             {PREMI.map(({ chiave, titolo, unita }) => {
               const premio = premiInVista.find((voce) => voce.fase === fase && voce.premio === chiave)
               return <article className="honors-premio" key={chiave}>

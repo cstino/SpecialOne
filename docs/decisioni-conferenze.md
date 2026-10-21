@@ -179,6 +179,10 @@ marcatore/assistman/portiere, in tre ambiti: **East, West, Totale**), poi i vinc
   (oggi solo 'title'/'draft') a 'champions' e 'europa'. Nelle leghe senza conferenze il titolo si chiama «Title Playoff»;
   con le conferenze «Champions League» (logo UEFA).
 - L'albo d'oro (lista) continua a mostrare solo i premi 'totale'.
+- **21/10/2026: premi individuali solo totali** (decisione del committente): marcatore, assistman e portiere sommano campionato e
+  playoff di ogni tabellone in un unico premio per stagione (`premi_individuali_lega` restituisce fase e ambito = 'totale', migrazione
+  `20261021140000`, vale anche per le stagioni passate). La rivelazione di fine stagione mostra i tre premi della stagione e poi i
+  vincitori dei tornei; l'albo d'oro un solo blocco "Premi della stagione".
 
 ## Formato dei playoff con le conferenze: OPZIONE B (deciso il 14 ottobre 2026)
 
