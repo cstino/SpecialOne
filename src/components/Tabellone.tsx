@@ -11,11 +11,12 @@ import { LOGO_FASE } from '../lib/faseSquadra'
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; onOpenMatch: (id: number) => void }
 
 const TITOLO: Record<Bracket['tipo'], string> = { title: 'Title Playoff', draft: 'Draft Playoff' }
-// Formato B (leghe con le conferenze): Champions League e Draft Playoffs, con il turno di play-in East/West.
+// Formato B (leghe con le conferenze): Title Playoff e Draft Playoffs, con il turno di play-in East/West.
 const conferenze = (b: Bracket | undefined) => b?.formato === 'conferenze'
-const titoloDi = (b: Bracket) => conferenze(b) ? (b.tipo === 'title' ? 'Champions League' : 'Draft Playoffs') : TITOLO[b.tipo]
-const logoDi = (b: Bracket) => conferenze(b) && b.tipo === 'title' ? '/loghi-fase/uefa/champions-league.png' : LOGO_FASE[b.tipo]
-// Lettere dei play-in come nel regolamento: Champions A-D, Draft Playoffs E-H.
+// Anche con le conferenze il titolo resta il Title Playoff con il logo di sempre (decisione del committente, 21/10/2026).
+const titoloDi = (b: Bracket) => conferenze(b) ? (b.tipo === 'title' ? 'Title Playoff' : 'Draft Playoffs') : TITOLO[b.tipo]
+const logoDi = (b: Bracket) => LOGO_FASE[b.tipo]
+// Lettere dei play-in come nel regolamento: Title Playoff A-D, Draft Playoffs E-H.
 const letteraPlayIn = (b: Bracket, posizione: number) => (b.tipo === 'title' ? 'ABCD' : 'EFGH')[posizione] ?? '?'
 const sigla = (conferenza: string | null | undefined, seed: number | null | undefined) => seed == null ? null : conferenza ? `${conferenza === 'est' ? 'E' : 'W'}${seed}` : String(seed)
 
@@ -140,7 +141,7 @@ export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
     <div className="season-page season-page--narrow tabellone-page">
       <PopupSpiegazione userId={membership.user_id} hintKey="tabellone-playoff-v2" titolo="Come funzionano i playoff">
         {league.conferenze_attive
-          ? <p>A fine stagione regolare ogni conference si divide in due: le prime 6 vanno in <strong>Champions League</strong>, dalla 7ª alla 12ª nel <strong>Draft Playoffs</strong>. In Champions la 1ª e la 2ª di ogni conference vanno direttamente ai quarti, dalla 3ª alla 6ª giocano un <strong>play-in</strong> incrociato con l'altra conference; nel Draft Playoffs è il contrario: 12ª e 11ª dirette ai quarti, dalla 7ª alla 10ª al play-in.</p>
+          ? <p>A fine stagione regolare ogni conference si divide in due: le prime 6 vanno al <strong>Title Playoff</strong>, dalla 7ª alla 12ª nel <strong>Draft Playoffs</strong>. Nel Title Playoff la 1ª e la 2ª di ogni conference vanno direttamente ai quarti, dalla 3ª alla 6ª giocano un <strong>play-in</strong> incrociato con l'altra conference; nel Draft Playoffs è il contrario: 12ª e 11ª dirette ai quarti, dalla 7ª alla 10ª al play-in.</p>
           : <p>A fine stagione regolare la classifica si divide in due tabelloni a eliminazione diretta, giocati in parallelo. Il <strong>Title Playoff</strong> prende le prime 8 e assegna il titolo; il <strong>Draft Playoff</strong> prende tutte le altre squadre.</p>}
         <p>Ogni sfida mostra andata, ritorno e totale. Passa chi segna di più nella somma delle due partite (i gol in trasferta non valgono doppio); in caso di parità il ritorno va ai <strong>supplementari</strong> e poi ai <strong>rigori</strong>. La <strong>finale</strong> invece è una gara secca in campo neutro.</p>
         <p>Il Draft Playoff non è un ripiego: come va lì, e chi ti elimina, decide l'ordine di scelta nel prossimo mercato a scelte. Vale la pena giocarselo fino in fondo.</p>

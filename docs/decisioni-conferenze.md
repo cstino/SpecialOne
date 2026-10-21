@@ -194,7 +194,8 @@ L'Europa League sparisce. Per ogni conference (12 squadre):
   semifinale di Champions, 23ª finalista, 24ª campione.
 - **BLOCCO 2 fatto (21 ottobre 2026), migrazione `20261021130000`.** `crea_tabelloni` nelle leghe con le conferenze chiama
   `private.crea_tabelloni_conferenze`: due tabelloni con `formato = 'conferenze'`, il Champions resta di `tipo = 'title'` (stelle,
-  albo, premi e conferenze stampa lo riconoscono gia'; nell'app si chiama Champions League con il logo UEFA). Turno 1 = i quattro
+  albo, premi e conferenze stampa lo riconoscono gia'). Nome: **Title Playoff con il logo di sempre**, anche con le conferenze
+  (decisione del committente il 21/10/2026: niente "Champions League"/logo UEFA in tabellone, legenda della classifica e rivelazione dei premi). Turno 1 = i quattro
   play-in (la prima squadra indicata e' la favorita), turno 2 = i quarti creati subito con la testa di serie e `da_tie_id` = il
   play-in da cui arriva l'avversario; `avanza_bracket` sui tabelloni del formato B passa a `private.avanza_bracket_conferenze`, che
   riempie i quarti, poi accoppia semifinali e finale con la favorita "alta" (`private.po_favorita`: meglio piazzata in Champions,

@@ -46,14 +46,14 @@ const FRASE_PREMIO = {
 } as const
 // Nome del torneo: con le conferenze la Champions League, senza il Title Playoff.
 const NOME_TORNEO = (chiave: Torneo['chiave'], conferenze: boolean) =>
-  chiave === 'draft' ? 'Draft Playoffs' : chiave === 'europa' ? 'Europa League' : conferenze ? 'Champions League' : 'Title Playoff'
+  chiave === 'draft' ? 'Draft Playoffs' : chiave === 'europa' ? 'Europa League' : 'Title Playoff'
 const DEL_TORNEO = (chiave: Torneo['chiave'], conferenze: boolean) =>
-  chiave === 'draft' ? ' dei Draft Playoffs' : chiave === 'europa' ? ' dell’Europa League' : conferenze ? ' della Champions League' : ' del Title Playoff'
+  chiave === 'draft' ? ' dei Draft Playoffs' : chiave === 'europa' ? ' dell’Europa League' : ' del Title Playoff'
 // Sfondo e logo di un torneo (e dei suoi premi).
 function aspettoTorneo(chiave: Torneo['chiave'], conferenze: boolean) {
   if (chiave === 'draft') return { fase: 'draft' as const, sfondo: conferenze ? SFONDO.draftNuovo : SFONDO.draft, logo: LOGO_FASE.draft }
   if (chiave === 'europa') return { fase: 'draft' as const, sfondo: SFONDO.draft, logo: LOGO_UEFA.europa }
-  return { fase: 'title' as const, sfondo: SFONDO.title, logo: conferenze ? LOGO_UEFA.champions : LOGO_FASE.title }
+  return { fase: 'title' as const, sfondo: SFONDO.title, logo: LOGO_FASE.title }
 }
 
 function IconaPremio({ tipo }: { tipo: Premio['premio'] }) {

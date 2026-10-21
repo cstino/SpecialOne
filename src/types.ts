@@ -118,7 +118,7 @@ export type Bracket = {
   stato: 'in_corso' | 'concluso'
   vincitore_team_id: number | null
   finalista_team_id: number | null
-  // 'conferenze' = formato B (Champions + Draft Playoffs con play-in East/West), 21/10/2026
+  // 'conferenze' = formato B (Title Playoff + Draft Playoffs con play-in East/West), 21/10/2026
   formato?: 'classico' | 'conferenze'
 }
 

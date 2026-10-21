@@ -190,7 +190,7 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
                 </div>
                 <span>{standing.giocate}</span><span>{standing.vittorie}</span><span>{standing.pareggi}</span><span>{standing.sconfitte}</span><span>{standing.gol_fatti}</span><span>{standing.gol_subiti}</span><span>{standing.differenza_reti > 0 ? `+${standing.differenza_reti}` : standing.differenza_reti}</span><strong>{standing.punti}</strong>
                 <span className="standings-zona">
-                  {zonaPlayoff && <i className={`standings-zona__chip is-${zonaPlayoff}`} aria-label={{ title: 'Zona Title Playoff', draft: 'Zona Draft Playoff', champions: 'Champions League, diretta ai quarti', 'champions-playin': 'Champions League, play-in', 'draftpo-playin': 'Draft Playoffs, play-in', draftpo: 'Draft Playoffs, diretta ai quarti' }[zonaPlayoff]} />}
+                  {zonaPlayoff && <i className={`standings-zona__chip is-${zonaPlayoff}`} aria-label={{ title: 'Zona Title Playoff', draft: 'Zona Draft Playoff', champions: 'Title Playoff, diretta ai quarti', 'champions-playin': 'Title Playoff, play-in', 'draftpo-playin': 'Draft Playoffs, play-in', draftpo: 'Draft Playoffs, diretta ai quarti' }[zonaPlayoff]} />}
                 </span>
               </div>
             })}
@@ -199,8 +199,8 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
             <span><i className="standings-legend-dot" /> La tua squadra</span>
             {conferenze
               ? <>
-                  <span><i className="standings-zona__chip is-champions" /> Champions League · diretta ai quarti</span>
-                  <span><i className="standings-zona__chip is-champions-playin" /> Champions League · play-in</span>
+                  <span><i className="standings-zona__chip is-champions" /> Title Playoff · diretta ai quarti</span>
+                  <span><i className="standings-zona__chip is-champions-playin" /> Title Playoff · play-in</span>
                   <span><i className="standings-zona__chip is-draftpo-playin" /> Draft Playoffs · play-in</span>
                   <span><i className="standings-zona__chip is-draftpo" /> Draft Playoffs · diretta ai quarti</span>
                 </>
