@@ -6795,3 +6795,9 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 /* QuizOne: sotto ogni scelta, quanto si vince indovinando */
 .bet-page .qz-tasto { display: grid; place-content: center; gap: 3px; height: 62px; }
 .qz-tasto small { font: 800 .7rem/1 "Bai Jamjuree", sans-serif; letter-spacing: 0; text-transform: none; opacity: .85; }
+
+/* QuizOne: classifica a schede */
+.qz .av-giocate li { grid-template-columns: 28px minmax(0, 1fr) auto 70px; }
+.qz-classifica__nome { display: flex; align-items: center; gap: 8px; }
+.qz-classifica__nome .crest { width: 24px; height: 24px; flex: none; }
+.qz .av-giocate__esito small { color: #b9b0cc; font-size: .72rem; }

@@ -13,7 +13,9 @@ import { useSeasonData } from '../lib/useSeasonData'
 type Dati = ReturnType<typeof useSeasonData>
 type Domanda = { id: number; ora: number; regolata: boolean; testo: string | null; risposte: string[] | null; corretta: number | null; giocatori: number; esiti: Array<{ team_id: number; corretta: boolean | null; puntata: number; vinto: number }> | null }
 type Mia = { puntata: number; risposta: number | null; corretta: boolean | null; vinto: number }
-type Stato = { adesso: number; crediti: number; prossima: number; domanda: Domanda | null; mia: Mia | null; oggi: Array<{ ora: number; testo: string; risposta: string }>; classifica: Array<{ team_id: number; giuste: number; giocate: number; vinto: number }> }
+type Stato = { adesso: number; crediti: number; prossima: number; domanda: Domanda | null; mia: Mia | null; oggi: Array<{ ora: number; testo: string; risposta: string }>; classifica: RigaClassifica[]; classifica_totale?: RigaClassifica[] }
+type RigaClassifica = { team_id: number; giuste: number; giocate: number; vinto: number }
+const MIN_WIN_RATE = 5   // domande giocate per entrare nella classifica del win rate
 
 const PUNTATE = [10, 50, 100, 250, 500]
 let scarto = 0
@@ -35,6 +37,7 @@ export function Quizzone({ leagueId, dati }: { leagueId: number; dati: Dati }) {
   const [errore, setErrore] = useState('')
   const [invio, setInvio] = useState(false)
   const [festa, setFesta] = useState(0)
+  const [scheda, setScheda] = useState<'oggi' | 'totale' | 'winrate'>('oggi')
   const [, setTic] = useState(0)
   const [audio, setAudio] = useState(() => { try { return localStorage.getItem('slot-audio') !== '0' } catch { return true } })
   const suoni = useSuoni(audio)
@@ -152,15 +155,25 @@ export function Quizzone({ leagueId, dati }: { leagueId: number; dati: Dati }) {
 
     {errore && <p className="slot-messaggio"><span className="slot-errore">{errore}</span></p>}
 
-    {st.classifica.length > 0 && <section className="av-giocate">
-      <header><h2>Classifica di oggi</h2><span>risposte giuste</span></header>
-      <ol>{st.classifica.map((c) => <li key={c.team_id}>
-        <span className="bet-giocatori__stemma"><Crest value={dati.teamById.get(c.team_id)?.stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(c.team_id)} size="small" /></span>
-        <span className="av-giocate__nome">{dati.teamById.get(c.team_id)?.nome ?? '—'}</span>
-        <span className="av-giocate__puntata">{c.giuste}/{c.giocate}</span>
-        <span className="av-giocate__esito"><i>+{fmt(c.vinto)}</i></span>
-      </li>)}</ol>
-    </section>}
+    <section className="av-giocate">
+      <header><h2>Classifica</h2></header>
+      <div className="bet-tab bet-tab--piccola" role="tablist" aria-label="Classifica">
+        {([['oggi', 'Oggi'], ['totale', 'Totale'], ['winrate', 'Win rate']] as const).map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={scheda === k} className={scheda === k ? 'is-attiva' : ''} onClick={() => setScheda(k)}>{l}</button>)}
+      </div>
+      {(() => {
+        const tot = st.classifica_totale ?? []
+        const righe = scheda === 'oggi' ? st.classifica : scheda === 'totale' ? tot
+          : tot.filter((c) => c.giocate >= MIN_WIN_RATE).sort((a, b) => b.giuste / b.giocate - a.giuste / a.giocate || b.giocate - a.giocate)
+        if (righe.length === 0) return <p className="bet-nota">{scheda === 'winrate' ? `Entra in classifica chi ha giocato almeno ${MIN_WIN_RATE} domande.` : scheda === 'oggi' ? 'Nessuno ha ancora giocato oggi.' : 'Ancora nessuna domanda giocata.'}</p>
+        return <ol>{righe.map((c, i) => <li key={c.team_id}>
+          <span className={`bet-pos${i < 3 ? ` bet-pos--${i + 1}` : ''}`}>{i + 1}</span>
+          <span className="av-giocate__nome qz-classifica__nome"><Crest value={dati.teamById.get(c.team_id)?.stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(c.team_id)} size="small" />{dati.teamById.get(c.team_id)?.nome ?? '—'}</span>
+          <span className="av-giocate__puntata">{scheda === 'winrate' ? `${Math.round((100 * c.giuste) / c.giocate)}%` : `${c.giuste}/${c.giocate}`}</span>
+          <span className="av-giocate__esito">{scheda === 'winrate' ? <small>{c.giuste}/{c.giocate}</small> : <i>+{fmt(c.vinto)}</i>}</span>
+        </li>)}</ol>
+      })()}
+      {scheda === 'winrate' && <p className="bet-nota">Percentuale di risposte giuste, per chi ha giocato almeno {MIN_WIN_RATE} domande.</p>}
+    </section>
 
     {st.oggi.length > 0 && <section className="qz-oggi">
       <h2>Le domande di oggi</h2>
