@@ -39,7 +39,7 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
   const [blackjack, setBlackjack] = useState(false)
   const [premi, setPremi] = useState<Premio[]>([])
   // Una bustina di figurine gratis ogni 500 crediti spesi (dal 21/10/2026): avanzamento verso la prossima e bustine da aprire.
-  const [bustina, setBustina] = useState<{ spesi: number; gratis: number } | null>(null)
+  const [bustina, setBustina] = useState<{ spesi: number; gratis: number; oggi: number } | null>(null)
 
   const carica = useCallback(async () => {
     const { data, error } = await supabase.rpc('casino_stato', { p_league_id: leagueId })
@@ -48,8 +48,8 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
     setCrazyone((data as { crazyone?: boolean }).crazyone === true)
     setAviatone((data as { aviatone?: boolean }).aviatone === true)
     setBlackjack((data as { blackjack?: boolean }).blackjack === true)
-    const st = data as { album?: boolean; bustina_spesi?: number; bustine_gratis?: number }
-    setBustina(st.album && st.bustina_spesi != null ? { spesi: st.bustina_spesi, gratis: st.bustine_gratis ?? 0 } : null)
+    const st = data as { album?: boolean; bustina_spesi?: number; bustine_gratis?: number; bustine_oggi?: number }
+    setBustina(st.album && st.bustina_spesi != null ? { spesi: st.bustina_spesi, gratis: st.bustine_gratis ?? 0, oggi: st.bustine_oggi ?? 0 } : null)
     // Premi partita appena pagati (solo partite gia' viste o vecchie di 24 ore: niente spoiler). Restano a schermo finche' non si chiudono.
     const nuovi = ((data as { premi?: Premio[] }).premi ?? [])
     if (nuovi.length) setPremi((p) => [...p, ...nuovi])
@@ -107,9 +107,9 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
     </div>
     {errore && <p className="slot-errore" role="alert">{errore}</p>}
     {bustina && <div className="cas-bustina">
-      <div className="cas-bustina__testo"><b>Bustina di figurine</b><span>{fmt(bustina.spesi)} / 500 crediti spesi</span></div>
-      <div className="cas-bustina__barra" role="progressbar" aria-valuemin={0} aria-valuemax={500} aria-valuenow={bustina.spesi}><i style={{ width: `${Math.min(100, bustina.spesi / 5)}%` }} /></div>
-      <small>{bustina.gratis > 0 ? `Hai ${bustina.gratis} ${bustina.gratis === 1 ? 'bustina gratis' : 'bustine gratis'} da aprire nell'Album.` : 'Ogni 500 crediti giocati al casinò ricevi una bustina gratis per l\'Album.'}</small>
+      <div className="cas-bustina__testo"><b>Bustina di figurine</b><span>{bustina.oggi >= 15 ? 'Limite di oggi raggiunto' : `${fmt(bustina.spesi)} / 500 crediti spesi`}</span></div>
+      <div className="cas-bustina__barra" role="progressbar" aria-valuemin={0} aria-valuemax={500} aria-valuenow={bustina.oggi >= 15 ? 500 : bustina.spesi}><i style={{ width: `${bustina.oggi >= 15 ? 100 : Math.min(100, bustina.spesi / 5)}%` }} /></div>
+      <small>Oggi {bustina.oggi}/15 · {bustina.gratis > 0 ? `Hai ${bustina.gratis} ${bustina.gratis === 1 ? 'bustina gratis' : 'bustine gratis'} da aprire nell'Album.` : 'Una bustina gratis per l\'Album ogni 500 crediti giocati, massimo 15 al giorno.'}</small>
     </div>}
     {premi.length > 0 && <div className="cas-premi" role="status">
       <div className="cas-premi__testa"><b>Premi partita</b><button type="button" aria-label="Chiudi" onClick={() => setPremi([])}>✕</button></div>
