@@ -54,7 +54,8 @@ export type Team = {
   campione_in_carica?: boolean
 }
 
-export type Membership = Team & { league?: League }
+// notifiche_scelta: quali notifiche ricevere in questa lega (21/10/2026)
+export type Membership = Team & { league?: League; notifiche_scelta?: 'tutte' | 'calcio' | 'betone' }
 
 export type Season = {
   id: number

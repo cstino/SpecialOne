@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
 import { useNotificheContesto } from '../lib/navigazione'
 import { quandoRelativo } from '../lib/notifiche'
 import type { League, Membership } from '../types'
@@ -12,6 +13,17 @@ type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 export function Avvisi({ membership, onNavigate }: Props) {
   const league = membership.league as League
   const centro = useNotificheContesto()
+  // Quali notifiche ricevere in questa lega: tutte, solo calcio o solo BetOne (SchedOne, CasinOne, QuizOne, Album).
+  const [scelta, setScelta] = useState<'tutte' | 'calcio' | 'betone'>(membership.notifiche_scelta ?? 'tutte')
+  const [salvo, setSalvo] = useState(false)
+  async function cambiaScelta(nuova: 'tutte' | 'calcio' | 'betone') {
+    if (nuova === scelta || salvo) return
+    const prima = scelta
+    setScelta(nuova); setSalvo(true)
+    const { error } = await supabase.rpc('imposta_notifiche', { p_league_id: league.id, p_scelta: nuova })
+    if (error) setScelta(prima); else membership.notifiche_scelta = nuova
+    setSalvo(false)
+  }
 
   // Il contesto e' condiviso da tutte le leghe dell'utente (un solo canale
   // Realtime, vedi lib/navigazione.ts): qui si mostrano solo gli avvisi di
@@ -33,6 +45,17 @@ export function Avvisi({ membership, onNavigate }: Props) {
       <section className="alerts-heading">
         <div><p className="kicker">{league.nome}</p><h1>Avvisi.</h1><p>Risultati, mercato e aggiornamenti della tua carriera, tutti nello stesso posto.</p></div>
         <div className="alerts-heading__count"><strong>{notifiche.length}</strong><span>{notifiche.length === 1 ? 'avviso' : 'avvisi'}</span></div>
+      </section>
+
+      <section className="alerts-scelta">
+        <h2>Quali notifiche vuoi ricevere?</h2>
+        <div className="alerts-scelta__opzioni" role="radiogroup" aria-label="Notifiche da ricevere">
+          {([['tutte', 'Tutte'], ['calcio', 'Solo calcio'], ['betone', 'Solo BetOne']] as const).map(([k, l]) =>
+            <button key={k} type="button" role="radio" aria-checked={scelta === k} className={scelta === k ? 'is-scelta' : ''} disabled={salvo} onClick={() => void cambiaScelta(k)}>{l}</button>)}
+        </div>
+        <p>{scelta === 'tutte' ? 'Ricevi tutto: partite, mercato, squadra e anche SchedOne, giochi del casinò, QuizOne e Album.'
+          : scelta === 'calcio' ? 'Ricevi solo le notifiche del calcio (partite, formazione, mercato, scambi, conferenze, spogliatoio). Niente notifiche di BetOne.'
+            : 'Ricevi solo le notifiche di BetOne: SchedOne, giochi del casinò, QuizOne e Album.'} Vale per questa lega, sul telefono e qui negli avvisi.</p>
       </section>
 
       {centro?.caricamento ? <section className="season-state is-caricamento"><LoadingLogo compatto /><h2>Carico gli avvisi…</h2><span className="caricamento-barra" aria-hidden="true" /></section>
