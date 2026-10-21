@@ -105,7 +105,7 @@ export function quante(rng, n, p) {
  *   cartellini: [{ giocatore, tipo }]
  *
  * Restituisce una Map id -> { voto, dettaglio } per chi ha giocato almeno
- * MINUTI_MINIMI; gli altri ricevono { voto: null }.
+ * MINUTI_MINIMI o ha segnato/fatto assist; gli altri ricevono { voto: null }.
  */
 export function pagelle(lati, seme) {
   const rng = generatore(seme);
@@ -134,7 +134,10 @@ export function pagelle(lati, seme) {
     for (const [id, minuti] of L.stats.minuti) {
       const g = L.giocatori.get(id);
       const slot = L.stats.slot?.get(id) ?? g?.posizioni?.[0] ?? 'CM';
-      if (!g || minuti < MINUTI_MINIMI) { out.set(id, { voto: null, lato }); continue; }
+      // Sotto MINUTI_MINIMI "senza voto", tranne chi ha segnato o fatto assist (21/10/2026, decisione del committente:
+      // chi entra e decide la partita deve avere il voto, come al fantacalcio).
+      const decisivo = (gol.get(id) ?? 0) > 0 || (L.assist?.get(id) ?? 0) > 0;
+      if (!g || (minuti < MINUTI_MINIMI && !decisivo)) { out.set(id, { voto: null, lato }); continue; }
       const rep = REPARTO[slot] ?? 'MID';
       const quota = Math.min(1, minuti / 90);
 
