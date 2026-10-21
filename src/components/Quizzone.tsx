@@ -21,7 +21,11 @@ const PUNTATE = [10, 50, 100, 250, 500]
 let scarto = 0
 const ora = () => Date.now() + scarto
 const hh = (ms: number) => new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }).format(ms)
-const mmss = (ms: number) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` }
+// Conto alla rovescia: m:ss sotto l'ora, h:mm:ss oltre (di notte la prossima domanda e' alle 8:00).
+const mmss = (ms: number) => {
+  const s = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = String(s % 60).padStart(2, '0')
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`
+}
 
 function Anello({ resto, totale }: { resto: number; totale: number }) {
   const k = Math.max(0, Math.min(1, resto / totale))
