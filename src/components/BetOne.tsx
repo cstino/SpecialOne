@@ -58,7 +58,7 @@ const esito = (casa: number, trasf: number): Segno => (casa > trasf ? '1' : casa
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void; revealedMatchIds: Set<number>; onRevealMatch: (matchId: number) => void }
 
-export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch }: Props) {
+export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch, sezione: sezioneFissa = 'pronostici' }: Props & { sezione?: 'pronostici' | 'casino' }) {
   const league = membership.league as League
   const dati = useSeasonData(membership)
   const adesso = useAdesso()
@@ -77,10 +77,8 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
   const [puntata, setPuntata] = useState(100)
   const [crediti, setCrediti] = useState<number | null>(null)
   useEffect(() => { void supabase.rpc('casino_stato', { p_league_id: league.id }).then(({ data }) => setCrediti(Number((data as { crediti?: number } | null)?.crediti ?? 0))) }, [league.id, salvata])
-  const [sezione, setSezione] = useState<'pronostici' | 'casino'>('pronostici')
-  // Il casino' per ora lo vede solo il committente (lo decide il server: casino_visibile).
-  const [casinoVisibile, setCasinoVisibile] = useState(false)
-  useEffect(() => { void supabase.rpc('casino_visibile').then(({ data }) => setCasinoVisibile(data === true)) }, [])
+  // SchedOne (pronostici) e CasinOne (casino') sono due pagine separate del menu BetOne.
+  const sezione = sezioneFissa
 
   // --- La giornata a cui si gioca: la prima ancora da giocare del campionato.
   const giornata = useMemo(() => {
@@ -229,10 +227,10 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
   const scala = [0, 1, 2, 3].map((e) => ({ e, m: moltiplicatore(partiteAttivo.length, e, doppieOra) })).filter((x) => x.m > 0)
 
   return <main className="app-shell season-shell bet-shell">
-    <GameNav league={league} active="betone" onNavigate={onNavigate} />
-    <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>BetOne</span></header>
+    <GameNav league={league} active={sezione === 'casino' ? 'casinone' : 'betone'} onNavigate={onNavigate} />
+    <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>{sezione === 'casino' ? 'CasinOne' : 'SchedOne'}</span></header>
     <div className="season-page season-page--narrow bet-page">
-      {dati.loading || !caricato ? <section className="season-state is-caricamento"><LoadingLogo compatto /><h2>Preparo la schedina…</h2><span className="caricamento-barra" aria-hidden="true" /></section> : <>
+      {dati.loading || !caricato ? <section className="season-state is-caricamento"><LoadingLogo compatto /><h2>{sezione === 'casino' ? 'Accendo le luci del casinò…' : 'Preparo la schedina…'}</h2><span className="caricamento-barra" aria-hidden="true" /></section> : <>
 
         <section className="bet-hero">
           <div className="bet-hero__marchio" aria-hidden="true">
@@ -242,17 +240,15 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
           </div>
           <div className="bet-hero__testo">
             <p className="bet-kicker">{league.nome}</p>
-            <h1>Bet<b>One</b></h1>
-            <p className="bet-sottotitolo">La schedina della giornata: 1, X o 2 per ogni partita, con solo {MAX_DOPPIE} doppie a disposizione. Una schedina perfetta vale una WIN.</p>
+            {sezione === 'casino' ? <><h1>Casin<b>One</b></h1>
+              <p className="bet-sottotitolo">I giochi del casinò di SpecialOne: AviatOne, CrazyOne, BlackjackOne e SlotOne, con i crediti di BetOne.</p></>
+              : <><h1>Sched<b>One</b></h1>
+              <p className="bet-sottotitolo">La schedina della giornata: 1, X o 2 per ogni partita, con solo {MAX_DOPPIE} doppie a disposizione. Una schedina perfetta vale una WIN.</p></>}
           </div>
         </section>
 
-        <div className="bet-sezioni" role="tablist" aria-label="Sezione di BetOne">
-          <button type="button" role="tab" aria-selected={sezione === 'pronostici'} className={sezione === 'pronostici' ? 'is-attiva' : ''} onClick={() => setSezione('pronostici')}><span aria-hidden="true">🎟️</span>Pronostici</button>
-          {casinoVisibile && <button type="button" role="tab" aria-selected={sezione === 'casino'} className={sezione === 'casino' ? 'is-attiva' : ''} onClick={() => setSezione('casino')}><span aria-hidden="true">🎰</span>Casinò</button>}
-        </div>
 
-        {casinoVisibile && sezione === 'casino' ? <CasinoHub leagueId={league.id} teamId={membership.id} dati={dati} /> : <>
+        {sezione === 'casino' ? <CasinoHub leagueId={league.id} teamId={membership.id} dati={dati} /> : <>
         {giornata == null
           ? <section className="bet-vuoto"><strong>Nessuna giornata da giocare</strong><p>La prossima schedina si apre appena c'è una nuova giornata di campionato.</p></section>
           : <>

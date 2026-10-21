@@ -4,7 +4,7 @@ import type { League } from '../types'
 import { Icona as IconaTonda } from './Icona'
 import { supabase } from '../lib/supabase'
 
-export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'under' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse' | 'social' | 'rivalita' | 'salastampa' | 'spogliatoio' | 'pubblico' | 'betone' | 'album' | 'quizzone'
+export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'under' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse' | 'social' | 'rivalita' | 'salastampa' | 'spogliatoio' | 'pubblico' | 'betone' | 'casinone' | 'album' | 'quizzone'
 type GameNavProps = { league: League; active: GameView; onNavigate?: (view: GameView) => void }
 
 // Icone disegnate a mano: i glifi Unicode di prima (▦ ♜ ♙ ◆ ◉ ≡) venivano resi dal
@@ -34,6 +34,7 @@ const ICONE: Record<string, ReactNode> = {
   risultati: <><path d="M4 20V10M10 20V4M16 20v-8M21 20H3" /><path d="m3.5 7 4-3 4 2 4-4" /></>,
   altro: <><circle cx="5.5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="18.5" cy="12" r="1.8" /></>,
   quizzone: <><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6" /><path d="M12 17h.01" /></>,
+  casinone: <><rect x="4" y="4" width="16" height="16" rx="3" /><circle cx="9" cy="9" r="1.3" /><circle cx="15" cy="15" r="1.3" /><circle cx="15" cy="9" r="1.3" /><circle cx="9" cy="15" r="1.3" /></>,
   album: <><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z" /><path d="M5 17a3 3 0 0 1 3-3h11" /><path d="M9.5 7.5h5v4h-5z" /></>,
   extra: <><path d="m12 3 2.2 5.2L20 9l-4.3 3.8L17 18.5 12 15.6 7 18.5l1.3-5.7L4 9l5.8-.8z" /></>,
   betone: <><path d="M4 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2.2a2 2 0 0 0 0 3.6V16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2.2a2 2 0 0 0 0-3.6z" /><path d="M10 8v8" strokeDasharray="1.6 2.4" /><path d="m13.5 11 1.5 1.5L17.5 10" /></>,
@@ -53,7 +54,7 @@ function Icona({ nome }: { nome: string }) {
 type NavLeaf = { view: GameView; label: string }
 // Le voci del menu sono raggruppate per argomento, ognuna con il suo sottomenu: un'unica riga in menu che
 // si apre sulle pagine dell'argomento (Mercato per primo, poi Gestione, Risultati ed Extra campo).
-type NavGroup = { group: 'gestione' | 'mercato' | 'risultati' | 'extra' | 'altro'; label: string; children: readonly NavLeaf[] }
+type NavGroup = { group: 'gestione' | 'mercato' | 'risultati' | 'extra' | 'betone' | 'altro'; label: string; children: readonly NavLeaf[] }
 type NavEntry = NavLeaf | NavGroup
 
 const gruppoGestione: NavGroup = {
@@ -200,15 +201,16 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
   const conAdmin: readonly NavEntry[] = eAdmin && league.fase_carriera !== 'offseason'
     ? [...conExtra, { view: 'admin', label: 'Admin' }]
     : conExtra
-  // Altro: BetOne (schedina e casino') e l'Album, ultimo gruppo del menu, nelle leghe con le novita'.
-  // L'album compare solo dove il server lo attiva (album_attivo: per ora LegaBot).
-  const gruppoAltro: NavGroup = { group: 'altro', label: 'Altro', children: [
-    { view: 'betone', label: 'BetOne' },
-    ...(albumAttivo ? [{ view: 'album' as GameView, label: 'Album' }] : []),
+  // BetOne (21/10/2026): sezione del menu con SchedOne (la schedina), CasinOne (i giochi) e QuizOne.
+  // Altro: l'Album, dove il server lo attiva (album_attivo). Solo nelle leghe con le novita'.
+  const gruppoBetOne: NavGroup = { group: 'betone', label: 'BetOne', children: [
+    { view: 'betone', label: 'SchedOne' },
+    { view: 'casinone', label: 'CasinOne' },
     ...(quizAttivo ? [{ view: 'quizzone' as GameView, label: 'QuizOne' }] : []),
   ] }
+  const gruppoAltro: NavGroup = { group: 'altro', label: 'Altro', children: albumAttivo ? [{ view: 'album' as GameView, label: 'Album' }] : [] }
   const items: readonly NavEntry[] = league.conferenze_stampa && league.stato === 'stagione' && league.fase_carriera !== 'offseason'
-    ? [...conAdmin, gruppoAltro]
+    ? [...conAdmin, gruppoBetOne, ...(gruppoAltro.children.length ? [gruppoAltro] : [])]
     : conAdmin
   const [menuMobileAperto, setMenuMobileAperto] = useState(false)
   // Ogni argomento si apre da solo quando si e' su una delle sue pagine (link diretto, tab interno).
