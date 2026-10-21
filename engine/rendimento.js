@@ -78,12 +78,14 @@ export function creaRendimento(seme) {
     v += s.ok.int * PESI.intervento + (s.att.int - s.ok.int) * PESI.interventoMancato;
     v += s.ok.duelli * PESI.contrastoVinto + (s.att.duelli - s.ok.duelli) * PESI.contrastoPerso;
     v += s.ok.dri * PESI.dribblingRiuscito + (s.att.dri - s.ok.dri) * PESI.dribblingFallito;
-    v += (extra.gol ?? s.gol) * (PESI.gol[rep] ?? 1) + (extra.assist ?? s.assist) * PESI.assist;
+    // Gol e assist contano per intero anche a chi gioca poco (21/10/2026, decisione del committente): restano fuori
+    // dalla riduzione verso il 6 qui sotto.
+    const decisivi = (extra.gol ?? s.gol) * (PESI.gol[rep] ?? 1) + (extra.assist ?? s.assist) * PESI.assist;
     v += s.golSubiti * (PESI.golSubito[rep] ?? 0);
     v += s.errori * PESI.errore;
     v += extra.extra ?? 0;
     // Chi gioca poco resta vicino al 6: ha avuto meno occasioni per farsi notare.
-    let voto = 6 + (v - 6) * (0.45 + 0.55 * quota);
+    let voto = 6 + (v - 6) * (0.45 + 0.55 * quota) + decisivi;
     // I cartellini si pagano per intero, anche se arrivano al 17': non si
     // diluiscono con i minuti. L'espulso non puo' superare il tetto.
     if (s.rosso) voto = Math.min(voto + PESI.rosso, PESI.tettoRosso);

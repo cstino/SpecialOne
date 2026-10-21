@@ -198,10 +198,9 @@ export function pagelle(lati, seme) {
       const inPorta = Math.max(golSuoi, Math.min(tiri, Math.round(tiri * tiriInPortaMiei / tiriMiei)));
       d.tiri = tiri; d.tiriInPorta = inPorta; d.gol = golSuoi;
       voto += (inPorta - golSuoi) * PESI.tiroInPorta + (tiri - inPorta) * PESI.tiroFuori;
-      voto += golSuoi * (PESI.gol[rep] ?? 1);
-
       d.assist = L.assist?.get(id) ?? 0;
-      voto += d.assist * PESI.assist;
+      // Gol e assist contano per intero anche a chi gioca poco: fuori dalla riduzione verso il 6 (21/10/2026).
+      const decisivi = golSuoi * (PESI.gol[rep] ?? 1) + d.assist * PESI.assist;
 
       // la porta: portiere e difesa rispondono dei gol subiti
       if (rep === 'GK') { d.parate = parateTotali; voto += parateTotali * PESI.parata; }
@@ -214,7 +213,7 @@ export function pagelle(lati, seme) {
       else if (c) voto += PESI.rosso;
 
       // Chi gioca poco resta vicino al 6: ha avuto meno occasioni per farsi notare.
-      voto = 6 + (voto - 6) * (0.45 + 0.55 * quota);
+      voto = 6 + (voto - 6) * (0.45 + 0.55 * quota) + decisivi;
       voto += gauss() * PESI.rumore;
       out.set(id, { voto: Math.round(clamp(voto, 3, 10) * 10) / 10, dettaglio: d, lato });
     }
