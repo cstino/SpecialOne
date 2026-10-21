@@ -7,13 +7,13 @@ import { GameNav, type GameView } from './GameNav'
 import { useSeasonData } from '../lib/useSeasonData'
 
 // QUIZONE, scritto QuizOne (internamente "quizzone": supabase/migrations/20261020280000_quizzone.sql): una domanda ogni ora piena, uguale per tutti.
-// :00-:10 si entra (gratis o puntando 10-500), :10-:25 domanda con 4 risposte, poi risultato. Risposta giusta = 100
+// :00-:10 si entra (gratis o puntando 10-500), :10-:25 domanda con 4 risposte, poi risultato. Risposta giusta = premio fisso (100, dal 22/10/2026 250) + 2x puntata; alle 22:30 il primo del giorno vince 1.000
 // crediti, piu' il doppio della puntata. Le domande e le risposte giuste le decide il server dai dati della stagione.
 
 type Dati = ReturnType<typeof useSeasonData>
 type Domanda = { id: number; ora: number; regolata: boolean; testo: string | null; risposte: string[] | null; corretta: number | null; giocatori: number; esiti: Array<{ team_id: number; corretta: boolean | null; puntata: number; vinto: number }> | null }
 type Mia = { puntata: number; risposta: number | null; corretta: boolean | null; vinto: number }
-type Stato = { adesso: number; crediti: number; prossima: number; domanda: Domanda | null; mia: Mia | null; oggi: Array<{ ora: number; testo: string; risposta: string }>; classifica: RigaClassifica[]; classifica_totale?: RigaClassifica[] }
+type Stato = { adesso: number; crediti: number; prossima: number; domanda: Domanda | null; mia: Mia | null; oggi: Array<{ ora: number; testo: string; risposta: string }>; classifica: RigaClassifica[]; classifica_totale?: RigaClassifica[]; premio?: number; vincitori?: Array<{ team_id: number; giuste: number; crediti: number }> }
 type RigaClassifica = { team_id: number; giuste: number; giocate: number; vinto: number }
 const MIN_WIN_RATE = 5   // domande giocate per entrare nella classifica del win rate
 
@@ -82,6 +82,7 @@ export function Quizzone({ leagueId, dati }: { leagueId: number; dati: Dati }) {
   if (!st) return <section className="slot-caricamento">{errore ? <p role="alert">{errore}</p> : <p>Accendo le luci dello studio…</p>}</section>
 
   const d = st.domanda, mia = st.mia
+  const premio = st.premio ?? 100  // premio fisso per risposta giusta, deciso dal server (250 dal 22/10/2026)
   const adesso = ora()
   const dt = d ? adesso - d.ora : Infinity
   const fase: 'entra' | 'domanda' | 'controllo' | 'risultato' | 'attesa' = !d ? 'attesa'
@@ -111,11 +112,11 @@ export function Quizzone({ leagueId, dati }: { leagueId: number; dati: Dati }) {
         <small>Domanda delle {hh(d.ora)}</small>
         <Anello resto={10_000 - dt} totale={10_000} />
         {mia ? <p className="qz-dentro">Sei dentro {mia.puntata > 0 ? <>con <b>{fmt(mia.puntata)}</b> crediti</> : <b>gratis</b>}. La domanda sta per arrivare…</p> : <>
-          <p>Gratis o con puntata, se indovini vinci sempre <b>100 crediti</b>. Puntando vinci anche il doppio della puntata (se sbagli, perdi solo la puntata).</p>
+          <p>Gratis o con puntata, se indovini vinci sempre <b>{fmt(premio)} crediti</b>. Puntando vinci anche il doppio della puntata (se sbagli, perdi solo la puntata).</p>
           <div className="qz-puntate">{PUNTATE.map((p) => <button key={p} type="button" className={`fiche-casino fiche-casino--${p >= 100 ? 100 : p === 50 ? 50 : 10}${puntata === p ? ' is-scelta' : ''}`} disabled={p > st.crediti} onClick={() => setPuntata(p)}><span>{p}</span></button>)}</div>
           <div className="qz-scelta">
-            <button type="button" className="qz-tasto qz-tasto--gratis" disabled={invio} onClick={() => void entra(0)}><span>Gioca gratis</span><small>se indovini +100</small></button>
-            <button type="button" className="qz-tasto qz-tasto--punta" disabled={invio || puntata > st.crediti} onClick={() => void entra(puntata)}><span>Punta {fmt(puntata)}</span><small>se indovini +{fmt(100 + puntata * 2)}</small></button>
+            <button type="button" className="qz-tasto qz-tasto--gratis" disabled={invio} onClick={() => void entra(0)}><span>Gioca gratis</span><small>se indovini +{fmt(premio)}</small></button>
+            <button type="button" className="qz-tasto qz-tasto--punta" disabled={invio || puntata > st.crediti} onClick={() => void entra(puntata)}><span>Punta {fmt(puntata)}</span><small>se indovini +{fmt(premio + puntata * 2)}</small></button>
           </div>
         </>}
         <p className="qz-giocatori">{d.giocatori} {d.giocatori === 1 ? 'giocatore dentro' : 'giocatori dentro'}</p>
@@ -172,6 +173,9 @@ export function Quizzone({ leagueId, dati }: { leagueId: number; dati: Dati }) {
           <span className="av-giocate__esito">{scheda === 'winrate' ? <small>{c.giuste}/{c.giocate}</small> : <i>+{fmt(c.vinto)}</i>}</span>
         </li>)}</ol>
       })()}
+      {scheda === 'oggi' && ((st.vincitori ?? []).length > 0
+        ? <p className="bet-nota">Vincitore di oggi: {(st.vincitori ?? []).map((w) => dati.teamById.get(w.team_id)?.nome ?? '—').join(', ')} (+1.000 crediti).</p>
+        : <p className="bet-nota">Alle 22:30 il primo della classifica di oggi vince 1.000 crediti.</p>)}
       {scheda === 'winrate' && <p className="bet-nota">Percentuale di risposte giuste, per chi ha giocato almeno {MIN_WIN_RATE} domande.</p>}
     </section>
 
@@ -194,7 +198,7 @@ export function PaginaQuizzone({ membership, onNavigate }: { membership: Members
         <div className="bet-hero__testo">
           <p className="bet-kicker">{league.nome}</p>
           <h1>Quiz<b>One</b></h1>
-          <p className="bet-sottotitolo">Il quiz di SpecialOne: una domanda ogni ora sulla stagione. 100 crediti a chi indovina, e chi punta raddoppia la puntata.</p>
+          <p className="bet-sottotitolo">Il quiz di SpecialOne: una domanda ogni ora sulla stagione. Crediti a chi indovina, chi punta raddoppia la puntata e il primo della giornata vince 1.000 crediti.</p>
         </div>
       </section>
       {dati.loading ? <section className="slot-caricamento"><p>Preparo lo studio…</p></section> : <Quizzone leagueId={league.id} dati={dati} />}
