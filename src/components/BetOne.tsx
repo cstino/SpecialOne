@@ -17,11 +17,12 @@ type Segno = '1' | 'X' | '2'
 const SEGNI: Segno[] = ['1', 'X', '2']
 const MAX_DOPPIE = 2
 const MINUTI_CHIUSURA = 15
-// Stessa formula di private.betone_moltiplicatore: errori -> moltiplicatore, ogni doppia lo dimezza.
+// Stessa formula di private.betone_moltiplicatore: errori -> moltiplicatore (le doppie sono gratis dal 21/10/2026).
 function moltiplicatore(partite: number, errori: number, doppie: number) {
   const k = Math.max(0, partite - 6)
   const base = errori === 0 ? 20 * 1.6 ** k : errori === 1 ? 4 * 1.4 ** k : errori === 2 ? 1.5 * 1.2 ** k : errori === 3 && partite >= 8 ? 1 : 0
-  return Math.round(base * 0.5 ** Math.max(0, doppie) * 100) / 100
+  void doppie
+  return Math.round(base * 100) / 100
 }
 const fmtN = (n: number) => new Intl.NumberFormat('it-IT', { maximumFractionDigits: 2 }).format(n)
 
@@ -283,7 +284,6 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
               <div className="bet-quote" aria-label="Moltiplicatori">
                 {scala.map((x) => <span key={x.e} className={x.e === 0 ? 'is-top' : ''}><small>{x.e === 0 ? 'Tutte giuste' : `${partiteAttivo.length - x.e} su ${partiteAttivo.length}`}</small><b>×{fmtN(x.m)}</b><em>{fmtN(Math.round(puntata * x.m))}</em></span>)}
               </div>
-              {doppieOra > 0 && <p className="bet-ticket__nota">Con {doppieOra} {doppieOra === 1 ? 'doppia' : 'doppie'} i moltiplicatori sono {doppieOra === 1 ? 'dimezzati' : 'divisi per 4'}.</p>}
               <p className="bet-ticket__avviso">Come al totocalcio vanno giocate <b>tutte le {partiteAttivo.length} partite</b>: la scommessa si piazza solo a schedina completa.</p>
               <ol className="bet-righe">
                 {partiteAttivo.map((f, i) => {
@@ -398,7 +398,7 @@ export function BetOne({ membership, onNavigate, revealedMatchIds, onRevealMatch
             <li>Puoi modificarla fino a {MINUTI_CHIUSURA} minuti prima della simulazione. Quelle degli altri restano nascoste finché non sono valutate.</li>
             <li>Una schedina con <b>tutti i pronostici giusti</b> vale una <b>WIN</b>. In classifica contano le WIN e, a parità, le partite azzeccate.</li>
             <li>Si gioca sempre con i <b>crediti</b>: scegli quanto puntare, da 1 credito in su (quanto vuoi, entro i crediti che hai). La puntata si scala subito; finché la schedina è aperta puoi cambiarla e la differenza ti viene restituita o scalata.</li>
-            <li>La vincita è <b>puntata × moltiplicatore</b>, secondo quanti pronostici azzecchi (la tabella è sulla schedina). Con 6 partite: tutte giuste ×20, 5 su 6 ×4, 4 su 6 ×1,5, meno perdi la puntata. Ogni <b>doppia dimezza</b> i moltiplicatori.</li>
+            <li>La vincita è <b>puntata × moltiplicatore</b>, secondo quanti pronostici azzecchi (la tabella è sulla schedina). Con 6 partite: tutte giuste ×20, 5 su 6 ×4, 4 su 6 ×1,5, meno perdi la puntata. Le <b>doppie sono gratis</b>: non cambiano il moltiplicatore.</li>
           </ul>}
         </section>
         </>}
