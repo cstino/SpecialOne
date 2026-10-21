@@ -107,9 +107,9 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
     </div>
     {errore && <p className="slot-errore" role="alert">{errore}</p>}
     {bustina && <div className="cas-bustina">
-      <div className="cas-bustina__testo"><b>Bustina di figurine</b><span>{bustina.oggi >= 15 ? 'Limite di oggi raggiunto' : `${fmt(bustina.spesi)} / 500 crediti spesi`}</span></div>
-      <div className="cas-bustina__barra" role="progressbar" aria-valuemin={0} aria-valuemax={500} aria-valuenow={bustina.oggi >= 15 ? 500 : bustina.spesi}><i style={{ width: `${bustina.oggi >= 15 ? 100 : Math.min(100, bustina.spesi / 5)}%` }} /></div>
-      <small>Oggi {bustina.oggi}/15 · {bustina.gratis > 0 ? `Hai ${bustina.gratis} ${bustina.gratis === 1 ? 'bustina gratis' : 'bustine gratis'} da aprire nell'Album.` : 'Una bustina gratis per l\'Album ogni 500 crediti giocati, massimo 15 al giorno.'}</small>
+      <div className="cas-bustina__testo"><b>Bustina di figurine</b><span>{bustina.gratis >= 15 ? 'Apri una bustina per riceverne altre' : bustina.oggi >= 15 ? 'Limite di oggi raggiunto' : `${fmt(bustina.spesi)} / 500 crediti spesi`}</span></div>
+      <div className="cas-bustina__barra" role="progressbar" aria-valuemin={0} aria-valuemax={500} aria-valuenow={bustina.oggi >= 15 || bustina.gratis >= 15 ? 500 : bustina.spesi}><i style={{ width: `${bustina.oggi >= 15 || bustina.gratis >= 15 ? 100 : Math.min(100, bustina.spesi / 5)}%` }} /></div>
+      <small>Oggi {bustina.oggi}/15 · {bustina.gratis > 0 ? `Hai ${bustina.gratis} ${bustina.gratis === 1 ? 'bustina gratis' : 'bustine gratis'} da aprire nell'Album${bustina.gratis >= 15 ? ' (massimo 15)' : ''}.` : 'Una bustina gratis per l\'Album ogni 500 crediti giocati, massimo 15 al giorno e 15 da aprire.'}</small>
     </div>}
     {premi.length > 0 && <div className="cas-premi" role="status">
       <div className="cas-premi__testa"><b>Premi partita</b><button type="button" aria-label="Chiudi" onClick={() => setPremi([])}>✕</button></div>
