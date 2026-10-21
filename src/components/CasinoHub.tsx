@@ -11,7 +11,9 @@ import { BlackjackOne } from './BlackjackOne'
 // I crediti sono gli stessi per tutti i giochi; la classifica e' unica (miglior colpo in un solo giro, qualsiasi gioco).
 
 type Dati = ReturnType<typeof useSeasonData>
-type RigaClassifica = { team_id: number; crediti: number; max_vincita: number; giri: number }
+type RigaClassifica = { team_id: number; miglior_colpo: number; spesi: number; profitto: number; giri: number; crediti: number | null }
+type Vista = 'colpo' | 'spesi' | 'profitto'
+type Filtro = 'tutti' | 'aviat' | 'crazy' | 'bj' | 'slot'
 type Gioco = 'slot' | 'crazy' | 'aviat' | 'bj'
 type Premio = { esito: 'vittoria' | 'pareggio' | 'sconfitta'; crediti: number; avversario_id: number }
 
@@ -29,6 +31,8 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
   const [gioco, setGioco] = useState<Gioco | null>(null)
   const [crediti, setCrediti] = useState<number | null>(null)
   const [classifica, setClassifica] = useState<RigaClassifica[]>([])
+  const [vista, setVista] = useState<Vista>('colpo')
+  const [filtro, setFiltro] = useState<Filtro>('tutti')
   const [errore, setErrore] = useState('')
   const [crazyone, setCrazyone] = useState(false)
   const [aviatone, setAviatone] = useState(false)
@@ -45,24 +49,38 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
     // Premi partita appena pagati (solo partite gia' viste o vecchie di 24 ore: niente spoiler). Restano a schermo finche' non si chiudono.
     const nuovi = ((data as { premi?: Premio[] }).premi ?? [])
     if (nuovi.length) setPremi((p) => [...p, ...nuovi])
-    const { data: cl } = await supabase.rpc('casino_classifica', { p_league_id: leagueId })
-    setClassifica((cl ?? []) as RigaClassifica[])
+
   }, [leagueId])
   useEffect(() => { if (gioco == null) void carica() }, [carica, gioco])
 
-  const aggiornaClassifica = () => { void supabase.rpc('casino_classifica', { p_league_id: leagueId }).then(({ data: cl }) => setClassifica((cl ?? []) as RigaClassifica[])) }
+  // Classifica del casino': miglior colpo, crediti spesi o profitto, per tutti i giochi (predefinito) o per uno solo.
+  const aggiornaClassifica = useCallback(() => {
+    void supabase.rpc('casino_classifica_giochi', { p_league_id: leagueId, p_gioco: filtro === 'tutti' ? null : filtro })
+      .then(({ data: cl }) => setClassifica((cl ?? []) as RigaClassifica[]))
+  }, [leagueId, filtro])
+  useEffect(() => { if (gioco == null) aggiornaClassifica() }, [aggiornaClassifica, gioco])
+  const ordinata = [...classifica].sort((a, b) => vista === 'colpo' ? b.miglior_colpo - a.miglior_colpo : vista === 'spesi' ? b.spesi - a.spesi : b.profitto - a.profitto)
+  const filtri: Array<[Filtro, string]> = [['tutti', 'Tutti'], ...(aviatone ? [['aviat', 'AviatOne'] as [Filtro, string]] : []), ...(crazyone ? [['crazy', 'CrazyOne'] as [Filtro, string]] : []),
+    ...(blackjack ? [['bj', 'BlackjackOne'] as [Filtro, string]] : []), ['slot', 'SlotOne']]
   const tabellaClassifica = <>
   <section className="slot-classifica">
     <h2>Classifica del casinò</h2>
-    <p className="bet-nota">Conta la vincita più alta ottenuta in un solo giro{crazyone || aviatone ? ', in qualsiasi gioco' : ''}.</p>
-    {classifica.length === 0 ? <p className="bet-nota">Ancora nessuno al tavolo.</p> : <ol>
-      {classifica.map((r, i) => {
+    <div className="bet-tab bet-tab--piccola" role="tablist" aria-label="Classifica">
+      {([['colpo', 'Miglior colpo'], ['spesi', 'Crediti spesi'], ['profitto', 'Profitto']] as const).map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={vista === k} className={vista === k ? 'is-attiva' : ''} onClick={() => setVista(k)}>{l}</button>)}
+    </div>
+    <div className="cas-filtri" role="group" aria-label="Gioco">
+      {filtri.map(([k, l]) => <button key={k} type="button" aria-pressed={filtro === k} className={filtro === k ? 'is-attivo' : ''} onClick={() => setFiltro(k)}>{l}</button>)}
+    </div>
+    <p className="bet-nota">{vista === 'colpo' ? 'La vincita più alta ottenuta in un solo giro.' : vista === 'spesi' ? 'Tutti i crediti puntati.' : 'Crediti vinti meno crediti puntati.'}{filtro === 'tutti' ? ' Tutti i giochi.' : ''}</p>
+    {ordinata.length === 0 ? <p className="bet-nota">Ancora nessuno al tavolo.</p> : <ol>
+      {ordinata.map((r, i) => {
         const t = dati.teamById.get(r.team_id)
+        const valore = vista === 'colpo' ? r.miglior_colpo : vista === 'spesi' ? r.spesi : r.profitto
         return <li key={r.team_id} className={r.team_id === teamId ? 'is-mia' : ''}>
           <span className={`bet-pos${i < 3 ? ` bet-pos--${i + 1}` : ''}`}>{i + 1}</span>
           <span className="bet-giocatori__stemma"><Crest value={t?.stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(r.team_id)} size="small" /></span>
-          <span className="bet-classifica__nome"><strong>{t?.nome ?? '—'}</strong><small>{fmt(r.crediti)} crediti · {fmt(r.giri)} giri</small></span>
-          <span className="slot-classifica__crediti"><b>{fmt(r.max_vincita)}</b><small>miglior colpo</small></span>
+          <span className="bet-classifica__nome"><strong>{t?.nome ?? '—'}</strong><small>{r.crediti != null ? `${fmt(r.crediti)} crediti · ` : ''}{fmt(r.giri)} giri</small></span>
+          <span className={`slot-classifica__crediti${vista === 'profitto' ? (valore >= 0 ? ' is-positivo' : ' is-negativo') : ''}`}><b>{vista === 'profitto' && valore > 0 ? '+' : ''}{fmt(valore)}</b><small>{vista === 'colpo' ? 'miglior colpo' : vista === 'spesi' ? 'spesi' : 'profitto'}</small></span>
         </li>
       })}
     </ol>}

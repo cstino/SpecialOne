@@ -6801,3 +6801,11 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .qz-classifica__nome { display: flex; align-items: center; gap: 8px; }
 .qz-classifica__nome .crest { width: 24px; height: 24px; flex: none; }
 .qz .av-giocate__esito small { color: #b9b0cc; font-size: .72rem; }
+
+/* Classifica del casino': filtro per gioco e profitto colorato */
+.cas-filtri { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 4px; scrollbar-width: none; }
+.cas-filtri::-webkit-scrollbar { display: none; }
+.bet-page .cas-filtri button { flex: none; padding: 6px 12px; border: 1px solid var(--bet-linea); border-radius: 99px; background: rgba(255,255,255,.04); color: #cfc6e0; font-size: .74rem; font-weight: 800; cursor: pointer; }
+.bet-page .cas-filtri button.is-attivo { border-color: var(--bet-oro); background: rgba(246,196,83,.16); color: var(--bet-oro); }
+.slot-classifica__crediti.is-positivo b { color: #7dffb5; }
+.slot-classifica__crediti.is-negativo b { color: #ff8a96; }
