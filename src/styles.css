@@ -4811,9 +4811,9 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .honors-premio__chi strong { overflow:hidden; color:#fff; font:700 1.05rem/1.05 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing:.02em; text-overflow:ellipsis; text-transform:uppercase; white-space:nowrap; }
 .honors-premio__chi span { display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden; color:#a79cb2; font-size:.7rem; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
 .honors-premio__chi .crest { width:18px; flex:none; }
-.honors-premio__valore { grid-area:valore; display:grid; justify-items:center; }
-.honors-premio__valore b { color:var(--pr-acc); font:700 2rem/1 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-.honors-premio__valore small { color:#8f86a0; font-size:.5rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+.honors-premio__valore { grid-area:valore; display:grid; justify-items:end; width:72px; text-align:right; }   /* colonna fissa: numeri allineati fra le carte */
+.honors-premio__valore b { color:var(--pr-acc); font:700 2rem/1 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-variant-numeric:tabular-nums; }
+.honors-premio__valore small { margin-top:3px; color:#8f86a0; font-size:.5rem; font-weight:800; line-height:1.25; letter-spacing:.1em; text-transform:uppercase; }
 .honors-premio__vuoto { grid-column:1 / -1; margin:0; color:#82798f; font-size:.75rem; }
 
 /* ---- Rivelazione dell'albo d'oro a fine stagione ---- */
