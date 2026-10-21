@@ -118,6 +118,8 @@ export type Bracket = {
   stato: 'in_corso' | 'concluso'
   vincitore_team_id: number | null
   finalista_team_id: number | null
+  // 'conferenze' = formato B (Champions + Draft Playoffs con play-in East/West), 21/10/2026
+  formato?: 'classico' | 'conferenze'
 }
 
 export type BracketTie = {
@@ -133,6 +135,10 @@ export type BracketTie = {
   gara_secca: boolean
   vincitore_team_id: number | null
   stato: 'in_attesa' | 'in_corso' | 'concluso'
+  // formato B: il quarto aspetta la vincente di questo play-in; conference delle due squadre ('est' / 'ovest')
+  da_tie_id?: number | null
+  conferenza_alta?: string | null
+  conferenza_bassa?: string | null
 }
 
 export type Match = {

@@ -6809,3 +6809,12 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .bet-page .cas-filtri button.is-attivo { border-color: var(--bet-oro); background: rgba(246,196,83,.16); color: var(--bet-oro); }
 .slot-classifica__crediti.is-positivo b { color: #7dffb5; }
 .slot-classifica__crediti.is-negativo b { color: #ff8a96; }
+
+/* Tabellone formato B: turno di play-in sopra l'albero */
+.tabellone-playin { display: grid; gap: 8px; margin: 4px 0 18px; }
+.tabellone-playin h3 { margin: 0; font-size: .82rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; color: var(--fase-luce, #f6c453); }
+.tabellone-playin > p { margin: 0; color: rgba(255,255,255,.65); font-size: .78rem; }
+.tabellone-playin__griglia { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.tabellone-playin__posto { display: grid; gap: 4px; }
+.tabellone-playin__posto small { color: rgba(255,255,255,.7); font-size: .7rem; padding-left: 4px; }
+.tabellone-playin__posto small b { color: #fff; }

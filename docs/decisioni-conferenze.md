@@ -192,5 +192,15 @@ L'Europa League sparisce. Per ogni conference (12 squadre):
 - Ordine delle scelte: 1ª-4ª Draft Playoffs (vincitore, finalista, semifinaliste), 5ª-8ª eliminate ai quarti del Draft,
   9ª-12ª eliminate nel play-in del Draft, 13ª-16ª eliminate nel play-in della Champions, 17ª-22ª eliminate ai quarti e in
   semifinale di Champions, 23ª finalista, 24ª campione.
-- Gia' fatto: legenda e colori della classifica. Da fare (BLOCCO 2): `crea_tabelloni` & co. con questo formato,
-  `brackets.tipo` 'champions' e 'draft' (il CHECK ammette oggi solo 'title'/'draft'). Va pronto entro la 22ª giornata.
+- **BLOCCO 2 fatto (21 ottobre 2026), migrazione `20261021130000`.** `crea_tabelloni` nelle leghe con le conferenze chiama
+  `private.crea_tabelloni_conferenze`: due tabelloni con `formato = 'conferenze'`, il Champions resta di `tipo = 'title'` (stelle,
+  albo, premi e conferenze stampa lo riconoscono gia'; nell'app si chiama Champions League con il logo UEFA). Turno 1 = i quattro
+  play-in (la prima squadra indicata e' la favorita), turno 2 = i quarti creati subito con la testa di serie e `da_tie_id` = il
+  play-in da cui arriva l'avversario; `avanza_bracket` sui tabelloni del formato B passa a `private.avanza_bracket_conferenze`, che
+  riempie i quarti, poi accoppia semifinali e finale con la favorita "alta" (`private.po_favorita`: meglio piazzata in Champions,
+  peggio piazzata nel Draft Playoffs) e chiude il tabellone. Giornate: play-in 23-24, quarti 25-26, semifinali 27-28, finale 29 in
+  campo neutro. L'ordine delle scelte usa la regola esistente (`assegna_posizioni_playoff`, "dietro a chi ti ha battuto") e da'
+  esattamente 1ª-4ª Draft Playoffs ... 24ª campione. Verifica: 6 simulazioni complete sulla classifica vera della Serie F
+  (abbinamenti, quarti, campi, giornate, finale neutra, ordine delle 24 scelte) = 0 errori; LegaBot resta al formato classico.
+  Pagina `Tabellone.tsx`: sezione Play-in sopra l'albero (con "La vincente sfida…"), albero dai quarti, sigle E3/W6, "Vincente
+  play-in D" finche' l'avversario non c'e'. La schedina SchedOne non copre le partite di playoff (solo campionato).
