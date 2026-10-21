@@ -6616,6 +6616,14 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .bet-page .cas-premi__testa button { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 8px; background: rgba(255,255,255,.08); font-size: .8rem; cursor: pointer; }
 .cas-premi p { display: flex; justify-content: space-between; gap: 10px; margin: 0; font-size: .86rem; }
 .cas-premi p strong { color: var(--bet-oro); font-variant-numeric: tabular-nums; }
+/* Bustina di figurine ogni 500 crediti spesi: barra d'avanzamento oro sotto il saldo. */
+.cas-bustina { display: grid; gap: 7px; padding: 12px 14px; border: 1px solid rgba(246,196,83,.4); border-radius: 16px; background: linear-gradient(135deg, rgba(246,196,83,.14), rgba(255,255,255,.03)); }
+.cas-bustina__testo { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.cas-bustina__testo b { color: var(--bet-oro); font-size: .74rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.cas-bustina__testo span { font-size: .84rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.cas-bustina__barra { height: 8px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.1); }
+.cas-bustina__barra i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #f6c453, #ffe9a8); box-shadow: 0 0 10px rgba(246,196,83,.6); transition: width .6s ease; }
+.cas-bustina small { color: rgba(255,255,255,.66); font-size: .76rem; }
 /* AviatOne: il bottone d'azione sta sempre sopra a tutto. La fiche scelta (ingrandita, quindi "sollevata") su telefoni
    stretti debordava sotto il bottone e, spenta durante il volo, si prendeva il tocco: con 100 INCASSA non funzionava. */
 .av-pannello > .av-azione { position: relative; z-index: 3; }

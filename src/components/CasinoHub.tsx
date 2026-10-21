@@ -38,6 +38,8 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
   const [aviatone, setAviatone] = useState(false)
   const [blackjack, setBlackjack] = useState(false)
   const [premi, setPremi] = useState<Premio[]>([])
+  // Una bustina di figurine gratis ogni 500 crediti spesi (dal 21/10/2026): avanzamento verso la prossima e bustine da aprire.
+  const [bustina, setBustina] = useState<{ spesi: number; gratis: number } | null>(null)
 
   const carica = useCallback(async () => {
     const { data, error } = await supabase.rpc('casino_stato', { p_league_id: leagueId })
@@ -46,6 +48,8 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
     setCrazyone((data as { crazyone?: boolean }).crazyone === true)
     setAviatone((data as { aviatone?: boolean }).aviatone === true)
     setBlackjack((data as { blackjack?: boolean }).blackjack === true)
+    const st = data as { album?: boolean; bustina_spesi?: number; bustine_gratis?: number }
+    setBustina(st.album && st.bustina_spesi != null ? { spesi: st.bustina_spesi, gratis: st.bustine_gratis ?? 0 } : null)
     // Premi partita appena pagati (solo partite gia' viste o vecchie di 24 ore: niente spoiler). Restano a schermo finche' non si chiudono.
     const nuovi = ((data as { premi?: Premio[] }).premi ?? [])
     if (nuovi.length) setPremi((p) => [...p, ...nuovi])
@@ -102,6 +106,11 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
       <span className="slot-ricarica">+1.000 gratis alle 23:00</span>
     </div>
     {errore && <p className="slot-errore" role="alert">{errore}</p>}
+    {bustina && <div className="cas-bustina">
+      <div className="cas-bustina__testo"><b>Bustina di figurine</b><span>{fmt(bustina.spesi)} / 500 crediti spesi</span></div>
+      <div className="cas-bustina__barra" role="progressbar" aria-valuemin={0} aria-valuemax={500} aria-valuenow={bustina.spesi}><i style={{ width: `${Math.min(100, bustina.spesi / 5)}%` }} /></div>
+      <small>{bustina.gratis > 0 ? `Hai ${bustina.gratis} ${bustina.gratis === 1 ? 'bustina gratis' : 'bustine gratis'} da aprire nell'Album.` : 'Ogni 500 crediti giocati al casinò ricevi una bustina gratis per l\'Album.'}</small>
+    </div>}
     {premi.length > 0 && <div className="cas-premi" role="status">
       <div className="cas-premi__testa"><b>Premi partita</b><button type="button" aria-label="Chiudi" onClick={() => setPremi([])}>✕</button></div>
       {premi.map((p, i) => <p key={i}><span>{p.esito === 'vittoria' ? 'Vittoria' : p.esito === 'pareggio' ? 'Pareggio' : 'Sconfitta'} contro {dati.teamById.get(p.avversario_id)?.nome ?? '—'}</span><strong>+{fmt(p.crediti)}</strong></p>)}
