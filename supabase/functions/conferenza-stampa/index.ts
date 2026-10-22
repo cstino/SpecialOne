@@ -676,8 +676,13 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
   if (new Date(d.scade_il).getTime() < Date.now()) return json(409, { errore: 'La conferenza è chiusa: il tempo per rispondere è scaduto.' })
   // La domanda PRIMA della partita aspetta che si sia risposto alle domande della partita passata (ancora aperte).
   if (d.tipo === 'pre') {
+    // Contano solo le domande dell'ULTIMA partita, le stesse che l'app mostra: una domanda di una partita piu' vecchia
+    // (es. un diritto di replica nato dopo) non e' visibile e non deve bloccare chi ha risposto a tutto (22/10/2026).
+    const { data: ultima } = await admin.from('conferenze_domande').select('match_id')
+      .eq('team_id', d.team_id).eq('tipo', 'dopo').not('match_id', 'is', null).order('match_id', { ascending: false }).limit(1)
     const { data: arretrate } = await admin.from('conferenze_domande').select('id')
-      .eq('team_id', d.team_id).eq('tipo', 'dopo').is('risposta', null).gt('scade_il', new Date().toISOString()).limit(1)
+      .eq('team_id', d.team_id).eq('tipo', 'dopo').eq('match_id', ultima?.[0]?.match_id ?? -1)
+      .is('risposta', null).gt('scade_il', new Date().toISOString()).limit(1)
     if (arretrate?.length) return json(409, { errore: 'Prima rispondi alle domande sulla partita di ieri sera: poi potrai rispondere a questa.' })
   }
 
