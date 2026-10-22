@@ -6232,8 +6232,8 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .alb-sc-mini:disabled { cursor: default; }
 .alb-sc-mini.is-scelta { transform: translateY(-4px); }
 .alb-sc-mini.is-scelta .fig { box-shadow: 0 0 0 3px #7be3a0, 0 6px 14px rgba(0,0,0,.4); }
-.alb-sc-mini em { position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); padding: 1px 6px; border-radius: 99px; background: #e93bd0; color: #fff; font-style: normal; font-size: .52rem; font-weight: 900; white-space: nowrap; }
-.alb-sc-mini i { position: absolute; top: -6px; right: -6px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #7be3a0; color: #0e2416; font-style: normal; font-weight: 900; font-size: .7rem; }
+.alb-sc-mini > em { position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); padding: 1px 6px; border-radius: 99px; background: #e93bd0; color: #fff; font-style: normal; font-size: .52rem; font-weight: 900; white-space: nowrap; }
+.alb-sc-mini > i { position: absolute; top: -6px; right: -6px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #7be3a0; color: #0e2416; font-style: normal; font-weight: 900; font-size: .7rem; }
 .alb-sc-squadre { display: flex; flex-wrap: wrap; gap: 8px; }
 .alb-sc-squadre button { display: grid; place-items: center; width: 48px; height: 48px; padding: 6px; border: 1px solid var(--bet-linea); border-radius: 12px; background: rgba(255,255,255,.03); cursor: pointer; }
 .alb-sc-squadre button.is-scelta { border-color: #f6c453; background: rgba(246,196,83,.14); }
