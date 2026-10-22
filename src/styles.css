@@ -6184,7 +6184,7 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .pack-scena { width: 100%; padding: 0 0 4px; touch-action: none; }
 .pk { touch-action: none; }
 /* Stemma sulla figurina: niente cerchio bianco, un po' piu' grande, con un'ombra per staccarlo dallo sfondo */
-.fig__club { width: 22cqw; height: 22cqw; top: 3.5cqw; right: 3.5cqw; border-radius: 0; background: none; box-shadow: none; }
+.fig__club { width: 22cqw; height: 22cqw; top: 3.5cqw; right: 3.5cqw; border-radius: 0; background: none; box-shadow: none; overflow: visible; }  /* overflow visibile: prima tagliava l'ombra dello stemma ai bordi e si vedeva un riquadro grigio */
 .fig__club .crest, .fig__club img { width: 100% !important; height: 100% !important; filter: drop-shadow(0 2px 3px rgba(0,0,0,.55)); }
 /* Tasto "Un'altra": scritta scura sul giallo (la regola generale dei pulsanti della pagina la faceva bianca) */
 .alb .alb-compra:not(:disabled), .alb .alb-compra:not(:disabled) b, .alb .alb-compra:not(:disabled) small { color: #1a1205; }
