@@ -489,7 +489,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
             : <>
               <button type="button" className="button button--secondary" onClick={() => setBusta(null)}>Chiudi</button>
               {gratis > 0
-                ? <button type="button" className="alb-compra alb-compra--piccola" disabled={compro} onClick={() => void compra(true)}><span><b>Un'altra</b><small>🎁 gratis ({gratis})</small></span></button>
+                ? <button type="button" className="alb-compra alb-compra--piccola alb-compra--gratis" disabled={compro} onClick={() => void compra(true)}><span><b>Un'altra</b><small>🎁 gratis ({gratis})</small></span></button>
                 : <button type="button" className="alb-compra alb-compra--piccola" disabled={compro || crediti < PREZZO} onClick={() => void compra()}><span><b>Un'altra</b><small>{PREZZO} crediti</small></span></button>}
             </>}
         </div>

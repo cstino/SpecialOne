@@ -6203,7 +6203,12 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .mini-busta__sald { position: absolute; top: 0; left: 0; right: 0; height: 12%; background: linear-gradient(90deg, #8a6612, #ffe9a0 30%, #c99319 60%, #ffe08a 85%, #7a5a10); }
 .mini-busta__sald--giu { top: auto; bottom: 0; }
 .slot-vinto__bustina { color: #fff; font-size: .95rem !important; font-weight: 900 !important; letter-spacing: .04em; background: linear-gradient(90deg, #ffd84d, #ff3df2); -webkit-background-clip: text; background-clip: text; color: transparent !important; }
-.alb-compra--gratis { background: linear-gradient(180deg, #ff9ae8, #e93bd0) !important; box-shadow: 0 8px 22px rgba(233,59,208,.45) !important; animation: slot-respira 2.2s ease-in-out infinite; }
+/* Apertura gratis: fucsia con gradiente che scorre, ben diverso dal giallo a pagamento (cosi' non si apre a pagamento per sbaglio) */
+.alb-compra--gratis { background: linear-gradient(110deg, #ff4fd8, #b13bff, #ff4fd8, #ff8ae9, #ff4fd8) !important; background-size: 300% 100% !important; box-shadow: 0 8px 22px rgba(233,59,208,.45) !important; animation: alb-gratis-scorri 3s linear infinite, slot-respira 2.2s ease-in-out infinite; }
+.alb .alb-compra--gratis:not(:disabled), .alb .alb-compra--gratis:not(:disabled) b, .alb .alb-compra--gratis:not(:disabled) small { color: #fff; text-shadow: 0 1px 2px rgba(80,0,70,.5); }
+.alb-compra--gratis small { opacity: .95; }
+@keyframes alb-gratis-scorri { to { background-position: -300% 0; } }
+@media (prefers-reduced-motion: reduce) { .alb-compra--gratis { animation: none; } }
 
 /* Album: schede Pagine / Scambi e scambi di figurine */
 .alb-viste { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; border: 1px solid var(--bet-linea); border-radius: 14px; background: rgba(255,255,255,.03); }
