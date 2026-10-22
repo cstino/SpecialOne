@@ -46,6 +46,8 @@ type Props = {
   focus: string | null
   xpDisposizione: XpDisposizione[]
   xpIndicazioni: number
+  // Le indicazioni dell'ultima partita giocata (null: mai giocate). La barra Indicazioni scende solo di quanto si e' cambiato rispetto a queste.
+  indicazioniGiocate: IndicazioniGiocate | null
   onChange: (d: string[] | null, r: (string | null)[] | null, c: (string | null)[] | null) => void
   onFocus: (f: string | null) => void
   // Applica un preset tattico e dice cosa e' successo (null: niente da dire).
@@ -62,6 +64,8 @@ type Props = {
   squadra: IndicazioniSquadra
   onSquadra: (q: Partial<IndicazioniSquadra>) => void
 }
+
+export type IndicazioniGiocate = { stile: string | null; ruoli: (string | null)[] | null; compiti: (string | null)[] | null; focus_corsia: string | null; linea_difensiva: string | null; ampiezza: string | null; ruolo_portiere: string | null; velocita_manovra: string | null }
 
 export type IndicazioniSquadra = { stile: string; linea: string | null; ampiezza: string | null; velocita: string | null; portiere: string | null }
 
@@ -144,7 +148,7 @@ const RAGGIO_CALAMITA = 13
 const SOGLIA_TRASCINAMENTO = 3
 
 export default function SchemaTattico({
-  fase, modulo, disposizione, ruoli, compiti, focus, xpDisposizione, xpIndicazioni, onChange, onFocus, onPreset, onClose,
+  fase, modulo, disposizione, ruoli, compiti, focus, xpDisposizione, xpIndicazioni, indicazioniGiocate, onChange, onFocus, onPreset, onClose,
   moduliSalvati, moduloSalvatoAttivo, onSalvaModulo, onEliminaModulo, squadra, onSquadra,
 }: Props) {
   const standard = MODULI[modulo] ?? []
@@ -189,9 +193,23 @@ export default function SchemaTattico({
   const mostra = libero
     ? { linea: squadra.linea, ampiezza: squadra.ampiezza, velocita: squadra.velocita, focus }
     : da
+  // Quante delle 28 indicazioni sono diverse da quelle dell'ultima partita giocata: stessa distanza di
+  // private.avanza_familiarita (un elemento assente da entrambe le parti non e' un cambiamento). Prima si
+  // contavano tutte quelle attive, e con 24 indicazioni identiche da 6 partite la barra restava a 0%.
+  const compito = (c: string | null | undefined) => (c && c !== 'equilibrio' ? c : '')
+  const diverse = indicazioniGiocate
+    ? (((indicazioniGiocate.stile ?? '') !== (squadra.stile ?? '') ? 1 : 0)
+      + Array.from({ length: 11 }).filter((_, i) => (indicazioniGiocate.ruoli?.[i] ?? '') !== (ruoli?.[i] ?? '')).length
+      + Array.from({ length: 11 }).filter((_, i) => compito(indicazioniGiocate.compiti?.[i]) !== compito(compiti?.[i])).length
+      + ((indicazioniGiocate.focus_corsia ?? '') !== (focus ?? '') ? 1 : 0)
+      + ((indicazioniGiocate.linea_difensiva ?? '') !== (squadra.linea ?? '') ? 1 : 0)
+      + ((indicazioniGiocate.ampiezza ?? '') !== (squadra.ampiezza ?? '') ? 1 : 0)
+      + ((indicazioniGiocate.ruolo_portiere ?? '') !== (squadra.portiere ?? '') ? 1 : 0)
+      + ((indicazioniGiocate.velocita_manovra ?? '') !== (squadra.velocita ?? '') ? 1 : 0))
+    : conIndicazioni
   const quotaIndicazioni = Math.min(1,
     Math.round(Math.min(1, xpIndicazioni / FAM_PARTITE_PIENA)
-      * resaFamiliarita(conIndicazioni / 28) * FAM_PARTITE_PIENA) / FAM_PARTITE_PIENA)
+      * resaFamiliarita(diverse / 28) * FAM_PARTITE_PIENA) / FAM_PARTITE_PIENA)
 
   const cambiati = 11 - uguali(standard, schema)
   const erroreSimmetria = erroreSimmetriaSchema(schema)
@@ -342,7 +360,8 @@ export default function SchemaTattico({
         <Barra nome="Disposizione" quota={quotaDisposizione}
           nota={cambiati === 0 ? 'Lo schieramento standard del modulo.' : `${cambiati} ${cambiati === 1 ? 'posizione spostata' : 'posizioni spostate'}.`} />
         <Barra nome="Indicazioni" quota={quotaIndicazioni}
-          nota={conIndicazioni === 0 ? 'Nessuna indicazione data.' : `${conIndicazioni} ${conIndicazioni === 1 ? 'indicazione attiva' : 'indicazioni attive'}.`} />
+          nota={(conIndicazioni === 0 ? 'Nessuna indicazione data' : `${conIndicazioni} ${conIndicazioni === 1 ? 'indicazione attiva' : 'indicazioni attive'}`)
+            + (indicazioniGiocate ? (diverse === 0 ? ', come nell\'ultima partita.' : `, ${diverse} ${diverse === 1 ? 'cambiata' : 'cambiate'} dall'ultima partita.`) : '.')} />
       </div>
 
       {(cambiati > 0 || conIndicazioni > 0) && (moduloSalvatoAttivo

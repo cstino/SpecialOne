@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactM
 import { supabase } from '../lib/supabase'
 import { attributiCorrenti } from '../lib/attributiGiocatore'
 import { disponiCard, nomeSchieramento, schieramentoInCampo } from '../lib/schieramento'
-import SchemaTattico, { type XpDisposizione } from './SchemaTattico'
+import SchemaTattico, { type XpDisposizione, type IndicazioniGiocate } from './SchemaTattico'
 import { erroreSimmetriaSchema } from '../lib/simmetriaSchema'
 import { STILE_LABEL, assiDelloStile } from '../lib/stili'
 import { idoneitaRuolo, segnoIdoneita } from '../lib/tattica'
@@ -342,6 +342,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const [schemaAperto, setSchemaAperto] = useState(false)
   const [xpDisposizione, setXpDisposizione] = useState<XpDisposizione[]>([])
   const [xpIndicazioni, setXpIndicazioni] = useState(0)
+  // Le indicazioni dell'ultima partita giocata: la barra Indicazioni misura quanto si e' cambiato rispetto a queste (come private.avanza_familiarita).
+  const [indicazioniGiocate, setIndicazioniGiocate] = useState<IndicazioniGiocate | null>(null)
   const [selected, setSelected] = useState<PlayerLocation | null>(null)
   const [openZone, setOpenZone] = useState<PlayerZone>('starter')
   const [detailPlayer, setDetailPlayer] = useState<Player | null>(null)
@@ -414,7 +416,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       const [{ data: formationXp, error: formationXpError }, { data: stileXp, error: stileXpError }, { data: indicazioniXp }] = await Promise.all([
         supabase.from('formation_xp').select('modulo, disposizione, partite_giocate').eq('league_id', league.id).eq('team_id', membership.id),
         supabase.from('stile_xp').select('stile, partite_giocate').eq('league_id', league.id).eq('team_id', membership.id),
-        supabase.from('indicazioni_xp').select('partite_giocate').eq('team_id', membership.id).maybeSingle(),
+        supabase.from('indicazioni_xp').select('partite_giocate, stile, ruoli, compiti, focus_corsia, linea_difensiva, ampiezza, ruolo_portiere, velocita_manovra').eq('team_id', membership.id).maybeSingle(),
       ])
       // I moduli salvati non sono indispensabili per schierare: se la lettura
       // fallisce la pagina funziona lo stesso, senza la sezione "I tuoi moduli".
@@ -431,6 +433,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           .filter((riga) => Array.isArray(riga.disposizione) && riga.disposizione.length === 11)
           .map((riga) => ({ disposizione: riga.disposizione as string[], partite: riga.partite_giocate })))
         setXpIndicazioni(indicazioniXp?.partite_giocate ?? 0)
+        setIndicazioniGiocate(indicazioniXp ? (indicazioniXp as unknown as IndicazioniGiocate) : null)
       }
       if (league.tattiche_attive) {
         const { data: sc } = await supabase.from('schemi_squadra').select('*').eq('team_id', membership.id).maybeSingle()
@@ -1045,6 +1048,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         focus={focusCorsia}
         xpDisposizione={xpDisposizione}
         xpIndicazioni={xpIndicazioni}
+        indicazioniGiocate={indicazioniGiocate}
         onChange={(d, r, c) => { setDisposizione(d); setRuoli(r); setCompiti(c); setSaved(false) }}
         onFocus={(f) => { setFocusCorsia(f); setSaved(false) }}
         onPreset={usaPreset}
