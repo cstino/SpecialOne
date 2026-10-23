@@ -181,6 +181,8 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   const [controparte, setControparte] = useState<number | null>(null)
   const [miei, setMiei] = useState<Doppione[]>([])
   const [suoi, setSuoi] = useState<Doppione[]>([])
+  // Dei miei doppioni, quelli che all'altro giocatore mancano del tutto (per sapere cosa gli interessa davvero).
+  const [glimancano, setGlimancano] = useState<Set<number>>(new Set())
   const [offro, setOffro] = useState<Voce[]>([])
   const [chiedo, setChiedo] = useState<Voce[]>([])
   const [contro, setContro] = useState<number | null>(null)
@@ -216,8 +218,10 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   }, [leagueId, teamId])
   useEffect(() => { void carica() }, [carica])
   useEffect(() => {
-    if (controparte == null) { setSuoi([]); return }
+    if (controparte == null) { setSuoi([]); setGlimancano(new Set()); return }
     void supabase.rpc('album_doppioni', { p_league_id: leagueId, p_team_id: controparte }).then(({ data }) => setSuoi((data ?? []) as Doppione[]))
+    void supabase.rpc('album_mancano_a', { p_league_id: leagueId, p_team_id: controparte })
+      .then(({ data }) => setGlimancano(new Set(((data ?? []) as Array<{ figurina_id: number }>).map((r) => r.figurina_id))))
   }, [controparte, leagueId])
 
   const perSquadra = useMemo(() => {
@@ -389,7 +393,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
           </div>}
           <h4>Offri <span>i tuoi doppioni</span></h4>
           {miei.length === 0 ? <p className="bet-nota">Non hai doppioni da scambiare.</p> : <div className="alb-sc-griglia">
-            {miei.map((d) => miniCarta(d, offro.some((x) => chiave(x) === chiave(d)), () => alterna(offro, setOffro, { figurina_id: d.figurina_id, ultra: d.ultra })))}
+            {[...miei].sort((a, b) => Number(glimancano.has(b.figurina_id)) - Number(glimancano.has(a.figurina_id))).map((d) => miniCarta(d, offro.some((x) => chiave(x) === chiave(d)), () => alterna(offro, setOffro, { figurina_id: d.figurina_id, ultra: d.ultra }), glimancano.has(d.figurina_id) ? 'gli manca' : undefined))}
           </div>}
           <button type="button" className="alb-compra" disabled={lavoro || offro.length === 0 || chiedo.length === 0} onClick={() => void proponi()}>
             <span><b>{lavoro ? 'Invio…' : contro ? 'Invia la controproposta' : 'Proponi lo scambio'}</b><small>dai {offro.length} · ricevi {chiedo.length}</small></span>
