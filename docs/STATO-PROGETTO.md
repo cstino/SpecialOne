@@ -2101,7 +2101,7 @@ Eccezioni: nessun portiere disponibile (infortunati o squalificati), oppure meno
   giocare (in porta il miglior portiere disponibile, un portiere fuori dai pali scambiato col miglior giocatore di
   movimento disponibile, prima dalla panchina); `correggi_formazioni_giornata` per la simulazione.
 * `simula-giornata`: prima di giocare ripassa le formazioni della giornata (un portiere può essersi infortunato dopo il
-  salvataggio) e usa la versione corretta delle formazioni ereditate. Ridispiegata il 24/10 alle 17.
+  salvataggio) e usa la versione corretta delle formazioni ereditate. Ridispiegata il 24/10 alle 23:16, subito dopo la giornata (la giornata 18 di quella sera ha girato ancora con la versione precedente).
 * Prove in rollback: formazione regolare accettata; movimento in porta e portiere in campo rifiutati; caso Pro secco
   (portiere Tzolakis schierato punta) corretto nella copia ereditata; formazione storica intatta; emergenza senza
   portieri lasciata com'è; nessun giocatore duplicato.
