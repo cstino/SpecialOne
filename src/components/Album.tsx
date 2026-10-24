@@ -17,7 +17,8 @@ type Anagrafica = { id: number; nome: string; posizioni: string[]; foto_url: str
 type Uscita = { figurina_id: number; tipo: Figurina['tipo']; ultra: boolean; nuova: boolean }
 type RigaClassifica = { team_id: number; attaccate: number; totale: number; ultra: number; pagine: number }
 type Voce = { figurina_id: number; ultra: boolean }
-type Doppione = Voce & { copie: number }
+// impegnate: copie gia' dentro altri scambi in attesa (non si possono riproporre ne' riciclare)
+type Doppione = Voce & { copie: number; impegnate?: number }
 type ScambioFig = { id: number; da_team_id: number; a_team_id: number; offerte: Voce[]; richieste: Voce[]; stato: string; scade_il: string; da_user: string }
 
 const PREZZO = 250
@@ -222,7 +223,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     void supabase.rpc('album_doppioni', { p_league_id: leagueId, p_team_id: controparte }).then(({ data }) => setSuoi((data ?? []) as Doppione[]))
     void supabase.rpc('album_mancano_a', { p_league_id: leagueId, p_team_id: controparte })
       .then(({ data }) => setGlimancano(new Set(((data ?? []) as Array<{ figurina_id: number }>).map((r) => r.figurina_id))))
-  }, [controparte, leagueId])
+  }, [controparte, leagueId, scambi])
 
   const perSquadra = useMemo(() => {
     const m = new Map<number, Figurina[]>()
@@ -241,8 +242,9 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   const base = figurine.filter((f) => f.tipo !== 'conferenza')
   const attaccate = base.filter((f) => ce(f.id)).length
   const ultraTot = figurine.filter((f) => ceUltra(f.id)).length
-  const doppioni = [...possesso.values()].reduce((s, p) => s + Math.max(0, p.normali - 1) + Math.max(0, p.ultra - 1), 0)
-  const valoreDoppioni = [...possesso.values()].reduce((s, p) => s + Math.max(0, p.normali - 1) * 10 + Math.max(0, p.ultra - 1) * 50, 0)
+  // Si riciclano solo i doppioni non impegnati in uno scambio in attesa.
+  const doppioni = miei.reduce((s, d) => s + Math.max(0, d.copie - (d.impegnate ?? 0)), 0)
+  const valoreDoppioni = miei.reduce((s, d) => s + Math.max(0, d.copie - (d.impegnate ?? 0)) * (d.ultra ? 50 : 10), 0)
 
   async function compra(conGratis = false) {
     if (compro) return
@@ -298,10 +300,14 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     window.requestAnimationFrame(() => document.querySelector('.alb-sc-componi')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
   const fig = (id: number) => figurine.find((x) => x.id === id)
+  // Figurine ancora libere di un doppione: nella controproposta lo scambio originale si chiude, quindi le sue figurine non contano come impegnate.
+  const originale = contro != null ? scambi.find((x) => x.id === contro) : undefined
+  const libere = (d: Doppione, dellOriginale: Voce[] | undefined) =>
+    d.copie - Math.max(0, (d.impegnate ?? 0) - (dellOriginale?.filter((x) => chiave(x) === chiave(d)).length ?? 0))
   const miniCarta = (v: Voce, scelta?: boolean, onClick?: () => void, nota?: string) => {
     const f = fig(v.figurina_id)
     if (!f) return null
-    return <button key={chiave(v)} type="button" className={`alb-sc-mini${scelta ? ' is-scelta' : ''}`} onClick={onClick} disabled={!onClick} aria-pressed={scelta}>
+    return <button key={chiave(v)} type="button" className={`alb-sc-mini${scelta ? ' is-scelta' : ''}${nota === 'in scambio' ? ' is-impegnata' : ''}`} onClick={onClick} disabled={!onClick} aria-pressed={scelta}>
       <Carta f={f} ana={f.player_id != null ? ana.get(f.player_id) : undefined} dati={dati} ultra={v.ultra || f.tipo === 'conferenza'} piccola />
       {nota && <em>{nota}</em>}
       {scelta && <i aria-hidden="true">✓</i>}
@@ -379,7 +385,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
       </div>}
 
       <div className="alb-sc-blocco alb-sc-componi"><h3>{contro ? 'Controproposta' : 'Nuovo scambio'}</h3>
-        <p className="bet-nota">Si scambiano solo i doppioni, almeno una figurina per parte. La proposta vale 24 ore.</p>
+        <p className="bet-nota">Si scambiano solo i doppioni, almeno una figurina per parte. La proposta vale 24 ore. Una figurina dentro uno scambio in attesa è bloccata finché non viene accettato, rifiutato o ritirato.</p>
         <div className="alb-sc-squadre">
           {dati.teams.filter((t) => t.id !== teamId && t.attiva !== false && t.user_id && !t.controllata_da_pc).map((t) => <button key={t.id} type="button" className={controparte === t.id ? 'is-scelta' : ''} title={t.nome} aria-label={t.nome}
             onClick={() => { setControparte(t.id); setChiedo([]); setContro(null) }}>
@@ -389,11 +395,15 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
         {controparte != null && <>
           <h4>Chiedi a {dati.teamById.get(controparte)?.nome} <span>i suoi doppioni</span></h4>
           {suoi.length === 0 ? <p className="bet-nota">Non ha doppioni da scambiare.</p> : <div className="alb-sc-griglia">
-            {[...suoi].sort((a, b) => Number(ce(a.figurina_id)) - Number(ce(b.figurina_id))).map((d) => miniCarta(d, chiedo.some((x) => chiave(x) === chiave(d)), () => alterna(chiedo, setChiedo, { figurina_id: d.figurina_id, ultra: d.ultra }), ce(d.figurina_id) ? undefined : 'ti manca'))}
+            {[...suoi].sort((a, b) => Number(libere(a, originale?.offerte) <= 0) - Number(libere(b, originale?.offerte) <= 0) || Number(ce(a.figurina_id)) - Number(ce(b.figurina_id))).map((d) => libere(d, originale?.offerte) <= 0
+              ? miniCarta(d, false, undefined, 'in scambio')
+              : miniCarta(d, chiedo.some((x) => chiave(x) === chiave(d)), () => alterna(chiedo, setChiedo, { figurina_id: d.figurina_id, ultra: d.ultra }), ce(d.figurina_id) ? undefined : 'ti manca'))}
           </div>}
           <h4>Offri <span>i tuoi doppioni</span></h4>
           {miei.length === 0 ? <p className="bet-nota">Non hai doppioni da scambiare.</p> : <div className="alb-sc-griglia">
-            {[...miei].sort((a, b) => Number(glimancano.has(b.figurina_id)) - Number(glimancano.has(a.figurina_id))).map((d) => miniCarta(d, offro.some((x) => chiave(x) === chiave(d)), () => alterna(offro, setOffro, { figurina_id: d.figurina_id, ultra: d.ultra }), glimancano.has(d.figurina_id) ? 'gli manca' : undefined))}
+            {[...miei].sort((a, b) => Number(libere(a, originale?.richieste) <= 0) - Number(libere(b, originale?.richieste) <= 0) || Number(glimancano.has(b.figurina_id)) - Number(glimancano.has(a.figurina_id))).map((d) => libere(d, originale?.richieste) <= 0
+              ? miniCarta(d, false, undefined, 'in scambio')
+              : miniCarta(d, offro.some((x) => chiave(x) === chiave(d)), () => alterna(offro, setOffro, { figurina_id: d.figurina_id, ultra: d.ultra }), glimancano.has(d.figurina_id) ? 'gli manca' : undefined))}
           </div>}
           <button type="button" className="alb-compra" disabled={lavoro || offro.length === 0 || chiedo.length === 0} onClick={() => void proponi()}>
             <span><b>{lavoro ? 'Invio…' : contro ? 'Invia la controproposta' : 'Proponi lo scambio'}</b><small>dai {offro.length} · ricevi {chiedo.length}</small></span>
