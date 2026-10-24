@@ -1424,6 +1424,12 @@ export default {
         }
       }
 
+      // Niente fuori ruolo estremi (portiere fuori dai pali, giocatore di movimento in porta): il database corregge da
+      // solo ogni formazione (trigger su lineups, 24/10/2026). Qui si ripassano quelle gia' salvate per la giornata,
+      // perche' dopo il salvataggio un portiere puo' essersi infortunato o squalificato. Non deve mai fermare la giornata.
+      const ripasso = await ctx.supabaseAdmin.rpc('correggi_formazioni_giornata', { p_league_id: leagueId, p_giornata: giornata })
+      if (ripasso.error) console.error('correggi_formazioni_giornata', ripasso.error.message)
+
       const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult, stileXpResult, indicazioniXpResult, medicoResult] = await Promise.all([
         ctx.supabaseAdmin.from('teams').select('id, nome, user_id, controllata_da_pc, capitano').eq('league_id', leagueId).in('id', teamIds),
         ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, specializzazione_attiva, morale').eq('league_id', leagueId).in('team_id', teamIds),
@@ -1525,9 +1531,12 @@ export default {
           const tribuna = roster.giocatori.filter((player) => !starters.includes(player.id) && !bench.includes(player.id)).map((player) => player.id)
           fallback = { team_id: teamId, modulo: '4-3-3', titolari: starters, panchina: bench, tribuna, stile_gioco: 'equilibrato', automatica: true }
         }
-        const { error: lineupError } = await ctx.supabaseAdmin.from('lineups').insert({ league_id: leagueId, giornata, ...fallback })
+        const { data: salvata, error: lineupError } = await ctx.supabaseAdmin.from('lineups').insert({ league_id: leagueId, giornata, ...fallback })
+          .select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx, disposizione, ruoli, compiti, focus_corsia, linea_difensiva, ampiezza, velocita_manovra, ruolo_portiere')
+          .single()
         if (lineupError) throw lineupError
-        lineups.set(teamId, fallback)
+        // Il database puo' aver corretto un portiere fuori ruolo nella formazione ereditata: si gioca con quella salvata.
+        lineups.set(teamId, (salvata ?? fallback) as DbLineup)
       }
 
       // Fotografia prima delle partite: serve a distinguere un infortunio nuovo

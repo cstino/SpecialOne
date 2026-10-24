@@ -2089,3 +2089,19 @@ solo la definizione della funzione.
 si ferma ad agosto, benché lo schema contenga le migrazioni successive. Per evitare un push
 massivo di file arretrati, queste due migrazioni sono state applicate in modo mirato con
 `supabase db query --linked --experimental --file`. Restano versionate nel repository.
+
+## Formazioni: niente fuori ruolo estremi (24 ottobre 2026)
+
+Contro chi perde apposta per finire nei Draft Playoffs, sono vietati il **giocatore di movimento in porta** e il
+**portiere fra i dieci di movimento** (le altre scelte fuori ruolo restano libere, con la penalità del motore).
+Eccezioni: nessun portiere disponibile (infortunati o squalificati), oppure meno di 10 giocatori di movimento disponibili.
+
+* `20261024150000`: `salva_formazione` rifiuta i due casi con un messaggio.
+* `20261024151000`: trigger `lineups_niente_fuori_ruolo` che **corregge** ogni formazione di una partita ancora da
+  giocare (in porta il miglior portiere disponibile, un portiere fuori dai pali scambiato col miglior giocatore di
+  movimento disponibile, prima dalla panchina); `correggi_formazioni_giornata` per la simulazione.
+* `simula-giornata`: prima di giocare ripassa le formazioni della giornata (un portiere può essersi infortunato dopo il
+  salvataggio) e usa la versione corretta delle formazioni ereditate. Ridispiegata il 24/10 alle 17.
+* Prove in rollback: formazione regolare accettata; movimento in porta e portiere in campo rifiutati; caso Pro secco
+  (portiere Tzolakis schierato punta) corretto nella copia ereditata; formazione storica intatta; emergenza senza
+  portieri lasciata com'è; nessun giocatore duplicato.
