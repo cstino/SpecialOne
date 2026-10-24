@@ -485,9 +485,20 @@ async function generaPre(admin: any, fixtureId: number) {
     const mie = await formaRecente(admin, f.season_id, f.giornata, t.id)
     const loro = await formaRecente(admin, f.season_id, f.giornata, avvId)
     const derby = gradoCon(t.id, avvId) > 90 || t.rivale_id === avvId || avv.rivale_id === t.id
-    // Infortunati della propria squadra (fatto pubblico per l'allenatore): i piu' forti, per nome.
-    const { data: inf } = await admin.from('player_instances').select('overall_corrente, players(nome)')
-      .eq('team_id', t.id).eq('ritirato', false).gt('infortunato_fino_a', 0).order('overall_corrente', { ascending: false }).limit(3)
+    // Infortunati della propria squadra: solo quelli che sono una NOVITA', cioe' infortunati nell'ultima partita giocata e
+    // ancora fuori. Prima si citavano tutti quelli ancora in infermeria, e per un infortunio lungo (es. 9 giornate) la domanda
+    // tornava a ogni conferenza (24/10/2026).
+    const { data: ultima } = await admin.from('fixtures').select('matches(blocchi)')
+      .eq('season_id', f.season_id).lt('giornata', f.giornata)
+      .or(`home_team_id.eq.${t.id},away_team_id.eq.${t.id}`)
+      .order('giornata', { ascending: false }).limit(1)
+    const ultimaM = ultima?.[0]?.matches
+    const blocchiUltima = (Array.isArray(ultimaM) ? ultimaM[0] : ultimaM)?.blocchi as Array<{ tipo: string; team_id?: number; esce?: number }> | undefined
+    const infortunatiFreschi = (blocchiUltima ?? []).filter((e) => e.tipo === 'infortunio' && e.team_id === t.id && e.esce).map((e) => e.esce as number)
+    const { data: inf } = infortunatiFreschi.length
+      ? await admin.from('player_instances').select('overall_corrente, players(nome)')
+        .in('id', infortunatiFreschi).eq('ritirato', false).gt('infortunato_fino_a', 0).order('overall_corrente', { ascending: false }).limit(3)
+      : { data: [] }
     const infortunati = (inf ?? []).map((x: { players: { nome: string } | { nome: string }[] | null }) => (Array.isArray(x.players) ? x.players[0] : x.players)?.nome).filter(Boolean)
     const conDraft = gruppo.length > POSTI
     const campionato = gruppo.length >= 6 && f.giornata >= 3 && !f.bracket_tie_id
@@ -502,7 +513,7 @@ async function generaPre(admin: any, fixtureId: number) {
       campionato,
       fattiNumerici({ nome: t.nome, gruppo, teamId: t.id, nomi: new Map(Array.from(squadra.values()).map((x) => [x.id, x.nome])), forma: mie, avversarioId: avvId }),
       derby ? `Questa partita è un DERBY: ${avv.nome} è il grande rivale di ${t.nome} (o ${t.nome} lo è per ${avv.nome}).` : '',
-      infortunati.length ? `Infortunati di ${t.nome}: ${infortunati.join(', ')}.` : '',
+      infortunati.length ? `Infortunati di ${t.nome} nell'ultima partita (notizia fresca): ${infortunati.join(', ')}.` : '',
     ].filter(Boolean).join('\n')
 
     const out = await chiediAI<{ domanda: string; giornalista: string }>(
