@@ -1,30 +1,38 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 import { useMusica } from '../lib/musicaCasino'
 import type { useSeasonData } from '../lib/useSeasonData'
 import { Crest } from './Crest'
+import { SimboloPallone, SimboloStemmaOro } from './SimboliBonus'
+
+// La finestra dei minigiochi si scarica solo quando serve (e in anticipo appena si apre la slot).
+const SlotBonus = lazy(() => import('./SlotBonus'))
 
 // BetOne Casino' (docs/decisioni-conferenze-stampa.md §BetOne): una slot a tema SpecialOne, minigioco interno senza
 // effetti sul gioco vero. Ogni giro lo estrae il SERVER (casino_gira): qui si anima soltanto il risultato.
 // Simboli 0-7 = gli stemmi della giornata (0-2 pagano poco, 3-5 medio, 6-7 molto), 8 = logo SpecialOne (jolly),
-// 9 = coppa (3 o piu' ovunque: giri gratis con vincite doppie). 10 linee, 1.000 crediti gratis ogni giorno alle 23:10.
+// 9 = coppa (3 o piu' ovunque: giri gratis con vincite doppie), 10 = bustina, 11 = pallone (3 o piu': Calcio di rigore),
+// 12 = stemma d'oro (3 o piu': Scegli lo stemma). 10 linee, 1.000 crediti gratis ogni giorno alle 23:10.
 
 type Dati = ReturnType<typeof useSeasonData>
 type Vincita = { linea: number; simbolo: number; n: number; vinto: number }
-type Esito = { griglia: number[]; vincite: Vincita[]; coppe: number; scatter: number; vinto: number; gratis: boolean; molt: number; puntata: number; nuovi_gratis: number; crediti: number; giri_gratis: number; max_vincita: number; bustine?: number; bustine_vinte?: number; bustine_gratis?: number }
-type Stato = { crediti: number; giri_gratis: number; puntata_gratis: number | null; simboli: number[]; max_vincita: number; giri: number; prossima_ricarica: string; bustine_gratis?: number; album?: boolean }
+type Esito = { griglia: number[]; vincite: Vincita[]; coppe: number; scatter: number; vinto: number; gratis: boolean; molt: number; puntata: number; nuovi_gratis: number; crediti: number; giri_gratis: number; max_vincita: number; bustine?: number; bonus?: Array<{ id: number; tipo: 'stemma' | 'rigori' }>; bustine_vinte?: number; bustine_gratis?: number }
+type Stato = { crediti: number; giri_gratis: number; puntata_gratis: number | null; simboli: number[]; max_vincita: number; giri: number; prossima_ricarica: string; bustine_gratis?: number; album?: boolean; bonus_aperto?: { id: number; tipo: 'stemma' | 'rigori' } | null }
 
 const PUNTATE = [10, 20, 50, 100]
 const LINEE = [[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,0,0,1],[1,2,2,2,1],[0,1,1,1,0]]
-const PESI = [9, 9, 9, 7, 7, 7, 4, 4, 3, 2, 0]
+const PESI = [9, 9, 9, 7, 7, 7, 4, 4, 3, 2, 0, 1.6, 1.6]   // solo per i simboli che scorrono mentre i rulli girano
+const PESI_TOT = PESI.reduce((a, b) => a + b, 0)
 const PAGA_BASE: Record<string, number[]> = { basso: [8, 26, 100], medio: [14, 52, 200], alto: [26, 125, 500] }
 // Dove c'e' l'album (e quindi la bustina sui rulli) gli stemmi pagano un po' di piu'.
 const PAGA_ALBUM: Record<string, number[]> = { basso: [9, 29, 110], medio: [16, 56, 222], alto: [29, 136, 550] }
-// 20/10/2026: tutte le vincite in crediti moltiplicate per questa scala (ritorno 97% invece di 94%), come in casino_gira.
-const SCALA_ALBUM = 1.033, SCALA_BASE = 1.024
+// Tutte le vincite in crediti moltiplicate per questa scala, come in casino_gira. 24/10/2026: con i minigiochi (pallone e stemma d'oro)
+// la scala sale per tenere il ritorno al 97% (docs/slotone-minigiochi.md).
+const SCALA_ALBUM = 1.0947, SCALA_BASE = 1.0537
 const COLORI_LINEE = ['#ffd84d', '#ff5ad1', '#4de2ff', '#7dff6b', '#ff8a3d', '#b78bff', '#ff4d6d', '#3dffb5', '#ffe9a8', '#6bb7ff']
 export const fmt = (n: number) => new Intl.NumberFormat('it-IT').format(Math.round(n))
-const pescaSimbolo = () => { let x = Math.random() * 61; for (let i = 0; i < 11; i++) { x -= PESI[i]; if (x < 0) return i } return 0 }
+const pescaSimbolo = () => { let x = Math.random() * PESI_TOT; for (let i = 0; i < PESI.length; i++) { x -= PESI[i]; if (x < 0) return i } return 0 }
 export const ridotto = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
 // ---------- Suoni sintetizzati (nessun file audio) ----------
@@ -116,6 +124,8 @@ export function Contatore({ valore }: { valore: number }) {
 }
 
 function Simbolo({ s, simboli, dati }: { s: number; simboli: number[]; dati: Dati }) {
+  if (s === 11) return <SimboloPallone />
+  if (s === 12) return <SimboloStemmaOro />
   if (s === 8) return <span className="slot-sim slot-sim--jolly"><img src="/specialone-mark.svg" alt="Jolly SpecialOne" /></span>
   if (s === 10) return <span className="slot-sim slot-sim--bustina" aria-label="Bustina">
     <span className="mini-busta"><span className="mini-busta__sald" /><img src="/specialone-mark.svg" alt="" /><span className="mini-busta__sald mini-busta__sald--giu" /></span>
@@ -148,6 +158,9 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
   const [festa, setFesta] = useState(0)
   const [audio, setAudio] = useState(() => { try { return localStorage.getItem('slot-audio') !== '0' } catch { return true } })
   const [tabella, setTabella] = useState(false)
+  // Minigioco aperto (pallone o stemma d'oro): la finestra resta sopra la slot finche' non si incassa.
+  const [bonus, setBonus] = useState<{ id: number; tipo: 'stemma' | 'rigori' } | null>(null)
+  const [bonusInArrivo, setBonusInArrivo] = useState(false)
   const suoni = useSuoni(audio)
   const sbloccaMusica = useMusica('slot', audio)
 
@@ -156,8 +169,10 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
     if (error) { setErrore(error.message); return }
     const s = data as Stato
     setStato(s); setCrediti(s.crediti)
+    if (s.bonus_aperto) setBonus((b) => b ?? s.bonus_aperto ?? null)   // ripresa: minigioco lasciato a meta'
   }, [leagueId])
   useEffect(() => { void carica() }, [carica])
+  useEffect(() => { void import('./SlotBonus') }, [])   // scarica in anticipo la finestra dei minigiochi
   useEffect(() => { try { localStorage.setItem('slot-audio', audio ? '1' : '0') } catch { /* preferenza solo locale */ } }, [audio])
 
   // Le linee vincenti si accendono una alla volta.
@@ -170,7 +185,7 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
   const simboli = stato?.simboli ?? []
   const scala = stato?.album ? SCALA_ALBUM : SCALA_BASE
   const giriGratis = stato?.giri_gratis ?? 0
-  const puoiGirare = !inCorsa && stato != null && (giriGratis > 0 || crediti >= puntata)
+  const puoiGirare = !inCorsa && !bonus && !bonusInArrivo && stato != null && (giriGratis > 0 || crediti >= puntata)
 
   async function gira() {
     if (!puoiGirare) return
@@ -201,7 +216,9 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
         setGriglia(r.griglia); setStrisce(null); setInCorsa(false); setEsito(r)
         setCrediti(r.crediti)
         setStato((s) => (s ? { ...s, crediti: r.crediti, giri_gratis: r.giri_gratis, max_vincita: r.max_vincita, bustine_gratis: r.bustine_gratis ?? s.bustine_gratis } : s))
-        if (r.coppe >= 3 || (r.bustine_vinte ?? 0) > 0) suoni.coppe()
+        if (r.coppe >= 3 || (r.bustine_vinte ?? 0) > 0 || (r.bonus?.length ?? 0) > 0) suoni.coppe()
+        // Minigioco: qualche istante per vedere i simboli che lo hanno acceso, poi si apre la finestra.
+        if (r.bonus?.length) { setBonusInArrivo(true); window.setTimeout(() => { setBonus(r.bonus![0]); setBonusInArrivo(false) }, ridotto() ? 400 : 1900) }
         if (r.vinto >= r.puntata * 20) { suoni.grande(); setFesta((n) => n + 1); for (let i = 0; i < 18; i++) window.setTimeout(() => suoni.moneta(i), 400 + i * 60) }
         else if (r.vinto > 0) suoni.vincita()
         onGiro?.()
@@ -216,6 +233,7 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
     if (v) LINEE[v.linea].slice(0, v.n).forEach((riga, rullo) => set.add(rullo * 3 + riga))
     if (esito.coppe >= 3) esito.griglia.forEach((s, i) => { if (s === 9) set.add(i) })
     if ((esito.bustine ?? 0) >= 3) esito.griglia.forEach((s, i) => { if (s === 10) set.add(i) })
+    for (const speciale of [11, 12]) if (esito.griglia.filter((s) => s === speciale).length >= 3) esito.griglia.forEach((s, i) => { if (s === speciale) set.add(i) })
     return set
   }, [esito, lineaVista])
 
@@ -257,11 +275,12 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
               stroke={COLORI_LINEE[lineaAttiva.linea]} />
           </svg>}
         </div>
-        {esito && (esito.vinto > 0 || (esito.bustine_vinte ?? 0) > 0) && !inCorsa && <div className={`slot-vinto slot-vinto--${livello}`} role="status">
+        {esito && (esito.vinto > 0 || (esito.bustine_vinte ?? 0) > 0 || (esito.bonus?.length ?? 0) > 0) && !inCorsa && <div className={`slot-vinto slot-vinto--${livello}`} role="status">
           {livello === 'mega' && <em>MEGA WIN</em>}{livello === 'grande' && <em>BIG WIN</em>}
           {esito.vinto > 0 && <strong>+<Contatore valore={esito.vinto} /></strong>}
           {(esito.bustine_vinte ?? 0) > 0 && <span className="slot-vinto__bustina">🎁 {esito.bustine_vinte === 1 ? 'BUSTINA IN REGALO!' : `${esito.bustine_vinte} BUSTINE IN REGALO!`}</span>}
           {esito.nuovi_gratis > 0 && <span>🏆 {esito.nuovi_gratis} giri gratis!</span>}
+          {esito.bonus?.map((b) => <span key={b.id} className="slot-vinto__bonus">{b.tipo === 'rigori' ? '⚽ BONUS: CALCIO DI RIGORE!' : '🛡️ BONUS: SCEGLI LO STEMMA!'}</span>)}
         </div>}
       </div>
       <Festa key={festa} attiva={festa > 0} />
@@ -270,6 +289,7 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
     <p className="slot-messaggio" role="status">
       {errore ? <span className="slot-errore">{errore}</span>
         : inCorsa ? 'Buona fortuna…'
+        : esito && (esito.bonus?.length ?? 0) > 0 ? 'Hai acceso un minigioco: si parte!'
         : esito && (esito.bustine_vinte ?? 0) > 0 ? `Hai vinto ${esito.bustine_vinte === 1 ? 'una bustina' : `${esito.bustine_vinte} bustine`} per l'album: la trovi in Altro › Album.`
         : esito ? (esito.vinto > 0 ? (lineaAttiva ? `Linea ${lineaAttiva.linea + 1}: ${lineaAttiva.n} simboli, +${fmt(lineaAttiva.vinto)}` : `Coppe: +${fmt(esito.scatter)}`) : 'Niente stavolta. Ritenta!')
         : giriGratis > 0 ? 'Hai dei giri gratis: tutte le vincite valgono doppio.' : 'Scegli la puntata e tira la leva.'}
@@ -284,6 +304,11 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
       </button>
     </div>
 
+    {bonus && createPortal(<Suspense fallback={null}>
+      <SlotBonus key={bonus.id} leagueId={leagueId} bonusId={bonus.id} tipoIniziale={bonus.tipo} suoni={suoni}
+        onFine={(c) => { setBonus(null); setCrediti(c); setStato((st) => (st ? { ...st, crediti: c, bonus_aperto: null } : st)); void carica(); onGiro?.() }} />
+    </Suspense>, document.body)}
+
     <section className="slot-pannello">
       <button type="button" className="slot-pannello__tasto" aria-expanded={tabella} onClick={() => setTabella((v) => !v)}>Tabella dei premi <span aria-hidden="true">{tabella ? '−' : '+'}</span></button>
       {tabella && <div className="slot-premi">
@@ -295,6 +320,8 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
         <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={8} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo"><b>Jolly</b>: vale come qualsiasi stemma e aiuta a completare le linee. Cinque jolly sulla stessa linea: <b>{fmt(400 * puntata / 10 * scala)}</b> crediti.</span></div>
         {stato.album && <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={10} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo"><b>Bustina</b>: conta ovunque, come la coppa. 3 bustine: <b>una bustina gratis</b> per l'album; 4: due; 5: tre. Le trovi in Altro › Album.</span></div>}
         <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={9} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo"><b>Coppa</b>: conta in qualsiasi posizione, anche fuori dalle linee. 3 coppe: <b>{fmt(2 * puntata * scala)}</b> crediti e <b>8 giri gratis</b>; 4 coppe: {fmt(5 * puntata * scala)} e 12 giri; 5 coppe: {fmt(20 * puntata * scala)} e 20 giri. Nei giri gratis non paghi e le vincite valgono doppio.</span></div>
+        <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={11} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo"><b>Pallone</b>: 3 o più, in qualsiasi posizione, aprono il minigioco <b>Calcio di rigore</b>. Tiri fino a 5 rigori: ogni gol alza il premio (da <b>×1</b> fino a <b>×120</b> la puntata con 5 gol su 5), il primo rigore parato chiude il bonus.</span></div>
+        <div className="slot-premi__riga"><span className="slot-premi__simboli"><span><Simbolo s={12} simboli={simboli} dati={dati} /></span></span><span className="slot-premi__testo"><b>Stemma d'oro</b>: 3 o più, in qualsiasi posizione, aprono il minigioco <b>Scegli lo stemma</b>. Ci sono 9 scudi coperti: ne scopri 3 e vinci la <b>somma dei premi</b>, fino a <b>×500</b> la puntata. Nei giri gratis i minigiochi pagano la puntata normale, non doppia.</span></div>
         <p>Le <b>linee</b> sono 10: le tre righe orizzontali più sette percorsi a zig-zag. Quando vinci, la linea si illumina sui rulli. Gli stemmi cambiano a ogni giornata e pagano di più le squadre meglio piazzate in classifica (prima riga). Ogni giro lo estrae il server.</p>
       </div>}
     </section>
