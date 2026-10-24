@@ -5,6 +5,7 @@ import { useMusica } from '../lib/musicaCasino'
 import type { useSeasonData } from '../lib/useSeasonData'
 import { Contatore, Festa, fmt, ridotto, useSuoni } from './Casino'
 import { Crest } from './Crest'
+import { ChatCasino } from './ChatCasino'
 
 // BetOne Casino' › CrazyOne LIVE, il Crazy Time a tema SpecialOne (supabase/migrations/20261020190000_crazyone_live.sql).
 // Una ruota per lega, uguale per tutti: 15 s per puntare, top slot, ruota, eventuale bonus; poi il giro successivo.
@@ -651,6 +652,8 @@ export function CrazyOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
       </ol>}
       {vincitori.length > 0 && spicchioFermo != null && <p className="bet-nota">{vincitori.length === 1 ? 'Ha vinto' : 'Hanno vinto'} {vincitori.map((q) => dati.teamById.get(q.team_id)?.nome ?? '—').join(', ')}.</p>}
     </section>
+
+    <ChatCasino leagueId={leagueId} canale="crazy" dati={dati} titolo="Chat CrazyOne" />
 
     <section className="slot-pannello">
       <button type="button" className="slot-pannello__tasto" aria-expanded={regole} onClick={() => setRegole((v) => !v)}>Come si gioca <span aria-hidden="true">{regole ? '−' : '+'}</span></button>

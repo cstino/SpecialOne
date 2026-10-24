@@ -6843,3 +6843,38 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .alerts-scelta__opzioni button.is-scelta { background: linear-gradient(145deg, #8b5cf6, #6d28d9); color: #fff; box-shadow: 0 4px 12px rgba(109,40,217,.35); }
 .alerts-scelta__opzioni button:disabled { cursor: default; }
 .alerts-scelta p { margin: 0; color: #a79cb2; font-size: .76rem; line-height: 1.4; }
+
+/* Chat dei giochi multiplayer del casino' (CrazyOne, AviatOne, tavolo di BlackjackOne). Mobile-first. */
+.cc { border: 1px solid var(--bet-linea); border-radius: 16px; background: rgba(255,255,255,.03); overflow: hidden; }
+.cc.is-aperta { border-color: rgba(246,196,83,.35); }
+.bet-page .cc__testa { width: 100%; display: flex; align-items: center; gap: 10px; padding: 13px 16px; text-align: left; font-weight: 700; }
+.cc__titolo { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+.cc__nuovi { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 99px; background: #e93bd0; color: #fff; font-size: .72rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+.cc__anteprima { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8f86a3; font-size: .8rem; font-weight: 500; }
+.cc__anteprima i { color: #cfc7e0; font-style: normal; font-weight: 700; }
+.cc__freccia { margin-left: auto; flex: none; }
+.cc__corpo { display: grid; gap: 10px; padding: 0 12px 12px; }
+.cc__lista { display: grid; align-content: start; gap: 8px; height: 220px; margin: 0; padding: 4px 2px; overflow-y: auto; list-style: none; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.cc__vuota { align-self: center; justify-self: center; color: #8f86a3; font-size: .82rem; }
+.cc__msg { display: flex; align-items: flex-start; gap: 8px; }
+.cc__stemma { flex: none; width: 28px; height: 28px; }
+.cc__stemma .crest { width: 28px !important; height: 28px !important; }
+.cc__bolla { display: grid; gap: 1px; min-width: 0; max-width: calc(100% - 36px); padding: 6px 10px; border-radius: 4px 14px 14px 14px; background: rgba(255,255,255,.07); }
+.cc__msg.is-mio .cc__bolla { background: rgba(246,196,83,.16); }
+.cc__autore { display: flex; align-items: baseline; gap: 8px; }
+.cc__autore b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .74rem; font-weight: 800; color: #cfc7e0; }
+.cc__autore small { flex: none; color: #8f86a3; font-size: .66rem; font-variant-numeric: tabular-nums; }
+.cc__testo { overflow-wrap: anywhere; font-size: .92rem; line-height: 1.3; }
+.cc__mod { display: flex; flex: none; align-items: center; gap: 4px; margin-left: auto; }
+.bet-page .cc__mod button { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; background: rgba(255,255,255,.08); font-size: .78rem; }
+.cc__reazioni { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.bet-page .cc__reazioni button { flex: none; min-height: 34px; padding: 0 12px; border-radius: 99px; background: rgba(255,255,255,.08); font-size: .84rem; font-weight: 700; white-space: nowrap; }
+.bet-page .cc__reazioni button:disabled { opacity: .4; }
+.cc__form { display: flex; gap: 8px; }
+.bet-page .cc__form input[type="text"], .bet-page .cc__form input[type="text"]:hover, .bet-page .cc__form input[type="text"]:focus { flex: 1; width: auto; min-width: 0; min-height: 44px; margin: 0; padding: 0 14px; border: 1px solid var(--bet-linea); border-radius: 12px; background: rgba(0,0,0,.28); color: #fff; font-size: 16px; -webkit-appearance: none; appearance: none; box-shadow: none; }
+.bet-page .cc__form input[type="text"]:focus { border-color: var(--bet-oro); outline: none; }
+.bet-page .cc__form input[type="text"]::placeholder { color: #8f86a3; }
+.bet-page .cc__form > button { flex: none; min-height: 44px; padding: 0 18px; border-radius: 12px; background: linear-gradient(180deg, #ffd978, #f6c453); color: #1a1205; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
+.bet-page .cc__form > button:disabled { background: rgba(255,255,255,.1); color: rgba(255,255,255,.45); cursor: default; }
+.cc__nota { margin: 0; color: #8f86a3; font-size: .72rem; }
+.cc__errore { margin: 0; color: #ff8b8b; font-size: .8rem; }

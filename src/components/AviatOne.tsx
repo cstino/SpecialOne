@@ -4,6 +4,7 @@ import { useMusica } from '../lib/musicaCasino'
 import type { useSeasonData } from '../lib/useSeasonData'
 import { Contatore, Festa, fmt, ridotto, useSuoni } from './Casino'
 import { Crest } from './Crest'
+import { ChatCasino } from './ChatCasino'
 
 // BetOne Casino' › AviatOne LIVE, l'Aviator a tema SpecialOne (supabase/migrations/20261020140000_aviatone_live.sql).
 // Un solo aereo per lega, uguale per tutti: 7 s per puntare, volo, crash, 3 s di pausa, giro successivo.
@@ -351,6 +352,8 @@ export function AviatOne({ leagueId, dati }: { leagueId: number; dati: Dati }) {
         })}
       </ol>}
     </section>
+
+    <ChatCasino leagueId={leagueId} canale="aviat" dati={dati} titolo="Chat AviatOne" />
 
     <section className="slot-pannello">
       <AviatOneRegole />

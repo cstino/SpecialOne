@@ -4,6 +4,7 @@ import type { useSeasonData } from '../lib/useSeasonData'
 import { useMusica } from '../lib/musicaCasino'
 import { Contatore, Festa, fmt, useSuoni } from './Casino'
 import { Crest } from './Crest'
+import { ChatCasino } from './ChatCasino'
 
 // BetOne Casino' › BlackjackOne LIVE (supabase/migrations/20261020270000_blackjackone_tavoli_live.sql).
 // Tavoli condivisi da massimo 4 giocatori contro un solo banco: puntate 15 s, distribuzione, assicurazione, turni da
@@ -244,6 +245,8 @@ export function BlackjackOne({ leagueId, dati }: { leagueId: number; dati: Dati 
             <button type="button" className="bj-mossa bj-mossa--piccola" disabled={invio || !ultima || mio.puntata === ultima || ultima > crediti + mio.puntata} onClick={() => void punta(ultima)}>Ripeti {ultima ? fmt(ultima) : ''}</button>
           </div>
         </div> : null}
+
+    <ChatCasino key={t.id} leagueId={leagueId} canale={`bj:${t.id}`} dati={dati} titolo={`Chat del tavolo ${t.numero}`} />
 
     <section className="slot-pannello">
       <button type="button" className="slot-pannello__tasto" aria-expanded={regole} onClick={() => setRegole((v) => !v)}>Come si gioca <span aria-hidden="true">{regole ? '−' : '+'}</span></button>
