@@ -1493,6 +1493,10 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .formation-slots label span, .formation-bench h3 { color: #dcd4e8; }
 .formation-bench, .formation-footer { border-color: #302a40; }
 .notice--error { color: #ffc7d0; background: #4b1d2b; border: 1px solid #86384d; }
+/* Avviso: chi gioca fuori ruolo perdera' morale dopo la partita */
+.notice--morale { color: #ffe2a8; background: #3b2a10; border: 1px solid #8a6420; line-height: 1.45; }
+.notice--morale b { display: block; margin-bottom: 2px; color: #ffd27a; }
+.notice--morale strong { color: #fff; }
 .draft-refresh { display: block; margin: 20px auto; }
 .roster-hero { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding: 52px 42px 32px; border-bottom: 1px solid #2b2739; }
 .roster-hero h1 { margin: 8px 0 12px; color: #fff; font-size: clamp(3.5rem, 7vw, 6.7rem); line-height: .9; }

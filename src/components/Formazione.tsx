@@ -115,6 +115,17 @@ function reparto(slot: string) {
 }
 
 const REPARTO_ORDINE: Record<string, number> = { GK: 0, DEF: 1, MID: 2, ATT: 3 }
+
+// Morale perso dopo una partita giocata fuori ruolo (24/10/2026): stessa regola di private.calo_morale_fuori_ruolo.
+// Conta il ruolo principale (il primo in scheda): reparto vicino -8, reparto lontano (difesa <-> attacco) -25,
+// stesso reparto o ruolo elencato niente. I portieri sono esclusi (portiere fuori dai pali e movimento in porta sono vietati).
+function caloMoraleFuoriRuolo(posizioni: string[], slot: string): number {
+  if (!slot || posizioni.length === 0 || posizioni.includes(slot)) return 0
+  if (QUASI_NATURALI[slot]?.includes(posizioni[0])) return 0
+  const a = reparto(slot), b = reparto(posizioni[0])
+  if (a === 'GK' || b === 'GK' || a === b) return 0
+  return (a === 'DEF' && b === 'ATT') || (a === 'ATT' && b === 'DEF') ? 25 : 8
+}
 const POSIZIONI_CONFINANTI: Record<string, string[]> = {
   LB: ['LWB', 'LM'], LWB: ['LB', 'LM', 'LW'], LM: ['LB', 'LWB', 'LW'], LW: ['LWB', 'LM'],
   RB: ['RWB', 'RM'], RWB: ['RB', 'RM', 'RW'], RM: ['RB', 'RWB', 'RW'], RW: ['RWB', 'RM'],
@@ -594,6 +605,13 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   const titolariConSlot = titolari
     .map((id, index) => ({ player: players.find((item) => item.id === id), slot: slots[index] }))
     .filter((item): item is { player: Player; slot: string } => Boolean(item.player))
+  // Chi perdera' morale per il fuori ruolo, se la formazione resta questa (il portiere, posto 1, non conta).
+  const caliMorale = titolari.flatMap((id, index) => {
+    if (index === 0) return []
+    const player = players.find((item) => item.id === id)
+    const calo = player ? caloMoraleFuoriRuolo(player.posizioni, slots[index]) : 0
+    return player && calo > 0 ? [{ player, calo, slot: slots[index] }] : []
+  })
   const overallTitolari = titolariConSlot.length
     ? Math.round(titolariConSlot.reduce((somma, item) => somma + overallEfficacePosizione(item.player, item.slot) * fattoreCondizione(item.player.condizione), 0) / titolariConSlot.length)
     : null
@@ -1115,6 +1133,9 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         </PopupSpiegazione>}
       <section className="formation-hero"><p className="kicker">La tua distinta · {league.nome}</p><h1>Schiera la squadra.</h1></section>
       {error && <p className="notice notice--error" role="alert">{error}</p>}
+      {caliMorale.length > 0 && <p className="notice notice--morale" role="status">
+        <b>Fuori ruolo, il morale crolla.</b> Dopo la partita {caliMorale.map((c, i) => <span key={c.player.id}>{i > 0 ? (i === caliMorale.length - 1 ? ' e ' : ', ') : ''}<strong>{cognome(c.player.nome)}</strong> ({ruoloIt(c.slot)}) perderà <strong>{c.calo}</strong></span>)} di morale.
+      </p>}
       {players.length < 11 ? <section className="formation-panel"><h2>Rosa incompleta</h2><p>Servono almeno 11 giocatori prima di poter salvare una formazione.</p></section> : (
         <section className={`formation-panel formation-panel--tactical formazione-broadcast formazione-broadcast--${fase}`}>
           <div className="formation-toolbar">

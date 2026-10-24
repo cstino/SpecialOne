@@ -2105,3 +2105,9 @@ Eccezioni: nessun portiere disponibile (infortunati o squalificati), oppure meno
 * Prove in rollback: formazione regolare accettata; movimento in porta e portiere in campo rifiutati; caso Pro secco
   (portiere Tzolakis schierato punta) corretto nella copia ereditata; formazione storica intatta; emergenza senza
   portieri lasciata com'è; nessun giocatore duplicato.
+* `20261024160000` (morale): dopo ogni giornata chi è sceso in campo da titolare **fuori reparto** perde morale:
+  reparto vicino −8, reparto lontano (difesa ↔ attacco) −25, fino a un minimo di 10 (gli altri fattori negativi si
+  fermano a 40). Stesso reparto o ruolo elencato: niente. Solo i titolari scelti dall'allenatore e davvero in campo;
+  portieri esclusi. Aggiunto in coda a `private.morale_giornaliero` (una volta per giornata). Nella schermata della
+  formazione un avviso dice prima chi perderà morale e quanto. Prova in rollback sulla giornata 18 della Serie F:
+  4 titolari colpiti su 238, tutti di Pro secco.
