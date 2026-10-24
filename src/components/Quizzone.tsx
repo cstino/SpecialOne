@@ -109,7 +109,7 @@ export function Quizzone({ leagueId, dati }: { leagueId: number; dati: Dati }) {
         <small>Prossima domanda</small>
         <strong>{hh(st.prossima)}</strong>
         <span>tra {mmss(st.prossima - adesso)}</span>
-        <p>Una domanda ogni ora sulla stagione in corso. All'ora piena hai 10 secondi per entrare, gratis o puntando, poi 15 secondi per rispondere.</p>
+        <p>Una domanda ogni ora sulla stagione in corso. All'ora piena hai 10 secondi per entrare, gratis o puntando, poi 15 secondi per rispondere. Se arrivi tardi puoi rispondere lo stesso, gratis.</p>
       </div>}
 
       {fase === 'entra' && d && <div className="qz-entra">
@@ -135,14 +135,14 @@ export function Quizzone({ leagueId, dati }: { leagueId: number; dati: Dati }) {
         <div className="qz-risposte">
           {(d.risposte ?? []).map((r, i) => {
             const mia_ = mia?.risposta === i, giusta = d.corretta === i
-            return <button key={i} type="button" disabled={fase !== 'domanda' || !mia || mia.risposta != null || invio} onClick={() => void rispondi(i)}
+            return <button key={i} type="button" disabled={fase !== 'domanda' || mia?.risposta != null || invio} onClick={() => void rispondi(i)}
               className={`qz-risposta${mia_ ? ' is-mia' : ''}${d.corretta != null && giusta ? ' is-giusta' : ''}${d.corretta != null && mia_ && !giusta ? ' is-sbagliata' : ''}`}>
               <i>{'ABCD'[i]}</i><span>{r}</span>
             </button>
           })}
         </div>
         <p className="qz-esito" role="status">
-          {fase === 'domanda' ? (!mia ? 'Non sei entrato in tempo: guardi la domanda, ma non puoi rispondere.' : mia.risposta == null ? 'Scegli una risposta!' : 'Risposta data. Aspetta il risultato…')
+          {fase === 'domanda' ? (!mia ? <>Non sei entrato in tempo: giochi <b>gratis</b>. Scegli una risposta!</> : mia.risposta == null ? 'Scegli una risposta!' : 'Risposta data. Aspetta il risultato…')
             : fase === 'controllo' ? 'Controllo le risposte…'
               : !mia ? 'Non hai giocato questa domanda.' : mia.corretta ? <>Esatto! <b>+{fmt(mia.vinto)}</b> crediti</> : mia.risposta == null ? 'Tempo scaduto: nessuna risposta.' : <>Sbagliato{mia.puntata > 0 ? <>: persi {fmt(mia.puntata)} crediti</> : ''}.</>}
         </p>

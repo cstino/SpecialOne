@@ -27,11 +27,22 @@ export type Notifica = {
 // Quante se ne tengono in memoria. La campanella non e' un archivio: oltre
 // questa soglia si scorre la cronologia della lega, non le notifiche.
 const LIMITE = 30
+// L'avviso "tra 3 minuti la domanda" di QuizOne non serve a domanda passata: dopo 4 minuti non si mostra piu' (il server lo cancella comunque).
+const QUIZ_SCADENZA = 4 * 60_000
+const quizScaduto = (n: Notifica, adesso: number) =>
+  n.titolo === 'QuizOne' && n.dati?.view === 'quizzone' && adesso - new Date(n.creata_il).getTime() > QUIZ_SCADENZA
 let sequenzaCanali = 0
 
 export function useNotifiche(userId: string | undefined) {
-  const [notifiche, setNotifiche] = useState<Notifica[]>([])
+  const [tutte, setNotifiche] = useState<Notifica[]>([])
   const [caricamento, setCaricamento] = useState(true)
+  // Orologio per far sparire gli avvisi scaduti anche a pagina aperta.
+  const [adesso, setAdesso] = useState(() => Date.now())
+  useEffect(() => {
+    const t = window.setInterval(() => setAdesso(Date.now()), 30_000)
+    return () => window.clearInterval(t)
+  }, [])
+  const notifiche = useMemo(() => tutte.filter((n) => !quizScaduto(n, adesso)), [tutte, adesso])
 
   const carica = useCallback(async () => {
     if (!userId) {
