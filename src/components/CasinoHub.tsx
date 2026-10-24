@@ -103,7 +103,7 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
   return <section className="cas-hub">
     <div className="slot-saldo">
       <div><small>I tuoi crediti</small><strong><Contatore valore={crediti} /></strong></div>
-      <span className="slot-ricarica">+1.000 gratis alle 23:00</span>
+      <span className="slot-ricarica">+1.000 gratis alle 23:10</span>
     </div>
     {errore && <p className="slot-errore" role="alert">{errore}</p>}
     {bustina && <div className="cas-bustina">
