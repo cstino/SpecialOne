@@ -70,7 +70,7 @@ provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
 
 ## 4. Stadio: nuovo ramo delle risorse
 
-* **Stato:** `deciso` in parte (25/10/2026) — da definire l'importo dei crediti; fattore campo da misurare col motore.
+* **Stato:** `deciso` (25/10/2026) — da preparare prima dell'off-season 3.
 * **Richiesta:** «Gestione stadio tra le risorse. Più punti si assegnano allo stadio e più lo stadio diventa grande e di
   conseguenza aumenta il limite del bonus del pubblico. Con 0 punti risorsa il massimale del bonus del pubblico è +1,0;
   si sale di 0,2 per ogni punto risorsa, quindi al massimo uno stadio può dare +3.»
@@ -85,10 +85,15 @@ provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
     vale circa un quarto di oggi e cresce con stadio, risultati e conferenze);
   * **massimo dei punti risorsa da 20 a 26**, nessuna ridistribuzione dei punti già spesi (romperebbe vivaio e training);
   * lo stadio dà anche **entrate di crediti del casinò per ogni partita in casa** (i "biglietti").
-* **Da definire:** quanti crediti per partita in casa e per livello (proposta: 25 × livello, pagati insieme ai premi
-  partita, quindi dopo la visione o dopo 24 ore, senza spoiler).
-* **Da misurare (chat del motore):** vittorie in casa per livello di stadio e di pubblico con il motore L2; verificare
-  che il motore accetti un moltiplicatore casa maggiore di 1 (oggi è al massimo 1).
+  * **crediti per partita in casa: 50 × livello dello stadio** (livello 1 = 50, poi +50 a livello: livello 10 = 500;
+    livello 0 = niente). Da pagare insieme ai premi partita, quindi dopo la visione o dopo 24 ore, senza spoiler;
+  * confermato dopo le misure: **si parte da +1,0** (proposta di partire da +2,0 scartata dal committente).
+* **Misure col motore L2 (chat del motore, rapporto 8):** nessuna modifica al motore, il moltiplicatore oltre 1 funziona
+  (va implementato in `moltiplicatori_casa` / `moltiplicatore_pubblico`, più il livello dello stadio salvato in
+  `team_risorse`). Vittorie casa / pari / trasferta: inizio S3 (stadio 0, pubblico 50) **39,5 / 24,9 / 35,5**; stadio 5 e
+  pubblico pieno (come oggi) 45,9 / 24,0 / 30,1; stadio 10 e pubblico pieno 50,7 / 22,4 / 26,8. Stadio da 0 a 10 con
+  pubblico pieno = **+2,8 punti a stagione**. Il target V casa 43–47% di simulate-reale è misurato a moltiplicatore 1:
+  con lo stadio va riferito al livello medio reale, da rivedere dopo qualche giornata di Season 3.
 
 ---
 
