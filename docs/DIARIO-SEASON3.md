@@ -68,4 +68,28 @@ provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
 
 ---
 
+## 4. Stadio: nuovo ramo delle risorse
+
+* **Stato:** `deciso` in parte (25/10/2026) — da definire l'importo dei crediti; fattore campo da misurare col motore.
+* **Richiesta:** «Gestione stadio tra le risorse. Più punti si assegnano allo stadio e più lo stadio diventa grande e di
+  conseguenza aumenta il limite del bonus del pubblico. Con 0 punti risorsa il massimale del bonus del pubblico è +1,0;
+  si sale di 0,2 per ogni punto risorsa, quindi al massimo uno stadio può dare +3.»
+* **Oggi:** tre rami (vivaio, training, medico) da 0 a 10, 2 punti a ogni quarto di stagione, **massimo 20 punti** in
+  tutta la vita della lega (Serie F: 16 ricevuti, ~15 spesi). Il pubblico scala il fattore campo con
+  `private.moltiplicatore_pubblico` = (pubblico − 10)/70 fra 0 e 1, cioè fino a tutto il bonus casa del motore
+  (attacco +2,0).
+* **Decisioni:**
+  * quarto ramo **stadio**, livello da 0 a 10; massimo del bonus del pubblico **+1,0 a livello 0, +0,2 per livello, +3,0 a
+    livello 10** (livello 5 = come oggi). Tradotto nel motore: moltiplicatore casa = (1 + 0,2 × livello)/2 × fattore pubblico;
+  * **tutti partono da 0** alla Season 3 (il committente lo sa: con il pubblico a 50, a inizio stagione il fattore campo
+    vale circa un quarto di oggi e cresce con stadio, risultati e conferenze);
+  * **massimo dei punti risorsa da 20 a 26**, nessuna ridistribuzione dei punti già spesi (romperebbe vivaio e training);
+  * lo stadio dà anche **entrate di crediti del casinò per ogni partita in casa** (i "biglietti").
+* **Da definire:** quanti crediti per partita in casa e per livello (proposta: 25 × livello, pagati insieme ai premi
+  partita, quindi dopo la visione o dopo 24 ore, senza spoiler).
+* **Da misurare (chat del motore):** vittorie in casa per livello di stadio e di pubblico con il motore L2; verificare
+  che il motore accetti un moltiplicatore casa maggiore di 1 (oggi è al massimo 1).
+
+---
+
 <!-- Nuove richieste qui sotto: "## N. Titolo", poi Stato, Richiesta (parole del committente), Decisioni, Note. -->
