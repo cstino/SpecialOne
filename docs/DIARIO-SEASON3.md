@@ -126,4 +126,25 @@ provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
 
 ---
 
+## 6. Il tifo segue di più i risultati; derby moltiplicati
+
+* **Stato:** `deciso` (26/10/2026) — da preparare prima dell'off-season 3.
+* **Richiesta:** «Vorrei che il morale del tifo si aggiorni con le partite: perdendo una partita si perde punteggio tifo,
+  vincendo si guadagna. Nei derby sono moltiplicati.»
+* **Oggi** (`private.morale_giornaliero`): in casa vittoria +1,5, pareggio −0,5, sconfitta −2,5; in trasferta la metà.
+  Negli scontri fra rivali un bonus in più proporzionale al grado di rivalità (fino a +2 / −3 per il pubblico, ±4 per il
+  morale dei giocatori). Il grosso del tifo lo muovono le conferenze stampa.
+* **Decisioni:**
+  * **risultati raddoppiati**: in casa **vittoria +3, pareggio −1, sconfitta −5**; in trasferta la metà
+    (+1,5 / −0,5 / −2,5);
+  * **nei derby l'effetto del risultato sul tifo è ×2** (vincere il derby in casa +6, perderlo −10; in trasferta +3 / −5),
+    **al posto** del bonus proporzionale di oggi per il pubblico. Derby = rivalità oltre il 90% o rivale dichiarato,
+    come nelle conferenze stampa;
+  * il morale dei giocatori nei derby (fino a ±4) resta com'è.
+* **Note:** con il tifo che riparte da 50 a ogni stagione (voce 2) e lo stadio (voce 4), i risultati contano di più sul
+  fattore campo: una buona stagione in casa porta il tifo verso 80, una cattiva lo abbassa molto. Il pubblico resta fra
+  0 e 100.
+
+---
+
 <!-- Nuove richieste qui sotto: "## N. Titolo", poi Stato, Richiesta (parole del committente), Decisioni, Note. -->
