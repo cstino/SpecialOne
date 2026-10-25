@@ -51,4 +51,21 @@ provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
 
 ---
 
+## 3. Cambio di ruolo più rapido verso un ruolo secondario
+
+* **Stato:** `deciso` (25/10/2026) — da preparare prima dell'off-season 3.
+* **Richiesta:** «Alcuni giocatori hanno ruoli secondari, tipo Quiñones della Mafiester. Col training lo posso far
+  diventare anche TS (non è tra i ruoli secondari) e mi ci mette lo stesso tempo che a spostarlo in un ruolo che conosce
+  come secondario. Spostarlo in un ruolo secondario dovrebbe richiedere meno tempo: nel mio caso 8 giorni per il ruolo non
+  secondario e 6 per quello secondario.»
+* **Oggi** (`public.avvia_cambio_ruolo`): base = max(6, 14 − 2 × (ruoli in scheda − 1)), poi lo sconto del livello di
+  allenamento (`riduzione_tempi_ruolo_pct`), minimo 2 giornate. Il ruolo d'arrivo non conta. Quiñones (ED/ATT/AS,
+  allenamento livello 4 = −16%): base 10 → 8 giornate per qualsiasi ruolo.
+* **Decisione:** se il ruolo d'arrivo è **già tra i ruoli in scheda** del giocatore, la durata è **il 25% in meno**
+  (Quiñones: TS 8, ATT o AS 6). Vale per tutti; si somma allo sconto dell'allenamento, minimo 2.
+* **Note per farlo:** stessa regola anche in `avvia_cambio_ruolo_vivaio`, e nell'app dove si mostrano i giorni previsti
+  prima di avviare il cambio (da cercare: anteprima della durata in Rosa/Allenamento).
+
+---
+
 <!-- Nuove richieste qui sotto: "## N. Titolo", poi Stato, Richiesta (parole del committente), Decisioni, Note. -->
