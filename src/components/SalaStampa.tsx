@@ -60,6 +60,15 @@ export function SalaStampa({ teamId, revealedMatchIds, senzaTitolo = false, quan
   }, [teamId])
 
   useEffect(() => { void carica() }, [carica])
+  // Una risposta inviata aspetta il giudizio della sala stampa (lo calcola un'AI, puo' metterci qualche secondo): finche'
+  // non arriva si ricontrolla da soli, cosi' la card non resta su "sta ascoltando" se la pagina si e' ricaricata o il
+  // telefono ha messo in pausa la richiesta. Dopo 5 minuti senza giudizio il server libera la risposta.
+  const inAttesa = domande.some((d) => d.risposta && d.voto == null)
+  useEffect(() => {
+    if (!inAttesa) return
+    const t = window.setInterval(() => { if (document.visibilityState === 'visible') void carica() }, 4000)
+    return () => window.clearInterval(t)
+  }, [inAttesa, carica])
 
   // DOPO la partita: solo l'ultima partita con domande, le conferenze vecchie non servono qui.
   const dopo = domande.filter((d) => d.tipo !== 'pre').sort((a, b) => (b.match_id ?? 0) - (a.match_id ?? 0) || a.ordine - b.ordine)
