@@ -31,7 +31,8 @@ Leggi per intero `CLAUDE.md` e poi `docs/STATO-PROGETTO.md`. In più, regole di 
 * **Niente screenshot**: si verifica con numeri e misure; la grafica la guarda il committente.
 * **Il motore è validato.** Procedura obbligatoria per ogni modifica (CLAUDE.md §4): descrivi, applica, lancia le suite,
   confronta, e se una metrica esce dal target **torna indietro**. Non riscrivere, non "modernizzare".
-* **Lavora su un branch** (`feat/motore-s3`), mai direttamente su main. Push su main solo quando il committente lo dice
+* **Lavora su un branch** (`feat/motore-s3`) **nella sua cartella**: `/Users/cristianobraccili/SpecialOne-motore-s3` (git worktree).
+  **Mai fare checkout nella cartella principale** `/Users/cristianobraccili/SpecialOne`: la condividono altre sessioni e resta su main (il 25/10 un checkout lì ha spostato sul branch anche il supervisore). Mai direttamente su main. Push su main solo quando il committente lo dice
   (ogni push rifà il sito su Vercel: si raggruppano).
 * **Database sul Mac** (non il cloud): migrazioni una per una con
   `docker exec -i supabase-db psql -U postgres -v ON_ERROR_STOP=1 -q < supabase/migrations/FILE.sql`. **Mai `db push`.**
