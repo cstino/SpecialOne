@@ -97,4 +97,33 @@ provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
 
 ---
 
+## 5. Prestiti a club finti
+
+* **Stato:** `deciso` (26/10/2026); alcuni dettagli sono proposte da confermare quando si implementa.
+* **Richiesta:** «Possibilità di mandare giocatori in prestito. Se ne possono mandare solamente 5 in una stagione. Il
+  giocatore in prestito sale quasi come uno che gioca titolare, tra titolare e turnover. Il training è deciso dalle squadre
+  dove va in prestito, che decidono quale training e se cambiare ruolo al giocatore. Le squadre sono fittizie, non quelle
+  della Serie F, come se andassero a squadre controllate da bot. Un giocatore può essere richiamato dal prestito ma poi non
+  può più esserci mandato. Un giocatore può essere mandato in prestito una volta durante la stagione. Il giocatore conta
+  sempre sull'ingaggio e sul numero dei giocatori della squadra.»
+* **Decisioni:**
+  * **massimo 5 prestiti per squadra a stagione**; ogni giocatore **una sola volta a stagione**; **richiamabile** in
+    qualsiasi momento, ma dopo il richiamo non può ripartire (in quella stagione);
+  * **durata: fino a fine stagione** (o fino al richiamo); **tutti i giocatori** possono andare in prestito;
+  * va a **club finti** (non le squadre della lega), gestiti dal sistema come bot;
+  * **crescita** come chi gioca il 60% dei minuti: moltiplicatore **1,16** (turnover 1,04, titolare 1,25), per
+    l'**allenamento del club che lo ospita** (club finto di livello medio, 5), non quello della squadra proprietaria;
+  * **training e cambio ruolo li decide il club ospite**, non il proprietario;
+  * **niente infortuni né squalifiche** in prestito: torna com'era partito (crescita a parte);
+  * conta **sempre** sul tetto ingaggi e sul numero di giocatori della rosa.
+* **Proposte da confermare all'implementazione:**
+  * il club ospite sceglie una specializzazione a caso fra quelle disponibili per il ruolo; cambia ruolo con
+    probabilità **20%** per prestito, verso un ruolo raggiungibile (`private.ruoli_target_cambio`), con i tempi normali;
+  * durante il prestito il giocatore non può essere schierato, scambiato, venduto né svincolato: prima va richiamato;
+  * le promesse di minutaggio sono sospese e il morale resta fermo finché è in prestito;
+  * a fine stagione rientrano tutti in automatico, prima dell'off-season (rinnovi, invecchiamento);
+  * nomi dei club finti da una lista fissa, con stemma generico.
+
+---
+
 <!-- Nuove richieste qui sotto: "## N. Titolo", poi Stato, Richiesta (parole del committente), Decisioni, Note. -->
