@@ -97,7 +97,12 @@ provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
 * **Grafica (26/10/2026):** nella sezione Stadio delle Risorse l'immagine cambia con il livello. Immagini del committente,
   compresse in WebP 1600×800 in `public/stadio/`: `stadio-0-2.webp` (stadio di provincia), `stadio-3-5.webp` (stadio
   medio a due anelli), `stadio-6-8.webp` (grande stadio col maxischermo), `stadio-9-10.webp` (arena chiusa con il tetto ad
-  anello). Abbinamento fatto per grandezza, da confermare col committente.
+  anello). Abbinamento per grandezza, confermato dal committente il 26/10/2026.
+* **Nome dello stadio (26/10/2026):** nella pagina Club, con il pulsante di modifica (dove oggi si cambiano nome e
+  stemma), si può scrivere il **nome dello stadio**, **al massimo 20 caratteri** (controllo anche nel database). Se non lo
+  si scrive si usa un **nome di default**. Proposta da confermare: una lista di nomi generici entro 20 caratteri
+  ("Stadio Comunale", "Arena Civica", "Stadio dei Pini", "Campo dei Tigli"...), assegnati in modo fisso per squadra.
+  Dove mostrarlo (da decidere): sezione Stadio delle Risorse, pagina Club, e volendo l'intro della partita in casa.
 
 ---
 
