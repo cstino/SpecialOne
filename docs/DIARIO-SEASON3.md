@@ -94,6 +94,10 @@ provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
   pubblico pieno (come oggi) 45,9 / 24,0 / 30,1; stadio 10 e pubblico pieno 50,7 / 22,4 / 26,8. Stadio da 0 a 10 con
   pubblico pieno = **+2,8 punti a stagione**. Il target V casa 43–47% di simulate-reale è misurato a moltiplicatore 1:
   con lo stadio va riferito al livello medio reale, da rivedere dopo qualche giornata di Season 3.
+* **Grafica (26/10/2026):** nella sezione Stadio delle Risorse l'immagine cambia con il livello. Immagini del committente,
+  compresse in WebP 1600×800 in `public/stadio/`: `stadio-0-2.webp` (stadio di provincia), `stadio-3-5.webp` (stadio
+  medio a due anelli), `stadio-6-8.webp` (grande stadio col maxischermo), `stadio-9-10.webp` (arena chiusa con il tetto ad
+  anello). Abbinamento fatto per grandezza, da confermare col committente.
 
 ---
 
