@@ -29,4 +29,26 @@ provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
 
 ---
 
+## 2. Morale e tifosi a metà a inizio stagione; soglia dei titolari al 65%
+
+* **Stato:** `deciso` (25/10/2026) — da preparare prima dell'off-season 3.
+* **Richiesta:** «Dal prossimo anno ogni squadra parte con il morale rosa e tifosi a metà. I titolari devono avere come
+  soglia di gioco il 65% al posto del 55%.»
+* **Decisioni:**
+  * **morale di tutti i giocatori a 50 e pubblico di tutte le squadre a 50 all'inizio di OGNI nuova stagione**, in
+    **tutte le leghe** (la prima volta all'inizio della Season 3). Oggi non si azzerano mai (Serie F: morale medio 79,
+    pubblico 91);
+  * **soglia minima del "Titolare fisso" dal 55% al 65%** dei minuti, **per tutti** dalla Season 3, anche per le promesse
+    già scritte nei contratti in corso. La soglia "rossa" (quando il giocatore si lamenta) segue: 70% della soglia,
+    quindi dal 38,5% al 45,5%. La quota attesa dal morale resta 75%.
+* **Note per farlo:**
+  * l'azzeramento va fatto quando parte la nuova stagione (chiusura dell'off-season), non all'inizio dell'off-season:
+    durante l'off-season il morale serve ancora ai rinnovi. Da confermare col committente quando si implementa;
+  * con il pubblico a 50 il moltiplicatore del fattore campo parte da (50-10)/70 ≈ 0,57: a inizio stagione il vantaggio
+    di giocare in casa è più basso e cresce con risultati e conferenze;
+  * la soglia sta in due posti da tenere allineati: SQL `private.soglia_minutaggio` (e `controlla_minutaggio`) e
+    `src/lib/minutaggio.ts` (`GRADINI_MINUTAGGIO`); poi `docs/decisioni-minutaggio.md` §6.
+
+---
+
 <!-- Nuove richieste qui sotto: "## N. Titolo", poi Stato, Richiesta (parole del committente), Decisioni, Note. -->
