@@ -158,7 +158,7 @@ provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
 
 ## 7. Inni di squadra: collezionabili dalle bustine, si sentono nell'intro
 
-* **Stato:** `da valutare` (27/10/2026): idea chiara, restano da decidere rarità, doppioni, quale intro e playoff.
+* **Stato:** `da valutare` (27/10/2026): idea chiara, restano da decidere doppioni, quale intro e playoff.
 * **Richiesta:** «Gli inni si sentono al posto della canzone della regular season durante l'intro. Si ottengono
   spacchettando le bustine, sono molto rari e a volte escono 3 figurine e 1 inno.» E poi: «gli inni sono canzoni che
   aggiungerò io. Ogni squadra nel menu "altro" troverà il menu "inno di squadra". Lì troveranno la lista degli inni
@@ -174,10 +174,11 @@ provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
   * nuova voce **"Inno di squadra"** nel menu **Altro**: lista degli inni posseduti, si sceglie quello attivo (con ascolto
     di prova);
   * tutti partono con l'**"Inno di lega"** (il brano di oggi), sempre posseduto, attivo di default;
-  * gli inni escono **raramente dalle bustine**: in quella bustina escono 3 figurine **più** 1 inno.
+  * gli inni escono **raramente dalle bustine**: in quella bustina escono 3 figurine **più** 1 inno;
+  * rarità **1 bustina su 20** (deciso 27/10: «1 su 100 è un po' troppo raro»).
 * **Proposte (da confermare):**
-  * rarità **1 bustina su 100**, uguale per bustine comprate e gratis; fra gli inni non ancora posseduti si estrae a caso,
-    così non escono doppioni finché ne manca qualcuno;
+  * uguale per bustine comprate e gratis; fra gli inni non ancora posseduti si estrae a caso, così non escono doppioni
+    finché ne manca qualcuno;
   * se li hai già tutti, al posto dell'inno arrivano crediti (es. 300);
   * nell'intro si sente l'inno **di chi guarda** (ognuno sente il suo); chi non ne ha scelto uno sente l'inno di lega;
   * **solo regular season**: nei playoff restano le musiche del Title Playoff e del Draft Playoffs.
