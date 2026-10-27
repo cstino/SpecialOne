@@ -957,6 +957,49 @@ function normalizzaCronaca(eventi: EventoPartita[]) {
   return normalizzati.sort((sinistra, destra) => sinistra.minuto - destra.minuto || sinistra.team_id - destra.team_id)
 }
 
+// CONTROLLO FINALE DELLA CRONACA (27/10/2026). Nella stagione 1 una cronaca sbagliata mostrava al 90' un risultato
+// diverso da quello del motore, e una squadra sembrava andare ai supplementari senza motivo (andata 2-0, ritorno 1-0).
+// Le cause sono state corrette l'1 e il 2 ottobre; questo controllo e' la rete di sicurezza contro bug futuri. Prima del
+// salvataggio la cronaca deve dire esattamente quello che ha deciso il motore: gol totali e gol dei 90' per squadra,
+// niente oltre il 90' senza supplementari, supplementari solo con l'eliminatoria in parita'.
+type RisultatoPerControllo = { golC: number; golO: number; golRegolamentari: { casa: number; ospite: number }; supplementari: boolean }
+function verificaCronaca(cronaca: EventoPartita[], r: RisultatoPerControllo, decisiva: boolean, scartoAndata: number): string[] {
+  const problemi: string[] = []
+  const gol = cronaca.filter((e) => e.tipo === 'gol')
+  const conta = (lato: Lato, fino: number) => gol.filter((e) => e.lato === lato && e.minuto <= fino).length
+  if (conta('casa', MINUTO_MASSIMO) !== r.golC || conta('ospite', MINUTO_MASSIMO) !== r.golO) problemi.push(`gol in cronaca ${conta('casa', MINUTO_MASSIMO)}-${conta('ospite', MINUTO_MASSIMO)} invece di ${r.golC}-${r.golO}`)
+  const c90 = conta('casa', 90), o90 = conta('ospite', 90)
+  if (c90 !== r.golRegolamentari.casa || o90 !== r.golRegolamentari.ospite) problemi.push(`al 90' in cronaca ${c90}-${o90} invece di ${r.golRegolamentari.casa}-${r.golRegolamentari.ospite}`)
+  if (!r.supplementari && cronaca.some((e) => e.minuto > 90)) problemi.push('eventi oltre il 90\' senza supplementari')
+  if (r.supplementari && (!decisiva || scartoAndata + r.golRegolamentari.casa - r.golRegolamentari.ospite !== 0)) problemi.push('supplementari senza parita\' (motore)')
+  return problemi
+}
+// Riporta ogni gol nella fase in cui l'ha messo il motore (90' o supplementari), senza toccare ne' il totale ne' i
+// marcatori; senza supplementari nessun evento resta oltre il 90'. Cambia solo il minuto mostrato.
+function correggiFasiCronaca(cronaca: EventoPartita[], r: RisultatoPerControllo, seed: number) {
+  const rnd = creaRng(seed ^ 0x5bd1e995)
+  const nelRegolamentare = (minuto: number) => minuto <= 90
+  for (const lato of ['casa', 'ospite'] as Lato[]) {
+    const gol = cronaca.filter((e) => e.tipo === 'gol' && e.lato === lato).sort((a, b) => a.minuto - b.minuto)
+    let regolari = gol.filter((e) => nelRegolamentare(e.minuto))
+    const voluti = r.golRegolamentari[lato]
+    // troppi gol nei 90': gli ultimi passano ai supplementari (solo se giocati)
+    while (regolari.length > voluti && r.supplementari) {
+      const e = regolari.pop()!
+      e.minuto = 91 + Math.floor(rnd() * (MINUTO_MASSIMO - 90)); e.blocco = Math.ceil(e.minuto / MINUTI_PER_BLOCCO)
+    }
+    // troppo pochi gol nei 90': i primi dei supplementari tornano nell'ultimo quarto d'ora
+    const extra = gol.filter((e) => !nelRegolamentare(e.minuto))
+    while (regolari.length < voluti && extra.length) {
+      const e = extra.shift()!
+      e.minuto = 76 + Math.floor(rnd() * 15); e.blocco = BLOCCHI_REGOLAMENTARI
+      regolari = [...regolari, e]
+    }
+  }
+  if (!r.supplementari) for (const e of cronaca) if (e.minuto > 90) { e.minuto = 90; e.blocco = BLOCCHI_REGOLAMENTARI }
+  cronaca.sort((a, b) => a.minuto - b.minuto || a.team_id - b.team_id)
+}
+
 function playerStats(teamId: number, stats: JsonMap, teamStats: JsonMap, assist: Map<number, number>) {
   const minuti = stats.minuti as Map<number, number>
   const tiri = stats.tiri as Map<number, number>
@@ -1706,6 +1749,20 @@ export default {
             giocatore: cartellino.giocatore,
             colore: cartellino.tipo,
           })
+        }
+        // Rete di sicurezza: la cronaca salvata deve coincidere con il motore (vedi verificaCronaca). Se non torna si
+        // corregge qui e si avvisa il proprietario; il risultato e i supplementari restano quelli decisi dal motore.
+        const anomalie = verificaCronaca(cronaca, result, decisiva, scartoAndata)
+        if (anomalie.length) {
+          correggiFasiCronaca(cronaca, result, seed)
+          const residue = verificaCronaca(cronaca, result, decisiva, scartoAndata)
+          console.error('Cronaca incoerente corretta', fixture.id, anomalie, residue)
+          const { error: errAnomalia } = await ctx.supabaseAdmin.rpc('segnala_anomalia', {
+            p_titolo: 'Cronaca corretta automaticamente',
+            p_corpo: `Partita ${fixture.id} (giornata ${giornata}): ${anomalie.join('; ')}.${residue.length ? ` Resta: ${residue.join('; ')}.` : ' Ora coincide con il motore.'}`,
+            p_dati: { fixture_id: fixture.id, anomalie, residue },
+          })
+          if (errAnomalia) console.error('segnala_anomalia', errAnomalia.message)
         }
         const { data: saved, error: saveError } = await ctx.supabaseAdmin.rpc('registra_risultato_partita', {
           p_fixture_id: fixture.id,
