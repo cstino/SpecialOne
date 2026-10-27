@@ -156,4 +156,36 @@ provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
 
 ---
 
+## 7. Inni di squadra: collezionabili dalle bustine, si sentono nell'intro
+
+* **Stato:** `da valutare` (27/10/2026): idea chiara, restano da decidere rarità, doppioni, quale intro e playoff.
+* **Richiesta:** «Gli inni si sentono al posto della canzone della regular season durante l'intro. Si ottengono
+  spacchettando le bustine, sono molto rari e a volte escono 3 figurine e 1 inno.» E poi: «gli inni sono canzoni che
+  aggiungerò io. Ogni squadra nel menu "altro" troverà il menu "inno di squadra". Lì troveranno la lista degli inni
+  disponibili e all'inizio avranno solo quello di default, ovvero quello della lega che si sente ora, e lo chiameremo
+  "inno di lega". Quando riceveranno inni spacchettando, questi si aggiungeranno alla loro lista e potranno scegliere
+  quale usare se ne hanno più di uno.»
+* **Oggi:** l'intro suona un solo brano in loop (`MUSICA_FASE` in `src/lib/faseSquadra.ts`, riprodotto da
+  `MatchIntro.tsx`); in regular season è `/musica-fase/regular_season.m4a`. L'intro parte da un tocco dell'utente, quindi
+  l'audio può partire da solo senza blocchi del browser.
+* **Decisioni:**
+  * gli inni sono un **catalogo di canzoni caricate dal committente**, non legati a una squadra precisa: chiunque può
+    trovarli e usarli;
+  * nuova voce **"Inno di squadra"** nel menu **Altro**: lista degli inni posseduti, si sceglie quello attivo (con ascolto
+    di prova);
+  * tutti partono con l'**"Inno di lega"** (il brano di oggi), sempre posseduto, attivo di default;
+  * gli inni escono **raramente dalle bustine**: in quella bustina escono 3 figurine **più** 1 inno.
+* **Proposte (da confermare):**
+  * rarità **1 bustina su 100**, uguale per bustine comprate e gratis; fra gli inni non ancora posseduti si estrae a caso,
+    così non escono doppioni finché ne manca qualcuno;
+  * se li hai già tutti, al posto dell'inno arrivano crediti (es. 300);
+  * nell'intro si sente l'inno **di chi guarda** (ognuno sente il suo); chi non ne ha scelto uno sente l'inno di lega;
+  * **solo regular season**: nei playoff restano le musiche del Title Playoff e del Draft Playoffs.
+* **Note tecniche:** i file audio (consigliati 30–90 s, m4a, ~0,5–1,5 MB) vanno su Supabase Storage, non nel sito, così
+  se ne aggiungono di nuovi senza rifare il deploy; tabella catalogo (`inni`: titolo, file, attivo) + inni posseduti per
+  squadra + inno scelto. L'estrazione dentro `album_compra_bustina` va fatta lato server (non si bara). Per aggiungere un
+  inno il committente mi passa il file e il titolo, oppure una piccola pagina admin.
+
+---
+
 <!-- Nuove richieste qui sotto: "## N. Titolo", poi Stato, Richiesta (parole del committente), Decisioni, Note. -->
