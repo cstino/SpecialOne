@@ -189,4 +189,47 @@ provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
 
 ---
 
+## 8. Figurine: quattro rarità (common, rare, ultrarara, ultimate)
+
+* **Stato:** `deciso` (27/10/2026), tranne la ripartizione interna delle ultimate (proposta sotto).
+* **Richiesta:** «Vorrei fare varie rarità: common, rare, ultrarare, ultimate.» Rarità delle **figurine**, non delle
+  bustine: la bustina resta una sola.
+* **Oggi** (`album_compra_bustina`): per ogni figurina 2% ultrarara, 10% stemma, il resto giocatore normale; il giocatore
+  si estrae con un peso che favorisce gli overall alti; le figurine delle conference escono solo ultrarare.
+  `album_possesso` tiene due contatori per figurina, `normali` e `ultra`.
+* **Decisioni:**
+  * stesso giocatore in **più versioni**, ognuna con la sua grafica; **quali versioni esistono dipende dall'overall**:
+    common per tutti, **rare da 70**, **ultrarara da 78**, **ultimate da 83** (Serie F: 576 / 209 / 36 giocatori su 672;
+    LegaBot: 147 / 63 / 14 su 462). «Un giocatore con overall 70 non può avere la ultimate»;
+  * probabilità per figurina: **common 75%, rare 18%, ultrarara 6%, ultimate 1%**. Prima si estrae la rarità, poi il
+    giocatore fra quelli che hanno quella versione;
+  * **stemmi e conference solo ultimate**, ed escono **dentro l'1% delle ultimate** (non più il 10% di oggi per gli stemmi).
+* **Proposte (da confermare):**
+  * dentro l'1% delle ultimate: metà giocatori, metà stemmi (con le conference al 10% dove esistono);
+  * le figurine già possedute: `normali` → common, `ultra` → ultrarara;
+  * l'album si completa con qualsiasi versione; le versioni rare si vedono nella pagina del giocatore (come oggi l'ultra);
+  * l'inno (voce 7) resta una quarta carta a parte, fuori da queste probabilità.
+* **Avviso dato al committente sugli stemmi:** finora in Serie F sono uscite circa 3.400 figurine (≈ 1.100 bustine,
+  tutto il gruppo). Con stemmi allo 0,5% per figurina ne sarebbero usciti circa 17 in tutto il gruppo, e un album di
+  24 stemmi richiederebbe a un singolo migliaia di bustine. Da rivedere se l'album stemmi deve restare completabile.
+* **Note tecniche:** `album_possesso` passa da due contatori a quattro (o a una riga per versione); scambi, doppioni,
+  "mancano a" e bustine vanno adeguati alle versioni. Grafica delle carte: quattro cornici distinte in stile EA FC.
+
+---
+
+## 9. Figurine: foto a mezzo busto
+
+* **Stato:** `da valutare` (27/10/2026).
+* **Richiesta:** «Per ogni giocatore abbiamo solo la foto della faccia e sulle bustine non vengono un granché. Non si
+  riuscirebbero a reperire almeno le foto a mezzo busto?»
+* **Oggi:** le foto vengono dal CDN di sofifa (i ritratti ufficiali di EA FC, testa e spalle) e sono salvate a
+  **160×160** (`tools/importazione/scarica_foto.py`), mentre la carta le mostra più grandi: una parte della resa scadente
+  viene da lì. Il 27/10 il CDN risponde 403 alle nostre richieste.
+* **Valutazione:** una fonte gratuita di foto a mezzo busto per tutti i 5.400 giocatori non esiste. Le foto vere sono di
+  agenzie (Getty e simili, a pagamento), e i corpi interi di EA esistono solo per pochi campioni. Strade possibili:
+  1. riscaricare i ritratti alla dimensione più grande disponibile (240 o più) e ridisegnare la carta attorno al ritratto
+     in stile FUT (sfondo per rarità, ritratto grande che "esce" dalla cornice);
+  2. busto disegnato con la maglia nei colori della squadra sotto il ritratto;
+  3. immagini generate (già scartato una volta per lo stile anime).
+
 <!-- Nuove richieste qui sotto: "## N. Titolo", poi Stato, Richiesta (parole del committente), Decisioni, Note. -->
