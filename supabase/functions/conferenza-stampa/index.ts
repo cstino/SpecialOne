@@ -6,8 +6,8 @@ import { jwtVerify } from 'jose'
 //  CONFERENZE STAMPA POST PARTITA (docs/decisioni-conferenze-stampa.md, fase 1)
 //
 //  Due azioni:
-//   - genera  (cron, chiave segreta): dai fatti della partita un'AI scrive 1-2
-//             domande per ogni allenatore umano;
+//   - genera  (cron, chiave segreta): dai fatti della partita un'AI scrive una
+//             domanda per ogni allenatore umano (dal 28/10/2026: prima 1-2);
 //   - rispondi (allenatore, JWT): l'AI valuta la risposta, il server limita il
 //             voto a -3..+3 e lo applica al morale (public.applica_conferenza).
 //
@@ -383,26 +383,26 @@ async function genera(admin: any, matchId: number) {
 
     const out = await chiediAI<{ domande: Array<{ giornalista: string; domanda: string }> }>(
       'Sei la sala stampa di un gioco manageriale di calcio in italiano, giocato fra amici. ' +
-      'Dopo la partita scrivi le domande che i giornalisti fanno all\'allenatore in conferenza stampa. ' +
+      'Dopo la partita scrivi la domanda che un giornalista fa all\'allenatore in conferenza stampa. ' +
       REGOLA_NUMERI +
       'Regole: usa SOLO i fatti forniti, non inventarne altri; dai del lei e inizia con "Mister"; ' +
       'NON citare mai voti, pagelle o numeri di valutazione dei giocatori: parla della prestazione a parole ("qualche errore di troppo", "una partita sottotono", "è parso incerto", "ha deciso la partita"); ' +
       'tono da conferenza vera, diretto, a volte pungente quando il risultato o la serie lo giustificano, mai offensivo; ' +
       'ogni domanda al massimo 280 caratteri, una sola domanda per voce (niente elenchi); ' +
       'scegli gli spunti più forti (gol nel finale, rimonte, espulsioni, serie negative o positive, classifica, migliori e peggiori in campo). ' +
-      'Se un giocatore della squadra è andato molto male o è stato espulso, una domanda può incalzare l\'allenatore proprio su di lui ("lo difende?", "lo rifarebbe giocare?"): è la domanda trappola, dove né difenderlo sempre né scaricarlo è la risposta ovvia. ' +
+      'Se un giocatore della squadra è andato molto male o è stato espulso, la domanda può incalzare l\'allenatore proprio su di lui ("lo difende?", "lo rifarebbe giocare?"): è la domanda trappola, dove né difenderlo sempre né scaricarlo è la risposta ovvia. ' +
       'In questo campionato NON esiste la retrocessione: non parlare MAI di salvezza, retrocessione o zona retrocessione. ' +
-      'Se nel riepilogo c\'è la voce "Il campionato", una delle domande può allargarsi al torneo: la lotta al vertice e per il titolo, la corsa per entrare nel Title Playoff (o Title Playoffs), la lotta per i Draft Playoffs (chi ci finisce, l\'ordine di scelta nel mercato), o cosa ne pensa delle squadre che stanno davanti o dietro; ' +
+      'Se nel riepilogo c\'è la voce "Il campionato", la domanda può allargarsi al torneo: la lotta al vertice e per il titolo, la corsa per entrare nel Title Playoff (o Title Playoffs), la lotta per i Draft Playoffs (chi ci finisce, l\'ordine di scelta nel mercato), o cosa ne pensa delle squadre che stanno davanti o dietro; ' +
       'parla dei Draft Playoffs solo se il riepilogo li cita, e usa le stesse parole del riepilogo per i gruppi di squadre; ' +
-      'scegli il tema in base alla posizione della squadra dell\'allenatore (in alto: corsa al titolo e rivali dirette; sul confine: la corsa per entrare nel Title Playoff; in basso: il Draft Playoff o i Draft Playoffs, come scritto nel riepilogo), e nomina le squadre reali del riepilogo, mai altre; varia il taglio da una domanda all\'altra, senza usare sempre la stessa formula. ' +
-      'Se nel riepilogo c\'è la voce DERBY, una delle domande riguarda proprio il derby (la rivalità, la partita, cosa significa per i tifosi); se c\'è la voce sul grande rivale, una delle domande lo riguarda (come sta andando, il confronto in classifica, cosa ne pensa): mai numeri o percentuali di rivalità. ' +
-      'Se nel riepilogo c\'è la voce sugli obiettivi di stagione, una delle domande chiede quali sono gli obiettivi della squadra e fin dove pensa di arrivare (titolo, Title Playoff, crescita dei giovani, ecc.), senza dare per scontato un obiettivo. ' +
-      'Fai 2 domande se la partita offre almeno due spunti diversi, altrimenti 1. ' +
+      'scegli il tema in base alla posizione della squadra dell\'allenatore (in alto: corsa al titolo e rivali dirette; sul confine: la corsa per entrare nel Title Playoff; in basso: il Draft Playoff o i Draft Playoffs, come scritto nel riepilogo), e nomina le squadre reali del riepilogo, mai altre; varia il taglio da una partita all\'altra, senza usare sempre la stessa formula. ' +
+      'Se nel riepilogo c\'è la voce DERBY, la domanda riguarda proprio il derby (la rivalità, la partita, cosa significa per i tifosi); se c\'è la voce sul grande rivale (e non c\'è il derby), la domanda lo riguarda (come sta andando, il confronto in classifica, cosa ne pensa): mai numeri o percentuali di rivalità. ' +
+      'Se nel riepilogo c\'è la voce sugli obiettivi di stagione, la domanda può chiedere quali sono gli obiettivi della squadra e fin dove pensa di arrivare (titolo, Title Playoff, crescita dei giovani, ecc.), senza dare per scontato un obiettivo. ' +
+      'Fai UNA SOLA domanda, sullo spunto più forte: se ci sono più voci (derby, grande rivale, campionato, obiettivi, giocatore andato male) scegline una sola, con il derby che ha la precedenza. ' +
       'La voce "giornalista" è il nome di una testata o di un programma sportivo italiano REALE, scelto fra questi: ' +
       'Sky Sport, Sky Sport 24, DAZN, Rai Sport, 90° minuto, Tutto il calcio minuto per minuto, Sport Mediaset, Mediaset Infinity, ' +
       'La Gazzetta dello Sport, Corriere dello Sport, Tuttosport, Il Corriere della Sera, La Repubblica, Radio 24, Radio Rai, TMW Radio, Calciomercato.com, Il Processo. ' +
       'Scrivi SOLO il nome della testata o del programma: MAI il nome di un giornalista vero o inventato. ' +
-      'Se fai due domande usa due testate diverse, e scegli la testata che si addice allo stile della domanda',
+      'Scegli la testata che si addice allo stile della domanda',
       scheda,
       {
         name: 'scrivi_domande',
@@ -411,7 +411,7 @@ async function genera(admin: any, matchId: number) {
           type: 'object',
           properties: {
             domande: {
-              type: 'array', minItems: 1, maxItems: 2,
+              type: 'array', minItems: 1, maxItems: 1,
               items: {
                 type: 'object',
                 properties: {
@@ -426,7 +426,7 @@ async function genera(admin: any, matchId: number) {
         },
       },
     )
-    const righe = (out.domande ?? []).slice(0, 2).map((d, i) => ({
+    const righe = (out.domande ?? []).slice(0, 1).map((d, i) => ({
       league_id: f.league_id, match_id: matchId, team_id: t.id, ordine: i + 1, modello: ultimoModello || null,
       giornalista: String(d.giornalista ?? 'Sala stampa').slice(0, 80) || 'Sala stampa',
       domanda: String(d.domanda ?? '').slice(0, 600),

@@ -32,7 +32,7 @@ export function PaginaSalaStampa({ membership, onNavigate, revealedMatchIds }: P
     <div className="season-page season-page--narrow alerts-page">
       <section className="alerts-heading">
         <div><p className="kicker">{league.nome}</p><h1>Sala stampa.</h1>
-          <p>Dopo ogni partita i giornalisti ti fanno una o due domande: le tue risposte muovono il morale della rosa, l'umore del pubblico e le rivalità. Le domande compaiono dopo che hai guardato la partita. Nelle risposte puoi nominare qualsiasi squadra della lega: attaccarla fa salire la rivalità con lei, elogiarla la fa scendere.</p></div>
+          <p>Dopo ogni partita i giornalisti ti fanno una domanda: le tue risposte muovono il morale della rosa, l'umore del pubblico e le rivalità. Le domande compaiono dopo che hai guardato la partita. Nelle risposte puoi nominare qualsiasi squadra della lega: attaccarla fa salire la rivalità con lei, elogiarla la fa scendere.</p></div>
       </section>
       <SalaStampa teamId={membership.id} revealedMatchIds={revealedMatchIds} senzaTitolo
         quandoVuota={<Vuota titolo="Nessuna domanda per ora." testo="Dopo la prossima partita i giornalisti ti aspettano in sala stampa." />} />

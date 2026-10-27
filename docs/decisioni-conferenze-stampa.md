@@ -15,7 +15,7 @@ Tre fasi separate, ognuna giocabile da sola, in quest'ordine consigliato:
 
 ### Le domande
 - Dopo la simulazione delle 23:00 (Europe/Rome), per ogni allenatore **umano** (non le
-  squadre del PC) nascono 1-2 domande sulla storia della sua partita.
+  squadre del PC) nasce una domanda sulla storia della sua partita (1-2 fino al 27/10/2026, ridotta a una su richiesta del committente: con il diritto di replica diventavano troppe).
 - Le scrive un'AI partendo da **fatti preparati dal server**: risultato, minuti dei gol
   (vantaggio nel finale e pareggio subito, rimonta, gol al 90'), espulsioni, serie di
   risultati recenti, classifica, scontro diretto, migliore in campo, eventuale rivalità.
