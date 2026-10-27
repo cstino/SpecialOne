@@ -16,6 +16,7 @@ import { attributiInLega, attributiIstanza, type Attributi } from '../lib/attrib
 import { SegnaMercato } from './SegnaMercato'
 import { UnderlineTabs } from './ui/underline-tabs'
 import { useFaseSquadra } from '../lib/faseSquadra'
+import { useFaseMercato, ETICHETTA_SCAMBI_CHIUSO } from '../lib/faseMercato'
 
 // Ordine di CALENDARIO, non alfabetico. Dentro una stagione l'ON-Season cade a
 // meta' campionato e l'OFF-Season alla fine, quindi viene prima la ON:
@@ -146,6 +147,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
   const dati = useSeasonData(membership)
   // Colori della fase (verde regular, blu title, arancio draft), come Rosa e dashboard.
   const fase = useFaseSquadra(league.id, membership.id, dati.season?.id)
+  const faseMercato = useFaseMercato(league.id)
   const adesso = useOraCorrente()
   const [rose, setRose] = useState<Giocatore[]>([])
   const [scelte, setScelte] = useState<Scelta[]>([])
@@ -346,8 +348,9 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
   const chiusuraMercatoIl = prossimaPartitaIl == null ? null : prossimaPartitaIl - 2 * 60 * 60 * 1000
   const mercatoDinamicoAperto = cicloDinamico && aperturaMercatoIl != null && chiusuraMercatoIl != null
     && adesso >= aperturaMercatoIl && adesso < chiusuraMercatoIl
-  const aperto = cicloDinamico ? mercatoDinamicoAperto : mercatoAperto()
-  const etichettaMercato = cicloDinamico
+  const chiusoPerFase = faseMercato?.scambiChiuso ?? false   // playoff e fine stagione; riapre con l'off-season
+  const aperto = !chiusoPerFase && (cicloDinamico ? mercatoDinamicoAperto : mercatoAperto())
+  const etichettaMercato = chiusoPerFase ? ETICHETTA_SCAMBI_CHIUSO : cicloDinamico
     ? aperto
       ? `Mercato aperto · chiude tra ${formatCountdown(Math.max(0, (chiusuraMercatoIl ?? adesso) - adesso))}`
       : adesso < (aperturaMercatoIl ?? 0)

@@ -7,6 +7,7 @@ import { formatCountdown, oraServerAdesso, useOraCorrente } from '../lib/countdo
 import type { Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { PopupSpiegazione } from './PopupSpiegazione'
+import { useFaseMercato, ETICHETTA_GIOCATORI_CHIUSO } from '../lib/faseMercato'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
@@ -32,6 +33,7 @@ function mercatoAperto() {
 
 export function Under({ membership, onNavigate }: Props) {
   const league = membership.league!
+  const faseMercato = useFaseMercato(league.id)
   const dati = useSeasonData(membership)
   const adesso = useOraCorrente()
   const [aste, setAste] = useState<Asta[]>([])
@@ -98,8 +100,9 @@ export function Under({ membership, onNavigate }: Props) {
   const chiusuraMercatoIl = prossimaPartitaIl == null ? null : prossimaPartitaIl - 2 * 60 * 60 * 1000
   const mercatoDinamicoAperto = cicloDinamico && aperturaMercatoIl != null && chiusuraMercatoIl != null
     && adesso >= aperturaMercatoIl && adesso < chiusuraMercatoIl
-  const aperto = cicloDinamico ? mercatoDinamicoAperto : mercatoAperto()
-  const etichetta = cicloDinamico
+  const chiusoPerFase = faseMercato?.giocatoriChiuso ?? false   // playoff, fine stagione, off-season
+  const aperto = !chiusoPerFase && (cicloDinamico ? mercatoDinamicoAperto : mercatoAperto())
+  const etichetta = chiusoPerFase ? ETICHETTA_GIOCATORI_CHIUSO : cicloDinamico
     ? aperto ? `Mercato aperto · chiude tra ${formatCountdown(Math.max(0, (chiusuraMercatoIl ?? adesso) - adesso))}`
       : `Mercato chiuso · apre tra ${formatCountdown(Math.max(0, (aperturaMercatoIl ?? adesso) - adesso))}`
     : aperto ? 'Mercato aperto · chiude alle 21:00' : 'Mercato chiuso · apre alle 23:30'

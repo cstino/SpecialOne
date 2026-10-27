@@ -2111,3 +2111,18 @@ Eccezioni: nessun portiere disponibile (infortunati o squalificati), oppure meno
   portieri esclusi. Aggiunto in coda a `private.morale_giornaliero` (una volta per giornata). Nella schermata della
   formazione un avviso dice prima chi perderà morale e quanto. Prova in rollback sulla giornata 18 della Serie F:
   4 titolari colpiti su 238, tutti di Pro secco.
+
+## Playoff: crescita e mercato (27 ottobre 2026)
+
+* **Crescita anche nei playoff** (`20261027100000`): `applica_progressione_trimestrale` non si ferma più oltre
+  `giornate_totali`; ogni giornata di playoff applica la stessa quota giornaliera (stesse fasce d'età, minutaggio,
+  training). Prima nei playoff nessuno cresceva né calava. In Serie F (22 + 7 giornate) la crescita della stagione e il
+  calo dei più anziani sono circa un terzo più ampi.
+* **Mercato per fasi** (`20261027110000`): `private.fase_mercato` = stagione / playoff (tabelloni creati) /
+  fine_stagione (lega conclusa) / offseason. Svincolati e under (`offri_per_svincolato`, `offri_per_under`,
+  `richiama_svincolato`) solo in stagione; scambi (`proponi_scambio`, accettazione in `rispondi_a_proposta`; il rifiuto
+  resta sempre possibile) chiusi in playoff e fine stagione, riaperti con l'off-season. Estrazioni giornaliere di
+  svincolati e under, e con loro le mosse di mercato delle squadre PC, solo in stagione. L'app legge la fase da
+  `stato_mercato` (`src/lib/faseMercato.ts`) per non mostrare "Mercato aperto" a fase chiusa.
+* **Schedine (SchedOne) chiuse durante i playoff**: già così (le partite dei playoff sono escluse), confermato dal
+  committente.

@@ -17,6 +17,7 @@ import { LoadingLogo } from './LoadingLogo'
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { UnderlineTabs } from './ui/underline-tabs'
 import { Icona } from './Icona'
+import { useFaseMercato, ETICHETTA_GIOCATORI_CHIUSO } from '../lib/faseMercato'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
@@ -129,6 +130,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   // risolto, e rifarlo a mano avrebbe prodotto una seconda verita'.
   const dati = useSeasonData(membership)
   const fase = useFaseSquadra(league.id, membership.id, dati.season?.id)
+  const faseMercato = useFaseMercato(league.id)
   // Cosa chiede ogni svincolato: chi lo prende firma con quel minutaggio (docs/decisioni-minutaggio.md).
   const soglieMinutaggio = useSoglieMinutaggio(league.id, Boolean(league.tattiche_attive))
   const adesso = useOraCorrente()
@@ -431,8 +433,9 @@ export function Mercato({ membership, onNavigate }: Props) {
   // quindi quella condizione era vera quasi sempre — mostrava il mercato
   // aperto (e il modulo di offerta attivo) anche ben oltre le 21:00, salvo
   // poi farsi rifiutare l'offerta dalla RPC, che applica la regola vera.
-  const aperto = cicloDinamico ? mercatoDinamicoAperto : mercatoAperto()
-  const etichettaMercato = cicloDinamico
+  const chiusoPerFase = faseMercato?.giocatoriChiuso ?? false   // playoff, fine stagione, off-season
+  const aperto = !chiusoPerFase && (cicloDinamico ? mercatoDinamicoAperto : mercatoAperto())
+  const etichettaMercato = chiusoPerFase ? ETICHETTA_GIOCATORI_CHIUSO : cicloDinamico
     ? aperto
       ? `Mercato aperto · chiude tra ${formatCountdown(Math.max(0, (chiusuraMercatoIl ?? adesso) - adesso))}`
       : adesso < (aperturaMercatoIl ?? 0)
