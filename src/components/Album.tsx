@@ -168,7 +168,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   const [possesso, setPossesso] = useState<Map<number, Possesso>>(new Map())
   const [ana, setAna] = useState<Map<number, Anagrafica>>(new Map())
   const [errore, setErrore] = useState('')
-  const [pagina, setPagina] = useState<number | 'conf' | null>(null)
+  const [pagina, setPagina] = useState<number | 'conf' | 'agg' | null>(null)
   const [busta, setBusta] = useState<Uscita[] | null>(null)
   const [scoperte, setScoperte] = useState<Set<number>>(new Set())
   const [strappo, setStrappo] = useState(false)
@@ -227,19 +227,21 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
 
   const perSquadra = useMemo(() => {
     const m = new Map<number, Figurina[]>()
-    for (const f of figurine) if (f.team_id != null) m.set(f.team_id, [...(m.get(f.team_id) ?? []), f])
-    for (const [k, v] of m) m.set(k, v.sort((a, b) => (a.tipo === 'stemma' ? -1 : b.tipo === 'stemma' ? 1 : 0) || Number(a.aggiornamento) - Number(b.aggiornamento) || (b.overall ?? 0) - (a.overall ?? 0) || a.id - b.id))
+    // Le figurine "AGG." (giocatori arrivati dopo l'apertura dell'album) stanno nella pagina Aggiornamenti, fuori dal conteggio.
+    for (const f of figurine) if (f.team_id != null && !f.aggiornamento) m.set(f.team_id, [...(m.get(f.team_id) ?? []), f])
+    for (const [k, v] of m) m.set(k, v.sort((a, b) => (a.tipo === 'stemma' ? -1 : b.tipo === 'stemma' ? 1 : 0) || (b.overall ?? 0) - (a.overall ?? 0) || a.id - b.id))
     return m
   }, [figurine])
+  const agg = useMemo(() => figurine.filter((f) => f.aggiornamento).sort((a, b) => (dati.teamById.get(a.team_id ?? 0)?.nome ?? '').localeCompare(dati.teamById.get(b.team_id ?? 0)?.nome ?? '') || (b.overall ?? 0) - (a.overall ?? 0) || a.id - b.id), [figurine, dati.teamById])
   const squadre = useMemo(() => [...perSquadra.keys()].sort((a, b) => (dati.teamById.get(a)?.nome ?? '').localeCompare(dati.teamById.get(b)?.nome ?? '')), [perSquadra, dati.teamById])
-  const numeri = useMemo(() => { const m = new Map<number, number>(); let n = 1; for (const t of squadre) for (const f of perSquadra.get(t) ?? []) m.set(f.id, n++); for (const f of figurine.filter((x) => x.tipo === 'conferenza')) m.set(f.id, n++); return m }, [squadre, perSquadra, figurine])
+  const numeri = useMemo(() => { const m = new Map<number, number>(); let n = 1; for (const t of squadre) for (const f of perSquadra.get(t) ?? []) m.set(f.id, n++); for (const f of figurine.filter((x) => x.tipo === 'conferenza')) m.set(f.id, n++); for (const f of agg) m.set(f.id, n++); return m }, [squadre, perSquadra, figurine, agg])
   const conf = figurine.filter((f) => f.tipo === 'conferenza')
   // Figurina di esempio per far vedere com'e' un'ultrarara: il giocatore con l'overall piu' alto dell'album.
   const esempioUltra = useMemo(() => figurine.filter((f) => f.tipo === 'giocatore').sort((a, b) => (b.overall ?? 0) - (a.overall ?? 0))[0], [figurine])
 
   const ce = (id: number) => { const p = possesso.get(id); return Boolean(p && p.normali + p.ultra > 0) }
   const ceUltra = (id: number) => (possesso.get(id)?.ultra ?? 0) > 0
-  const base = figurine.filter((f) => f.tipo !== 'conferenza')
+  const base = figurine.filter((f) => f.tipo !== 'conferenza' && !f.aggiornamento)
   const attaccate = base.filter((f) => ce(f.id)).length
   const ultraTot = figurine.filter((f) => ceUltra(f.id)).length
   // Si riciclano solo i doppioni non impegnati in uno scambio in attesa.
@@ -326,7 +328,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   if (errore && stagione == null) return <section className="alb-vuoto"><p role="alert">{errore}</p></section>
   if (stagione == null) return <section className="alb-vuoto"><p>Apro l'album…</p></section>
 
-  const figPagina = pagina === 'conf' ? conf : pagina != null ? perSquadra.get(pagina) ?? [] : []
+  const figPagina = pagina === 'conf' ? conf : pagina === 'agg' ? agg : pagina != null ? perSquadra.get(pagina) ?? [] : []
   const completaPagina = (t: number) => (perSquadra.get(t) ?? []).every((f) => ce(f.id))
 
   return <section className="alb">
@@ -447,13 +449,20 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
             <span className="alb-indice__nome"><strong>Conference</strong><small>{conf.filter((f) => ce(f.id)).length}/{conf.length} ultrarare</small></span>
           </button>
         </li>}
+        {agg.length > 0 && <li>
+          <button type="button" className="alb-indice__conf alb-indice__agg" onClick={() => { setPagina('agg'); window.requestAnimationFrame(() => scheda.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })) }}>
+            <span className="alb-indice__stemma">🆕</span>
+            <span className="alb-indice__nome"><strong>Aggiornamenti</strong><small>{agg.filter((f) => ce(f.id)).length}/{agg.length} · extra</small></span>
+          </button>
+        </li>}
       </ul>
     </> : <div ref={scheda} className="alb-pagina">
       <div className="alb-pagina__testa">
         <button type="button" className="alb-indietro" onClick={() => setPagina(null)}>‹ Pagine</button>
-        <strong>{pagina === 'conf' ? 'Conference' : dati.teamById.get(pagina)?.nome}</strong>
+        <strong>{pagina === 'conf' ? 'Conference' : pagina === 'agg' ? 'Aggiornamenti' : dati.teamById.get(pagina)?.nome}</strong>
         <span>{figPagina.filter((f) => ce(f.id)).length}/{figPagina.length}</span>
       </div>
+      {pagina === 'agg' && <p className="bet-nota">Giocatori arrivati nelle rose dopo l'apertura dell'album. Si collezionano e si scambiano come le altre, ma non contano per il completamento, le pagine e la classifica.</p>}
       <ul className="alb-griglia">
         {figPagina.map((f) => <li key={f.id}>
           <Carta f={f} ana={f.player_id != null ? ana.get(f.player_id) : undefined} dati={dati} ultra={ceUltra(f.id) || f.tipo === 'conferenza'} vuota={!ce(f.id)} numero={numeri.get(f.id)} />
