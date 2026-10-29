@@ -1863,6 +1863,21 @@ export default {
       })
       if (condizioneError) throw condizioneError
 
+      // Le squadre che riposano questa giornata (primi turni dei playoff): per loro il tempo passa lo stesso, quindi
+      // infortuni e stanchezza recuperano. Idempotente per (lega, giornata, squadra). Un errore qui non ferma la giornata.
+      const { error: riposoError } = await ctx.supabaseAdmin.rpc('applica_riposo_squadre', {
+        p_league_id: leagueId,
+        p_giornata: giornata,
+      })
+      if (riposoError) {
+        console.error('applica_riposo_squadre', riposoError.message)
+        await ctx.supabaseAdmin.rpc('segnala_anomalia', {
+          p_titolo: 'Recupero delle squadre a riposo non applicato',
+          p_corpo: `Lega ${leagueId}, giornata ${giornata}: ${riposoError.message}`,
+          p_dati: { league_id: leagueId, giornata },
+        })
+      }
+
       // Ammonizioni e squalifiche: chi ha giocato oggi sconta una giornata di
       // squalifica gia' in corso (come per gli infortuni, il conto alla
       // rovescia avanza a ogni giornata della SQUADRA, non solo per chi era
