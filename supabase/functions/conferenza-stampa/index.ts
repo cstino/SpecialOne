@@ -202,12 +202,41 @@ function fattiNumerici(opts: {
 }
 
 // Riga di riepilogo per le partite di playoff: la regular season e' chiusa, classifica e punti non servono piu'.
+// I turni non a gara secca sono andata e ritorno (conta la somma dei gol): il giornalista deve sapere quale gara e',
+// com'e' finita l'andata e chi e' avanti, altrimenti parla di "dentro o fuori" anche all'andata.
 // deno-lint-ignore no-explicit-any
-async function schedaPlayoff(admin: any, tieId: number): Promise<string> {
-  const { data: tie } = await admin.from('bracket_ties').select('turno, gara_secca, brackets(tipo)').eq('id', tieId).single()
+async function schedaPlayoff(admin: any, tieId: number, fixtureId: number, teamId: number, nomi: Map<number, string>): Promise<string> {
+  const { data: tie } = await admin.from('bracket_ties').select('turno, gara_secca, vincitore_team_id, brackets(tipo)').eq('id', tieId).single()
   const b = Array.isArray(tie?.brackets) ? tie.brackets[0] : tie?.brackets
   const posta = b?.tipo === 'draft' ? 'per l\'ordine di scelta nel mercato (non per il titolo)' : 'per il titolo'
-  return `FASE PLAYOFF${tie?.turno ? ` (turno ${tie.turno})` : ''}${tie?.gara_secca ? ', gara secca' : ''}: la regular season è finita, la classifica non esiste più. Si gioca ${posta}; chi perde il turno è eliminato.`
+  const { data: gare } = await admin.from('fixtures').select('id, home_team_id, away_team_id, matches(gol_home, gol_away)')
+    .eq('bracket_tie_id', tieId).order('giornata')
+  type Gara = { id: number; home_team_id: number; away_team_id: number; matches: Array<{ gol_home: number; gol_away: number }> | { gol_home: number; gol_away: number } | null }
+  const lista = (gare ?? []) as Gara[]
+  const ris = (g: Gara) => (Array.isArray(g.matches) ? g.matches[0] : g.matches) ?? null
+  const qui = lista.findIndex((g) => g.id === fixtureId)
+  const fuori: string[] = [`FASE PLAYOFF${tie?.turno ? ` (turno ${tie.turno})` : ''}: la regular season è finita, la classifica non esiste più. Si gioca ${posta}.`]
+  if (tie?.gara_secca || lista.length < 2 || qui < 0) {
+    fuori.push('Gara secca: chi perde è eliminato.')
+  } else {
+    fuori.push(`Sfida di andata e ritorno, passa chi segna di più nella somma delle due gare: questa è la gara di ${qui === 0 ? 'ANDATA' : 'RITORNO'}.`)
+    const altroId = lista[qui].home_team_id === teamId ? lista[qui].away_team_id : lista[qui].home_team_id
+    let miei = 0, loro = 0, giocate = 0
+    for (const [i, g] of lista.entries()) {
+      const r = ris(g)
+      if (!r) continue
+      giocate++
+      if (i !== qui) fuori.push(`Andata: ${nomi.get(g.home_team_id)} ${r.gol_home}-${r.gol_away} ${nomi.get(g.away_team_id)}.`)
+      miei += g.home_team_id === teamId ? r.gol_home : r.gol_away
+      loro += g.home_team_id === teamId ? r.gol_away : r.gol_home
+    }
+    const io = nomi.get(teamId), lui = nomi.get(altroId)
+    if (qui === 0 && !ris(lista[0])) fuori.push('Nessuno può essere eliminato stasera: il ritorno si gioca alla giornata successiva.')
+    else if (qui === 0) fuori.push(`Il ritorno si gioca alla giornata successiva: nessuno è ancora eliminato. ${miei === loro ? 'La sfida è in parità.' : `${miei > loro ? io : lui} parte avanti di ${Math.abs(miei - loro)} gol.`}`)
+    else if (giocate === 1) fuori.push(miei === loro ? `Dopo l'andata la sfida è in parità: stasera chi vince passa.` : `Dopo l'andata ${miei > loro ? io : lui} è avanti di ${Math.abs(miei - loro)} gol: ${miei > loro ? lui : io} deve rimontare.`)
+    else fuori.push(`Somma delle due gare: ${io} ${miei}, ${lui} ${loro}.${tie?.vincitore_team_id ? ` Passa il turno ${nomi.get(tie.vincitore_team_id)}, ${tie.vincitore_team_id === teamId ? lui : io} è eliminata.` : ''}`)
+  }
+  return fuori.join(' ')
 }
 
 const REGOLA_NUMERI = 'NUMERI: non fare calcoli e non inventare cifre. Cita punti, differenze, serie e posizioni SOLO se sono scritti esattamente nel riepilogo; ' +
@@ -384,7 +413,7 @@ async function genera(admin: any, matchId: number) {
       mie.filter((p: { voto: number }) => p.voto <= 5.5).length
         ? `Giocatori di ${t.nome} in grave difficoltà oggi: ${mie.filter((p: { voto: number }) => p.voto <= 5.5).map((p: { player_instance_id: number; voto: number }) => `${nome.get(p.player_instance_id)} (${prestazione(p.voto)})`).join(', ')}.` : '',
       mie.length ? `Fra i giocatori di ${t.nome}: il migliore è stato ${nome.get(mie[0].player_instance_id)} (${prestazione(mie[0].voto)}), il meno brillante ${nome.get(mie[mie.length - 1].player_instance_id)} (${prestazione(mie[mie.length - 1].voto)}).` : '',
-      inPlayoff ? await schedaPlayoff(admin, f.bracket_tie_id) : '',
+      inPlayoff ? await schedaPlayoff(admin, f.bracket_tie_id, f.id, t.id, nomeSquadra) : '',
       pos && !inPlayoff ? `Classifica dopo questa partita: ${t.nome} ${pos.posizione}° su ${nelGruppo(t.id)} con ${pos.punti} punti in ${pos.giocate} partite${posAvv ? `; ${avversario} ${posAvv.posizione}° con ${posAvv.punti}` : ''}.` : '',
       campionatoDi(t.id),
       fattiNumerici({ nome: t.nome, gruppo: inPlayoff ? [] : gruppoDi(t.id), teamId: t.id, nomi: nomeSquadra, forma: ultime, avversarioId: avvId }),
@@ -405,7 +434,7 @@ async function genera(admin: any, matchId: number) {
       'scegli gli spunti più forti (gol nel finale, rimonte, espulsioni, serie negative o positive, classifica, migliori e peggiori in campo). ' +
       'Se un giocatore della squadra è andato molto male o è stato espulso, la domanda può incalzare l\'allenatore proprio su di lui ("lo difende?", "lo rifarebbe giocare?"): è la domanda trappola, dove né difenderlo sempre né scaricarlo è la risposta ovvia. ' +
       'In questo campionato NON esiste la retrocessione: non parlare MAI di salvezza, retrocessione o zona retrocessione. ' +
-      'Se nel riepilogo c\'è la voce FASE PLAYOFF, parla SOLO di playoff (il turno, l\'avversario, la posta in gioco, la tensione dell\'eliminazione): MAI di regular season, classifica, punti o posizioni. ' +
+      'Se nel riepilogo c\'è la voce FASE PLAYOFF, parla SOLO di playoff: MAI di regular season, classifica, punti o posizioni. Tieni conto di andata o ritorno e del risultato dell\'andata come scritti nel riepilogo (chi è avanti, la rimonta da fare, il vantaggio da difendere); di eliminazione parla solo se il riepilogo dice che stasera si può essere eliminati. Varia il taglio: niente formule fisse come "dentro o fuori" o "come ha preparato la squadra". ' +
       'Se nel riepilogo c\'è la voce "Il campionato", la domanda può allargarsi al torneo: la lotta al vertice e per il titolo, la corsa per entrare nel Title Playoff (o Title Playoffs), la lotta per i Draft Playoffs (chi ci finisce, l\'ordine di scelta nel mercato), o cosa ne pensa delle squadre che stanno davanti o dietro; ' +
       'parla dei Draft Playoffs solo se il riepilogo li cita, e usa le stesse parole del riepilogo per i gruppi di squadre; ' +
       'scegli il tema in base alla posizione della squadra dell\'allenatore (in alto: corsa al titolo e rivali dirette; sul confine: la corsa per entrare nel Title Playoff; in basso: il Draft Playoff o i Draft Playoffs, come scritto nel riepilogo), e nomina le squadre reali del riepilogo, mai altre; varia il taglio da una partita all\'altra, senza usare sempre la stessa formula. ' +
@@ -522,7 +551,7 @@ async function generaPre(admin: any, fixtureId: number) {
     const scheda = [
       `Lega: ${lega.nome}. Giornata ${f.giornata}${f.bracket_tie_id ? ' (playoff)' : ''}. La partita si gioca stasera alle ${ora}: NON e' ancora stata giocata, non c'e' nessun risultato.`,
       `Squadra dell'allenatore: ${t.nome} (${inCasa ? 'in casa' : 'in trasferta'}). Avversario: ${avv.nome}.`,
-      inPlayoff ? await schedaPlayoff(admin, f.bracket_tie_id) : '',
+      inPlayoff ? await schedaPlayoff(admin, f.bracket_tie_id, f.id, t.id, new Map(Array.from(squadra.values()).map((x) => [x.id, x.nome]))) : '',
       pos && !inPlayoff ? `Classifica: ${t.nome} ${pos.posizione}° con ${pos.punti} punti in ${pos.giocate} partite${posAvv ? `; ${avv.nome} ${posAvv.posizione}° con ${posAvv.punti}` : ''}.` : '',
       mie.length ? `Ultimi risultati di ${t.nome} (dal più recente): ${mie.join(' ')}.` : '',
       loro.length ? `Ultimi risultati di ${avv.nome} (dal più recente): ${loro.join(' ')}.` : '',
@@ -541,7 +570,7 @@ async function generaPre(admin: any, fixtureId: number) {
       'Scegli lo spunto più forte fra: l\'avversario e la sua forma, cosa si gioca la squadra in classifica, la serie di risultati, ' +
       'gli infortunati citati, le scelte di formazione e la tattica (in generale, senza inventare chi gioca), le aspettative dei tifosi. ' +
       'Se nel riepilogo c\'è la voce DERBY, la domanda riguarda proprio il derby (la rivalità, cosa significa per i tifosi, come lo prepara): mai numeri o percentuali di rivalità. ' +
-      'Se nel riepilogo c\'è la voce FASE PLAYOFF, parla SOLO di playoff (il turno, l\'avversario, la posta in gioco, la tensione dell\'eliminazione): MAI di regular season, classifica, punti o posizioni. ' +
+      'Se nel riepilogo c\'è la voce FASE PLAYOFF, parla SOLO di playoff: MAI di regular season, classifica, punti o posizioni. Tieni conto di andata o ritorno e del risultato dell\'andata come scritti nel riepilogo (chi è avanti, la rimonta da fare, il vantaggio da difendere); di eliminazione parla solo se il riepilogo dice che stasera si può essere eliminati. Varia il taglio: niente formule fisse come "dentro o fuori" o "come ha preparato la squadra". ' +
       'In questo campionato NON esiste la retrocessione: non parlare MAI di salvezza o retrocessione; parla di Title Playoff/Title Playoffs o Draft Playoffs solo se il riepilogo li cita, con le stesse parole. ' +
       'Nomina solo squadre e giocatori presenti nel riepilogo. ' +
       'La voce "giornalista" è il nome di una testata o di un programma sportivo italiano REALE, scelto fra questi: ' +
