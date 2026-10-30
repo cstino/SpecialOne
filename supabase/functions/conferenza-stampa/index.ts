@@ -144,13 +144,15 @@ const prestazione = (voto: number) =>
   : voto >= 6 ? 'prestazione discreta' : voto >= 5.5 ? 'prestazione sottotono' : 'prestazione molto negativa, con errori evidenti'
 
 // Gli ultimi risultati di una squadra prima di una certa giornata (V/P/S, dal piu' recente).
+// Nei playoff (soloPlayoff) contano solo le partite dei tabelloni: la regular season e' finita.
 // deno-lint-ignore no-explicit-any
-async function formaRecente(admin: any, seasonId: number, giornata: number, teamId: number): Promise<string[]> {
-  const { data: prec } = await admin.from('fixtures')
+async function formaRecente(admin: any, seasonId: number, giornata: number, teamId: number, soloPlayoff = false): Promise<string[]> {
+  let q = admin.from('fixtures')
     .select('giornata, home_team_id, away_team_id, matches(gol_home, gol_away)')
     .eq('season_id', seasonId).lt('giornata', giornata)
     .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
-    .order('giornata', { ascending: false }).limit(5)
+  if (soloPlayoff) q = q.not('bracket_tie_id', 'is', null)
+  const { data: prec } = await q.order('giornata', { ascending: false }).limit(5)
   return (prec ?? []).flatMap((x: { home_team_id: number; matches: Array<{ gol_home: number; gol_away: number }> | { gol_home: number; gol_away: number } | null }) => {
     const r = Array.isArray(x.matches) ? x.matches[0] : x.matches
     if (!r) return []
@@ -197,6 +199,15 @@ function fattiNumerici(opts: {
     if (n >= 3) out.push(`Serie in corso: ${n} ${opts.forma[0] === 'V' ? 'vittorie' : opts.forma[0] === 'S' ? 'sconfitte' : 'pareggi'} consecutive.`)
   }
   return out.join(' ')
+}
+
+// Riga di riepilogo per le partite di playoff: la regular season e' chiusa, classifica e punti non servono piu'.
+// deno-lint-ignore no-explicit-any
+async function schedaPlayoff(admin: any, tieId: number): Promise<string> {
+  const { data: tie } = await admin.from('bracket_ties').select('turno, gara_secca, brackets(tipo)').eq('id', tieId).single()
+  const b = Array.isArray(tie?.brackets) ? tie.brackets[0] : tie?.brackets
+  const posta = b?.tipo === 'draft' ? 'per l\'ordine di scelta nel mercato (non per il titolo)' : 'per il titolo'
+  return `FASE PLAYOFF${tie?.turno ? ` (turno ${tie.turno})` : ''}${tie?.gara_secca ? ', gara secca' : ''}: la regular season è finita, la classifica non esiste più. Si gioca ${posta}; chi perde il turno è eliminato.`
 }
 
 const REGOLA_NUMERI = 'NUMERI: non fare calcoli e non inventare cifre. Cita punti, differenze, serie e posizioni SOLO se sono scritti esattamente nel riepilogo; ' +
@@ -291,7 +302,8 @@ async function genera(admin: any, matchId: number) {
       : `Le ${gruppo.length} squadre vanno tutte al Title Playoff (per il titolo).`)
   }
 
-  const forma = (teamId: number) => formaRecente(admin, f.season_id, f.giornata, teamId)
+  const inPlayoff = Boolean(f.bracket_tie_id)
+  const forma = (teamId: number) => formaRecente(admin, f.season_id, f.giornata, teamId, inPlayoff)
 
   // Rivalita' della lega: serve per il derby (grado oltre 90, o rivale dichiarato) e per le domande sul rivale.
   const { data: rivRighe } = await admin.from('rivalita').select('team_a, team_b, grado').eq('league_id', f.league_id)
@@ -350,7 +362,7 @@ async function genera(admin: any, matchId: number) {
       const avvDichiarato = (teamById.get(avvId) as { rivale_id?: number | null } | undefined)?.rivale_id
       derby = gradoCon(t.id, avvId) > 90 || (t as { rivale_id?: number | null }).rivale_id === avvId || avvDichiarato === t.id
       const rivaleId = rivaleDi(t.id, (t as { rivale_id?: number | null }).rivale_id)
-      if (!derby && rivaleId && rivaleId !== avvId && Math.random() < 0.25) {
+      if (!derby && !inPlayoff && rivaleId && rivaleId !== avvId && Math.random() < 0.25) {
         const rp = (classifica ?? []).find((x: Riga) => x.team_id === rivaleId) as Riga | undefined
         const ult = await ultimoRisultato(admin, f.season_id, f.giornata, rivaleId, nomeSquadra)
         rivaleScheda = `Il grande rivale di ${t.nome} è ${nomeSquadra.get(rivaleId)}${rp ? `, ${rp.posizione}° in classifica con ${rp.punti} punti` : ''}${ult ? `; nell'ultima giornata ${ult}` : ''}.`
@@ -372,9 +384,10 @@ async function genera(admin: any, matchId: number) {
       mie.filter((p: { voto: number }) => p.voto <= 5.5).length
         ? `Giocatori di ${t.nome} in grave difficoltà oggi: ${mie.filter((p: { voto: number }) => p.voto <= 5.5).map((p: { player_instance_id: number; voto: number }) => `${nome.get(p.player_instance_id)} (${prestazione(p.voto)})`).join(', ')}.` : '',
       mie.length ? `Fra i giocatori di ${t.nome}: il migliore è stato ${nome.get(mie[0].player_instance_id)} (${prestazione(mie[0].voto)}), il meno brillante ${nome.get(mie[mie.length - 1].player_instance_id)} (${prestazione(mie[mie.length - 1].voto)}).` : '',
-      pos ? `Classifica dopo questa partita: ${t.nome} ${pos.posizione}° su ${nelGruppo(t.id)} con ${pos.punti} punti in ${pos.giocate} partite${posAvv ? `; ${avversario} ${posAvv.posizione}° con ${posAvv.punti}` : ''}.` : '',
+      inPlayoff ? await schedaPlayoff(admin, f.bracket_tie_id) : '',
+      pos && !inPlayoff ? `Classifica dopo questa partita: ${t.nome} ${pos.posizione}° su ${nelGruppo(t.id)} con ${pos.punti} punti in ${pos.giocate} partite${posAvv ? `; ${avversario} ${posAvv.posizione}° con ${posAvv.punti}` : ''}.` : '',
       campionatoDi(t.id),
-      fattiNumerici({ nome: t.nome, gruppo: gruppoDi(t.id), teamId: t.id, nomi: nomeSquadra, forma: ultime, avversarioId: avvId }),
+      fattiNumerici({ nome: t.nome, gruppo: inPlayoff ? [] : gruppoDi(t.id), teamId: t.id, nomi: nomeSquadra, forma: ultime, avversarioId: avvId }),
       derby ? `Questa partita è un DERBY: ${avversario} è il grande rivale di ${t.nome} (o ${t.nome} lo è per ${avversario}).` : '',
       rivaleScheda,
       obiettivi ? `Da inizio stagione (${pos ? `${t.nome} è ${pos.posizione}° con ${pos.punti} punti` : 'classifica ancora vuota'}): una domanda può chiedere all'allenatore gli obiettivi di stagione della squadra e fin dove pensa di arrivare.` : '',
@@ -392,6 +405,7 @@ async function genera(admin: any, matchId: number) {
       'scegli gli spunti più forti (gol nel finale, rimonte, espulsioni, serie negative o positive, classifica, migliori e peggiori in campo). ' +
       'Se un giocatore della squadra è andato molto male o è stato espulso, la domanda può incalzare l\'allenatore proprio su di lui ("lo difende?", "lo rifarebbe giocare?"): è la domanda trappola, dove né difenderlo sempre né scaricarlo è la risposta ovvia. ' +
       'In questo campionato NON esiste la retrocessione: non parlare MAI di salvezza, retrocessione o zona retrocessione. ' +
+      'Se nel riepilogo c\'è la voce FASE PLAYOFF, parla SOLO di playoff (il turno, l\'avversario, la posta in gioco, la tensione dell\'eliminazione): MAI di regular season, classifica, punti o posizioni. ' +
       'Se nel riepilogo c\'è la voce "Il campionato", la domanda può allargarsi al torneo: la lotta al vertice e per il titolo, la corsa per entrare nel Title Playoff (o Title Playoffs), la lotta per i Draft Playoffs (chi ci finisce, l\'ordine di scelta nel mercato), o cosa ne pensa delle squadre che stanno davanti o dietro; ' +
       'parla dei Draft Playoffs solo se il riepilogo li cita, e usa le stesse parole del riepilogo per i gruppi di squadre; ' +
       'scegli il tema in base alla posizione della squadra dell\'allenatore (in alto: corsa al titolo e rivali dirette; sul confine: la corsa per entrare nel Title Playoff; in basso: il Draft Playoff o i Draft Playoffs, come scritto nel riepilogo), e nomina le squadre reali del riepilogo, mai altre; varia il taglio da una partita all\'altra, senza usare sempre la stessa formula. ' +
@@ -482,8 +496,9 @@ async function generaPre(admin: any, fixtureId: number) {
     if (!avv) continue
     const pos = posDi(t.id), posAvv = posDi(avvId)
     const gruppo = gruppoDi(t.id)
-    const mie = await formaRecente(admin, f.season_id, f.giornata, t.id)
-    const loro = await formaRecente(admin, f.season_id, f.giornata, avvId)
+    const inPlayoff = Boolean(f.bracket_tie_id)
+    const mie = await formaRecente(admin, f.season_id, f.giornata, t.id, inPlayoff)
+    const loro = await formaRecente(admin, f.season_id, f.giornata, avvId, inPlayoff)
     const derby = gradoCon(t.id, avvId) > 90 || t.rivale_id === avvId || avv.rivale_id === t.id
     // Infortunati della propria squadra: solo quelli che sono una NOVITA', cioe' infortunati nell'ultima partita giocata e
     // ancora fuori. Prima si citavano tutti quelli ancora in infermeria, e per un infortunio lungo (es. 9 giornate) la domanda
@@ -507,11 +522,12 @@ async function generaPre(admin: any, fixtureId: number) {
     const scheda = [
       `Lega: ${lega.nome}. Giornata ${f.giornata}${f.bracket_tie_id ? ' (playoff)' : ''}. La partita si gioca stasera alle ${ora}: NON e' ancora stata giocata, non c'e' nessun risultato.`,
       `Squadra dell'allenatore: ${t.nome} (${inCasa ? 'in casa' : 'in trasferta'}). Avversario: ${avv.nome}.`,
-      pos ? `Classifica: ${t.nome} ${pos.posizione}° con ${pos.punti} punti in ${pos.giocate} partite${posAvv ? `; ${avv.nome} ${posAvv.posizione}° con ${posAvv.punti}` : ''}.` : '',
+      inPlayoff ? await schedaPlayoff(admin, f.bracket_tie_id) : '',
+      pos && !inPlayoff ? `Classifica: ${t.nome} ${pos.posizione}° con ${pos.punti} punti in ${pos.giocate} partite${posAvv ? `; ${avv.nome} ${posAvv.posizione}° con ${posAvv.punti}` : ''}.` : '',
       mie.length ? `Ultimi risultati di ${t.nome} (dal più recente): ${mie.join(' ')}.` : '',
       loro.length ? `Ultimi risultati di ${avv.nome} (dal più recente): ${loro.join(' ')}.` : '',
       campionato,
-      fattiNumerici({ nome: t.nome, gruppo, teamId: t.id, nomi: new Map(Array.from(squadra.values()).map((x) => [x.id, x.nome])), forma: mie, avversarioId: avvId }),
+      fattiNumerici({ nome: t.nome, gruppo: inPlayoff ? [] : gruppo, teamId: t.id, nomi: new Map(Array.from(squadra.values()).map((x) => [x.id, x.nome])), forma: mie, avversarioId: avvId }),
       derby ? `Questa partita è un DERBY: ${avv.nome} è il grande rivale di ${t.nome} (o ${t.nome} lo è per ${avv.nome}).` : '',
       infortunati.length ? `Infortunati di ${t.nome} nell'ultima partita (notizia fresca): ${infortunati.join(', ')}.` : '',
     ].filter(Boolean).join('\n')
@@ -525,6 +541,7 @@ async function generaPre(admin: any, fixtureId: number) {
       'Scegli lo spunto più forte fra: l\'avversario e la sua forma, cosa si gioca la squadra in classifica, la serie di risultati, ' +
       'gli infortunati citati, le scelte di formazione e la tattica (in generale, senza inventare chi gioca), le aspettative dei tifosi. ' +
       'Se nel riepilogo c\'è la voce DERBY, la domanda riguarda proprio il derby (la rivalità, cosa significa per i tifosi, come lo prepara): mai numeri o percentuali di rivalità. ' +
+      'Se nel riepilogo c\'è la voce FASE PLAYOFF, parla SOLO di playoff (il turno, l\'avversario, la posta in gioco, la tensione dell\'eliminazione): MAI di regular season, classifica, punti o posizioni. ' +
       'In questo campionato NON esiste la retrocessione: non parlare MAI di salvezza o retrocessione; parla di Title Playoff/Title Playoffs o Draft Playoffs solo se il riepilogo li cita, con le stesse parole. ' +
       'Nomina solo squadre e giocatori presenti nel riepilogo. ' +
       'La voce "giornalista" è il nome di una testata o di un programma sportivo italiano REALE, scelto fra questi: ' +
