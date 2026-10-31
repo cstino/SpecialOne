@@ -5500,6 +5500,10 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .fixture-gruppo__testa .conf-badge img { height: 24px; filter: none; }
 .fixture-gruppo__testa--est b { color: #4db3ff; }
 .fixture-gruppo__testa--ovest b { color: #ff6b4a; }
+/* Playoff: il logo del tabellone al posto del nome, poi turno e andata/ritorno nel colore della fase. */
+.fixture-gruppo__logo { height: 20px; width: auto; max-width: 46%; object-fit: contain; }
+.fixture-gruppo__testa--title b { color: #3fe0d0; }
+.fixture-gruppo__testa--draft b { color: #ffc46b; }
 .players-standings-giocatore small .conf-badge img { height: 15px; filter: none; }
 .players-standings-giocatore small .conf-badge { margin-right: 4px; }
 @media (max-width: 389px) { .filtro-conf button { gap: 5px; padding: 0 4px; font-size: .72rem; letter-spacing: .03em; } }

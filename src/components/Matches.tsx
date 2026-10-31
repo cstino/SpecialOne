@@ -1,6 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSeasonData } from '../lib/useSeasonData'
-import type { Fixture, League, Match, Membership, Team } from '../types'
+import { supabase } from '../lib/supabase'
+import { LOGO_FASE } from '../lib/faseSquadra'
+import { nomeTurnoTabellone, titoloTabellone } from '../lib/playoff'
+import type { Bracket, BracketTie, Fixture, League, Match, Membership, Team } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { FixtureScore, formatMatchDate, SeasonState, TeamLabel } from './SeasonUI'
 import { SOGLIA_DERBY, useRivalitaMie } from '../lib/useRivalita'
@@ -27,15 +30,41 @@ type CardProps = {
   // Con le conferenze: conferenza di una squadra (null = sconosciuta) e filtro scelto.
   confDiSquadra?: Map<number, Conferenza>
   filtro?: FiltroConf
+  // Playoff: sfida e tabellone di ogni partita con bracket_tie_id.
+  tieById?: Map<number, BracketTie>
+  bracketById?: Map<number, Bracket>
+  tiesPerBracket?: Map<number, BracketTie[]>
 }
 
-function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeamId, matchByFixture, revealedMatchIds, onOpenMatch, onRevealMatch, onOpenTeam, evidenza = false, confDiSquadra, filtro = 'tutte', rivalita }: CardProps) {
+type Gruppo = { chiave: string; conf: Conferenza | null; fixtures: Fixture[]; playoff?: { tipo: Bracket['tipo']; titolo: string; sottotitolo: string } }
+
+function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeamId, matchByFixture, revealedMatchIds, onOpenMatch, onRevealMatch, onOpenTeam, evidenza = false, confDiSquadra, filtro = 'tutte', rivalita, tieById, bracketById, tiesPerBracket }: CardProps) {
   const simulate = fixtures.filter((fixture) => fixture.stato === 'simulata').length
   const completata = fixtures.length > 0 && simulate === fixtures.length
 
   // Con le conferenze le partite si dividono per conferenza (stesso girone = stessa conferenza);
   // le sfide fra conferenze diverse (tabelloni) restano in un gruppo a parte, senza intestazione.
-  const gruppi = useMemo(() => {
+  // Nei playoff le partite si dividono per tabellone (prima il Title, poi il Draft), con turno e andata/ritorno;
+  // il filtro di conferenza tiene le sfide in cui gioca almeno una squadra di quella conferenza.
+  const gruppi = useMemo((): Gruppo[] => {
+    if (fixtures.some((f) => f.bracket_tie_id != null)) {
+      const perTabellone = new Map<number, Fixture[]>()
+      for (const f of fixtures) {
+        if (filtro !== 'tutte' && confDiSquadra?.get(f.home_team_id) !== filtro && confDiSquadra?.get(f.away_team_id) !== filtro) continue
+        const tie = f.bracket_tie_id != null ? tieById?.get(f.bracket_tie_id) : undefined
+        const chiave = tie?.bracket_id ?? 0
+        perTabellone.set(chiave, [...(perTabellone.get(chiave) ?? []), f])
+      }
+      return [...perTabellone.entries()]
+        .map(([bracketId, lista]): Gruppo => {
+          const b = bracketById?.get(bracketId)
+          const tie = lista[0].bracket_tie_id != null ? tieById?.get(lista[0].bracket_tie_id) : undefined
+          if (!b || !tie) return { chiave: `playoff-${bracketId}`, conf: null, fixtures: lista }
+          const gara = tie.gara_secca ? 'Gara unica' : lista[0].mano === 2 ? 'Ritorno' : 'Andata'
+          return { chiave: `playoff-${bracketId}`, conf: null, fixtures: lista, playoff: { tipo: b.tipo, titolo: titoloTabellone(b), sottotitolo: `${nomeTurnoTabellone(b, tie.turno, tiesPerBracket?.get(b.id) ?? [])} · ${gara}` } }
+        })
+        .sort((a, b) => (a.playoff?.tipo === 'title' ? 0 : 1) - (b.playoff?.tipo === 'title' ? 0 : 1))
+    }
     if (!confDiSquadra || confDiSquadra.size === 0) return fixtures.length ? [{ chiave: 'tutte', conf: null as Conferenza | null, fixtures }] : []
     const per: Record<string, Fixture[]> = { est: [], ovest: [], altre: [] }
     for (const f of fixtures) {
@@ -47,7 +76,7 @@ function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeam
     return ordine
       .filter(([k]) => per[k].length > 0 && (filtro === 'tutte' || k === filtro || (k === 'altre' && per.altre.some((f) => confDiSquadra.get(f.home_team_id) === filtro || confDiSquadra.get(f.away_team_id) === filtro))))
       .map(([k, c]) => ({ chiave: k, conf: c, fixtures: k === 'altre' && filtro !== 'tutte' ? per.altre.filter((f) => confDiSquadra.get(f.home_team_id) === filtro || confDiSquadra.get(f.away_team_id) === filtro) : per[k] }))
-  }, [fixtures, confDiSquadra, filtro])
+  }, [fixtures, confDiSquadra, filtro, tieById, bracketById, tiesPerBracket])
 
   return <article className={`giornata-card ${evidenza ? 'giornata-card--evidenza' : ''}`}>
     <header className="giornata-card__testa">
@@ -61,6 +90,7 @@ function GiornataCard({ giornata, fixtures, membership, teamById, crestUrlByTeam
 
     <div className="fixture-list">
       {gruppi.map((gruppo) => <div className="fixture-gruppo" key={gruppo.chiave}>
+        {gruppo.playoff && <div className={`fixture-gruppo__testa fixture-gruppo__testa--${gruppo.playoff.tipo}`}><img className="fixture-gruppo__logo" src={LOGO_FASE[gruppo.playoff.tipo]} alt={gruppo.playoff.titolo} /><b>{gruppo.playoff.sottotitolo}</b></div>}
         {gruppo.conf && <div className={`fixture-gruppo__testa fixture-gruppo__testa--${gruppo.conf}`}><ConferenceBadge conferenza={gruppo.conf} /><b>{NOME_CONFERENZA[gruppo.conf]}</b></div>}
         {gruppo.fixtures.map((fixture) => {
         const match = matchByFixture.get(fixture.id)
@@ -108,6 +138,31 @@ export function Matches({ membership, onNavigate, revealedMatchIds, onOpenMatch,
   }, [data.standings])
   const [filtro, setFiltro] = useState<FiltroConf>('tutte')
 
+  // Tabelloni e sfide dei playoff, caricati solo se la stagione ha partite di playoff.
+  const conPlayoff = data.fixtures.some((f) => f.bracket_tie_id != null)
+  const [brackets, setBrackets] = useState<Bracket[]>([])
+  const [ties, setTies] = useState<BracketTie[]>([])
+  useEffect(() => {
+    if (!conPlayoff) return
+    let vivo = true
+    void Promise.all([
+      supabase.from('brackets').select('*').eq('league_id', league.id),
+      supabase.from('bracket_ties').select('*').eq('league_id', league.id),
+    ]).then(([bRes, tRes]) => {
+      if (!vivo) return
+      setBrackets((bRes.data ?? []) as Bracket[])
+      setTies((tRes.data ?? []) as BracketTie[])
+    })
+    return () => { vivo = false }
+  }, [conPlayoff, league.id, data.season?.id])
+  const tieById = useMemo(() => new Map(ties.map((t) => [t.id, t])), [ties])
+  const bracketById = useMemo(() => new Map(brackets.map((b) => [b.id, b])), [brackets])
+  const tiesPerBracket = useMemo(() => {
+    const m = new Map<number, BracketTie[]>()
+    for (const t of ties) m.set(t.bracket_id, [...(m.get(t.bracket_id) ?? []), t])
+    return m
+  }, [ties])
+
   const giornate = useMemo(() => {
     const mappa = new Map<number, Fixture[]>()
     for (const fixture of data.fixtures) mappa.set(fixture.giornata, [...(mappa.get(fixture.giornata) ?? []), fixture])
@@ -137,6 +192,9 @@ export function Matches({ membership, onNavigate, revealedMatchIds, onOpenMatch,
     onOpenTeam,
     confDiSquadra,
     filtro,
+    tieById,
+    bracketById,
+    tiesPerBracket,
   }
 
   return <main className="app-shell season-shell">
