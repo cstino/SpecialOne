@@ -42,15 +42,40 @@ export const MUSICA_FASE: Record<FaseSquadra, string> = {
   draft: '/musica-fase/draftplayoffs.mp3',
 }
 
+// Ultima fase vista per squadra: in memoria (tornando alla home) e nel browser (all'apertura dell'app), cosi'
+// la pagina non parte dai colori della regular season per poi cambiare quando arriva la risposta del database.
+// E' solo un ricordo estetico: la fase vera si ricalcola sempre e sostituisce questo valore.
+const faseRicordata = new Map<string, FaseSquadra>()
+const chiaveFase = (leagueId: number, teamId: number) => `so-fase:${leagueId}:${teamId}`
+function leggiFase(leagueId: number, teamId: number): FaseSquadra {
+  const chiave = chiaveFase(leagueId, teamId)
+  const inMemoria = faseRicordata.get(chiave)
+  if (inMemoria) return inMemoria
+  try {
+    const salvata = localStorage.getItem(chiave)
+    if (salvata === 'regular' || salvata === 'title' || salvata === 'draft') return salvata
+  } catch { /* storage non disponibile: si parte da regular */ }
+  return 'regular'
+}
+function ricordaFase(leagueId: number, teamId: number, fase: FaseSquadra) {
+  const chiave = chiaveFase(leagueId, teamId)
+  faseRicordata.set(chiave, fase)
+  try { localStorage.setItem(chiave, fase) } catch { /* niente: resta il ricordo in memoria */ }
+}
+
 // In quale fase si trova una squadra: guarda se partecipa a un tabellone
 // ancora in corso per la stagione data. Nessun tabellone attivo (stagione
 // regolare, o tabelloni già tutti conclusi) ricade su 'regular'.
 export function useFaseSquadra(leagueId: number, teamId: number, seasonId: number | null | undefined): FaseSquadra {
-  const [fase, setFase] = useState<FaseSquadra>('regular')
+  const [fase, setFaseStato] = useState<FaseSquadra>(() => leggiFase(leagueId, teamId))
 
   useEffect(() => {
     let vivo = true
-    if (!seasonId) { setFase('regular'); return }
+    const setFase = (f: FaseSquadra) => { ricordaFase(leagueId, teamId, f); setFaseStato(f) }
+    // Cambiando squadra si riparte dal ricordo di quella squadra. Senza stagione (anche mentre i dati della
+    // stagione stanno ancora arrivando) si resta sul ricordo invece di tornare per un attimo alla regular season.
+    setFaseStato(leggiFase(leagueId, teamId))
+    if (!seasonId) return
 
     async function carica() {
       const { data: brackets } = await supabase.from('brackets')
