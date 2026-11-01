@@ -72,7 +72,8 @@ export function TeamLabel({ team, imageUrl, reversed = false, onClick, mostraCam
   return <span className={`season-team ${reversed ? 'season-team--reversed' : ''}`}>{content}</span>
 }
 
-export function FixtureScore({ fixture, match, reveal = false }: { fixture: Fixture; match?: Match; reveal?: boolean }) {
+// breve: per colonne strette (es. Ultime partite nel profilo squadra) la nota usa le sigle d.t.s. / rig.
+export function FixtureScore({ fixture, match, reveal = false, breve = false }: { fixture: Fixture; match?: Match; reveal?: boolean; breve?: boolean }) {
   const esito = fixture.stato === 'simulata' && match
     ? reveal ? <span className="fixture-reveal">VEDI<br />RISULTATO</span> : <span className="fixture-score"><b>{match.gol_home}</b><i>-</i><b>{match.gol_away}</b></span>
     : fixture.stato === 'in_corso' ? <span className="fixture-status fixture-status--live">LIVE</span>
@@ -88,8 +89,8 @@ export function FixtureScore({ fixture, match, reveal = false }: { fixture: Fixt
   // supplementari cambiano la lettura del risultato, vanno detti.
   const nota = !mostraRisultato ? null
     : match.rigori_home !== null && match.rigori_away !== null
-      ? `Rigori ${match.rigori_home}-${match.rigori_away}`
-      : match.gol_home_90 !== null ? 'Dopo i supplementari'
+      ? `${breve ? 'Rig.' : 'Rigori'} ${match.rigori_home}-${match.rigori_away}`
+      : match.gol_home_90 !== null ? (breve ? 'd.t.s.' : 'Dopo i supplementari')
       // Ultimo girone di un campionato a gironi dispari (design.md §6.6):
       // niente vantaggio casa. Nelle finali di tabellone e' la norma.
       : fixture.campo_neutro ? 'Campo neutro'

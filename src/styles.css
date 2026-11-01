@@ -2686,6 +2686,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .team-recent-panel > button:last-child { border-bottom: 0; }
 .team-recent-panel > button:hover { background: #211a29; }
 .team-recent-panel > button .season-team:last-child { flex-direction: row-reverse; text-align: right; }
+.team-recent-panel > button > .fixture-score-wrap { justify-self: center; min-width: 0; }
 .team-budget-panel h2 { margin: 5px 0 26px; color: #fff; font-size: 2rem; }
 .team-budget-panel dl { margin: 0; }
 .team-budget-panel dl div { display: flex; justify-content: space-between; gap: 15px; padding: 13px 0; border-top: 1px solid #2e2936; }
