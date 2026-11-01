@@ -650,7 +650,8 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
                 </article>
               })}
             </div>
-            <GraficoPressione curva={curva} minuto={minuto} fine={oraFinale} eventi={eventi} colori={colori ?? { casa: COLORE_FASE[fase], ospite: COLORE_OSPITE }}
+            {/* Durante i 90' il grafico finisce al 90': arrivare a 120' svelerebbe i supplementari prima del fischio. */}
+            <GraficoPressione curva={curva} minuto={minuto} fine={fineFase} eventi={eventi} colori={colori ?? { casa: COLORE_FASE[fase], ospite: COLORE_OSPITE }}
               sigle={{ casa: casa?.sigla ?? 'CASA', ospite: ospite?.sigla ?? 'OSP' }}
               stemmi={{
                 casa: <Crest value={casa?.stemma_url ?? null} stelle={casa?.titoli_title} imageUrl={data.crestUrlByTeamId.get(fixture.home_team_id)} size="small" />,
