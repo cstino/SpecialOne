@@ -14,6 +14,9 @@ import { Icona } from './Icona'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { MODULI, REPARTO } from '../lib/tattica'
 
+// Fase (title/draft) di ogni sfida di playoff gia' aperta in questa sessione.
+const faseDelTie = new Map<number, FaseSquadra>()
+
 type Props = {
   membership: Membership
   matchId: number
@@ -155,15 +158,20 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
 
   // Fase, turno e andata: come la cronaca live (MatchReveal) e l'intro
   // (MatchIntro), cosi' il riepilogo ha la stessa veste grafica della partita.
+  // La fase si conosce solo dopo aver letto il tabellone: finche' non c'e', la pagina resta in caricamento (prima
+  // mostrava per un attimo i colori della regular season). Le fasi gia' lette restano in memoria per sfida.
   const [fase, setFase] = useState<FaseSquadra>('regular')
+  const [tieRisolto, setTieRisolto] = useState<number | null>(null)
   const [turno, setTurno] = useState<string | null>(null)
   const [andata, setAndata] = useState<{ casa: number; ospite: number } | null>(null)
   useEffect(() => {
     let vivo = true
     async function carica() {
       if (!fixture?.bracket_tie_id) { if (vivo) { setFase('regular'); setTurno(null); setAndata(null) }; return }
-      const { data: tie } = await supabase.from('bracket_ties').select('bracket_id, turno').eq('id', fixture.bracket_tie_id).single()
-      if (!tie || !vivo) return
+      const tieId = fixture.bracket_tie_id
+      const { data: tie } = await supabase.from('bracket_ties').select('bracket_id, turno').eq('id', tieId).single()
+      if (!vivo) return
+      if (!tie) { setFase(faseDelTie.get(tieId) ?? 'regular'); setTieRisolto(tieId); return }
       const [{ data: bracketRow }, { data: tutte }, { data: primaMano }] = await Promise.all([
         supabase.from('brackets').select('tipo').eq('id', tie.bracket_id).single(),
         supabase.from('bracket_ties').select('turno').eq('bracket_id', tie.bracket_id),
@@ -172,7 +180,10 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
           : Promise.resolve({ data: null }),
       ])
       if (!vivo) return
-      setFase((bracketRow?.tipo as FaseSquadra | undefined) ?? 'regular')
+      const tipo = (bracketRow?.tipo as FaseSquadra | undefined) ?? 'regular'
+      faseDelTie.set(tieId, tipo)
+      setFase(tipo)
+      setTieRisolto(tieId)
       // Il totale dei turni si legge dal primo, che e' completo dall'inizio
       // (stessa regola di Tabellone.tsx e MatchIntro.tsx).
       const primoTurno = (tutte ?? []).filter((t) => t.turno === 1).length
@@ -188,6 +199,9 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
     void carica()
     return () => { vivo = false }
   }, [fixture?.bracket_tie_id, fixture?.mano, fixture?.home_team_id])
+  const faseNota: FaseSquadra | null = !fixture?.bracket_tie_id ? 'regular'
+    : tieRisolto === fixture.bracket_tie_id ? fase
+    : faseDelTie.get(fixture.bracket_tie_id) ?? null
 
   // Le partite simulate prima dell'introduzione della cronaca hanno blocchi vuoto.
   const eventi = useMemo(() => {
@@ -302,9 +316,10 @@ export function MatchDetail({ membership, matchId, onBack, onRivedi, onNavigate,
   return <main className="app-shell season-shell">
     <GameNav league={league} active="matches" onNavigate={navigate} />
     <header className="topbar season-topbar"><button className="match-detail-back" type="button" onClick={onBack}>← Torna alle partite</button><span>Rapporto partita</span></header>
-    <SeasonState loading={data.loading || caricamentoPartita} error={data.error} onRetry={data.reload} />
+    <SeasonState loading={data.loading || caricamentoPartita || Boolean(fixture && !faseNota)} error={data.error} onRetry={data.reload} />
     {!data.loading && !caricamentoPartita && !data.error && (!match || !fixture) && <section className="season-state"><span className="season-state__icon">!</span><h2>Partita non trovata</h2><button className="button button--primary" type="button" onClick={onBack}>Torna indietro</button></section>}
-    {!data.loading && !data.error && match && fixture && (() => {
+    {!data.loading && !data.error && match && fixture && faseNota && (() => {
+      const fase = faseNota
       const casa = data.teamById.get(fixture.home_team_id)
       const ospite = data.teamById.get(fixture.away_team_id)
       const stato = match.rigori_home !== null ? 'Finale d.c.r.' : match.gol_home_90 !== null ? 'Finale d.t.s.' : 'Finale'
