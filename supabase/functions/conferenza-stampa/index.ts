@@ -206,16 +206,34 @@ function fattiNumerici(opts: {
 // com'e' finita l'andata e chi e' avanti, altrimenti parla di "dentro o fuori" anche all'andata.
 // deno-lint-ignore no-explicit-any
 async function schedaPlayoff(admin: any, tieId: number, fixtureId: number, teamId: number, nomi: Map<number, string>): Promise<string> {
-  const { data: tie } = await admin.from('bracket_ties').select('turno, gara_secca, vincitore_team_id, brackets(tipo)').eq('id', tieId).single()
+  const { data: tie } = await admin.from('bracket_ties').select('bracket_id, turno, gara_secca, vincitore_team_id, brackets(tipo, formato)').eq('id', tieId).single()
   const b = Array.isArray(tie?.brackets) ? tie.brackets[0] : tie?.brackets
   const posta = b?.tipo === 'draft' ? 'per l\'ordine di scelta nel mercato (non per il titolo)' : 'per il titolo'
+  // Nome del turno come nel Tabellone: con le conferenze 1 play-in, 2 quarti, 3 semifinali, 4 finale; nel formato
+  // classico i turni totali si contano dal primo turno, che nasce completo.
+  const { count: primoTurno } = await admin.from('bracket_ties').select('id', { count: 'exact', head: true }).eq('bracket_id', tie?.bracket_id).eq('turno', 1)
+  const totali = b?.formato === 'conferenze' ? 4 : (primoTurno ? Math.ceil(Math.log2(primoTurno * 2)) : 0)
+  const mancanti = totali - (tie?.turno ?? 0)
+  const nomeTurno = b?.formato === 'conferenze' && tie?.turno === 1 ? 'play-in' : mancanti === 0 ? 'FINALE' : mancanti === 1 ? 'semifinale' : mancanti === 2 ? 'quarti di finale' : `turno ${tie?.turno}`
   const { data: gare } = await admin.from('fixtures').select('id, home_team_id, away_team_id, matches(gol_home, gol_away)')
     .eq('bracket_tie_id', tieId).order('giornata')
   type Gara = { id: number; home_team_id: number; away_team_id: number; matches: Array<{ gol_home: number; gol_away: number }> | { gol_home: number; gol_away: number } | null }
   const lista = (gare ?? []) as Gara[]
   const ris = (g: Gara) => (Array.isArray(g.matches) ? g.matches[0] : g.matches) ?? null
   const qui = lista.findIndex((g) => g.id === fixtureId)
-  const fuori: string[] = [`FASE PLAYOFF${tie?.turno ? ` (turno ${tie.turno})` : ''}: la regular season è finita, la classifica non esiste più. Si gioca ${posta}.`]
+  const fuori: string[] = [`FASE PLAYOFF (${nomeTurno}): la regular season è finita, la classifica non esiste più. Si gioca ${posta}.`]
+  if (mancanti === 0) {
+    // La finale decide tutto: il Title Playoff assegna il titolo di campione, i Draft Playoffs la prima scelta del draft di off-season.
+    fuori.push(b?.tipo === 'draft'
+      ? 'È la FINALE dei Draft Playoffs: chi vince ottiene la PRIMA SCELTA al draft di off-season; chi perde non ha la prima scelta.'
+      : 'È la FINALE del Title Playoff: chi vince è CAMPIONE della stagione; chi perde chiude da finalista sconfitto.')
+    if (tie?.vincitore_team_id) {
+      const perdente = lista[0] ? (lista[0].home_team_id === tie.vincitore_team_id ? lista[0].away_team_id : lista[0].home_team_id) : null
+      fuori.push(b?.tipo === 'draft'
+        ? `${nomi.get(tie.vincitore_team_id)} ha vinto i Draft Playoffs e ottiene la prima scelta del draft${perdente ? `; ${nomi.get(perdente)} ha perso la finale` : ''}.`
+        : `${nomi.get(tie.vincitore_team_id)} ha vinto il Title Playoff ed è CAMPIONE${perdente ? `; ${nomi.get(perdente)} ha perso la finale` : ''}.`)
+    }
+  }
   if (tie?.gara_secca || lista.length < 2 || qui < 0) {
     fuori.push('Gara secca: chi perde è eliminato.')
   } else {
@@ -434,7 +452,7 @@ async function genera(admin: any, matchId: number) {
       'scegli gli spunti più forti (gol nel finale, rimonte, espulsioni, serie negative o positive, classifica, migliori e peggiori in campo). ' +
       'Se un giocatore della squadra è andato molto male o è stato espulso, la domanda può incalzare l\'allenatore proprio su di lui ("lo difende?", "lo rifarebbe giocare?"): è la domanda trappola, dove né difenderlo sempre né scaricarlo è la risposta ovvia. ' +
       'In questo campionato NON esiste la retrocessione: non parlare MAI di salvezza, retrocessione o zona retrocessione. ' +
-      'Se nel riepilogo c\'è la voce FASE PLAYOFF, parla SOLO di playoff: MAI di regular season, classifica, punti o posizioni. Tieni conto di andata o ritorno e del risultato dell\'andata come scritti nel riepilogo (chi è avanti, la rimonta da fare, il vantaggio da difendere); di eliminazione parla solo se il riepilogo dice che stasera si può essere eliminati. Varia il taglio: niente formule fisse come "dentro o fuori" o "come ha preparato la squadra". ' +
+      'Se nel riepilogo c\'è la voce FASE PLAYOFF, parla SOLO di playoff: MAI di regular season, classifica, punti o posizioni. Tieni conto di andata o ritorno e del risultato dell\'andata come scritti nel riepilogo (chi è avanti, la rimonta da fare, il vantaggio da difendere); di eliminazione parla solo se il riepilogo dice che stasera si può essere eliminati. Se il riepilogo dice che è la FINALE, la domanda riguarda proprio quello: prima della partita cosa significa giocarsi il titolo (o la prima scelta); dopo, il titolo di campione o la prima scelta appena vinti, oppure la finale persa, con i nomi scritti nel riepilogo. Varia il taglio: niente formule fisse come "dentro o fuori" o "come ha preparato la squadra". ' +
       'Se nel riepilogo c\'è la voce "Il campionato", la domanda può allargarsi al torneo: la lotta al vertice e per il titolo, la corsa per entrare nel Title Playoff (o Title Playoffs), la lotta per i Draft Playoffs (chi ci finisce, l\'ordine di scelta nel mercato), o cosa ne pensa delle squadre che stanno davanti o dietro; ' +
       'parla dei Draft Playoffs solo se il riepilogo li cita, e usa le stesse parole del riepilogo per i gruppi di squadre; ' +
       'scegli il tema in base alla posizione della squadra dell\'allenatore (in alto: corsa al titolo e rivali dirette; sul confine: la corsa per entrare nel Title Playoff; in basso: il Draft Playoff o i Draft Playoffs, come scritto nel riepilogo), e nomina le squadre reali del riepilogo, mai altre; varia il taglio da una partita all\'altra, senza usare sempre la stessa formula. ' +
@@ -570,7 +588,7 @@ async function generaPre(admin: any, fixtureId: number) {
       'Scegli lo spunto più forte fra: l\'avversario e la sua forma, cosa si gioca la squadra in classifica, la serie di risultati, ' +
       'gli infortunati citati, le scelte di formazione e la tattica (in generale, senza inventare chi gioca), le aspettative dei tifosi. ' +
       'Se nel riepilogo c\'è la voce DERBY, la domanda riguarda proprio il derby (la rivalità, cosa significa per i tifosi, come lo prepara): mai numeri o percentuali di rivalità. ' +
-      'Se nel riepilogo c\'è la voce FASE PLAYOFF, parla SOLO di playoff: MAI di regular season, classifica, punti o posizioni. Tieni conto di andata o ritorno e del risultato dell\'andata come scritti nel riepilogo (chi è avanti, la rimonta da fare, il vantaggio da difendere); di eliminazione parla solo se il riepilogo dice che stasera si può essere eliminati. Varia il taglio: niente formule fisse come "dentro o fuori" o "come ha preparato la squadra". ' +
+      'Se nel riepilogo c\'è la voce FASE PLAYOFF, parla SOLO di playoff: MAI di regular season, classifica, punti o posizioni. Tieni conto di andata o ritorno e del risultato dell\'andata come scritti nel riepilogo (chi è avanti, la rimonta da fare, il vantaggio da difendere); di eliminazione parla solo se il riepilogo dice che stasera si può essere eliminati. Se il riepilogo dice che è la FINALE, la domanda riguarda proprio quello: prima della partita cosa significa giocarsi il titolo (o la prima scelta); dopo, il titolo di campione o la prima scelta appena vinti, oppure la finale persa, con i nomi scritti nel riepilogo. Varia il taglio: niente formule fisse come "dentro o fuori" o "come ha preparato la squadra". ' +
       'In questo campionato NON esiste la retrocessione: non parlare MAI di salvezza o retrocessione; parla di Title Playoff/Title Playoffs o Draft Playoffs solo se il riepilogo li cita, con le stesse parole. ' +
       'Nomina solo squadre e giocatori presenti nel riepilogo. ' +
       'La voce "giornalista" è il nome di una testata o di un programma sportivo italiano REALE, scelto fra questi: ' +
