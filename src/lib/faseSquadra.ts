@@ -63,11 +63,17 @@ function ricordaFase(leagueId: number, teamId: number, fase: FaseSquadra) {
   try { localStorage.setItem(chiave, fase) } catch { /* niente: resta il ricordo in memoria */ }
 }
 
-// In quale fase si trova una squadra: guarda se partecipa a un tabellone
-// ancora in corso per la stagione data. Nessun tabellone attivo (stagione
-// regolare, o tabelloni già tutti conclusi) ricade su 'regular'.
+// In quale fase si trova una squadra: guarda a quale tabellone della stagione data partecipa. Anche a tabellone
+// concluso (dopo la finale) la squadra resta nella sua fase fino alla stagione nuova: prima tornava ai colori della
+// regular season la sera stessa della finale. Nessun tabellone per la squadra ricade su 'regular'.
 export function useFaseSquadra(leagueId: number, teamId: number, seasonId: number | null | undefined): FaseSquadra {
+  return useFaseSquadraStato(leagueId, teamId, seasonId).fase
+}
+
+// Come useFaseSquadra, con in piu' se il tabellone e' finito e se la squadra l'ha vinto (per la home).
+export function useFaseSquadraStato(leagueId: number, teamId: number, seasonId: number | null | undefined): { fase: FaseSquadra; concluso: boolean; vinto: boolean } {
   const [fase, setFaseStato] = useState<FaseSquadra>(() => leggiFase(leagueId, teamId))
+  const [esito, setEsito] = useState<{ concluso: boolean; vinto: boolean }>({ concluso: false, vinto: false })
 
   useEffect(() => {
     let vivo = true
@@ -75,11 +81,12 @@ export function useFaseSquadra(leagueId: number, teamId: number, seasonId: numbe
     // Cambiando squadra si riparte dal ricordo di quella squadra. Senza stagione (anche mentre i dati della
     // stagione stanno ancora arrivando) si resta sul ricordo invece di tornare per un attimo alla regular season.
     setFaseStato(leggiFase(leagueId, teamId))
+    setEsito({ concluso: false, vinto: false })
     if (!seasonId) return
 
     async function carica() {
       const { data: brackets } = await supabase.from('brackets')
-        .select('id, tipo').eq('league_id', leagueId).eq('season_id', seasonId).neq('stato', 'concluso')
+        .select('id, tipo, stato, vincitore_team_id').eq('league_id', leagueId).eq('season_id', seasonId)
       if (!vivo) return
       if (!brackets || brackets.length === 0) { setFase('regular'); return }
 
@@ -92,10 +99,11 @@ export function useFaseSquadra(leagueId: number, teamId: number, seasonId: numbe
       const idsPropri = new Set((ties ?? []).map((t) => t.bracket_id))
       const proprio = brackets.find((b) => idsPropri.has(b.id))
       setFase(proprio ? (proprio.tipo as FaseSquadra) : 'regular')
+      setEsito({ concluso: proprio?.stato === 'concluso', vinto: Boolean(proprio && proprio.vincitore_team_id === teamId) })
     }
     void carica()
     return () => { vivo = false }
   }, [leagueId, teamId, seasonId])
 
-  return fase
+  return { fase, ...esito }
 }

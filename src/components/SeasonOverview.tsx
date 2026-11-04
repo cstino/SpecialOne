@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useSeasonData } from '../lib/useSeasonData'
 import { formatCountdown, useOraCorrente } from '../lib/countdown'
-import { LOGO_FASE, SFONDO_FASE, useFaseSquadra, type FaseSquadra } from '../lib/faseSquadra'
+import { LOGO_FASE, SFONDO_FASE, useFaseSquadraStato, type FaseSquadra } from '../lib/faseSquadra'
 import type { League, Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { Crest } from './Crest'
@@ -23,7 +23,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
   const data = useSeasonData(membership)
   const adesso = useOraCorrente()
   const forma = useMemo(() => formaPerSquadra(data.fixtures, data.matchByFixture), [data.fixtures, data.matchByFixture])
-  const fase = useFaseSquadra(league.id, membership.id, data.season?.id)
+  const { fase, concluso: tabelloneConcluso, vinto: tabelloneVinto } = useFaseSquadraStato(league.id, membership.id, data.season?.id)
   const miaSquadra = data.teamById.get(membership.id)
   const rivalita = useRivalitaMie(league.id, membership.id, Boolean(league.conferenze_stampa))
   const miaClassifica = data.standings.find((riga) => riga.team_id === membership.id)
@@ -92,7 +92,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
                     tabellone continuano a incrementarla oltre giornate_totali
                     (docs/decisioni-draft-picks.md), producendo cose come
                     "17 di 14". Meglio lo stato del tabellone di questa squadra. */}
-                <span className="text-[.68rem] font-extrabold uppercase tracking-[.1em] text-white">{LABEL_FASE[fase]} in corso</span>
+                <span className="text-[.68rem] font-extrabold uppercase tracking-[.1em] text-white">{!tabelloneConcluso ? `${LABEL_FASE[fase]} in corso` : tabelloneVinto ? (fase === 'title' ? 'Campione' : 'Prima scelta conquistata') : `${LABEL_FASE[fase]} concluso`}</span>
               </div>}
         </div>
       </section>
@@ -132,7 +132,7 @@ export function SeasonOverview({ membership, onNavigate, revealedMatchIds, onOpe
         <section className="dash-sezione">
           <header className="dash-testa">
             <h2 className="dash-linguetta">Prossima partita</h2>
-            <span className="dash-sotto">G{data.nextFixture?.giornata ?? data.giornateStagione}</span>
+            {data.nextFixture && <span className="dash-sotto">G{data.nextFixture.giornata}</span>}
           </header>
           <article className="dash-card dash-partita">
             <div className="dash-partita__quando">
