@@ -203,13 +203,16 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
     : conExtra
   // BetOne (21/10/2026): sezione del menu con SchedOne (la schedina), CasinOne (i giochi) e QuizOne.
   // Altro: l'Album, dove il server lo attiva (album_attivo). Solo nelle leghe con le novita'.
+  // CasinOne, QuizOne e Album restano anche a campionato concluso e per tutta l'off-season (si azzerano solo con la
+  // stagione nuova); la schedina no, perche' senza giornate da giocare il server la rifiuta (betone_salva).
+  const schedinaAperta = league.stato === 'stagione' && league.fase_carriera !== 'offseason'
   const gruppoBetOne: NavGroup = { group: 'betone', label: 'BetOne', children: [
-    { view: 'betone', label: 'SchedOne' },
+    ...(schedinaAperta ? [{ view: 'betone' as GameView, label: 'SchedOne' }] : []),
     { view: 'casinone', label: 'CasinOne' },
     ...(quizAttivo ? [{ view: 'quizzone' as GameView, label: 'QuizOne' }] : []),
   ] }
   const gruppoAltro: NavGroup = { group: 'altro', label: 'Altro', children: albumAttivo ? [{ view: 'album' as GameView, label: 'Album' }] : [] }
-  const items: readonly NavEntry[] = league.conferenze_stampa && league.stato === 'stagione' && league.fase_carriera !== 'offseason'
+  const items: readonly NavEntry[] = league.conferenze_stampa && (league.stato === 'stagione' || league.stato === 'conclusa')
     ? [...conAdmin, gruppoBetOne, ...(gruppoAltro.children.length ? [gruppoAltro] : [])]
     : conAdmin
   const [menuMobileAperto, setMenuMobileAperto] = useState(false)
