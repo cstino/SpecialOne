@@ -460,7 +460,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     setVivaioLoading(true); setVivaioErrore(null)
     const [prospettiResult, tabellaResult, risorseResult] = await Promise.all([
       supabase.from('vivaio_prospetti')
-        .select('id, ingaggio, entrata_stagione, giornate_rimanenti, promozione_tentativi, overall_inizio_stagione, player_id, giocatore:players(nome, posizioni, overall, eta, nazionalita, foto_url)')
+        .select('id, ingaggio, entrata_stagione, giornate_rimanenti, promozione_tentativi, overall_inizio_stagione, player_id, posizioni_override, giocatore:players(nome, posizioni, overall, eta, nazionalita, foto_url)')
         .eq('league_id', league.id).eq('team_id', teamId),
       supabase.rpc('tabella_risorse'),
       supabase.from('team_risorse').select('livello_vivaio').eq('team_id', teamId).maybeSingle(),
@@ -469,7 +469,9 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     const livello = (risorseResult.data as { livello_vivaio: number } | null)?.livello_vivaio ?? 0
     const scala = (tabellaResult.data as { rami?: { vivaio?: { slot: number }[] } } | null)?.rami?.vivaio
     setVivaioSlotMassimi(scala?.[livello]?.slot ?? 1)
-    const righe = (prospettiResult.data ?? []) as unknown as (VivaioProspetto & { player_id: number })[]
+    // Dopo un cambio ruolo completato valgono posizioni_override (come nella scheda giocatore), non le posizioni del catalogo.
+    const righe = ((prospettiResult.data ?? []) as unknown as (VivaioProspetto & { player_id: number; posizioni_override: string[] | null })[])
+      .map((r) => r.posizioni_override?.length ? { ...r, giocatore: { ...r.giocatore, posizioni: r.posizioni_override } } : r)
     if (righe.length === 0) { setVivaioProspetti([]); setVivaioLoading(false); return }
     const { data: fasce } = await supabase.rpc('fascia_potenziale_giocatori', {
       p_player_ids: righe.map((r) => r.player_id), p_team_id: teamId,
