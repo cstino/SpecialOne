@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { useSeasonData } from '../lib/useSeasonData'
-import { urlFotoGiocatore } from '../lib/fotoGiocatore'
-import { cognome } from '../lib/nomi'
-import { macroRuolo, ruoloIt } from '../lib/ruoli'
 import { Crest } from './Crest'
+import { Carta, type Anagrafica, type Figurina, type Versione } from './CartaFut'
 
 // Album delle figurine (docs/decisioni-conferenze-stampa.md §BetOne): una pagina per squadra, stemma + giocatori.
 // Bustina da 250 crediti, 3 figurine; l'estrazione la fa il server (album_compra_bustina). Dalla Season 3 quattro
@@ -12,10 +10,7 @@ import { Crest } from './Crest'
 // (iridescente); stemmi e conference solo ultimate. Doppioni riciclabili, pagina completa = 200 crediti.
 
 type Dati = ReturnType<typeof useSeasonData>
-type Figurina = { id: number; tipo: 'stemma' | 'giocatore' | 'conferenza'; team_id: number | null; player_id: number | null; conferenza: 'est' | 'ovest' | null; overall: number | null; aggiornamento: boolean }
-type Versione = 'common' | 'rare' | 'ultra' | 'ultimate'
 type Possesso = { figurina_id: number; normali: number; rare: number; ultra: number; ultimate: number }
-type Anagrafica = { id: number; nome: string; posizioni: string[]; foto_url: string | null; foto_figurina: string | null }
 type Uscita = { figurina_id: number; tipo: Figurina['tipo']; versione?: Versione; ultra: boolean; nuova: boolean }
 type RigaClassifica = { team_id: number; attaccate: number; totale: number; ultra: number; pagine: number }
 type Voce = { figurina_id: number; versione: Versione }
@@ -25,6 +20,8 @@ type VoceSalvata = { figurina_id: number; versione?: Versione; ultra?: boolean }
 type ScambioFig = { id: number; da_team_id: number; a_team_id: number; offerte: VoceSalvata[]; richieste: VoceSalvata[]; stato: string; scade_il: string; da_user: string }
 
 const PREZZO = 250
+// Quello che serve alla card FUT: foto, bandiera e le sei statistiche (anche quelle da portiere).
+const COLONNE_GIOCATORE = 'id, nome, posizioni, foto_url, foto_figurina, nazionalita, pace:attributi->pace, shooting:attributi->shooting, passing:attributi->passing, dribbling_generale:attributi->dribbling_generale, defending:attributi->defending, physic:attributi->physic, gk_diving:attributi->gk_diving, gk_handling:attributi->gk_handling, gk_kicking:attributi->gk_kicking, gk_reflexes:attributi->gk_reflexes, goalkeeping_speed:attributi->goalkeeping_speed, gk_positioning:attributi->gk_positioning'
 // Ordine di pregio, nome e valore al riciclo di ogni versione (stessi crediti di album_ricicla_doppioni).
 const VERSIONI: Versione[] = ['ultimate', 'ultra', 'rare', 'common']
 const NOME_VERSIONE: Record<Versione, string> = { common: 'Common', rare: 'Rara', ultra: 'Ultrarara', ultimate: 'Ultimate' }
@@ -36,58 +33,6 @@ const voce = (x: VoceSalvata): Voce => ({ figurina_id: x.figurina_id, versione: 
 const speciale = (v: Versione | undefined) => v === 'ultra' || v === 'ultimate'
 const ridotto = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 const fmt = (n: number) => new Intl.NumberFormat('it-IT').format(n)
-
-// ---------- Una figurina ----------
-// Cornice per versione (argento, oro, oro olografico, iridescente), voto nello scudo, foto con luce dietro, targhetta
-// inclinata col nome, stemma e numero. Una lucentezza scorre sulla carta; ultrarara e ultimate hanno anche riflesso
-// arcobaleno e scintille.
-function Carta({ f, ana, dati, versione, vuota, numero, piccola }: { f: Figurina; ana?: Anagrafica; dati: Dati; versione: Versione; vuota?: boolean; numero?: number; piccola?: boolean }) {
-  const ultra = speciale(versione)
-  const team = f.team_id != null ? dati.teamById.get(f.team_id) : undefined
-  const crestUrl = f.team_id != null ? dati.crestUrlByTeamId.get(f.team_id) : undefined
-  const ruoloMacro = macroRuolo(ana?.posizioni ?? []).toLowerCase()
-  const classe = `fig${versione !== 'common' ? ` fig--${versione}` : ''}${piccola ? ' fig--piccola' : ''} fig--${f.tipo}${f.tipo === 'giocatore' ? ` fig--${ruoloMacro}` : ''}`
-  if (vuota) return <div className="fig fig--vuota" aria-label={`Figurina ${numero ?? ''} mancante`}><span className="fig__numero">{numero}</span></div>
-  const extra = <>
-    <span className="fig__lucido" aria-hidden="true" />
-    {ultra && <><span className="fig__olo" aria-hidden="true" /><span className="fig__scintille" aria-hidden="true"><i /><i /><i /><i /><i /></span></>}
-    {numero != null && <span className="fig__num" aria-hidden="true">{numero}</span>}
-  </>
-  if (f.tipo === 'conferenza') {
-    const est = f.conferenza === 'est'
-    return <div className={classe} aria-label={`Figurina ${NOME_VERSIONE[versione].toLowerCase()} ${est ? 'Eastern' : 'Western'} Conference`}>
-      <div className="fig__dentro">
-        <div className="fig__raggi" aria-hidden="true" />
-        <div className="fig__conf"><img src={est ? '/loghi-conferenza/east.svg' : '/loghi-conferenza/west.svg'} alt="" /></div>
-        <div className="fig__targa"><strong>{est ? 'EASTERN' : 'WESTERN'}</strong><small>Conference</small></div>
-      </div>
-      {extra}
-    </div>
-  }
-  if (f.tipo === 'stemma') {
-    return <div className={classe} aria-label={`Stemma ${team?.nome ?? ''}`}>
-      <div className="fig__dentro">
-        <div className="fig__raggi" aria-hidden="true" />
-        <div className="fig__stemma"><Crest value={team?.stemma_url ?? null} imageUrl={crestUrl} size="large" eager /></div>
-        <div className="fig__targa"><strong>{team?.nome ?? '—'}</strong><small>Stemma ufficiale</small></div>
-      </div>
-      {extra}
-    </div>
-  }
-  // Foto scontornata stile FUT (Season 3) se c'e', altrimenti il ritratto di sempre.
-  const foto = urlFotoGiocatore(ana?.foto_figurina ?? ana?.foto_url)
-  return <div className={`${classe}${ana?.foto_figurina ? ' fig--scontornata' : ''}`} aria-label={`${ana?.nome ?? 'Giocatore'}${versione !== 'common' ? `, ${NOME_VERSIONE[versione].toLowerCase()}` : ''}`}>
-    <div className="fig__dentro">
-      <div className="fig__raggi" aria-hidden="true" />
-      <div className="fig__scudo"><b>{f.overall ?? ''}</b><span>{ruoloIt(ana?.posizioni?.[0] ?? '')}</span></div>
-      <div className="fig__club"><Crest value={team?.stemma_url ?? null} imageUrl={crestUrl} size="small" /></div>
-      <div className="fig__foto">{foto ? <img src={foto} alt="" loading="lazy" /> : <span>👤</span>}</div>
-      <div className="fig__targa"><strong>{ana ? cognome(ana.nome) : '—'}</strong><small>{team?.nome ?? ''}</small></div>
-      {f.aggiornamento && <em className="fig__agg">AGG.</em>}
-    </div>
-    {extra}
-  </div>
-}
 
 // ---------- La bustina: 3D, si inclina col dito e si apre strappando la linea in alto ----------
 function suonoStrappo(forte: boolean) {
@@ -227,7 +172,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     const ids = [...new Set(figs.filter((x) => x.player_id != null).map((x) => x.player_id as number))]
     const mappa = new Map<number, Anagrafica>()
     for (let i = 0; i < ids.length; i += 300) {
-      const { data: g } = await supabase.from('players').select('id, nome, posizioni, foto_url, foto_figurina').in('id', ids.slice(i, i + 300))
+      const { data: g } = await supabase.from('players').select(COLONNE_GIOCATORE).in('id', ids.slice(i, i + 300))
       for (const x of (g ?? []) as Anagrafica[]) mappa.set(x.id, x)
     }
     setAna(mappa)

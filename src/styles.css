@@ -7081,3 +7081,62 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .sp-storico li.is-fallita, .sp-storico li.is-rinunciata { opacity: .6; }
 .sp-storico li.is-fallita b, .sp-storico li.is-rinunciata b { color: #8d84a0; }
 @media (max-width: 560px) { .sp-colonne { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   FIGURINE FUT (Season 3): sagoma a scudo, sfondo nei colori dello stemma della squadra (--fut-c1/--fut-c2 da
+   lib/coloriStemma), cornice per rarita'. Misure in cqw: la stessa carta va bene grande e in miniatura.
+   ============================================================ */
+.fut { container-type: inline-size; position: relative; aspect-ratio: 5 / 7; width: 100%; isolation: isolate; color: var(--fut-testo, #fff4d8);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20140%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M50%200%20L57%205.5%20Q63%204.5%2071%203.2%20L94%207.6%20Q98%208.6%2098%2012.8%20L98%20111%20Q98%20119.5%2090%20123.6%20L57%20137.6%20Q50%20141%2043%20137.6%20L10%20123.6%20Q2%20119.5%202%20111%20L2%2012.8%20Q2%208.6%206%207.6%20L29%203.2%20Q37%204.5%2043%205.5%20Z%22/%3E%3C/svg%3E") center / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20140%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M50%200%20L57%205.5%20Q63%204.5%2071%203.2%20L94%207.6%20Q98%208.6%2098%2012.8%20L98%20111%20Q98%20119.5%2090%20123.6%20L57%20137.6%20Q50%20141%2043%20137.6%20L10%20123.6%20Q2%20119.5%202%20111%20L2%2012.8%20Q2%208.6%206%207.6%20L29%203.2%20Q37%204.5%2043%205.5%20Z%22/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  background: linear-gradient(135deg, #f4f6fb 0%, #9aa3b5 22%, #eef1f7 45%, #7d8699 68%, #e9edf5 100%);
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,.45)); font-family: "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.fut--rare { background: linear-gradient(135deg, #fff4c2 0%, #d9a521 24%, #fff0b3 46%, #b07d10 70%, #ffe48f 100%); }
+.fut--ultra { background: linear-gradient(135deg, #fff2b0, #c48a14 20%, #ffe58a 40%, #a86c08 60%, #ffeaa0 80%, #c48a14); background-size: 200% 200%; animation: fig-oro 4s linear infinite; }
+.fut--ultimate { background: conic-gradient(from var(--fig-angolo), #ff3df2, #7a5cff, #3de8ff, #7bff8c, #ffd84d, #ff3df2); animation: fig-iride 4s linear infinite; }
+.fut__fondo { position: absolute; inset: 2.6%; z-index: 0; overflow: hidden; -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20140%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M50%200%20L57%205.5%20Q63%204.5%2071%203.2%20L94%207.6%20Q98%208.6%2098%2012.8%20L98%20111%20Q98%20119.5%2090%20123.6%20L57%20137.6%20Q50%20141%2043%20137.6%20L10%20123.6%20Q2%20119.5%202%20111%20L2%2012.8%20Q2%208.6%206%207.6%20L29%203.2%20Q37%204.5%2043%205.5%20Z%22/%3E%3C/svg%3E") center / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20140%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M50%200%20L57%205.5%20Q63%204.5%2071%203.2%20L94%207.6%20Q98%208.6%2098%2012.8%20L98%20111%20Q98%20119.5%2090%20123.6%20L57%20137.6%20Q50%20141%2043%20137.6%20L10%20123.6%20Q2%20119.5%202%20111%20L2%2012.8%20Q2%208.6%206%207.6%20L29%203.2%20Q37%204.5%2043%205.5%20Z%22/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  background: radial-gradient(120% 70% at 72% 30%, color-mix(in srgb, var(--fut-c1) 80%, #fff 20%) 0%, var(--fut-c1) 38%, color-mix(in srgb, var(--fut-c2) 85%, #000 15%) 100%); }
+.fut__righe { position: absolute; inset: 0; background: repeating-linear-gradient(118deg, transparent 0 9cqw, color-mix(in srgb, var(--fut-c2) 45%, transparent) 9cqw 15cqw, transparent 15cqw 24cqw); opacity: .55; }
+.fut__luce { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 52%, color-mix(in srgb, var(--fut-c2) 92%, #000 8%) 72%), radial-gradient(60% 40% at 30% 12%, rgba(255,255,255,.22), transparent 70%); }
+.fut__filigrana { position: absolute; top: 6%; right: -12%; width: 78%; opacity: .12; filter: grayscale(.2); }
+.fut--ultimate .fut__fondo { box-shadow: inset 0 0 18cqw rgba(110,40,200,.55); }
+.fut__alto { position: absolute; top: 12%; left: 9%; z-index: 3; display: grid; justify-items: center; line-height: .9; text-shadow: 0 1px 2px rgba(0,0,0,.35); }
+.fut--chiara .fut__alto { text-shadow: none; }
+.fut__alto b { font-size: 20cqw; font-weight: 800; letter-spacing: -.03em; }
+.fut__alto span { margin-top: 1.5cqw; font-size: 8.5cqw; font-weight: 800; letter-spacing: .02em; }
+.fut__foto { position: absolute; top: 9%; right: 3%; left: 22%; bottom: 36%; z-index: 2; display: grid; place-items: end center; }
+.fut__foto img { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; filter: drop-shadow(0 4cqw 4cqw rgba(0,0,0,.4));
+  -webkit-mask: linear-gradient(180deg, #000 82%, transparent 100%); mask: linear-gradient(180deg, #000 82%, transparent 100%); }
+.fut:not(.fut--scontornata) .fut__foto { left: 34%; right: 8%; top: 16%; bottom: 40%; }
+.fut__basso { position: absolute; left: 7%; right: 7%; bottom: 9%; z-index: 3; display: grid; justify-items: center; gap: 1.5cqw; text-align: center; }
+.fut__basso strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10cqw; font-weight: 800; letter-spacing: -.01em; line-height: 1.05; text-shadow: 0 1px 3px rgba(0,0,0,.4); }
+.fut--chiara .fut__basso strong { text-shadow: none; }
+.fut__stat { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0 .8cqw; width: 100%; margin: 0; }
+.fut__stat div { display: grid; justify-items: center; }
+.fut__stat dt { font-size: 4.6cqw; font-weight: 800; opacity: .85; }
+.fut__stat dd { margin: 0; font-size: 6.8cqw; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+.fut__id { display: flex; align-items: center; justify-content: center; gap: 3cqw; height: 9cqw; margin-top: .5cqw; }
+.fut__bandiera { font-size: 7.5cqw; line-height: 1; filter: drop-shadow(0 1px 1px rgba(0,0,0,.4)); }
+.fut__stemma { height: 9cqw; width: auto; max-width: 14cqw; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
+.fut__centro { position: absolute; inset: 15% 16% 34%; z-index: 2; display: grid; place-items: center; }
+.fut__centro img { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 3cqw 4cqw rgba(0,0,0,.45)); }
+.fut__basso--solo-nome { bottom: 13%; gap: .5cqw; }
+.fut__basso--solo-nome small { font-size: 5cqw; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; opacity: .8; }
+.fut__num { position: absolute; bottom: 5.2%; left: 50%; z-index: 4; transform: translateX(-50%); font-size: 3.6cqw; font-weight: 800; opacity: .55; font-variant-numeric: tabular-nums; }
+.fut__agg { position: absolute; top: 34%; left: -10%; z-index: 4; padding: .8cqw 14%; background: #ff3d6e; color: #fff; font-style: normal; font-size: 4.2cqw; font-weight: 900; letter-spacing: .08em; transform: rotate(-32deg); }
+.fut__lucido { position: absolute; inset: 0; z-index: 5; pointer-events: none; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.5) 48%, transparent 58%); background-size: 260% 100%; animation: fig-lucido 5s ease-in-out infinite; mix-blend-mode: soft-light; }
+.fut__olo { position: absolute; inset: 0; z-index: 4; pointer-events: none; mix-blend-mode: color-dodge; opacity: .45;
+  background: linear-gradient(120deg, transparent 15%, rgba(255,61,242,.75) 30%, rgba(61,232,255,.75) 42%, rgba(120,255,140,.7) 52%, rgba(255,216,77,.8) 62%, transparent 78%), repeating-linear-gradient(60deg, rgba(255,255,255,.16) 0 2px, transparent 2px 7px);
+  background-size: 300% 100%, auto; animation: fig-olo 3.2s linear infinite; }
+.fut--ultimate .fut__olo { opacity: .62; }
+.fut__scintille { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+.fut__scintille i { position: absolute; width: 7cqw; height: 7cqw; background: radial-gradient(circle, #fff 0 18%, transparent 20%), conic-gradient(from 45deg, transparent 0 22%, #fff 25%, transparent 28% 47%, #fff 50%, transparent 53% 72%, #fff 75%, transparent 78% 97%, #fff 100%); border-radius: 50%; opacity: 0; animation: fig-scintilla 2.4s ease-in-out infinite; }
+.fut__scintille i:nth-child(1) { top: 18%; left: 74%; } .fut__scintille i:nth-child(2) { top: 40%; left: 10%; animation-delay: .5s; }
+.fut__scintille i:nth-child(3) { top: 58%; left: 82%; animation-delay: 1s; } .fut__scintille i:nth-child(4) { top: 26%; left: 40%; animation-delay: 1.5s; }
+.fut__scintille i:nth-child(5) { top: 66%; left: 30%; animation-delay: 2s; }
+.fut--vuota { background: rgba(255,255,255,.08); filter: none; display: grid; place-items: center; }
+.fut--vuota::before { content: ''; position: absolute; inset: 2.6%; -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20140%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M50%200%20L57%205.5%20Q63%204.5%2071%203.2%20L94%207.6%20Q98%208.6%2098%2012.8%20L98%20111%20Q98%20119.5%2090%20123.6%20L57%20137.6%20Q50%20141%2043%20137.6%20L10%20123.6%20Q2%20119.5%202%20111%20L2%2012.8%20Q2%208.6%206%207.6%20L29%203.2%20Q37%204.5%2043%205.5%20Z%22/%3E%3C/svg%3E") center / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20140%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M50%200%20L57%205.5%20Q63%204.5%2071%203.2%20L94%207.6%20Q98%208.6%2098%2012.8%20L98%20111%20Q98%20119.5%2090%20123.6%20L57%20137.6%20Q50%20141%2043%20137.6%20L10%20123.6%20Q2%20119.5%202%20111%20L2%2012.8%20Q2%208.6%206%207.6%20L29%203.2%20Q37%204.5%2043%205.5%20Z%22/%3E%3C/svg%3E") center / 100% 100% no-repeat; background: #15121d; }
+.fut__vuota-num { position: relative; color: rgba(255,255,255,.28); font-size: 16cqw; font-weight: 800; }
+.alb-carta__fronte .fut { height: 100%; width: auto; margin: 0 auto; }
+.alb-sc-mini.is-impegnata .fut { opacity: .45; filter: grayscale(.6); }
+.alb-sc-mini.is-scelta .fut { filter: drop-shadow(0 0 3px #7be3a0) drop-shadow(0 0 3px #7be3a0); }
+@media (prefers-reduced-motion: reduce) { .fut--ultra, .fut--ultimate, .fut__lucido, .fut__olo, .fut__scintille i { animation: none; } }
