@@ -58,7 +58,8 @@ provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato
 
 ## 3. Cambio di ruolo più rapido verso un ruolo secondario
 
-* **Stato:** `deciso` (25/10/2026) — da preparare prima dell'off-season 3.
+* **Stato:** `pubblicato` (5/11/2026): migrazione `20261105113000_cambio_ruolo_secondario.sql`, rosa e vivaio. Lo sconto
+  del 25% si somma in punti percentuali a quello dell'allenamento (Quiñones, allenamento −16%: TS 8, ATT o AS 6).
 * **Richiesta:** «Alcuni giocatori hanno ruoli secondari, tipo Quiñones della Mafiester. Col training lo posso far
   diventare anche TS (non è tra i ruoli secondari) e mi ci mette lo stesso tempo che a spostarlo in un ruolo che conosce
   come secondario. Spostarlo in un ruolo secondario dovrebbe richiedere meno tempo: nel mio caso 8 giorni per il ruolo non
