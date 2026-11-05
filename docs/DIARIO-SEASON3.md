@@ -79,8 +79,10 @@ provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato
 * **Stato:** `in lavoro` (5/11/2026): database applicato (migrazione `20261105130000_stadio.sql`), app pronta in
   locale. `leagues.stadio_attivo`: Serie F acceso subito, le altre leghe alla loro prossima stagione
   (`finalizza_offseason`). Tetto punti 26 solo dove lo stadio è acceso (`private.punti_abilita_massimi_lega`).
-  Nome di default da una lista fissa in `src/lib/stadio.ts` (id squadra modulo 20). Il nome si vede nella pagina Club,
-  nella sezione Stadio delle Risorse e nel riquadro della prossima partita; non ancora nell'intro della partita.
+  Nome (5/11): **massimo 25 caratteri**, **mai vuoto**: ogni squadra ha già un nome di default diverso dalle altre della
+  lega (`private.nomi_stadio_default`, 30 nomi; trigger per le squadre nuove). Si cambia in Club > Modifica squadra
+  **solo a stagione in corso** (dalla Season 3), controllo anche nel database. Si vede nella pagina Club, nella sezione
+  Stadio delle Risorse, nel riquadro della prossima partita e nella locandina dell'intro (squadra di casa).
 * **Misure col motore ATTUALE (5/11/2026, 30.000 partite per riga, squadre pari):** vittorie casa / pari / trasferta:
   inizio S3 (stadio 0, pubblico 50) **39,6 / 24,8 / 35,6**; stadio 0 e pubblico pieno 41,3 / 24,3 / 34,3; stadio 5 e
   pubblico pieno (come oggi) 46,2 / 23,3 / 30,5; stadio 10 e pubblico pieno **51,4 / 21,8 / 26,8**. Stadio da 0 a 10 con

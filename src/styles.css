@@ -4642,6 +4642,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .match-intro__locandina-squadra:last-child .crest--large { animation-delay: .9s; }
 .match-intro__locandina-squadra strong { color: rgba(255,255,255,.82); font-size: .82rem; font-weight: 800; letter-spacing: .02em; }
 .match-intro__locandina-vs { color: var(--loc-vs); font: 600 clamp(2rem, 9vw, 2.7rem)/1 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; text-shadow: 0 0 22px color-mix(in srgb, var(--loc-vs) 55%, transparent); animation: match-intro-crest .45s .75s cubic-bezier(.2,.8,.2,1.4) both; }
+.match-intro__locandina-stadio { margin: 6px 0 0; color: rgba(255,255,255,.62); font: 700 clamp(.7rem, 3.2vw, .85rem)/1.2 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: .18em; text-transform: uppercase; animation: match-intro-in .5s .6s ease-out both; }
 .match-intro__locandina-piede { display: grid; justify-items: center; gap: 6px; animation: match-intro-in .5s 1.1s ease-out both; }
 .match-intro__locandina-piede img { height: 34px; width: auto; max-width: 60vw; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,.5)); }
 .match-intro__locandina-piede span { color: rgba(255,255,255,.6); font-size: .62rem; font-weight: 900; letter-spacing: .22em; text-transform: uppercase; }

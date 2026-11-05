@@ -23,7 +23,7 @@ import { Icona } from './Icona'
 import { fasciaVoto, formatoVoto } from '../lib/voti'
 import { ruoloIt, ruoliIt } from '../lib/ruoli'
 import { firmaStemma } from '../lib/stemmiFirmati'
-import { NOME_STADIO_MAX, nomeStadio } from '../lib/stadio'
+import { NOME_STADIO_MAX, nomeStadio, nomeStadioModificabile } from '../lib/stadio'
 
 type Props = {
   membership: Membership
@@ -734,7 +734,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       // Solo predefiniti (o lo stemma che la squadra ha gia'): non si caricano piu' immagini.
       if (crest.type === 'upload') throw new Error('Gli stemmi personalizzati non si possono piu\' caricare: scegline uno della lista.')
       const crestPath = crest.value
-      const { data, error } = await supabase.rpc('aggiorna_profilo_squadra', { p_team_id: team.id, p_nome: teamName, p_stemma_url: crestPath, p_sigla: sigla, ...(league.stadio_attivo ? { p_nome_stadio: nomeStadioCampo } : {}) })
+      const { data, error } = await supabase.rpc('aggiorna_profilo_squadra', { p_team_id: team.id, p_nome: teamName, p_stemma_url: crestPath, p_sigla: sigla, ...(nomeStadioModificabile(league) ? { p_nome_stadio: nomeStadioCampo } : {}) })
       if (error) throw error
       const updated = data as Team
       setTeamOverride(updated)
@@ -823,14 +823,14 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       <div className="season-page team-profile-page">
 
       {ownTeam && editing && <form className="team-settings-panel" onSubmit={saveProfile}>
-        <div><p className="kicker">Impostazioni squadra</p><h2>{league.stadio_attivo ? 'Nome, sigla, stadio e logo' : 'Nome, sigla e logo'}</h2><label>Nome squadra<input type="text" minLength={2} maxLength={NOME_SQUADRA_MAX} required value={teamName} onChange={(event) => setTeamName(pulisciNomeSquadra(event.target.value))} /><small className="team-identity__nota">{SUGGERIMENTO_NOME_SQUADRA}</small></label>
+        <div><p className="kicker">Impostazioni squadra</p><h2>{nomeStadioModificabile(league) ? 'Nome, sigla, stadio e logo' : 'Nome, sigla e logo'}</h2><label>Nome squadra<input type="text" minLength={2} maxLength={NOME_SQUADRA_MAX} required value={teamName} onChange={(event) => setTeamName(pulisciNomeSquadra(event.target.value))} /><small className="team-identity__nota">{SUGGERIMENTO_NOME_SQUADRA}</small></label>
           <label className="team-sigla-campo">Sigla<input type="text" inputMode="text" autoCapitalize="characters" autoComplete="off" spellCheck={false} minLength={3} maxLength={3} required value={sigla} onChange={(event) => setSigla(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3))} /></label>
           <p className={`field-help ${siglaOccupataDa || (sigla && !siglaValida) ? 'is-errore' : ''}`}>
             {siglaOccupataDa ? `${sigla} è già usata da ${siglaOccupataDa.nome}.`
               : !siglaValida ? 'Tre caratteri tra lettere e cifre.'
               : 'Compare nello scoreboard delle partite al posto del nome.'}
           </p>
-          {league.stadio_attivo && <label>Nome dello stadio<input type="text" maxLength={NOME_STADIO_MAX} value={nomeStadioCampo} placeholder={nomeStadio({ id: team.id, nome_stadio: null })} onChange={(event) => setNomeStadioCampo(event.target.value.slice(0, NOME_STADIO_MAX))} /><small className="team-identity__nota">Al massimo {NOME_STADIO_MAX} caratteri. Se lo lasci vuoto resta «{nomeStadio({ id: team.id, nome_stadio: null })}».</small></label>}
+          {nomeStadioModificabile(league) && <label>Nome dello stadio<input type="text" maxLength={NOME_STADIO_MAX} value={nomeStadioCampo} placeholder={nomeStadio(team)} onChange={(event) => setNomeStadioCampo(event.target.value.slice(0, NOME_STADIO_MAX))} /><small className="team-identity__nota">Al massimo {NOME_STADIO_MAX} caratteri.</small></label>}
           </div>
         <CrestPicker value={crest} onChange={setCrest} disabled={saving} disabledValues={stemmiUsati} />
         {saveError && <p className="notice notice--error">{saveError}</p>}

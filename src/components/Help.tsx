@@ -145,8 +145,8 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
       <p>Dalla Season 3 c'è un quarto ramo, lo <strong>Stadio</strong>, e il tetto dei punti sale da 20
         a 26. Lo stadio decide il massimo del bonus casa che il tuo pubblico può darti: +1,0 di overall a
         livello 0, +0,2 a ogni livello, fino a +3,0 a livello 10. Ogni partita in casa porta anche
-        crediti del casinò dai biglietti, 50 per livello. Il nome dello stadio si sceglie nella pagina
-        Club, con "Modifica squadra".</p>
+        crediti del casinò dai biglietti, 50 per livello. Ogni stadio ha già un nome: dalla Season 3 lo puoi
+        cambiare nella pagina Club, con "Modifica squadra" (al massimo 25 caratteri).</p>
     </>,
   },
   {

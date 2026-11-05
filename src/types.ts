@@ -36,7 +36,7 @@ export type Team = {
   // La squadra rivale dichiarata (derby fisso), con la stagione in cui e' stata scelta: si cambia una volta a stagione.
   rivale_id?: number | null
   rivale_stagione?: number | null
-  // Nome dello stadio scelto dalla squadra (max 20 caratteri); null = nome di default (lib/stadio.ts).
+  // Nome dello stadio (max 25 caratteri): mai vuoto, il database ne assegna uno di default.
   nome_stadio?: string | null
   league_id: number
   // Le squadre PC arrivano dal database senza utente; il client le normalizza

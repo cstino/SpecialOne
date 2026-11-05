@@ -1,23 +1,21 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
-import type { Team } from '../types'
+import type { League, Team } from '../types'
 
 // Lo stadio (Season 3, docs/DIARIO-SEASON3.md §4): quarto ramo delle risorse. Il calcolo vero sta nel database
 // (public.moltiplicatori_casa, private.effetti_ramo); qui solo nome, immagine e bonus da mostrare.
 
-export const NOME_STADIO_MAX = 20
+export const NOME_STADIO_MAX = 25
 
-// Nome di default per chi non ne ha scritto uno: fisso per squadra (stesso id, stesso nome).
-const NOMI_DEFAULT = [
-  'Stadio Comunale', 'Arena Civica', 'Stadio dei Pini', 'Campo dei Tigli', 'Stadio del Porto',
-  'Arena del Lago', 'Stadio delle Querce', 'Campo Sportivo', 'Stadio della Valle', 'Arena dei Colli',
-  'Stadio del Mare', 'Stadio dei Cipressi', 'Arena del Fiume', 'Stadio del Litorale', 'Stadio dei Mulini',
-  'Arena del Borgo', 'Stadio delle Mura', 'Campo degli Ulivi', 'Stadio del Faro', 'Arena dei Castagni',
-]
+// Il nome non e' mai vuoto: il database ne assegna uno di default a ogni squadra, diverso dalle altre della lega
+// (private.nomi_stadio_default). 'Stadio' resta solo come ripiego se la riga non e' ancora arrivata.
+export function nomeStadio(team: Pick<Team, 'nome_stadio'> | null | undefined): string {
+  return team?.nome_stadio?.trim() || 'Stadio'
+}
 
-export function nomeStadio(team: Pick<Team, 'id' | 'nome_stadio'> | null | undefined): string {
-  if (!team) return 'Stadio'
-  return team.nome_stadio?.trim() || NOMI_DEFAULT[team.id % NOMI_DEFAULT.length]
+/** Il nome si cambia (Club > Modifica squadra) solo a stagione in corso con lo stadio acceso. */
+export function nomeStadioModificabile(league: Pick<League, 'stadio_attivo' | 'stato' | 'fase_carriera'>): boolean {
+  return Boolean(league.stadio_attivo) && league.stato === 'stagione' && league.fase_carriera !== 'offseason'
 }
 
 // Immagine per grandezza: provincia, due anelli, maxischermo, arena col tetto.

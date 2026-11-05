@@ -312,6 +312,7 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
           <div className="match-intro__locandina-testa">
             <h2 className="match-intro__locandina-titolo">{bracket ? bracket.etichettaTurno : `Giornata ${fixture.giornata}`}</h2>
             <p className="match-intro__locandina-data">{sottotitoloLocandina}</p>
+            {league?.stadio_attivo && !fixture.campo_neutro && homeTeam?.nome_stadio && <p className="match-intro__locandina-stadio">{homeTeam.nome_stadio}</p>}
           </div>
           <div className="match-intro__locandina-card">
             <div className="match-intro__locandina-squadra">
