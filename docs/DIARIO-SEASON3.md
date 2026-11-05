@@ -76,7 +76,15 @@ provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato
 
 ## 4. Stadio: nuovo ramo delle risorse
 
-* **Stato:** `deciso` (25/10/2026) — da preparare prima dell'off-season 3.
+* **Stato:** `in lavoro` (5/11/2026): database applicato (migrazione `20261105130000_stadio.sql`), app pronta in
+  locale. `leagues.stadio_attivo`: Serie F acceso subito, le altre leghe alla loro prossima stagione
+  (`finalizza_offseason`). Tetto punti 26 solo dove lo stadio è acceso (`private.punti_abilita_massimi_lega`).
+  Nome di default da una lista fissa in `src/lib/stadio.ts` (id squadra modulo 20). Il nome si vede nella pagina Club,
+  nella sezione Stadio delle Risorse e nel riquadro della prossima partita; non ancora nell'intro della partita.
+* **Misure col motore ATTUALE (5/11/2026, 30.000 partite per riga, squadre pari):** vittorie casa / pari / trasferta:
+  inizio S3 (stadio 0, pubblico 50) **39,6 / 24,8 / 35,6**; stadio 0 e pubblico pieno 41,3 / 24,3 / 34,3; stadio 5 e
+  pubblico pieno (come oggi) 46,2 / 23,3 / 30,5; stadio 10 e pubblico pieno **51,4 / 21,8 / 26,8**. Stadio da 0 a 10 con
+  pubblico pieno = **+3,0 punti a stagione** (11 partite in casa).
 * **Richiesta:** «Gestione stadio tra le risorse. Più punti si assegnano allo stadio e più lo stadio diventa grande e di
   conseguenza aumenta il limite del bonus del pubblico. Con 0 punti risorsa il massimale del bonus del pubblico è +1,0;
   si sale di 0,2 per ogni punto risorsa, quindi al massimo uno stadio può dare +3.»

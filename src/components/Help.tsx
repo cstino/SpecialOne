@@ -142,6 +142,11 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         <strong> Training</strong> accelera la crescita dei giovani e riduce i tempi di cambio
         ruolo e di piano di sviluppo (vedi le voci dedicate). <strong>Reparto medico</strong>
         riduce il rischio di infortunio e fa recuperare più condizione a fine partita.</p>
+      <p>Dalla Season 3 c'è un quarto ramo, lo <strong>Stadio</strong>, e il tetto dei punti sale da 20
+        a 26. Lo stadio decide il massimo del bonus casa che il tuo pubblico può darti: +1,0 di overall a
+        livello 0, +0,2 a ogni livello, fino a +3,0 a livello 10. Ogni partita in casa porta anche
+        crediti del casinò dai biglietti, 50 per livello. Il nome dello stadio si sceglie nella pagina
+        Club, con "Modifica squadra".</p>
     </>,
   },
   {

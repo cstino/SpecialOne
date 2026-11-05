@@ -3993,6 +3993,8 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .risorse-ramo__corpo > header b { flex: none; color: #c58cff; font: 900 1.5rem/1 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 .risorse-ramo__corpo > header b i { color: #6f6683; font-size: .9rem; font-style: normal; }
 .risorse-ramo__corpo > header b.is-massimo { color: #69e6a0; }
+/* Stadio: il titolo e' il nome scelto dalla squadra, sotto il nome del ramo. */
+.risorse-ramo__tipo { display: block; margin-top: 3px; color: #c58cff; font-size: .6rem; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
 
 .risorse-scala { display: flex; gap: 3px; }
 .risorse-scala span { flex: 1; height: 7px; border-radius: 99px; background: rgba(255,255,255,.08); }
@@ -6633,6 +6635,7 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .bet-page .cas-premi__testa button { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 8px; background: rgba(255,255,255,.08); font-size: .8rem; cursor: pointer; }
 .cas-premi p { display: flex; justify-content: space-between; gap: 10px; margin: 0; font-size: .86rem; }
 .cas-premi p strong { color: var(--bet-oro); font-variant-numeric: tabular-nums; }
+.cas-premi p.cas-premi__biglietti { padding-left: 12px; color: rgba(255,255,255,.7); font-size: .78rem; }
 /* Bustina di figurine ogni 500 crediti spesi: barra d'avanzamento oro sotto il saldo. */
 .cas-bustina { display: grid; gap: 7px; padding: 12px 14px; border: 1px solid rgba(246,196,83,.4); border-radius: 16px; background: linear-gradient(135deg, rgba(246,196,83,.14), rgba(255,255,255,.03)); }
 .cas-bustina__testo { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }

@@ -3,16 +3,18 @@ import { supabase } from '../lib/supabase'
 import type { Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
 import { PopupSpiegazione } from './PopupSpiegazione'
+import { immagineStadio, nomeStadio } from '../lib/stadio'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
-type Ramo = 'vivaio' | 'training' | 'medico'
+type Ramo = 'vivaio' | 'training' | 'medico' | 'stadio'
 type Risorse = {
   team_id: number
   punti_ricevuti: number
   livello_vivaio: number
   livello_training: number
   livello_medico: number
+  livello_stadio: number
 }
 // Ogni voce e' l'effetto del ramo a un dato livello, cosi' come lo calcola
 // private.effetti_ramo: la curva sta nel database, qui si legge soltanto.
@@ -43,6 +45,12 @@ const RAMI: readonly { id: Ramo; nome: string; descrizione: string; immagine: st
     descrizione: 'Quanto resistono i tuoi giocatori agli infortuni, quanta più condizione recuperano a fine partita e quanto in fretta guariscono.',
     immagine: '/risorse/medico.jpg',
   },
+  {
+    id: 'stadio',
+    nome: 'Stadio',
+    descrizione: 'Più è grande, più il tuo pubblico può spingere la squadra nelle partite in casa. E ogni partita in casa porta crediti del casinò dai biglietti.',
+    immagine: '/stadio/stadio-0-2.webp',
+  },
 ]
 
 // Come si legge a schermo un effetto: etichetta e formato del valore. Le
@@ -58,16 +66,21 @@ const ETICHETTE: Record<string, { testo: string; formato: (v: number) => string 
   riduzione_infortuni_pct: { testo: 'Rischio infortuni', formato: (v) => (v === 0 ? 'pieno' : `−${v}%`) },
   riduzione_calo_residuo_pct: { testo: 'Recupero post-partita', formato: (v) => (v === 0 ? 'nessun bonus' : `+${v}% recuperato`) },
   recupero_infortuni_pct: { testo: 'Guarigione', formato: (v) => (v === 0 ? 'tempi pieni' : `${v}% a giornata di rientrare prima`) },
+  bonus_casa_massimo: { testo: 'Bonus casa massimo', formato: (v) => `+${v.toFixed(1).replace('.', ',')} di overall` },
+  biglietti_partita: { testo: 'Biglietti a partita in casa', formato: (v) => (v === 0 ? 'nessuno' : `${v} crediti`) },
 }
 
 function livelloDi(risorse: Risorse, ramo: Ramo) {
   return ramo === 'vivaio' ? risorse.livello_vivaio
     : ramo === 'training' ? risorse.livello_training
+    : ramo === 'stadio' ? risorse.livello_stadio
     : risorse.livello_medico
 }
 
 export function Risorse({ membership, onNavigate }: Props) {
   const league = membership.league!
+  // Lo stadio compare da quando la lega lo accende (Season 3).
+  const rami = league.stadio_attivo ? RAMI : RAMI.filter((ramo) => ramo.id !== 'stadio')
   const [risorse, setRisorse] = useState<Risorse | null>(null)
   const [tabella, setTabella] = useState<Tabella | null>(null)
   const [caricamento, setCaricamento] = useState(true)
@@ -83,9 +96,9 @@ export function Risorse({ membership, onNavigate }: Props) {
   const carica = useCallback(async () => {
     const [statoResult, tabellaResult, seasonResult] = await Promise.all([
       supabase.from('team_risorse')
-        .select('team_id, punti_ricevuti, livello_vivaio, livello_training, livello_medico')
+        .select('team_id, punti_ricevuti, livello_vivaio, livello_training, livello_medico, livello_stadio')
         .eq('team_id', membership.id).maybeSingle(),
-      supabase.rpc('tabella_risorse'),
+      supabase.rpc('tabella_risorse', { p_league_id: league.id }),
       supabase.from('seasons').select('id, giornate_totali').eq('league_id', league.id).eq('numero', league.stagione_corrente).maybeSingle(),
     ])
     if (statoResult.error) { setErrore(statoResult.error.message); setCaricamento(false); return }
@@ -95,7 +108,7 @@ export function Risorse({ membership, onNavigate }: Props) {
     // vera nasce al primo punto assegnato o alla prima spesa.
     setRisorse((statoResult.data as Risorse | null) ?? {
       team_id: membership.id, punti_ricevuti: 0,
-      livello_vivaio: 0, livello_training: 0, livello_medico: 0,
+      livello_vivaio: 0, livello_training: 0, livello_medico: 0, livello_stadio: 0,
     })
     setTabella(tabellaResult.data as Tabella)
 
@@ -132,7 +145,7 @@ export function Risorse({ membership, onNavigate }: Props) {
     </main>
   }
 
-  const spesi = risorse.livello_vivaio + risorse.livello_training + risorse.livello_medico
+  const spesi = risorse.livello_vivaio + risorse.livello_training + risorse.livello_medico + (risorse.livello_stadio ?? 0)
   const disponibili = risorse.punti_ricevuti - spesi
   const esauriti = risorse.punti_ricevuti >= tabella.punti_massimi
 
@@ -148,7 +161,7 @@ export function Risorse({ membership, onNavigate }: Props) {
         <p>
           Ogni quarto di stagione ricevi {tabella.punti_per_checkpoint} punti abilità, fino a un
           massimo di {tabella.punti_massimi} in tutta la vita della lega. I rami hanno{' '}
-          {tabella.livello_massimo} livelli ciascuno, {tabella.livello_massimo * RAMI.length} in
+          {tabella.livello_massimo} livelli ciascuno, {tabella.livello_massimo * rami.length} in
           totale: non potrai mai riempirli tutti, quindi la scelta conta.
         </p>
         <p>I punti investiti non si possono riassegnare: una volta messi su un ramo restano lì.</p>
@@ -169,20 +182,23 @@ export function Risorse({ membership, onNavigate }: Props) {
       {errore && <p className="notice notice--error">{errore}</p>}
 
       <div className="risorse-rami">
-        {RAMI.map((ramo) => {
+        {rami.map((ramo) => {
           const livello = livelloDi(risorse, ramo.id)
           const scala = tabella.rami[ramo.id]
           const ora = scala[livello]
           const dopo = livello < tabella.livello_massimo ? scala[livello + 1] : null
           const alMassimo = livello >= tabella.livello_massimo
           const chiavi = Object.keys(ora).filter((chiave) => chiave !== 'livello')
+          // Lo stadio cambia foto con la grandezza e porta il nome scelto nella pagina Club.
+          const immagine = ramo.id === 'stadio' ? immagineStadio(livello) : ramo.immagine
+          const titolo = ramo.id === 'stadio' ? nomeStadio(membership) : ramo.nome
           return (
             <article className="risorse-ramo" key={ramo.id}>
-              <div className="risorse-ramo__foto" style={{ backgroundImage: `url(${ramo.immagine})` }} role="img" aria-label={ramo.nome} />
+              <div className="risorse-ramo__foto" style={{ backgroundImage: `url(${immagine})` }} role="img" aria-label={titolo} />
 
               <div className="risorse-ramo__corpo">
                 <header>
-                  <h2>{ramo.nome}</h2>
+                  <h2>{titolo}{ramo.id === 'stadio' && <small className="risorse-ramo__tipo">Stadio</small>}</h2>
                   <b className={alMassimo ? 'is-massimo' : ''}>{livello}<i>/{tabella.livello_massimo}</i></b>
                 </header>
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { useSeasonData } from '../lib/useSeasonData'
 import { Crest } from './Crest'
@@ -15,7 +15,8 @@ type RigaClassifica = { team_id: number; miglior_colpo: number; spesi: number; p
 type Vista = 'colpo' | 'spesi' | 'profitto'
 type Filtro = 'tutti' | 'aviat' | 'crazy' | 'bj' | 'slot'
 type Gioco = 'slot' | 'crazy' | 'aviat' | 'bj'
-type Premio = { esito: 'vittoria' | 'pareggio' | 'sconfitta'; crediti: number; avversario_id: number }
+// biglietti: incasso dello stadio per le partite in casa (Season 3), 0 in trasferta o senza stadio.
+type Premio = { esito: 'vittoria' | 'pareggio' | 'sconfitta'; crediti: number; biglietti?: number; avversario_id: number }
 
 // Le locandine (public/casino/*.webp, 540×810) le ha disegnate il committente; il nome del gioco e' gia' nell'immagine.
 const GIOCHI: Array<{ id: Gioco; titolo: string; sotto: string; nuovo?: boolean }> = [
@@ -113,7 +114,10 @@ export function CasinoHub({ leagueId, teamId, dati }: Props) {
     </div>}
     {premi.length > 0 && <div className="cas-premi" role="status">
       <div className="cas-premi__testa"><b>Premi partita</b><button type="button" aria-label="Chiudi" onClick={() => setPremi([])}>✕</button></div>
-      {premi.map((p, i) => <p key={i}><span>{p.esito === 'vittoria' ? 'Vittoria' : p.esito === 'pareggio' ? 'Pareggio' : 'Sconfitta'} contro {dati.teamById.get(p.avversario_id)?.nome ?? '—'}</span><strong>+{fmt(p.crediti)}</strong></p>)}
+      {premi.map((p, i) => <Fragment key={i}>
+        <p><span>{p.esito === 'vittoria' ? 'Vittoria' : p.esito === 'pareggio' ? 'Pareggio' : 'Sconfitta'} contro {dati.teamById.get(p.avversario_id)?.nome ?? '—'}</span><strong>+{fmt(p.crediti)}</strong></p>
+        {(p.biglietti ?? 0) > 0 && <p className="cas-premi__biglietti"><span>Biglietti allo stadio</span><strong>+{fmt(p.biglietti ?? 0)}</strong></p>}
+      </Fragment>)}
     </div>}
 
     <section className="cas-fila">

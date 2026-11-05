@@ -5,14 +5,15 @@ import type { League, Membership } from '../types'
 import { Crest } from './Crest'
 import { GameNav, type GameView } from './GameNav'
 import { LoadingLogo } from './LoadingLogo'
+import { bonusCasaMassimo, nomeStadio, useLivelliStadio } from '../lib/stadio'
 
 // Il pubblico (docs/decisioni-conferenze-stampa.md §2b): l'umore dei tifosi di ogni squadra, da 0 a 100,
 // della tua squadra, con l'andamento nel tempo (tabella pubblico_storico). Muove il bonus casa: pieno (+2,0 di overall) da 80 in su, nessun bonus a 10 o
-// meno, mai uno svantaggio. Qui vedi solo il tuo.
+// meno, mai uno svantaggio. Qui vedi solo il tuo. Dalla Season 3 il massimo lo decide lo stadio (lib/stadio.ts):
+// +1,0 a livello 0, +0,2 a livello; senza stadio (livello null) resta +2,0.
 
-const BONUS_MAX = 2
 const moltiplicatore = (p: number) => Math.max(0, Math.min(1, (p - 10) / 70))
-export const bonus = (p: number) => BONUS_MAX * moltiplicatore(p)
+export const bonus = (p: number, livelloStadio?: number | null) => bonusCasaMassimo(livelloStadio) * moltiplicatore(p)
 export const fmtBonus = (b: number) => `+${b.toFixed(1).replace('.', ',')}`
 
 export function fascia(p: number) {
@@ -87,6 +88,8 @@ export function PaginaPubblico({ membership, onNavigate }: Props) {
     .map((t) => ({ team: t, pubblico: Number(t.pubblico ?? 100) }))
     .sort((a, b) => b.pubblico - a.pubblico || a.team.nome.localeCompare(b.team.nome)), [dati.teamById])
   const mio = righe.find((r) => r.team.id === membership.id)
+  const livelliStadio = useLivelliStadio(league.id, league.stadio_attivo)
+  const mioStadio = league.stadio_attivo ? livelliStadio.get(membership.id) ?? 0 : null
   const f = mio ? fascia(mio.pubblico) : null
 
   return <main className="app-shell season-shell pubblico-shell">
@@ -107,7 +110,7 @@ export function PaginaPubblico({ membership, onNavigate }: Props) {
             <span className="pubblico-mio__etichetta">{f.testo}</span>
           </span>
           <span className="pubblico-barra pubblico-barra--grande" aria-hidden="true"><i style={{ width: `${100 - mio.pubblico}%` }} /><u style={{ left: '80%' }} /></span>
-          <span className="pubblico-mio__bonus">Bonus casa: <b>{fmtBonus(bonus(mio.pubblico))}</b> di overall <em>{mio.pubblico >= 80 ? '(il massimo)' : `(il massimo è ${fmtBonus(BONUS_MAX)})`}</em></span>
+          <span className="pubblico-mio__bonus">Bonus casa: <b>{fmtBonus(bonus(mio.pubblico, mioStadio))}</b> di overall <em>{mio.pubblico >= 80 ? `(il massimo${mioStadio != null ? ` del ${nomeStadio(mio.team)}` : ''})` : `(il massimo è ${fmtBonus(bonusCasaMassimo(mioStadio))})`}</em></span>
         </button>}
 
         <h2 className="pubblico-titolo">Come sta andando</h2>
@@ -125,7 +128,9 @@ export function PaginaPubblico({ membership, onNavigate }: Props) {
         <div className="popup-spiegazione__corpo">
           <p>Ogni squadra ha un <b>umore del pubblico da 0 a 100</b>, uguale per tutti: <b>riparte da 50 a ogni nuova stagione</b>. Nella pagina vedi il tuo e come è cambiato nella stagione.</p>
           <h3>Perché conta</h3>
-          <p>Decide il <b>bonus casa</b>: quando giochi in casa la tua squadra rende come con <b>+2,0 di overall</b> in attacco e a centrocampo. Con il pubblico <b>da 80 in su il bonus è pieno</b>; sotto cala fino a <b>zero a 10 o meno</b>. Non diventa mai uno svantaggio. Fra pubblico al massimo e in rottura ballano circa <b>5 punti in una stagione da 38 giornate</b>: è più del morale.</p>
+          {league.stadio_attivo
+            ? <p>Decide il <b>bonus casa</b>: quando giochi in casa la tua squadra rende come con qualche punto di overall in più in attacco e a centrocampo. Il massimo lo decide lo <b>stadio</b>, che costruisci nelle Risorse: <b>+1,0 di overall a livello 0</b>, +0,2 a ogni livello, <b>+3,0 a livello 10</b>. Con il pubblico <b>da 80 in su</b> hai tutto il massimo del tuo stadio; sotto cala fino a <b>zero a 10 o meno</b>. Non diventa mai uno svantaggio.</p>
+            : <p>Decide il <b>bonus casa</b>: quando giochi in casa la tua squadra rende come con <b>+2,0 di overall</b> in attacco e a centrocampo. Con il pubblico <b>da 80 in su il bonus è pieno</b>; sotto cala fino a <b>zero a 10 o meno</b>. Non diventa mai uno svantaggio. Fra pubblico al massimo e in rottura ballano circa <b>5 punti in una stagione da 38 giornate</b>: è più del morale.</p>}
           <h3>Cosa lo muove</h3>
           <ul>
             <li><b>Conferenze stampa</b> — è la leva più forte. Rispetto per i tifosi, ambizione e difesa del club lo alzano; dare la colpa a loro o allo stadio lo affonda. Lo scherno verso gli avversari lo fa salire.</li>
