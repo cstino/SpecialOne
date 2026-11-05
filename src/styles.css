@@ -5659,7 +5659,7 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .battezza-stadio__form input:focus { border-color: #4fdc8c; box-shadow: 0 0 0 3px rgba(79,220,140,.25); }
 .battezza-stadio__form small { justify-self: end; color: #7f9585; font-size: .75rem; font-variant-numeric: tabular-nums; }
 .battezza-stadio__errore { margin: 0; color: #ff8b8b; font-size: .82rem; }
-.battezza-stadio__conferma { height: 52px; margin-top: 8px; border: 0; border-radius: 14px; background: linear-gradient(180deg, #4fdc8c, #23a35b); color: #06200f; font: inherit; font-size: 1rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; cursor: pointer; box-shadow: 0 8px 22px rgba(35,163,91,.35); }
+.battezza-stadio__conferma { height: 52px; margin-top: 8px; padding: 0 16px; text-align: center; border: 0; border-radius: 14px; background: linear-gradient(180deg, #4fdc8c, #23a35b); color: #06200f; font: inherit; font-size: 1rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; cursor: pointer; box-shadow: 0 8px 22px rgba(35,163,91,.35); }
 .battezza-stadio__conferma:disabled { background: rgba(255,255,255,.1); box-shadow: none; color: rgba(255,255,255,.4); cursor: default; }
 
 /* Pubblico: andamento della propria squadra */
