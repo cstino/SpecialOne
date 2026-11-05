@@ -12,8 +12,13 @@ Una foto si accetta solo se TheSportsDB ha la stessa data di nascita: con due om
 la faccia sbagliata. TheSportsDB limita le richieste (circa una ogni 2 secondi con la chiave gratuita):
 lo script rallenta da solo quando riceve 429 ed e' ripetibile, i giocatori gia' esaminati si saltano.
 
+Con l'abbonamento a TheSportsDB la chiave sta nel .env del server (THESPORTSDB_KEY=...): con --env la si legge da
+li' senza stamparla, e le richieste vanno al ritmo concesso (--pausa 0.7, circa 85 al minuto).
+
 Uso:
   python3 tools/importazione/scarica_figurine.py --giocatori giocatori.tsv --output-dir /tmp/figurine
+  python3 tools/importazione/scarica_figurine.py --giocatori giocatori.tsv --output-dir /tmp/figurine \
+    --env ~/supabase-spinoff/project/.env --pausa 0.7
 """
 
 from __future__ import annotations
@@ -28,7 +33,9 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-API = "https://www.thesportsdb.com/api/v1/json/123/searchplayers.php?p="
+API = "https://www.thesportsdb.com/api/v1/json/{chiave}/searchplayers.php?p="
+CHIAVE = "123"
+PAUSA = 2.1
 UA = "SpecialOne/1.0 (private one-off dataset import)"
 
 
@@ -72,8 +79,8 @@ def chiedi(url: str) -> bytes:
 
 def trova(nome: str, completo: str, nascita: str) -> tuple[dict | None, str]:
     for q in ricerche(nome, completo):
-        dati = json.loads(chiedi(API + urllib.parse.quote(q)) or b"{}")
-        time.sleep(2.1)
+        dati = json.loads(chiedi(API.format(chiave=CHIAVE) + urllib.parse.quote(q)) or b"{}")
+        time.sleep(PAUSA)
         for p in dati.get("player") or []:
             if p.get("strSport") != "Soccer":
                 continue
@@ -87,7 +94,18 @@ def main() -> None:
     parser.add_argument("--giocatori", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--lato", type=int, default=360)
+    parser.add_argument("--env", type=Path, help="file .env con THESPORTSDB_KEY (la chiave non viene mai stampata)")
+    parser.add_argument("--pausa", type=float, default=2.1, help="secondi fra una ricerca e l'altra")
     args = parser.parse_args()
+
+    global CHIAVE, PAUSA
+    PAUSA = args.pausa
+    if args.env:
+        for riga in args.env.expanduser().read_text().splitlines():
+            if riga.startswith("THESPORTSDB_KEY="):
+                CHIAVE = riga.split("=", 1)[1].strip().strip('"').strip("'")
+        if CHIAVE == "123":
+            raise SystemExit("THESPORTSDB_KEY non trovata nel file .env")
 
     cartella = args.output_dir / "cutout"
     cartella.mkdir(parents=True, exist_ok=True)
