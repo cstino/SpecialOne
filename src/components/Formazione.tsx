@@ -405,6 +405,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
         .select('id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, player_id, posizioni_override')
         .eq('league_id', league.id)
         .eq('team_id', membership.id)
+        // In prestito (Season 3) non si schiera: non compare nemmeno in tribuna.
+        .is('prestito_id', null)
         .order('overall_corrente', { ascending: false })
       if (rosterError) { setError(rosterError.message); setLoading(false); return }
       const roster = instances ?? []

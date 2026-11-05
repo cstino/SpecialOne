@@ -61,6 +61,9 @@ type RosterPlayer = {
   rinnovoStagione: number | null
   rinnovoTentativi: number
   sulMercato: boolean
+  /** Prestiti (Season 3): club dove gioca adesso, e se in questa stagione e' gia' partito una volta. */
+  prestitoClub: { nome: string; logo: string } | null
+  prestatoStagione: boolean
   mentalita: { bandiera: number; economia: number; vittorie: number }
   /** Minutaggio promesso (docs/decisioni-minutaggio.md): solo nelle leghe con le tattiche. */
   minutaggio?: { gradino: GradinoMinutaggio; trattato: boolean; richiamo: boolean; cessione: boolean; richiesto: GradinoMinutaggio | null; minutiPct: number | null }
@@ -228,6 +231,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     offertaM: string
   } | null>(null)
   const [cambiRuolo, setCambiRuolo] = useState<Map<number, CambioRuoloRiga>>(new Map())
+  const [prestitiUsati, setPrestitiUsati] = useState(0)
   const [specializzazioni, setSpecializzazioni] = useState<Map<number, SpecializzazioneRiga>>(new Map())
   const team = teamOverride?.id === teamId ? teamOverride : seasonData.teamById.get(teamId)
   const ownTeam = teamId === membership.id
@@ -351,11 +355,19 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       setRosterLoading(true)
       setRosterError(null)
       const [instancesResult, statsResult, cambiRuoloResult, specializzazioniResult] = await Promise.all([
-        supabase.from('player_instances').select('id, player_id, overall_corrente, overall_inizio_stagione, eta_corrente, ingaggio, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, morale, contratto_scadenza, rinnovo_stagione, rinnovo_tentativi, sul_mercato, posizioni_override, specializzazione_attiva').eq('league_id', league.id).eq('team_id', teamId),
+        supabase.from('player_instances').select('id, player_id, overall_corrente, overall_inizio_stagione, eta_corrente, ingaggio, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, morale, contratto_scadenza, rinnovo_stagione, rinnovo_tentativi, sul_mercato, posizioni_override, specializzazione_attiva, prestito_id').eq('league_id', league.id).eq('team_id', teamId),
         supabase.from('match_stats').select('match_id, player_instance_id, minuti, gol, assist, tiri, tiri_porta, passaggi_tentati, passaggi_riusciti, contrasti_vinti, dribbling').eq('league_id', league.id).eq('team_id', teamId),
         supabase.from('cambi_ruolo').select('id, player_instance_id, ruolo_precedente, ruolo_target, avviato_giornata, completa_giornata').eq('league_id', league.id).eq('team_id', teamId).is('completato_il', null),
         supabase.from('specializzazioni_giocatore').select('id, player_instance_id, specializzazione_precedente, specializzazione_target, avviato_giornata, completa_giornata').eq('league_id', league.id).eq('team_id', teamId).is('completato_il', null),
       ])
+      // Prestiti della stagione: quanti ne ha usati la squadra e dove gioca chi e' fuori.
+      const { data: righePrestiti } = await supabase.from('prestiti')
+        .select('id, player_instance_id, esito, club_prestito(nome, logo)').eq('team_id', teamId).eq('stagione', league.stagione_corrente)
+      type RigaPrestito = { id: number; player_instance_id: number; esito: string; club_prestito: { nome: string; logo: string } | null }
+      const prestitiRighe = (righePrestiti ?? []) as unknown as RigaPrestito[]
+      setPrestitiUsati(prestitiRighe.length)
+      const prestitoPerId = new Map(prestitiRighe.map((riga) => [riga.id, riga]))
+      const prestatiStagione = new Set(prestitiRighe.map((riga) => riga.player_instance_id))
       // Le pagelle non sono indispensabili: se mancano la rosa si vede lo stesso.
       const { data: righePagelle } = await supabase.from('pagelle')
         .select('match_id, player_instance_id, voto, migliore_in_campo').eq('league_id', league.id).eq('team_id', teamId)
@@ -404,6 +416,8 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           rinnovoStagione: instance.rinnovo_stagione,
           rinnovoTentativi: instance.rinnovo_tentativi,
           sulMercato: instance.sul_mercato,
+          prestitoClub: instance.prestito_id ? prestitoPerId.get(instance.prestito_id)?.club_prestito ?? { nome: 'Club in prestito', logo: '' } : null,
+          prestatoStagione: prestatiStagione.has(instance.id),
           mentalita: {
             bandiera: info?.mentalita_bandiera ?? 33,
             economia: info?.mentalita_economia ?? 33,
@@ -943,7 +957,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       {ownTeam && cambiRuolo.has(player.id) && <i className="team-roster-player__lavoro team-roster-player__lavoro--ruolo" title="Cambio ruolo in corso" aria-label="Cambio ruolo in corso"><Icona nome="cambio" /></i>}
                     </span>}
                   </span>
-                  <div><strong>{player.nome}</strong><small>{ruoliIt(player.posizioni)} · {player.eta} anni · <em>{money(player.ingaggio)}/stagione</em> · <em className={contratto(player, league.stagione_corrente).urgente ? 'contratto-urgente' : 'contratto-residuo'}>{contratto(player, league.stagione_corrente).testo}</em></small></div>
+                  <div><strong>{player.nome}</strong>{player.prestitoClub && <small className="team-roster-player__prestito">{player.prestitoClub.logo && <img src={player.prestitoClub.logo} alt="" />}In prestito · {player.prestitoClub.nome}</small>}<small>{ruoliIt(player.posizioni)} · {player.eta} anni · <em>{money(player.ingaggio)}/stagione</em> · <em className={contratto(player, league.stagione_corrente).urgente ? 'contratto-urgente' : 'contratto-residuo'}>{contratto(player, league.stagione_corrente).testo}</em></small></div>
                   <b>
                     <span className="ovr-con-delta">
                       {player.overall}
@@ -1200,7 +1214,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           const ex = exId != null && exId !== schedaAperta.id ? players.find((p) => p.id === exId)?.nome ?? null : null
           return { requisiti: r, effettivo: r.effettivo, designato: r.designato, exCapitano: ex, inCorso: nominaInCorso, errore: nominaErrore, onNomina: () => void nominaCapitano() }
         })() : undefined}
-        azionePericolosa={ownTeam && league.stato === 'stagione' ? {
+        azionePericolosa={ownTeam && league.stato === 'stagione' && !schedaAperta.prestitoClub ? {
           etichetta: 'Svincola giocatore',
           descrizione: schedaAperta.ritiroAnnunciato
             ? `${schedaAperta.nome} ha già annunciato il ritiro: lo svincolo è definitivo, non tornerà disponibile per nessuna squadra. Non riceverai alcun rimborso e le formazioni future che lo contengono dovranno essere salvate di nuovo.`
@@ -1241,8 +1255,35 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
             return risposta
           },
         } : undefined}
-        proponiScambio={!ownTeam && onProponiScambio && league.stato === 'stagione' ? { onClick: () => onProponiScambio(teamId, schedaAperta.id) } : undefined}
-        listaMercato={ownTeam && league.stato === 'stagione' ? {
+        proponiScambio={!ownTeam && onProponiScambio && league.stato === 'stagione' && !schedaAperta.prestitoClub ? { onClick: () => onProponiScambio(teamId, schedaAperta.id) } : undefined}
+        prestito={ownTeam && league.stato === 'stagione' && league.fase_carriera === 'normale' && league.stadio_attivo ? {
+          club: schedaAperta.prestitoClub,
+          allenamento: schedaAperta.prestitoClub ? (() => {
+            const cambio = cambiRuolo.get(schedaAperta.id)
+            const piano = specializzazioni.get(schedaAperta.id)
+            const parti = [
+              piano ? `piano «${specEtichette.get(piano.specializzazione_target) ?? piano.specializzazione_target}»` : null,
+              cambio ? `cambio ruolo verso ${ruoloIt(cambio.ruolo_target)}` : null,
+            ].filter(Boolean)
+            return parti.length ? `Il club lo allena: ${parti.join(' e ')}.` : 'Il club lo allena come preferisce.'
+          })() : null,
+          bloccato: schedaAperta.prestatoStagione ? 'In questa stagione è già stato in prestito.'
+            : prestitiUsati >= 5 ? 'Hai già usato i 5 prestiti di questa stagione.' : undefined,
+          rimasti: Math.max(0, 5 - prestitiUsati),
+          onManda: async () => {
+            const { error } = await supabase.rpc('manda_in_prestito', { p_instance_id: schedaAperta.id })
+            if (error) throw new Error(error.message)
+            await caricaRoster()
+            setSchedaAperta(null)
+          },
+          onRichiama: async () => {
+            const { error } = await supabase.rpc('richiama_dal_prestito', { p_instance_id: schedaAperta.id })
+            if (error) throw new Error(error.message)
+            await caricaRoster()
+            setSchedaAperta(null)
+          },
+        } : undefined}
+        listaMercato={ownTeam && league.stato === 'stagione' && !schedaAperta.prestitoClub ? {
           inLista: schedaAperta.sulMercato,
           onCambia: async (valore) => {
             const { error } = await supabase.rpc('imposta_sul_mercato', { p_instance_id: schedaAperta.id, p_valore: valore })
@@ -1250,7 +1291,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
             setPlayers((current) => current.map((item) => item.id === schedaAperta.id ? { ...item, sulMercato: valore } : item))
           },
         } : undefined}
-        cambioRuolo={ownTeam && league.stato === 'stagione' && !schedaAperta.ritiroAnnunciato ? {
+        cambioRuolo={ownTeam && league.stato === 'stagione' && !schedaAperta.ritiroAnnunciato && !schedaAperta.prestitoClub ? {
           inCorso: (() => {
             const cambio = cambiRuolo.get(schedaAperta.id)
             return cambio ? { ruoloPrecedente: cambio.ruolo_precedente, ruoloTarget: cambio.ruolo_target, avviatoGiornata: cambio.avviato_giornata, completaGiornata: cambio.completa_giornata } : null
@@ -1260,7 +1301,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           onAvvia: (ruoloTarget) => avviaCambioRuolo(schedaAperta.id, ruoloTarget),
           onAnnulla: () => annullaCambioRuolo(schedaAperta.id),
         } : undefined}
-        specializzazione={ownTeam && league.stato === 'stagione' && !schedaAperta.ritiroAnnunciato ? {
+        specializzazione={ownTeam && league.stato === 'stagione' && !schedaAperta.ritiroAnnunciato && !schedaAperta.prestitoClub ? {
           attiva: schedaAperta.specializzazioneAttiva
             ? specEtichette.get(schedaAperta.specializzazioneAttiva) ?? schedaAperta.specializzazioneAttiva
             : null,

@@ -124,7 +124,11 @@ provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato
 
 ## 5. Prestiti a club finti
 
-* **Stato:** `deciso` (26/10/2026); alcuni dettagli sono proposte da confermare quando si implementa.
+* **Stato:** `in lavoro` (5/11/2026): database applicato (migrazione `20261105150000_prestiti.sql`), app pronta in
+  locale, simulazione da ridispiegare (esclude i giocatori in prestito). Proposte confermate il 5/11 tranne i club:
+  **club reali con stemmi reali** (37 club di livello medio presenti nei dati, stemmi da TheSportsDB in
+  `public/loghi-club/`, tabella `club_prestito`). Regola in più confermata: dopo il prestito restano almeno 18 giocatori
+  e un portiere. Si accende con lo stadio (`leagues.stadio_attivo`), quindi in Serie F dalla prima giornata della S3.
 * **Richiesta:** «Possibilità di mandare giocatori in prestito. Se ne possono mandare solamente 5 in una stagione. Il
   giocatore in prestito sale quasi come uno che gioca titolare, tra titolare e turnover. Il training è deciso dalle squadre
   dove va in prestito, che decidono quale training e se cambiare ruolo al giocatore. Le squadre sono fittizie, non quelle

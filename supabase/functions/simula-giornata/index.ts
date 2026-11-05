@@ -1247,7 +1247,7 @@ async function gestisciAmichevole(
   const teamIds = [am.da_team_id, am.a_team_id] as number[]
   const [teamsR, instancesR, linR, xpR, stileR, indR, medicoR] = await Promise.all([
     admin.from('teams').select('id, nome, capitano').eq('league_id', am.league_id).in('id', teamIds),
-    admin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, specializzazione_attiva, morale').eq('league_id', am.league_id).in('team_id', teamIds),
+    admin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, specializzazione_attiva, morale').eq('league_id', am.league_id).in('team_id', teamIds).is('prestito_id', null),
     admin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx, disposizione, ruoli, compiti, focus_corsia, linea_difensiva, ampiezza, velocita_manovra, ruolo_portiere').eq('league_id', am.league_id).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
     admin.from('formation_xp').select('team_id, modulo, disposizione, partite_giocate').eq('league_id', am.league_id).in('team_id', teamIds),
     admin.from('stile_xp').select('team_id, stile, partite_giocate').eq('league_id', am.league_id).in('team_id', teamIds),
@@ -1317,7 +1317,7 @@ async function formazioneClaude(ctx: { supabaseAdmin: any; authMode: string }, l
 
   const [instR, linR] = await Promise.all([
     admin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, specializzazione_attiva, morale')
-      .eq('league_id', leagueId).eq('team_id', teamId).eq('ritirato', false),
+      .eq('league_id', leagueId).eq('team_id', teamId).eq('ritirato', false).is('prestito_id', null),
     admin.from('lineups').select('giornata, modulo, titolari, panchina, tribuna, stile_gioco, disposizione, ruoli, compiti, focus_corsia, linea_difensiva, ampiezza, ruolo_portiere, velocita_manovra')
       .eq('team_id', teamId).order('giornata', { ascending: false }).limit(1),
   ])
@@ -1473,9 +1473,11 @@ export default {
       const ripasso = await ctx.supabaseAdmin.rpc('correggi_formazioni_giornata', { p_league_id: leagueId, p_giornata: giornata })
       if (ripasso.error) console.error('correggi_formazioni_giornata', ripasso.error.message)
 
+      // I giocatori in prestito (Season 3) non giocano: fuori dalle rose della simulazione, quindi niente minuti,
+      // infortuni o calo di condizione finche' non rientrano.
       const [teamsResult, instancesResult, lineupsResult, previousLineupsResult, xpResult, stileXpResult, indicazioniXpResult, medicoResult] = await Promise.all([
         ctx.supabaseAdmin.from('teams').select('id, nome, user_id, controllata_da_pc, capitano').eq('league_id', leagueId).in('id', teamIds),
-        ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, specializzazione_attiva, morale').eq('league_id', leagueId).in('team_id', teamIds),
+        ctx.supabaseAdmin.from('player_instances').select('id, team_id, player_id, overall_corrente, eta_corrente, condizione, infortunato_fino_a, ammonizioni_stagione, squalificato_fino_a, posizioni_override, specializzazione_attiva, morale').eq('league_id', leagueId).in('team_id', teamIds).is('prestito_id', null),
         ctx.supabaseAdmin.from('lineups').select('team_id, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx, disposizione, ruoli, compiti, focus_corsia, linea_difensiva, ampiezza, velocita_manovra, ruolo_portiere').eq('league_id', leagueId).eq('giornata', giornata).in('team_id', teamIds),
         ctx.supabaseAdmin.from('lineups').select('team_id, giornata, modulo, titolari, panchina, tribuna, stile_gioco, automatica, rigorista, punizione_corta, punizione_lunga, angolo_dx, angolo_sx, disposizione, ruoli, compiti, focus_corsia, linea_difensiva, ampiezza, velocita_manovra, ruolo_portiere').eq('league_id', leagueId).lt('giornata', giornata).in('team_id', teamIds).order('automatica', { ascending: true }).order('giornata', { ascending: false }),
         ctx.supabaseAdmin.from('formation_xp').select('team_id, modulo, disposizione, partite_giocate').eq('league_id', leagueId).in('team_id', teamIds),

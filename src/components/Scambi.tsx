@@ -225,7 +225,8 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
     const [istanzeRes, scelteRes, proposteRes, trattativeRes, capienzaRes, valutazioniRes] = await Promise.all([
       supabase.from('player_instances')
         .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato, sul_mercato, posizioni_override')
-        .eq('league_id', league.id).not('team_id', 'is', null),
+        // In prestito (Season 3) non si scambia: va richiamato prima.
+        .eq('league_id', league.id).not('team_id', 'is', null).is('prestito_id', null),
       supabase.from('scelte_draft')
         .select('id, team_origine_id, team_proprietario_id, stagione, finestra, posizione, stato')
         .eq('league_id', league.id).in('stato', ['futura', 'determinata'])

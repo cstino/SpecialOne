@@ -143,6 +143,15 @@ type Props = {
   }
   /** Giocatore di un'altra squadra: porta al mercato scambi con lui gia' selezionato. */
   proponiScambio?: { onClick: () => void }
+  /** Prestiti (Season 3): club = dove gioca adesso (null se e' in rosa); bloccato = perche' non puo' partire. */
+  prestito?: {
+    club: { nome: string; logo: string } | null
+    allenamento?: string | null
+    bloccato?: string
+    rimasti: number
+    onManda: () => Promise<void>
+    onRichiama: () => Promise<void>
+  }
   cambioRuolo?: {
     inCorso: { ruoloPrecedente: string; ruoloTarget: string; avviatoGiornata: number; completaGiornata: number } | null
     /** Giornata di riferimento per il conto alla rovescia: solo indicativa, il server decide davvero. */
@@ -510,8 +519,22 @@ export function SchedaGiocatore(props: Props) {
   return createPortal(<SchedaGiocatoreInterna {...props} />, document.body)
 }
 
-function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, userId, giocatore, fotoUrl, stagione, capitano, azionePericolosa, rinnovo, listaMercato, proponiScambio, cambioRuolo, specializzazione, onClose }: Props) {
+function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, userId, giocatore, fotoUrl, stagione, capitano, azionePericolosa, rinnovo, listaMercato, proponiScambio, prestito, cambioRuolo, specializzazione, onClose }: Props) {
   const [confermaAperta, setConfermaAperta] = useState(false)
+  const [prestitoConferma, setPrestitoConferma] = useState(false)
+  const [prestitoInCorso, setPrestitoInCorso] = useState(false)
+  const [prestitoErrore, setPrestitoErrore] = useState<string | null>(null)
+  async function eseguiPrestito() {
+    if (!prestito) return
+    setPrestitoInCorso(true); setPrestitoErrore(null)
+    try {
+      await (prestito.club ? prestito.onRichiama() : prestito.onManda())
+      setPrestitoConferma(false)
+    } catch (errore) {
+      setPrestitoErrore(errore instanceof Error ? errore.message : 'Operazione non riuscita.')
+    }
+    setPrestitoInCorso(false)
+  }
   const [confermaCapitano, setConfermaCapitano] = useState(false)
   const [vistaRinnovo, setVistaRinnovo] = useState(false)
   const [proposta, setProposta] = useState<PropostaRinnovo | null>(null)
@@ -1044,6 +1067,24 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
               ))}
             </div>
           </div>
+
+          {prestito && <div className={`player-prestito ${prestito.club ? 'is-fuori' : ''}`}>
+            {prestito.club
+              ? <div className="player-prestito__club"><img src={prestito.club.logo} alt="" /><div><small>In prestito</small><strong>{prestito.club.nome}</strong>{prestito.allenamento && <span>{prestito.allenamento}</span>}</div></div>
+              : <div className="player-prestito__club"><div><small>Prestito</small><strong>Mandalo a giocare altrove</strong><span>{prestito.bloccato ?? `Ti restano ${prestito.rimasti} ${prestito.rimasti === 1 ? 'prestito' : 'prestiti'} in questa stagione.`}</span></div></div>}
+            {!prestitoConferma
+              ? <button className="button button--secondary" type="button" disabled={!prestito.club && Boolean(prestito.bloccato)} onClick={() => { setPrestitoErrore(null); setPrestitoConferma(true) }}>{prestito.club ? 'Richiama' : 'Manda in prestito'}</button>
+              : <div className="player-prestito__conferma">
+                  <p>{prestito.club
+                    ? `Torna subito in rosa e potrai schierarlo dalla prossima giornata. In questa stagione non potrà più andare in prestito.`
+                    : `Va in un club scelto dal sistema fino a fine stagione. Cresce come chi gioca più di metà delle partite e l'allenamento lo decide il club che lo ospita. Resta sul tuo tetto ingaggi e in rosa, ma non puoi schierarlo, scambiarlo né svincolarlo finché non lo richiami.`}</p>
+                  {prestitoErrore && <p className="notice notice--error">{prestitoErrore}</p>}
+                  <div>
+                    <button className="button button--primary" type="button" disabled={prestitoInCorso} onClick={() => void eseguiPrestito()}>{prestitoInCorso ? 'Attendi…' : prestito.club ? 'Richiama adesso' : 'Conferma il prestito'}</button>
+                    <button className="button button--secondary" type="button" disabled={prestitoInCorso} onClick={() => setPrestitoConferma(false)}>Annulla</button>
+                  </div>
+                </div>}
+          </div>}
 
           {(azionePericolosa || rinnovo || listaMercato || proponiScambio) && <div className="player-modal__danger">
             {!confermaAperta
