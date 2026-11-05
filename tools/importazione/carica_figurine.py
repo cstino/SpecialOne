@@ -5,9 +5,9 @@ I file vanno in cutout/<id>.webp; poi si scrive un SQL che riempie players.foto_
 applicare con docker exec ... psql come ogni migrazione dati. La chiave di servizio si legge dal
 .env del server sul Mac e non viene mai stampata.
 
-Uso:
+Uso (dal Mac del server: l'indirizzo pubblico risponde 403 alle richieste dello script, quello locale no):
   python3 tools/importazione/carica_figurine.py --output-dir /tmp/figurine \
-    --env ~/supabase-spinoff/project/.env --sql /tmp/figurine/foto_figurina.sql
+    --env ~/supabase-spinoff/project/.env --sql /tmp/figurine/foto_figurina.sql --url http://localhost:8000
 """
 
 from __future__ import annotations
