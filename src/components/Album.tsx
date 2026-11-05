@@ -15,7 +15,7 @@ type Dati = ReturnType<typeof useSeasonData>
 type Figurina = { id: number; tipo: 'stemma' | 'giocatore' | 'conferenza'; team_id: number | null; player_id: number | null; conferenza: 'est' | 'ovest' | null; overall: number | null; aggiornamento: boolean }
 type Versione = 'common' | 'rare' | 'ultra' | 'ultimate'
 type Possesso = { figurina_id: number; normali: number; rare: number; ultra: number; ultimate: number }
-type Anagrafica = { id: number; nome: string; posizioni: string[]; foto_url: string | null }
+type Anagrafica = { id: number; nome: string; posizioni: string[]; foto_url: string | null; foto_figurina: string | null }
 type Uscita = { figurina_id: number; tipo: Figurina['tipo']; versione?: Versione; ultra: boolean; nuova: boolean }
 type RigaClassifica = { team_id: number; attaccate: number; totale: number; ultra: number; pagine: number }
 type Voce = { figurina_id: number; versione: Versione }
@@ -74,8 +74,9 @@ function Carta({ f, ana, dati, versione, vuota, numero, piccola }: { f: Figurina
       {extra}
     </div>
   }
-  const foto = urlFotoGiocatore(ana?.foto_url)
-  return <div className={classe} aria-label={`${ana?.nome ?? 'Giocatore'}${versione !== 'common' ? `, ${NOME_VERSIONE[versione].toLowerCase()}` : ''}`}>
+  // Foto scontornata stile FUT (Season 3) se c'e', altrimenti il ritratto di sempre.
+  const foto = urlFotoGiocatore(ana?.foto_figurina ?? ana?.foto_url)
+  return <div className={`${classe}${ana?.foto_figurina ? ' fig--scontornata' : ''}`} aria-label={`${ana?.nome ?? 'Giocatore'}${versione !== 'common' ? `, ${NOME_VERSIONE[versione].toLowerCase()}` : ''}`}>
     <div className="fig__dentro">
       <div className="fig__raggi" aria-hidden="true" />
       <div className="fig__scudo"><b>{f.overall ?? ''}</b><span>{ruoloIt(ana?.posizioni?.[0] ?? '')}</span></div>
@@ -226,7 +227,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     const ids = [...new Set(figs.filter((x) => x.player_id != null).map((x) => x.player_id as number))]
     const mappa = new Map<number, Anagrafica>()
     for (let i = 0; i < ids.length; i += 300) {
-      const { data: g } = await supabase.from('players').select('id, nome, posizioni, foto_url').in('id', ids.slice(i, i + 300))
+      const { data: g } = await supabase.from('players').select('id, nome, posizioni, foto_url, foto_figurina').in('id', ids.slice(i, i + 300))
       for (const x of (g ?? []) as Anagrafica[]) mappa.set(x.id, x)
     }
     setAna(mappa)

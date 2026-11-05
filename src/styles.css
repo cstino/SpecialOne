@@ -6073,6 +6073,10 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .fig__foto { position: absolute; left: 0; right: 0; top: 14%; bottom: 22%; z-index: 1; display: grid; place-items: end center; }
 .fig__foto img { width: 100%; height: 100%; object-fit: contain; object-position: bottom; filter: drop-shadow(0 6px 8px rgba(0,0,0,.45)); }
 .fig__foto span { font-size: 30cqw; opacity: .3; }
+/* Foto scontornata (Season 3): il giocatore dalla vita in su riempie la carta e scende dietro la targhetta. */
+.fig--scontornata .fig__foto { top: 7%; bottom: 17%; left: -4%; right: -4%; }
+.fig--scontornata .fig__foto img { object-fit: contain; object-position: center bottom; filter: drop-shadow(0 8px 10px rgba(0,0,0,.5)); }
+.fig--scontornata .fig__raggi { mask-image: radial-gradient(circle at 50% 40%, #000 0 36%, transparent 70%); -webkit-mask-image: radial-gradient(circle at 50% 40%, #000 0 36%, transparent 70%); }
 .fig__targa { position: absolute; left: -4%; right: -4%; bottom: 0; z-index: 2; display: grid; gap: .5cqw; padding: 5cqw 8% 4cqw; text-align: center;
   background: linear-gradient(180deg, rgba(8,6,16,.75), rgba(8,6,16,.95)); clip-path: polygon(0 18%, 100% 0, 100% 100%, 0 100%); border-top: 0; }
 .fig__targa::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1.4cqw; background: linear-gradient(90deg, transparent, #e9edf5, transparent); transform: skewY(-3.4deg); transform-origin: left; }

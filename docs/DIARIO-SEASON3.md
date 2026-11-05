@@ -249,7 +249,12 @@ provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato
 
 ## 9. Figurine: foto a mezzo busto
 
-* **Stato:** `da valutare` (27/10/2026).
+* **Stato:** `in lavoro` (5/11/2026): **foto scontornate da TheSportsDB** (dalla vita in su, trasparenti, stile card
+  FUT), solo per le figurine. Per **tutti i 5.992 giocatori reali** del database (non solo quelli con la figurina oggi),
+  prima quelli dell'album; accettate solo se coincide la data di nascita. Scarico con
+  `tools/importazione/scarica_figurine.py`, caricamento in `player-photos/cutout/` con `carica_figurine.py`, colonna
+  `players.foto_figurina`. Chi non ce l'ha (circa 10% dei reali, tutti i generati del vivaio) tiene il ritratto EA.
+  Il busto disegnato con la maglia è stato scartato dal committente. Il CDN EA (sofifa) risponde 403.
 * **Richiesta:** «Per ogni giocatore abbiamo solo la foto della faccia e sulle bustine non vengono un granché. Non si
   riuscirebbero a reperire almeno le foto a mezzo busto?»
 * **Oggi:** le foto vengono dal CDN di sofifa (i ritratti ufficiali di EA FC, testa e spalle) e sono salvate a
