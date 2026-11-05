@@ -20,7 +20,7 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     corpo: <>
       <p>Una lega vive in cicli. Si parte con il <strong>draft</strong>, dove ogni squadra si
         costruisce la rosa; poi si entra in <strong>stagione</strong>, dove ogni notte alle{' '}
-        <strong>23:00</strong> (fuso orario Europe/Rome) il sistema simula <strong>una
+        <strong>22:00</strong> (fuso orario Europe/Rome) il sistema simula <strong>una
         giornata</strong> di campionato, mai di più. Di giorno c'è sempre un mercato aperto per
         buona parte delle ore, in cui si scambiano giocatori e si fanno offerte sugli
         svincolati.</p>
@@ -286,7 +286,7 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     titolo: 'Come si schiera la squadra',
     corpo: <>
       <p>Prima di ogni giornata scegli modulo, stile e i tuoi <strong>undici titolari</strong>,
-        più la panchina; chi resta fuori va in tribuna. La deadline è le <strong>23:00 Europe/
+        più la panchina; chi resta fuori va in tribuna. La deadline è le <strong>22:00 Europe/
         Rome</strong>, lo stesso orario in cui parte la simulazione della giornata.</p>
       <p>Se non salvi una formazione in tempo, il sistema ne genera una automatica: riusa
         l'ultimo modulo che avevi usato (o il 4-3-3 se è la prima volta) e schiera gli undici
@@ -512,7 +512,7 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
       <p>Allo scadere delle 24 ore l'off-season si chiude da sola. Se una squadra fosse rimasta
         sotto il minimo di 21 giocatori, il sistema la completa automaticamente scegliendo gli
         svincolati più economici e sostenibili sotto il suo tetto ingaggi. La prima giornata della nuova
-        stagione si gioca alla prima mezzanotte di simulazione (23:00) utile dopo la chiusura.</p>
+        stagione si gioca alla prima mezzanotte di simulazione (22:00) utile dopo la chiusura.</p>
     </>,
   },
   {

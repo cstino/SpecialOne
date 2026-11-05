@@ -295,7 +295,7 @@ function CreateLeague({ user, onBack, onComplete }: Omit<OnboardingProps, 'onCan
           <div><dt>Draft</dt><dd>{draftMode === '2_of_4' ? '2 of 4' : 'BY ROLE'}</dd></div>
           <div><dt>Fine prevista</dt><dd>{dataFineStagione(matchdays)}</dd></div>
         </dl>
-        <p>Una giornata viene simulata ogni sera alle 23:00, ora di Roma.</p>
+        <p>Una giornata viene simulata ogni sera alle 22:00, ora di Roma.</p>
         <button className={`button button--light${pending ? ' is-loading' : ''}`} type="submit" disabled={pending} aria-busy={pending}>
           {pending ? 'Creazione in corso…' : 'Crea lega e squadra'}
         </button>

@@ -192,7 +192,7 @@ export function MatchIntro({ membership, fixture, data, homeTeam, awayTeam, home
       if (!vivo) return
       const mappaLineup = new Map<number, Lineup>((righeLineup ?? []).map((riga) => [riga.team_id, { modulo: riga.modulo, titolari: riga.titolari as number[], disposizione: riga.disposizione as string[] | null }]))
       // L'undici salvato in `lineups` puo' differire da quello sceso in campo
-      // (titolare infortunato sostituito, formazione automatica delle 23:00,
+      // (titolare infortunato sostituito, formazione automatica delle 22:00,
       // modulo cambiato): la presentazione deve mostrare chi ha giocato davvero.
       const giocata = data.matchByFixture.get(fixture.id)
       if (giocata) {

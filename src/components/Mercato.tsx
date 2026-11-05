@@ -75,9 +75,9 @@ type Anagrafica = {
   altezza?: number | null
 }
 
-// Il mercato apre alle 23:30 e chiude alle 21:00 (design §9.1, apertura
+// Il mercato apre alle 22:30 e chiude alle 20:00 (design §9.1, apertura
 // spostata dalle 07:00 il 7 agosto 2026 per aprire subito dopo le partite,
-// simulate alle 23:00). Qui serve solo a non far comporre una proposta che
+// simulate alle 22:00). Qui serve solo a non far comporre una proposta che
 // il database rifiuterebbe: la regola vera sta nella RPC, dove non e'
 // aggirabile cambiando l'orologio del telefono.
 function minutiDalMezzanotteRoma() {
@@ -89,10 +89,10 @@ function minutiDalMezzanotteRoma() {
 
 function mercatoAperto() {
   const ora = minutiDalMezzanotteRoma()
-  // La finestra scavalca la mezzanotte (23:30 -> 21:00 del giorno dopo):
-  // aperto se siamo oltre le 23:30 oppure prima delle 21:00. Chiuso solo
+  // La finestra scavalca la mezzanotte (22:30 -> 20:00 del giorno dopo):
+  // aperto se siamo oltre le 22:30 oppure prima delle 20:00. Chiuso solo
   // nelle due ore e mezza fra la chiusura e la riapertura.
-  return ora >= 23 * 60 + 30 || ora < 21 * 60
+  return ora >= 22 * 60 + 30 || ora < 20 * 60
 }
 
 function milioni(euro: number) {
@@ -403,7 +403,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   // le aste di origine spin off-season (funzionalita' rimossa, ma restano
   // aste storiche con questa origine): essendo datate col giorno corrente,
   // altrimenti nasconderebbero un'estrazione del giorno precedente ancora
-  // aperta (chiude alle 21:00).
+  // aperta (chiude alle 20:00).
   const asteEstrazione = aste.filter((a) => a.origine === 'estrazione')
   const giornoAste = asteEstrazione[0]?.giorno ?? null
   const asteDelGiorno = asteEstrazione.filter((a) => a.giorno === giornoAste)
@@ -431,7 +431,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   // orario. Ma l'estrazione automatica di ogni sera lascia SEMPRE almeno
   // un'asta aperta nell'ultima tornata per gran parte del giorno dopo,
   // quindi quella condizione era vera quasi sempre — mostrava il mercato
-  // aperto (e il modulo di offerta attivo) anche ben oltre le 21:00, salvo
+  // aperto (e il modulo di offerta attivo) anche ben oltre le 20:00, salvo
   // poi farsi rifiutare l'offerta dalla RPC, che applica la regola vera.
   const chiusoPerFase = faseMercato?.giocatoriChiuso ?? false   // playoff, fine stagione, off-season
   const aperto = !chiusoPerFase && (cicloDinamico ? mercatoDinamicoAperto : mercatoAperto())
@@ -441,7 +441,7 @@ export function Mercato({ membership, onNavigate }: Props) {
       : adesso < (aperturaMercatoIl ?? 0)
         ? `Mercato chiuso · apre tra ${formatCountdown(Math.max(0, (aperturaMercatoIl ?? adesso) - adesso))}`
         : 'Mercato chiuso · in attesa della prossima partita'
-    : aperto ? 'Mercato aperto · chiude alle 21:00' : 'Mercato chiuso · apre alle 23:30'
+    : aperto ? 'Mercato aperto · chiude alle 20:00' : 'Mercato chiuso · apre alle 22:30'
   const mieProposteAperte = nuoviDelGiorno.filter((a) => a.stato === 'aperta' && mieOfferte.has(a.id))
   // Quanto delle mie offerte ancora aperte occupa già capienza (docs/decisioni-economia.md
   // §3): non pro-rata come nel vecchio modello a cassa, l'ingaggio offerto per intero.
@@ -489,7 +489,7 @@ export function Mercato({ membership, onNavigate }: Props) {
     try {
       const riuscita = await chiama(
         () => supabase.rpc('offri_per_svincolato', { p_auction_id: asta.id, p_ingaggio: valore }),
-        'Offerta registrata. Si apre alle 21:00.',
+        'Offerta registrata. Si apre alle 20:00.',
         350,
       )
       if (riuscita) setBozzaOfferta((correnti) => ({ ...correnti, [asta.id]: '' }))
@@ -674,8 +674,8 @@ export function Mercato({ membership, onNavigate }: Props) {
 
     {!caricamento && !errore && <div className="season-page season-page--narrow">
       <PopupSpiegazione userId={membership.user_id} hintKey="mercato-free-agent-v3" titolo="Come funziona il Free Agent">
-        <p>Ogni sera alle 23:30 esce <strong>un giocatore per ruolo</strong> (portiere, difensore, centrocampista, attaccante), più tutti i giocatori svincolati dalle squadre che nessuno ha ancora preso: restano in vetrina ogni giorno finché non firmano o finché il loro contratto non scade.</p>
-        <p>È un'asta a busta chiusa dalle 23:30 alle 21:00: offri l'ingaggio annuale che sei disposto a pagare, ma <strong>nessuno vede le offerte altrui</strong> e nemmeno tu vedi quanto chiede davvero il giocatore. Alle 21:00 vince l'offerta più alta sopra la richiesta nascosta; a parità vince chi ha offerto prima. Un'asta andata deserta non si riapre.</p>
+        <p>Ogni sera alle 22:30 esce <strong>un giocatore per ruolo</strong> (portiere, difensore, centrocampista, attaccante), più tutti i giocatori svincolati dalle squadre che nessuno ha ancora preso: restano in vetrina ogni giorno finché non firmano o finché il loro contratto non scade.</p>
+        <p>È un'asta a busta chiusa dalle 22:30 alle 20:00: offri l'ingaggio annuale che sei disposto a pagare, ma <strong>nessuno vede le offerte altrui</strong> e nemmeno tu vedi quanto chiede davvero il giocatore. Alle 20:00 vince l'offerta più alta sopra la richiesta nascosta; a parità vince chi ha offerto prima. Un'asta andata deserta non si riapre.</p>
         <p>Offrire <strong>impegna la capienza salariale</strong> finché l'asta non si chiude: se perdi o ritiri l'offerta torna libera. Attenzione allo svincolo: il giocatore che tagli libera il posto in rosa, ma <strong>il suo ingaggio resta sul tuo tetto</strong> fino alla fine del contratto, a meno che un'altra squadra non lo prenda (in off-season si svincola come prima, senza peso sul tetto). In off-season questo mercato è chiuso.</p>
         <p>Ogni giocatore <strong>chiede un minutaggio</strong>, uguale per tutte le squadre: titolare fisso, turnover, sporadico o promessa futura, con tra parentesi la percentuale minima di minuti. Chi lo prende <strong>firma con quella promessa</strong>: se poi non lo fai giocare come pattuito prima ti richiama, poi chiede la cessione e non rinnova più. L'asta resta solo sull'ingaggio: il minutaggio non si tratta, lo si accetta.</p>
       </PopupSpiegazione>
@@ -683,7 +683,7 @@ export function Mercato({ membership, onNavigate }: Props) {
         <div>
           <p className="kicker">Stagione {league.stagione_corrente} · {league.nome}</p>
           <h1>Free Agent.</h1>
-          <p>Asta a busta chiusa: si offre dalle 23:30 alle 21:00.</p>
+          <p>Asta a busta chiusa: si offre dalle 22:30 alle 20:00.</p>
         </div>
         <div className="season-total">
           <strong>{milioni(conti ? conti.capienza : 0)}</strong>
@@ -716,7 +716,7 @@ export function Mercato({ membership, onNavigate }: Props) {
             <small>{giornoAste ?? 'nessuna estrazione'}</small>
           </div>
           {nuoviDelGiorno.length === 0
-            ? <p className="season-empty">Nessuna estrazione ancora. I nuovi svincolati escono ogni giorno alle 23:30.</p>
+            ? <p className="season-empty">Nessuna estrazione ancora. I nuovi svincolati escono ogni giorno alle 22:30.</p>
             : <>
                 <UnderlineTabs
                   tabs={ORDINE_MACRO_RUOLO.map((ruolo) => {
@@ -809,14 +809,14 @@ export function Mercato({ membership, onNavigate }: Props) {
         <p className="mercato-nota">
           Offri l’ingaggio annuale che sei disposto a pagare. <strong>Nessuno vede le offerte altrui</strong>,
           e nemmeno tu vedi quanto chiede davvero il giocatore: se lo sapessi offriresti sempre un euro sopra.
-          Alle 21:00 vince l’offerta più alta che supera la sua richiesta, e <strong>a parità vince chi ha
+          Alle 20:00 vince l’offerta più alta che supera la sua richiesta, e <strong>a parità vince chi ha
           offerto prima</strong> — modificare l’offerta fa ripartire il tuo turno. Nessun limite al numero di
           aste vinte: contano solo il budget e gli slot liberi in rosa. <strong>Offrire impegna il
           denaro</strong> finché l’asta non si chiude, così non puoi promettere più di quanto hai.
         </p>
 
         {asteDelGiorno.length === 0
-          ? <p className="season-empty">Nessuna estrazione ancora. I nuovi svincolati escono ogni giorno alle 23:30.</p>
+          ? <p className="season-empty">Nessuna estrazione ancora. I nuovi svincolati escono ogni giorno alle 22:30.</p>
           : <ul className="mercato-aste">
               {asteDelGiorno.map((a) => {
                 const g = svincolati.get(a.player_id)

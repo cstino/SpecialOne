@@ -133,7 +133,7 @@ function minutiDalMezzanotteRoma() {
 }
 function mercatoAperto() {
   const ora = minutiDalMezzanotteRoma()
-  return ora >= 23 * 60 + 30 || ora < 21 * 60
+  return ora >= 22 * 60 + 30 || ora < 20 * 60
 }
 function milioni(euro: number) {
   return `${(euro / 1_000_000).toFixed(1).replace('.', ',')} M€`
@@ -339,7 +339,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
 
   // Stesso orologio dinamico del mercato svincolati: dopo l'ultima partita
   // simulata, prima della prossima. Fuori da un ciclo di stagione (draft,
-  // off-season) resta l'orario fisso 23:30-21:00.
+  // off-season) resta l'orario fisso 22:30-20:00.
   const ultimaPartitaIl = useMemo(() => dati.matches.reduce<number | null>((u, p) => {
     const t = new Date(p.simulata_il).getTime()
     return u == null || t > u ? t : u
@@ -359,7 +359,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
       : adesso < (aperturaMercatoIl ?? 0)
         ? `Mercato chiuso · apre tra ${formatCountdown(Math.max(0, (aperturaMercatoIl ?? adesso) - adesso))}`
         : 'Mercato chiuso · in attesa della prossima partita'
-    : aperto ? 'Mercato aperto · chiude alle 21:00' : 'Mercato chiuso · apre alle 23:30'
+    : aperto ? 'Mercato aperto · chiude alle 20:00' : 'Mercato chiuso · apre alle 22:30'
 
   const miaRosa = useMemo(() => rose.filter((g) => g.team_id === membership.id).sort((a, b) => b.overall - a.overall), [rose, membership.id])
   const rosaAvversaria = useMemo(() => rose.filter((g) => g.team_id === avversaria).sort((a, b) => b.overall - a.overall), [rose, avversaria])

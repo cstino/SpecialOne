@@ -104,8 +104,8 @@ function PannelloLega({ lega, onIndietro }: { lega: Lega; onIndietro: () => void
   const [quadro, setQuadro] = useState<Quadro | null>(null)
   const [adesso, setAdesso] = useState(Date.now())
   const [live, setLive] = useState(false)   // diretta a tutto schermo
-  const [automatica, setAutomatica] = useState(false)   // la diretta e' partita da sola (alle 23:00)
-  // Diretta automatica, solo per questa lega: l'ultima partita gia' nota all'apertura; se dalle 23:00 ne
+  const [automatica, setAutomatica] = useState(false)   // la diretta e' partita da sola (alle 22:00)
+  // Diretta automatica, solo per questa lega: l'ultima partita gia' nota all'apertura; se dalle 22:00 ne
   // compare una nuova non ancora vista, la diretta parte da sola.
   const nota = useRef<number | null | undefined>(undefined)
   const radice = useRef<HTMLElement>(null)
@@ -122,13 +122,13 @@ function PannelloLega({ lega, onIndietro }: { lega: Lega; onIndietro: () => void
   }, [aggiorna])
   useEffect(() => { if (!live) radice.current?.focus() }, [live, quadro === null])
 
-  // Dalle 23:00 alle 23:59 (ora di Roma) controlla ogni 30 secondi se la partita di stasera e' uscita.
+  // Dalle 22:00 alle 22:59 (ora di Roma) controlla ogni 30 secondi se la partita di stasera e' uscita.
   useEffect(() => {
     const controlla = async () => {
       const ora = Number(new Intl.DateTimeFormat('it-IT', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Rome' }).format(new Date()))
-      // Solo in sviluppo: ?prova23 finge che siano le 23 (per provare la diretta automatica).
+      // Solo in sviluppo: ?prova23 finge che siano le 22 (per provare la diretta automatica).
       const prova = import.meta.env.DEV && new URLSearchParams(window.location.search).has('prova23')
-      if ((ora !== 23 && !prova) || nota.current === undefined || live) return
+      if ((ora !== 22 && !prova) || nota.current === undefined || live) return
       const q = await caricaQuadro(lega)
       const id = q.ultima?.fixtureId ?? null
       if (id === null || id === nota.current) return
@@ -172,7 +172,7 @@ function Prossima({ quadro, adesso }: { quadro: Quadro; adesso: number }) {
   const p = quadro.prossima
   if (!p) return <p className="oc-centro">Nessuna partita in programma.</p>
   return <div className="oc-partita">
-    <p className="oc-occhiello">Giornata {p.giornata} · ore 23:00</p>
+    <p className="oc-occhiello">Giornata {p.giornata} · ore 22:00</p>
     <div className="oc-sfida"><Stemma s={p.casa} grande /><span className="oc-vs">VS</span><Stemma s={p.ospite} grande /></div>
     <p className="oc-sfida__nomi"><span>{p.casa.nome}</span><span>{p.ospite.nome}</span></p>
     <p className="oc-grande">{contoAllaRovescia(p.dataSim, adesso)}</p>

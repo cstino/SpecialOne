@@ -1115,7 +1115,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
             tornando al vecchio lo ritrovi.</p>
           <p>Hai <strong>due schemi</strong>. Quello segnato "Attivo" va in partita; l'altro lo prepari, e il suo modulo
             si impara un po' a ogni partita anche senza schierarlo. Selezionalo e salva per metterlo in partita.
-            Se non schieri entro le <strong>23:00</strong>, il sistema mette una formazione automatica.</p>
+            Se non schieri entro le <strong>22:00</strong>, il sistema mette una formazione automatica.</p>
         </PopupSpiegazione>
         : <PopupSpiegazione userId={membership.user_id} hintKey="formazione" titolo="Come funziona la Formazione">
         <p>Scegli uno dei moduli disponibili e assegna un giocatore a ogni slot: titolari, panchina e il
@@ -1125,7 +1125,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
           confidenza e rende meglio: è l'indice <strong>FTSG</strong> (familiarità tattiche e stile di
           gioco), il cerchio accanto a OVR titolari. Ogni partita giocata vale +20% di familiarità con quel
           modulo e quello stile; cambiarne anche solo uno per una giornata fa scendere l'indice. Se non
-          schieri entro le <strong>23:00</strong>, il sistema genera una formazione automatica di riserva
+          schieri entro le <strong>22:00</strong>, il sistema genera una formazione automatica di riserva
           per non farti saltare la giornata.</p>
         <p>La barretta sotto il nome di ogni giocatore è la sua <strong>energia</strong>: più è bassa, meno
           rende in campo (il suo overall effettivo scende, fino a −18% sotto il 40%) e più rischia di

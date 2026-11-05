@@ -28,7 +28,7 @@ function minutiDalMezzanotteRoma() {
 }
 function mercatoAperto() {
   const ora = minutiDalMezzanotteRoma()
-  return ora >= 23 * 60 + 30 || ora < 21 * 60
+  return ora >= 22 * 60 + 30 || ora < 20 * 60
 }
 
 export function Under({ membership, onNavigate }: Props) {
@@ -105,7 +105,7 @@ export function Under({ membership, onNavigate }: Props) {
   const etichetta = chiusoPerFase ? ETICHETTA_GIOCATORI_CHIUSO : cicloDinamico
     ? aperto ? `Mercato aperto · chiude tra ${formatCountdown(Math.max(0, (chiusuraMercatoIl ?? adesso) - adesso))}`
       : `Mercato chiuso · apre tra ${formatCountdown(Math.max(0, (aperturaMercatoIl ?? adesso) - adesso))}`
-    : aperto ? 'Mercato aperto · chiude alle 21:00' : 'Mercato chiuso · apre alle 23:30'
+    : aperto ? 'Mercato aperto · chiude alle 20:00' : 'Mercato chiuso · apre alle 22:30'
 
   const giornoAste = aste[0]?.giorno ?? null
   const asteDelGiorno = aste.filter((a) => a.giorno === giornoAste && a.stato === 'aperta')
@@ -119,7 +119,7 @@ export function Under({ membership, onNavigate }: Props) {
     const { error } = await supabase.rpc('offri_per_under', { p_auction_id: a.id, p_ingaggio: valore })
     setAzioneInCorso(null); setInCorso(false)
     if (error) { setEsito(error.message); return }
-    setEsito('Offerta registrata. Si apre alle 21:00.')
+    setEsito('Offerta registrata. Si apre alle 20:00.')
     setBozza((b) => ({ ...b, [a.id]: '' }))
     await carica()
   }

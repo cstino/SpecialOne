@@ -235,7 +235,7 @@ function buildLineup(lineup: DbLineup, roster: EngineRoster, capitanoId: number 
   const slots = MODULI[lineup.modulo]
   if (!slots || slots.length !== 11 || lineup.titolari.length !== 11) throw new Error(`Formazione non valida per la squadra ${lineup.team_id}.`)
   // Un giocatore puo' sparire dalla rosa DOPO che la formazione e' stata
-  // salvata: il mercato chiude alle 21:00 e la formazione salvata prima (o
+  // salvata: il mercato chiude alle 20:00 e la formazione salvata prima (o
   // ereditata dalla giornata precedente) resta li' con dentro un ceduto.
   //
   // Prima qui c'era un throw. Siccome l'errore risale fino al gestore esterno,

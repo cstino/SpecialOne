@@ -10,7 +10,7 @@ type EsitoAzione = { tono: 'ok' | 'errore'; testo: string }
 
 // Fallback manuale per le tre azioni che normalmente fa pg_cron da solo:
 // simulazione notturna (00:00), estrazione svincolati (07:00), chiusura
-// mercato (21:00). Pensato per quando un cron non parte, non per sostituire
+// mercato (20:00). Pensato per quando un cron non parte, non per sostituire
 // l'automatismo: l'admin lo usa solo se qualcosa e' rimasto fermo.
 export function Admin({ membership, onNavigate }: AdminProps) {
   const league = membership.league as League
@@ -148,9 +148,9 @@ export function Admin({ membership, onNavigate }: AdminProps) {
         </section>
 
         <section className="mercato-blocco">
-          <div className="sezione-testa"><div><p className="kicker">07:00 e 21:00</p><h2>Mercato</h2></div></div>
+          <div className="sezione-testa"><div><p className="kicker">07:00 e 20:00</p><h2>Mercato</h2></div></div>
           <p className="mercato-nota">Aprire estrae gli svincolati del giorno, come il cron delle 07:00. Chiudere risolve le aste
-            aperte e fa scadere le proposte in attesa, come il cron delle 21:00. Farlo due volte lo stesso giorno non duplica nulla.</p>
+            aperte e fa scadere le proposte in attesa, come il cron delle 20:00. Farlo due volte lo stesso giorno non duplica nulla.</p>
           <div className="admin-azioni-riga">
             <button className="button button--secondary" type="button" disabled={aprendo} onClick={() => void apriMercato()}>
               {aprendo ? 'Apro…' : 'Apri mercato'}

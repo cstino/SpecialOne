@@ -49,7 +49,7 @@ const ETICHETTA: Record<Riga['tipo'], string> = {
   cambio: 'Cambio', infortunio: 'Infortunio', fallo: 'Fallo', angolo: 'Angolo', fischio: 'Arbitro',
 }
 
-// automatica = partita alle 23:00 senza averla aperta: a fine partita si chiude da sola dopo qualche secondo
+// automatica = partita alle 22:00 senza averla aperta: a fine partita si chiude da sola dopo qualche secondo
 // (cosi' parte la diretta della lega successiva, se c'e').
 export function DirettaLive({ partita, onEsci, automatica = false }: { partita: Risultato; onEsci: () => void; automatica?: boolean }) {
   const [minuto, setMinuto] = useState(0)

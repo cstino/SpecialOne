@@ -7,7 +7,7 @@ import { GameNav, type GameView } from './GameNav'
 import { useSeasonData } from '../lib/useSeasonData'
 
 // QUIZONE, scritto QuizOne (internamente "quizzone": supabase/migrations/20261020280000_quizzone.sql): una domanda ogni ora piena, uguale per tutti.
-// :00-:10 si entra (gratis o puntando 10-500), :10-:25 domanda con 4 risposte, poi risultato. Risposta giusta = premio fisso (100, dal 22/10/2026 250) + 2x puntata; alle 22:30 il primo del giorno vince 500
+// :00-:10 si entra (gratis o puntando 10-500), :10-:25 domanda con 4 risposte, poi risultato. Risposta giusta = premio fisso (100, dal 22/10/2026 250) + 2x puntata; alle 21:30 il primo del giorno vince 500
 // crediti, piu' il doppio della puntata. Le domande e le risposte giuste le decide il server dai dati della stagione.
 
 type Dati = ReturnType<typeof useSeasonData>
@@ -179,7 +179,7 @@ export function Quizzone({ leagueId, dati }: { leagueId: number; dati: Dati }) {
       })()}
       {scheda === 'oggi' && ((st.vincitori ?? []).length > 0
         ? <p className="bet-nota">Vincitore di oggi: {(st.vincitori ?? []).map((w) => dati.teamById.get(w.team_id)?.nome ?? '—').join(', ')} (+{fmt((st.vincitori ?? [])[0].crediti)} crediti).</p>
-        : <p className="bet-nota">Alle 22:30 il primo della classifica di oggi vince 500 crediti.</p>)}
+        : <p className="bet-nota">Alle 21:30 il primo della classifica di oggi vince 500 crediti.</p>)}
       {scheda === 'winrate' && <p className="bet-nota">Percentuale di risposte giuste, per chi ha giocato almeno {MIN_WIN_RATE} domande.</p>}
     </section>
 
