@@ -4,7 +4,7 @@ import type { League } from '../types'
 import { Icona as IconaTonda } from './Icona'
 import { supabase } from '../lib/supabase'
 
-export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'under' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse' | 'social' | 'rivalita' | 'salastampa' | 'spogliatoio' | 'pubblico' | 'betone' | 'casinone' | 'album' | 'quizzone'
+export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'under' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse' | 'social' | 'rivalita' | 'salastampa' | 'spogliatoio' | 'pubblico' | 'betone' | 'casinone' | 'album' | 'quizzone' | 'sponsor'
 type GameNavProps = { league: League; active: GameView; onNavigate?: (view: GameView) => void }
 
 // Icone disegnate a mano: i glifi Unicode di prima (▦ ♜ ♙ ◆ ◉ ≡) venivano resi dal
@@ -38,6 +38,7 @@ const ICONE: Record<string, ReactNode> = {
   album: <><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z" /><path d="M5 17a3 3 0 0 1 3-3h11" /><path d="M9.5 7.5h5v4h-5z" /></>,
   extra: <><path d="m12 3 2.2 5.2L20 9l-4.3 3.8L17 18.5 12 15.6 7 18.5l1.3-5.7L4 9l5.8-.8z" /></>,
   betone: <><path d="M4 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2.2a2 2 0 0 0 0 3.6V16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2.2a2 2 0 0 0 0-3.6z" /><path d="M10 8v8" strokeDasharray="1.6 2.4" /><path d="m13.5 11 1.5 1.5L17.5 10" /></>,
+  sponsor: <><path d="M4 9.5 12 4l8 5.5v9.5H4z" /><path d="M9 19v-5h6v5M8 10.5h8" /></>,
   salastampa: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" /></>,
   spogliatoio: <><path d="M4 12.5V8l4-2.5L12 7l4-1.5L20 8v4.5" /><path d="M5 12.5h14V19H5z" /><path d="M9.5 15.5h5" /></>,
   menu: <><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></>,
@@ -195,8 +196,12 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
         ? { ...voce, children: [...voce.children, { view: 'spogliatoio' as GameView, label: 'Spogliatoio' }] }
         : voce)
     : baseItems
+  // Sponsor (Season 3): in Extra campo da quando la lega accende le novita' della Season 3, a stagione in corso.
+  const extra: NavGroup = league.stadio_attivo && league.stato === 'stagione' && league.fase_carriera === 'normale'
+    ? { ...gruppoExtra, children: [...gruppoExtra.children, { view: 'sponsor', label: 'Sponsor' }] }
+    : gruppoExtra
   const conExtra: readonly NavEntry[] = league.conferenze_stampa && league.stato !== 'draft'
-    ? conSpogliatoio.flatMap((voce) => !eGruppo(voce) && voce.view === 'notifications' ? [gruppoExtra, voce] : [voce])
+    ? conSpogliatoio.flatMap((voce) => !eGruppo(voce) && voce.view === 'notifications' ? [extra, voce] : [voce])
     : conSpogliatoio
   const conAdmin: readonly NavEntry[] = eAdmin && league.fase_carriera !== 'offseason'
     ? [...conExtra, { view: 'admin', label: 'Admin' }]

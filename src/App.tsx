@@ -18,6 +18,7 @@ import { SocialOne } from './components/SocialOne'
 import { Rivalita } from './components/Rivalita'
 import { PaginaSalaStampa, PaginaSpogliatoio } from './components/PaginaExtra'
 import { PaginaPubblico } from './components/Pubblico'
+import { PaginaSponsor } from './components/Sponsor'
 import { AuthScreen } from './components/AuthScreen'
 import { Manutenzione } from './components/Manutenzione'
 import { useManutenzione } from './lib/useManutenzione'
@@ -552,6 +553,7 @@ export default function App() {
       : gameView === 'betone' ? <BetOne membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} onRevealMatch={(id) => setRevealMatch({ id, from: 'betone' })} />
       : gameView === 'casinone' ? <BetOne key="casinone" sezione="casino" membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} onRevealMatch={(id) => setRevealMatch({ id, from: 'casinone' })} />
       : gameView === 'pubblico' ? <PaginaPubblico membership={active} onNavigate={navigateGame} onOpenTeam={openTeam} />
+      : gameView === 'sponsor' ? <PaginaSponsor membership={active} onNavigate={navigateGame} />
       : gameView === 'admin' ? <Admin membership={active} onNavigate={navigateGame} />
       : gameView === 'help' ? <Help membership={active} onNavigate={navigateGame} />
       : gameView === 'finanza' ? <Finanza membership={active} onNavigate={navigateGame} />

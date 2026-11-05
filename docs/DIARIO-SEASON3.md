@@ -269,7 +269,16 @@ provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato
 
 ## 10. Sponsor
 
-* **Stato:** `da valutare` (5/11/2026): proposta di regole e catalogo in attesa di conferma.
+* **Stato:** `in lavoro` (5/11/2026): database applicato (`20261105190000_sponsor.sql`, `..191000_sponsor_cron.sql`),
+  app pronta in locale (Extra campo > Sponsor). Regole confermate: 3 offerte per colonna, un contratto attivo per
+  colonna, offerte rinnovate a ogni giornata e dopo completamento/fallimento, rinuncia = 24 ore senza offerte, premi
+  in crediti verificati solo su partite già viste. **Offerte costruite sulla squadra** (richiesta del committente):
+  tifo attuale + 15 e solo sotto 85, classifica solo con spazio sopra (primo = "resta primo"), gol su media ultime 6,
+  derby/trasferta/U21/capitano solo se possibili, premio × forza avversari (0,6-2,0) e trasferte. 14 tipi: vittoria,
+  porta inviolata, segna X, Under 21 titolare, vittoria in trasferta, derby, gol del capitano, pubblicità occulta
+  (tifo −1), testimonial (tifo −2); serie 3 su 5, imbattuto 5, gol fatti 6, gol subiti 6, bomber, sponsor di maglia
+  (tifo +3), classifica, tifo. 67 aziende reali in 8 settori. Controllo automatico ogni 10 minuti (cron
+  `sponsor-valuta`). Acceso con la Season 3.
 * **Richiesta:** «Vorrei aggiungere gli sponsor. In "Extra campo" il menu "Sponsor": arrivano richieste di
   sponsorizzazione da aziende reali (scarichiamo i loghi). Servono a guadagnare crediti. Le richieste possono essere
   brevi o lunghe, per esempio: PUBBLICITÀ OCCULTA, cita il nostro sponsor nella prossima intervista (200 crediti), si
