@@ -11,7 +11,7 @@ export type GradinoMinutaggio = 'titolare' | 'turnover' | 'sporadico' | 'promess
 // quota = minuti attesi (usata dal morale); soglia = minimo per dire che la promessa
 // e' rispettata, in percentuale sulle partite giocabili (docs/decisioni-minutaggio.md §6).
 export const GRADINI_MINUTAGGIO: Record<GradinoMinutaggio, { nome: string; detto: string; quota: number; soglia: number }> = {
-  titolare: { nome: 'Titolare fisso', detto: 'Gioca la maggior parte delle partite.', quota: 0.75, soglia: 55 },
+  titolare: { nome: 'Titolare fisso', detto: 'Gioca la maggior parte delle partite.', quota: 0.75, soglia: 65 },
   turnover: { nome: 'Turnover', detto: 'Entra quando i titolari sono stanchi.', quota: 0.40, soglia: 30 },
   sporadico: { nome: 'Sporadico', detto: 'Gioca poche partite.', quota: 0.05, soglia: 3 },
   promessa: { nome: 'Promessa futura', detto: 'Under 21: avrà spazio nei prossimi anni.', quota: 0.05, soglia: 3 },

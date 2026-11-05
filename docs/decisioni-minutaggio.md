@@ -127,9 +127,9 @@ Migrazione `20261008114000_richiamo_per_morale.sql`.
 ## 6. Soglia minima, colori e assenti
 
 La **soglia minima** di un gradino è la quota di minuti sotto la quale la promessa non è più
-rispettata: titolare fisso **55%**, turnover **30%**, sporadico 3%, promessa futura 3%. Si
+rispettata: titolare fisso **65%** (55% fino alla Season 2), turnover **30%**, sporadico 3%, promessa futura 3%. Si
 vede accanto al nome del gradino in scheda, nella trattativa e nei mercati («Titolare fisso
-(min. 55%)»). La **quota** promessa (75%, 40%, 5%, 5%) resta quella che il morale si aspetta.
+(min. 65%)»). La **quota** promessa (75%, 40%, 5%, 5%) resta quella che il morale si aspetta.
 
 Il 4 ottobre la soglia del titolare era 45% (60% della quota): troppo bassa, il committente
 l'ha giudicata poco da titolare. Sui titolari della stagione 1 di Serie F la mediana dei minuti

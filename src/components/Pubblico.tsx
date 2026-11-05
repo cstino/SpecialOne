@@ -123,14 +123,14 @@ export function PaginaPubblico({ membership, onNavigate }: Props) {
       <div className="popup-spiegazione popup-morale" onClick={(e) => e.stopPropagation()}>
         <h2>Il pubblico</h2>
         <div className="popup-spiegazione__corpo">
-          <p>Ogni squadra ha un <b>umore del pubblico da 0 a 100</b>, uguale per tutti all'inizio (100). Nella pagina vedi il tuo e come è cambiato nella stagione.</p>
+          <p>Ogni squadra ha un <b>umore del pubblico da 0 a 100</b>, uguale per tutti: <b>riparte da 50 a ogni nuova stagione</b>. Nella pagina vedi il tuo e come è cambiato nella stagione.</p>
           <h3>Perché conta</h3>
           <p>Decide il <b>bonus casa</b>: quando giochi in casa la tua squadra rende come con <b>+2,0 di overall</b> in attacco e a centrocampo. Con il pubblico <b>da 80 in su il bonus è pieno</b>; sotto cala fino a <b>zero a 10 o meno</b>. Non diventa mai uno svantaggio. Fra pubblico al massimo e in rottura ballano circa <b>5 punti in una stagione da 38 giornate</b>: è più del morale.</p>
           <h3>Cosa lo muove</h3>
           <ul>
             <li><b>Conferenze stampa</b> — è la leva più forte. Rispetto per i tifosi, ambizione e difesa del club lo alzano; dare la colpa a loro o allo stadio lo affonda. Lo scherno verso gli avversari lo fa salire.</li>
-            <li><b>Risultati</b> — poco e lentamente: vittoria +1,5, pareggio −0,5, sconfitta −2,5 (in trasferta la metà).</li>
-            <li><b>Rivalità</b> — contro una rivale la partita vale di più: vincere lo alza, perdere lo abbassa.</li>
+            <li><b>Risultati</b> — in casa vittoria +4, pareggio −1, sconfitta −4 (in trasferta la metà).</li>
+            <li><b>Derby</b> — contro la rivale dichiarata o con una rivalità oltre il 90% il risultato vale <b>il doppio</b>: vincere il derby in casa +8, perderlo −8.</li>
             <li><b>Il capitano</b> — se la protesta è forte, un buon capitano risponde ai tifosi e li calma un po'.</li>
           </ul>
           <h3>Le fasce</h3>

@@ -4,7 +4,7 @@ Le funzionalità e le modifiche che il committente vuole per la **Season 3**. Le
 richiesta si annota qui con data, stato e decisioni prese, così resta traccia fra una conversazione e l'altra.
 
 **Stati:** `da valutare` (appena chiesta) · `deciso` (regole fissate col committente) · `in lavoro` · `pronto` (fatto e
-provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
+provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato`.
 
 **Calendario:** la Season 2 della Serie F chiude la stagione regolare il 28/10/2026, poi playoff (giornate 23–29), poi
 **off-season 3**. Quello che è `pronto` si pubblica a inizio off-season, salvo indicazioni diverse.
@@ -13,7 +13,10 @@ provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
 
 ## 1. Motore di simulazione: meno goleade, più gol nel finale, più peso alla forza
 
-* **Stato:** `pronto` — da pubblicare **all'inizio dell'off-season 3** (deciso il 25/10/2026).
+* **Stato:** `rimandato` (5/11/2026): il committente preferisce i risultati di oggi. Il motore nuovo resta sul branch
+  `feat/motore-s3`, validato, da riprendere eventualmente a metà Season 3 coi dati veri. Le misure dello stadio (voce 4)
+  vanno rifatte col motore attuale.
+* **Prima:** `pronto` — da pubblicare all'inizio dell'off-season 3 (deciso il 25/10/2026).
 * **Chi:** chat di lavoro "motore S3" (specialone-6a), supervisionata. Branch `feat/motore-s3`, worktree
   `/Users/cristianobraccili/SpecialOne-motore-s3`. Dettagli in `docs/HANDOFF-MOTORE-SEASON3.md` e
   `docs/RAPPORTI-MOTORE-S3.md` (nella worktree); procedura in `docs/PUBBLICAZIONE-MOTORE-S3.md`.
@@ -31,7 +34,9 @@ provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
 
 ## 2. Morale e tifosi a metà a inizio stagione; soglia dei titolari al 65%
 
-* **Stato:** `deciso` (25/10/2026) — da preparare prima dell'off-season 3.
+* **Stato:** `in lavoro` (5/11/2026): migrazione `20261105103000_season3_morale_tifo_soglia.sql`. Azzeramento alla
+  chiusura dell'off-season (confermato il 5/11); soglia al 65% subito per tutte le leghe (oggi decide solo colori ed
+  etichette: i richiami partono dal morale sotto 30).
 * **Richiesta:** «Dal prossimo anno ogni squadra parte con il morale rosa e tifosi a metà. I titolari devono avere come
   soglia di gioco il 65% al posto del 55%.»
 * **Decisioni:**
@@ -137,7 +142,10 @@ provato, in attesa di pubblicazione) · `pubblicato` · `scartato`.
 
 ## 6. Il tifo segue di più i risultati; derby moltiplicati
 
-* **Stato:** `deciso` (26/10/2026) — da preparare prima dell'off-season 3.
+* **Stato:** `in lavoro` (5/11/2026): stessa migrazione della voce 2 (`private.e_derby`, `morale_giornaliero`).
+* **Cambio del 5/11/2026:** vittoria e sconfitta simmetriche, in casa **+4 / −1 / −4**, in trasferta la metà (+2 / −0,5 /
+  −2), derby ×2 (+8 / −8 in casa). Con +3/−1/−5 e partenza da 50 una squadra media perdeva ~14 punti di tifo a stagione
+  solo coi risultati; così resta intorno a 50 e il tifo racconta la stagione.
 * **Richiesta:** «Vorrei che il morale del tifo si aggiorni con le partite: perdendo una partita si perde punteggio tifo,
   vincendo si guadagna. Nei derby sono moltiplicati.»
 * **Oggi** (`private.morale_giornaliero`): in casa vittoria +1,5, pareggio −0,5, sconfitta −2,5; in trasferta la metà.
