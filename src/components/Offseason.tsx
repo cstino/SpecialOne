@@ -155,7 +155,7 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
             </label>})}
           </div>
           <div className="offseason-slots"><div><p className="kicker">Espansione</p><strong>Nuovi posti</strong><small>Il codice invito resterà attivo per nuovi allenatori.</small></div><div className="offseason-stepper"><button type="button" aria-label="Riduci nuovi posti" disabled={newSlots === 0} onClick={() => setNewSlots(value => Math.max(0, value - 1))}>−</button><output>{newSlots}</output><button type="button" aria-label="Aumenta nuovi posti" disabled={newSlots === 16} onClick={() => setNewSlots(value => Math.min(16, value + 1))}>+</button></div></div>
-          <div className="offseason-launch__footer"><div><small>PROSSIMA STAGIONE</small><strong>{activeCount} squadre</strong></div><button className="offseason-open-button" disabled={pending || activeCount < 4 || activeCount > 20} onClick={openOffseason}><span>{pending ? 'Preparazione…' : 'Apri off-season'}</span><i aria-hidden="true">→</i></button></div>
+          <div className="offseason-launch__footer"><div><small>PROSSIMA STAGIONE</small><strong>{activeCount} squadre</strong></div><button className="offseason-open-button" disabled={pending || activeCount < 4 || activeCount > 24} onClick={openOffseason}><span>{pending ? 'Preparazione…' : 'Apri off-season'}</span><i aria-hidden="true">→</i></button></div>
         </>}
         </div>
       </section>}
@@ -198,7 +198,7 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
             <div className="offseason-launch__footer"><div><small>PROSSIMA STAGIONE</small><strong>{editActiveCount} squadre</strong></div>
               <div style={{ display: 'flex', gap: '.6rem' }}>
                 <button className="button button--secondary" type="button" disabled={pending} onClick={() => setEditing(false)}>Annulla</button>
-                <button className="offseason-open-button" disabled={pending || editActiveCount < 4 || editActiveCount > 20} onClick={salvaModificheSquadre}><span>{pending ? 'Salvataggio…' : 'Salva modifiche'}</span><i aria-hidden="true">→</i></button>
+                <button className="offseason-open-button" disabled={pending || editActiveCount < 4 || editActiveCount > 24} onClick={salvaModificheSquadre}><span>{pending ? 'Salvataggio…' : 'Salva modifiche'}</span><i aria-hidden="true">→</i></button>
               </div>
             </div>
           </>}
