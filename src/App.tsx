@@ -46,6 +46,7 @@ import { LoadingLogo } from './components/LoadingLogo'
 import { MenuIniziale } from './components/MenuIniziale'
 import { NomeAllenatoreObbligatorio, useNomeAllenatoreObbligatorio } from './components/NomeAllenatoreObbligatorio'
 import { ScegliRivale } from './components/ScegliRivale'
+import { BattezzaStadio } from './components/BattezzaStadio'
 import { BetOne } from './components/BetOne'
 import { PaginaAlbum } from './components/PaginaAlbum'
 import { PaginaQuizzone } from './components/Quizzone'
@@ -475,6 +476,12 @@ export default function App() {
         onApriNotifica={apriNotifica}
       />
     )
+  }
+
+  // Battesimo dello stadio: entrando in una lega con lo stadio acceso, chi non ha ancora confermato il nome lo
+  // sceglie prima di tutto il resto (una volta sola, anche in off-season).
+  if (active.league?.stadio_attivo && active.user_id && active.nome_stadio_scelto === false) {
+    return <BattezzaStadio membership={active} onFatto={() => void loadMemberships()} />
   }
 
   // Una lega conclusa va alle schermate di stagione, non allo spogliatoio:

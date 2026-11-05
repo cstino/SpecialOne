@@ -38,6 +38,8 @@ export type Team = {
   rivale_stagione?: number | null
   // Nome dello stadio (max 25 caratteri): mai vuoto, il database ne assegna uno di default.
   nome_stadio?: string | null
+  // False finche' l'allenatore non ha confermato il nome (battesimo dello stadio al primo ingresso).
+  nome_stadio_scelto?: boolean
   league_id: number
   // Le squadre PC arrivano dal database senza utente; il client le normalizza
   // a stringa vuota prima di usarle nei componenti che indicizzano per user id.
