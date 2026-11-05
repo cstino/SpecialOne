@@ -201,7 +201,9 @@ testo libero e l'AI valuta l'effetto sul **morale di quel giocatore** (solo suo,
   promesse. L'app mostra subito "Promessa registrata". Il voto NON premia la promessa.
 - **Verifica a fine partita** (`private.verifica_richieste`, sui dati): titolare = in campo dall'inizio;
   spazio = almeno 30 minuti; riposo = fuori dai titolari. **Mantenuta +8, tradita -20**. Infortunato o
-  squalificato: la promessa decade senza penale. Nessuna risposta: scade senza effetti.
+  squalificato: la promessa decade senza penale. Nessuna risposta: ~~scade senza effetti~~ dal 5/11/2026
+  vale come un rifiuto secco (voto −1,5) con sfogo su SocialOne (DIARIO-SEASON3 voce 11, che aggiunge anche la
+  richiesta del capitano: giorno libero per la squadra).
 - **Sfogo sul social**: una promessa tradita diventa un post pubblico del giocatore su SocialOne (anche
   una mantenuta, di ringraziamento). Questo risolve il punto aperto sugli sfoghi per questo caso.
 - Dove: sezione "Spogliatoio" nella home (sotto la Sala stampa), icona "!" (richiesta aperta) o "★"

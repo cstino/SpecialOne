@@ -5,17 +5,18 @@ import { ruoloIt } from '../lib/ruoli'
 
 // Le richieste dei giocatori (docs/decisioni-conferenze-stampa.md §2e): un giocatore scrive al mister,
 // l'allenatore risponde a testo libero, l'AI valuta l'effetto sul morale di quel giocatore e registra
-// l'eventuale promessa, che si verifica a fine partita.
+// l'eventuale promessa, che si verifica a fine partita. Il capitano puo' chiedere un giorno libero per tutta la squadra
+// (DIARIO-SEASON3 voce 11); una richiesta lasciata scadere vale come un rifiuto secco, con sfogo sui social.
 
 type Richiesta = {
   id: number
   player_instance_id: number
-  tipo: 'titolare' | 'spazio' | 'riposo'
+  tipo: 'titolare' | 'spazio' | 'riposo' | 'giorno_libero'
   testo: string
   giornata_target: number
   creata_il: string
   scade_il: string
-  stato: 'aperta' | 'risposta' | 'promessa' | 'mantenuta' | 'tradita' | 'decaduta' | 'scaduta'
+  stato: 'aperta' | 'risposta' | 'promessa' | 'mantenuta' | 'tradita' | 'decaduta' | 'scaduta' | 'accettata' | 'rifiutata'
   risposta: string | null
   reazione: string | null
   effetto_morale: number | null
@@ -26,9 +27,11 @@ type Giocatore = { nome: string; ruolo: string; foto?: string }
 const MAX = 1200
 const CHIEDE: Record<Richiesta['tipo'], string> = {
   titolare: 'Chiede di giocare titolare', spazio: 'Chiede più minuti', riposo: 'Chiede di riposare',
+  giorno_libero: 'Capitano · chiede un giorno libero per la squadra',
 }
 const PROMESSA: Record<Richiesta['tipo'], string> = {
   titolare: 'titolare nella prossima partita', spazio: 'almeno mezz\'ora nella prossima partita', riposo: 'a riposo nella prossima partita',
+  giorno_libero: '',
 }
 const numero = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toFixed(0)}`
 
@@ -93,6 +96,7 @@ export function RichiesteGiocatori({ teamId, onCambio, senzaTitolo = false, quan
         const g = giocatori.get(r.player_instance_id)
         const aperta = r.stato === 'aperta' && new Date(r.scade_il).getTime() > Date.now()
         const bozza = bozze[r.id] ?? ''
+        const capitano = r.tipo === 'giorno_libero'
         return <article className="richiesta" key={r.id}>
           <header className="richiesta__testa">
             <span className="richiesta__foto">{g?.foto ? <img src={g.foto} alt="" loading="lazy" /> : <b>{(g?.nome ?? '?').charAt(0)}</b>}</span>
@@ -101,7 +105,7 @@ export function RichiesteGiocatori({ teamId, onCambio, senzaTitolo = false, quan
           <p className="richiesta__messaggio">{r.testo}</p>
           {aperta
             ? <div className="richiesta__form">
-              <textarea value={bozza} maxLength={MAX} rows={3} placeholder="Rispondi al giocatore…" disabled={invio === r.id}
+              <textarea value={bozza} maxLength={MAX} rows={3} placeholder={capitano ? 'Rispondi al capitano…' : 'Rispondi al giocatore…'} disabled={invio === r.id}
                 onChange={(e) => setBozze((b) => ({ ...b, [r.id]: e.target.value }))} />
               <div className="richiesta__azioni">
                 <span>{bozza.length}/{MAX}</span>
@@ -109,17 +113,23 @@ export function RichiesteGiocatori({ teamId, onCambio, senzaTitolo = false, quan
                   {invio === r.id ? 'Invio…' : 'Rispondi'}
                 </button>
               </div>
-              <p className="richiesta__nota">Se prometti qualcosa, ricorda che a fine partita si controlla.</p>
+              <p className="richiesta__nota">{capitano
+                ? 'Se concedi il giorno libero: morale +4 e condizione −8 a tutta la rosa. Se lo neghi: morale −4 a tutti. Le tue parole possono migliorare o peggiorare l’effetto. Senza risposta vale come un no secco.'
+                : 'Se prometti qualcosa, ricorda che a fine partita si controlla. Senza risposta si sentirà ignorato.'}</p>
               {errori[r.id] && <p className="richiesta__errore" role="alert">{errori[r.id]}</p>}
             </div>
             : <>
               {r.risposta && <blockquote className="richiesta__risposta">{r.risposta}</blockquote>}
-              {r.reazione && <p className="richiesta__reazione"><b>{g?.nome ?? 'Il giocatore'}</b>{r.reazione}{r.effetto_morale != null && <em>Morale {numero(Number(r.effetto_morale))}</em>}</p>}
+              {r.reazione && <p className="richiesta__reazione"><b>{g?.nome ?? 'Il giocatore'}</b>{r.reazione}{r.effetto_morale != null && <em>Morale {numero(Number(r.effetto_morale))}{capitano ? ' a tutti' : ''}</em>}</p>}
               {r.stato === 'promessa' && <p className="richiesta__esito is-promessa">Promessa registrata: {PROMESSA[r.tipo]} (giornata {r.giornata_target}). Se non la mantieni, perderà molto morale.</p>}
               {r.stato === 'mantenuta' && <p className="richiesta__esito is-ok">Promessa mantenuta: morale {numero(Number(r.esito_morale ?? 8))}.</p>}
               {r.stato === 'tradita' && <p className="richiesta__esito is-no">Promessa non mantenuta: morale {numero(Number(r.esito_morale ?? -20))}. Si è sfogato sui social.</p>}
               {r.stato === 'decaduta' && <p className="richiesta__esito">Promessa decaduta: non era disponibile.</p>}
-              {r.stato === 'scaduta' && <p className="richiesta__esito">Nessuna risposta: la richiesta è scaduta.</p>}
+              {r.stato === 'accettata' && <p className="richiesta__esito is-ok">Giorno libero concesso: condizione −8 a tutta la rosa, morale {numero(Number(r.effetto_morale ?? 4))} a tutti.</p>}
+              {r.stato === 'rifiutata' && <p className="richiesta__esito is-no">Giorno libero negato: morale {numero(Number(r.effetto_morale ?? -4))} a tutta la rosa.</p>}
+              {r.stato === 'scaduta' && <p className="richiesta__esito is-no">Nessuna risposta: {r.effetto_morale != null
+                ? `${capitano ? 'la squadra si è sentita ignorata' : 'si è sentito ignorato'}, morale ${numero(Number(r.effetto_morale))}${capitano ? ' a tutti' : ''}. Si è sfogato sui social.`
+                : 'la richiesta è scaduta.'}</p>}
             </>}
         </article>
       })}

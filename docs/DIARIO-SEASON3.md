@@ -288,4 +288,23 @@ provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato
 * **Note:** loghi da Simple Icons (SVG ufficiali monocolore, con il colore del marchio); le risposte alle conferenze
   sono testo libero, quindi "cita lo sponsor" si verifica cercando il nome nella risposta.
 
+## 11. Richiesta del capitano (giorno libero) e richieste ignorate
+
+* **Stato:** `in lavoro` (5/11/2026): migrazione `20261105220000_richiesta_capitano_e_silenzio.sql`, funzione
+  `conferenza-stampa` e `RichiesteGiocatori.tsx` pronti. Provato in transazione annullata su Serie F.
+* **Richiesta:** «Vorrei richieste anche da parte del capitano, che ad esempio può chiedere un giorno libero dagli
+  allenamenti per la squadra. Questo si traduce con un −8% di forma fisica per tutti se accettato, un + nel morale. Se
+  rifiutato la forma fisica rimane uguale ma scende il morale di squadra.» E: «alcuni, per evitare richieste insidiose
+  dei loro giocatori, semplicemente evitano di rispondere».
+* **Decisioni (committente, 5/11/2026):**
+  * Risposta a testo libero valutata dall'AI, come le altre richieste. Concesso: condizione −8 punti e morale +4 a tutta
+    la rosa; negato: morale −4 a tutti. Il voto alle parole (da −3 a +1,5) si somma, arrotondato. Esclusi ritirati e
+    giocatori in prestito.
+  * Richiesta ignorata (scaduta senza risposta): vale come un rifiuto secco (voto −1,5) e il giocatore si sfoga su
+    SocialOne. Per il capitano: −4 −1,5 → −6 di morale a tutta la rosa. Prima "scadeva senza effetti" (in Serie F 20
+    richieste su 70 lasciate scadere).
+  * Proposta mia, da confermare: il capitano chiede il giorno libero solo dopo una vittoria, in circa una giornata su
+    tre, al massimo 2 volte a stagione e a 6 giornate di distanza, mai nei playoff; serve un capitano disponibile. Non
+    conta nel tetto di 7 richieste personali e può cadere sulla stessa giornata di una di esse.
+
 <!-- Nuove richieste qui sotto: "## N. Titolo", poi Stato, Richiesta (parole del committente), Decisioni, Note. -->
