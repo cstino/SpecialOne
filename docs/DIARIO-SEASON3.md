@@ -247,6 +247,12 @@ provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato
 
 ---
 
+* **Solo dall'album della stagione nuova** (5/11/2026, richiesta del committente): rarità, card FUT e foto valgono
+  dall'album successivo al lancio (`leagues.album_nuovo_dalla_stagione`: Serie F 3, LegaBot 6, leghe nuove 1).
+  L'album in corso torna alla figurina e all'estrazione di prima. Le 13 rare e le 6 ultimate già uscite nell'album S2
+  della Serie F sono state convertite: rara → normale, ultimate di giocatore → ultrarara, ultimate di stemma → normale.
+  Migrazione `20261105230000_album_nuovo_dalla_stagione.sql`, che toglie anche un rallentamento (7,5 s a bustina).
+
 ## 9. Figurine: foto a mezzo busto
 
 * **Stato:** `in lavoro` (5/11/2026): **foto scontornate da TheSportsDB** (dalla vita in su, trasparenti, stile card
