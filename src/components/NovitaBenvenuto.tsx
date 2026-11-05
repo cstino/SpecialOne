@@ -219,7 +219,7 @@ const PAGINE: Pagina[] = [
     occhiello: 'Novità · Off-season e albo d’oro',
     titolo: 'Ogni stagione lascia il segno.',
     punti: [
-      <>L'off-season si apre dopo l'ultima giornata e dura quanto decide la lega. Rinnovi, scambi e UNDER restano aperti per tutta la durata; il mercato svincolati è chiuso.</>,
+      <>L'off-season si apre dopo l'ultima giornata e dura quanto decide la lega. Rinnovi e scambi restano aperti per tutta la durata; i mercati svincolati e UNDER sono chiusi e riaprono con la nuova stagione.</>,
       <>L'<strong>Albo d'oro</strong> premia anche miglior marcatore, assistman e portiere, in Regular Season e nei Title Playoff.</>,
       <>A fine stagione una <strong>presentazione a sorpresa</strong> svela campione e premi, con le carte da girare.</>,
     ],

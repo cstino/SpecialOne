@@ -110,7 +110,7 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
     <section className="season-page offseason-page">
       <PopupSpiegazione userId={membership.user_id} hintKey="offseason-v2" titolo="Come funziona l'Off-season">
         <p>L'off-season si apre dopo l'ultima giornata, quando tutti hanno avuto il tempo di rivedere i risultati, e dura quanto decide la lega (il conto alla rovescia è in questa pagina). Prima l'admin conferma quali squadre proseguono: i giocatori di quelle escluse finiscono fra gli svincolati, e le eventuali nuove squadre entrano con un mini-draft.</p>
-        <p>Fino alla scadenza puoi <strong>rinnovare i contratti</strong> e <strong>fare scambi</strong>; il mercato UNDER resta aperto, quello degli svincolati invece è <strong>chiuso</strong> e riapre con la nuova stagione. Si apre anche il draft OFF-Season: ordine delle scelte ed eleggibili sono già visibili, l'estrazione avviene alla fine dell'off-season.</p>
+        <p>Fino alla scadenza puoi <strong>rinnovare i contratti</strong> e <strong>fare scambi</strong>; i mercati degli svincolati e UNDER invece sono <strong>chiusi</strong> e riaprono con la nuova stagione. Si apre anche il draft OFF-Season: ordine delle scelte ed eleggibili sono già visibili, l'estrazione avviene alla fine dell'off-season.</p>
         <p>Alla scadenza chi non è stato rinnovato lascia la squadra. Se una rosa scende sotto il minimo di 21 giocatori, il sistema la completa da solo con svincolati sostenibili sotto il tetto: meglio non arrivarci, ma non si resta mai bloccati.</p>
       </PopupSpiegazione>
       <header className="offseason-hero">
