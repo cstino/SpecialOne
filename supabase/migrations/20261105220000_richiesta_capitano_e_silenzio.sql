@@ -2,7 +2,8 @@
 -- 1) Il capitano puo' chiedere un giorno libero per la squadra (tipo 'giorno_libero'). Risposta a testo libero
 --    valutata dall'AI come le altre: se il mister concede il giorno libero, condizione -8 a tutta la rosa e morale
 --    +4 a tutti; se lo nega, morale -4 a tutti. Le parole spostano l'effetto del voto (da -3 a +1,5), arrotondato.
---    Nasce dopo una vittoria, al massimo 2 volte a stagione e a distanza di almeno 6 giornate, mai nei playoff.
+--    Nasce dopo una vittoria, al massimo 3 volte a stagione (2-3 per una squadra che vince spesso) e a distanza
+--    di almeno 6 giornate, mai nei playoff.
 -- 2) Una richiesta lasciata scadere non e' piu' gratis: vale come un rifiuto secco (voto -1,5) e il giocatore si
 --    sfoga su SocialOne. Per il capitano il calo di morale tocca tutta la rosa.
 
@@ -141,8 +142,9 @@ begin
   return v_n;
 end $$;
 
--- Richiesta del capitano: dopo una vittoria nell'ultima partita giocata, in circa una giornata su tre
--- (deterministico, come le altre), al massimo 2 a stagione e a 6 giornate di distanza. Serve un capitano
+-- Richiesta del capitano: dopo una vittoria nell'ultima partita giocata, con probabilita' 8 / giornate della stagione
+-- regolare (deterministico, come le altre; Serie F 8/22 = 36%), al massimo 3 a stagione e a 6 giornate di distanza.
+-- In simulazione: 2 a stagione per una squadra media, 2-3 per chi vince spesso, 1-2 per chi vince poco. Serve un capitano
 -- disponibile (non infortunato, non squalificato, non in prestito).
 create or replace function private.genera_richiesta_capitano(p_team_id bigint, p_league_id bigint, p_user_id uuid, p_stagione smallint, p_giornata smallint)
 returns boolean
@@ -160,14 +162,17 @@ begin
   if exists (select 1 from public.richieste_giocatori r where r.team_id = p_team_id and r.giornata_target = p_giornata and r.tipo = 'giorno_libero') then
     return false;
   end if;
-  if (select count(*) from public.richieste_giocatori r where r.team_id = p_team_id and r.stagione = p_stagione and r.tipo = 'giorno_libero') >= 2 then
+  if (select count(*) from public.richieste_giocatori r where r.team_id = p_team_id and r.stagione = p_stagione and r.tipo = 'giorno_libero') >= 3 then
     return false;
   end if;
   if exists (select 1 from public.richieste_giocatori r where r.team_id = p_team_id and r.stagione = p_stagione and r.tipo = 'giorno_libero'
              and r.giornata_target > p_giornata - 6) then
     return false;
   end if;
-  if abs(hashtext('cap' || p_team_id || ':' || p_giornata)) % 3 <> 0 then return false; end if;
+  if abs(hashtext('cap' || p_team_id || ':' || p_giornata)) % 1000 >=
+     1000.0 * 8 / greatest(1, (select giornate_totali from public.leagues where id = p_league_id)) then
+    return false;
+  end if;
 
   select case when f.home_team_id = p_team_id then m.gol_home else m.gol_away end,
          case when f.home_team_id = p_team_id then m.gol_away else m.gol_home end

@@ -303,8 +303,9 @@ provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato
   * Richiesta ignorata (scaduta senza risposta): vale come un rifiuto secco (voto −1,5) e il giocatore si sfoga su
     SocialOne. Per il capitano: −4 −1,5 → −6 di morale a tutta la rosa. Prima "scadeva senza effetti" (in Serie F 20
     richieste su 70 lasciate scadere).
-  * Proposta mia, da confermare: il capitano chiede il giorno libero solo dopo una vittoria, in circa una giornata su
-    tre, al massimo 2 volte a stagione e a 6 giornate di distanza, mai nei playoff; serve un capitano disponibile. Non
+  * Frequenza ("2-3 volte a stagione, non di più"): solo dopo una vittoria, con probabilità 8 / giornate (Serie F
+    36%), al massimo 3 a stagione e a 6 giornate di distanza, mai nei playoff; serve un capitano disponibile. In
+    simulazione: squadra media 2 a stagione, chi vince spesso 2-3, chi vince poco 1-2. Non
     conta nel tetto di 7 richieste personali e può cadere sulla stessa giornata di una di esse.
 
 <!-- Nuove richieste qui sotto: "## N. Titolo", poi Stato, Richiesta (parole del committente), Decisioni, Note. -->
