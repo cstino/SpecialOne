@@ -7107,9 +7107,9 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .fut__foto img { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; filter: drop-shadow(0 4cqw 4cqw rgba(0,0,0,.4));
   -webkit-mask: linear-gradient(180deg, #000 82%, transparent 100%); mask: linear-gradient(180deg, #000 82%, transparent 100%); }
 .fut:not(.fut--scontornata) .fut__foto { left: 34%; right: 8%; top: 16%; bottom: 40%; }
-.fut__basso { position: absolute; left: 7%; right: 7%; bottom: 9%; z-index: 3; display: grid; justify-items: center; gap: 1.5cqw; text-align: center; }
+.fut__basso { position: absolute; left: 7%; right: 7%; bottom: 9%; z-index: 3; display: grid; justify-items: center; gap: 1.5cqw; text-align: center; color: var(--fut-testo-basso, inherit); }
 .fut__basso strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10cqw; font-weight: 800; letter-spacing: -.01em; line-height: 1.05; text-shadow: 0 1px 3px rgba(0,0,0,.4); }
-.fut--chiara .fut__basso strong { text-shadow: none; }
+.fut--chiara-basso .fut__basso strong { text-shadow: none; }
 .fut__stat { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0 .8cqw; width: 100%; margin: 0; }
 .fut__stat div { display: grid; justify-items: center; }
 .fut__stat dt { font-size: 4.6cqw; font-weight: 800; opacity: .85; }
@@ -7121,7 +7121,7 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .fut__centro img { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 3cqw 4cqw rgba(0,0,0,.45)); }
 .fut__basso--solo-nome { bottom: 13%; gap: .5cqw; }
 .fut__basso--solo-nome small { font-size: 5cqw; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; opacity: .8; }
-.fut__num { position: absolute; bottom: 5.2%; left: 50%; z-index: 4; transform: translateX(-50%); font-size: 3.6cqw; font-weight: 800; opacity: .55; font-variant-numeric: tabular-nums; }
+.fut__num { position: absolute; bottom: 5.2%; left: 50%; z-index: 4; transform: translateX(-50%); color: var(--fut-testo-basso, inherit); font-size: 3.6cqw; font-weight: 800; opacity: .55; font-variant-numeric: tabular-nums; }
 .fut__agg { position: absolute; top: 34%; left: -10%; z-index: 4; padding: .8cqw 14%; background: #ff3d6e; color: #fff; font-style: normal; font-size: 4.2cqw; font-weight: 900; letter-spacing: .08em; transform: rotate(-32deg); }
 .fut__lucido { position: absolute; inset: 0; z-index: 5; pointer-events: none; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.5) 48%, transparent 58%); background-size: 260% 100%; animation: fig-lucido 5s ease-in-out infinite; mix-blend-mode: soft-light; }
 .fut__olo { position: absolute; inset: 0; z-index: 4; pointer-events: none; mix-blend-mode: color-dodge; opacity: .45;

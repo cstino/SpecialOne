@@ -5,9 +5,11 @@ import { useEffect, useState } from 'react'
 // secondo e' il piu' numeroso fra quelli abbastanza diversi dal primo. Il bianco puro conta solo se non c'e' altro
 // (molti stemmi hanno un fondo bianco). Risultato in memoria per tutta la sessione: e' solo grafica.
 
-export type ColoriStemma = { primo: string; secondo: string; chiaro: boolean }
+// chiaro: il primo colore (parte alta della carta) e' chiaro; chiaroBasso: lo e' il secondo, su cui stanno nome e
+// statistiche. Su fondo chiaro il testo diventa scuro.
+export type ColoriStemma = { primo: string; secondo: string; chiaro: boolean; chiaroBasso: boolean }
 
-export const COLORI_PREDEFINITI: ColoriStemma = { primo: '#3b2a6b', secondo: '#120c24', chiaro: false }
+export const COLORI_PREDEFINITI: ColoriStemma = { primo: '#3b2a6b', secondo: '#120c24', chiaro: false, chiaroBasso: false }
 const cache = new Map<string, Promise<ColoriStemma>>()
 
 function hex(r: number, g: number, b: number) {
@@ -65,7 +67,7 @@ function estrai(img: HTMLImageElement): ColoriStemma {
   const secondo = lista.find((c) => c !== primo && diverso(c) && c.n >= lista[0].n * 0.06)
   const scuro = hex(...[1, 3, 5].map((k) => parseInt(primo.colore.slice(k, k + 2), 16) * 0.35) as [number, number, number])
   const coppia = { primo: primo.colore, secondo: secondo?.colore ?? scuro }
-  return { ...coppia, chiaro: luminanza(coppia.primo) > 0.6 }
+  return { ...coppia, chiaro: luminanza(coppia.primo) > 0.6, chiaroBasso: luminanza(coppia.secondo) > 0.6 }
 }
 
 export function coloriStemma(url: string): Promise<ColoriStemma> {

@@ -157,7 +157,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     const { data: cs } = await supabase.rpc('casino_stato', { p_league_id: leagueId })
     setGratis(Number((cs as { bustine_gratis?: number } | null)?.bustine_gratis ?? 0))
     const [{ data: f }, { data: p }, { data: cl }] = await Promise.all([
-      supabase.from('album_figurine').select('id, tipo, team_id, player_id, conferenza, overall, aggiornamento').eq('league_id', leagueId).eq('stagione', st).order('id'),
+      supabase.from('album_figurine').select('id, tipo, team_id, player_id, conferenza, overall, aggiornamento, statistiche, posizioni').eq('league_id', leagueId).eq('stagione', st).order('id'),
       supabase.from('album_possesso').select('figurina_id, normali, rare, ultra, ultimate').eq('league_id', leagueId),
       supabase.rpc('album_classifica', { p_league_id: leagueId }),
     ])
