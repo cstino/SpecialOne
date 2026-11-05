@@ -267,4 +267,16 @@ provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato
   2. busto disegnato con la maglia nei colori della squadra sotto il ritratto;
   3. immagini generate (già scartato una volta per lo stile anime).
 
+## 10. Sponsor
+
+* **Stato:** `da valutare` (5/11/2026): proposta di regole e catalogo in attesa di conferma.
+* **Richiesta:** «Vorrei aggiungere gli sponsor. In "Extra campo" il menu "Sponsor": arrivano richieste di
+  sponsorizzazione da aziende reali (scarichiamo i loghi). Servono a guadagnare crediti. Le richieste possono essere
+  brevi o lunghe, per esempio: PUBBLICITÀ OCCULTA, cita il nostro sponsor nella prossima intervista (200 crediti), si
+  ripercuote leggermente sull'ambiente dei tifosi; VITTORIE, vinci 3 delle prossime 5 partite (1000 crediti). Ne
+  dobbiamo pensare varie. Gli utenti ne hanno varie tra cui scegliere, divise tra breve e lungo termine; se ne sceglie
+  solo una per categoria finché non la completano; completata quella, si aggiornano. Tipo 3 per categoria.»
+* **Note:** loghi da Simple Icons (SVG ufficiali monocolore, con il colore del marchio); le risposte alle conferenze
+  sono testo libero, quindi "cita lo sponsor" si verifica cercando il nome nella risposta.
+
 <!-- Nuove richieste qui sotto: "## N. Titolo", poi Stato, Richiesta (parole del committente), Decisioni, Note. -->
