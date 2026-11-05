@@ -215,7 +215,13 @@ provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato
 
 ## 8. Figurine: quattro rarità (common, rare, ultrarara, ultimate)
 
-* **Stato:** `deciso` (27/10/2026), tranne la ripartizione interna delle ultimate (proposta sotto).
+* **Stato:** `in lavoro` (5/11/2026): database applicato (migrazione `20261105170000_album_rarita.sql`), app pronta in
+  locale. Decisioni del 5/11: **stemmi e conference al 5% per figurina** (sempre ultimate; conference un decimo di quel
+  5%), giocatori nel restante 95% con common 75 / rare 18 / ultrarara 6 / ultimate 1 (se nessun giocatore ha quella
+  versione si scende alla precedente). Proposte confermate: normali → common, ultra → ultrarara, l'album si completa
+  con qualsiasi versione, nella pagina si vede la più preziosa. Riciclo: common 10, rare 25, ultrarara 50, ultimate 150.
+  Grafica: common argento, rara oro pieno, ultrarara oro olografico (come prima), ultimate cornice iridescente che gira.
+  Prova su 2.000 figurine: 71 / 19 / 5,2 / 0,6 % giocatori, 4,2 % stemmi e conference.
 * **Richiesta:** «Vorrei fare varie rarità: common, rare, ultrarare, ultimate.» Rarità delle **figurine**, non delle
   bustine: la bustina resta una sola.
 * **Oggi** (`album_compra_bustina`): per ogni figurina 2% ultrarara, 10% stemma, il resto giocatore normale; il giocatore

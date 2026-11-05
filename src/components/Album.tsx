@@ -7,32 +7,46 @@ import { macroRuolo, ruoloIt } from '../lib/ruoli'
 import { Crest } from './Crest'
 
 // Album delle figurine (docs/decisioni-conferenze-stampa.md §BetOne): una pagina per squadra, stemma + giocatori.
-// Bustina da 100 crediti, 3 figurine; l'estrazione la fa il server (album_compra_bustina). Ultrarara = versione
-// olografica; in Serie F anche le due conference. Doppioni riciclabili, pagina completa = 200 crediti.
+// Bustina da 250 crediti, 3 figurine; l'estrazione la fa il server (album_compra_bustina). Dalla Season 3 quattro
+// versioni (docs/DIARIO-SEASON3.md §8): common (argento), rare (oro), ultrarara (oro olografico), ultimate
+// (iridescente); stemmi e conference solo ultimate. Doppioni riciclabili, pagina completa = 200 crediti.
 
 type Dati = ReturnType<typeof useSeasonData>
 type Figurina = { id: number; tipo: 'stemma' | 'giocatore' | 'conferenza'; team_id: number | null; player_id: number | null; conferenza: 'est' | 'ovest' | null; overall: number | null; aggiornamento: boolean }
-type Possesso = { figurina_id: number; normali: number; ultra: number }
+type Versione = 'common' | 'rare' | 'ultra' | 'ultimate'
+type Possesso = { figurina_id: number; normali: number; rare: number; ultra: number; ultimate: number }
 type Anagrafica = { id: number; nome: string; posizioni: string[]; foto_url: string | null }
-type Uscita = { figurina_id: number; tipo: Figurina['tipo']; ultra: boolean; nuova: boolean }
+type Uscita = { figurina_id: number; tipo: Figurina['tipo']; versione?: Versione; ultra: boolean; nuova: boolean }
 type RigaClassifica = { team_id: number; attaccate: number; totale: number; ultra: number; pagine: number }
-type Voce = { figurina_id: number; ultra: boolean }
+type Voce = { figurina_id: number; versione: Versione }
 // impegnate: copie gia' dentro altri scambi in attesa (non si possono riproporre ne' riciclare)
 type Doppione = Voce & { copie: number; impegnate?: number }
-type ScambioFig = { id: number; da_team_id: number; a_team_id: number; offerte: Voce[]; richieste: Voce[]; stato: string; scade_il: string; da_user: string }
+type VoceSalvata = { figurina_id: number; versione?: Versione; ultra?: boolean }
+type ScambioFig = { id: number; da_team_id: number; a_team_id: number; offerte: VoceSalvata[]; richieste: VoceSalvata[]; stato: string; scade_il: string; da_user: string }
 
 const PREZZO = 250
+// Ordine di pregio, nome e valore al riciclo di ogni versione (stessi crediti di album_ricicla_doppioni).
+const VERSIONI: Versione[] = ['ultimate', 'ultra', 'rare', 'common']
+const NOME_VERSIONE: Record<Versione, string> = { common: 'Common', rare: 'Rara', ultra: 'Ultrarara', ultimate: 'Ultimate' }
+const RICICLO: Record<Versione, number> = { common: 10, rare: 25, ultra: 50, ultimate: 150 }
+const copie = (p: Possesso | undefined, v: Versione) => !p ? 0 : v === 'rare' ? p.rare : v === 'ultra' ? p.ultra : v === 'ultimate' ? p.ultimate : p.normali
+const totale = (p: Possesso | undefined) => !p ? 0 : p.normali + p.rare + p.ultra + p.ultimate
+// Le voci degli scambi fatti prima delle rarita' hanno {ultra} al posto di {versione}.
+const voce = (x: VoceSalvata): Voce => ({ figurina_id: x.figurina_id, versione: x.versione ?? (x.ultra ? 'ultra' : 'common') })
+const speciale = (v: Versione | undefined) => v === 'ultra' || v === 'ultimate'
 const ridotto = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 const fmt = (n: number) => new Intl.NumberFormat('it-IT').format(n)
 
 // ---------- Una figurina ----------
-// Cornice argento (oro olografico per le ultrarare), voto nello scudo, foto con luce dietro, targhetta inclinata col
-// nome, stemma e numero. Una lucentezza scorre sulla carta; l'ultrarara ha anche riflesso arcobaleno e scintille.
-function Carta({ f, ana, dati, ultra, vuota, numero, piccola }: { f: Figurina; ana?: Anagrafica; dati: Dati; ultra: boolean; vuota?: boolean; numero?: number; piccola?: boolean }) {
+// Cornice per versione (argento, oro, oro olografico, iridescente), voto nello scudo, foto con luce dietro, targhetta
+// inclinata col nome, stemma e numero. Una lucentezza scorre sulla carta; ultrarara e ultimate hanno anche riflesso
+// arcobaleno e scintille.
+function Carta({ f, ana, dati, versione, vuota, numero, piccola }: { f: Figurina; ana?: Anagrafica; dati: Dati; versione: Versione; vuota?: boolean; numero?: number; piccola?: boolean }) {
+  const ultra = speciale(versione)
   const team = f.team_id != null ? dati.teamById.get(f.team_id) : undefined
   const crestUrl = f.team_id != null ? dati.crestUrlByTeamId.get(f.team_id) : undefined
   const ruoloMacro = macroRuolo(ana?.posizioni ?? []).toLowerCase()
-  const classe = `fig${ultra ? ' fig--ultra' : ''}${piccola ? ' fig--piccola' : ''} fig--${f.tipo}${f.tipo === 'giocatore' ? ` fig--${ruoloMacro}` : ''}`
+  const classe = `fig${versione !== 'common' ? ` fig--${versione}` : ''}${piccola ? ' fig--piccola' : ''} fig--${f.tipo}${f.tipo === 'giocatore' ? ` fig--${ruoloMacro}` : ''}`
   if (vuota) return <div className="fig fig--vuota" aria-label={`Figurina ${numero ?? ''} mancante`}><span className="fig__numero">{numero}</span></div>
   const extra = <>
     <span className="fig__lucido" aria-hidden="true" />
@@ -41,7 +55,7 @@ function Carta({ f, ana, dati, ultra, vuota, numero, piccola }: { f: Figurina; a
   </>
   if (f.tipo === 'conferenza') {
     const est = f.conferenza === 'est'
-    return <div className={classe} aria-label={`Figurina ultrarara ${est ? 'Eastern' : 'Western'} Conference`}>
+    return <div className={classe} aria-label={`Figurina ${NOME_VERSIONE[versione].toLowerCase()} ${est ? 'Eastern' : 'Western'} Conference`}>
       <div className="fig__dentro">
         <div className="fig__raggi" aria-hidden="true" />
         <div className="fig__conf"><img src={est ? '/loghi-conferenza/east.svg' : '/loghi-conferenza/west.svg'} alt="" /></div>
@@ -61,7 +75,7 @@ function Carta({ f, ana, dati, ultra, vuota, numero, piccola }: { f: Figurina; a
     </div>
   }
   const foto = urlFotoGiocatore(ana?.foto_url)
-  return <div className={classe} aria-label={`${ana?.nome ?? 'Giocatore'}${ultra ? ', ultrarara' : ''}`}>
+  return <div className={classe} aria-label={`${ana?.nome ?? 'Giocatore'}${versione !== 'common' ? `, ${NOME_VERSIONE[versione].toLowerCase()}` : ''}`}>
     <div className="fig__dentro">
       <div className="fig__raggi" aria-hidden="true" />
       <div className="fig__scudo"><b>{f.overall ?? ''}</b><span>{ruoloIt(ana?.posizioni?.[0] ?? '')}</span></div>
@@ -198,7 +212,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     setGratis(Number((cs as { bustine_gratis?: number } | null)?.bustine_gratis ?? 0))
     const [{ data: f }, { data: p }, { data: cl }] = await Promise.all([
       supabase.from('album_figurine').select('id, tipo, team_id, player_id, conferenza, overall, aggiornamento').eq('league_id', leagueId).eq('stagione', st).order('id'),
-      supabase.from('album_possesso').select('figurina_id, normali, ultra').eq('league_id', leagueId),
+      supabase.from('album_possesso').select('figurina_id, normali, rare, ultra, ultimate').eq('league_id', leagueId),
       supabase.rpc('album_classifica', { p_league_id: leagueId }),
     ])
     const figs = (f ?? []) as Figurina[]
@@ -236,17 +250,19 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   const squadre = useMemo(() => [...perSquadra.keys()].sort((a, b) => (dati.teamById.get(a)?.nome ?? '').localeCompare(dati.teamById.get(b)?.nome ?? '')), [perSquadra, dati.teamById])
   const numeri = useMemo(() => { const m = new Map<number, number>(); let n = 1; for (const t of squadre) for (const f of perSquadra.get(t) ?? []) m.set(f.id, n++); for (const f of figurine.filter((x) => x.tipo === 'conferenza')) m.set(f.id, n++); for (const f of agg) m.set(f.id, n++); return m }, [squadre, perSquadra, figurine, agg])
   const conf = figurine.filter((f) => f.tipo === 'conferenza')
-  // Figurina di esempio per far vedere com'e' un'ultrarara: il giocatore con l'overall piu' alto dell'album.
+  // Figurina di esempio per far vedere com'e' un'ultimate: il giocatore con l'overall piu' alto dell'album.
   const esempioUltra = useMemo(() => figurine.filter((f) => f.tipo === 'giocatore').sort((a, b) => (b.overall ?? 0) - (a.overall ?? 0))[0], [figurine])
 
-  const ce = (id: number) => { const p = possesso.get(id); return Boolean(p && p.normali + p.ultra > 0) }
-  const ceUltra = (id: number) => (possesso.get(id)?.ultra ?? 0) > 0
+  const ce = (id: number) => totale(possesso.get(id)) > 0
+  // Nella pagina si vede la versione migliore che possiedi.
+  const migliore = (id: number): Versione => VERSIONI.find((v) => copie(possesso.get(id), v) > 0) ?? 'common'
   const base = figurine.filter((f) => f.tipo !== 'conferenza' && !f.aggiornamento)
   const attaccate = base.filter((f) => ce(f.id)).length
-  const ultraTot = figurine.filter((f) => ceUltra(f.id)).length
+  const ultraTot = figurine.filter((f) => copie(possesso.get(f.id), 'ultra') > 0).length
+  const ultimateTot = figurine.filter((f) => copie(possesso.get(f.id), 'ultimate') > 0).length
   // Si riciclano solo i doppioni non impegnati in uno scambio in attesa.
   const doppioni = miei.reduce((s, d) => s + Math.max(0, d.copie - (d.impegnate ?? 0)), 0)
-  const valoreDoppioni = miei.reduce((s, d) => s + Math.max(0, d.copie - (d.impegnate ?? 0)) * (d.ultra ? 50 : 10), 0)
+  const valoreDoppioni = miei.reduce((s, d) => s + Math.max(0, d.copie - (d.impegnate ?? 0)) * RICICLO[d.versione], 0)
 
   async function compra(conGratis = false) {
     if (compro) return
@@ -263,15 +279,15 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     void carica()
   }
 
-  function scopri(i: number, ultra: boolean) {
+  function scopri(i: number, versione: Versione) {
     setScoperte((prev) => {
       if (prev.has(i)) return prev
-      if (ultra) { try { navigator.vibrate?.([30, 40, 60]) } catch { /* niente */ } }
+      if (speciale(versione)) { try { navigator.vibrate?.([30, 40, 60]) } catch { /* niente */ } }
       const n = new Set(prev); n.add(i); return n
     })
   }
 
-  const chiave = (v: Voce) => `${v.figurina_id}:${v.ultra ? 1 : 0}`
+  const chiave = (v: Voce) => `${v.figurina_id}:${v.versione}`
   const alterna = (lista: Voce[], set: (v: Voce[]) => void, v: Voce) => set(lista.some((x) => chiave(x) === chiave(v)) ? lista.filter((x) => chiave(x) !== chiave(v)) : [...lista, v])
   async function proponi() {
     if (controparte == null) return
@@ -298,19 +314,20 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   }
   function controproposta(sc: ScambioFig) {
     setContro(sc.id); setControparte(sc.da_team_id)
-    setOffro(sc.richieste); setChiedo(sc.offerte)
+    setOffro(sc.richieste.map(voce)); setChiedo(sc.offerte.map(voce))
     window.requestAnimationFrame(() => document.querySelector('.alb-sc-componi')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
   const fig = (id: number) => figurine.find((x) => x.id === id)
   // Figurine ancora libere di un doppione: nella controproposta lo scambio originale si chiude, quindi le sue figurine non contano come impegnate.
   const originale = contro != null ? scambi.find((x) => x.id === contro) : undefined
-  const libere = (d: Doppione, dellOriginale: Voce[] | undefined) =>
-    d.copie - Math.max(0, (d.impegnate ?? 0) - (dellOriginale?.filter((x) => chiave(x) === chiave(d)).length ?? 0))
-  const miniCarta = (v: Voce, scelta?: boolean, onClick?: () => void, nota?: string) => {
+  const libere = (d: Doppione, dellOriginale: VoceSalvata[] | undefined) =>
+    d.copie - Math.max(0, (d.impegnate ?? 0) - (dellOriginale?.map(voce).filter((x) => chiave(x) === chiave(d)).length ?? 0))
+  const miniCarta = (salvata: VoceSalvata, scelta?: boolean, onClick?: () => void, nota?: string) => {
+    const v = voce(salvata)
     const f = fig(v.figurina_id)
     if (!f) return null
     return <button key={chiave(v)} type="button" className={`alb-sc-mini${scelta ? ' is-scelta' : ''}${nota === 'in scambio' ? ' is-impegnata' : ''}`} onClick={onClick} disabled={!onClick} aria-pressed={scelta}>
-      <Carta f={f} ana={f.player_id != null ? ana.get(f.player_id) : undefined} dati={dati} ultra={v.ultra || f.tipo === 'conferenza'} piccola />
+      <Carta f={f} ana={f.player_id != null ? ana.get(f.player_id) : undefined} dati={dati} versione={v.versione} piccola />
       {nota && <em>{nota}</em>}
       {scelta && <i aria-hidden="true">✓</i>}
     </button>
@@ -338,7 +355,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
         <small>Stagione {stagione}</small>
         <strong>{attaccate}<span>/{base.length}</span></strong>
         <div className="alb-barra" aria-label={`Completamento ${Math.round(attaccate * 100 / Math.max(1, base.length))}%`}><i style={{ width: `${(attaccate * 100) / Math.max(1, base.length)}%` }} /></div>
-        <p>{ultraTot} ultrarare · {fmt(crediti)} crediti</p>
+        <p>{ultimateTot} ultimate · {ultraTot} ultrarare · {fmt(crediti)} crediti</p>
       </div>
     </div>
 
@@ -399,13 +416,13 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
           {suoi.length === 0 ? <p className="bet-nota">Non ha doppioni da scambiare.</p> : <div className="alb-sc-griglia">
             {[...suoi].sort((a, b) => Number(libere(a, originale?.offerte) <= 0) - Number(libere(b, originale?.offerte) <= 0) || Number(ce(a.figurina_id)) - Number(ce(b.figurina_id))).map((d) => libere(d, originale?.offerte) <= 0
               ? miniCarta(d, false, undefined, 'in scambio')
-              : miniCarta(d, chiedo.some((x) => chiave(x) === chiave(d)), () => alterna(chiedo, setChiedo, { figurina_id: d.figurina_id, ultra: d.ultra }), ce(d.figurina_id) ? undefined : 'ti manca'))}
+              : miniCarta(d, chiedo.some((x) => chiave(x) === chiave(d)), () => alterna(chiedo, setChiedo, { figurina_id: d.figurina_id, versione: d.versione }), ce(d.figurina_id) ? undefined : 'ti manca'))}
           </div>}
           <h4>Offri <span>i tuoi doppioni</span></h4>
           {miei.length === 0 ? <p className="bet-nota">Non hai doppioni da scambiare.</p> : <div className="alb-sc-griglia">
             {[...miei].sort((a, b) => Number(libere(a, originale?.richieste) <= 0) - Number(libere(b, originale?.richieste) <= 0) || Number(glimancano.has(b.figurina_id)) - Number(glimancano.has(a.figurina_id))).map((d) => libere(d, originale?.richieste) <= 0
               ? miniCarta(d, false, undefined, 'in scambio')
-              : miniCarta(d, offro.some((x) => chiave(x) === chiave(d)), () => alterna(offro, setOffro, { figurina_id: d.figurina_id, ultra: d.ultra }), glimancano.has(d.figurina_id) ? 'gli manca' : undefined))}
+              : miniCarta(d, offro.some((x) => chiave(x) === chiave(d)), () => alterna(offro, setOffro, { figurina_id: d.figurina_id, versione: d.versione }), glimancano.has(d.figurina_id) ? 'gli manca' : undefined))}
           </div>}
           <button type="button" className="alb-compra" disabled={lavoro || offro.length === 0 || chiedo.length === 0} onClick={() => void proponi()}>
             <span><b>{lavoro ? 'Invio…' : contro ? 'Invia la controproposta' : 'Proponi lo scambio'}</b><small>dai {offro.length} · ricevi {chiedo.length}</small></span>
@@ -415,15 +432,15 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
       </div>
     </section> : <>
 
-    {pagina == null && esempioUltra && <section className="alb-esempio" aria-label="Esempio di figurina ultrarara">
+    {pagina == null && esempioUltra && <section className="alb-esempio" aria-label="Esempio di figurina ultimate">
       <div className="alb-esempio__carta">
-        <Carta f={esempioUltra} ana={esempioUltra.player_id != null ? ana.get(esempioUltra.player_id) : undefined} dati={dati} ultra numero={numeri.get(esempioUltra.id)} />
+        <Carta f={esempioUltra} ana={esempioUltra.player_id != null ? ana.get(esempioUltra.player_id) : undefined} dati={dati} versione="ultimate" numero={numeri.get(esempioUltra.id)} />
         <em>Esempio</em>
       </div>
       <div className="alb-esempio__testo">
-        <p className="alb-esempio__kicker">✦ Ultrarara</p>
-        <h3>La figurina più ambita</h3>
-        <p>Esce circa una volta ogni 50 figurine: cornice d'oro, riflesso olografico arcobaleno e scintille. Si attacca sopra la versione normale.{conferenze ? ' In questa lega ci sono anche le due figurine delle Conference, solo ultrarare.' : ''}</p>
+        <p className="alb-esempio__kicker">✦ Quattro rarità</p>
+        <h3>Common, Rara, Ultrarara, Ultimate</h3>
+        <p>Ogni giocatore ha la versione <b>Common</b> (argento); da 70 di overall anche la <b>Rara</b> (oro), da 78 l'<b>Ultrarara</b> (oro olografico) e da 83 l'<b>Ultimate</b> (iridescente), che esce circa una figurina su cento. Gli stemmi{conferenze ? ' e le due Conference' : ''} esistono solo Ultimate. Per completare l'album basta una versione qualsiasi; nella pagina vedi la più preziosa che hai.</p>
       </div>
     </section>}
 
@@ -446,7 +463,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
         {conferenze && conf.length > 0 && <li>
           <button type="button" className="alb-indice__conf" onClick={() => setPagina('conf')}>
             <span className="alb-indice__stemma">✨</span>
-            <span className="alb-indice__nome"><strong>Conference</strong><small>{conf.filter((f) => ce(f.id)).length}/{conf.length} ultrarare</small></span>
+            <span className="alb-indice__nome"><strong>Conference</strong><small>{conf.filter((f) => ce(f.id)).length}/{conf.length} ultimate</small></span>
           </button>
         </li>}
         {agg.length > 0 && <li>
@@ -465,8 +482,8 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
       {pagina === 'agg' && <p className="bet-nota">Giocatori arrivati nelle rose dopo l'apertura dell'album. Si collezionano e si scambiano come le altre, ma non contano per il completamento, le pagine e la classifica.</p>}
       <ul className="alb-griglia">
         {figPagina.map((f) => <li key={f.id}>
-          <Carta f={f} ana={f.player_id != null ? ana.get(f.player_id) : undefined} dati={dati} ultra={ceUltra(f.id) || f.tipo === 'conferenza'} vuota={!ce(f.id)} numero={numeri.get(f.id)} />
-          {(possesso.get(f.id)?.normali ?? 0) + (possesso.get(f.id)?.ultra ?? 0) > 1 && <span className="alb-doppio">×{(possesso.get(f.id)?.normali ?? 0) + (possesso.get(f.id)?.ultra ?? 0)}</span>}
+          <Carta f={f} ana={f.player_id != null ? ana.get(f.player_id) : undefined} dati={dati} versione={migliore(f.id)} vuota={!ce(f.id)} numero={numeri.get(f.id)} />
+          {totale(possesso.get(f.id)) > 1 && <span className="alb-doppio">×{totale(possesso.get(f.id))}</span>}
         </li>)}
       </ul>
     </div>}
@@ -481,7 +498,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
           return <li key={r.team_id} className={r.team_id === teamId ? 'is-mia' : ''}>
             <span className={`bet-pos${i < 3 ? ` bet-pos--${i + 1}` : ''}`}>{i + 1}</span>
             <span className="bet-giocatori__stemma"><Crest value={t?.stemma_url ?? null} imageUrl={dati.crestUrlByTeamId.get(r.team_id)} size="small" /></span>
-            <span className="bet-classifica__nome"><strong>{t?.nome ?? '—'}</strong><small>{r.ultra} ultrarare · {r.pagine} pagine complete</small></span>
+            <span className="bet-classifica__nome"><strong>{t?.nome ?? '—'}</strong><small>{r.ultra} ultrarare e ultimate · {r.pagine} pagine complete</small></span>
             <span className="slot-classifica__crediti"><b>{Math.round((r.attaccate * 100) / Math.max(1, r.totale))}%</b><small>{r.attaccate}/{r.totale}</small></span>
           </li>
         })}
@@ -495,20 +512,21 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
           {busta.map((u, i) => {
             const f = figurine.find((x) => x.id === u.figurina_id) ?? { id: u.figurina_id, tipo: u.tipo, team_id: null, player_id: null, conferenza: null, overall: null, aggiornamento: false } as Figurina
             const girata = scoperte.has(i)
-            return <button key={i} type="button" className={`alb-carta${girata ? ' is-girata' : ''}${u.ultra ? ' is-ultra' : ''}`} style={{ ['--i' as string]: i }}
-              onClick={() => scopri(i, u.ultra)} aria-label={girata ? 'Figurina scoperta' : 'Tocca per scoprire'}>
+            const ver: Versione = u.versione ?? (u.ultra ? 'ultra' : 'common')
+            return <button key={i} type="button" className={`alb-carta${girata ? ' is-girata' : ''}${speciale(ver) ? ' is-ultra' : ''}${ver !== 'common' ? ` is-${ver}` : ''}`} style={{ ['--i' as string]: i }}
+              onClick={() => scopri(i, ver)} aria-label={girata ? 'Figurina scoperta' : 'Tocca per scoprire'}>
               <span className="alb-carta__retro" aria-hidden="true"><img src="/specialone-mark.svg" alt="" /><i /></span>
               <span className="alb-carta__fronte">
-                <Carta f={f} ana={f.player_id != null ? ana.get(f.player_id) : undefined} dati={dati} ultra={u.ultra} numero={numeri.get(f.id)} />
-                {girata && u.ultra && <span className="alb-carta__boom" aria-hidden="true" />}
+                <Carta f={f} ana={f.player_id != null ? ana.get(f.player_id) : undefined} dati={dati} versione={ver} numero={numeri.get(f.id)} />
+                {girata && speciale(ver) && <span className="alb-carta__boom" aria-hidden="true" />}
                 {/* Dentro il fronte (gia' girato di 180 gradi): cosi' la scritta si legge dritta */}
-                {girata && <em className={`alb-carta__etichetta${u.ultra ? ' is-ultra' : u.nuova ? ' is-nuova' : ''}`}>{u.ultra ? '✦ ULTRARARA ✦' : u.nuova ? 'NUOVA' : 'DOPPIONE'}</em>}
+                {girata && <em className={`alb-carta__etichetta${speciale(ver) ? ` is-ultra is-${ver}` : ver === 'rare' ? ' is-rare' : u.nuova ? ' is-nuova' : ''}`}>{ver === 'ultimate' ? '✦ ULTIMATE ✦' : ver === 'ultra' ? '✦ ULTRARARA ✦' : ver === 'rare' ? `RARA${u.nuova ? ' · NUOVA' : ''}` : u.nuova ? 'NUOVA' : 'DOPPIONE'}</em>}
               </span>
             </button>
           })}
         </div>
         <div className="alb-apertura__azioni">
-          {scoperte.size < busta.length ? <button type="button" className="button button--secondary" onClick={() => busta.forEach((u, i) => scopri(i, u.ultra))}>Scopri tutte</button>
+          {scoperte.size < busta.length ? <button type="button" className="button button--secondary" onClick={() => busta.forEach((u, i) => scopri(i, u.versione ?? (u.ultra ? 'ultra' : 'common')))}>Scopri tutte</button>
             : <>
               <button type="button" className="button button--secondary" onClick={() => setBusta(null)}>Chiudi</button>
               {gratis > 0
