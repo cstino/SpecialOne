@@ -13,7 +13,9 @@
 -- Rimedio: una sola funzione dice qual e' la prossima giornata del training (prima giornata da giocare
 -- della stagione in corso; se non ce ne sono, quella dopo l'ultima in calendario; a stagione nuova senza
 -- calendario, la 1). Al passaggio di stagione gli allenamenti in corso si riportano sulla numerazione
--- nuova togliendo le giornate della stagione finita: le giornate che mancavano restano le stesse.
+-- nuova togliendo le giornate della stagione finita, piu' 6 giornate di "estate" (richiesta del
+-- committente, 6/11/2026): l'off-season vale come 6 giornate di allenamento, anche per chi l'ha avviato
+-- in off-season.
 
 create or replace function private.giornata_training(p_league_id bigint)
 returns integer
@@ -43,6 +45,7 @@ begin
   select coalesce(max(f.giornata), 0) into v_fatte
   from public.fixtures f join public.seasons s on s.id = f.season_id
   where s.league_id = new.id and s.numero = old.stagione_corrente;
+  v_fatte := v_fatte + 6;  -- l'estate
 
   update public.cambi_ruolo
   set avviato_giornata = avviato_giornata - v_fatte, completa_giornata = completa_giornata - v_fatte
