@@ -350,3 +350,21 @@ provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato
   giocatore decisa in automatico (rinuncia se ora vale più del contratto o se è scontento).
 
 <!-- Nuove richieste qui sotto: "## N. Titolo", poi Stato, Richiesta (parole del committente), Decisioni, Note. -->
+
+## 13. Espansione a 28 squadre (conference da 14): playoff
+
+* **Stato:** `deciso` (7/11/2026), solo come regola. L'espansione non è ancora programmata: si implementa quando
+  arrivano le 4 squadre nuove.
+* **Regular season:** 13 avversarie × 2 = **26 giornate** (oggi 22); playoff invariati in 7 serate, in tutto 33.
+* **Scelta del committente: OPZIONE A**, tabelloni invariati:
+  * **Champions** 1ª-6ª di ogni conference e **Draft Playoffs** 9ª-14ª, stesso formato B di oggi
+    (`docs/decisioni-conferenze.md`), con il Draft Playoffs spostato di due posizioni: 14ª e 13ª dirette ai quarti,
+    play-in 12E–9W, 11E–10W, 12W–9E, 11W–10E.
+  * **7ª e 8ª** di ogni conference: stagione finita, niente playoff.
+* **Ordine delle scelte (28):** 1ª-12ª Draft Playoffs come oggi; **13ª-16ª le quattro escluse (7ª-8ª), per classifica:
+  peggiore prima** (stessi criteri della classifica, confrontando le due conference); 17ª-28ª Champions come oggi
+  (17ª-20ª eliminate nel play-in, ..., 27ª finalista, 28ª campione).
+* **Scartate:** B (tabelloni da 7 con un solo bye: svaluta il 2° posto); C (Europa League a 4 per la 7ª e l'8ª):
+  eventualmente da aggiungere in seguito sopra la A.
+* **Da toccare quando si fa:** `crea_tabelloni_conferenze` (posizioni del Draft), `assegna_posizioni_playoff` /
+  ordine delle scelte (le 4 escluse), legenda della classifica (zona neutra 7-8), `giornate_totali`, calendario a 14.
