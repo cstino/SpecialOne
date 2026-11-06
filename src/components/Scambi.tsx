@@ -49,7 +49,7 @@ const MOSTRA_VOTI = false
 const soloCifre = (v: string) => v.replace(/\D/g, '').slice(0, 3)
 const numeroOppure = (v: string): number | null => (v === '' ? null : Number(v))
 
-type StatoProposta = 'in_attesa' | 'accettata' | 'rifiutata' | 'ritirata' | 'scaduta'
+type StatoProposta = 'in_attesa' | 'accettata' | 'rifiutata' | 'ritirata' | 'scaduta' | 'decaduta'
 
 type Proposta = {
   id: number
@@ -122,7 +122,7 @@ type TrattativaPubblica = {
 }
 
 const ETICHETTE_STATO: Record<StatoProposta, string> = {
-  in_attesa: 'In attesa', accettata: 'Accettata', rifiutata: 'Rifiutata', ritirata: 'Ritirata', scaduta: 'Scaduta',
+  in_attesa: 'In attesa', accettata: 'Accettata', rifiutata: 'Rifiutata', ritirata: 'Ritirata', scaduta: 'Scaduta', decaduta: 'Decaduta',
 }
 
 function minutiDalMezzanotteRoma() {
