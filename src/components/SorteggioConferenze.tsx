@@ -100,10 +100,12 @@ export function SorteggioConferenze({ membership, onFine, onMenu, demo }: Props)
   const prima = Boolean(stato) && secondiAllAvvio > 0
   const trascorso = stato ? Math.max(0, adesso - avviatoMs) : 0
   const dovute = stato ? Math.min(stato.totale, Math.floor(trascorso / passoMs)) : 0
-  const finito = Boolean(stato) && dovute >= (stato?.totale ?? 0)
   const secondiNelSlot = stato ? (trascorso % passoMs) / 1000 : 0
   const secondiRimasti = Math.max(0, (stato?.passo_secondi ?? 20) - secondiNelSlot)
   const secondiCarta = (stato?.passo_secondi ?? 20) - SECONDI_ROULETTE
+  // Finito solo dopo che anche l'ultima estratta ha avuto la sua carta per intero: prima si passava a "Sorteggio
+  // completato" nell'istante in cui usciva, e l'ultima squadra non si vedeva mai (segnalato il 6/11/2026).
+  const finito = Boolean(stato) && dovute >= (stato?.totale ?? 0) && trascorso >= (stato?.totale ?? 0) * passoMs + secondiCarta * 1000
 
   // Se manca una estrazione che il tempo dice gia' rivelata la si chiede ogni secondo;
   // altrimenti si risincronizza ogni 5. A sorteggio finito si guarda quando la lega riparte.
