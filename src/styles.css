@@ -4557,6 +4557,52 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .x-anteprima__tutti { display: block; width: 100%; padding: 14px 16px; border: 0; background: transparent; color: #b98cff; font: 600 .9rem/1 inherit; font-family: inherit; text-align: left; cursor: pointer; }
 .x-anteprima__tutti:hover { background: rgba(185,140,255,.06); }
 
+/* Giornali, insider e influencer (6/11/2026): profili da aprire e seguire. Avatar quadrato per le testate,
+   tondo per le persone; pulsante "Segui" bianco come su X, "Segui già" che al passaggio diventa "Non seguire". */
+.x-schede { grid-template-columns: repeat(3, 1fr); }
+.x-verificato--influencer { color: #f91880; }
+.x-avatar--profilo b { color: #fff; font: 900 .78rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; letter-spacing: .02em; text-shadow: 0 1px 2px rgba(0,0,0,.3); }
+.x-avatar--giornale, .x-avatar--pagelle { border-radius: 10px; }
+.x-avatar--grande { width: 76px; height: 76px; border: 4px solid #050407; box-sizing: content-box; }
+.x-avatar--grande b { font-size: 1.35rem; }
+.x-avatar--grande.x-avatar--giornale, .x-avatar--grande.x-avatar--pagelle { border-radius: 18px; }
+.x-post__autore { display: inline-flex; align-items: center; gap: 4px; min-width: 0; margin: 0; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.x-post__autore:hover .x-post__nome { text-decoration: underline; }
+.x-post__autore:focus-visible, .x-post__avatar-btn:focus-visible { outline: 2px solid #b98cff; outline-offset: 2px; border-radius: 8px; }
+.x-post__avatar-btn { display: block; margin: 0; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.x-segui { display: inline-grid; place-items: center; min-width: 84px; height: 34px; margin: 0; padding: 0 16px; border: 1px solid #e7e9ea; border-radius: 999px; background: #e7e9ea; color: #0b0a10; font: 800 .86rem/1 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+.x-segui:hover { background: #d0d3d6; }
+.x-segui.is-seguito { border-color: #3a3645; background: transparent; color: #e7e9ea; }
+.x-segui__no { display: none; }
+.x-segui.is-seguito:hover { border-color: #67202f; background: rgba(244,33,46,.1); color: #f4212e; }
+.x-segui.is-seguito:hover .x-segui__si { display: none; }
+.x-segui.is-seguito:hover .x-segui__no { display: inline; }
+.x-segui:focus-visible { outline: 2px solid #b98cff; outline-offset: 2px; }
+.x-scopri { display: grid; gap: 10px; padding: 14px 0 16px; border-bottom: 1px solid #1f1c27; }
+.x-scopri__titolo { margin: 0; padding: 0 16px; color: #e7e9ea; font: 800 1.05rem/1.2 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; }
+.x-scopri__lista { display: grid; grid-auto-flow: column; grid-auto-columns: 148px; gap: 10px; padding: 0 16px 4px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.x-scopri__lista::-webkit-scrollbar { display: none; }
+.x-scopri__card { display: grid; justify-items: center; gap: 10px; padding: 14px 10px 12px; border: 1px solid #2a2633; border-radius: 16px; background: #0c0a11; scroll-snap-align: start; }
+.x-scopri__apri { display: grid; justify-items: center; gap: 4px; width: 100%; margin: 0; padding: 0; border: 0; background: transparent; color: #e7e9ea; font: inherit; text-align: center; cursor: pointer; }
+.x-scopri__apri .x-avatar { width: 56px; height: 56px; margin-bottom: 4px; }
+.x-scopri__apri strong { max-width: 100%; overflow: hidden; font-size: .84rem; font-weight: 800; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.x-scopri__apri small { max-width: 100%; overflow: hidden; color: #71767b; font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
+.x-scopri__apri em { color: #a6a3b0; font-size: .68rem; font-style: normal; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.x-scopri__card .x-segui { width: 100%; }
+.x-profilo { border-bottom: 1px solid #1f1c27; }
+.x-profilo__copertina { position: relative; height: 128px; }
+.x-profilo__indietro { position: absolute; top: 10px; left: 12px; display: grid; place-items: center; width: 36px; height: 36px; margin: 0; padding: 0; border: 0; border-radius: 50%; background: rgba(5,4,7,.6); color: #fff; cursor: pointer; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.x-profilo__indietro svg { width: 20px; height: 20px; }
+.x-profilo__riga { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: -42px; padding: 0 16px; }
+.x-profilo__riga .x-segui { margin-bottom: 4px; }
+.x-profilo__info { display: grid; gap: 6px; padding: 10px 16px 16px; }
+.x-profilo__info h2 { display: flex; align-items: center; gap: 5px; margin: 0; color: #fff; font: 800 1.3rem/1.2 "Bai Jamjuree", ui-sans-serif, system-ui, sans-serif; }
+.x-profilo__info h2 .x-verificato { width: 20px; height: 20px; }
+.x-profilo__handle { margin: -4px 0 0; color: #71767b; font-size: .9rem; }
+.x-profilo__bio { margin: 2px 0 0; color: #e7e9ea; font-size: .95rem; line-height: 1.4; }
+.x-profilo__numeri { margin: 0; color: #71767b; font-size: .88rem; }
+.x-profilo__numeri b { color: #e7e9ea; font-weight: 800; }
+
 @media (max-width: 600px) { .x-pagina { border-inline: 0; } }
 /* Sul telefono la barra dell'app (.game-mobilebar) e' fissa in alto: le schede si agganciano sotto di lei. */
 @media (max-width: 899px) { .x-barra { top: max(68px, calc(env(safe-area-inset-top) + 56px)); } }

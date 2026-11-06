@@ -362,3 +362,17 @@ Voce del menu Extra campo, solo nelle leghe con le novità (`leagues.conferenze_
 - **Ricarica alle 23:30 (19/10/2026).** I 1.000 crediti giornalieri arrivano alle 23:30 ora di Roma (non più a mezzanotte). Migrazione `20261019270000`.
 - **Ricarica alle 23:00 (19/10/2026, correzione).** I 1.000 crediti giornalieri arrivano alle 23:00 ora di Roma. Migrazione `20261019280000`.
 - **Schedina a puntata (19/10/2026, sostituisce i crediti fissi).** Si scommette sempre con i crediti: puntata 50, 100, 250 o 500, scalata subito; cambiandola finché la schedina è aperta si scala o si restituisce la differenza. Vincita = puntata × moltiplicatore secondo gli errori: con 6 partite 0 errori ×20, 1 ×4, 2 ×1,5, di più 0; con più partite la scala cresce (`private.betone_moltiplicatore`: 0 err 20·1,6^(N−6), 1 err 4·1,4^(N−6), 2 err 1,5·1,2^(N−6), 3 err ×1 se N ≥ 8). Ogni doppia dimezza il moltiplicatore. Le schedine giocate gratis prima del cambio (puntata 0) vengono valutate con la regola di allora (20 per pronostico giusto, 300 la perfetta). WIN e classifica invariate. Sulla schedina: tabella dei moltiplicatori con la vincita per la puntata scelta. Migrazione `20261019290000`.
+
+- **Giornali, insider e influencer (6/11/2026).** Profili parodia da seguire (tabella `social_profili`, chi segue chi in
+  `social_seguiti`, funzioni `social_profili_lega` e `social_segui`; `social_feed` ha i filtri `p_seguiti` e `p_profilo`).
+  La Gazzetta dello Sprint scrive l'ufficialità degli scambi, il Corriere dello Spot dà il voto a entrambe le squadre
+  (valore ricevuto contro valore ceduto: qualità con peso più che lineare, giovani col margine in più, trentenni meno; il
+  pezzo migliore pesa per intero, gli altri 0,7^n; voto 4-9 a mezzi punti) e un tifoso risponde (protesta se il voto è
+  ≤ 5,5, gongola se ≥ 7). Fabrizio Romanzo o Gianluca Di Marzipane danno un retroscena in 6 scambi su 10: **mai dati veri
+  delle trattative** (scelta del committente), solo frasi verosimili da morale, età e ruolo. Sky Spot 24 copre le aste
+  degli svincolati, TuttoMercatoWop le UNDER. Per ogni giornata: L'Ultimo Omino analizza la partita più interessante
+  (vittoria con poco possesso, dominio, pareggio), Lele Adami esalta il giocatore della giornata (almeno 2 tra gol e
+  assist), Calciatori Bruttini prende in giro la batosta (almeno 3 gol di scarto) e un tifoso risponde. Gli articoli
+  escono da 2 a 90 minuti dopo l'evento. Cron `social-stampa` ogni 5 minuti, `private.social_genera_stampa`; solo eventi
+  dal 6/11/2026. Schermata: scheda "Seguiti" con i profili da seguire, pagina del profilo dal nome o dall'avatar.
+  Migrazione `20261106060000_socialone_profili_stampa.sql`.

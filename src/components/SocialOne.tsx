@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Icona } from './Icona'
 import { supabase } from '../lib/supabase'
 import { useSeasonData } from '../lib/useSeasonData'
@@ -12,10 +12,12 @@ import { firmaFoto } from './RosaElenco'
 // Un post per ogni evento, generato dal database; lo vede tutta la lega, l'utente vede per primi
 // quelli che riguardano la sua squadra. Le conversazioni (domanda -> allenatore -> tifosi -> capitano)
 // si leggono a filo, in ordine di tempo. Risultati e scambi hanno la loro card.
+// Giornali, insider e influencer (6/11/2026) sono profili veri: si aprono, si seguono, e la scheda "Seguiti"
+// mostra solo i loro post.
 
 export type PostSocial = {
   id: number
-  autore_tipo: 'lega' | 'testata' | 'allenatore' | 'tifosi' | 'giocatore'
+  autore_tipo: 'lega' | 'testata' | 'allenatore' | 'tifosi' | 'giocatore' | 'influencer'
   autore_nome: string
   autore_handle: string | null
   team_id: number | null
@@ -27,7 +29,24 @@ export type PostSocial = {
   n_mi_piace: number
   mio_mi_piace: boolean
   riguarda_me: boolean
+  profilo?: string | null
 }
+
+export type ProfiloSocial = {
+  id: string
+  nome: string
+  tipo: 'giornale' | 'pagelle' | 'insider' | 'influencer'
+  bio: string
+  sigla: string
+  colore: string
+  colore2: string
+  follower: number
+  seguito: boolean
+  n_post: number
+}
+
+// I profili e l'apertura della loro pagina arrivano ai post senza passarli di componente in componente.
+const ProfiliCtx = createContext<{ perId: Map<string, ProfiloSocial>; apri?: (id: string) => void }>({ perId: new Map() })
 
 type Dati = ReturnType<typeof useSeasonData>
 
@@ -37,14 +56,14 @@ const PAGINA = 30
 //  Dati
 // ------------------------------------------------------------
 
-export function useSocialFeed(leagueId: number, perTe: boolean, limite = PAGINA) {
+export function useSocialFeed(leagueId: number, perTe: boolean, limite = PAGINA, seguiti = false, profilo: string | null = null) {
   const [post, setPost] = useState<PostSocial[]>([])
   const [caricamento, setCaricamento] = useState(true)
   const [altri, setAltri] = useState(false)
   const [errore, setErrore] = useState<string | null>(null)
 
   const carica = useCallback(async (offset: number) => {
-    const { data, error } = await supabase.rpc('social_feed', { p_league_id: leagueId, p_per_te: perTe, p_limite: limite, p_offset: offset })
+    const { data, error } = await supabase.rpc('social_feed', { p_league_id: leagueId, p_per_te: perTe, p_limite: limite, p_offset: offset, p_seguiti: seguiti, p_profilo: profilo })
     if (error) { setErrore(error.message); setCaricamento(false); return }
     const righe = (data ?? []).map((r: PostSocial) => ({ ...r, n_mi_piace: Number(r.n_mi_piace) })) as PostSocial[]
     setPost((prima) => offset === 0 ? righe : [...prima, ...righe.filter((r) => !prima.some((p) => p.id === r.id))])
@@ -52,7 +71,7 @@ export function useSocialFeed(leagueId: number, perTe: boolean, limite = PAGINA)
     setAltri(righe.filter((r) => r.in_risposta_a === null).length === limite)
     setErrore(null)
     setCaricamento(false)
-  }, [leagueId, perTe, limite])
+  }, [leagueId, perTe, limite, seguiti, profilo])
 
   useEffect(() => { setCaricamento(true); void carica(0) }, [carica])
 
@@ -75,6 +94,23 @@ export function useSocialFeed(leagueId: number, perTe: boolean, limite = PAGINA)
 
   return { post, caricamento, altri, errore, mostraAltri, mettiMiPiace, commenta, ricarica: () => void carica(0) }
 }
+
+function useProfili(leagueId: number) {
+  const [profili, setProfili] = useState<ProfiloSocial[]>([])
+  const carica = useCallback(async () => {
+    const { data } = await supabase.rpc('social_profili_lega', { p_league_id: leagueId })
+    setProfili(((data ?? []) as ProfiloSocial[]).map((p) => ({ ...p, follower: Number(p.follower), n_post: Number(p.n_post) })))
+  }, [leagueId])
+  useEffect(() => { void carica() }, [carica])
+  const segui = useCallback(async (id: string) => {
+    setProfili((ps) => ps.map((p) => p.id === id ? { ...p, seguito: !p.seguito, follower: p.follower + (p.seguito ? -1 : 1) } : p))
+    const { error } = await supabase.rpc('social_segui', { p_league_id: leagueId, p_profilo: id })
+    if (error) void carica()
+  }, [leagueId, carica])
+  return { profili, segui }
+}
+
+const compatto = new Intl.NumberFormat('it-IT', { notation: 'compact', maximumFractionDigits: 1 })
 
 export function useFotoGiocatori(post: PostSocial[]) {
   const [foto, setFoto] = useState<Map<number, string>>(new Map())
@@ -133,7 +169,7 @@ function handle(p: PostSocial, dati: Dati) {
   }
 }
 
-// Badge di verifica: oro la lega, blu stampa e giocatori, viola gli allenatori. I tifosi no.
+// Badge di verifica: oro la lega, blu stampa e giocatori, viola gli allenatori, rosa gli influencer. I tifosi no.
 function Verificato({ tipo }: { tipo: PostSocial['autore_tipo'] }) {
   if (tipo === 'tifosi') return null
   return <svg className={`x-verificato x-verificato--${tipo}`} viewBox="0 0 22 22" aria-label="Account verificato" role="img">
@@ -153,7 +189,15 @@ function Svg({ nome }: { nome: keyof typeof IconaAzione }) {
   return <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{IconaAzione[nome]}</svg>
 }
 
+function AvatarProfilo({ profilo, grande }: { profilo: ProfiloSocial; grande?: boolean }) {
+  return <span className={`x-avatar x-avatar--profilo x-avatar--${profilo.tipo}${grande ? ' x-avatar--grande' : ''}`}
+    style={{ background: `linear-gradient(135deg, ${profilo.colore}, ${profilo.colore2})` }}><b>{profilo.sigla}</b></span>
+}
+
 export function Avatar({ post, dati, foto }: { post: PostSocial; dati: Dati; foto: Map<number, string> }) {
+  const { perId } = useContext(ProfiliCtx)
+  const profilo = post.profilo ? perId.get(post.profilo) : undefined
+  if (profilo) return <AvatarProfilo profilo={profilo} />
   if (post.autore_tipo === 'lega') return <span className="x-avatar x-avatar--lega"><img src="/specialone-mark.svg" alt="" /></span>
   if (post.autore_tipo === 'giocatore') {
     const url = post.player_instance_id ? foto.get(post.player_instance_id) : undefined
@@ -253,6 +297,7 @@ export function PostX({ post, dati, foto, nRisposte, rispondeA, filoSopra, filoS
     else setCommento(null)
   }
   const [scoppio, setScoppio] = useState(0)
+  const { apri: apriProfilo } = useContext(ProfiliCtx)
   const squadra = post.team_id ? dati.teamById.get(post.team_id)?.nome : undefined
   const card = post.autore_tipo === 'lega' ? (CardPartita({ post, dati }) ?? CardScambio({ post, dati })) : null
 
@@ -267,14 +312,24 @@ export function PostX({ post, dati, foto, nRisposte, rispondeA, filoSopra, filoS
   return <article className={`x-post x-post--${post.autore_tipo}${filoSopra ? ' has-filo-sopra' : ''}${filoSotto ? ' has-filo-sotto' : ''}`}>
     <div className="x-post__colonna">
       {filoSopra && <i className="x-filo x-filo--sopra" aria-hidden="true" />}
-      <Avatar post={post} dati={dati} foto={foto} />
+      {post.profilo && apriProfilo
+        ? <button className="x-post__avatar-btn" type="button" aria-label={`Apri il profilo di ${post.autore_nome}`} onClick={() => apriProfilo(post.profilo!)}><Avatar post={post} dati={dati} foto={foto} /></button>
+        : <Avatar post={post} dati={dati} foto={foto} />}
       {filoSotto && <i className="x-filo x-filo--sotto" aria-hidden="true" />}
     </div>
     <div className="x-post__corpo">
       <header className="x-post__testa">
-        <strong className="x-post__nome">{post.autore_nome}</strong>
-        <Verificato tipo={post.autore_tipo} />
-        <span className="x-post__handle">@{handle(post, dati)}</span>
+        {post.profilo && apriProfilo
+          ? <button className="x-post__autore" type="button" onClick={() => apriProfilo(post.profilo!)}>
+            <strong className="x-post__nome">{post.autore_nome}</strong>
+            <Verificato tipo={post.autore_tipo} />
+            <span className="x-post__handle">@{handle(post, dati)}</span>
+          </button>
+          : <>
+            <strong className="x-post__nome">{post.autore_nome}</strong>
+            <Verificato tipo={post.autore_tipo} />
+            <span className="x-post__handle">@{handle(post, dati)}</span>
+          </>}
         <span className="x-post__punto" aria-hidden="true">·</span>
         <time className="x-post__tempo" dateTime={post.creato_il} title={new Date(post.creato_il).toLocaleString('it-IT', { timeZone: 'Europe/Rome' })}>{tempoBreve(post.creato_il)}</time>
       </header>
@@ -353,43 +408,101 @@ function SocialBloccato({ carica, matchId, onRevealMatch }: { carica: boolean; m
   </div>
 }
 
+const NOME_TIPO: Record<ProfiloSocial['tipo'], string> = { giornale: 'Giornale', pagelle: 'Pagelle', insider: 'Insider di mercato', influencer: 'Influencer' }
+
+function BottoneSegui({ profilo, onSegui }: { profilo: ProfiloSocial; onSegui: (id: string) => void }) {
+  return <button className={`x-segui${profilo.seguito ? ' is-seguito' : ''}`} type="button" aria-pressed={profilo.seguito} onClick={() => onSegui(profilo.id)}>
+    <span className="x-segui__si">{profilo.seguito ? 'Segui già' : 'Segui'}</span>
+    {profilo.seguito && <span className="x-segui__no" aria-hidden="true">Non seguire</span>}
+  </button>
+}
+
+// I profili da seguire: in cima alla scheda "Seguiti", scorrono di lato sul telefono.
+function ProfiliDaSeguire({ profili, onSegui, onApri }: { profili: ProfiloSocial[]; onSegui: (id: string) => void; onApri: (id: string) => void }) {
+  return <section className="x-scopri" aria-label="Profili da seguire">
+    <h2 className="x-scopri__titolo">Giornali e influencer</h2>
+    <div className="x-scopri__lista">
+      {profili.map((pr) => <article className="x-scopri__card" key={pr.id}>
+        <button className="x-scopri__apri" type="button" onClick={() => onApri(pr.id)}>
+          <AvatarProfilo profilo={pr} />
+          <strong>{pr.nome}</strong>
+          <small>@{pr.id}</small>
+          <em>{NOME_TIPO[pr.tipo]}</em>
+        </button>
+        <BottoneSegui profilo={pr} onSegui={onSegui} />
+      </article>)}
+    </div>
+  </section>
+}
+
+function TestaProfilo({ profilo, onSegui, onIndietro }: { profilo: ProfiloSocial; onSegui: (id: string) => void; onIndietro: () => void }) {
+  return <section className="x-profilo">
+    <div className="x-profilo__copertina" style={{ background: `linear-gradient(120deg, ${profilo.colore2}, ${profilo.colore})` }}>
+      <button className="x-profilo__indietro" type="button" aria-label="Torna al feed" onClick={onIndietro}><Icona nome="indietro" /></button>
+    </div>
+    <div className="x-profilo__riga">
+      <AvatarProfilo profilo={profilo} grande />
+      <BottoneSegui profilo={profilo} onSegui={onSegui} />
+    </div>
+    <div className="x-profilo__info">
+      <h2>{profilo.nome} <Verificato tipo={profilo.tipo === 'influencer' ? 'influencer' : 'testata'} /></h2>
+      <p className="x-profilo__handle">@{profilo.id} · {NOME_TIPO[profilo.tipo]}</p>
+      <p className="x-profilo__bio">{profilo.bio}</p>
+      <p className="x-profilo__numeri"><b>{compatto.format(profilo.follower)}</b> follower <span aria-hidden="true">·</span> <b>{profilo.n_post}</b> post in questa lega</p>
+    </div>
+  </section>
+}
+
 export function SocialOne({ membership, onNavigate, revealedMatchIds, onRevealMatch }: Props) {
   const league = membership.league as League
   const dati = useSeasonData(membership)
-  const [scheda, setScheda] = useState<'per-te' | 'lega'>('per-te')
-  const { post, caricamento, altri, errore, mostraAltri, mettiMiPiace, commenta } = useSocialFeed(league.id, scheda === 'per-te')
+  const [scheda, setScheda] = useState<'per-te' | 'seguiti' | 'lega'>('per-te')
+  const [profiloAperto, setProfiloAperto] = useState<string | null>(null)
+  const { profili, segui } = useProfili(league.id)
+  const { post, caricamento, altri, errore, mostraAltri, mettiMiPiace, commenta } =
+    useSocialFeed(league.id, scheda === 'per-te' && !profiloAperto, PAGINA, scheda === 'seguiti' && !profiloAperto, profiloAperto)
   const foto = useFotoGiocatori(post)
   const blocco = useSocialBloccato(league, dati, revealedMatchIds)
+  const perId = useMemo(() => new Map(profili.map((p) => [p.id, p])), [profili])
+  const apri = useCallback((id: string) => { setProfiloAperto(id); window.scrollTo({ top: 0 }) }, [])
+  const ctx = useMemo(() => ({ perId, apri }), [perId, apri])
+  const aperto = profiloAperto ? perId.get(profiloAperto) : undefined
+  const nessunSeguito = scheda === 'seguiti' && !profiloAperto && profili.length > 0 && !profili.some((p) => p.seguito)
 
-  return <main className="app-shell season-shell social-shell">
-    <GameNav league={league} active="social" onNavigate={onNavigate} />
-    <div className="x-pagina">
-      <header className="x-barra">
-        {/* Solo il titolo: logo e nome della lega sono gia' nella barra dell'app, subito sopra. */}
-        <h1 className="x-barra__titolo">Social<b>One</b></h1>
-        <nav className="x-schede" role="tablist" aria-label="Feed">
-          {([['per-te', 'Per te'], ['lega', 'Tutta la lega']] as const).map(([valore, testo]) =>
-            <button key={valore} type="button" role="tab" aria-selected={scheda === valore} className={scheda === valore ? 'is-attiva' : ''} onClick={() => setScheda(valore)}>
-              <span>{testo}</span>
-            </button>)}
-        </nav>
-      </header>
-      {blocco.bloccato ? <SocialBloccato carica={blocco.carica} matchId={blocco.matchId} onRevealMatch={onRevealMatch} />
-        : caricamento ? <div className="x-stato"><LoadingLogo compatto /><p>Carico il feed…</p></div>
-        : errore ? <div className="x-stato"><p>{errore}</p></div>
-        : post.length === 0 ? <div className="x-stato"><strong>Ancora nessun post</strong><p>Appena succede qualcosa nella lega, lo trovi qui.</p></div>
-        : <>
-          <Feed post={post} dati={dati} foto={foto} onMiPiace={(id) => void mettiMiPiace(id)} onCommenta={commenta} />
-          {altri && <button className="x-altri" type="button" onClick={mostraAltri}>Mostra altri post</button>}
-        </>}
-    </div>
-  </main>
+  return <ProfiliCtx.Provider value={ctx}>
+    <main className="app-shell season-shell social-shell">
+      <GameNav league={league} active="social" onNavigate={onNavigate} />
+      <div className="x-pagina">
+        {aperto ? <TestaProfilo profilo={aperto} onSegui={(id) => void segui(id)} onIndietro={() => setProfiloAperto(null)} />
+          : <header className="x-barra">
+            {/* Solo il titolo: logo e nome della lega sono gia' nella barra dell'app, subito sopra. */}
+            <h1 className="x-barra__titolo">Social<b>One</b></h1>
+            <nav className="x-schede" role="tablist" aria-label="Feed">
+              {([['per-te', 'Per te'], ['seguiti', 'Seguiti'], ['lega', 'Tutta la lega']] as const).map(([valore, testo]) =>
+                <button key={valore} type="button" role="tab" aria-selected={scheda === valore} className={scheda === valore ? 'is-attiva' : ''} onClick={() => setScheda(valore)}>
+                  <span>{testo}</span>
+                </button>)}
+            </nav>
+          </header>}
+        {!aperto && scheda === 'seguiti' && profili.length > 0 && <ProfiliDaSeguire profili={profili} onSegui={(id) => void segui(id)} onApri={apri} />}
+        {blocco.bloccato ? <SocialBloccato carica={blocco.carica} matchId={blocco.matchId} onRevealMatch={onRevealMatch} />
+          : nessunSeguito ? <div className="x-stato"><strong>Non segui ancora nessuno</strong><p>Segui un giornale o un influencer qui sopra: i loro post arrivano in questa scheda.</p></div>
+          : caricamento ? <div className="x-stato"><LoadingLogo compatto /><p>Carico il feed…</p></div>
+          : errore ? <div className="x-stato"><p>{errore}</p></div>
+          : post.length === 0 ? <div className="x-stato"><strong>Ancora nessun post</strong><p>{aperto ? `${aperto.nome} non ha ancora scritto niente in questa lega.` : 'Appena succede qualcosa nella lega, lo trovi qui.'}</p></div>
+          : <>
+            <Feed post={post} dati={dati} foto={foto} onMiPiace={(id) => void mettiMiPiace(id)} onCommenta={commenta} />
+            {altri && <button className="x-altri" type="button" onClick={mostraAltri}>Mostra altri post</button>}
+          </>}
+      </div>
+    </main>
+  </ProfiliCtx.Provider>
 }
 
 // La card in home, al posto di "Oggi nella lega": stessa struttura e stesse misure, ma con i post di SocialOne.
 // Ruota da sola fra i post piu' rilevanti per te; toccarla apre il feed.
 const ETICHETTA_CARD: Record<PostSocial['autore_tipo'], string> = {
-  lega: 'UFFICIALE', testata: 'STAMPA', allenatore: 'ALLENATORE', tifosi: 'TIFOSI', giocatore: 'GIOCATORE',
+  lega: 'UFFICIALE', testata: 'STAMPA', allenatore: 'ALLENATORE', tifosi: 'TIFOSI', giocatore: 'GIOCATORE', influencer: 'INFLUENCER',
 }
 
 export function SocialCard({ membership, onNavigate, revealedMatchIds, onRevealMatch }: Props) {
@@ -397,6 +510,8 @@ export function SocialCard({ membership, onNavigate, revealedMatchIds, onRevealM
   const dati = useSeasonData(membership)
   const blocco = useSocialBloccato(league, dati, revealedMatchIds)
   const { post, caricamento } = useSocialFeed(league.id, true, 6)
+  const { profili } = useProfili(league.id)
+  const ctx = useMemo(() => ({ perId: new Map(profili.map((p) => [p.id, p])) }), [profili])
   const radici = useMemo(() => post.filter((p) => p.in_risposta_a === null), [post])
   const foto = useFotoGiocatori(radici)
   const [indice, setIndice] = useState(0)
@@ -425,7 +540,7 @@ export function SocialCard({ membership, onNavigate, revealedMatchIds, onRevealM
               <span className="social-card__meta"><i aria-hidden="true">♥</i>{attivo.n_mi_piace}{risposte > 0 && <span>· {risposte} {risposte === 1 ? 'risposta' : 'risposte'}</span>}</span>
               <em>Apri SocialOne →</em>
             </div>
-            <div className="league-news__visual social-card__avatar" aria-hidden="true"><Avatar post={attivo} dati={dati} foto={foto} /></div>
+            <div className="league-news__visual social-card__avatar" aria-hidden="true"><ProfiliCtx.Provider value={ctx}><Avatar post={attivo} dati={dati} foto={foto} /></ProfiliCtx.Provider></div>
           </>}
       </button>
     </div>
