@@ -558,9 +558,12 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
 
   // Prima giornata ancora da giocare: stima locale per il conto alla
   // rovescia del cambio ruolo, il server e' comunque l'unica fonte vera.
+  // Senza partite da giocare (off-season, fine playoff) e' quella dopo l'ultima in calendario, come
+  // private.giornata_training: gli allenamenti avviati ora partono da li'.
   const prossimaGiornata = useMemo(() => {
     const programmate = seasonData.fixtures.filter((f) => f.stato === 'programmata').map((f) => f.giornata)
-    return programmate.length ? Math.min(...programmate) : null
+    if (programmate.length) return Math.min(...programmate)
+    return seasonData.fixtures.length ? Math.max(...seasonData.fixtures.map((f) => f.giornata)) + 1 : null
   }, [seasonData.fixtures])
 
   async function apriSchedaVivaio(prospetto: VivaioProspetto) {
