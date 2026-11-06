@@ -374,7 +374,9 @@ Voce del menu Extra campo, solo nelle leghe con le novità (`leagues.conferenze_
   (vittoria con poco possesso, dominio, pareggio), Lele Adani esalta il giocatore della giornata (almeno 2 tra gol e
   assist), Antonio Cassano (aggiunto il 6/11, scrive sgrammaticato) gli risponde smontandolo e Adani
   ribatte una volta su due, poi Cassano attacca il flop (almeno 4 tiri senza gol né assist, o almeno 12 passaggi
-  sbagliati), Calciatori Brutti prende in giro la batosta (almeno 3 gol di scarto) e un tifoso risponde. Gli articoli
+  sbagliati), Giuseppe Pastore (aggiunto il 6/11) pubblica fino a due curiosità dalla storia della lega
+  (record, prime vittorie di sempre, serie, traguardi di gol, la giornata più o meno prolifica: dettaglio nella
+  migrazione 20261106110000), Calciatori Brutti prende in giro la batosta (almeno 3 gol di scarto) e un tifoso risponde. Gli articoli
   escono da 2 a 90 minuti dopo l'evento. Cron `social-stampa` ogni 5 minuti, `private.social_genera_stampa`; solo eventi
   dal 6/11/2026. Schermata: scheda "Seguiti" con i profili da seguire, pagina del profilo dal nome o dall'avatar.
   Migrazione `20261106060000_socialone_profili_stampa.sql`.
