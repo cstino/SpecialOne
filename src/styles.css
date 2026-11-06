@@ -5022,6 +5022,16 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .rinnovo-gradino.is-rifiutato { cursor: default; opacity: .5; }
 .rinnovo-gradino.is-rifiutato small { color: #ffb4a3; }
 .rinnovo-risposta small { display: block; margin-top: 4px; font-style: normal; opacity: .75; }
+/* Contratti pluriennali (diario Season 3 §12): durata e opzione nella trattativa, decisione dell'opzione in scheda. */
+.rinnovo-durata__scelte { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.rinnovo-durata__scelte .rinnovo-gradino { min-height: 68px; padding: 9px 8px; }
+.rinnovo-durata__scelte .rinnovo-gradino strong { font-size: .76rem; }
+.player-opzione { display: grid; gap: 10px; margin: 14px 0 0; padding: 12px; border: 1px solid rgba(155,76,255,.45); border-radius: 12px; color: rgba(255,255,255,.85); background: rgba(155,76,255,.1); font-size: .8rem; line-height: 1.45; }
+.player-opzione p { margin: 0; }
+.player-opzione b { color: #d6b0ff; }
+.player-opzione__azioni { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.player-opzione__azioni .button { justify-content: center; text-align: center; }
+.player-opzione__esito { color: #d6b0ff; font-weight: 700; }
 .player-minutaggio-avviso { margin: 12px 0 0; padding: 10px 12px; border: 1px solid rgba(255,200,87,.4); border-radius: 10px; color: rgba(255,255,255,.82); background: rgba(255,200,87,.08); font-size: .78rem; line-height: 1.45; }
 .player-minutaggio-avviso b { color: #ffd84d; }
 .player-minutaggio-avviso.is-cessione { border-color: rgba(255,107,107,.5); background: rgba(255,107,107,.1); }

@@ -314,4 +314,39 @@ provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato
     simulazione: squadra media 2 a stagione, chi vince spesso 2-3, chi vince poco 1-2. Non
     conta nel tetto di 7 richieste personali e può cadere sulla stessa giornata di una di esse.
 
+## 12. Contratti pluriennali con opzione +1 (squadra o giocatore)
+
+* **Stato:** `pronto` (6/11/2026): migrazione `20261106010000_contratti_pluriennali.sql` provata in transazione
+  annullata su Serie F (prezzi, tetto su ogni stagione, opzioni, svincolo a metà, morale basso), app pronta in locale
+  (scheda giocatore: durata, opzione, decisione dell'opzione squadra; rosa; guida). Si accende da sola quando la Serie F
+  passa alla stagione 3. Promemoria opzioni ogni giorno alle 12 con al massimo 3 partite da giocare (cron
+  `promemoria-opzioni`). Squadre del computer: restano su rinnovi di un anno.
+* **Taratura (6/11/2026):** sui 472 contratti della Serie F in scadenza a fine S3 il premio dei giovani era troppo
+  debole (il morale alto, che ha l'83% dei giocatori, lo annullava): portato a +5% a stagione +1% per ogni punto di
+  margine oltre i 3, al massimo +15%. Moltiplicatore medio per 3 stagioni: under 23 con 10+ punti di margine 1,25 (max
+  1,40), altri under 23 1,08, 24-29 anni 0,98, 30-31 0,88, 32+ 0,79. 20 giocatori sotto 30 di morale firmerebbero solo
+  per un anno.
+* **Decisioni (committente, 6/11/2026):**
+  * Numeri della proposta come base, da misurare simulando i rinnovi della Serie F prima di accendere.
+  * Svincolo di un contratto lungo: l'ingaggio pesa per intero sul tetto fino a fine della stagione in corso, poi a
+    metà in ognuna delle stagioni rimaste (oggi pesa per intero fino a scadenza, che però è al massimo fine stagione).
+  * Opzione squadra non decisa entro fine stagione = **rifiutata**: il giocatore va svincolato.
+* **Richiesta:** «Vorrei anche che dalla prossima season si possano trattare contratti per più stagioni e come in nba
+  inserire anche la clausola del +1 (a scelta della squadra o a scelta del giocatore). Ovviamente dobbiamo bilanciare.
+  Nel senso che un giocatore che ha del potenziale, dovrà considerare che ha appunto del potenziale e quindi se gli si
+  propone un ingaggio a lungo termine, magari chiede di più. Il contrario per un giocatore avanti con l'età. Poi
+  dipenderà anche dal morale di quel giocatore. Il massimo di lunghezza del contratto direi 3 fissi col + 1. Non di più.»
+* **Cosa cambia rispetto a oggi:** `docs/decisioni-economia.md` §2 fissa i contratti a 1 anno (`offri_rinnovo` rifiuta
+  `p_durata <> 1`, `rinnovo_proposta` restituisce sempre durata 1). Il tetto resta fisso e uguale per tutti, quindi il
+  controllo resta esatto: si ripete `verifica_capienza` per ogni stagione coperta dal contratto. Va aggiornata la §2
+  di decisioni-economia (gerarchia: quel file vince sul design doc).
+* **Dati disponibili:** `players.potential` (già usato da `private.valore_proiettato` per gli scambi), eta e overall
+  correnti, `player_instances.morale`, mentalità bandiera/economia. Oggi in Serie F 180 contratti scadono a fine S2 e
+  472 a fine S3.
+* **Proposta (da confermare):** durata 1-3 + opzione facoltativa; ingaggio fisso per tutta la durata; per ogni anno
+  oltre il primo il giocatore chiede di più se giovane con margine di crescita, di meno se over 30; il morale alto fa
+  sconto, il morale basso fa chiedere di più (sotto 30 solo un anno); opzione squadra +8%, opzione giocatore −5%; si
+  rinnova solo nell'ultima stagione del contratto; opzione squadra decisa dall'allenatore entro fine stagione, opzione
+  giocatore decisa in automatico (rinuncia se ora vale più del contratto o se è scontento).
+
 <!-- Nuove richieste qui sotto: "## N. Titolo", poi Stato, Richiesta (parole del committente), Decisioni, Note. -->

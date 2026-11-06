@@ -24,6 +24,7 @@ import { fasciaVoto, formatoVoto } from '../lib/voti'
 import { ruoloIt, ruoliIt } from '../lib/ruoli'
 import { firmaStemma } from '../lib/stemmiFirmati'
 import { NOME_STADIO_MAX, nomeStadio, nomeStadioModificabile } from '../lib/stadio'
+import { pluriennaliAttivi, type OpzioneContratto } from '../lib/contratti'
 
 type Props = {
   membership: Membership
@@ -58,6 +59,8 @@ type RosterPlayer = {
   specializzazioneAttiva: string | null
   morale: number
   contrattoScadenza: number
+  /** Opzione +1 del contratto (contratti pluriennali), se c'e'. */
+  opzioneContratto: OpzioneContratto | null
   rinnovoStagione: number | null
   rinnovoTentativi: number
   sulMercato: boolean
@@ -151,8 +154,11 @@ function contratto(player: RosterPlayer, stagioneCorrente: number) {
   if (player.minutaggio?.cessione) return { testo: 'Chiede la cessione.', urgente: true }
   if (player.rinnovoTentativi >= 3) return { testo: 'Non intende rinnovare.', urgente: true }
   const residue = player.contrattoScadenza - stagioneCorrente
+  if (residue <= 0 && player.opzioneContratto === 'squadra') return { testo: 'opzione da decidere', urgente: true }
+  if (residue <= 0 && player.opzioneContratto === 'giocatore') return { testo: 'ultima stagione · opz. giocatore', urgente: true }
   if (residue <= 0) return { testo: 'ultima stagione', urgente: true }
-  return { testo: `ancora ${residue} ${residue === 1 ? 'stagione' : 'stagioni'}`, urgente: false }
+  const opzione = player.opzioneContratto ? ` +1 ${player.opzioneContratto === 'squadra' ? 'opz. squadra' : 'opz. giocatore'}` : ''
+  return { testo: `ancora ${residue} ${residue === 1 ? 'stagione' : 'stagioni'}${opzione}`, urgente: false }
 }
 
 // Anteprima della buonuscita che chiederà svincola_giocatore: meta' (per
@@ -355,7 +361,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       setRosterLoading(true)
       setRosterError(null)
       const [instancesResult, statsResult, cambiRuoloResult, specializzazioniResult] = await Promise.all([
-        supabase.from('player_instances').select('id, player_id, overall_corrente, overall_inizio_stagione, eta_corrente, ingaggio, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, morale, contratto_scadenza, rinnovo_stagione, rinnovo_tentativi, sul_mercato, posizioni_override, specializzazione_attiva, prestito_id').eq('league_id', league.id).eq('team_id', teamId),
+        supabase.from('player_instances').select('id, player_id, overall_corrente, overall_inizio_stagione, eta_corrente, ingaggio, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, morale, contratto_scadenza, opzione_contratto, rinnovo_stagione, rinnovo_tentativi, sul_mercato, posizioni_override, specializzazione_attiva, prestito_id').eq('league_id', league.id).eq('team_id', teamId),
         supabase.from('match_stats').select('match_id, player_instance_id, minuti, gol, assist, tiri, tiri_porta, passaggi_tentati, passaggi_riusciti, contrasti_vinti, dribbling').eq('league_id', league.id).eq('team_id', teamId),
         supabase.from('cambi_ruolo').select('id, player_instance_id, ruolo_precedente, ruolo_target, avviato_giornata, completa_giornata').eq('league_id', league.id).eq('team_id', teamId).is('completato_il', null),
         supabase.from('specializzazioni_giocatore').select('id, player_instance_id, specializzazione_precedente, specializzazione_target, avviato_giornata, completa_giornata').eq('league_id', league.id).eq('team_id', teamId).is('completato_il', null),
@@ -413,6 +419,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           specializzazioneAttiva: instance.specializzazione_attiva,
           morale: instance.morale,
           contrattoScadenza: instance.contratto_scadenza,
+          opzioneContratto: instance.opzione_contratto ?? null,
           rinnovoStagione: instance.rinnovo_stagione,
           rinnovoTentativi: instance.rinnovo_tentativi,
           sulMercato: instance.sul_mercato,
@@ -1197,6 +1204,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           ritiroAnnunciato: schedaAperta.ritiroAnnunciato,
           morale: ownTeam ? schedaAperta.morale : undefined,
           contrattoScadenza: ownTeam ? schedaAperta.contrattoScadenza : undefined,
+          opzioneContratto: ownTeam ? schedaAperta.opzioneContratto : undefined,
           stagioneCorrente: ownTeam ? league.stagione_corrente : undefined,
           mentalita: ownTeam ? schedaAperta.mentalita : undefined,
           minutaggio: schedaAperta.minutaggio,
@@ -1220,6 +1228,8 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
             ? `${schedaAperta.nome} ha già annunciato il ritiro: lo svincolo è definitivo, non tornerà disponibile per nessuna squadra. Non riceverai alcun rimborso e le formazioni future che lo contengono dovranno essere salvate di nuovo.`
             : league.fase_carriera === 'offseason'
               ? `${schedaAperta.nome} uscirà subito dalla rosa e libererà il posto e il suo ingaggio di ${money(schedaAperta.ingaggio)}: in off-season si svincola senza conseguenze sul tetto (dalla stagione nuova l'ingaggio di chi svincoli resterà sul tuo tetto). Devi mantenere almeno ${ROSA_MINIMA} giocatori. Le formazioni future che lo contengono dovranno essere salvate di nuovo.`
+              : schedaAperta.contrattoScadenza > league.stagione_corrente
+              ? `${schedaAperta.nome} uscirà subito dalla rosa e libererà il posto, ma il suo ingaggio di ${money(schedaAperta.ingaggio)} resterà sul tuo tetto per intero fino a fine stagione e a metà (${money(Math.round(schedaAperta.ingaggio / 2))}) fino alla fine del contratto (stagione ${schedaAperta.contrattoScadenza}), a meno che un'altra squadra non lo prenda prima.${schedaAperta.opzioneContratto ? " L'opzione del contratto decade." : ''} Devi mantenere almeno ${ROSA_MINIMA} giocatori. Le formazioni future che lo contengono dovranno essere salvate di nuovo.`
               : `${schedaAperta.nome} uscirà subito dalla rosa e libererà il posto, ma il suo ingaggio di ${money(schedaAperta.ingaggio)} resterà sul tuo tetto fino alla fine del contratto (stagione ${schedaAperta.contrattoScadenza}), a meno che un'altra squadra non lo prenda prima. Devi mantenere almeno ${ROSA_MINIMA} giocatori. Le formazioni future che lo contengono dovranno essere salvate di nuovo.`,
           inCorso: releasePending,
           errore: releaseError,
@@ -1231,6 +1241,12 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
             ? 'Ha chiesto la cessione: non rinnoverà il contratto.'
             : schedaAperta.rinnovoTentativi >= 3
             ? 'Non intende rinnovare: andrà a scadenza a fine stagione.'
+            : pluriennaliAttivi(league) && schedaAperta.opzioneContratto === 'squadra'
+            ? "Ha un'opzione a favore della squadra: prima decidi se esercitarla."
+            : pluriennaliAttivi(league) && schedaAperta.opzioneContratto === 'giocatore'
+            ? "Ha un'opzione a suo favore: a fine stagione decide lui se restare un altro anno."
+            : pluriennaliAttivi(league) && schedaAperta.contrattoScadenza > league.stagione_corrente
+            ? `Contratto fino alla stagione ${schedaAperta.contrattoScadenza}: si rinnova nella sua ultima stagione.`
             : schedaAperta.rinnovoStagione === league.stagione_corrente
               ? 'Ha già rinnovato in questa stagione: se ne riparla dalla prossima.'
               : undefined,
@@ -1239,20 +1255,35 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
             if (error) throw new Error(error.message)
             return data as PropostaRinnovo
           },
-          onOffri: async (ingaggio, minutaggio) => {
+          onOffri: async (ingaggio, minutaggio, durata, opzione) => {
             const { data, error } = await supabase.rpc('offri_rinnovo', {
-              p_instance_id: schedaAperta.id, p_ingaggio: ingaggio, p_durata: 1,
+              p_instance_id: schedaAperta.id, p_ingaggio: ingaggio, p_durata: durata,
               ...(minutaggio ? { p_minutaggio: minutaggio } : {}),
+              ...(opzione ? { p_opzione: opzione } : {}),
             })
             if (error) throw new Error(error.message)
             const risposta = data as EsitoRinnovo
             if (risposta.esito === 'accettato') {
               setPlayers((current) => current.map((item) => item.id === schedaAperta.id
-                ? { ...item, ingaggio, contrattoScadenza: risposta.contratto_scadenza ?? item.contrattoScadenza, rinnovoStagione: league.stagione_corrente,
+                ? { ...item, ingaggio, contrattoScadenza: risposta.contratto_scadenza ?? item.contrattoScadenza, opzioneContratto: risposta.opzione ?? null, rinnovoStagione: league.stagione_corrente,
                     minutaggio: item.minutaggio && risposta.minutaggio ? { ...item.minutaggio, gradino: risposta.minutaggio, trattato: true, richiamo: false } : item.minutaggio }
                 : item))
             }
             return risposta
+          },
+        } : undefined}
+        opzioneSquadra={ownTeam && league.stato === 'stagione' && league.fase_carriera !== 'offseason' && schedaAperta.opzioneContratto === 'squadra'
+          && schedaAperta.contrattoScadenza <= league.stagione_corrente ? {
+          scadenza: schedaAperta.contrattoScadenza,
+          ingaggio: schedaAperta.ingaggio,
+          onDecidi: async (esercita) => {
+            const { data, error } = await supabase.rpc('decidi_opzione_squadra', { p_instance_id: schedaAperta.id, p_esercita: esercita })
+            if (error) throw new Error(error.message)
+            const r = data as { messaggio: string; contratto_scadenza: number }
+            setPlayers((current) => current.map((item) => item.id === schedaAperta.id
+              ? { ...item, opzioneContratto: null, contrattoScadenza: r.contratto_scadenza, rinnovoStagione: esercita ? league.stagione_corrente : item.rinnovoStagione }
+              : item))
+            return r.messaggio
           },
         } : undefined}
         proponiScambio={!ownTeam && onProponiScambio && league.stato === 'stagione' && !schedaAperta.prestitoClub ? { onClick: () => onProponiScambio(teamId, schedaAperta.id) } : undefined}

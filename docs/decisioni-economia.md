@@ -94,6 +94,15 @@ ricchi-più-ricchi che design §5.6 cercava di contenere con una tassa.
 
 **I contratti durano una stagione. Il rinnovo estende di un anno, mai di più.**
 
+> **Superata dai contratti pluriennali (6 novembre 2026, `docs/DIARIO-SEASON3.md` §12).** Dalla stagione
+> `leagues.contratti_pluriennali_dalla` (Serie F dalla 3) il rinnovo si tratta solo nell'ultima stagione del contratto,
+> per 1-3 stagioni più un'opzione +1 (squadra o giocatore), con l'ingaggio fisso per tutta la durata. Il controllo resta
+> esatto: `offri_rinnovo` verifica la capienza su ogni stagione coperta (anche quella dell'opzione del giocatore, che
+> conta nel monte; l'opzione della squadra si verifica quando viene esercitata, `decidi_opzione_squadra`). Prezzo in
+> `private.moltiplicatore_durata`, opzioni chiuse all'ingresso in off-season da `private.risolvi_opzioni_contratti`.
+> Lo svincolo di un contratto lungo pesa per intero nella stagione dello svincolo e a metà nelle successive
+> (`player_instances.peso_stagione`, `private.peso_svincolato`). Migrazione `20261106010000_contratti_pluriennali.sql`.
+
 È la scelta che rende il controllo *esatto* invece che *prudenziale*: al momento
 del rinnovo il sistema conosce già tetto e stipendi della stagione successiva, e
 può rispondere sì o no senza stimare nulla.

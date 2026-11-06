@@ -6,6 +6,8 @@ export type League = {
   conferenze_stampa?: boolean
   // Lo stadio (Season 3): quarto ramo delle risorse, acceso da quando parte la nuova stagione della lega.
   stadio_attivo?: boolean
+  // Contratti pluriennali con opzione +1 (diario Season 3 §12): attivi da questa stagione della lega in poi.
+  contratti_pluriennali_dalla?: number
   nome: string
   admin_id: string
   codice_invito: string

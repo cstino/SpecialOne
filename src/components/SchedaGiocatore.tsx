@@ -12,6 +12,7 @@ import { RUOLO_LABEL } from '../lib/ruoliTattici'
 import { nomeSuDueRighe } from '../lib/nomi'
 import { GRADINI_MINUTAGGIO, nomeConSoglia, percentuale as percentualeMinuti, statoMinuti, type GradinoMinutaggio } from '../lib/minutaggio'
 import { ruoloIt, ruoliIt } from '../lib/ruoli'
+import { NOME_OPZIONE, testoOpzione, type OpzioneContratto } from '../lib/contratti'
 
 export type StatsStagione = {
   presenze: number
@@ -50,6 +51,8 @@ export type DatiScheda = {
   ingaggio?: number
   /** Ultima stagione coperta dal contratto, con la stagione in corso per il confronto. */
   contrattoScadenza?: number
+  /** Opzione +1 del contratto (contratti pluriennali). */
+  opzioneContratto?: OpzioneContratto | null
   stagioneCorrente?: number
   /** Ha annunciato il ritiro a inizio stagione: gioca ancora, ma non e' cedibile. */
   ritiroAnnunciato?: boolean
@@ -83,11 +86,17 @@ export type PropostaRinnovo = {
   gradino_richiesto?: GradinoMinutaggio | null
   gradino_trattato?: boolean
   gradini?: { chiave: GradinoMinutaggio; richiesta: number; rifiuto: string | null }[] | null
+  /** Contratti pluriennali (diario Season 3 §12): assenti o false finche' la lega non li ha. */
+  stagione_corrente?: number
+  pluriennali?: boolean
+  solo_un_anno?: boolean
+  /** Quanto si sposta la richiesta per ogni durata (1-3) e opzione. */
+  moltiplicatori?: { durata: number; opzione: OpzioneContratto | null; moltiplicatore: number }[] | null
 }
 
 /** Risposta del giocatore a un'offerta: mai la cifra esatta, solo quanto si è lontani. */
 export type EsitoRinnovo = {
-  esito: 'accettato' | 'rifiutato' | 'chiusa' | 'gradino_rifiutato'
+  esito: 'accettato' | 'rifiutato' | 'chiusa' | 'gradino_rifiutato' | 'durata_rifiutata'
   messaggio: string
   /** Perche' ha rifiutato il gradino (solo con esito gradino_rifiutato). */
   motivo?: string
@@ -95,6 +104,8 @@ export type EsitoRinnovo = {
   tentativi_usati: number
   contratto_scadenza?: number
   ingaggio?: number
+  durata?: number
+  opzione?: OpzioneContratto | null
 }
 
 /** Allenamento (cambio ruolo o specializzazione) in corso: stessa forma per entrambi i rami. */
@@ -132,10 +143,16 @@ type Props = {
     nomeAllenatore?: string | null
     /** Legge la proposta dal server: e' il giocatore a fare la prima cifra. */
     onCarica: () => Promise<PropostaRinnovo>
-    /** Manda una controproposta. La soglia la valuta il server, mai il browser. Durata sempre di una stagione: non si negozia. */
-    onOffri: (ingaggio: number, minutaggio: GradinoMinutaggio | null) => Promise<EsitoRinnovo>
+    /** Manda una controproposta. La soglia la valuta il server, mai il browser. Durata 1 finche' la lega non ha i pluriennali. */
+    onOffri: (ingaggio: number, minutaggio: GradinoMinutaggio | null, durata: number, opzione: OpzioneContratto | null) => Promise<EsitoRinnovo>
     /** Se valorizzato, il bottone e' disabilitato e questo e' il motivo. */
     bloccato?: string
+  }
+  /** Opzione a favore della squadra all'ultima stagione: l'allenatore la esercita o ci rinuncia. */
+  opzioneSquadra?: {
+    scadenza: number
+    ingaggio: number
+    onDecidi: (esercita: boolean) => Promise<string>
   }
   listaMercato?: {
     inLista: boolean
@@ -519,7 +536,7 @@ export function SchedaGiocatore(props: Props) {
   return createPortal(<SchedaGiocatoreInterna {...props} />, document.body)
 }
 
-function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, userId, giocatore, fotoUrl, stagione, capitano, azionePericolosa, rinnovo, listaMercato, proponiScambio, prestito, cambioRuolo, specializzazione, onClose }: Props) {
+function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, userId, giocatore, fotoUrl, stagione, capitano, azionePericolosa, rinnovo, opzioneSquadra, listaMercato, proponiScambio, prestito, cambioRuolo, specializzazione, onClose }: Props) {
   const [confermaAperta, setConfermaAperta] = useState(false)
   const [prestitoConferma, setPrestitoConferma] = useState(false)
   const [prestitoInCorso, setPrestitoInCorso] = useState(false)
@@ -545,6 +562,11 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
   // con l'arrotondamento mentre scrive.
   const [offertaM, setOffertaM] = useState('')
   const [gradinoOfferto, setGradinoOfferto] = useState<GradinoMinutaggio | null>(null)
+  const [durataOfferta, setDurataOfferta] = useState(1)
+  const [opzioneOfferta, setOpzioneOfferta] = useState<OpzioneContratto | null>(null)
+  const [opzioneInCorso, setOpzioneInCorso] = useState(false)
+  const [opzioneEsito, setOpzioneEsito] = useState<string | null>(null)
+  const [opzioneErrore, setOpzioneErrore] = useState<string | null>(null)
   const [inLista, setInLista] = useState(listaMercato?.inLista ?? false)
   const [listaInCorso, setListaInCorso] = useState(false)
   const [listaEsito, setListaEsito] = useState<string | null>(null)
@@ -709,6 +731,32 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
     setListaInCorso(false)
   }
 
+  // Stessa formula del server (public.offri_rinnovo): richiesta del gradino x moltiplicatore, al passo di 0,1 M€.
+  function richiestaPer(dati: PropostaRinnovo, gradino: GradinoMinutaggio | null, durata: number, opzione: OpzioneContratto | null) {
+    const base = dati.gradini?.find((g) => g.chiave === gradino)?.richiesta ?? dati.richiesta
+    const m = dati.pluriennali ? dati.moltiplicatori?.find((x) => x.durata === durata && x.opzione === opzione)?.moltiplicatore ?? 1 : 1
+    return Math.max(500_000, Math.round((base * m) / 100_000) * 100_000)
+  }
+
+  function scegliTermini(dati: PropostaRinnovo, gradino: GradinoMinutaggio | null, durata: number, opzione: OpzioneContratto | null) {
+    setGradinoOfferto(gradino)
+    setDurataOfferta(durata)
+    setOpzioneOfferta(opzione)
+    setOffertaM((richiestaPer(dati, gradino, durata, opzione) / 1_000_000).toFixed(1).replace('.', ','))
+  }
+
+  async function decidiOpzione(esercita: boolean) {
+    if (!opzioneSquadra) return
+    setOpzioneInCorso(true)
+    setOpzioneErrore(null)
+    try {
+      setOpzioneEsito(await opzioneSquadra.onDecidi(esercita))
+    } catch (errore) {
+      setOpzioneErrore(errore instanceof Error ? errore.message : 'Operazione non riuscita.')
+    }
+    setOpzioneInCorso(false)
+  }
+
   async function apriRinnovo() {
     if (!rinnovo) return
     setVistaRinnovo(true)
@@ -721,8 +769,7 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
       // Si parte dal gradino che ha gia', se non lo rifiuta; altrimenti dal primo accettabile.
       const accettabili = (dati.gradini ?? []).filter((g) => !g.rifiuto)
       const iniziale = accettabili.find((g) => g.chiave === dati.gradino_richiesto) ?? accettabili.find((g) => g.chiave === dati.gradino_attuale) ?? accettabili[0] ?? null
-      setGradinoOfferto(iniziale?.chiave ?? null)
-      setOffertaM(((iniziale?.richiesta ?? dati.richiesta) / 1_000_000).toFixed(1).replace('.', ','))
+      scegliTermini(dati, iniziale?.chiave ?? null, 1, null)
     } catch (errore) {
       setRinnovoErrore(errore instanceof Error ? errore.message : 'Proposta non disponibile.')
     }
@@ -737,7 +784,7 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
     setRinnovoInCorso(true)
     setRinnovoErrore(null)
     try {
-      const risposta = await rinnovo.onOffri(offertaEuro, gradinoOfferto)
+      const risposta = await rinnovo.onOffri(offertaEuro, gradinoOfferto, durataOfferta, opzioneOfferta)
       setEsito(risposta)
       setProposta({ ...proposta, tentativi_usati: risposta.tentativi_usati, trattativa_chiusa: risposta.esito === 'chiusa' })
     } catch (errore) {
@@ -818,8 +865,10 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
           <p className="rinnovo-lettera__firma">— {giocatore.nome}, {giocatore.eta} anni</p>
         </blockquote>
         <div className="rinnovo-cifre">
-          <div><span>Ingaggio richiesto</span><strong>{milioni(proposta.gradini?.find((g) => g.chiave === gradinoOfferto)?.richiesta ?? proposta.richiesta)}</strong><small>{gradinoOfferto ? `da ${GRADINI_MINUTAGGIO[gradinoOfferto].nome.toLowerCase()}` : 'a stagione'}</small></div>
-          <div><span>Durata</span><strong>{stagioni(proposta.durata)}</strong><small>fino alla stagione {proposta.nuova_scadenza}</small></div>
+          <div><span>Ingaggio richiesto</span><strong>{milioni(richiestaPer(proposta, gradinoOfferto, durataOfferta, opzioneOfferta))}</strong><small>{gradinoOfferto ? `da ${GRADINI_MINUTAGGIO[gradinoOfferto].nome.toLowerCase()}` : 'a stagione'}</small></div>
+          {proposta.pluriennali && proposta.stagione_corrente != null
+            ? <div><span>Durata</span><strong>{stagioni(durataOfferta)}</strong><small>fino alla stagione {proposta.stagione_corrente + durataOfferta}{opzioneOfferta ? ` ${testoOpzione(opzioneOfferta, proposta.stagione_corrente + durataOfferta)}` : ''}</small></div>
+            : <div><span>Durata</span><strong>{stagioni(proposta.durata)}</strong><small>fino alla stagione {proposta.nuova_scadenza}</small></div>}
         </div>
 
         {esito && <p className={`rinnovo-risposta rinnovo-risposta--${esito.esito}`}>«{esito.messaggio}»{esito.motivo && <small> {esito.motivo}</small>}</p>}
@@ -837,13 +886,40 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
               {proposta.gradini.map((g) => <button key={g.chiave} type="button" role="radio" aria-checked={gradinoOfferto === g.chiave}
                 className={`rinnovo-gradino${gradinoOfferto === g.chiave ? ' is-scelto' : ''}${g.rifiuto ? ' is-rifiutato' : ''}`}
                 disabled={Boolean(g.rifiuto) || rinnovoInCorso}
-                onClick={() => { setGradinoOfferto(g.chiave); setOffertaM((g.richiesta / 1_000_000).toFixed(1).replace('.', ',')) }}>
+                onClick={() => scegliTermini(proposta, g.chiave, durataOfferta, opzioneOfferta)}>
                 <strong>{GRADINI_MINUTAGGIO[g.chiave].nome} <em>(min. {GRADINI_MINUTAGGIO[g.chiave].soglia}%)</em></strong>
                 <small>{g.rifiuto ?? GRADINI_MINUTAGGIO[g.chiave].detto}</small>
-                {!g.rifiuto && <b>{milioni(g.richiesta)}</b>}
+                {!g.rifiuto && <b>{milioni(richiestaPer(proposta, g.chiave, durataOfferta, opzioneOfferta))}</b>}
               </button>)}
             </div>
             <p className="rinnovo-nota">Più minuti prometti, meno chiede; un gradino sotto la sua richiesta costa di più, due non li accetta. Se poi non lo fai giocare come promesso, prima ti richiama, poi chiede la cessione e non rinnova più.</p>
+          </div>}
+          {proposta.pluriennali && proposta.stagione_corrente != null && <div className="rinnovo-gradini rinnovo-durata">
+            <p className="kicker">Durata del contratto</p>
+            <div className="rinnovo-durata__scelte" role="radiogroup" aria-label="Durata del contratto">
+              {[1, 2, 3].map((d) => <button key={d} type="button" role="radio" aria-checked={durataOfferta === d}
+                className={`rinnovo-gradino${durataOfferta === d ? ' is-scelto' : ''}${proposta.solo_un_anno && d > 1 ? ' is-rifiutato' : ''}`}
+                disabled={rinnovoInCorso || (proposta.solo_un_anno && d > 1)}
+                onClick={() => scegliTermini(proposta, gradinoOfferto, d, opzioneOfferta)}>
+                <strong>{stagioni(d)}</strong>
+                <small>fino alla {proposta.stagione_corrente! + d}</small>
+                {!(proposta.solo_un_anno && d > 1) && <b>{milioni(richiestaPer(proposta, gradinoOfferto, d, opzioneOfferta))}</b>}
+              </button>)}
+            </div>
+            <p className="kicker">Opzione +1</p>
+            <div className="rinnovo-durata__scelte" role="radiogroup" aria-label="Opzione per una stagione in più">
+              {([null, 'squadra', 'giocatore'] as const).map((o) => <button key={o ?? 'nessuna'} type="button" role="radio" aria-checked={opzioneOfferta === o}
+                className={`rinnovo-gradino${opzioneOfferta === o ? ' is-scelto' : ''}${proposta.solo_un_anno && o ? ' is-rifiutato' : ''}`}
+                disabled={rinnovoInCorso || Boolean(proposta.solo_un_anno && o)}
+                onClick={() => scegliTermini(proposta, gradinoOfferto, durataOfferta, o)}>
+                <strong>{o ? NOME_OPZIONE[o][0].toUpperCase() + NOME_OPZIONE[o].slice(1) : 'Nessuna'}</strong>
+                <small>{o === 'squadra' ? 'Decidi tu se tenerlo' : o === 'giocatore' ? 'Decide lui se restare' : 'Contratto secco'}</small>
+                {!(proposta.solo_un_anno && o) && <b>{milioni(richiestaPer(proposta, gradinoOfferto, durataOfferta, o))}</b>}
+              </button>)}
+            </div>
+            <p className="rinnovo-nota">{proposta.solo_un_anno
+              ? 'È troppo scontento per legarsi: firma solo per una stagione, senza opzione.'
+              : "Lo stesso ingaggio per tutta la durata. Un giovane che sa di crescere chiede di più per legarsi a lungo, chi ha passato i 30 si accontenta di meno in cambio della sicurezza; il morale alto fa sconto. Con l'opzione squadra decidi tu, entro fine stagione, se tenerlo un anno in più (non decisa vale come rifiutata): chiede l'8% in più. Con l'opzione giocatore decide lui a fine stagione: fa il 5% di sconto."}</p>
           </div>}
           <div className="rinnovo-offerta">
             <p className="kicker">La tua offerta</p>
@@ -856,10 +932,10 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
               </label>
             </div>
           </div>
-          <p className="rinnovo-nota">
+          {!proposta.pluriennali && <p className="rinnovo-nota">
             La durata non si negozia: un rinnovo estende sempre il contratto di una stagione.
             {' '}Il nuovo ingaggio decorre dalla prossima stagione — questa è già stata pagata.
-          </p>
+          </p>}
           <p className="rinnovo-tentativi">
             Tentativi rimasti: <b>{proposta.tentativi_totali - proposta.tentativi_usati}</b> su {proposta.tentativi_totali}.
             {' '}Esauriti, andrà a scadenza.
@@ -876,7 +952,7 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
           <p>{esito.messaggio}</p>
           <p className="rinnovo-lettera__firma">— {giocatore.nome}</p>
         </blockquote>
-        <p className="rinnovo-nota">Contratto rinnovato: {milioni(esito.ingaggio ?? 0)} a stagione fino alla stagione {esito.contratto_scadenza}{esito.minutaggio ? `, da ${GRADINI_MINUTAGGIO[esito.minutaggio].nome.toLowerCase()}` : ''}.</p>
+        <p className="rinnovo-nota">Contratto rinnovato: {milioni(esito.ingaggio ?? 0)} a stagione fino alla stagione {esito.contratto_scadenza}{esito.opzione && esito.contratto_scadenza != null ? `, ${testoOpzione(esito.opzione, esito.contratto_scadenza)}` : ''}{esito.minutaggio ? `, da ${GRADINI_MINUTAGGIO[esito.minutaggio].nome.toLowerCase()}` : ''}.</p>
         <div className="rinnovo-azioni"><button className="button button--primary" type="button" onClick={onClose}>Chiudi</button></div>
       </>}
     </section>
@@ -947,6 +1023,7 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
                     {residue <= 0
                       ? 'In scadenza a fine stagione'
                       : `Contratto fino alla stagione ${giocatore.contrattoScadenza} · ancora ${stagioni(residue)} dopo questa`}
+                    {giocatore.opzioneContratto ? ` · ${testoOpzione(giocatore.opzioneContratto, giocatore.contrattoScadenza!)}` : ''}
                   </small>
                 })()}
               </dd>
@@ -1084,6 +1161,19 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
                     <button className="button button--secondary" type="button" disabled={prestitoInCorso} onClick={() => setPrestitoConferma(false)}>Annulla</button>
                   </div>
                 </div>}
+          </div>}
+
+          {opzioneSquadra && <div className="player-opzione">
+            {opzioneEsito
+              ? <p className="player-opzione__esito" role="status">{opzioneEsito}</p>
+              : <>
+                  <p><b>Opzione squadra da decidere.</b> Puoi tenerlo anche nella stagione {opzioneSquadra.scadenza + 1} a {(opzioneSquadra.ingaggio / 1_000_000).toFixed(1)} M€. Se non decidi entro fine stagione, l'opzione vale come rifiutata.</p>
+                  {opzioneErrore && <p className="notice notice--error" role="alert">{opzioneErrore}</p>}
+                  <div className="player-opzione__azioni">
+                    <button className="button button--primary" type="button" disabled={opzioneInCorso} onClick={() => void decidiOpzione(true)}>Esercita l'opzione</button>
+                    <button className="button button--secondary" type="button" disabled={opzioneInCorso} onClick={() => void decidiOpzione(false)}>Rinuncia</button>
+                  </div>
+                </>}
           </div>}
 
           {(azionePericolosa || rinnovo || listaMercato || proponiScambio) && <div className="player-modal__danger">

@@ -427,6 +427,17 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         una sua richiesta di ingaggio, e da lì <strong>tratti solo su quello</strong>: la
         durata non si negozia mai, un rinnovo estende il contratto di
         <strong> esattamente una stagione</strong>.</p>
+      <p><strong>Contratti pluriennali</strong> (Serie F dalla Season 3): il rinnovo si tratta
+        solo nell'<strong>ultima stagione</strong> del contratto e puoi scegliere da
+        <strong> 1 a 3 stagioni</strong>, più un'eventuale <strong>opzione +1</strong>. L'ingaggio
+        resta lo stesso per tutta la durata. Per ogni stagione in più un giovane che sa di poter
+        crescere chiede di più, chi ha passato i 30 anni si accontenta di meno; il morale alto fa
+        sconto, quello basso fa chiedere di più (sotto 30 firma solo per un anno). Con
+        l'<strong>opzione squadra</strong> decidi tu, entro fine stagione, se tenerlo un anno in
+        più: se non decidi vale come rifiutata (chiede l'8% in più). Con
+        l'<strong>opzione giocatore</strong> decide lui a fine stagione: resta se il contratto
+        vale ancora quanto lui e non è scontento (fa il 5% di sconto). Svincolare un contratto
+        lungo: l'ingaggio pesa per intero fino a fine stagione, poi a metà fino alla scadenza.</p>
       <p>Insieme all'ingaggio tratti il <strong>minutaggio promesso</strong>: titolare fisso
         (gioca la maggior parte delle partite), turnover (entra quando i titolari sono stanchi),
         sporadico (poche partite) o promessa futura (solo sotto i 21 anni). Più minuti prometti,
