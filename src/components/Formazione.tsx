@@ -481,15 +481,19 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       // dall'off-season, senza partite, resta l'ultima giornata (stagione finita).
       const targetGiornata = nextFixture?.giornata ?? (league.fase_carriera === 'offseason' ? 1 : league.giornate_totali)
       if (active) setGiornata(targetGiornata)
-      const { data: lineup, error: lineupError } = await supabase.from('lineups')
+      // In off-season si riparte dall'ultima formazione salvata, qualunque giornata sia: cercando
+      // "fino alla giornata 1" si caricava la giornata 1 della stagione appena chiusa, vecchia di
+      // mesi, e sembrava che la formazione con le tattiche fosse sparita (segnalato il 6/11/2026).
+      // Le righe della stagione chiusa vengono archiviate solo alla fine dell'off-season.
+      const inOffseason = !nextFixture && league.fase_carriera === 'offseason'
+      let lineupQuery = supabase.from('lineups')
         .select('modulo, stile_gioco, titolari, panchina, tribuna, salvata_il, disposizione, ruoli, compiti, focus_corsia, linea_difensiva, ampiezza, velocita_manovra, ruolo_portiere')
         .eq('league_id', league.id)
         .eq('team_id', membership.id)
-        .lte('giornata', targetGiornata)
-        .order('automatica', { ascending: true })
-        .order('giornata', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+      lineupQuery = inOffseason
+        ? lineupQuery.order('automatica', { ascending: true }).order('salvata_il', { ascending: false })
+        : lineupQuery.lte('giornata', targetGiornata).order('automatica', { ascending: true }).order('giornata', { ascending: false })
+      const { data: lineup, error: lineupError } = await lineupQuery.limit(1).maybeSingle()
       if (lineupError) { setError(lineupError.message); setLoading(false); return }
       if (lineup) {
         const current = lineup as SavedLineup
