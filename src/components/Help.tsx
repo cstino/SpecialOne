@@ -22,14 +22,14 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
       <p>Una lega vive in cicli. Si parte con il <strong>draft</strong>, dove ogni squadra si
         costruisce la rosa; poi si entra in <strong>stagione</strong>, dove ogni notte alle{' '}
         <strong>22:00</strong> (fuso orario Europe/Rome) il sistema simula <strong>una
-        giornata</strong> di campionato, mai di più. Di giorno c'è sempre un mercato aperto per
-        buona parte delle ore, in cui si scambiano giocatori e si fanno offerte sugli
+        giornata</strong> di campionato, mai di più. Il mercato è aperto dalle <strong>22:30</strong>{' '}
+        alle <strong>20:00</strong> del giorno dopo: si scambiano giocatori e si fanno offerte sugli
         svincolati.</p>
-      <p>A fine campionato la lega entra in <strong>off-season</strong>: 24 ore in cui entrano
-        gli eventuali nuovi partecipanti, il mercato degli svincolati accelera ed esce
-        definitivamente chi aveva annunciato il ritiro, prima che riparta la stagione
-        successiva. I rinnovi non c'entrano: si trattano sempre a stagione in corso, mai in
-        questa finestra — vedi la voce "Contratti e rinnovi".</p>
+      <p>Dopo la stagione regolare ci sono i <strong>playoff</strong>; poi la lega entra in
+        <strong> off-season</strong>, una finestra che dura quanto deciso per la lega (il conto alla rovescia
+        è nella sua pagina). Lì entrano gli eventuali nuovi partecipanti, si rinnovano i contratti, si
+        fanno scambi e si prepara il draft; alla chiusura esce chi non è stato rinnovato e chi aveva
+        annunciato il ritiro, e riparte la stagione successiva. Vedi la voce "Off-season".</p>
       <p>Tutti gli orari del gioco — deadline formazioni, chiusura mercato, simulazione — sono
         sempre nel fuso di Roma, indipendentemente da dove ti trovi.</p>
     </>,
@@ -88,10 +88,11 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         livello, perché sta "pagando" anche il suo potenziale futuro, non solo quello che rende
         oggi. Un veterano oltre i 30 anni occupa invece progressivamente meno, verso fine
         carriera.</p>
-      <p>Ogni contratto dura <strong>esattamente una stagione</strong>. Un giocatore preso a
-        stagione in corso — da un'asta sugli svincolati o da uno scambio — ha un contratto che
-        scade comunque a fine della stagione in corso, non di quella successiva: alla prima
-        off-season utile va rinnovato come tutti gli altri, o lascia la rosa. Svincolare un
+      <p>Un contratto dura <strong>una stagione</strong>, salvo i contratti pluriennali dove sono
+        attivi (Serie F dalla Season 3: da 1 a 3 stagioni, vedi "Contratti e rinnovi"). Un giocatore
+        preso a stagione in corso — da un'asta sugli svincolati o da uno scambio — ha un contratto che
+        scade comunque a fine della stagione in corso: entro la fine dell'off-season va rinnovato come
+        tutti gli altri, o lascia la rosa. Svincolare un
         giocatore libera subito il posto in rosa, ma <strong>il suo ingaggio resta sul tuo tetto</strong>
         finché il contratto non scade o finché un'altra squadra non lo prende. La regola vale
         dall'inizio della stagione: in off-season si svincola come prima, liberando subito anche
@@ -109,8 +110,8 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     titolo: 'Overall e progressione',
     corpo: <>
       <p>Ogni giocatore ha un overall attuale e un <strong>potenziale</strong>: il tetto massimo
-        a cui può arrivare. L'overall si aggiorna quattro volte a stagione (al 25%, 50%, 75% e
-        100% delle giornate), non solo a fine anno.</p>
+        a cui può arrivare. L'overall si aggiorna <strong>a ogni giornata</strong>, un poco alla volta,
+        non solo a fine anno.</p>
       <p>Sotto i 27 anni l'overall tende a salire verso il potenziale, più velocemente quanto
         più è giovane. Fra 27 e 31 anni oscilla poco, in entrambe le direzioni. Da 32 anni in
         su comincia a scendere, e il calo si fa più marcato dopo i 35. L'overall non supera mai
@@ -170,9 +171,10 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     id: 'vivaio-under',
     titolo: 'Vivaio e mercato UNDER',
     corpo: <>
-      <p>Ogni giorno il sistema estrae automaticamente un piccolo gruppo di quindicenni per il
+      <p>Ogni sera alle 22:30 il sistema estrae un piccolo gruppo di quindicenni per il
         <strong> mercato UNDER</strong>, con un'asta a busta chiusa identica nel meccanismo a
-        quella degli svincolati (vedi quella voce), ma con un ingaggio minimo molto più basso.
+        quella degli svincolati (vedi quella voce), ma con un ingaggio minimo molto più basso. Come
+        il mercato degli svincolati, è chiuso durante i playoff e l'off-season.
         Chi vince porta il giovane nel proprio <strong>vivaio</strong>, non nella rosa vera: non
         conta nel minimo né nel massimo di rosa, e ha un tetto di slot a parte, legato al livello
         Vivaio.</p>
@@ -290,11 +292,11 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
       <p>Prima di ogni giornata scegli modulo, stile e i tuoi <strong>undici titolari</strong>,
         più la panchina; chi resta fuori va in tribuna. La deadline è le <strong>22:00 Europe/
         Rome</strong>, lo stesso orario in cui parte la simulazione della giornata.</p>
-      <p>Se non salvi una formazione in tempo, il sistema ne genera una automatica: riusa
-        l'ultimo modulo che avevi usato (o il 4-3-3 se è la prima volta) e schiera gli undici
-        che massimizzano l'overall efficace complessivo, garantendo almeno un portiere in
-        panchina se ne hai uno disponibile. Meglio comunque schierare sempre di persona: la
-        formazione automatica non conosce le tue preferenze tattiche.</p>
+      <p>La formazione salvata <strong>resta valida</strong> per le giornate successive, finché non la
+        cambi: non serve rifarla ogni sera. Se un titolare non è disponibile (infortunato o
+        squalificato) il sistema lo sostituisce al momento della partita. Solo se non hai mai salvato
+        una formazione il sistema ne genera una automatica, con gli undici che rendono di più nel tuo
+        ultimo modulo (o nel 4-3-3).</p>
       <p>La panchina arriva fino a <strong>9</strong> giocatori, la tribuna fino al resto della
         rosa massima (10, con una rosa al tetto di 30). Se un posto è libero lo vedi come un
         riquadro vuoto: seleziona un giocatore e tocca lo slot libero per spostarcelo, senza
@@ -385,12 +387,12 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     id: 'mercato-asta',
     titolo: 'Mercato — asta a busta chiusa sugli svincolati',
     corpo: <>
-      <p>Ogni giorno, quando il mercato riapre, il sistema estrae automaticamente 20 nuovi
-        giocatori svincolati (5 per ciascun macro-ruolo, 10 durante l'off-season). Chi viene
-        svincolato da una squadra si aggiunge invece garantito, oltre a quella quota — così
-        chi è stato appena tagliato torna subito visibile a tutti, non deve aspettare un
-        sorteggio casuale: capita quindi che un ruolo mostri più giocatori degli altri in un
-        giorno con parecchi svincoli. Tutti restano in evidenza per un giorno; se nessuno li
+      <p>Ogni sera alle 22:30, quando il mercato riapre, il sistema estrae <strong>un giocatore
+        per ruolo</strong> (portiere, difensore, centrocampista, attaccante). Chi viene svincolato da
+        una squadra si aggiunge invece garantito, oltre a quella quota — così chi è stato appena
+        tagliato torna subito visibile a tutti: capita quindi che un ruolo mostri più giocatori degli
+        altri in un giorno con parecchi svincoli. Durante i playoff e l'off-season questo mercato è
+        chiuso. Tutti restano in evidenza per un giorno; se nessuno li
         prende, restano comunque nell'archivio e possono ricevere offerte nei giorni
         successivi.</p>
       <p>Puoi fare <strong>una sola offerta per giocatore</strong>, indicando l'ingaggio annuale
@@ -424,8 +426,8 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     id: 'rinnovi',
     titolo: 'Contratti e rinnovi',
     corpo: <>
-      <p>A stagione in corso puoi aprire una trattativa di rinnovo dalla scheda di un tuo
-        giocatore, anche se il suo contratto non è ancora scaduto. È il giocatore ad aprire con
+      <p>A stagione in corso e per tutta l'off-season puoi aprire una trattativa di rinnovo dalla
+        scheda di un tuo giocatore, anche se il suo contratto non è ancora scaduto. È il giocatore ad aprire con
         una sua richiesta di ingaggio, e da lì <strong>tratti solo su quello</strong>: la
         durata non si negozia mai, un rinnovo estende il contratto di
         <strong> esattamente una stagione</strong>.</p>
@@ -513,16 +515,18 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     id: 'offseason',
     titolo: 'Off-season',
     corpo: <>
-      <p>Quando la stagione finisce, la lega non riparte subito: si apre una finestra di
-        <strong> 24 ore esatte</strong> di preparazione, che parte quando l'admin la avvia e
-        non può essere accelerata.</p>
-      <p>Prima di aprirla, l'admin sceglie una fra tre strade, alternative fra loro: chiudere
-        la lega qui, rimuovere uno o più partecipanti, oppure farne entrare di nuovi.</p>
-      <p>Durante le 24 ore, in parallelo: gli eventuali nuovi partecipanti fanno il loro draft
-        d'ingresso (con lo stesso meccanismo a pacchetti dell'inizio lega, per restare equo con
-        chi è già in corsa), e il mercato degli svincolati accelera, estraendo molti più
-        giocatori del solito ogni giorno, con spin extra per ogni squadra.</p>
-      <p>Allo scadere delle 24 ore l'off-season si chiude da sola. Se una squadra fosse rimasta
+      <p>Quando i playoff finiscono, la lega non riparte subito: dopo 24 ore per rivedere i
+        risultati l'admin apre l'<strong>off-season</strong>, una finestra di preparazione che dura
+        quanto deciso per la lega (il conto alla rovescia è nella sua pagina). Prima di aprirla
+        l'admin conferma quali squadre proseguono e se entrano squadre nuove.</p>
+      <p>Durante l'off-season si <strong>rinnovano i contratti</strong> e si <strong>fanno scambi</strong>;
+        i mercati degli svincolati e UNDER sono chiusi. Gli eventuali nuovi partecipanti fanno il loro
+        draft d'ingresso (con lo stesso meccanismo a pacchetti dell'inizio lega), e si prepara il
+        draft OFF-Season delle scelte: ordine ed eleggibili sono già visibili, l'estrazione avviene
+        alla chiusura.</p>
+      <p>Alla scadenza l'off-season si chiude da sola: escono i contratti non rinnovati e chi aveva
+        annunciato il ritiro, poi si estrae il draft. Nelle leghe con le conference segue il
+        sorteggio East/West in diretta. Se una squadra fosse rimasta
         sotto il minimo di 21 giocatori, il sistema la completa automaticamente scegliendo gli
         svincolati più economici e sostenibili sotto il suo tetto ingaggi. La prima giornata della nuova
         stagione si gioca alla prima mezzanotte di simulazione (22:00) utile dopo la chiusura.</p>

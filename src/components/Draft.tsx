@@ -371,7 +371,8 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
             Puoi ingaggiarlo subito o rifare lo spin (i reroll sono limitati). Ogni giocatore è unico in
             tutta la lega: appena qualcuno lo ingaggia, sparisce per tutti gli altri.</p>
         </> : <>
-          <p>Apri un pacchetto per reparto: 4 carte, ne scegli 2. Se meno di 2 carte sono ingaggiabili,
+          <p>Apri un pacchetto: 7 carte (un portiere, due difensori, due centrocampisti, due attaccanti), ne
+            scegli 2. Se meno di 2 carte sono ingaggiabili,
             quelle ingaggiabili restano ferme e solo le altre si ripescano automaticamente, senza consumarti
             un reroll. Ogni giocatore è unico in tutta la lega: appena qualcuno lo prende, sparisce per gli
             altri.</p>

@@ -1119,7 +1119,8 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
             tornando al vecchio lo ritrovi.</p>
           <p>Hai <strong>due schemi</strong>. Quello segnato "Attivo" va in partita; l'altro lo prepari, e il suo modulo
             si impara un po' a ogni partita anche senza schierarlo. Selezionalo e salva per metterlo in partita.
-            Se non schieri entro le <strong>22:00</strong>, il sistema mette una formazione automatica.</p>
+            La formazione salvata resta valida per le giornate dopo, finché non la cambi: le modifiche contano se le
+            salvi entro le <strong>22:00</strong>.</p>
         </PopupSpiegazione>
         : <PopupSpiegazione userId={membership.user_id} hintKey="formazione" titolo="Come funziona la Formazione">
         <p>Scegli uno dei moduli disponibili e assegna un giocatore a ogni slot: titolari, panchina e il
