@@ -198,7 +198,7 @@ export function Offseason({ user, membership, onNavigate, onOpenTeam, onRefresh 
             <div className="offseason-launch__footer"><div><small>PROSSIMA STAGIONE</small><strong>{editActiveCount} squadre</strong></div>
               <div style={{ display: 'flex', gap: '.6rem' }}>
                 <button className="button button--secondary" type="button" disabled={pending} onClick={() => setEditing(false)}>Annulla</button>
-                <button className="offseason-open-button" disabled={pending || editActiveCount < 4 || editActiveCount > 24} onClick={salvaModificheSquadre}><span>{pending ? 'Salvataggio…' : 'Salva modifiche'}</span><i aria-hidden="true">→</i></button>
+                <button className="offseason-open-button" disabled={pending || editActiveCount < 4 || editActiveCount > 28} onClick={salvaModificheSquadre}><span>{pending ? 'Salvataggio…' : 'Salva modifiche'}</span><i aria-hidden="true">→</i></button>
               </div>
             </div>
           </>}
