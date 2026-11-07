@@ -5,7 +5,7 @@ import { useId } from 'react'
 //   - in alto, sul blu notte: i tre premiati della stagione prima in fila, attaccati, tagliati alla vita
 //     (capocannoniere al centro, piu' grande e davanti; assistman a sinistra, portiere a destra);
 //   - una V di righe bianca/ciano/blu separa il blu dalla parte bassa argento a trama di tessuto;
-//   - sulla punta della V il logo ufficiale: lo stemma e, sotto, la scritta SPECIALONE su una fascia blu notte;
+//   - il logo ufficiale: lo stemma piccolo sopra la testa del capocannoniere, la scritta SPECIALONE su una fascia blu notte;
 //   - in basso SEASON n (Anton) e la riga "Figurine ufficiali".
 // Coordinate in un riquadro 500x654 (le proporzioni del corpo della bustina). I ritagli dei giocatori sono quadrati con
 // la persona tagliata alla vita sul bordo basso: i fondi delle foto finiscono sotto la V o dietro il marchio.
@@ -83,9 +83,9 @@ export function FacciataPromo({ premiati, stagione }: { premiati: PremiatoFaccia
     <polyline points={v(BORDO - 20)} fill="none" stroke="#27d3f0" strokeWidth="13" strokeLinejoin="miter" />
     <polyline points={v(BORDO - 6)} fill="none" stroke="#071a45" strokeWidth="8" strokeLinejoin="miter" />
 
-    {/* Il logo ufficiale: lo stemma sulla punta della V (ombra scura per staccarlo da maglie e argento), sotto la scritta
+    {/* Il logo ufficiale: lo stemma piccolo sopra la testa del capocannoniere (richiesta del 7/11/2026), la scritta
         SPECIALONE ufficiale su una fascia blu notte con i bordi ciano (bianca e oro, sull'argento non si leggerebbe) */}
-    <image href="/specialone-mark.svg" x={W / 2 - 62} y="278" width="124" height="175" filter={`url(#${id}-stemma)`} />
+    <image href="/specialone-mark.svg" x={W / 2 - 26} y="40" width="52" height="73" filter={`url(#${id}-stemma)`} />
     <polygon points="14,474 486,466 486,526 14,534" fill="#071a45" filter={`url(#${id}-ombra)`} />
     <line x1="14" y1="474" x2="486" y2="466" stroke="#27d3f0" strokeWidth="4" />
     <line x1="14" y1="534" x2="486" y2="526" stroke="#27d3f0" strokeWidth="4" />
