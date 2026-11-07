@@ -5,7 +5,7 @@ import { useId } from 'react'
 //   - in alto, sul blu notte: i tre premiati della stagione prima in fila, attaccati, tagliati alla vita
 //     (capocannoniere al centro, piu' grande e davanti; assistman a sinistra, portiere a destra);
 //   - una V di righe bianca/ciano/blu separa il blu dalla parte bassa argento a trama di tessuto;
-//   - sulla punta della V il marchio: rombo cromato con l'emblema, SPECIAL cromato e ONE ciano, davanti a tutto;
+//   - sulla punta della V il logo ufficiale: lo stemma e, sotto, la scritta SPECIALONE su una fascia blu notte;
 //   - in basso SEASON n (Anton) e la riga "Figurine ufficiali".
 // Coordinate in un riquadro 500x654 (le proporzioni del corpo della bustina). I ritagli dei giocatori sono quadrati con
 // la persona tagliata alla vita sul bordo basso: i fondi delle foto finiscono sotto la V o dietro il marchio.
@@ -45,21 +45,6 @@ export function FacciataPromo({ premiati, stagione }: { premiati: PremiatoFaccia
         <path d="M0 6 L6 0 M-1 1 L1 -1 M5 7 L7 5" stroke="#5d7391" strokeWidth=".7" opacity=".16" />
         <path d="M0 0 L6 6" stroke="#ffffff" strokeWidth=".7" opacity=".5" />
       </pattern>
-      <linearGradient id={`${id}-cromo`} x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#ffffff" />
-        <stop offset=".38" stopColor="#dce6f1" />
-        <stop offset=".5" stopColor="#7f93ab" />
-        <stop offset=".53" stopColor="#f4f8fc" />
-        <stop offset=".8" stopColor="#b4c3d4" />
-        <stop offset="1" stopColor="#ffffff" />
-      </linearGradient>
-      <linearGradient id={`${id}-olo`} x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#7ff6ff" stopOpacity=".55" />
-        <stop offset=".35" stopColor="#ffffff" stopOpacity="0" />
-        <stop offset=".6" stopColor="#ff9cf0" stopOpacity=".45" />
-        <stop offset=".85" stopColor="#ffe98a" stopOpacity=".4" />
-        <stop offset="1" stopColor="#7ff6ff" stopOpacity=".5" />
-      </linearGradient>
       <linearGradient id={`${id}-ciano`} x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stopColor="#d9fbff" />
         <stop offset=".5" stopColor="#3fdcf5" />
@@ -67,6 +52,10 @@ export function FacciataPromo({ premiati, stagione }: { premiati: PremiatoFaccia
       </linearGradient>
       <filter id={`${id}-ombra`} x="-20%" y="-20%" width="140%" height="140%">
         <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#020a1c" floodOpacity=".7" />
+      </filter>
+      <filter id={`${id}-stemma`} x="-30%" y="-20%" width="160%" height="140%">
+        <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#020a1c" floodOpacity=".85" />
+        <feDropShadow dx="0" dy="6" stdDeviation="9" floodColor="#020a1c" floodOpacity=".6" />
       </filter>
       <filter id={`${id}-bordo`} x="-10%" y="-10%" width="120%" height="120%">
         <feDropShadow dx="0" dy="0" stdDeviation="1.4" floodColor="#9ff3ff" floodOpacity=".9" />
@@ -94,20 +83,13 @@ export function FacciataPromo({ premiati, stagione }: { premiati: PremiatoFaccia
     <polyline points={v(BORDO - 20)} fill="none" stroke="#27d3f0" strokeWidth="13" strokeLinejoin="miter" />
     <polyline points={v(BORDO - 6)} fill="none" stroke="#071a45" strokeWidth="8" strokeLinejoin="miter" />
 
-    {/* Marchio sulla punta della V: rombo cromato con l'emblema in alto (sopra la scritta), poi SPECIAL / ONE davanti */}
-    <g filter={`url(#${id}-ombra)`}>
-      <polygon points="250,292 340,382 250,472 160,382" fill={`url(#${id}-cromo)`} stroke="#071a45" strokeWidth="5" strokeLinejoin="round" />
-      <polygon points="250,308 324,382 250,456 176,382" fill="#0a2a6b" />
-      <polygon points="250,308 324,382 250,456 176,382" fill={`url(#${id}-olo)`} />
-      <image href="/specialone-mark.svg" x="218" y="314" width="64" height="64" />
-    </g>
-    <g transform="translate(250 0) skewX(-9) translate(-250 0)" fontFamily="'Saira Condensed', 'Arial Narrow', sans-serif" fontWeight="800" textAnchor="middle">
-      <text x="250" y="455" fontSize="112" letterSpacing="-1" fill="none" stroke="#071a45" strokeWidth="16" strokeLinejoin="round">SPECIAL</text>
-      <text x="250" y="455" fontSize="112" letterSpacing="-1" fill={`url(#${id}-cromo)`} stroke="#ffffff" strokeWidth="2">SPECIAL</text>
-      <text x="250" y="455" fontSize="112" letterSpacing="-1" fill={`url(#${id}-olo)`}>SPECIAL</text>
-      <text x="250" y="512" fontSize="62" letterSpacing="10" fill="none" stroke="#071a45" strokeWidth="12" strokeLinejoin="round">ONE</text>
-      <text x="250" y="512" fontSize="62" letterSpacing="10" fill={`url(#${id}-ciano)`} stroke="#ffffff" strokeWidth="1.5">ONE</text>
-    </g>
+    {/* Il logo ufficiale: lo stemma sulla punta della V (ombra scura per staccarlo da maglie e argento), sotto la scritta
+        SPECIALONE ufficiale su una fascia blu notte con i bordi ciano (bianca e oro, sull'argento non si leggerebbe) */}
+    <image href="/specialone-mark.svg" x={W / 2 - 62} y="278" width="124" height="175" filter={`url(#${id}-stemma)`} />
+    <polygon points="14,474 486,466 486,526 14,534" fill="#071a45" filter={`url(#${id}-ombra)`} />
+    <line x1="14" y1="474" x2="486" y2="466" stroke="#27d3f0" strokeWidth="4" />
+    <line x1="14" y1="534" x2="486" y2="526" stroke="#27d3f0" strokeWidth="4" />
+    <image href="/loghi/specialone_text.svg" x={W / 2 - 205} y="477" width="410" height="47" />
 
     {/* SEASON n e la riga sotto, nella parte argento */}
     <g fontFamily="Anton, Impact, sans-serif" textAnchor="middle">

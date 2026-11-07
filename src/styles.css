@@ -211,9 +211,8 @@ input:disabled { opacity: 0.65; }
 .form-heading--large { margin-bottom: 3rem; }
 .form-heading--large p:last-child { max-width: 60ch; }
 
-/* Font della bustina Season 3 (Google Fonts, licenza OFL, solo latino): Anton per SEASON, Saira Condensed per il marchio. */
+/* Font della bustina Season 3 (Google Fonts, licenza OFL, solo latino): Anton per SEASON. */
 @font-face { font-family: "Anton"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/anton-400.woff2") format("woff2"); }
-@font-face { font-family: "Saira Condensed"; font-style: normal; font-weight: 800; font-display: swap; src: url("/fonts/sairacondensed-800.woff2") format("woff2"); }
 
 /* Bai Jamjuree autoospitato (SIL OFL), latin e latin-ext, pesi 400-700: font unico dell'app.
    I pesi 800/900 usati nel CSS ricadono sul 700. Nessuna chiamata di rete a runtime. */
@@ -6347,6 +6346,11 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 /* Bustina "promo" (rifatta da capo il 7/11/2026 sulle confezioni Topps 75): la facciata e' un'unica illustrazione SVG
    (BustinaPromo.tsx) che riempie il corpo; sopra restano solo il bollino adesivo e gli effetti della plastica. */
 .pk__facciata { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* Riflessi piu' discreti (richiesta del 7/11/2026: erano troppo forti) */
+.pk--v4 .pk__riflesso { opacity: .45; }
+.pk--v4 .pk__lampo { opacity: .4; }
+.pk--v4 .pk__luce { opacity: .55; }
+.pk--v4 .pk__grinze { opacity: .32; }
 .pk--promo .pk__bollino { top: 3.5%; right: 4%; bottom: auto; left: auto; width: 46px; height: 46px; transform: rotate(12deg); z-index: 4; }
 .alb-apertura:has(.pk--v4) { background: radial-gradient(circle at 50% 40%, rgba(17,112,214,.5), rgba(3,7,18,.96) 65%); }
 .pk--v4 .pk__corpo::after { content: ''; position: absolute; inset: 0; pointer-events: none;
