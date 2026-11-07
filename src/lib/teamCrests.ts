@@ -65,6 +65,7 @@ export const STEMMI_SQUADRA = [
   { id: 'arrosticini', nome: 'Arrosticini', src: '/stemmi-squadra/thumbs/arrosticini.png' },
   { id: 'sporting-genziana', nome: 'Sporting Genziana', src: '/stemmi-squadra/thumbs/sporting-genziana.png' },
   { id: 'middlesbronz', nome: 'Middlesbronz', src: '/stemmi-squadra/thumbs/middlesbronz.png' },
+  { id: 'jeffreys-eleven', nome: "Jeffrey's Eleven", src: '/stemmi-squadra/thumbs/jeffreys-eleven.png' },
 ] as const
 
 export const STEMMA_SQUADRA_DEFAULT = `preset:${STEMMI_SQUADRA[0].id}`
