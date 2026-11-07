@@ -49,7 +49,7 @@ const TAPPE: Tappa[] = [
   {
     id: 'formazione', view: 'squad', percorso: ['Gestione', 'Formazione'],
     titolo: 'Formazione',
-    testo: 'Scegli modulo, stile di gioco, gli 11 titolari e la panchina entro le 22:00. Se non salvi, il sistema schiera una formazione automatica. Un giocatore fuori ruolo rende meno: tienili dove sanno giocare.',
+    testo: 'Scegli modulo, stile di gioco, gli 11 titolari e la panchina entro le 22:00: la formazione salvata resta valida per le giornate dopo, finché non la cambi. Un giocatore fuori ruolo rende meno: tienili dove sanno giocare.',
   },
   {
     id: 'club', view: 'team', percorso: ['Gestione', 'Club'],
@@ -89,7 +89,7 @@ const TAPPE: Tappa[] = [
   {
     id: 'under', view: 'under', percorso: ['Mercato', 'UNDER'],
     titolo: 'UNDER',
-    testo: 'Ogni giorno escono dei quindicenni all\'asta. Chi vinci va nel vivaio: l\'overall è vero, il potenziale è una fascia nascosta. Entro l\'off-season lo promuovi in prima squadra o lo lasci andare.',
+    testo: 'Ogni giorno escono dei quindicenni all\'asta. Chi vinci va nel vivaio: l\'overall è vero, il potenziale è una fascia nascosta. Hai tante giornate quante ne ha la stagione regolare per promuoverlo in prima squadra, poi torna sul mercato.',
   },
   {
     id: 'partite', view: 'matches', percorso: ['Risultati', 'Partite'],

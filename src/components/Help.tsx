@@ -180,10 +180,11 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         nascosto</strong>: si mostra come una fascia (es. "68-88"), apposta non centrata sul
         valore reale — fare la media dei due estremi non lo svela. La fascia si stringe salendo
         di livello nel ramo Vivaio, fino a diventare un valore esatto al livello massimo.</p>
-      <p>Entro la fine dell'off-season un prospetto in cantera va <strong>promosso</strong> in
-        prima squadra (da quel momento è un giocatore come tutti gli altri, con ingaggio e
-        contratto) oppure <strong>rilasciato</strong>: se non decidi in tempo, torna comunque sul
-        mercato UNDER.</p>
+      <p>Un prospetto resta in cantera al massimo <strong>tante giornate quante ne ha la stagione
+        regolare</strong> in cui entra (il conto lo vedi sulla sua scheda): entro quel tempo va
+        <strong> promosso</strong> in prima squadra (da quel momento è un giocatore come tutti gli altri,
+        con ingaggio e contratto) oppure <strong>rilasciato</strong>: se non decidi in tempo, torna
+        comunque sul mercato UNDER.</p>
     </>,
   },
   {
