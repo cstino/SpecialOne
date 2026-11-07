@@ -5,6 +5,7 @@ import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { cognome } from '../lib/nomi'
 import { macroRuolo, ruoloIt } from '../lib/ruoli'
 import { Crest } from './Crest'
+import { LogoSeason } from './LogoSeason'
 import { Carta, type Anagrafica, type Figurina, type Versione } from './CartaFut'
 
 // Album delle figurine (docs/decisioni-conferenze-stampa.md §BetOne): una pagina per squadra, stemma + giocatori.
@@ -101,12 +102,36 @@ function suonoStrappo(forte: boolean) {
   } catch { /* audio non disponibile */ }
 }
 
-function Bustina({ stagione, onAperta }: { stagione: number; onAperta: () => void }) {
+// iOS chiede il permesso per il giroscopio, e solo dentro un tocco: si chiede al tasto che compra la bustina.
+function chiediGiroscopio() {
+  try {
+    const D = window.DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> } | undefined
+    void D?.requestPermission?.().catch(() => undefined)
+  } catch { /* niente giroscopio */ }
+}
+
+export function Bustina({ stagione, onAperta }: { stagione: number; onAperta: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const [tilt, setTilt] = useState({ x: 0, y: 0, lx: 50, ly: 30 })
   const [strappo, setStrappo] = useState(0)
   const [aperta, setAperta] = useState(false)
   const trascina = useRef<{ attivo: boolean; ultimoSuono: number }>({ attivo: false, ultimoSuono: 0 })
+  const dito = useRef(false)
+  // Sul telefono la bustina si inclina col giroscopio, come tenerla in mano: i riflessi della plastica scorrono.
+  // La posizione di partenza e' quella in cui la si tiene quando compare; il dito ha la precedenza.
+  useEffect(() => {
+    if (aperta || ridotto()) return
+    let zero: { b: number; g: number } | null = null
+    const gira = (e: DeviceOrientationEvent) => {
+      if (dito.current || e.beta == null || e.gamma == null) return
+      zero ??= { b: e.beta, g: e.gamma }
+      const px = Math.min(1, Math.max(0, 0.5 + (e.gamma - zero.g) / 50))
+      const py = Math.min(1, Math.max(0, 0.3 + (e.beta - zero.b) / 50))
+      setTilt({ x: (0.5 - py) * 18, y: (px - 0.5) * 24, lx: px * 100, ly: py * 100 })
+    }
+    window.addEventListener('deviceorientation', gira)
+    return () => window.removeEventListener('deviceorientation', gira)
+  }, [aperta])
 
   function posizione(e: React.PointerEvent) {
     const r = ref.current!.getBoundingClientRect()
@@ -114,6 +139,7 @@ function Bustina({ stagione, onAperta }: { stagione: number; onAperta: () => voi
   }
   function giu(e: React.PointerEvent) {
     if (aperta) return
+    dito.current = true
     // Lo strappo puo' partire anche da fuori, a sinistra della bustina, all'altezza della saldatura in alto.
     const { px, py } = posizione(e)
     if (py > -0.12 && py < 0.3 && px < 0.6) { trascina.current.attivo = true; (e.currentTarget as Element).setPointerCapture?.(e.pointerId) }
@@ -138,7 +164,7 @@ function Bustina({ stagione, onAperta }: { stagione: number; onAperta: () => voi
       }
     }
   }
-  function su() { trascina.current.attivo = false; if (!aperta) setTilt((t) => ({ ...t, x: 0, y: 0 })) }
+  function su() { trascina.current.attivo = false; dito.current = false; if (!aperta) setTilt((t) => ({ ...t, x: 0, y: 0 })) }
 
   return <div className={`pack-scena${aperta ? ' is-aperta' : ''}`}
     onPointerDown={giu} onPointerMove={muovi} onPointerUp={su} onPointerCancel={su}>
@@ -155,11 +181,16 @@ function Bustina({ stagione, onAperta }: { stagione: number; onAperta: () => voi
           <p className="pk__sopra">Figurine ufficiali</p>
           <div className="pk__emblema"><img src="/specialone-mark.svg" alt="" /></div>
           <p className="pk__marchio"><b>SPECIAL</b><span>ONE</span></p>
-          <p className="pk__stagione">Stagione {stagione}</p>
+          <LogoSeason n={stagione} className="pk__season" />
         </div>
         <div className="pk__bollino" aria-hidden="true"><b>3</b><small>figurine</small></div>
         <div className="pk__curva" aria-hidden="true" />
+        {/* Plastica: riflesso che segue l'inclinazione, grinze del foglio, pieghe delle saldature, lampo periodico */}
         <div className="pk__luce" aria-hidden="true" />
+        <div className="pk__riflesso" aria-hidden="true" />
+        <div className="pk__grinze" aria-hidden="true" />
+        <div className="pk__pieghe" aria-hidden="true" />
+        <div className="pk__lampo" aria-hidden="true" />
       </div>
       <div className="pk__sald pk__sald--giu">
         <span className="pk__righe" aria-hidden="true" />
@@ -286,6 +317,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   async function compra(conGratis = false) {
     if (compro) return
     setCompro(true); setErrore(''); setAvviso('')
+    chiediGiroscopio()
     const { data, error } = await supabase.rpc('album_compra_bustina', { p_league_id: leagueId, p_gratis: conGratis })
     setCompro(false)
     if (error) { setErrore(error.message); return }
@@ -573,4 +605,12 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
       </>}
     </div>}
   </section>
+}
+
+// Anteprima della bustina senza comprarla (?anteprima=bustina): si strappa e ricomincia, non scrive niente.
+export function AnteprimaBustina() {
+  const [giro, setGiro] = useState(0)
+  return <div className="alb-apertura" onPointerDown={chiediGiroscopio}>
+    <Bustina key={giro} stagione={3} onAperta={() => window.setTimeout(() => setGiro((g) => g + 1), 900)} />
+  </div>
 }

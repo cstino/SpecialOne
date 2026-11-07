@@ -12,6 +12,7 @@ import { AlboDOro } from './components/AlboDOro'
 import { AlboRivelazione } from './components/AlboRivelazione'
 import { OffseasonLive } from './components/OffseasonLive'
 import { AnteprimaOffseason } from './components/AnteprimaOffseason'
+import { AnteprimaBustina } from './components/Album'
 import { useAlboRivelazione } from './lib/useAlboRivelazione'
 import { Avvisi } from './components/Avvisi'
 import { SocialOne } from './components/SocialOne'
@@ -380,6 +381,8 @@ export default function App() {
     await loadMemberships()
   }
 
+  // Anteprima della bustina: solo grafica, nessun dato, si vede anche senza login.
+  if (new URLSearchParams(window.location.search).get('anteprima') === 'bustina') return <AnteprimaBustina />
   if (manutenzione.attiva) return <Manutenzione stato={manutenzione} />
   if (configurationError) {
     return <main className="fatal-state"><img src="/specialone-mark.svg" alt="" /><h1>Configurazione incompleta</h1><p>{configurationError}</p></main>
