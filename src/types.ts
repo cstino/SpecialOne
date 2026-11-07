@@ -56,6 +56,8 @@ export type Team = {
   controllata_da_pc: boolean
   entrata_stagione: number
   uscita_stagione: number | null
+  // Quando la squadra e' entrata nella lega (la visita guidata parte da sola solo per le nuove).
+  creata_il?: string
   // Title Playoff vinti, assegnati all'ingresso in off-season: una stella sullo stemma ciascuno.
   titoli_title?: number
   // Vincitore del Title Playoff piu' recente: cornice dorata sullo stemma.

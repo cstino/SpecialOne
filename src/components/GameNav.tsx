@@ -3,6 +3,7 @@ import { useNotificheContesto, useTornaAllaHome } from '../lib/navigazione'
 import type { League } from '../types'
 import { Icona as IconaTonda } from './Icona'
 import { supabase } from '../lib/supabase'
+import { EVENTO_MENU_MOBILE } from './VisitaGuidata'
 
 export type GameView = 'overview' | 'offseason' | 'draft' | 'squad' | 'team' | 'mercato' | 'scambi' | 'scelte' | 'under' | 'matches' | 'table' | 'tabellone' | 'honors' | 'notifications' | 'admin' | 'help' | 'finanza' | 'risorse' | 'social' | 'rivalita' | 'salastampa' | 'spogliatoio' | 'pubblico' | 'betone' | 'casinone' | 'album' | 'quizzone' | 'sponsor'
 type GameNavProps = { league: League; active: GameView; onNavigate?: (view: GameView) => void }
@@ -231,6 +232,13 @@ export function GameNav({ league, active, onNavigate }: GameNavProps) {
     const g = gruppoDi(active)
     if (g) setGruppiAperti((a) => a[g] ? a : { ...a, [g]: true })
   }, [active]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // La visita guidata apre e chiude il menu del telefono per mostrarlo.
+  useEffect(() => {
+    const comanda = (e: Event) => setMenuMobileAperto((e as CustomEvent<boolean>).detail)
+    window.addEventListener(EVENTO_MENU_MOBILE, comanda)
+    return () => window.removeEventListener(EVENTO_MENU_MOBILE, comanda)
+  }, [])
 
   useEffect(() => {
     if (!menuMobileAperto) return

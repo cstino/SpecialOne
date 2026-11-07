@@ -53,6 +53,7 @@ import { PaginaAlbum } from './components/PaginaAlbum'
 import { PaginaQuizzone } from './components/Quizzone'
 import { NovitaBenvenuto, useNovitaBenvenuto } from './components/NovitaBenvenuto'
 import { Onboarding } from './components/Onboarding'
+import { VisitaGuidata, useVisitaGuidata } from './components/VisitaGuidata'
 import { ContestoHome, ContestoNotifiche } from './lib/navigazione'
 import { useNotifiche, type Notifica } from './lib/notifiche'
 import { configurationError, supabase } from './lib/supabase'
@@ -99,6 +100,7 @@ export default function App() {
   const novita = useNovitaBenvenuto(session?.user.id)
   const nomeAllenatore = useNomeAllenatoreObbligatorio(session?.user.id)
   const albo = useAlboRivelazione(nelMenu ? null : (activeLeagueId ?? memberships[0]?.league_id), session?.user.id)
+  const visita = useVisitaGuidata(nelMenu ? undefined : (memberships.find((m) => m.league_id === activeLeagueId) ?? memberships[0]), session?.user.id)
 
   const apriMenu = useCallback(() => setNelMenu(true), [])
 
@@ -571,6 +573,7 @@ export default function App() {
       : <SeasonOverview membership={active} onNavigate={navigateGame} revealedMatchIds={partiteViste} onOpenMatch={(id) => setOpenMatch({ id, from: 'overview' })} onRevealMatch={(id) => setRevealMatch({ id, from: 'overview' })} onOpenTeam={openTeam} />
   return conContesti(<>
     {schermata}
+    {visita.attiva && !revealMatch && <VisitaGuidata league={active.league!} onNavigate={navigateGame} onChiudi={visita.chiudi} />}
     {revealMatch && <MatchReveal membership={active} matchId={revealMatch.id} onClose={() => { void segnaPartitaVista(revealMatch.id); setRevealMatch(null) }} onRevealed={segnaPartitaVista} onOpenReport={() => { void segnaPartitaVista(revealMatch.id); setOpenMatch(revealMatch); setRevealMatch(null) }} />}
   </>)
 }

@@ -7277,3 +7277,45 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .alb-sc-mini.is-impegnata .fut { opacity: .45; filter: grayscale(.6); }
 .alb-sc-mini.is-scelta .fut { filter: drop-shadow(0 0 3px #7be3a0) drop-shadow(0 0 3px #7be3a0); }
 @media (prefers-reduced-motion: reduce) { .fut--ultra, .fut--ultimate, .fut__lucido, .fut__olo, .fut__scintille i { animation: none; } }
+
+/* ── Visita guidata (VisitaGuidata.tsx): scheda in basso sopra la pagina vera, voce di menu illuminata ── */
+.visita { position: fixed; z-index: 130; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); display: grid; gap: 10px; max-width: 460px; margin: 0 auto; padding: 16px 18px 16px; border: 1px solid rgba(47,214,242,.45); border-radius: 18px; color: #e9e4f2; background: linear-gradient(160deg, rgba(33,26,51,.97), rgba(18,14,27,.98)); box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 24px 60px rgba(0,0,0,.6), 0 0 34px rgba(47,214,242,.16); animation: visita-entra .35s cubic-bezier(.2,.8,.2,1) both; }
+@media (min-width: 900px) { .visita { left: auto; right: 28px; bottom: 28px; width: 420px; margin: 0; } }
+.visita__testa { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.visita__conto { color: #8fe9f8; font-size: .68rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+.visita__conto b { color: #fff; }
+.visita__salta { appearance: none; margin: 0; padding: 4px 2px; border: 0; background: none; color: #9b92ab; font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.visita__salta:hover { color: #fff; }
+.visita__barra { height: 3px; overflow: hidden; border-radius: 3px; background: rgba(255,255,255,.08); }
+.visita__barra i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #8a4dff, #2fd6f2); transition: width .3s ease; }
+.visita__percorso { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 2px 0 0; padding: 0; list-style: none; }
+.visita__percorso li { padding: 3px 8px; border-radius: 999px; color: #b8b0c6; background: rgba(255,255,255,.06); font-size: .72rem; font-weight: 700; }
+.visita__percorso li + li::before { content: "›"; margin: 0 6px 0 -2px; color: #6f6680; }
+.visita__percorso li.is-qui { color: #06222a; background: #2fd6f2; }
+.visita__percorso li.is-qui::before { color: #0b4c5a; }
+.visita__titolo { margin: 0; color: #fff; font-size: 1.3rem; font-weight: 800; line-height: 1.15; letter-spacing: -.01em; text-wrap: balance; animation: visita-testo .3s ease-out both; }
+.visita__corpo { margin: 0; color: #cfc8db; font-size: .9rem; line-height: 1.45; animation: visita-testo .3s .04s ease-out both; }
+.visita__azioni { display: grid; grid-template-columns: auto 1fr; gap: 10px; margin-top: 4px; }
+.visita__indietro, .visita__avanti { appearance: none; margin: 0; min-height: 44px; padding: 0 18px; border-radius: 12px; font: inherit; font-size: .92rem; font-weight: 800; cursor: pointer; }
+.visita__indietro { border: 1px solid #3e3550; color: #d6cfe2; background: transparent; }
+.visita__indietro:disabled { opacity: .35; cursor: default; }
+.visita__avanti { border: 0; color: #fff; background: linear-gradient(100deg, #7b3cf0, #2fb5e8); box-shadow: 0 8px 22px rgba(70,120,240,.35); }
+.visita__avanti:hover { filter: brightness(1.08); }
+.visita button:focus-visible { outline: 2px solid #2fd6f2; outline-offset: 2px; }
+@keyframes visita-entra { from { opacity: 0; transform: translateY(18px); } }
+@keyframes visita-testo { from { opacity: 0; transform: translateX(8px); } }
+@keyframes visita-luce { 0%, 100% { box-shadow: 0 0 0 2px #2fd6f2, 0 0 14px rgba(47,214,242,.55); } 50% { box-shadow: 0 0 0 2px #2fd6f2, 0 0 26px rgba(47,214,242,.9); } }
+/* I popup di spiegazione delle pagine aspettano la fine del giro; la scheda (z-index 130) sta sopra il cassetto del menu (100). */
+body.visita-attiva .popup-spiegazione-sfondo { display: none; }
+body.visita-attiva .game-sidebar .game-nav-item--figlio.is-active,
+body.visita-attiva .game-sidebar .game-nav-item.is-active:not([aria-expanded]) { animation: visita-luce 1.6s ease-in-out infinite; }
+body.visita-attiva .game-mobilebar__menu { border-radius: 12px; animation: visita-luce 1.6s ease-in-out infinite; }
+body.visita-menu .game-sidebar nav { border-radius: 14px; animation: visita-luce 1.6s ease-in-out infinite; }
+body.visita-menu .game-sidebar .game-nav-item.is-active { animation: none; }
+/* Il pulsante nella pagina Aiuto per rifare il giro. */
+.visita-rifai { appearance: none; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 14px; width: 100%; max-width: 460px; margin: 18px 0 0; padding: 14px 18px; border: 1px solid rgba(47,214,242,.4); border-radius: 14px; color: #fff; background: linear-gradient(120deg, rgba(123,60,240,.22), rgba(47,181,232,.16)); font: inherit; text-align: left; cursor: pointer; }
+.visita-rifai b { font-size: 1rem; font-weight: 800; }
+.visita-rifai span { grid-column: 1; color: #b8b0c6; font-size: .82rem; }
+.visita-rifai i { grid-column: 2; grid-row: 1 / 3; color: #2fd6f2; font-size: 1.6rem; font-style: normal; }
+.visita-rifai:hover { border-color: #2fd6f2; }
+@media (prefers-reduced-motion: reduce) { .visita, .visita__titolo, .visita__corpo, body.visita-attiva .game-nav-item, body.visita-attiva .game-mobilebar__menu, body.visita-menu .game-sidebar nav { animation: none; } }

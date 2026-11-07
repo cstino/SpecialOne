@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import type { League, Membership } from '../types'
 import { GameNav, type GameView } from './GameNav'
+import { EVENTO_VISITA } from './VisitaGuidata'
 
 type Props = { membership: Membership; onNavigate: (view: GameView) => void }
 
@@ -591,6 +592,9 @@ export function Help({ membership, onNavigate }: Props) {
         <h1>Aiuto</h1>
         <p>Tutte le regole del gioco, spiegate senza gergo tecnico. Tocca un argomento per
           aprirlo.</p>
+        {league.stato !== 'draft' && <button className="visita-rifai" type="button" onClick={() => window.dispatchEvent(new Event(EVENTO_VISITA))}>
+          <b>Visita guidata</b><span>Un giro su tutte le pagine del gioco, dentro l'app</span><i aria-hidden="true">›</i>
+        </button>}
       </section>
       <GuidaArgomenti argomenti={ARGOMENTI_AIUTO} />
     </div>
