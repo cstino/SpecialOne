@@ -1069,6 +1069,10 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       const trattativa = vivaioTrattativa
                       const offertaEuro = Math.round(parseFloat(trattativa.offertaM.replace(',', '.')) * 10) * 100_000
                       const offertaValida = Number.isFinite(offertaEuro) && offertaEuro >= 500_000
+                      // Dopo un'offerta conta l'esito appena arrivato, non la proposta letta all'apertura: al terzo
+                      // rifiuto la trattativa e' chiusa e il modulo dell'offerta non deve piu' comparire.
+                      const chiusa = !!trattativa.proposta?.trattativa_chiusa || trattativa.esito?.esito === 'chiusa'
+                      const tentativiUsati = trattativa.esito?.tentativi_usati ?? trattativa.proposta?.tentativi_usati ?? 0
                       return <div className="player-modal__confirm vivaio-trattativa">
                         {trattativa.errore && <p className="notice notice--error" role="alert">{trattativa.errore}</p>}
                         {!trattativa.proposta && !trattativa.errore && <p className="season-empty">Sto ascoltando la sua richiesta…</p>}
@@ -1078,7 +1082,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                             <p>{g.nome} chiede <b>{money(trattativa.proposta.richiesta)}</b>/stagione per firmare.</p>
                           </div>
                           {trattativa.esito && <p className={`rinnovo-risposta rinnovo-risposta--${trattativa.esito.esito}`}>«{trattativa.esito.messaggio}»</p>}
-                          {trattativa.proposta.trattativa_chiusa ? <>
+                          {chiusa ? <>
                             <p className="rinnovo-nota">La trattativa è chiusa: resterà in cantera finché non scade il countdown in giornate.</p>
                             <div><button className="button button--secondary" type="button" onClick={() => setVivaioTrattativa(null)}>Chiudi</button></div>
                           </> : <>
@@ -1089,7 +1093,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                               </label>
                             </div>
                             <p className="rinnovo-tentativi">
-                              Tentativi rimasti: <b>{trattativa.proposta.tentativi_totali - trattativa.proposta.tentativi_usati}</b> su {trattativa.proposta.tentativi_totali}.
+                              Tentativi rimasti: <b>{trattativa.proposta.tentativi_totali - tentativiUsati}</b> su {trattativa.proposta.tentativi_totali}.
                               {' '}Esauriti, la trattativa si chiude per sempre.
                             </p>
                             <div>
