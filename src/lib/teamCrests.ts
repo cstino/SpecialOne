@@ -61,6 +61,10 @@ export const STEMMI_SQUADRA = [
   { id: 'weed-athletic', nome: 'Weed Athletic', src: '/stemmi-squadra/thumbs/weed-athletic.png' },
   { id: 'wolves', nome: 'Wolves', src: '/stemmi-squadra/thumbs/wolves.png' },
   { id: 'yugioh', nome: 'Yu-Gi-Oh', src: '/stemmi-squadra/thumbs/yugioh.png' },
+  { id: 'bucio-di-culo', nome: 'Bucio di Culo', src: '/stemmi-squadra/thumbs/bucio-di-culo.png' },
+  { id: 'arrosticini', nome: 'Arrosticini', src: '/stemmi-squadra/thumbs/arrosticini.png' },
+  { id: 'sporting-genziana', nome: 'Sporting Genziana', src: '/stemmi-squadra/thumbs/sporting-genziana.png' },
+  { id: 'middlesbronz', nome: 'Middlesbronz', src: '/stemmi-squadra/thumbs/middlesbronz.png' },
 ] as const
 
 export const STEMMA_SQUADRA_DEFAULT = `preset:${STEMMI_SQUADRA[0].id}`
