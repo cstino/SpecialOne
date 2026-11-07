@@ -5951,10 +5951,17 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .slot-messaggio { margin: -4px 0 0; min-height: 1.3em; text-align: center; color: #cfc6e0; font-size: .86rem; }
 .slot-errore { color: #ff8b8b; }
 .slot-comandi { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
-.slot-puntate { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.slot-comandi__sx { display: grid; gap: 8px; min-width: 0; }
+.slot-puntate { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
 .slot-puntate button { display: grid; place-items: center; height: 48px; padding: 0; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(255,255,255,.04); font-weight: 800; font-size: 1rem; text-align: center; cursor: pointer; font-variant-numeric: tabular-nums; }
 .slot-puntate button.is-scelta { border-color: #ffd84d; background: rgba(255,216,77,.16); color: #ffd84d; box-shadow: 0 0 12px rgba(255,216,77,.3); }
 .slot-puntate button:disabled { opacity: .5; cursor: default; }
+.slot-auto { display: flex; align-items: center; justify-content: center; gap: 8px; height: 38px; margin: 0; padding: 0 12px; border: 1px solid rgba(95,227,255,.35); border-radius: 12px;
+  background: rgba(95,227,255,.06); color: #9ff3ff; font: inherit; font-weight: 800; font-size: .82rem; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+.slot-auto i { font-style: normal; font-size: 1rem; line-height: 1; }
+.slot-auto.is-attivo { border-color: #ff5f8f; background: rgba(255,95,143,.16); color: #ffb3c9; box-shadow: 0 0 14px rgba(255,95,143,.3); }
+.slot-auto.is-attivo i { font-size: .8rem; }
+.slot-auto:disabled { opacity: .45; cursor: default; }
 .slot-gira { display: grid; place-items: center; align-content: center; width: 96px; height: 96px; padding: 0; border-radius: 50%; border: 3px solid #fff2b0; text-align: center; cursor: pointer;
   background: radial-gradient(circle at 35% 30%, #fff2b0, #ffcc33 40%, #d88a10 75%, #8a4f05); color: #2a1500; box-shadow: 0 8px 0 #6b3c03, 0 12px 26px rgba(255,180,40,.45); transition: transform .08s, box-shadow .08s; }
 .slot-gira span { font-size: 1.25rem; font-weight: 900; letter-spacing: .06em; line-height: 1; }

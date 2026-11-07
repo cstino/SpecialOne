@@ -20,7 +20,7 @@ type Vincita = { linea: number; simbolo: number; n: number; vinto: number }
 type Esito = { griglia: number[]; vincite: Vincita[]; coppe: number; scatter: number; vinto: number; gratis: boolean; molt: number; puntata: number; nuovi_gratis: number; crediti: number; giri_gratis: number; max_vincita: number; bustine?: number; bonus?: Array<{ id: number; tipo: 'stemma' | 'rigori' }>; bustine_vinte?: number; bustine_gratis?: number }
 type Stato = { crediti: number; giri_gratis: number; puntata_gratis: number | null; simboli: number[]; max_vincita: number; giri: number; prossima_ricarica: string; bustine_gratis?: number; album?: boolean; bonus_aperto?: { id: number; tipo: 'stemma' | 'rigori' } | null }
 
-const PUNTATE = [10, 20, 50, 100]
+const PUNTATE = [10, 20, 50, 100, 250]
 const LINEE = [[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,0,0,1],[1,2,2,2,1],[0,1,1,1,0]]
 const PESI = [9, 9, 9, 7, 7, 7, 4, 4, 3, 2, 0, 1.6, 1.6]   // solo per i simboli che scorrono mentre i rulli girano
 const PESI_TOT = PESI.reduce((a, b) => a + b, 0)
@@ -161,6 +161,8 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
   // Minigioco aperto (pallone o stemma d'oro): la finestra resta sopra la slot finche' non si incassa.
   const [bonus, setBonus] = useState<{ id: number; tipo: 'stemma' | 'rigori' } | null>(null)
   const [bonusInArrivo, setBonusInArrivo] = useState(false)
+  // Autospin: gira da solo finche' non lo fermi, finiscono i crediti o si apre un minigioco.
+  const [auto, setAuto] = useState(false)
   const suoni = useSuoni(audio)
   const sbloccaMusica = useMusica('slot', audio)
 
@@ -225,6 +227,18 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
       }
     }, d))
   }
+
+  useEffect(() => {
+    if (!auto) return
+    if (bonus || bonusInArrivo || errore) { setAuto(false); return }
+    if (inCorsa) return
+    if (!puoiGirare) { setAuto(false); return }
+    // Una pausa per vedere il risultato: piu' lunga se c'e' una vincita da guardare.
+    const pausa = ridotto() ? 300 : esito && esito.vinto > 0 ? 1600 : 600
+    const t = window.setTimeout(() => void gira(), pausa)
+    return () => window.clearTimeout(t)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auto, inCorsa, puoiGirare, bonus, bonusInArrivo, errore])
 
   const celleVincenti = useMemo(() => {
     const set = new Set<number>()
@@ -296,8 +310,14 @@ export function Casino({ leagueId, dati, onGiro }: Props) {
     </p>
 
     <div className="slot-comandi">
-      <div className="slot-puntate" role="group" aria-label="Puntata">
-        {PUNTATE.map((p) => <button key={p} type="button" className={puntata === p ? 'is-scelta' : ''} aria-pressed={puntata === p} disabled={inCorsa || giriGratis > 0} onClick={() => setPuntata(p)}>{p}</button>)}
+      <div className="slot-comandi__sx">
+        <div className="slot-puntate" role="group" aria-label="Puntata">
+          {PUNTATE.map((p) => <button key={p} type="button" className={puntata === p ? 'is-scelta' : ''} aria-pressed={puntata === p} disabled={inCorsa || auto || giriGratis > 0} onClick={() => setPuntata(p)}>{p}</button>)}
+        </div>
+        <button type="button" className={`slot-auto${auto ? ' is-attivo' : ''}`} aria-pressed={auto}
+          disabled={!auto && !puoiGirare} onClick={() => { if (!auto) setErrore(''); setAuto(!auto) }}>
+          {auto ? <><i aria-hidden="true">■</i>Ferma autospin</> : <><i aria-hidden="true">↻</i>Autospin</>}
+        </button>
       </div>
       <button type="button" className="slot-gira" disabled={!puoiGirare} onClick={() => void gira()}>
         <span>{giriGratis > 0 ? 'GRATIS' : 'GIRA'}</span><small>{giriGratis > 0 ? `${stato.puntata_gratis ?? puntata} ×2` : `${puntata} crediti`}</small>
