@@ -114,7 +114,34 @@ function chiediGiroscopio() {
 // data tengono la bustina di prima fino a fine stagione (decisione del committente, 7/11/2026).
 const BUSTINA_V4_DAL = Date.parse('2026-11-07T12:00:00Z')
 
-export function Bustina({ stagione, nuova, onAperta }: { stagione: number; nuova: boolean; onAperta: () => void }) {
+// I premiati della stagione prima (capocannoniere, assistman, miglior portiere) sulla bustina v4, al posto dell'emblema.
+type Premiato = { premio: 'marcatore' | 'assistman' | 'portiere'; nome: string; foto?: string }
+
+async function caricaPremiati(leagueId: number, stagione: number): Promise<Premiato[]> {
+  const { data: prima } = await supabase.from('seasons').select('id').eq('league_id', leagueId).eq('numero', stagione - 1).maybeSingle()
+  if (!prima) return []
+  const { data } = await supabase.rpc('premi_individuali_lega', { p_league_id: leagueId })
+  const righe = ((data ?? []) as Array<{ season_id: number; premio: Premiato['premio']; ambito?: string; nome: string; player_instance_id: number }>)
+    .filter((r) => r.season_id === (prima as { id: number }).id && (r.ambito ?? 'totale') === 'totale')
+  if (righe.length === 0) return []
+  const { data: ist } = await supabase.from('player_instances').select('id, players(foto_figurina, foto_url)').in('id', righe.map((r) => r.player_instance_id))
+  const foto = new Map(((ist ?? []) as unknown as Array<{ id: number; players: { foto_figurina: string | null; foto_url: string | null } | null }>)
+    .map((x) => [x.id, x.players?.foto_figurina ?? x.players?.foto_url ?? null]))
+  return righe.map((r) => ({ premio: r.premio, nome: r.nome, foto: urlFotoGiocatore(foto.get(r.player_instance_id)) }))
+}
+
+// Assistman a sinistra, capocannoniere al centro (piu' grande, davanti), portiere a destra.
+function TrioPremiati({ premiati }: { premiati: Premiato[] }) {
+  const ordine: Premiato['premio'][] = ['assistman', 'marcatore', 'portiere']
+  return <div className="pk__trio" aria-label={`I premiati della stagione scorsa: ${premiati.map((p) => p.nome).join(', ')}`}>
+    {ordine.map((chiave) => {
+      const p = premiati.find((x) => x.premio === chiave)
+      return p?.foto ? <img key={chiave} className={`pk__premiato pk__premiato--${chiave}`} src={p.foto} alt="" draggable={false} /> : null
+    })}
+  </div>
+}
+
+export function Bustina({ stagione, nuova, premiati = [], onAperta }: { stagione: number; nuova: boolean; premiati?: Premiato[]; onAperta: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const [tilt, setTilt] = useState({ x: 0, y: 0, lx: 50, ly: 30 })
   const [strappo, setStrappo] = useState(0)
@@ -183,7 +210,9 @@ export function Bustina({ stagione, nuova, onAperta }: { stagione: number; nuova
         <div className="pk__arte" aria-hidden="true" />
         <div className="pk__contenuto">
           <p className="pk__sopra">Figurine ufficiali</p>
-          <div className="pk__emblema"><img src="/specialone-mark.svg" alt="" /></div>
+          {nuova && premiati.filter((p) => p.foto).length === 3
+            ? <TrioPremiati premiati={premiati} />
+            : <div className="pk__emblema"><img src="/specialone-mark.svg" alt="" /></div>}
           <p className="pk__marchio"><b>SPECIAL</b><span>ONE</span></p>
           {nuova ? <LogoSeason n={stagione} className="pk__season" /> : <p className="pk__stagione">Stagione {stagione}</p>}
         </div>
@@ -218,6 +247,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   // Prima stagione con le figurine nuove (rarita', card FUT): gli album precedenti restano come erano.
   const [nuovaDal, setNuovaDal] = useState(1)
   const [bustinaNuova, setBustinaNuova] = useState(false)
+  const [premiati, setPremiati] = useState<Premiato[]>([])
   const [crediti, setCrediti] = useState(0)
   const [gratis, setGratis] = useState(0)
   const [figurine, setFigurine] = useState<Figurina[]>([])
@@ -269,7 +299,9 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     setFigurine(figs)
     // L'album della stagione in corso e' nato dopo l'arrivo della bustina v4?
     const { data: primo } = await supabase.from('album_figurine').select('creata_il').eq('league_id', leagueId).eq('stagione', st).order('id').limit(1).maybeSingle()
-    setBustinaNuova(primo != null && Date.parse((primo as { creata_il: string }).creata_il) >= BUSTINA_V4_DAL)
+    const v4 = primo != null && Date.parse((primo as { creata_il: string }).creata_il) >= BUSTINA_V4_DAL
+    setBustinaNuova(v4)
+    if (v4) void caricaPremiati(leagueId, st).then(setPremiati).catch(() => setPremiati([]))
     setPossesso(new Map(((p ?? []) as Possesso[]).map((x) => [x.figurina_id, x])))
     setClassifica((cl ?? []) as RigaClassifica[])
     const { data: sc } = await supabase.from('album_scambi').select('id, da_team_id, a_team_id, offerte, richieste, stato, scade_il, da_user').eq('league_id', leagueId).eq('stato', 'in_attesa').order('id', { ascending: false })
@@ -585,7 +617,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
 
     {busta && <div className="alb-apertura" role="dialog" aria-modal="true" aria-label="Apertura della bustina">
       <button type="button" className="alb-chiudi" aria-label="Chiudi" onClick={() => setBusta(null)}>✕</button>
-      {!strappo ? <Bustina stagione={stagione} nuova={bustinaNuova} onAperta={() => setStrappo(true)} /> : <>
+      {!strappo ? <Bustina stagione={stagione} nuova={bustinaNuova} premiati={premiati} onAperta={() => setStrappo(true)} /> : <>
         <div className="alb-carte">
           {busta.map((u, i) => {
             const f = figurine.find((x) => x.id === u.figurina_id) ?? { id: u.figurina_id, tipo: u.tipo, team_id: null, player_id: null, conferenza: null, overall: null, aggiornamento: false } as Figurina
@@ -617,10 +649,17 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   </section>
 }
 
+// Nell'anteprima (anche senza login) i premiati della Season 2 della Serie F, dalle foto pubbliche delle figurine.
+const PREMIATI_ANTEPRIMA: Premiato[] = [
+  { premio: 'marcatore', nome: 'O. Diakité', foto: urlFotoGiocatore('cutout/6174.webp') },
+  { premio: 'assistman', nome: 'M. Carrizo', foto: urlFotoGiocatore('cutout/6076.webp') },
+  { premio: 'portiere', nome: 'David Raya', foto: urlFotoGiocatore('cutout/4384.webp') },
+]
+
 // Anteprima della bustina senza comprarla (?anteprima=bustina): si strappa e ricomincia, non scrive niente.
 export function AnteprimaBustina() {
   const [giro, setGiro] = useState(0)
   return <div className="alb-apertura" onPointerDown={chiediGiroscopio}>
-    <Bustina key={giro} stagione={3} nuova onAperta={() => window.setTimeout(() => setGiro((g) => g + 1), 900)} />
+    <Bustina key={giro} stagione={3} nuova premiati={PREMIATI_ANTEPRIMA} onAperta={() => window.setTimeout(() => setGiro((g) => g + 1), 900)} />
   </div>
 }

@@ -6340,6 +6340,17 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .pk--v4 .pk__marchio span { color: #8ff0ff; }
 .pk--v4 .pk__emblema img { filter: drop-shadow(0 0 12px rgba(120,235,255,.8)) drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
 .pk--v4 .pk__taglio i { background: linear-gradient(90deg, #fff, #8ff0ff); box-shadow: 0 0 10px #8ff0ff, 0 0 18px #fff; }
+/* I tre premiati della stagione prima, a mezzo busto come nelle bustine promo: capocannoniere al centro e davanti,
+   il fondo sfuma nel blu e la scritta SPECIAL ONE si appoggia sopra. */
+.pk__trio { position: relative; flex: none; width: 116%; height: 48%; margin: 0 -8% -18px; pointer-events: none;
+  -webkit-mask: linear-gradient(180deg, #000 68%, transparent 100%); mask: linear-gradient(180deg, #000 68%, transparent 100%); }
+.pk__premiato { position: absolute; bottom: 0; height: 82%; width: auto; aspect-ratio: 1; object-fit: contain;
+  filter: drop-shadow(0 0 1px rgba(143,240,255,.9)) drop-shadow(0 6px 10px rgba(0,0,0,.55)); }
+.pk__premiato--assistman { left: 0; }
+.pk__premiato--portiere { right: 0; }
+.pk__premiato--marcatore { left: 50%; height: 100%; transform: translateX(-50%); z-index: 2; filter: drop-shadow(0 0 2px rgba(143,240,255,1)) drop-shadow(0 0 14px rgba(39,211,240,.55)) drop-shadow(0 8px 12px rgba(0,0,0,.6)); }
+.pk--v4 .pk__marchio { position: relative; z-index: 3; }
+.pk--v4 .pk__bollino { bottom: 2.5%; }
 .alb-apertura:has(.pk--v4) { background: radial-gradient(circle at 50% 40%, rgba(17,112,214,.5), rgba(3,7,18,.96) 65%); }
 .pk--v4 .pk__corpo::after { content: ''; position: absolute; inset: 0; pointer-events: none;
   box-shadow: inset 2px 0 0 rgba(255,255,255,.35), inset -2px 0 0 rgba(255,255,255,.22), inset 6px 0 10px rgba(0,0,0,.35), inset -6px 0 10px rgba(0,0,0,.4); }
