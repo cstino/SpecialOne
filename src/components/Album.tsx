@@ -110,7 +110,11 @@ function chiediGiroscopio() {
   } catch { /* niente giroscopio */ }
 }
 
-export function Bustina({ stagione, onAperta }: { stagione: number; onAperta: () => void }) {
+// La bustina v4 (plastica, logo SEASON) arriva con l'album della stagione nuova: gli album aperti prima di questa
+// data tengono la bustina di prima fino a fine stagione (decisione del committente, 7/11/2026).
+const BUSTINA_V4_DAL = Date.parse('2026-11-07T12:00:00Z')
+
+export function Bustina({ stagione, nuova, onAperta }: { stagione: number; nuova: boolean; onAperta: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const [tilt, setTilt] = useState({ x: 0, y: 0, lx: 50, ly: 30 })
   const [strappo, setStrappo] = useState(0)
@@ -120,7 +124,7 @@ export function Bustina({ stagione, onAperta }: { stagione: number; onAperta: ()
   // Sul telefono la bustina si inclina col giroscopio, come tenerla in mano: i riflessi della plastica scorrono.
   // La posizione di partenza e' quella in cui la si tiene quando compare; il dito ha la precedenza.
   useEffect(() => {
-    if (aperta || ridotto()) return
+    if (!nuova || aperta || ridotto()) return
     let zero: { b: number; g: number } | null = null
     const gira = (e: DeviceOrientationEvent) => {
       if (dito.current || e.beta == null || e.gamma == null) return
@@ -131,7 +135,7 @@ export function Bustina({ stagione, onAperta }: { stagione: number; onAperta: ()
     }
     window.addEventListener('deviceorientation', gira)
     return () => window.removeEventListener('deviceorientation', gira)
-  }, [aperta])
+  }, [aperta, nuova])
 
   function posizione(e: React.PointerEvent) {
     const r = ref.current!.getBoundingClientRect()
@@ -168,7 +172,7 @@ export function Bustina({ stagione, onAperta }: { stagione: number; onAperta: ()
 
   return <div className={`pack-scena${aperta ? ' is-aperta' : ''}`}
     onPointerDown={giu} onPointerMove={muovi} onPointerUp={su} onPointerCancel={su}>
-    <div ref={ref} className="pk" style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`, ['--lx' as string]: `${tilt.lx}%`, ['--ly' as string]: `${tilt.ly}%` }}>
+    <div ref={ref} className={`pk${nuova ? ' pk--v4' : ''}`} style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`, ['--lx' as string]: `${tilt.lx}%`, ['--ly' as string]: `${tilt.ly}%` }}>
       {/* Saldatura in alto: e' la parte che si strappa */}
       <div className="pk__sald pk__sald--su">
         <span className="pk__righe" aria-hidden="true" />
@@ -181,16 +185,18 @@ export function Bustina({ stagione, onAperta }: { stagione: number; onAperta: ()
           <p className="pk__sopra">Figurine ufficiali</p>
           <div className="pk__emblema"><img src="/specialone-mark.svg" alt="" /></div>
           <p className="pk__marchio"><b>SPECIAL</b><span>ONE</span></p>
-          <LogoSeason n={stagione} className="pk__season" />
+          {nuova ? <LogoSeason n={stagione} className="pk__season" /> : <p className="pk__stagione">Stagione {stagione}</p>}
         </div>
         <div className="pk__bollino" aria-hidden="true"><b>3</b><small>figurine</small></div>
         <div className="pk__curva" aria-hidden="true" />
         {/* Plastica: riflesso che segue l'inclinazione, grinze del foglio, pieghe delle saldature, lampo periodico */}
         <div className="pk__luce" aria-hidden="true" />
-        <div className="pk__riflesso" aria-hidden="true" />
-        <div className="pk__grinze" aria-hidden="true" />
-        <div className="pk__pieghe" aria-hidden="true" />
-        <div className="pk__lampo" aria-hidden="true" />
+        {nuova && <>
+          <div className="pk__riflesso" aria-hidden="true" />
+          <div className="pk__grinze" aria-hidden="true" />
+          <div className="pk__pieghe" aria-hidden="true" />
+          <div className="pk__lampo" aria-hidden="true" />
+        </>}
       </div>
       <div className="pk__sald pk__sald--giu">
         <span className="pk__righe" aria-hidden="true" />
@@ -211,6 +217,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   const [passate, setPassate] = useState<number[]>([])
   // Prima stagione con le figurine nuove (rarita', card FUT): gli album precedenti restano come erano.
   const [nuovaDal, setNuovaDal] = useState(1)
+  const [bustinaNuova, setBustinaNuova] = useState(false)
   const [crediti, setCrediti] = useState(0)
   const [gratis, setGratis] = useState(0)
   const [figurine, setFigurine] = useState<Figurina[]>([])
@@ -260,6 +267,9 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     ])
     const figs = (f ?? []) as Figurina[]
     setFigurine(figs)
+    // L'album della stagione in corso e' nato dopo l'arrivo della bustina v4?
+    const { data: primo } = await supabase.from('album_figurine').select('creata_il').eq('league_id', leagueId).eq('stagione', st).order('id').limit(1).maybeSingle()
+    setBustinaNuova(primo != null && Date.parse((primo as { creata_il: string }).creata_il) >= BUSTINA_V4_DAL)
     setPossesso(new Map(((p ?? []) as Possesso[]).map((x) => [x.figurina_id, x])))
     setClassifica((cl ?? []) as RigaClassifica[])
     const { data: sc } = await supabase.from('album_scambi').select('id, da_team_id, a_team_id, offerte, richieste, stato, scade_il, da_user').eq('league_id', leagueId).eq('stato', 'in_attesa').order('id', { ascending: false })
@@ -317,7 +327,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   async function compra(conGratis = false) {
     if (compro) return
     setCompro(true); setErrore(''); setAvviso('')
-    chiediGiroscopio()
+    if (bustinaNuova) chiediGiroscopio()
     const { data, error } = await supabase.rpc('album_compra_bustina', { p_league_id: leagueId, p_gratis: conGratis })
     setCompro(false)
     if (error) { setErrore(error.message); return }
@@ -575,7 +585,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
 
     {busta && <div className="alb-apertura" role="dialog" aria-modal="true" aria-label="Apertura della bustina">
       <button type="button" className="alb-chiudi" aria-label="Chiudi" onClick={() => setBusta(null)}>✕</button>
-      {!strappo ? <Bustina stagione={stagione} onAperta={() => setStrappo(true)} /> : <>
+      {!strappo ? <Bustina stagione={stagione} nuova={bustinaNuova} onAperta={() => setStrappo(true)} /> : <>
         <div className="alb-carte">
           {busta.map((u, i) => {
             const f = figurine.find((x) => x.id === u.figurina_id) ?? { id: u.figurina_id, tipo: u.tipo, team_id: null, player_id: null, conferenza: null, overall: null, aggiornamento: false } as Figurina
@@ -611,6 +621,6 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
 export function AnteprimaBustina() {
   const [giro, setGiro] = useState(0)
   return <div className="alb-apertura" onPointerDown={chiediGiroscopio}>
-    <Bustina key={giro} stagione={3} onAperta={() => window.setTimeout(() => setGiro((g) => g + 1), 900)} />
+    <Bustina key={giro} stagione={3} nuova onAperta={() => window.setTimeout(() => setGiro((g) => g + 1), 900)} />
   </div>
 }
