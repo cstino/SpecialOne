@@ -6329,6 +6329,18 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
   background: linear-gradient(115deg, transparent 44%, rgba(255,255,255,.65) 50%, transparent 56%); transform: translateX(-60%); animation: pk-lampo 4.2s ease-in-out 1.2s infinite; }
 @keyframes pk-lampo { 0% { transform: translateX(-60%); } 22%, 100% { transform: translateX(60%); } }
 /* Bordi laterali: il foglio gira e prende una lama di luce */
+/* Colori della Season 3: blu notte e ciano elettrico, saldature cromate. Diversa a colpo d'occhio dalla viola di prima. */
+.pk--v4 { filter: drop-shadow(0 26px 34px rgba(0,0,0,.65)) drop-shadow(0 0 28px rgba(40,200,255,.35)); }
+.pk--v4 .pk__corpo { background: linear-gradient(170deg, #040d24 0%, #0a2a6b 34%, #1170d6 64%, #27d3f0 88%, #b9fbff 100%); }
+.pk--v4 .pk__arte { background: radial-gradient(circle at 50% 34%, rgba(120,235,255,.4), transparent 42%),
+                                repeating-conic-gradient(from 0deg at 50% 34%, rgba(255,255,255,.07) 0 5deg, transparent 5deg 15deg),
+                                repeating-linear-gradient(62deg, rgba(255,255,255,.05) 0 2px, transparent 2px 10px); }
+.pk--v4 .pk__sald { background: linear-gradient(90deg, #4c5866, #f4f8fc 18%, #9aa8b8 34%, #ffffff 50%, #8794a5 66%, #e6eef7 82%, #3f4955); }
+.pk--v4 .pk__sopra { color: #8ff0ff; }
+.pk--v4 .pk__marchio span { color: #8ff0ff; }
+.pk--v4 .pk__emblema img { filter: drop-shadow(0 0 12px rgba(120,235,255,.8)) drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
+.pk--v4 .pk__taglio i { background: linear-gradient(90deg, #fff, #8ff0ff); box-shadow: 0 0 10px #8ff0ff, 0 0 18px #fff; }
+.alb-apertura:has(.pk--v4) { background: radial-gradient(circle at 50% 40%, rgba(17,112,214,.5), rgba(3,7,18,.96) 65%); }
 .pk--v4 .pk__corpo::after { content: ''; position: absolute; inset: 0; pointer-events: none;
   box-shadow: inset 2px 0 0 rgba(255,255,255,.35), inset -2px 0 0 rgba(255,255,255,.22), inset 6px 0 10px rgba(0,0,0,.35), inset -6px 0 10px rgba(0,0,0,.4); }
 .pk__season { flex: none; width: 66%; height: auto; filter: drop-shadow(0 3px 6px rgba(0,0,0,.5)); }

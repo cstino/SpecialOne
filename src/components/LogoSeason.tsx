@@ -13,8 +13,8 @@ export function LogoSeason({ n, className }: { n: number; className?: string }) 
         <stop offset="1" stopColor="#fff0b0" />
       </linearGradient>
       <linearGradient id={`${id}-fondo`} x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#1b0736" />
-        <stop offset="1" stopColor="#3a0d63" />
+        <stop offset="0" stopColor="#04102c" />
+        <stop offset="1" stopColor="#0b3474" />
       </linearGradient>
       <linearGradient id={`${id}-lucido`} x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stopColor="#fff" stopOpacity=".28" />
