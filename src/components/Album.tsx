@@ -174,6 +174,10 @@ type Props = { leagueId: number; teamId: number; dati: Dati; conferenze: boolean
 
 export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   const [stagione, setStagione] = useState<number | null>(null)
+  // Archivio: gli album delle stagioni passate restano sfogliabili, in sola lettura (richiesta del 7/11/2026).
+  // null = album della stagione in corso.
+  const [vedi, setVedi] = useState<number | null>(null)
+  const [passate, setPassate] = useState<number[]>([])
   // Prima stagione con le figurine nuove (rarita', card FUT): gli album precedenti restano come erano.
   const [nuovaDal, setNuovaDal] = useState(1)
   const [crediti, setCrediti] = useState(0)
@@ -212,8 +216,14 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     setGratis(Number((cs as { bustine_gratis?: number } | null)?.bustine_gratis ?? 0))
     const { data: lg } = await supabase.from('leagues').select('album_nuovo_dalla_stagione').eq('id', leagueId).maybeSingle()
     setNuovaDal(Number((lg as { album_nuovo_dalla_stagione?: number } | null)?.album_nuovo_dalla_stagione ?? 1))
+    // Le stagioni precedenti che hanno un album (conteggio senza scaricare le figurine).
+    const conteggi = await Promise.all(Array.from({ length: Math.max(0, st - 1) }, (_, i) => i + 1).map(async (n) => {
+      const { count } = await supabase.from('album_figurine').select('id', { count: 'exact', head: true }).eq('league_id', leagueId).eq('stagione', n)
+      return (count ?? 0) > 0 ? n : null
+    }))
+    setPassate(conteggi.filter((n): n is number => n != null).sort((a, b) => b - a))
     const [{ data: f }, { data: p }, { data: cl }] = await Promise.all([
-      supabase.from('album_figurine').select('id, tipo, team_id, player_id, conferenza, overall, aggiornamento, statistiche, posizioni').eq('league_id', leagueId).eq('stagione', st).order('id'),
+      supabase.from('album_figurine').select('id, tipo, team_id, player_id, conferenza, overall, aggiornamento, statistiche, posizioni').eq('league_id', leagueId).eq('stagione', vedi ?? st).order('id'),
       supabase.from('album_possesso').select('figurina_id, normali, rare, ultra, ultimate').eq('league_id', leagueId),
       supabase.rpc('album_classifica', { p_league_id: leagueId }),
     ])
@@ -232,7 +242,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
       for (const x of (g ?? []) as Anagrafica[]) mappa.set(x.id, x)
     }
     setAna(mappa)
-  }, [leagueId, teamId])
+  }, [leagueId, teamId, vedi])
   useEffect(() => { void carica() }, [carica])
   useEffect(() => {
     if (controparte == null) { setSuoi([]); setGlimancano(new Set()); return }
@@ -255,7 +265,9 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   // Figurina di esempio per far vedere com'e' un'ultimate: il giocatore con l'overall piu' alto dell'album.
   const esempioUltra = useMemo(() => figurine.filter((f) => f.tipo === 'giocatore').sort((a, b) => (b.overall ?? 0) - (a.overall ?? 0))[0], [figurine])
 
-  const classica = stagione != null && stagione < nuovaDal
+  const archivio = vedi != null
+  const mostrata = vedi ?? stagione
+  const classica = mostrata != null && mostrata < nuovaDal
   // La figurina giusta per l'album: quella di prima o la card FUT con la sua versione.
   const carta = (p: { f: Figurina; ana?: Anagrafica; versione: Versione; vuota?: boolean; numero?: number; piccola?: boolean }) => classica
     ? <CartaClassica {...p} dati={dati} ultra={speciale(p.versione) || p.f.tipo === 'conferenza'} />
@@ -355,17 +367,29 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
   const figPagina = pagina === 'conf' ? conf : pagina === 'agg' ? agg : pagina != null ? perSquadra.get(pagina) ?? [] : []
   const completaPagina = (t: number) => (perSquadra.get(t) ?? []).every((f) => ce(f.id))
 
+  const sfoglia = (n: number | null) => { setVedi(n === stagione ? null : n); setPagina(null); setVista('album'); setAvviso(''); setErrore('') }
+
   return <section className="alb">
-    <div className="alb-testa">
-      <div className="alb-testa__copertina" aria-hidden="true"><span>ALBUM</span><b>{stagione}</b></div>
+    {passate.length > 0 && <nav className="alb-scaffale" aria-label="I tuoi album">
+      {[stagione, ...passate].map((n) => <button key={n} type="button" className={`alb-scaffale__album${(mostrata === n) ? ' is-aperto' : ''}${n === stagione ? ' is-corrente' : ''}`}
+        aria-pressed={mostrata === n} onClick={() => sfoglia(n)}>
+        <span className="alb-scaffale__copertina" aria-hidden="true"><span>ALBUM</span><b>{n}</b></span>
+        <small>{n === stagione ? 'In corso' : `Season ${n}`}</small>
+      </button>)}
+    </nav>}
+
+    <div className={`alb-testa${archivio ? ' alb-testa--archivio' : ''}`}>
+      <div className="alb-testa__copertina" aria-hidden="true"><span>ALBUM</span><b>{mostrata}</b></div>
       <div className="alb-testa__dati">
-        <small>Stagione {stagione}</small>
+        <small>{archivio ? `Archivio · Stagione ${mostrata}` : `Stagione ${stagione}`}</small>
         <strong>{attaccate}<span>/{base.length}</span></strong>
         <div className="alb-barra" aria-label={`Completamento ${Math.round(attaccate * 100 / Math.max(1, base.length))}%`}><i style={{ width: `${(attaccate * 100) / Math.max(1, base.length)}%` }} /></div>
-        <p>{classica ? '' : `${ultimateTot} ultimate · `}{ultraTot} ultrarare · {fmt(crediti)} crediti</p>
+        <p>{classica ? '' : `${ultimateTot} ultimate · `}{ultraTot} ultrarare{archivio ? '' : ` · ${fmt(crediti)} crediti`}</p>
       </div>
     </div>
+    {archivio && <p className="alb-archivio-nota">Album chiuso: si sfoglia e basta. Bustine e scambi valgono solo per l'album della stagione in corso. <button type="button" onClick={() => sfoglia(null)}>Torna all'album di oggi ›</button></p>}
 
+    {!archivio && <>
     <div className="alb-azioni">
       {gratis > 0
         ? <button type="button" className="alb-compra alb-compra--gratis" disabled={compro} onClick={() => void compra(true)}>
@@ -381,12 +405,13 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
       </button>
     </div>
     {crediti < PREZZO && <p className="bet-nota">Servono {PREZZO} crediti: si vincono con le schedine e al casinò, e ogni giorno alle 22:10 ne arrivano 1.000.</p>}
+    </>}
     {(avviso || errore) && <p className={errore ? 'alb-errore' : 'alb-avviso'} role="status">{errore || avviso}</p>}
 
-    <div className="alb-viste" role="tablist">
+    {!archivio && <div className="alb-viste" role="tablist">
       <button type="button" role="tab" aria-selected={vista === 'album'} className={vista === 'album' ? 'is-attiva' : ''} onClick={() => setVista('album')}>Le pagine</button>
       <button type="button" role="tab" aria-selected={vista === 'scambi'} className={vista === 'scambi' ? 'is-attiva' : ''} onClick={() => setVista('scambi')}>Scambi{scambi.some((x) => x.a_team_id === teamId) ? <b>{scambi.filter((x) => x.a_team_id === teamId).length}</b> : null}</button>
-    </div>
+    </div>}
 
     {vista === 'scambi' ? <section className="alb-sc">
       {scambi.filter((x) => x.a_team_id === teamId).length > 0 && <div className="alb-sc-blocco"><h3>Proposte ricevute</h3>
@@ -439,7 +464,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
       </div>
     </section> : <>
 
-    {pagina == null && esempioUltra && <section className="alb-esempio" aria-label={`Esempio di figurina ${classica ? 'ultrarara' : 'ultimate'}`}>
+    {pagina == null && esempioUltra && !archivio && <section className="alb-esempio" aria-label={`Esempio di figurina ${classica ? 'ultrarara' : 'ultimate'}`}>
       <div className="alb-esempio__carta">
         {carta({ f: esempioUltra, ana: esempioUltra.player_id != null ? ana.get(esempioUltra.player_id) : undefined, versione: classica ? 'ultra' : 'ultimate', numero: numeri.get(esempioUltra.id) })}
         <em>Esempio</em>
@@ -501,7 +526,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
 
     </>}
 
-    <section className="alb-classifica">
+    {!archivio && <section className="alb-classifica">
       <h2>Collezionisti</h2>
       {classifica.length === 0 ? <p className="bet-nota">Ancora nessuno ha aperto una bustina.</p> : <ol>
         {classifica.map((r, i) => {
@@ -514,7 +539,7 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
           </li>
         })}
       </ol>}
-    </section>
+    </section>}
 
     {busta && <div className="alb-apertura" role="dialog" aria-modal="true" aria-label="Apertura della bustina">
       <button type="button" className="alb-chiudi" aria-label="Chiudi" onClick={() => setBusta(null)}>✕</button>

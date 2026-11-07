@@ -6010,6 +6010,24 @@ button.team-profile-crest:focus-visible { outline: 2px solid #c59be8; outline-of
 .alb-testa__copertina span { font-size: .62rem; font-weight: 900; letter-spacing: .18em; }
 .alb-testa__copertina b { font-size: 1.8rem; line-height: 1; }
 .alb-testa__dati { flex: 1; display: grid; gap: 4px; min-width: 0; }
+.alb-testa--archivio { background: linear-gradient(135deg, rgba(185,176,204,.12), rgba(255,255,255,.02)); }
+.alb-testa--archivio .alb-testa__copertina { background: linear-gradient(160deg, #d9d2e6, #8f86a3); box-shadow: inset 6px 0 0 rgba(0,0,0,.2), 0 8px 20px rgba(0,0,0,.35); }
+.alb-testa--archivio .alb-testa__dati small { color: #cfc7de; }
+/* Archivio: gli album delle stagioni come libri su uno scaffale. */
+.alb-scaffale { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 10px; border-bottom: 2px solid rgba(246,196,83,.18); scrollbar-width: none; }
+.alb-scaffale::-webkit-scrollbar { display: none; }
+.alb-scaffale__album { flex: none; display: grid; justify-items: center; gap: 6px; padding: 0; border: 0; background: none; color: #8f86a3; font: inherit; cursor: pointer; }
+.alb-scaffale__copertina { display: grid; place-items: center; align-content: center; width: 46px; height: 62px; border-radius: 5px 8px 8px 5px; background: linear-gradient(160deg, #6f6782, #3a3448); color: #e8e2f3; box-shadow: inset 4px 0 0 rgba(0,0,0,.25), 0 4px 10px rgba(0,0,0,.35); transition: transform .2s ease, box-shadow .2s ease; }
+.alb-scaffale__copertina span { font-size: .46rem; font-weight: 900; letter-spacing: .16em; }
+.alb-scaffale__copertina b { font-size: 1.25rem; line-height: 1; }
+.alb-scaffale__album.is-corrente .alb-scaffale__copertina { background: linear-gradient(160deg, #ffd978, #c9962a); color: #1a1205; }
+.alb-scaffale__album small { font-size: .62rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.alb-scaffale__album.is-aperto small { color: #ffe9a8; }
+.alb-scaffale__album.is-aperto .alb-scaffale__copertina { transform: translateY(-4px) rotate(-4deg); box-shadow: inset 4px 0 0 rgba(0,0,0,.25), 0 10px 18px rgba(246,196,83,.28), 0 0 0 2px #f6c453; }
+.alb-scaffale__album:focus-visible { outline: 2px solid #f6c453; outline-offset: 4px; border-radius: 8px; }
+.alb-archivio-nota { margin: 0; padding: 10px 14px; border: 1px dashed rgba(185,176,204,.35); border-radius: 12px; color: #b9b0cc; font-size: .82rem; line-height: 1.45; }
+.alb-archivio-nota button { padding: 0; border: 0; background: none; color: #f6c453; font: inherit; font-weight: 800; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .alb-scaffale__copertina { transition: none; } }
 .alb-testa__dati small { color: var(--bet-oro); font-size: .68rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
 .alb-testa__dati strong { font-size: 1.9rem; line-height: 1; font-variant-numeric: tabular-nums; }
 .alb-testa__dati strong span { color: #8f86a3; font-size: 1rem; }
