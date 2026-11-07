@@ -1106,7 +1106,7 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
       />}
       {/* Chiavi nuove (-v2): con la Season 2 il popup torna a tutti, aggiornato. */}
       {league.tattiche_attive
-        ? <PopupSpiegazione userId={membership.user_id} hintKey="formazione-v2" titolo="Come funziona la Formazione">
+        ? <PopupSpiegazione userId={membership.user_id} hintKey="formazione-v3" titolo="Come funziona la Formazione">
           <p>Scegli il modulo e metti un giocatore in ogni posto: titolari, panchina e tribuna. Chi gioca fuori
             ruolo rende meno, e la Rosa ti mostra subito il suo <strong>overall effettivo</strong>: in giallo quando è
             più basso del normale, per il ruolo o per la stanchezza.</p>

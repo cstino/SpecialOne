@@ -148,7 +148,7 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
     <header className="topbar season-topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span>Aggiornata alla giornata {Math.max(0, data.currentGiornata - 1)}</span></header>
     <SeasonState loading={data.loading} error={data.error} onRetry={data.reload} />
     {!data.loading && !data.error && <div className="season-page season-page--narrow">
-      <PopupSpiegazione userId={membership.user_id} hintKey="classifica-v2" titolo="Come si legge la Classifica">
+      <PopupSpiegazione userId={membership.user_id} hintKey="classifica-v3" titolo="Come si legge la Classifica">
         <p>A parità di punti si guarda, nell'ordine: gli <strong>scontri diretti</strong> (solo contro le squadre attualmente a pari punti), poi la <strong>differenza reti</strong>, poi i <strong>gol fatti</strong>.</p>
         {league.conferenze_attive
           ? <p>Ogni conference (East e West) ha la sua classifica: si giocano solo le partite dentro la propria conference. Le prime vanno al Title Playoff, che assegna il titolo; le ultime al Draft Playoffs, che decide l'ordine di scelta nel prossimo mercato a scelte. I posti esatti li trovi nella pagina Tabellone. Miglior marcatore, assistman e portiere della Regular Season finiscono nell'Albo d'oro.</p>

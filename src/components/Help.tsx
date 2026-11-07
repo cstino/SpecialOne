@@ -286,6 +286,29 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     </>,
   },
   {
+    id: 'tattiche-season2',
+    titolo: 'Tattiche — ruoli, compiti e familiarità',
+    corpo: <>
+      <p>Dove sono attive le tattiche (dalla Season 2), la card dello stile nella pagina Formazione
+        decide <strong>come gioca la squadra</strong>: uno stile di gioco già pronto oppure
+        <strong> Personalizzato</strong>, per scegliere tu dove attacca, quanto alta sta la linea
+        difensiva, quanto si allarga e a che velocità fa girare la palla. Lì scegli anche come gioca il
+        portiere.</p>
+      <p>A ogni titolare puoi dare un <strong>ruolo</strong> e un <strong>compito</strong>. Un ruolo
+        adatto alle sue caratteristiche dà un bonus, uno sbagliato una penalità. Il compito sposta il
+        suo peso fra <strong>più difesa</strong>, <strong>equilibrio</strong> e <strong>più
+        attacco</strong>. Se non vuoi perderci tempo, i <strong>preset tattici</strong> sistemano
+        tutto con un tocco.</p>
+      <p>La squadra rende meglio con ciò che conosce. La <strong>familiarità</strong> ha due barre: una
+        per la disposizione in campo (il modulo) e una per le indicazioni (stile, ruoli e compiti).
+        Si riempiono in circa <strong>5 partite</strong>. Cambiare modulo non cancella quello già
+        imparato: tornando al vecchio lo ritrovi.</p>
+      <p>Hai <strong>due schemi</strong>. Quello segnato "Attivo" va in partita; l'altro lo prepari
+        per dopo, e il suo modulo si impara un po' a ogni partita anche senza schierarlo. Per
+        mandarlo in campo selezionalo e salva.</p>
+    </>,
+  },
+  {
     id: 'schieramento',
     titolo: 'Come si schiera la squadra',
     corpo: <>
@@ -423,6 +446,29 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     </>,
   },
   {
+    id: 'mercato-scelte',
+    titolo: 'Mercato a scelte (Draft)',
+    corpo: <>
+      <p>Oltre agli svincolati, i giocatori migliori arrivano dal <strong>mercato a scelte</strong>,
+        nella pagina Draft. Ogni squadra ha dei <strong>ticket</strong>: ognuno è una scelta in una
+        finestra futura. Ci sono due finestre a stagione: l'<strong>ON-Season</strong>, a metà
+        stagione, e l'<strong>OFF-Season</strong>, che si estrae alla chiusura dell'off-season.</p>
+      <p>Nell'OFF-Season l'ordine di scelta dipende da come è andato il <strong>Draft
+        Playoff</strong> (vedi "Playoff"). Nell'ON-Season dipende dal monte ingaggi misurato alla
+        chiusura dell'off-season: chi spende meno sceglie prima.</p>
+      <p>Quando una finestra è aperta vedi la tua posizione e il pool degli eleggibili. Componi una
+        <strong> lista di preferenze</strong>, una sola anche se hai più ticket nella stessa finestra.
+        All'estrazione ogni scelta prende la prima preferenza ancora libera che entra sotto il tuo
+        tetto ingaggi. La lista si cambia fino a <strong>un'ora prima</strong> dell'estrazione. Se
+        nessuna preferenza è più disponibile, quella scelta resta vuota per la finestra.</p>
+      <p>Ogni eleggibile chiede un <strong>minutaggio</strong>: chi lo prende firma con quella
+        promessa e deve mantenerla (vedi "Contratti e rinnovi").</p>
+      <p>I ticket si <strong>scambiano</strong> come i giocatori. Lo stemma sul ticket resta quello
+        della squadra da cui viene la scelta, perché è il suo piazzamento a decidere la posizione;
+        cambia solo il proprietario.</p>
+    </>,
+  },
+  {
     id: 'rinnovi',
     titolo: 'Contratti e rinnovi',
     corpo: <>
@@ -509,6 +555,29 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         <strong> scontri diretti</strong> fra le squadre a pari punti, poi la
         <strong> differenza reti</strong> generale, poi i <strong>gol fatti</strong> in
         generale, e solo se resta ancora tutto pari, un sorteggio.</p>
+      <p>Nelle leghe con le <strong>conference</strong> (East e West) ogni conference ha la sua
+        classifica: i posti per i playoff si contano lì dentro.</p>
+    </>,
+  },
+  {
+    id: 'playoff',
+    titolo: 'Playoff',
+    corpo: <>
+      <p>A fine stagione regolare la classifica si divide in due tabelloni a eliminazione diretta,
+        giocati in parallelo. Il <strong>Title Playoff</strong> prende le prime 8 e assegna il
+        titolo; il <strong>Draft Playoff</strong> prende tutte le altre squadre.</p>
+      <p>Nelle leghe con le <strong>conference</strong> ogni conference si divide in due: le prime
+        posizioni vanno al Title Playoff, le altre al Draft Playoffs. Le prime due di ogni conference
+        passano direttamente ai quarti; le altre si giocano l'accesso in un
+        <strong> play-in</strong> incrociato con l'altra conference. Nel Draft Playoffs vale il
+        contrario: le ultime due vanno dirette ai quarti. I posti esatti li trovi nel Tabellone.</p>
+      <p>Ogni sfida è di <strong>andata e ritorno</strong>: passa chi segna di più nella somma (i gol
+        in trasferta non valgono doppio); in caso di parità il ritorno va ai supplementari e poi ai
+        rigori. La <strong>finale</strong> è una gara secca in campo neutro.</p>
+      <p>Il Draft Playoff non è un ripiego: come va lì, e chi ti elimina, decide l'ordine nel
+        mercato a scelte OFF-Season.</p>
+      <p>Durante i playoff sono chiusi gli scambi e i mercati degli svincolati e UNDER: gli scambi
+        riaprono con l'off-season. I rinnovi restano aperti.</p>
     </>,
   },
   {
@@ -530,6 +599,47 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         sotto il minimo di 21 giocatori, il sistema la completa automaticamente scegliendo gli
         svincolati più economici e sostenibili sotto il suo tetto ingaggi. La prima giornata della nuova
         stagione si gioca alla prima mezzanotte di simulazione (22:00) utile dopo la chiusura.</p>
+    </>,
+  },
+  {
+    id: 'extra-campo',
+    titolo: 'Extra campo — spogliatoio, stampa, tifosi',
+    corpo: <>
+      <p>Nelle leghe dove sono attive, queste pagine raccontano quello che succede intorno alla
+        squadra, e alcune toccano il morale dei giocatori.</p>
+      <p><strong>Spogliatoio</strong>: i tuoi giocatori ti scrivono, per esempio chi vuole più minuti
+        o il capitano che chiede un giorno libero. Rispondi con parole tue e la risposta muove il loro
+        morale. Una richiesta lasciata scadere vale come un no.</p>
+      <p><strong>Sala stampa</strong>: prima e dopo le partite i giornalisti ti fanno domande. Le tue
+        risposte vengono valutate e toccano il morale dei giocatori.</p>
+      <p><strong>SocialOne</strong>: il social della lega, dove giornali, giornalisti, influencer e
+        tifosi commentano partite e mercato. Se segui un profilo, in «Per te» vedi prima i suoi
+        post.</p>
+      <p><strong>Rivalità</strong>: il grado di rivalità con ogni altra squadra, da 0 a 100%, visibile
+        solo a te e all'altra squadra. Da qui scegli anche il tuo rivale fisso, il derby.</p>
+      <p><strong>Pubblico</strong>: l'umore dei tuoi tifosi, da 0 a 100. Più sono contenti, più è
+        grande il vantaggio quando giochi in casa; il massimo lo decide il livello dello stadio.</p>
+      <p><strong>Sponsor</strong>: le aziende ti propongono contratti a breve e a lungo termine. Ne
+        firmi uno per colonna e, se centri l'obiettivo, incassi crediti. Alcuni sponsor piacciono ai
+        tifosi, altri no.</p>
+    </>,
+  },
+  {
+    id: 'crediti-betone-album',
+    titolo: 'Crediti, BetOne e Album',
+    corpo: <>
+      <p>I <strong>crediti</strong> sono una moneta a parte: <strong>non toccano mai la squadra</strong>
+        né il tetto ingaggi. Si vincono con sponsor, schedine, giochi, quiz e pagine dell'album
+        completate.</p>
+      <p><strong>SchedOne</strong>: la schedina della prossima giornata. Metti 1, X o 2 su ogni
+        partita, con al massimo 2 doppie, e punti dei crediti. Chiude 15 minuti prima della simulazione
+        delle 22:00.</p>
+      <p><strong>CasinOne</strong>: AviatOne, CrazyOne, BlackjackOne e SlotOne, tutti a crediti.</p>
+      <p><strong>QuizOne</strong>: ogni ora una domanda sulla lega, uguale per tutti. Si entra nei
+        primi 10 minuti, gratis o puntando, e chi risponde giusto vince crediti.</p>
+      <p><strong>Album</strong>: le figurine della lega, una pagina per squadra. Compri le bustine con i
+        crediti, ricicli i doppioni e scambi le figurine con gli altri. Ogni pagina completa ti dà
+        crediti.</p>
     </>,
   },
   {

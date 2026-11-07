@@ -365,7 +365,7 @@ export function Draft({ user, membership, onNavigate, onRefresh }: DraftProps) {
     <main className="app-shell draft-shell">
       <GameNav league={league} active="draft" onNavigate={onNavigate} />
       <header className="topbar"><div className="brand-lockup brand-lockup--dark"><img src="/specialone-mark.svg" alt="" /><span>SpecialOne</span></div><span className="user-email">{user.email}</span></header>
-      <PopupSpiegazione userId={membership.user_id} hintKey={`draft-${isByRole ? 'by-role' : '2-of-4'}`} titolo="Come funziona il Draft">
+      <PopupSpiegazione userId={membership.user_id} hintKey={`draft-${isByRole ? 'by-role' : '2-of-4'}-v2`} titolo="Come funziona il Draft">
         {isByRole ? <>
           <p>A ogni turno scegli un ruolo e fai uno spin: pesca un giocatore disponibile per quel ruolo.
             Puoi ingaggiarlo subito o rifare lo spin (i reroll sono limitati). Ogni giocatore è unico in
