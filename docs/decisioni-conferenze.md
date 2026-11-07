@@ -30,7 +30,8 @@ Le altre leghe funzionano come prima.
 - **Pool degli eleggibili al draft**: con 24 squadre sono **30** (6 portieri + 8 difensori + 8 centrocampisti +
   8 attaccanti), uno per ogni scelta piu' un margine; fino a 16 squadre restano 23 (migrazione
   20261005090000; il committente aveva pensato a 35 e poi ha preferito 30). La dimensione si fissa
-  quando la finestra viene svelata.
+  quando la finestra viene svelata. Con **28 squadre** (Serie F dalla Season 3) sono **35**: 8 portieri + 9 per
+  ciascun altro ruolo (migrazione 20261107200000, decisione del 7/11/2026).
 - **Le 8 nuove squadre** (BLOCCO 3): costruiscono la rosa col mini-draft a pacchetti come sempre, con un
   budget del draft uguale per tutte e piu' alto: **48 M EUR** (il draft iniziale della Serie F era 40 M su
   tetto 80 M; i monti ingaggi attuali sono in media 53 M). Si imposta `leagues.budget_draft` all'apertura
