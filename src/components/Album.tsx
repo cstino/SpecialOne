@@ -6,6 +6,7 @@ import { cognome } from '../lib/nomi'
 import { macroRuolo, ruoloIt } from '../lib/ruoli'
 import { Crest } from './Crest'
 import { LogoSeason } from './LogoSeason'
+import { FacciataPromo } from './BustinaPromo'
 import { Carta, type Anagrafica, type Figurina, type Versione } from './CartaFut'
 
 // Album delle figurine (docs/decisioni-conferenze-stampa.md §BetOne): una pagina per squadra, stemma + giocatori.
@@ -130,17 +131,6 @@ async function caricaPremiati(leagueId: number, stagione: number): Promise<Premi
   return righe.map((r) => ({ premio: r.premio, nome: r.nome, foto: urlFotoGiocatore(foto.get(r.player_instance_id)) }))
 }
 
-// Assistman a sinistra, capocannoniere al centro (piu' grande, davanti), portiere a destra.
-function TrioPremiati({ premiati }: { premiati: Premiato[] }) {
-  const ordine: Premiato['premio'][] = ['assistman', 'marcatore', 'portiere']
-  return <div className="pk__trio" aria-label={`I premiati della stagione scorsa: ${premiati.map((p) => p.nome).join(', ')}`}>
-    {ordine.map((chiave) => {
-      const p = premiati.find((x) => x.premio === chiave)
-      return p?.foto ? <img key={chiave} className={`pk__premiato pk__premiato--${chiave}`} src={p.foto} alt="" draggable={false} /> : null
-    })}
-  </div>
-}
-
 export function Bustina({ stagione, nuova, premiati = [], onAperta }: { stagione: number; nuova: boolean; premiati?: Premiato[]; onAperta: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const [tilt, setTilt] = useState({ x: 0, y: 0, lx: 50, ly: 30 })
@@ -208,15 +198,15 @@ export function Bustina({ stagione, nuova, premiati = [], onAperta }: { stagione
       </div>
       {/* Corpo: grafica ordinata in colonna, con curvatura e riflessi sopra */}
       <div className="pk__corpo">
+        {promo ? <FacciataPromo premiati={premiati} stagione={stagione} /> : <>
         <div className="pk__arte" aria-hidden="true" />
-        {/* Bustina "promo": i premiati grandi dalla base, il marchio davanti in basso (come le confezioni Topps) */}
-        {promo && <><TrioPremiati premiati={premiati} /><div className="pk__fascia" aria-hidden="true" /></>}
         <div className="pk__contenuto">
           <p className="pk__sopra">Figurine ufficiali</p>
-          {!promo && <div className="pk__emblema"><img src="/specialone-mark.svg" alt="" /></div>}
+          <div className="pk__emblema"><img src="/specialone-mark.svg" alt="" /></div>
           <p className="pk__marchio"><b>SPECIAL</b><span>ONE</span></p>
           {nuova ? <LogoSeason n={stagione} className="pk__season" /> : <p className="pk__stagione">Stagione {stagione}</p>}
         </div>
+        </>}
         <div className="pk__bollino" aria-hidden="true"><b>3</b><small>figurine</small></div>
         <div className="pk__curva" aria-hidden="true" />
         {/* Plastica: riflesso che segue l'inclinazione, grinze del foglio, pieghe delle saldature, lampo periodico */}
