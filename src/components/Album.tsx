@@ -148,6 +148,7 @@ export function Bustina({ stagione, nuova, premiati = [], onAperta }: { stagione
   const [aperta, setAperta] = useState(false)
   const trascina = useRef<{ attivo: boolean; ultimoSuono: number }>({ attivo: false, ultimoSuono: 0 })
   const dito = useRef(false)
+  const promo = nuova && premiati.filter((p) => p.foto).length === 3
   // Sul telefono la bustina si inclina col giroscopio, come tenerla in mano: i riflessi della plastica scorrono.
   // La posizione di partenza e' quella in cui la si tiene quando compare; il dito ha la precedenza.
   useEffect(() => {
@@ -199,7 +200,7 @@ export function Bustina({ stagione, nuova, premiati = [], onAperta }: { stagione
 
   return <div className={`pack-scena${aperta ? ' is-aperta' : ''}`}
     onPointerDown={giu} onPointerMove={muovi} onPointerUp={su} onPointerCancel={su}>
-    <div ref={ref} className={`pk${nuova ? ' pk--v4' : ''}`} style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`, ['--lx' as string]: `${tilt.lx}%`, ['--ly' as string]: `${tilt.ly}%` }}>
+    <div ref={ref} className={`pk${nuova ? ' pk--v4' : ''}${promo ? ' pk--promo' : ''}`} style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`, ['--lx' as string]: `${tilt.lx}%`, ['--ly' as string]: `${tilt.ly}%` }}>
       {/* Saldatura in alto: e' la parte che si strappa */}
       <div className="pk__sald pk__sald--su">
         <span className="pk__righe" aria-hidden="true" />
@@ -208,11 +209,11 @@ export function Bustina({ stagione, nuova, premiati = [], onAperta }: { stagione
       {/* Corpo: grafica ordinata in colonna, con curvatura e riflessi sopra */}
       <div className="pk__corpo">
         <div className="pk__arte" aria-hidden="true" />
+        {/* Bustina "promo": i premiati grandi dalla base, il marchio davanti in basso (come le confezioni Topps) */}
+        {promo && <><TrioPremiati premiati={premiati} /><div className="pk__fascia" aria-hidden="true" /></>}
         <div className="pk__contenuto">
           <p className="pk__sopra">Figurine ufficiali</p>
-          {nuova && premiati.filter((p) => p.foto).length === 3
-            ? <TrioPremiati premiati={premiati} />
-            : <div className="pk__emblema"><img src="/specialone-mark.svg" alt="" /></div>}
+          {!promo && <div className="pk__emblema"><img src="/specialone-mark.svg" alt="" /></div>}
           <p className="pk__marchio"><b>SPECIAL</b><span>ONE</span></p>
           {nuova ? <LogoSeason n={stagione} className="pk__season" /> : <p className="pk__stagione">Stagione {stagione}</p>}
         </div>
