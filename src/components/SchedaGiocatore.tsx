@@ -558,6 +558,10 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
   const [rinnovoErrore, setRinnovoErrore] = useState<string | null>(null)
   const [rinnovoInCorso, setRinnovoInCorso] = useState(false)
   const [esito, setEsito] = useState<EsitoRinnovo | null>(null)
+  // Ogni risposta (o errore) del giocatore: la nuvoletta si rianima e la scheda ci scorre sopra, perche' arriva
+  // mentre si e' in fondo sul pulsante Proponi (segnalato l'8/11/2026: in cima non la si vedeva).
+  const [nRisposta, setNRisposta] = useState(0)
+  const rispostaRef = useRef<HTMLDivElement | null>(null)
   // Offerta in M€ come stringa: l'utente digita "3,4" e non deve combattere
   // con l'arrotondamento mentre scrive.
   const [offertaM, setOffertaM] = useState('')
@@ -791,7 +795,30 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
       setRinnovoErrore(errore instanceof Error ? errore.message : 'Offerta non riuscita.')
     }
     setRinnovoInCorso(false)
+    setNRisposta((n) => n + 1)
   }
+
+  useEffect(() => {
+    if (nRisposta === 0) return
+    // Chiude la tastiera e porta la risposta al centro dello schermo.
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+    const t = window.setTimeout(() => rispostaRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 80)
+    return () => window.clearTimeout(t)
+  }, [nRisposta])
+
+  // La risposta del giocatore, subito sopra i pulsanti: dove si guarda dopo aver premuto Proponi.
+  const nuvolettaRisposta = proposta && (esito || rinnovoErrore) && <div ref={rispostaRef} key={nRisposta}
+    className={`rinnovo-replica rinnovo-replica--${rinnovoErrore ? 'errore' : esito!.esito === 'chiusa' ? 'chiusa' : 'rifiutato'}`} role="status" aria-live="polite">
+    <i aria-hidden="true">{rinnovoErrore ? '!' : '✕'}</i>
+    <div>
+      <span>{rinnovoErrore ? 'Offerta non inviata'
+        : esito!.esito === 'chiusa' ? `${giocatore.nome} chiude la trattativa`
+        : esito!.esito === 'gradino_rifiutato' || esito!.esito === 'durata_rifiutata' ? `${giocatore.nome} non accetta questi termini`
+        : `${giocatore.nome} rifiuta · tentativo ${esito!.tentativi_usati} di ${proposta.tentativi_totali}`}</span>
+      <p>{rinnovoErrore ?? <>«{esito!.messaggio}»</>}</p>
+      {!rinnovoErrore && esito!.motivo && <small>{esito!.motivo}</small>}
+    </div>
+  </div>
 
   useEffect(() => {
     const chiudiConEsc = (evento: KeyboardEvent) => { if (evento.key === 'Escape') onClose() }
@@ -854,7 +881,7 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
       </div>
       <p className="kicker rinnovo-kicker">Trattativa · {giocatore.nome}</p>
 
-      {rinnovoErrore && <p className="notice notice--error" role="alert">{rinnovoErrore}</p>}
+      {rinnovoErrore && !proposta && <p className="notice notice--error" role="alert">{rinnovoErrore}</p>}
 
       {!proposta && !rinnovoErrore && <p className="season-empty">Sto ascoltando la sua richiesta…</p>}
 
@@ -871,12 +898,11 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
             : <div><span>Durata</span><strong>{stagioni(proposta.durata)}</strong><small>fino alla stagione {proposta.nuova_scadenza}</small></div>}
         </div>
 
-        {esito && <p className={`rinnovo-risposta rinnovo-risposta--${esito.esito}`}>«{esito.messaggio}»{esito.motivo && <small> {esito.motivo}</small>}</p>}
-
         {proposta.gia_rinnovato ? <>
           <p className="rinnovo-nota">Ha rinnovato in questa stagione: se ne potrà ritrattare dalla prossima.</p>
           <div className="rinnovo-azioni"><button className="button button--secondary" type="button" onClick={() => setVistaRinnovo(false)}>Torna alla scheda</button></div>
         </> : proposta.trattativa_chiusa ? <>
+          {nuvolettaRisposta}
           <p className="rinnovo-nota">La trattativa è chiusa: andrà a scadenza e lascerà la squadra a fine stagione.</p>
           <div className="rinnovo-azioni"><button className="button button--secondary" type="button" onClick={() => setVistaRinnovo(false)}>Torna alla scheda</button></div>
         </> : <>
@@ -936,6 +962,7 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
             La durata non si negozia: un rinnovo estende sempre il contratto di una stagione.
             {' '}Il nuovo ingaggio decorre dalla prossima stagione — questa è già stata pagata.
           </p>}
+          {nuvolettaRisposta}
           <p className="rinnovo-tentativi">
             Tentativi rimasti: <b>{proposta.tentativi_totali - proposta.tentativi_usati}</b> su {proposta.tentativi_totali}.
             {' '}Esauriti, andrà a scadenza.

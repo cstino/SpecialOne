@@ -1879,6 +1879,17 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .rinnovo-offerta input, .rinnovo-offerta select { min-height: 44px; width: 100%; box-sizing: border-box; padding: .5rem .7rem; color: #fff; border: 1px solid #4a3e5d; border-radius: 9px; background: #1d1827; font-size: 1rem; font-weight: 800; }
 .rinnovo-offerta small { color: #7f7690; font-size: .64rem; }
 .rinnovo-tentativi { margin: 0; color: #a49bb3; font-size: .74rem; }
+/* La risposta del giocatore sopra i pulsanti: nuvoletta con icona e colore dell'esito, rientra a ogni offerta. */
+.rinnovo-replica { --c: #ff9a52; --f: rgba(255,154,82,.14); width: 100%; box-sizing: border-box; display: grid; grid-template-columns: 38px 1fr; gap: 12px; align-items: start;
+  padding: 14px 16px; border: 1px solid var(--c); border-radius: 16px 16px 16px 4px; background: linear-gradient(135deg, var(--f), rgba(23,19,31,.92)); text-align: left;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.2), 0 10px 30px rgba(0,0,0,.35), 0 0 22px var(--f); animation: rinnovo-replica .45s cubic-bezier(.2,.9,.25,1.2) both; }
+.rinnovo-replica--chiusa, .rinnovo-replica--errore { --c: #ff5c7a; --f: rgba(255,92,122,.16); }
+.rinnovo-replica > i { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--c); color: #1a0d14; font-style: normal; font-weight: 900; font-size: 1.05rem; }
+.rinnovo-replica span { display: block; color: var(--c); font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.rinnovo-replica p { margin: 4px 0 0; color: #fff; font-size: 1.02rem; font-weight: 700; font-style: italic; line-height: 1.35; }
+.rinnovo-replica small { display: block; margin-top: 4px; color: #cfc6dc; font-size: .8rem; }
+@keyframes rinnovo-replica { 0% { opacity: 0; transform: translateY(14px) scale(.96); } 60% { opacity: 1; transform: translateY(-2px) scale(1.01); } 100% { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rinnovo-replica { animation: none; } }
 .rinnovo-tentativi b { color: #ffdd8a; }
 .fatto-contratto { display: block; margin-top: 3px; color: #9990aa; font-size: .66rem; font-weight: 600; }
 /* Durata residua nella riga della rosa: rosso solo quando la squadra sta per
