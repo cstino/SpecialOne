@@ -368,3 +368,19 @@ provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato
   eventualmente da aggiungere in seguito sopra la A.
 * **Da toccare quando si fa:** `crea_tabelloni_conferenze` (posizioni del Draft), `assegna_posizioni_playoff` /
   ordine delle scelte (le 4 escluse), legenda della classifica (zona neutra 7-8), `giornate_totali`, calendario a 14.
+
+## 14. Rinnovi: chi cala chiede meno (contro l'inflazione degli ingaggi)
+
+* **Stato:** `proposta` (8/11/2026), da rivalutare a inizio off-season 3 guardando quante squadre restano incastrate
+  sotto il tetto dopo le scadenze. Il tetto (80 M€) resta com'è: alzarlo aiuterebbe solo chi lo riempie già.
+* **Richiesta:** il committente è al limite del tetto e chiedeva se fosse il momento di alzarlo.
+* **Fotografia (8/11/2026, Serie F, monte S3):** 4 squadre sotto 2 M€ di margine (Fel Lazio 80,0, Detroit 79,1,
+  Coccialand 78,8, Mafiester 78,3), 5 fra 3 e 7 M€, 12 fra 9 e 18 M€, 7 con 20 M€ o più (Barbers 46,5). Media ~66 M€.
+  A fine S3 si liberano molti contratti (Mafiester 38,2 M€, Coccialand 31,8, Cocciaspigola 17,7).
+* **Il problema:** `private.rinnovo_proposta` chiede `greatest(500k, ingaggio attuale, teorico × fattore)`, quindi un
+  rinnovo non abbassa mai l'ingaggio. I giovani che crescono chiedono di più, i veterani che calano tengono lo stipendio
+  di quando erano al massimo: il monte della lega può solo salire. Dall'8/11 i veterani calano davvero (residuo al
+  tetto del potenziale, `20261108170000`), quindi il divario fra quanto valgono e quanto prendono crescerà.
+* **Proposta:** al rinnovo si chiede quanto si vale oggi, anche meno di prima, con un pavimento (es. 80% dell'ingaggio
+  attuale) per evitare crolli di colpo. Da toccare: `rinnovo_proposta` (e quindi `proposta_rinnovo`, `offri_rinnovo`,
+  i rinnovi delle squadre PC), testo di Aiuto sui rinnovi, §2 di decisioni-economia.
