@@ -891,7 +891,8 @@ input:disabled { opacity: 0.65; }
 /* Stessa altezza per Scheda e Training: la finestra non segue piu' il contenuto, che scorre dentro. */
 .scheda-broadcast { height: min(90dvh, 780px); }
 .scheda-broadcast .player-modal__close { color: var(--fz-luce); border-color: color-mix(in srgb, var(--fz-luce) 45%, transparent); background: rgba(255,255,255,.05); }
-.scheda-broadcast .player-modal__tabs { margin: 4px 44px 16px 0; }
+.scheda-broadcast .player-modal__tabs { margin: 0 0 16px; }
+.player-modal__page--mercato .player-modal__azioni .button { flex: 1 1 140px; }
 .scheda-broadcast .player-modal__hero { grid-template-columns: 96px minmax(0, 1fr) auto; gap: 14px; border-bottom: 0; padding: 6px 42px 14px 0; }
 .scheda-broadcast .player-modal__hero .kicker { margin: 0; color: color-mix(in srgb, var(--fz-luce) 80%, #fff); font: 600 .6rem/1 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: .22em; text-transform: uppercase; }
 .scheda-broadcast .player-modal__hero h2 { color: #fff; font: 700 clamp(1.4rem, 6vw, 2rem)/1 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: .03em; text-transform: uppercase; }

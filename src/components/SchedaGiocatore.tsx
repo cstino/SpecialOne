@@ -580,7 +580,10 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
   // almeno uno dei due rami, altrimenti la scheda resta a pagina singola
   // (es. profilo di un avversario, dove queste azioni non sono disponibili).
   const haTraining = Boolean(cambioRuolo || specializzazione)
-  const [pagina, setPagina] = useState<'scheda' | 'training'>('scheda')
+  // Pagina "Mercato" (8/11/2026): rinnovo, opzione, prestito, lista, scambio e svincolo, separati dalla scheda.
+  const haMercato = Boolean(prestito || opzioneSquadra || azionePericolosa || rinnovo || listaMercato || proponiScambio)
+  const pagine = (['scheda', 'training', 'mercato'] as const).filter((p) => p === 'scheda' || (p === 'training' ? haTraining : haMercato))
+  const [pagina, setPagina] = useState<'scheda' | 'training' | 'mercato'>('scheda')
   const pagerRef = useRef<HTMLDivElement>(null)
   // Cognomi lunghi: si rimpicciolisce il font finche' la parola non entra nella sua colonna
   const cognomeRef = useRef<HTMLHeadingElement>(null)
@@ -612,13 +615,13 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
   function onTouchEnd(evento: React.TouchEvent) {
     const inizio = touchStart.current
     touchStart.current = null
-    if (!inizio || !haTraining) return
+    if (!inizio || pagine.length < 2) return
     const fine = evento.changedTouches[0]
     if (!fine) return
     const dx = fine.clientX - inizio.x, dy = fine.clientY - inizio.y
     if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2 || Date.now() - inizio.t > 800) return
-    if (dx < 0 && pagina === 'scheda') setPagina('training')
-    if (dx > 0 && pagina === 'training') setPagina('scheda')
+    const prossima = pagine[pagine.indexOf(pagina) + (dx < 0 ? 1 : -1)]
+    if (prossima) setPagina(prossima)
   }
 
   const [cambioTarget, setCambioTarget] = useState<string[] | null>(null)
@@ -989,36 +992,37 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
     <section ref={modaleRef} className={`player-modal scheda-broadcast formazione-broadcast formazione-broadcast--${fase}`} role="dialog" aria-modal="true" aria-labelledby="player-modal-title">
       <button className="player-modal__close" type="button" onClick={onClose} aria-label="Chiudi dettagli giocatore"><Icona nome="chiudi" /></button>
 
-      {haTraining && <div className="player-modal__tabs formazione-schede" role="tablist" aria-label="Pagine della scheda">
-        {(['scheda', 'training'] as const).map((p) => (
+      {/* Testata fissa: la stessa su Scheda, Training e Mercato. */}
+      <div className="player-modal__hero">
+        <div className={`player-modal__photo player-modal__photo--${rep} ${fotoUrl ? 'has-photo' : ''}`}>
+          <AnonymousPlayer />
+          {fotoUrl && <img src={fotoUrl} alt={giocatore.nome} onError={(evento) => { evento.currentTarget.hidden = true; evento.currentTarget.parentElement?.classList.remove('has-photo') }} />}
+        </div>
+        <div>
+          <p className="kicker">Scheda giocatore</p>
+          {nomeSuDueRighe(giocatore.nome, giocatore.nomeEsteso).nome && <span className="player-modal__nome-proprio">{nomeSuDueRighe(giocatore.nome, giocatore.nomeEsteso).nome}</span>}
+          <div className="player-modal__nome-riga">
+            <h2 id="player-modal-title" ref={cognomeRef}>{cognome}</h2>
+            {giocatore.posizioni[0] && <span className={`role-pill role-pill--${rep.toLowerCase()}`}>{ruoloIt(giocatore.posizioni[0])}</span>}
+          </div>
+          <p>{giocatore.eta} anni · {giocatore.nazionalita || '—'}</p>
+        </div>
+        <strong className="player-modal__overall"><span>OVR</span>{giocatore.overall}</strong>
+      </div>
+
+      {pagine.length > 1 && <div className="player-modal__tabs formazione-schede" role="tablist" aria-label="Pagine della scheda">
+        {pagine.map((p) => (
           <button type="button" role="tab" aria-selected={pagina === p} key={p}
             className={`formazione-scheda${pagina === p ? ' is-attiva' : ''}`} onClick={() => setPagina(p)}>
-            <span>{p === 'scheda' ? 'Scheda' : 'Training'}</span>
+            <span>{p === 'scheda' ? 'Scheda' : p === 'training' ? 'Training' : 'Mercato'}</span>
           </button>
         ))}
       </div>}
 
+      {giocatore.ritiroAnnunciato && <p className="player-modal__ritiro">Si ritira a fine stagione — non può essere ceduto.</p>}
+
       <div className="player-modal__pager" ref={pagerRef} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-        <div className={`player-modal__page ${haTraining && pagina !== 'scheda' ? 'is-nascosta' : ''}`}>
-          <div className="player-modal__hero">
-            <div className={`player-modal__photo player-modal__photo--${rep} ${fotoUrl ? 'has-photo' : ''}`}>
-              <AnonymousPlayer />
-              {fotoUrl && <img src={fotoUrl} alt={giocatore.nome} onError={(evento) => { evento.currentTarget.hidden = true; evento.currentTarget.parentElement?.classList.remove('has-photo') }} />}
-            </div>
-            <div>
-              <p className="kicker">Scheda giocatore</p>
-              {nomeSuDueRighe(giocatore.nome, giocatore.nomeEsteso).nome && <span className="player-modal__nome-proprio">{nomeSuDueRighe(giocatore.nome, giocatore.nomeEsteso).nome}</span>}
-              <div className="player-modal__nome-riga">
-                <h2 id="player-modal-title" ref={cognomeRef}>{cognome}</h2>
-                {giocatore.posizioni[0] && <span className={`role-pill role-pill--${rep.toLowerCase()}`}>{ruoloIt(giocatore.posizioni[0])}</span>}
-              </div>
-              <p>{giocatore.nazionalita || '—'}</p>
-            </div>
-            <strong className="player-modal__overall"><span>OVR</span>{giocatore.overall}</strong>
-          </div>
-
-          {giocatore.ritiroAnnunciato && <p className="player-modal__ritiro">Si ritira a fine stagione — non può essere ceduto.</p>}
-
+        <div className={`player-modal__page ${pagina !== 'scheda' ? 'is-nascosta' : ''}`}>
           <dl className="player-modal__facts">
             <div><dt>Età</dt><dd>{giocatore.eta}</dd></div>
             <div><dt>Ruoli secondari</dt><dd>{ruoliIt(giocatore.posizioni.slice(1)) || 'Nessuno'}</dd></div>
@@ -1171,24 +1175,14 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
               ))}
             </div>
           </div>
+        </div>
 
-          {prestito && <div className={`player-prestito ${prestito.club ? 'is-fuori' : ''}`}>
-            {prestito.club
-              ? <div className="player-prestito__club"><img src={prestito.club.logo} alt="" /><div><small>In prestito</small><strong>{prestito.club.nome}</strong>{prestito.allenamento && <span>{prestito.allenamento}</span>}</div></div>
-              : <div className="player-prestito__club"><div><small>Prestito</small><strong>Mandalo a giocare altrove</strong><span>{prestito.bloccato ?? `Ti restano ${prestito.rimasti} ${prestito.rimasti === 1 ? 'prestito' : 'prestiti'} in questa stagione.`}</span></div></div>}
-            {!prestitoConferma
-              ? <button className="button button--secondary" type="button" disabled={!prestito.club && Boolean(prestito.bloccato)} onClick={() => { setPrestitoErrore(null); setPrestitoConferma(true) }}>{prestito.club ? 'Richiama' : 'Manda in prestito'}</button>
-              : <div className="player-prestito__conferma">
-                  <p>{prestito.club
-                    ? `Torna subito in rosa e potrai schierarlo dalla prossima giornata. In questa stagione non potrà più andare in prestito.`
-                    : `Va in un club scelto dal sistema fino a fine stagione. Cresce come chi gioca più di metà delle partite e l'allenamento lo decide il club che lo ospita. Resta sul tuo tetto ingaggi e in rosa, ma non puoi schierarlo, scambiarlo né svincolarlo finché non lo richiami.`}</p>
-                  {prestitoErrore && <p className="notice notice--error">{prestitoErrore}</p>}
-                  <div>
-                    <button className="button button--primary" type="button" disabled={prestitoInCorso} onClick={() => void eseguiPrestito()}>{prestitoInCorso ? 'Attendi…' : prestito.club ? 'Richiama adesso' : 'Conferma il prestito'}</button>
-                    <button className="button button--secondary" type="button" disabled={prestitoInCorso} onClick={() => setPrestitoConferma(false)}>Annulla</button>
-                  </div>
-                </div>}
-          </div>}
+        {haMercato && <div className={`player-modal__page player-modal__page--mercato ${pagina !== 'mercato' ? 'is-nascosta' : ''}`}>
+          {typeof giocatore.ingaggio === 'number' && <p className="player-training-intro">
+            Contratto: <b>{(giocatore.ingaggio / 1_000_000).toFixed(1)} M€</b> a stagione
+            {typeof giocatore.contrattoScadenza === 'number' && typeof giocatore.stagioneCorrente === 'number' &&
+              (giocatore.contrattoScadenza <= giocatore.stagioneCorrente ? ', in scadenza a fine stagione' : `, fino alla stagione ${giocatore.contrattoScadenza}`)}.
+          </p>}
 
           {opzioneSquadra && <div className="player-opzione">
             {opzioneEsito
@@ -1226,7 +1220,25 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
                   </div>
                 </div>}
           </div>}
-        </div>
+
+          {prestito && <div className={`player-prestito ${prestito.club ? 'is-fuori' : ''}`}>
+            {prestito.club
+              ? <div className="player-prestito__club"><img src={prestito.club.logo} alt="" /><div><small>In prestito</small><strong>{prestito.club.nome}</strong>{prestito.allenamento && <span>{prestito.allenamento}</span>}</div></div>
+              : <div className="player-prestito__club"><div><small>Prestito</small><strong>Mandalo a giocare altrove</strong><span>{prestito.bloccato ?? `Ti restano ${prestito.rimasti} ${prestito.rimasti === 1 ? 'prestito' : 'prestiti'} in questa stagione.`}</span></div></div>}
+            {!prestitoConferma
+              ? <button className="button button--secondary" type="button" disabled={!prestito.club && Boolean(prestito.bloccato)} onClick={() => { setPrestitoErrore(null); setPrestitoConferma(true) }}>{prestito.club ? 'Richiama' : 'Manda in prestito'}</button>
+              : <div className="player-prestito__conferma">
+                  <p>{prestito.club
+                    ? `Torna subito in rosa e potrai schierarlo dalla prossima giornata. In questa stagione non potrà più andare in prestito.`
+                    : `Va in un club scelto dal sistema fino a fine stagione. Cresce come chi gioca più di metà delle partite e l'allenamento lo decide il club che lo ospita. Resta sul tuo tetto ingaggi e in rosa, ma non puoi schierarlo, scambiarlo né svincolarlo finché non lo richiami.`}</p>
+                  {prestitoErrore && <p className="notice notice--error">{prestitoErrore}</p>}
+                  <div>
+                    <button className="button button--primary" type="button" disabled={prestitoInCorso} onClick={() => void eseguiPrestito()}>{prestitoInCorso ? 'Attendi…' : prestito.club ? 'Richiama adesso' : 'Conferma il prestito'}</button>
+                    <button className="button button--secondary" type="button" disabled={prestitoInCorso} onClick={() => setPrestitoConferma(false)}>Annulla</button>
+                  </div>
+                </div>}
+          </div>}
+        </div>}
 
         {haTraining && <div className={`player-modal__page player-modal__page--training ${pagina !== 'training' ? 'is-nascosta' : ''}`}>
           {/* Chiave nuova (v2) per mostrarlo di nuovo a tutti dopo il passaggio
