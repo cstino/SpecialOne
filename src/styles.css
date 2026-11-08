@@ -3056,6 +3056,13 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .free-agent-gruppo { margin-bottom:16px; }
 .free-agent-gruppo:last-child { margin-bottom:0; }
 .free-agent-gruppo__titolo { margin:0 0 8px; color:#b78ee4; font-size:.66rem; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
+/* Ordinamento delle carte nel reparto: pillole, la scelta attiva piena. Reset espliciti (niente preflight). */
+.free-agent-ordine { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:0 0 14px; }
+.free-agent-ordine span { margin-right:2px; color:#9e8bb5; font-size:.6rem; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
+.free-agent-ordine button { appearance:none; margin:0; padding:7px 12px; border:1px solid #40324f; border-radius:999px; background:#17131f; color:#cfc2e0; font:inherit; font-size:.78rem; font-weight:800; line-height:1; cursor:pointer; transition:background .15s, border-color .15s, color .15s; }
+.free-agent-ordine button:hover { border-color:#7c5bb0; color:#fff; }
+.free-agent-ordine button:focus-visible { outline:2px solid #b78ee4; outline-offset:2px; }
+.free-agent-ordine button.is-attivo { border-color:#8b5cf6; background:#8b5cf6; color:#fff; }
 .free-agent-filters { display:grid; grid-template-columns:1fr repeat(3,minmax(120px,auto)); gap:9px; align-items:end; }
 .free-agent-filters label, .range-filter { min-width:0; display:grid; gap:5px; margin:0; padding:0; border:0; }
 .free-agent-filters span, .range-filter legend { color:#9e8bb5; font-size:.6rem; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }

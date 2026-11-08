@@ -55,6 +55,10 @@ type Asta = {
   ingaggio_finale: number | null
 }
 
+// Ordine delle carte dentro il reparto del mercato svincolati.
+type OrdineAste = 'overall' | 'giovani' | 'esperti' | 'ingaggio'
+const ORDINI_ASTE: [OrdineAste, string][] = [['overall', 'Overall'], ['giovani', 'Più giovani'], ['esperti', 'Più esperti'], ['ingaggio', 'Ingaggio']]
+
 type Anagrafica = {
   nome: string
   nomeCompleto: string
@@ -143,6 +147,7 @@ export function Mercato({ membership, onNavigate }: Props) {
   const [attributiScheda, setAttributiScheda] = useState<Attributi>({})
   const [bozzaOfferta, setBozzaOfferta] = useState<Record<number, string>>({})
   const [paginaAstaRuolo, setPaginaAstaRuolo] = useState<MacroRuolo>('GK')
+  const [ordineAste, setOrdineAste] = useState<OrdineAste>('overall')
   // Offrire impegna il denaro: quello che conta non e' il budget ma cio' che
   // resta dopo aver messo da parte le offerte ancora in gioco.
   const [conti, setConti] = useState<{ capienza: number; slot_liberi: number } | null>(null)
@@ -654,6 +659,17 @@ export function Mercato({ membership, onNavigate }: Props) {
 
   const gruppiAsta = perRuolo(nuoviDelGiorno)
   const paginaAsta = gruppiAsta.find((gruppo) => gruppo.ruolo === paginaAstaRuolo) ?? gruppiAsta[0]
+  // A parita' (stessa eta' o stesso ingaggio) decide l'overall, poi il nome.
+  const asteOrdinate = paginaAsta ? [...paginaAsta.aste].sort((a, b) => {
+    const ga = svincolati.get(a.player_id)
+    const gb = svincolati.get(b.player_id)
+    const overall = (gb?.overall ?? 0) - (ga?.overall ?? 0)
+    const primo = ordineAste === 'giovani' ? (ga?.eta ?? 99) - (gb?.eta ?? 99)
+      : ordineAste === 'esperti' ? (gb?.eta ?? 0) - (ga?.eta ?? 0)
+      : ordineAste === 'ingaggio' ? a.ingaggio_teorico - b.ingaggio_teorico
+      : overall
+    return primo || overall || (ga?.nome ?? '').localeCompare(gb?.nome ?? '')
+  }) : []
 
   useEffect(() => {
     if (giornoAste === null || tornataLive === 0) return
@@ -730,7 +746,12 @@ export function Mercato({ membership, onNavigate }: Props) {
                 />
                 {paginaAsta && <div className="free-agent-gruppo">
                   <p className="free-agent-gruppo__titolo">{MACRO_LABEL[paginaAsta.ruolo]} · {paginaAsta.aste.length} giocatori</p>
-                  <div className="free-agent-grid">{paginaAsta.aste.map((a) => cardSvincolato(a))}</div>
+                  <div className="free-agent-ordine" role="group" aria-label="Ordina per">
+                    <span>Ordina per</span>
+                    {ORDINI_ASTE.map(([valore, testo]) => <button key={valore} type="button" aria-pressed={ordineAste === valore}
+                      className={ordineAste === valore ? 'is-attivo' : ''} onClick={() => setOrdineAste(valore)}>{testo}</button>)}
+                  </div>
+                  <div className="free-agent-grid">{asteOrdinate.map((a) => cardSvincolato(a))}</div>
                 </div>}
               </>}
         </div>
