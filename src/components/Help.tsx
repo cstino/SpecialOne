@@ -415,9 +415,9 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
         una squadra si aggiunge invece garantito, oltre a quella quota — così chi è stato appena
         tagliato torna subito visibile a tutti: capita quindi che un ruolo mostri più giocatori degli
         altri in un giorno con parecchi svincoli. Durante i playoff e l'off-season questo mercato è
-        chiuso. Tutti restano in evidenza per un giorno; se nessuno li
-        prende, restano comunque nell'archivio e possono ricevere offerte nei giorni
-        successivi.</p>
+        chiuso. Gli estratti a sorte restano in vetrina un giorno. Gli svincolati ancora pagati dal vecchio
+        club, quelli sopra 75 di overall e i non scelti del Draft tornano invece ogni giorno, ma al massimo
+        per <strong>30 giorni di mercato</strong>: poi escono dalla vetrina se nessuno li ha presi.</p>
       <p>Puoi fare <strong>una sola offerta per giocatore</strong>, indicando l'ingaggio annuale
         che sei disposto a pagargli. L'interfaccia mostra un "ingaggio minimo" di riferimento,
         ma non è una garanzia: la soglia vera che il giocatore accetta è nascosta e può essere
