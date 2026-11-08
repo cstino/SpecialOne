@@ -16,6 +16,8 @@ export const MODULI: Record<string, string[]> = {
   '3-4-3': ['GK', 'CB', 'CB', 'CB', 'LM', 'CM', 'CM', 'RM', 'LW', 'ST', 'RW'],
   '5-3-2': ['GK', 'LB', 'CB', 'CB', 'CB', 'RB', 'CM', 'CM', 'CM', 'ST', 'ST'],
   '4-2-4': ['GK', 'LB', 'CB', 'CB', 'RB', 'CM', 'CM', 'LW', 'ST', 'ST', 'RW'],
+  '4-5-1': ['GK', 'LB', 'CB', 'CB', 'RB', 'LM', 'CM', 'CDM', 'CM', 'RM', 'ST'],
+  '4-4-1-1': ['GK', 'LB', 'CB', 'CB', 'RB', 'LM', 'CM', 'CAM', 'CM', 'RM', 'ST'],
 }
 
 export function reparto(slot: string): 'GK' | 'DEF' | 'MID' | 'ATT' {
@@ -40,6 +42,8 @@ const RIGHE_PER_MODULO: Record<string, string[][]> = {
   // che ordina RW prima di entrambi gli ST: sul campo comparivano scambiati,
   // con l'ala destra stretta al centro invece che larga sulla fascia.
   '4-2-4': [['GK'], ['LB', 'CB', 'RB'], ['CM'], ['LW', 'ST', 'RW']],
+  '4-5-1': [['GK'], ['LB', 'CB', 'RB'], ['CDM'], ['LM', 'CM', 'RM'], ['ST']],
+  '4-4-1-1': [['GK'], ['LB', 'CB', 'RB'], ['LM', 'CM', 'RM'], ['CAM'], ['ST']],
   '4-3-3 offensivo': [['GK'], ['LB', 'CB', 'RB'], ['CM', 'CAM', 'CDM'], ['LW', 'ST', 'RW']],
   '4-3-3 difensivo': [['GK'], ['LB', 'CB', 'RB'], ['CM', 'CAM', 'CDM'], ['LW', 'ST', 'RW']],
 }

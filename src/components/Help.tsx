@@ -265,7 +265,7 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
       <p>Ci sono due leve tattiche, <strong>indipendenti</strong> fra loro, da scegliere insieme
         prima di ogni giornata: il <strong>modulo</strong> e lo <strong>stile di gioco</strong>.</p>
       <p>Il <strong>modulo</strong> (4-4-2, 4-3-3, 4-3-3 offensivo, 4-3-3 difensivo, 4-2-3-1,
-        3-5-2, 3-4-3, 5-3-2, 4-2-4) decide
+        3-5-2, 3-4-3, 5-3-2, 4-2-4, 4-5-1, 4-4-1-1) decide
         quanti giocatori mandi in ciascun reparto e con che ruoli. Non esiste un modulo
         oggettivamente più forte: ognuno sposta un po' di equilibrio fra attacco, centrocampo e
         difesa, e chi ha più giocatori orientati all'attacco spinge di più ma si scopre

@@ -526,6 +526,10 @@ export const MODULI = {
   '3-4-3':   ['GK','CB','CB','CB','LM','CM','CM','RM','LW','ST','RW'],
   '5-3-2':   ['GK','LB','CB','CB','CB','RB','CM','CM','CM','ST','ST'],
   '4-2-4':   ['GK','LB','CB','CB','RB','CM','CM','LW','ST','ST','RW'],
+  // 8 novembre 2026 (committente): 4-5-1 con due esterni, due mezzali e un mediano;
+  // il 4-4-1-1 e' lo stesso schieramento col mediano alzato a trequartista (slot 7).
+  '4-5-1':   ['GK','LB','CB','CB','RB','LM','CM','CDM','CM','RM','ST'],
+  '4-4-1-1': ['GK','LB','CB','CB','RB','LM','CM','CAM','CM','RM','ST'],
 };
 
 // conteggi nominali per la formula di counter

@@ -47,6 +47,8 @@ const MODULI: Record<string, string[]> = {
   '3-4-3': ['GK', 'CB', 'CB', 'CB', 'LM', 'CM', 'CM', 'RM', 'LW', 'ST', 'RW'],
   '5-3-2': ['GK', 'LB', 'CB', 'CB', 'CB', 'RB', 'CM', 'CM', 'CM', 'ST', 'ST'],
   '4-2-4': ['GK', 'LB', 'CB', 'CB', 'RB', 'CM', 'CM', 'LW', 'ST', 'ST', 'RW'],
+  '4-5-1': ['GK', 'LB', 'CB', 'CB', 'RB', 'LM', 'CM', 'CDM', 'CM', 'RM', 'ST'],
+  '4-4-1-1': ['GK', 'LB', 'CB', 'CB', 'RB', 'LM', 'CM', 'CAM', 'CM', 'RM', 'ST'],
 }
 
 const MODULO_DESCRIZIONI: Record<string, string> = {
@@ -59,6 +61,8 @@ const MODULO_DESCRIZIONI: Record<string, string> = {
   '3-4-3': '3 dif · 4 cen · 3 att',
   '5-3-2': '5 dif · 3 cen · 2 att',
   '4-2-4': '4 dif · 2 cen · 4 att',
+  '4-5-1': '4 dif · 2 est + 2 cen + CDC · 1 att',
+  '4-4-1-1': '4 dif · 4 cen · COC · 1 att',
 }
 
 

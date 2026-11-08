@@ -360,6 +360,32 @@ export const MODULI: Record<string, string[]> = {
     "ST",
     "ST",
     "RW"
+  ],
+  "4-5-1": [
+    "GK",
+    "LB",
+    "CB",
+    "CB",
+    "RB",
+    "LM",
+    "CM",
+    "CDM",
+    "CM",
+    "RM",
+    "ST"
+  ],
+  "4-4-1-1": [
+    "GK",
+    "LB",
+    "CB",
+    "CB",
+    "RB",
+    "LM",
+    "CM",
+    "CAM",
+    "CM",
+    "RM",
+    "ST"
   ]
 }
 
