@@ -630,7 +630,8 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     corpo: <>
       <p>I <strong>crediti</strong> sono una moneta a parte: <strong>non toccano mai la squadra</strong>
         né il tetto ingaggi. Si vincono con sponsor, schedine, giochi, quiz e pagine dell'album
-        completate.</p>
+        completate. A ogni stagione nuova i crediti ripartono da zero e i doppioni dell'album
+        vecchio non si riciclano né si scambiano più.</p>
       <p><strong>SchedOne</strong>: la schedina della prossima giornata. Metti 1, X o 2 su ogni
         partita, con al massimo 2 doppie, e punti dei crediti. Chiude 15 minuti prima della simulazione
         delle 22:00.</p>
