@@ -11,7 +11,7 @@ import { Pallone, Scudo } from './SimboliBonus'
 type Suoni = ReturnType<typeof useSuoni>
 type Mossa = { i?: number; v?: number; zona?: number; gol?: boolean; portiere?: number }
 type Bonus = { id: number; tipo: 'stemma' | 'rigori'; puntata: number; finito: boolean; scade: number; mosse: Mossa[]; molt: number; premio: number | null; tavola?: number[] | null }
-type Risposta = { bonus: Bonus | null; crediti: number }
+type Risposta = { bonus: Bonus | null; crediti: number; scaduto?: boolean }
 
 const SCALA_RIGORI = [1, 2, 4, 8, 25, 120]   // premio (x puntata) per 0..5 gol, come private.casino_bonus_molt
 const classeValore = (v: number) => (v >= 100 ? 'oro' : v >= 25 ? 'magenta' : v >= 5 ? 'ciano' : 'base')
@@ -124,11 +124,19 @@ export default function SlotBonus({ leagueId, bonusId, tipoIniziale, suoni, onFi
     }, veloce ? 200 : b2.tipo === 'stemma' ? 1300 : 1500)
   }
 
+  // Mossa arrivata dopo i 3 minuti: il server ha gia' giocato da solo le mosse restanti, si mostra com'e' finita.
+  const scaduto = (r: Risposta, b2: Bonus) => {
+    setAnim(null); setB(b2); setOccupato(false)
+    setErrore('Tempo scaduto: le mosse restanti si sono fatte da sole.')
+    finisci(r, b2)
+  }
+
   async function scegli(i: number) {
     if (occupato || !b || b.finito) return
     setOccupato(true); setErrore(''); suoni.tick(i)
     const r = await chiama(i)
     if (!r || !r.bonus) { setOccupato(false); return }
+    if (r.scaduto) { scaduto(r, r.bonus); return }
     setB(r.bonus)
     const m = r.bonus.mosse.find((x) => x.i === i)
     if (m?.v != null) { suoni.moneta(Math.min(8, m.v)); if (m.v >= 25) suoni.coppe() }
@@ -142,6 +150,7 @@ export default function SlotBonus({ leagueId, bonusId, tipoIniziale, suoni, onFi
     suoni.leva(); setAnim({ zona, portiere: null, gol: null, fase: 'volo' })
     const r = await chiama(zona)
     if (!r || !r.bonus) { setAnim(null); setOccupato(false); return }
+    if (r.scaduto) { scaduto(r, r.bonus); return }
     const m = r.bonus.mosse[r.bonus.mosse.length - 1]
     setAnim({ zona, portiere: m.portiere ?? zona, gol: m.gol ?? false, fase: 'volo' })
     window.setTimeout(() => {
