@@ -4065,6 +4065,8 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .azione-scheda.is-primaria .azione-scheda__icona { color: var(--az-scuro); border-color: rgba(0,0,0,.14); background: rgba(255,255,255,.28); }
 .azione-scheda.is-primaria .azione-scheda__testo small { color: color-mix(in srgb, var(--az-scuro) 72%, transparent); }
 .azione-scheda.is-primaria .azione-scheda__freccia { color: var(--az-scuro); }
+/* Testo della tessera piena: nero esplicito sul titolo (altrimenti eredita il bianco delle regole della scheda). */
+.scheda-broadcast .azione-scheda.is-primaria .azione-scheda__testo strong, .azione-scheda.is-primaria .azione-scheda__testo strong { color: #0b0a10; }
 /* Pericolo (svincolo): rosso spento, piu' basso, staccato in fondo. */
 .azione-scheda.is-pericolo { min-height: 56px; border-color: rgba(239,79,95,.35); background: rgba(104,35,51,.14); box-shadow: none; }
 .azione-scheda.is-pericolo:hover:not(:disabled) { border-color: rgba(239,79,95,.6); box-shadow: none; }
