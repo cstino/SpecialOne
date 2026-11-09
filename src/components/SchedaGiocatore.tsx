@@ -1046,15 +1046,14 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
             {typeof giocatore.ingaggio === 'number' && <div className="fatto-ingaggio">
               <dt>Ingaggio</dt>
               <dd>
-                {(giocatore.ingaggio / 1_000_000).toFixed(1)} M€ <small>/ stagione</small>
+                {(giocatore.ingaggio / 1_000_000).toFixed(1).replace('.', ',')} M€<small>/stagione</small>
+                {/* Righe corte, una per informazione: nel riquadro a mezza larghezza la frase lunga veniva tagliata. */}
                 {typeof giocatore.contrattoScadenza === 'number' && typeof giocatore.stagioneCorrente === 'number' && (() => {
                   const residue = giocatore.contrattoScadenza - giocatore.stagioneCorrente
-                  return <small className="fatto-contratto">
-                    {residue <= 0
-                      ? 'In scadenza a fine stagione'
-                      : `Contratto fino alla stagione ${giocatore.contrattoScadenza} · ancora ${stagioni(residue)} dopo questa`}
-                    {giocatore.opzioneContratto ? ` · ${testoOpzione(giocatore.opzioneContratto, giocatore.contrattoScadenza!)}` : ''}
-                  </small>
+                  return <span className="fatto-contratto" title={residue > 0 ? `Contratto fino alla stagione ${giocatore.contrattoScadenza}` : undefined}>
+                    <small>{residue <= 0 ? 'In scadenza a fine stagione' : `Ancora ${stagioni(residue)}`}</small>
+                    {giocatore.opzioneContratto && <small>+ {NOME_OPZIONE[giocatore.opzioneContratto]}</small>}
+                  </span>
                 })()}
               </dd>
             </div>}
