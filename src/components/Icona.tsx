@@ -22,6 +22,8 @@ const TRACCIATI = {
   prestito: 'M14 4.5h5.5V10M19.5 4.5 11 13M17.5 14v4a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 18V8A1.5 1.5 0 0 1 6 6.5h4',
   // richiamo dal prestito: freccia che torna
   richiama: 'M9 14.5 4.5 10 9 5.5M4.5 10h10a5 5 0 0 1 0 10H11',
+  // promozione dal vivaio: freccia che sale
+  promuovi: 'M12 19.5V5.5M6.5 11 12 5.5l5.5 5.5M7 19.5h10',
   // svincolo: giocatore col segno meno
   svincola: 'M15.5 20v-1.5a4 4 0 0 0-4-4h-5a4 4 0 0 0-4 4V20M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM16 11h5.5',
 } as const

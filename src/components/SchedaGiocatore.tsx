@@ -4,7 +4,8 @@ import { etichettaMorale } from './FaccinaMorale'
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from 'recharts'
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { Progress } from './ui/progress'
-import { Icona, type NomeIcona } from './Icona'
+import { Icona } from './Icona'
+import { AzioneScheda, AzioniOfferta, BarraSoddisfazione, richiestaContratto } from './Trattativa'
 import type { FaseSquadra } from '../lib/faseSquadra'
 import { fasciaVoto, formatoVoto } from '../lib/voti'
 import { idoneitaRuolo, PROFILI_RUOLI, RUOLI_SLOT, segnoIdoneita } from '../lib/tattica'
@@ -744,8 +745,7 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
   // mai oltre l'ingaggio massimo.
   function richiestaPer(dati: PropostaRinnovo, gradino: GradinoMinutaggio | null, durata: number, opzione: OpzioneContratto | null) {
     const base = dati.gradini?.find((g) => g.chiave === gradino)?.richiesta ?? dati.richiesta
-    const m = dati.pluriennali ? dati.moltiplicatori?.find((x) => x.durata === durata && x.opzione === opzione)?.moltiplicatore ?? 1 : 1
-    return Math.min(dati.ingaggio_massimo ?? Infinity, Math.max(500_000, Math.round((base * m) / 100_000) * 100_000))
+    return richiestaContratto(base, dati.moltiplicatori, dati.pluriennali, durata, opzione, dati.ingaggio_massimo)
   }
 
   function scegliTermini(dati: PropostaRinnovo, gradino: GradinoMinutaggio | null, durata: number, opzione: OpzioneContratto | null) {
@@ -970,14 +970,9 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
             {' '}Il nuovo ingaggio decorre dalla prossima stagione — questa è già stata pagata.
           </p>}
           {nuvolettaRisposta}
-          <p className="rinnovo-tentativi">
-            Tentativi rimasti: <b>{proposta.tentativi_totali - proposta.tentativi_usati}</b> su {proposta.tentativi_totali}.
-            {' '}Esauriti, andrà a scadenza.
-          </p>
-          <div className="rinnovo-azioni">
-            <button className="button button--primary" type="button" disabled={rinnovoInCorso || !offertaValida} onClick={inviaOfferta}>{rinnovoInCorso ? 'Attendo…' : 'Proponi'}</button>
-            <button className="button button--secondary" type="button" disabled={rinnovoInCorso} onClick={() => setVistaRinnovo(false)}>Ci penso</button>
-          </div>
+          <p className="rinnovo-tentativi">Esauriti i tentativi, andrà a scadenza.</p>
+          <AzioniOfferta inCorso={rinnovoInCorso} disabilitato={!offertaValida} tentativiRimasti={proposta.tentativi_totali - proposta.tentativi_usati}
+            tentativiTotali={proposta.tentativi_totali} onProponi={() => void inviaOfferta()} onAnnulla={() => setVistaRinnovo(false)} />
         </>}
       </>}
 
@@ -1347,36 +1342,4 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
       </div>
     </section>
   </div>
-}
-
-// La barra di soddisfazione della trattativa (9/11/2026): al 100% gli si offre quanto chiede. Non mostra dove sta la
-// soglia di accettazione (la zona sfumata aiutava troppo e rendeva inutili i tre tentativi): il colore va dal rosso
-// al verde con la percentuale, uguale per tutti i giocatori.
-function BarraSoddisfazione({ offerta, richiesta }: { offerta: number; richiesta: number }) {
-  const percento = richiesta > 0 ? Math.round((offerta / richiesta) * 100) : 0
-  const pieno = Math.min(100, Math.max(0, percento))
-  // 50% e sotto rosso, 100% verde
-  const tinta = Math.round(Math.min(1, Math.max(0, (percento - 50) / 50)) * 130)
-  return <div className="rinnovo-soddisfazione">
-    <div className="rinnovo-soddisfazione__testa">
-      <span>Soddisfazione</span>
-      <b>{percento}%</b>
-    </div>
-    <div className="rinnovo-soddisfazione__barra" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pieno} aria-label="Soddisfazione del giocatore">
-      <span className="rinnovo-soddisfazione__riempimento" style={{ width: `${pieno}%`, backgroundColor: `hsl(${tinta} 68% 52%)` }} />
-    </div>
-    <small>100% = quello che chiede. Quanto sia disposto a scendere dipende da lui: bandiera, voglia di vincere, soldi e morale.</small>
-  </div>
-}
-
-// Una tessera d'azione della scheda (pagina mercato), stile menu dei giochi: icona nel colore della fase, nome
-// dell'azione, una riga che dice cosa fa, freccia. Alta almeno 64 px e staccata dalle altre, per non sbagliare il tocco.
-function AzioneScheda({ icona, titolo, sotto, primaria, pericolo, disabled, onClick }: {
-  icona: NomeIcona; titolo: string; sotto?: string; primaria?: boolean; pericolo?: boolean; disabled?: boolean; onClick: () => void
-}) {
-  return <button type="button" className={`azione-scheda${primaria ? ' is-primaria' : ''}${pericolo ? ' is-pericolo' : ''}`} disabled={disabled} onClick={onClick}>
-    <span className="azione-scheda__icona"><Icona nome={icona} /></span>
-    <span className="azione-scheda__testo"><strong>{titolo}</strong>{sotto && <small>{sotto}</small>}</span>
-    <span className="azione-scheda__freccia"><Icona nome="avanti" /></span>
-  </button>
 }

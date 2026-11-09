@@ -2723,7 +2723,8 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
    a display:grid a riga singola nonostante flex fosse scritto qui sotto —
    i due bottoni finivano impilati anche col codice "giusto" in pagina.
    Riprodotto e verificato con un rendering headless prima di questo fix. */
-.team-roster-player > div.vivaio-azioni { display: flex; gap: 8px; }
+/* 9/11/2026: Promuovi e Rilascia sono tessere d'azione, su riga intera e staccate 10 px. */
+.team-roster-player > div.vivaio-azioni { display: grid; grid-column: 1 / -1; gap: 10px; margin-top: 10px; }
 .vivaio-azioni .button { flex: 1; padding: 0 10px; min-height: 34px; font-size: .68rem; white-space: nowrap; }
 /* La conferma (titolo + descrizione + due bottoni) non ci sta nella
    colonna da 180px di vivaio-azioni: riga intera propria, a ogni
@@ -4069,6 +4070,22 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .azione-scheda.is-pericolo .azione-scheda__freccia { color: #f08b9a; }
 .player-prestito .azione-scheda { margin-top: 2px; }
 .player-modal__page--mercato .player-modal__danger { margin-top: 28px; }
+/* Tessera compatta (azione secondaria, es. Rilascia nel vivaio). */
+.azione-scheda.is-compatta { min-height: 54px; padding-top: 8px; padding-bottom: 8px; }
+.azione-scheda.is-compatta .azione-scheda__icona { width: 36px; height: 36px; font-size: 1.1rem; }
+/* Invio dell'offerta: la tessera Proponi e, staccato sotto, Ci penso come testo. */
+.trattativa-azioni { display: grid; gap: 6px; width: 100%; margin-top: 4px; }
+.trattativa-azioni__annulla { appearance: none; justify-self: center; min-height: 44px; margin: 0; padding: 0 22px; color: rgba(255,255,255,.62); font: 700 .74rem/1 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: .14em; text-transform: uppercase; border: 0; border-radius: 10px; background: transparent; cursor: pointer; }
+.trattativa-azioni__annulla:hover:not(:disabled) { color: #fff; background: rgba(255,255,255,.05); }
+.trattativa-azioni__annulla:focus-visible { outline: 2px solid #b48cf0; outline-offset: 2px; }
+.trattativa-azioni__annulla:disabled { opacity: .45; cursor: not-allowed; }
+/* La trattativa del primo contratto: riquadro neutro (non rosso come le conferme), spazi da trattativa. */
+.team-roster-player > .player-modal__confirm.vivaio-trattativa { display: grid; gap: 14px; padding: 16px 14px; border-color: #3d3156; background: linear-gradient(180deg, rgba(124,58,237,.10), rgba(18,15,26,.9)); }
+.vivaio-trattativa > div:first-child strong { color: #fff; font-size: .95rem; }
+.vivaio-trattativa .rinnovo-durata { margin: 0; }
+.player-modal__confirm > div.trattativa-azioni { display: grid; gap: 6px; }
+.vivaio-trattativa input { border-color: #4a3e5d; background: #1d1827; }
+.vivaio-trattativa input:focus-visible { outline-color: #b48cf0; }
 @media (prefers-reduced-motion: reduce) { .azione-scheda { transition: none; } .azione-scheda:active:not(:disabled) { transform: none; } }
 /* Stadio: il titolo e' il nome scelto dalla squadra, sotto il nome del ramo. */
 .risorse-ramo__tipo { display: block; margin-top: 3px; color: #c58cff; font-size: .6rem; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }

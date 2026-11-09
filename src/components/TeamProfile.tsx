@@ -24,7 +24,13 @@ import { fasciaVoto, formatoVoto } from '../lib/voti'
 import { ruoloIt, ruoliIt } from '../lib/ruoli'
 import { firmaStemma } from '../lib/stemmiFirmati'
 import { NOME_STADIO_MAX, nomeStadio, nomeStadioModificabile } from '../lib/stadio'
-import { pluriennaliAttivi, type OpzioneContratto } from '../lib/contratti'
+import { pluriennaliAttivi, testoOpzione, type OpzioneContratto } from '../lib/contratti'
+import { AzioneScheda, AzioniOfferta, BarraSoddisfazione, SceltaContratto, richiestaContratto, type Moltiplicatore } from './Trattativa'
+
+const formatoMilioni = (euro: number) => (euro / 1_000_000).toFixed(1).replace('.', ',')
+// La richiesta del prospetto per una durata e un'opzione (stessa formula di public.offri_promozione).
+const richiestaPromozione = (p: PropostaPromozione, durata: number, opzione: OpzioneContratto | null) =>
+  richiestaContratto(p.richiesta, p.moltiplicatori, p.pluriennali, durata, opzione, p.ingaggio_massimo)
 
 type Props = {
   membership: Membership
@@ -106,6 +112,11 @@ type SpecializzazioneRiga = {
 
 /** Richiesta d'ingaggio del prospetto per firmare il primo contratto (stessa meccanica del rinnovo, senza durata/rinnovo-di-stagione: qui non c'e' nulla da estendere). */
 type PropostaPromozione = {
+  /** Contratti pluriennali: 1-3 stagioni + opzione, con i moltiplicatori della richiesta. */
+  pluriennali?: boolean
+  stagione_corrente?: number
+  moltiplicatori?: Moltiplicatore[] | null
+  ingaggio_massimo?: number
   ingaggio_attuale: number
   richiesta: number
   tentativi_usati: number
@@ -119,6 +130,8 @@ type EsitoPromozione = {
   messaggio: string
   tentativi_usati: number
   ingaggio?: number
+  contratto_scadenza?: number
+  opzione?: OpzioneContratto | null
 }
 
 type VivaioProspetto = {
@@ -235,6 +248,8 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     errore: string | null
     inCorso: boolean
     offertaM: string
+    durata: number
+    opzione: OpzioneContratto | null
   } | null>(null)
   const [cambiRuolo, setCambiRuolo] = useState<Map<number, CambioRuoloRiga>>(new Map())
   const [prestitiUsati, setPrestitiUsati] = useState(0)
@@ -534,10 +549,11 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   // resta chiusa per sempre (deciso con l'utente), il prospetto aspetta solo
   // che scada il countdown in giornate.
   async function apriTrattativaPromozione(id: number) {
-    setVivaioTrattativa({ id, proposta: null, esito: null, errore: null, inCorso: true, offertaM: '' })
+    setVivaioTrattativa({ id, proposta: null, esito: null, errore: null, inCorso: true, offertaM: '', durata: 1, opzione: null })
     const { data, error } = await supabase.rpc('proposta_promozione', { p_vivaio_id: id })
     if (error) { setVivaioTrattativa((corrente) => corrente && corrente.id === id ? { ...corrente, inCorso: false, errore: error.message } : corrente); return }
-    setVivaioTrattativa((corrente) => corrente && corrente.id === id ? { ...corrente, inCorso: false, proposta: data as PropostaPromozione } : corrente)
+    const proposta = data as PropostaPromozione
+    setVivaioTrattativa((corrente) => corrente && corrente.id === id ? { ...corrente, inCorso: false, proposta, offertaM: formatoMilioni(richiestaPromozione(proposta, 1, null)) } : corrente)
   }
 
   async function inviaOffertaPromozione() {
@@ -546,7 +562,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     const offertaEuro = Math.round(parseFloat(trattativa.offertaM.replace(',', '.')) * 10) * 100_000
     if (!Number.isFinite(offertaEuro) || offertaEuro < 500_000) return
     setVivaioTrattativa({ ...trattativa, inCorso: true, errore: null })
-    const { data, error } = await supabase.rpc('offri_promozione', { p_vivaio_id: trattativa.id, p_ingaggio: offertaEuro })
+    const { data, error } = await supabase.rpc('offri_promozione', { p_vivaio_id: trattativa.id, p_ingaggio: offertaEuro, p_durata: trattativa.durata, p_opzione: trattativa.opzione })
     if (error) { setVivaioTrattativa({ ...trattativa, inCorso: false, errore: error.message }); return }
     const esito = data as EsitoPromozione
     setVivaioTrattativa({ ...trattativa, inCorso: false, esito })
@@ -1079,31 +1095,34 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                         {trattativa.proposta && trattativa.esito?.esito !== 'accettato' && <>
                           <div>
                             <strong>Trattativa per il primo contratto</strong>
-                            <p>{g.nome} chiede <b>{money(trattativa.proposta.richiesta)}</b>/stagione per firmare.</p>
+                            <p>{g.nome} chiede <b>{money(richiestaPromozione(trattativa.proposta, trattativa.durata, trattativa.opzione))}</b>/stagione per firmare.</p>
                           </div>
                           {trattativa.esito && <p className={`rinnovo-risposta rinnovo-risposta--${trattativa.esito.esito}`}>«{trattativa.esito.messaggio}»</p>}
                           {chiusa ? <>
                             <p className="rinnovo-nota">La trattativa è chiusa: resterà in cantera finché non scade il countdown in giornate.</p>
                             <div><button className="button button--secondary" type="button" onClick={() => setVivaioTrattativa(null)}>Chiudi</button></div>
                           </> : <>
+                            {trattativa.proposta.pluriennali && typeof trattativa.proposta.stagione_corrente === 'number' && <SceltaContratto
+                              durata={trattativa.durata} opzione={trattativa.opzione} disabled={trattativa.inCorso}
+                              // il primo contratto conta la stagione in corso: 1 stagione = fino a fine stagione
+                              stagioneFine={(d) => trattativa.proposta!.stagione_corrente! + d - 1}
+                              richiestaPer={(d, o) => richiestaPromozione(trattativa.proposta!, d, o)}
+                              onScegli={(d, o) => setVivaioTrattativa({ ...trattativa, durata: d, opzione: o, offertaM: formatoMilioni(richiestaPromozione(trattativa.proposta!, d, o)) })} />}
                             <div className="rinnovo-offerta">
                               <label>
                                 <span>La tua offerta (M€ a stagione)</span>
                                 <input type="text" inputMode="decimal" value={trattativa.offertaM} onChange={(evento) => setVivaioTrattativa({ ...trattativa, offertaM: evento.target.value })} aria-label="Ingaggio offerto in milioni" />
                               </label>
+                              {offertaValida && <BarraSoddisfazione offerta={offertaEuro} richiesta={richiestaPromozione(trattativa.proposta, trattativa.durata, trattativa.opzione)} />}
                             </div>
-                            <p className="rinnovo-tentativi">
-                              Tentativi rimasti: <b>{trattativa.proposta.tentativi_totali - tentativiUsati}</b> su {trattativa.proposta.tentativi_totali}.
-                              {' '}Esauriti, la trattativa si chiude per sempre.
-                            </p>
-                            <div>
-                              <button className="button button--primary" type="button" disabled={trattativa.inCorso || !offertaValida} onClick={() => void inviaOffertaPromozione()}>{trattativa.inCorso ? 'Attendo…' : 'Proponi'}</button>
-                              <button className="button button--secondary" type="button" disabled={trattativa.inCorso} onClick={() => setVivaioTrattativa(null)}>Ci penso</button>
-                            </div>
+                            <p className="rinnovo-tentativi">Esauriti i tentativi, la trattativa si chiude per sempre.</p>
+                            <AzioniOfferta inCorso={trattativa.inCorso} disabilitato={!offertaValida}
+                              tentativiRimasti={trattativa.proposta.tentativi_totali - tentativiUsati} tentativiTotali={trattativa.proposta.tentativi_totali}
+                              onProponi={() => void inviaOffertaPromozione()} onAnnulla={() => setVivaioTrattativa(null)} />
                           </>}
                         </>}
                         {trattativa.esito?.esito === 'accettato' && <>
-                          <p className="rinnovo-nota">«{trattativa.esito.messaggio}» {g.nome} firma il primo contratto: {money(trattativa.esito.ingaggio ?? 0)}/stagione.</p>
+                          <p className="rinnovo-nota">«{trattativa.esito.messaggio}» {g.nome} firma il primo contratto: {money(trattativa.esito.ingaggio ?? 0)}/stagione{typeof trattativa.esito.contratto_scadenza === 'number' ? ` fino alla stagione ${trattativa.esito.contratto_scadenza}` : ''}{trattativa.esito.opzione && typeof trattativa.esito.contratto_scadenza === 'number' ? `, ${testoOpzione(trattativa.esito.opzione, trattativa.esito.contratto_scadenza)}` : ''}.</p>
                           <div><button className="button button--primary" type="button" onClick={() => setVivaioTrattativa(null)}>Chiudi</button></div>
                         </>}
                       </div>
@@ -1122,18 +1141,12 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                           </div>
                         </div>
                       : <div className="vivaio-azioni">
-                          <button
-                            className="button button--primary"
-                            type="button"
-                            disabled={inCorso || prospetto.promozione_tentativi >= 3}
-                            title={prospetto.promozione_tentativi >= 3 ? 'Trattativa chiusa: aspetta che scada il countdown.' : undefined}
-                            onClick={() => void apriTrattativaPromozione(prospetto.id)}
-                          >
-                            {prospetto.promozione_tentativi >= 3 ? 'Trattativa chiusa' : 'Promuovi'}
-                          </button>
-                          <button className="button button--danger-ghost" type="button" disabled={inCorso} onClick={() => setVivaioConferma(prospetto.id)}>
-                            Rilascia
-                          </button>
+                          <AzioneScheda icona="promuovi" primaria disabled={inCorso || prospetto.promozione_tentativi >= 3}
+                            titolo={prospetto.promozione_tentativi >= 3 ? 'Trattativa chiusa' : 'Promuovi'}
+                            sotto={prospetto.promozione_tentativi >= 3 ? 'Aspetta che scada il countdown' : 'Tratta il primo contratto in prima squadra'}
+                            onClick={() => void apriTrattativaPromozione(prospetto.id)} />
+                          <AzioneScheda icona="svincola" pericolo compatta disabled={inCorso} titolo="Rilascia" sotto="Torna sul mercato UNDER"
+                            onClick={() => setVivaioConferma(prospetto.id)} />
                         </div>)}
                   </div>
                 )
