@@ -1115,10 +1115,9 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                               </label>
                               {offertaValida && <BarraSoddisfazione offerta={offertaEuro} richiesta={richiestaPromozione(trattativa.proposta, trattativa.durata, trattativa.opzione)} />}
                             </div>
-                            <p className="rinnovo-tentativi">Esauriti i tentativi, la trattativa si chiude per sempre.</p>
                             <AzioniOfferta inCorso={trattativa.inCorso} disabilitato={!offertaValida}
                               tentativiRimasti={trattativa.proposta.tentativi_totali - tentativiUsati} tentativiTotali={trattativa.proposta.tentativi_totali}
-                              onProponi={() => void inviaOffertaPromozione()} onAnnulla={() => setVivaioTrattativa(null)} />
+                              onProponi={() => void inviaOffertaPromozione()} onAnnulla={() => setVivaioTrattativa(null)} seChiude="resterà in cantera finché non scade il countdown" />
                           </>}
                         </>}
                         {trattativa.esito?.esito === 'accettato' && <>

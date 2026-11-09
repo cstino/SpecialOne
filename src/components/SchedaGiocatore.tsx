@@ -1005,7 +1005,6 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
             {' '}Il nuovo ingaggio decorre dalla prossima stagione — questa è già stata pagata.
           </p>}
           {nuvolettaRisposta}
-          <p className="rinnovo-tentativi">Esauriti i tentativi, andrà a scadenza.</p>
           <AzioniOfferta inCorso={rinnovoInCorso} disabilitato={!offertaValida} tentativiRimasti={proposta.tentativi_totali - proposta.tentativi_usati}
             tentativiTotali={proposta.tentativi_totali} onProponi={() => void inviaOfferta()} onAnnulla={() => setVistaRinnovo(false)} />
         </>}

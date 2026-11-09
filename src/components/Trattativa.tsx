@@ -45,13 +45,26 @@ export function AzioneScheda({ icona, titolo, sotto, primaria, pericolo, compatt
   </button>
 }
 
-// Invio dell'offerta: la tessera piena «Proponi» (consuma un tentativo) e, staccato sotto, «Ci penso».
-export function AzioniOfferta({ inCorso, disabilitato, tentativiRimasti, tentativiTotali, onProponi, onAnnulla }: {
+// Invio dell'offerta: i tentativi rimasti ben in vista (9/11/2026: scritti solo nel pulsante si dimenticavano), la
+// tessera piena «Proponi» (consuma un tentativo) e, staccato sotto, «Ci penso». All'ultimo tentativo tutto diventa rosso.
+export function AzioniOfferta({ inCorso, disabilitato, tentativiRimasti, tentativiTotali, onProponi, onAnnulla, seChiude = 'andrà a scadenza' }: {
   inCorso: boolean; disabilitato: boolean; tentativiRimasti: number; tentativiTotali: number; onProponi: () => void; onAnnulla: () => void
+  /** Cosa succede se rifiuta l'ultima offerta. */
+  seChiude?: string
 }) {
+  const ultimo = tentativiRimasti <= 1
   return <div className="trattativa-azioni">
+    <div className={`trattativa-tentativi${ultimo ? ' is-ultimo' : ''}`} role="status">
+      <span className="trattativa-tentativi__pallini" aria-hidden="true">
+        {Array.from({ length: tentativiTotali }, (_, i) => <i key={i} className={i < tentativiTotali - tentativiRimasti ? 'is-usato' : ''} />)}
+      </span>
+      <span className="trattativa-tentativi__testo">
+        <b>{ultimo ? 'Ultimo tentativo' : `Tentativi rimasti: ${tentativiRimasti} su ${tentativiTotali}`}</b>
+        {ultimo && <small>Se rifiuta, {seChiude}.</small>}
+      </span>
+    </div>
     <AzioneScheda icona="contratto" titolo={inCorso ? 'Attendo…' : 'Proponi'} primaria disabled={inCorso || disabilitato} onClick={onProponi}
-      sotto={`Usa un tentativo: ne restano ${tentativiRimasti} su ${tentativiTotali}`} />
+      sotto={ultimo ? 'Ultimo tentativo' : 'Usa un tentativo'} />
     <button className="trattativa-azioni__annulla" type="button" disabled={inCorso} onClick={onAnnulla}>Ci penso</button>
   </div>
 }
