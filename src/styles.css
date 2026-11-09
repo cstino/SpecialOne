@@ -4038,6 +4038,42 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .player-prestito__conferma { display: grid; gap: 8px; }
 .player-prestito__conferma p { margin: 0; color: #c9c0d6; font-size: .74rem; line-height: 1.45; }
 .player-prestito__conferma > div { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Tessere d'azione della scheda (pagina mercato), stile menu dei giochi. Colore della fase del giocatore (--fz-*),
+   con ripiego viola fuori dalla scheda broadcast. Alte 64 px e staccate 12 px: niente tocchi sbagliati. */
+.player-azioni { display: grid; gap: 12px; margin-top: 18px; }
+.azione-scheda {
+  --az-luce: var(--fz-luce, #b48cf0); --az-2: var(--fz-2, #7c3aed); --az-scuro: var(--fz-scuro, #120d1c);
+  appearance: none; display: grid; grid-template-columns: 42px minmax(0, 1fr) 18px; align-items: center; gap: 14px;
+  width: 100%; min-height: 64px; margin: 0; padding: 11px 14px 11px 11px; box-sizing: border-box;
+  color: #fff; font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  border: 1px solid color-mix(in srgb, var(--az-luce) 30%, transparent); border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.015)), #15131c;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 6px 16px rgba(0,0,0,.28);
+  transition: transform .12s ease, border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+.azione-scheda:hover:not(:disabled) { border-color: color-mix(in srgb, var(--az-luce) 60%, transparent); box-shadow: inset 0 1px 0 rgba(255,255,255,.09), 0 8px 22px color-mix(in srgb, var(--az-2) 22%, transparent); }
+.azione-scheda:active:not(:disabled) { transform: scale(.985); }
+.azione-scheda:focus-visible { outline: 2px solid var(--az-luce); outline-offset: 3px; }
+.azione-scheda:disabled { cursor: not-allowed; opacity: .45; }
+.azione-scheda__icona { display: grid; place-items: center; width: 42px; height: 42px; color: var(--az-luce); font-size: 1.3rem; border: 1px solid color-mix(in srgb, var(--az-luce) 35%, transparent); border-radius: 11px; background: color-mix(in srgb, var(--az-luce) 14%, transparent); }
+.azione-scheda__testo { display: grid; gap: 3px; min-width: 0; }
+.azione-scheda__testo strong { font: 700 .82rem/1.15 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+.azione-scheda__testo small { color: rgba(255,255,255,.58); font-size: .7rem; line-height: 1.35; }
+.azione-scheda__freccia { display: grid; place-items: center; color: color-mix(in srgb, var(--az-luce) 70%, #fff); font-size: 1.05rem; opacity: .8; }
+/* Primaria: piena nel colore della fase. */
+.azione-scheda.is-primaria { color: var(--az-scuro); border-color: transparent; background: linear-gradient(135deg, var(--az-luce), var(--az-2)); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 10px 24px color-mix(in srgb, var(--az-2) 34%, transparent); }
+.azione-scheda.is-primaria .azione-scheda__icona { color: var(--az-scuro); border-color: rgba(0,0,0,.14); background: rgba(255,255,255,.28); }
+.azione-scheda.is-primaria .azione-scheda__testo small { color: color-mix(in srgb, var(--az-scuro) 72%, transparent); }
+.azione-scheda.is-primaria .azione-scheda__freccia { color: var(--az-scuro); }
+/* Pericolo (svincolo): rosso spento, piu' basso, staccato in fondo. */
+.azione-scheda.is-pericolo { min-height: 56px; border-color: rgba(239,79,95,.35); background: rgba(104,35,51,.14); box-shadow: none; }
+.azione-scheda.is-pericolo:hover:not(:disabled) { border-color: rgba(239,79,95,.6); box-shadow: none; }
+.azione-scheda.is-pericolo .azione-scheda__icona { width: 36px; height: 36px; color: #f08b9a; border-color: rgba(239,79,95,.35); background: rgba(239,79,95,.1); font-size: 1.1rem; }
+.azione-scheda.is-pericolo .azione-scheda__testo strong { color: #f3a0ac; }
+.azione-scheda.is-pericolo .azione-scheda__freccia { color: #f08b9a; }
+.player-prestito .azione-scheda { margin-top: 2px; }
+.player-modal__page--mercato .player-modal__danger { margin-top: 28px; }
+@media (prefers-reduced-motion: reduce) { .azione-scheda { transition: none; } .azione-scheda:active:not(:disabled) { transform: none; } }
 /* Stadio: il titolo e' il nome scelto dalla squadra, sotto il nome del ramo. */
 .risorse-ramo__tipo { display: block; margin-top: 3px; color: #c58cff; font-size: .6rem; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
 

@@ -4,7 +4,7 @@ import { etichettaMorale } from './FaccinaMorale'
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from 'recharts'
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { Progress } from './ui/progress'
-import { Icona } from './Icona'
+import { Icona, type NomeIcona } from './Icona'
 import type { FaseSquadra } from '../lib/faseSquadra'
 import { fasciaVoto, formatoVoto } from '../lib/voti'
 import { idoneitaRuolo, PROFILI_RUOLI, RUOLI_SLOT, segnoIdoneita } from '../lib/tattica'
@@ -1201,28 +1201,15 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
                 </>}
           </div>}
 
-          {(azionePericolosa || rinnovo || listaMercato || proponiScambio) && <div className="player-modal__danger">
-            {!confermaAperta
-              ? <div className="player-modal__azioni">
-                  {azionePericolosa && <button className="button button--danger-ghost" type="button" onClick={() => setConfermaAperta(true)}>{azionePericolosa.etichetta}</button>}
-                  {rinnovo && (rinnovo.bloccato
-                    ? <button className="button button--secondary" type="button" disabled title={rinnovo.bloccato}>Rinnovo</button>
-                    : <button className="button button--secondary" type="button" onClick={apriRinnovo}>Rinnovo</button>)}
-                  {proponiScambio && <button className="button button--primary player-modal__lista" type="button" onClick={proponiScambio.onClick}>Proponi scambio</button>}
-                  {listaMercato && <button className={`button player-modal__lista ${inLista ? 'button--secondary' : 'button--primary'}`} type="button" disabled={listaInCorso} onClick={cambiaLista}>
-                    {listaInCorso ? 'Attendi…' : inLista ? 'Rimuovi dal mercato' : 'Metti sul mercato'}
-                  </button>}
-                  {listaEsito && <p className="player-modal__lista-esito" role="status">{listaEsito}</p>}
-                  {listaErrore && <p className="notice notice--error player-modal__lista-esito" role="alert">{listaErrore}</p>}
-                </div>
-              : azionePericolosa && <div className="player-modal__confirm">
-                  <div><strong>Confermi lo svincolo?</strong><p>{azionePericolosa.descrizione}</p></div>
-                  {azionePericolosa.errore && <p className="notice notice--error">{azionePericolosa.errore}</p>}
-                  <div>
-                    <button className="button button--danger" type="button" disabled={azionePericolosa.inCorso} onClick={azionePericolosa.onConferma}>{azionePericolosa.inCorso ? 'Svincolo…' : 'Svincola definitivamente'}</button>
-                    <button className="button button--secondary" type="button" disabled={azionePericolosa.inCorso} onClick={() => setConfermaAperta(false)}>Annulla</button>
-                  </div>
-                </div>}
+          {(rinnovo || listaMercato || proponiScambio) && <div className="player-azioni">
+            {rinnovo && <AzioneScheda icona="contratto" titolo="Rinnova contratto" sotto={rinnovo.bloccato ?? 'Tratta ingaggio e durata'}
+              disabled={Boolean(rinnovo.bloccato)} onClick={apriRinnovo} />}
+            {proponiScambio && <AzioneScheda icona="cambio" titolo="Proponi scambio" sotto="Apri una trattativa con la sua squadra" primaria onClick={proponiScambio.onClick} />}
+            {listaMercato && <AzioneScheda icona="mercato" titolo={listaInCorso ? 'Attendi…' : inLista ? 'Rimuovi dal mercato' : 'Metti sul mercato'}
+              sotto={inLista ? 'Ora è in vetrina per gli altri allenatori' : 'Gli altri allenatori potranno fargli offerte'}
+              primaria={!inLista} disabled={listaInCorso} onClick={cambiaLista} />}
+            {listaEsito && <p className="player-modal__lista-esito" role="status">{listaEsito}</p>}
+            {listaErrore && <p className="notice notice--error player-modal__lista-esito" role="alert">{listaErrore}</p>}
           </div>}
 
           {prestito && <div className={`player-prestito ${prestito.club ? 'is-fuori' : ''}`}>
@@ -1230,7 +1217,9 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
               ? <div className="player-prestito__club"><img src={prestito.club.logo} alt="" /><div><small>In prestito</small><strong>{prestito.club.nome}</strong>{prestito.allenamento && <span>{prestito.allenamento}</span>}</div></div>
               : <div className="player-prestito__club"><div><small>Prestito</small><strong>Mandalo a giocare altrove</strong><span>{prestito.bloccato ?? `Ti restano ${prestito.rimasti} ${prestito.rimasti === 1 ? 'prestito' : 'prestiti'} in questa stagione.`}</span></div></div>}
             {!prestitoConferma
-              ? <button className="button button--secondary" type="button" disabled={!prestito.club && Boolean(prestito.bloccato)} onClick={() => { setPrestitoErrore(null); setPrestitoConferma(true) }}>{prestito.club ? 'Richiama' : 'Manda in prestito'}</button>
+              ? <AzioneScheda icona={prestito.club ? 'richiama' : 'prestito'} titolo={prestito.club ? 'Richiama' : 'Manda in prestito'}
+                  sotto={prestito.club ? 'Torna subito in rosa' : 'Fino a fine stagione, in un club scelto dal sistema'}
+                  disabled={!prestito.club && Boolean(prestito.bloccato)} onClick={() => { setPrestitoErrore(null); setPrestitoConferma(true) }} />
               : <div className="player-prestito__conferma">
                   <p>{prestito.club
                     ? `Torna subito in rosa e potrai schierarlo dalla prossima giornata. In questa stagione non potrà più andare in prestito.`
@@ -1239,6 +1228,20 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
                   <div>
                     <button className="button button--primary" type="button" disabled={prestitoInCorso} onClick={() => void eseguiPrestito()}>{prestitoInCorso ? 'Attendi…' : prestito.club ? 'Richiama adesso' : 'Conferma il prestito'}</button>
                     <button className="button button--secondary" type="button" disabled={prestitoInCorso} onClick={() => setPrestitoConferma(false)}>Annulla</button>
+                  </div>
+                </div>}
+          </div>}
+
+          {/* Lo svincolo sta in fondo, da solo e staccato dalle altre azioni: non si preme per sbaglio. */}
+          {azionePericolosa && <div className="player-modal__danger">
+            {!confermaAperta
+              ? <AzioneScheda icona="svincola" titolo={azionePericolosa.etichetta} sotto="Esce subito dalla rosa" pericolo onClick={() => setConfermaAperta(true)} />
+              : <div className="player-modal__confirm">
+                  <div><strong>Confermi lo svincolo?</strong><p>{azionePericolosa.descrizione}</p></div>
+                  {azionePericolosa.errore && <p className="notice notice--error">{azionePericolosa.errore}</p>}
+                  <div>
+                    <button className="button button--danger" type="button" disabled={azionePericolosa.inCorso} onClick={azionePericolosa.onConferma}>{azionePericolosa.inCorso ? 'Svincolo…' : 'Svincola definitivamente'}</button>
+                    <button className="button button--secondary" type="button" disabled={azionePericolosa.inCorso} onClick={() => setConfermaAperta(false)}>Annulla</button>
                   </div>
                 </div>}
           </div>}
@@ -1364,4 +1367,16 @@ function BarraSoddisfazione({ offerta, richiesta }: { offerta: number; richiesta
     </div>
     <small>100% = quello che chiede. Quanto sia disposto a scendere dipende da lui: bandiera, voglia di vincere, soldi e morale.</small>
   </div>
+}
+
+// Una tessera d'azione della scheda (pagina mercato), stile menu dei giochi: icona nel colore della fase, nome
+// dell'azione, una riga che dice cosa fa, freccia. Alta almeno 64 px e staccata dalle altre, per non sbagliare il tocco.
+function AzioneScheda({ icona, titolo, sotto, primaria, pericolo, disabled, onClick }: {
+  icona: NomeIcona; titolo: string; sotto?: string; primaria?: boolean; pericolo?: boolean; disabled?: boolean; onClick: () => void
+}) {
+  return <button type="button" className={`azione-scheda${primaria ? ' is-primaria' : ''}${pericolo ? ' is-pericolo' : ''}`} disabled={disabled} onClick={onClick}>
+    <span className="azione-scheda__icona"><Icona nome={icona} /></span>
+    <span className="azione-scheda__testo"><strong>{titolo}</strong>{sotto && <small>{sotto}</small>}</span>
+    <span className="azione-scheda__freccia"><Icona nome="avanti" /></span>
+  </button>
 }
