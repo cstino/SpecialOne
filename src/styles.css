@@ -3837,6 +3837,9 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .scambi-riga__nome small { color: rgba(255,255,255,.55); font-size: .68rem; }
 .scambi-riga__ovr { font: 900 1.15rem/1 "Bai Jamjuree", sans-serif; font-variant-numeric: tabular-nums; }
 .scambi-riga__apri { color: rgba(255,255,255,.45); font-size: 1.2rem; line-height: 1; }
+.scambi-riga.is-scelta { grid-template-columns: auto minmax(0, 1fr) auto; border-color: rgba(246,196,83,.3); background: rgba(246,196,83,.06); }
+.scambi-riga.is-scelta .scambi-riga__ovr { color: #f6c453; }
+.scambi-chip__origine { margin-left: 4px; font-size: .9em; font-weight: 600; opacity: .75; }
 /* Le azioni stanno in un'area propria, staccata dalle righe; Accetta chiede conferma. */
 .scambi-card > footer.scambi-card__azioni { margin-top: 6px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.1); gap: 10px; }
 .scambi-card > footer.scambi-card__azioni .button { min-height: 48px; }

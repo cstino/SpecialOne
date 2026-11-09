@@ -139,7 +139,7 @@ function milioni(euro: number) {
   return `${(euro / 1_000_000).toFixed(1).replace('.', ',')} M€`
 }
 function etichettaScelta(s: Scelta) {
-  return `${s.finestra === 'on' ? 'ON' : 'OFF'}-Season ${s.stagione}`
+  return `${s.finestra === 'on' ? 'ON' : 'OFF'}-Season ${s.stagione}${s.posizione != null ? ` · ${s.posizione}ª` : ''}`
 }
 
 export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezione = null, onPreselezioneUsata, propostaDaMostrare = null }: Props) {
@@ -515,6 +515,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
       </button>
     : <span key={`s${id}`} className={`scambi-chip scambi-chip--pick scambi-chip--pick-${sceltaDati(id)?.finestra ?? 'on'}`}>
         {sceltaDati(id) ? etichettaScelta(sceltaDati(id)!) : `#${id}`}
+        {sceltaDati(id) && sceltaDati(id)!.team_origine_id !== sceltaDati(id)!.team_proprietario_id && <small className="scambi-chip__origine">di {nomeSquadra(sceltaDati(id)!.team_origine_id)}</small>}
       </span>
 
   // Il contenuto di una proposta (9/11/2026): due blocchi uno sotto l'altro, sempre dal tuo punto di vista ("Ricevi" e
@@ -531,10 +532,18 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
       <span className="scambi-riga__apri" aria-hidden="true">›</span>
     </button>
   }
-  const rigaScelta = (id: number) => <span key={`s${id}`} className={`scambi-riga is-statica scambi-riga--pick-${sceltaDati(id)?.finestra ?? 'on'}`}>
-    <span className="scambi-riga__ruolo is-scelta">Scelta</span>
-    <span className="scambi-riga__nome"><strong>{sceltaDati(id) ? etichettaScelta(sceltaDati(id)!) : `#${id}`}</strong></span>
-  </span>
+  // Scelta: finestra e stagione, la squadra d'origine (puo' essere una scelta presa da un'altra squadra) e la posizione.
+  const rigaScelta = (id: number) => {
+    const sc = sceltaDati(id)
+    return <span key={`s${id}`} className={`scambi-riga is-statica is-scelta scambi-riga--pick-${sc?.finestra ?? 'on'}`}>
+      <span className="scambi-riga__ruolo is-scelta">Scelta</span>
+      <span className="scambi-riga__nome">
+        <strong>{sc ? `${sc.finestra === 'on' ? 'ON' : 'OFF'}-Season ${sc.stagione}` : `#${id}`}</strong>
+        {sc && <small>Origine: {nomeSquadra(sc.team_origine_id)}</small>}
+      </span>
+      <b className="scambi-riga__ovr" title={sc?.posizione == null ? 'Posizione non ancora assegnata' : undefined}>{sc?.posizione != null ? `${sc.posizione}ª` : '—'}</b>
+    </span>
+  }
   const rigaVivaio = (id: number) => <span key={`v${id}`} className="scambi-riga is-statica">
     <span className="scambi-riga__ruolo is-vivaio">Vivaio</span>
     <span className="scambi-riga__nome"><strong>{prospetto(id) ? prospetto(id)!.nome : 'Prospetto'}</strong></span>
