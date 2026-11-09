@@ -20,9 +20,8 @@ type Gioco = 'slot' | 'crazy' | 'aviat' | 'bj' | 'roul'
 type Premio = { esito: 'vittoria' | 'pareggio' | 'sconfitta'; crediti: number; biglietti?: number; avversario_id: number }
 
 // Le locandine (public/casino/*.webp, 540×810) le ha disegnate il committente; il nome del gioco e' gia' nell'immagine.
-// RoulettOne non ha ancora la sua locandina (la sta disegnando il committente): copertina in CSS col nome.
 const GIOCHI: Array<{ id: Gioco; titolo: string; sotto: string; nuovo?: boolean; senzaLocandina?: boolean }> = [
-  { id: 'roul', titolo: 'RoulettOne', sotto: 'Roulette europea live', nuovo: true, senzaLocandina: true },
+  { id: 'roul', titolo: 'RoulettOne', sotto: 'Roulette europea live', nuovo: true },
   { id: 'aviat', titolo: 'AviatOne', sotto: 'Incassa prima che voli via' },
   { id: 'bj', titolo: 'BlackjackOne', sotto: 'Batti il banco senza sballare' },
   { id: 'crazy', titolo: 'CrazyOne', sotto: 'Ruota · 4 bonus' },
