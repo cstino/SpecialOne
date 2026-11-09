@@ -1636,3 +1636,39 @@ Mai il portiere.
 **Da sapere**: la prima giornata dopo l'off-season ha pochi cambi per stanchezza perche' tutti partono con la condizione
 al massimo (media 3,1 a squadra alla giornata 1 di stagione 2, contro ~4,9 nelle altre). I cambi per rendimento non
 dipendono dalla condizione.
+
+## 47. Voti sulla scala da giornale italiano — 9 novembre 2026
+
+**Perché.** Il committente: «ho perso e ho più sufficienti che insufficienti; il voto deve dipendere da quante cose ha
+fatto bene e quante ne ha sbagliate». Sui voti veri degli ultimi 20 giorni (9.000) chi perdeva prendeva in media 6,38
+e solo il 13% sotto il 6: la scala era quella di SofaScore (media 6,7), ma l'app colora come un giornale (6 =
+sufficienza, sotto rosso). E le azioni pesavano poco: base 6,4, punti per il solo numero di passaggi tentati, errori
+che costavano meno dei gesti riusciti (contrasto +0,14/−0,10, dribbling +0,10/−0,06), sconfitta −0,15.
+
+**Cosa cambia** (`engine/pagelle.js`, `engine/rendimento.js`, `engine/config.js`):
+- base 6,0 (più l'aggiustamento per reparto): il 6 è una partita normale;
+- le azioni contano per il **saldo** rispetto alla riuscita media della lega (passaggi 0,82, interventi 0,64, contrasti
+  0,63, dribbling 0,62): chi sta nella media non guadagna niente, ogni gesto riuscito in più sale, ogni errore in più
+  scende. Niente punti per il volume;
+- risultato ±0,3 più 0,1 per ogni gol di scarto oltre il primo (al massimo +0,3);
+- tiro in porta +0,15, fuori −0,10; parata +0,12; porta inviolata GK/DEF +0,4; assist 0,6;
+- soglia dei cambi per scarso rendimento 6,2 → 5,5: stessi cambi per rendimento di prima (0,9 a squadra per partita).
+
+**Taratura** (`tools/validazione/prova-pagelle.mjs`, 1.500 partite, rose vere):
+
+| | prima | dopo |
+|---|---|---|
+| media voti | 6,59 | 6,08 |
+| chi vince | 6,84 (2% sotto il 6) | 6,46 (18%) |
+| pareggio | 6,60 (3%) | 6,08 (39%) |
+| chi perde | 6,35 (10%) | 5,69 (66%) |
+| migliore in campo | 7,98 | 7,67 |
+| MVP per reparto GK/DEF/MID/ATT | 10/33/28/29% | 7/38/27/28% |
+| interpreti adatti / inadatti | 6,78 / 6,66 | 6,23 / 5,97 |
+
+Il segnale tattico della media voto (adatti contro inadatti) è più che raddoppiato.
+
+**Voti già dati.** Ricalcolati solo quelli della 1ª giornata della Season 3 di Serie F (decisione del committente),
+non le stagioni passate. Il voto vecchio è una formula fissa: si toglie la parte vecchia e si mette la nuova con i
+conteggi salvati (dettaglio, minuti, ruolo dalla disposizione, gol subiti in campo dalla cronaca); errori individuali e
+cartellini pesano uguale nelle due formule e si annullano. Chi perdeva: 6,41 → 5,72 (63% sotto il 6).

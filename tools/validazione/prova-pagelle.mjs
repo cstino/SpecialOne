@@ -2,14 +2,14 @@
 //
 // Rose vere da pool-reale.json (come prova-ruoli-reali), ruoli scelti a caso
 // per avere interpreti adatti e non adatti. Misura:
-//   - la distribuzione dei voti (obiettivo SofaScore: media ~6,7, scarto ~0,6);
+//   - la distribuzione dei voti (scala da giornale: media ~6, chi perde quasi sempre sotto);
 //   - il migliore in campo: voto e reparto (tutti devono poterlo essere);
 //   - quanto la media voto separa chi e' adatto al proprio ruolo da chi no;
 //   - che i voti non cambino gol e risultati (seme separato).
 import { readFileSync } from 'fs';
 import { simulaPartita, schiera } from '../../engine/engine.js';
 import { setSeed, rnd } from '../../engine/random.js';
-import { MODULI, REPARTO } from '../../engine/config.js';
+import { MODULI, REPARTO, CFG } from '../../engine/config.js';
 import { deltaMorale } from '../../engine/morale.js';
 import { deltaRuoli, sommaDelta, ruoliPerSlot } from '../../engine/ruoli.js';
 import { pagelle, migliorInCampo } from '../../engine/pagelle.js';
@@ -58,6 +58,10 @@ function assistDalMotore(r, nome) {
   return m;
 }
 
+// SOGLIA=x per provare un'altra soglia dei cambi per scarso rendimento.
+if (process.env.SOGLIA) CFG.SOGLIA_RENDIMENTO_CAMBIO = Number(process.env.SOGLIA);
+const perEsito = { vittoria: [], pari: [], sconfitta: [] };
+let cambiRendimento = 0;
 const azioni = {};
 const voti = [], mvp = [], mvpRep = {}, perRep = {}, perFit = { adatto: [], neutro: [], inadatto: [] };
 let mvpVincente = 0, partiteConVincitore = 0;
@@ -80,11 +84,14 @@ for (let i = 0; i < N; i++) {
     casa: lato(ra, A, r.perGiocatore.casa, r.statsCasa, r.golC, r.golO, 'casa'),
     ospite: lato(rb, B, r.perGiocatore.ospite, r.statsOspite, r.golO, r.golC, 'ospite'),
   }, i * 7919 + 13);
+  cambiRendimento += r.cambiInPartita.filter((c) => c.motivo === 'rendimento').length;
   const tutti = new Map([...ra.giocatori, ...rb.giocatori].map((g) => [g.id, g]));
   const slotDi = new Map([...r.perGiocatore.casa.slot, ...r.perGiocatore.ospite.slot]);
   for (const [id, x] of v) {
     if (x.voto === null) continue;
     voti.push(x.voto);
+    const diff = x.lato === 'casa' ? r.golC - r.golO : r.golO - r.golC;
+    perEsito[diff > 0 ? 'vittoria' : diff < 0 ? 'sconfitta' : 'pari'].push(x.voto);
     const rep = REPARTO[slotDi.get(id)] ?? '?';
     (perRep[rep] ??= []).push(x.voto);
     if (x.dettaglio) { const dd = (azioni[rep] ??= {}); for (const [k, val] of Object.entries(x.dettaglio)) dd[k] = (dd[k] ?? 0) + val; dd.n = (dd.n ?? 0) + 1; }
@@ -106,6 +113,8 @@ const q = (a, p) => { const s = [...a].sort((x, y) => x - y); return s[Math.floo
 console.log(`\n  ${N} partite, ${voti.length} voti`);
 console.log(`  voti: media ${media(voti).toFixed(2)}  scarto ${dev(voti).toFixed(2)}  5%-95%: ${q(voti, .05)}-${q(voti, .95)}  min ${Math.min(...voti)} max ${Math.max(...voti)}`);
 console.log(`  insufficienti: <6 ${(100*voti.filter(v=>v<6).length/voti.length).toFixed(1)}%  <5.5 ${(100*voti.filter(v=>v<5.5).length/voti.length).toFixed(1)}%  >=7 ${(100*voti.filter(v=>v>=7).length/voti.length).toFixed(1)}%`);
+for (const [k, a] of Object.entries(perEsito)) console.log(`  ${k}: media ${media(a).toFixed(2)}  <6 ${(100 * a.filter((v) => v < 6).length / a.length).toFixed(0)}%  >=6.5 ${(100 * a.filter((v) => v >= 6.5).length / a.length).toFixed(0)}%`);
+console.log(`  cambi per scarso rendimento: ${(cambiRendimento / N / 2).toFixed(2)} a squadra per partita (soglia ${CFG.SOGLIA_RENDIMENTO_CAMBIO})`);
 console.log(`  migliore in campo: media ${media(mvp).toFixed(2)}  10%-90%: ${q(mvp, .1)}-${q(mvp, .9)}  della squadra vincente ${(mvpVincente / partiteConVincitore * 100).toFixed(0)}%`);
 const tot = Object.values(mvpRep).reduce((a, b) => a + b, 0);
 console.log('  MVP per reparto: ' + ['GK', 'DEF', 'MID', 'ATT'].map((k) => `${k} ${((mvpRep[k] ?? 0) / tot * 100).toFixed(0)}%`).join('  ') + '   (titolari: GK 9%, DEF 36%, MID 27%, ATT 27%)');

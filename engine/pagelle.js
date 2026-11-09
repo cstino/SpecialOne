@@ -39,30 +39,32 @@ export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 // Sotto questi minuti non si da' il voto: "senza voto", come sui giornali.
 export const MINUTI_MINIMI = 15;
 
-// Il peso di ogni gesto sul voto. Tarati con tools/validazione/prova-pagelle.mjs:
-// media intorno a 6,6, scarto intorno a 0,55, migliore in campo fra 7,5 e 8,5,
-// e l'MVP distribuito su tutti i reparti.
+// Il peso di ogni gesto sul voto. Scala da giornale italiano (9/11/2026,
+// richiesta del committente: "ho perso e ho piu' sufficienti che
+// insufficienti"): il 6 e' una partita normale, chi perde va quasi sempre
+// sotto. Prima la scala era quella di SofaScore (media 6,7, base 6,4, chi
+// perdeva prendeva in media 6,38 e solo il 13% sotto il 6).
+// Tarati con tools/validazione/prova-pagelle.mjs.
 export const PESI = {
-  base: 6.4,
-  vittoria: 0.15, sconfitta: -0.15,
+  base: 6.05,
+  // Il risultato: vittoria/sconfitta, piu' un tanto per ogni gol di scarto
+  // oltre il primo (al massimo tre). Perdere 0-4 non e' perdere 1-2.
+  vittoria: 0.3, sconfitta: -0.3, perGolDiScarto: 0.1,
   gol: { ATT: 1.0, MID: 1.1, DEF: 1.2, GK: 1.5 },
-  assist: 0.7,
-  tiroInPorta: 0.12, tiroFuori: -0.06,
-  // I passaggi sono tanti (un centrocampista ne tenta 60): pesano per la
-  // PRECISIONE rispetto all'attesa, non uno per uno, piu' un poco di volume.
-  precisione: 0.04, attesaPassaggi: 0.82, volumePassaggi: 0.003,
-  contrastoVinto: 0.14, contrastoPerso: -0.1,
-  intervento: 0.14, interventoMancato: -0.12,
-  dribblingRiuscito: 0.1, dribblingFallito: -0.06,
-  parata: 0.14,
-  // DEF era -0,14: nelle partite vere si segna molto (Serie F 4,3 gol a
-  // partita) e i difensori avevano la media piu' bassa di tutti (6,49 contro
-  // 6,81 degli attaccanti su 20.000 voti di LegaBot). Registro, punto 38.
-  golSubito: { GK: -0.3, DEF: -0.11, MID: -0.03, ATT: 0 },
-  // Aggiustamento di base per reparto, tarato sui voti veri: medie vicine fra
-  // i reparti come su SofaScore, con gli attaccanti piu' estremi.
-  basePerReparto: { GK: 0, DEF: 0.04, MID: 0, ATT: -0.08 },
-  portaInviolata: { GK: 0.4, DEF: 0.35, MID: 0.08, ATT: 0 },
+  assist: 0.6,
+  tiroInPorta: 0.15, tiroFuori: -0.1,
+  // Le azioni contano per il SALDO fra riuscite e sbagliate, misurato sulla
+  // riuscita media della lega (attesa): chi sta nella media non guadagna
+  // niente, ogni gesto riuscito in piu' sale, ogni errore in piu' scende. Con
+  // l'attesa dei passaggi a 0,82 un passaggio sbagliato costa quanto 4-5
+  // riusciti. Niente piu' punti per il solo numero di passaggi tentati.
+  attesa: { pass: 0.82, int: 0.64, duelli: 0.63, dri: 0.62 },
+  saldo: { pass: 0.09, int: 0.45, duelli: 0.45, dri: 0.35 },
+  parata: 0.12,
+  golSubito: { GK: -0.3, DEF: -0.12, MID: -0.04, ATT: 0 },
+  // Aggiustamento di base per reparto: medie vicine fra i reparti.
+  basePerReparto: { GK: -0.1, DEF: 0.12, MID: 0.04, ATT: -0.1 },
+  portaInviolata: { GK: 0.4, DEF: 0.4, MID: 0.1, ATT: 0 },
   giallo: -0.3, rosso: -1.5, tettoRosso: 5.0,
   // Errore individuale su un gol subito (solo nel rendimento live): quota di
   // gol che nascono da un errore, penalita' e chi ne risponde per reparto.
@@ -71,6 +73,21 @@ export const PESI = {
   // Quanto lo scarto tattico (punti di overall) sposta la riuscita dei gesti.
   tattica: 0.02,
 };
+
+// Il saldo delle azioni: riuscite meno quelle attese con la riuscita media.
+export function saldoAzioni(ok, att) {
+  let v = 0;
+  for (const k of ['pass', 'int', 'duelli', 'dri']) v += PESI.saldo[k] * ((ok[k] ?? 0) - PESI.attesa[k] * (att[k] ?? 0));
+  return v;
+}
+
+// Il peso del risultato per chi ha giocato tutta la partita.
+export function pesoRisultato(golFatti, golSubiti) {
+  const scarto = golFatti - golSubiti;
+  if (scarto === 0) return 0;
+  const extra = PESI.perGolDiScarto * Math.min(3, Math.abs(scarto) - 1);
+  return scarto > 0 ? PESI.vittoria + extra : PESI.sconfitta - extra;
+}
 
 // Gli interventi difensivi (chiusure, intercetti, anticipi) per posizione, a
 // pressione avversaria media. Il motore non li distribuisce: senza, un
@@ -129,7 +146,7 @@ export function pagelle(lati, seme) {
     const parateTotali = Math.max(0, Number(A.squadra.inPorta ?? 0) - L.golSubiti);
     const tiriInPortaMiei = Number(L.squadra.inPorta ?? 0);
     const tiriMiei = Math.max(1, Number(L.squadra.tiri ?? 0));
-    const risultato = L.golFatti > L.golSubiti ? PESI.vittoria : L.golFatti < L.golSubiti ? PESI.sconfitta : 0;
+    const risultato = pesoRisultato(L.golFatti, L.golSubiti);
 
     for (const [id, minuti] of L.stats.minuti) {
       const g = L.giocatori.get(id);
@@ -170,7 +187,6 @@ export function pagelle(lati, seme) {
       const pass = L.stats.passaggi?.get(id) ?? 0;
       const pPass = clamp(0.8 + ((a.short_passing ?? g.short_passing ?? 65) - 68) / 220 - (contro - 70) / 260 + spinta, 0.55, 0.96);
       d.passaggiRiusciti = quante(rng, pass, pPass); d.passaggi = pass;
-      voto += (d.passaggiRiusciti - pass * PESI.attesaPassaggi) * PESI.precisione + pass * PESI.volumePassaggi;
 
       // interventi difensivi: tanti quanti l'avversario ne provoca attaccando
       const pressione = clamp(Number(A.squadra.tiri ?? 12) / 12, 0.5, 1.8);
@@ -178,19 +194,19 @@ export function pagelle(lati, seme) {
       const difesa = ((a.standing_tackle ?? g.tackle ?? 60) + (a.mentality_interceptions ?? g.tackle ?? 60) + (a.defending_marking_awareness ?? g.tackle ?? 60)) / 3;
       const pInt = clamp(0.62 + (difesa - 62) / 170 - (contro - 70) / 220 + spinta, 0.3, 0.92);
       d.interventiRiusciti = quante(rng, Math.max(0, interventi), pInt); d.interventi = Math.max(0, interventi);
-      voto += d.interventiRiusciti * PESI.intervento + (d.interventi - d.interventiRiusciti) * PESI.interventoMancato;
 
       // contrasti: i duelli difensivi che il motore gli ha assegnato
       const duelli = L.stats.contrasti?.get(id) ?? 0;
       const pDuello = clamp(0.6 + ((a.standing_tackle ?? g.tackle ?? 60) - 62) / 170 - (contro - 70) / 220 + spinta, 0.3, 0.9);
       d.contrastiVinti = quante(rng, duelli, pDuello); d.contrasti = duelli;
-      voto += d.contrastiVinti * PESI.contrastoVinto + (duelli - d.contrastiVinti) * PESI.contrastoPerso;
 
       // dribbling
       const dri = L.stats.dribbling?.get(id) ?? 0;
       const pDri = clamp(0.55 + ((a.dribbling ?? g.dribbling ?? 60) - 65) / 160 - (contro - 70) / 220 + spinta, 0.25, 0.88);
       d.dribblingRiusciti = quante(rng, dri, pDri); d.dribbling = dri;
-      voto += d.dribblingRiusciti * PESI.dribblingRiuscito + (dri - d.dribblingRiusciti) * PESI.dribblingFallito;
+      voto += saldoAzioni(
+        { pass: d.passaggiRiusciti, int: d.interventiRiusciti, duelli: d.contrastiVinti, dri: d.dribblingRiusciti },
+        { pass, int: d.interventi, duelli, dri });
 
       // tiri: quelli in porta ripartiti in proporzione, i gol a parte
       const tiri = L.stats.tiri?.get(id) ?? 0;

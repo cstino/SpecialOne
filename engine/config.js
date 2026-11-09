@@ -137,7 +137,10 @@ export const CFG = {
   // giocando male, anche se e' fresco. Mai il portiere. Il voto e' quello in
   // pagella, costruito dalle azioni vere del giocatore: sotto questa soglia, e
   // dopo almeno MIN_BLOCCHI_RENDIMENTO blocchi giocati, e' candidato al cambio.
-  SOGLIA_RENDIMENTO_CAMBIO: 6.2,
+  // 6,2 sulla scala SofaScore; 5,5 da quando i voti seguono la scala da
+  // giornale (9/11/2026): stessi cambi per rendimento di prima, 0,9 a squadra
+  // per partita (tools/validazione/prova-pagelle.mjs).
+  SOGLIA_RENDIMENTO_CAMBIO: 5.5,
   MIN_BLOCCHI_RENDIMENTO: 2,
   // Chi entra deve essere almeno cosi' vicino, in overall nello slot, a chi esce:
   // non si toglie un 80 che gioca male per un 60.

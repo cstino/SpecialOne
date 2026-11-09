@@ -19,7 +19,7 @@
 // ============================================================
 
 import { CFG, REPARTO, PESI_SLOT, pesoStat } from './config.js';
-import { PESI, INTERVENTI, AVVERSARIO, mediaReparto, generatore, quante, clamp } from './pagelle.js';
+import { PESI, INTERVENTI, AVVERSARIO, mediaReparto, generatore, quante, clamp, saldoAzioni } from './pagelle.js';
 
 // Quanti gol non hanno un assist (rigori, tiri da fuori, ribattute, azioni
 // personali) e quanto pesa ogni ruolo come uomo-assist. Erano nella Edge
@@ -74,10 +74,7 @@ export function creaRendimento(seme) {
     const minuti = extra.minuti ?? s.blocchi * 90 / CFG.BLOCCHI_PARTITA;
     const quota = Math.min(1, minuti / 90);
     let v = PESI.base + (PESI.basePerReparto[rep] ?? 0);
-    v += (s.ok.pass - s.att.pass * PESI.attesaPassaggi) * PESI.precisione + s.att.pass * PESI.volumePassaggi;
-    v += s.ok.int * PESI.intervento + (s.att.int - s.ok.int) * PESI.interventoMancato;
-    v += s.ok.duelli * PESI.contrastoVinto + (s.att.duelli - s.ok.duelli) * PESI.contrastoPerso;
-    v += s.ok.dri * PESI.dribblingRiuscito + (s.att.dri - s.ok.dri) * PESI.dribblingFallito;
+    v += saldoAzioni(s.ok, s.att);
     // Gol e assist contano per intero anche a chi gioca poco (21/10/2026, decisione del committente): restano fuori
     // dalla riduzione verso il 6 qui sotto.
     const decisivi = (extra.gol ?? s.gol) * (PESI.gol[rep] ?? 1) + (extra.assist ?? s.assist) * PESI.assist;
