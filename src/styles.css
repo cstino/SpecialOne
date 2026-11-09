@@ -1880,6 +1880,23 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .rinnovo-offerta input, .rinnovo-offerta select { min-height: 44px; width: 100%; box-sizing: border-box; padding: .5rem .7rem; color: #fff; border: 1px solid #4a3e5d; border-radius: 9px; background: #1d1827; font-size: 1rem; font-weight: 800; }
 .rinnovo-offerta small { color: #7f7690; font-size: .64rem; }
 .rinnovo-tentativi { margin: 0; color: #a49bb3; font-size: .74rem; }
+/* Barra di soddisfazione della trattativa: zona di accettazione sfumata, riempimento dal rosso al verde. */
+.rinnovo-soddisfazione { display: grid; gap: 7px; margin-top: 12px; }
+.rinnovo-soddisfazione__testa { display: flex; align-items: baseline; gap: 8px; }
+.rinnovo-soddisfazione__testa span { color: #958b9e; font-size: .64rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.rinnovo-soddisfazione__testa b { color: #fff; font-size: 1rem; font-variant-numeric: tabular-nums; }
+.rinnovo-soddisfazione__testa em { margin-left: auto; font-size: .74rem; font-style: normal; font-weight: 800; }
+.rinnovo-soddisfazione.is-basso .rinnovo-soddisfazione__testa em { color: #ff7a7a; }
+.rinnovo-soddisfazione.is-forse .rinnovo-soddisfazione__testa em { color: #ffd166; }
+.rinnovo-soddisfazione.is-pieno .rinnovo-soddisfazione__testa em { color: #5ee08f; }
+.rinnovo-soddisfazione__barra { position: relative; height: 14px; overflow: hidden; border: 1px solid #3a2f4b; border-radius: 999px; background: #120e19; }
+.rinnovo-soddisfazione__zona { position: absolute; top: 0; bottom: 0; background: linear-gradient(90deg, rgba(94, 224, 143, 0), rgba(94, 224, 143, .45) 35%, rgba(94, 224, 143, .45) 65%, rgba(94, 224, 143, 0)); }
+.rinnovo-soddisfazione__riempimento { position: absolute; top: 3px; bottom: 3px; left: 3px; max-width: calc(100% - 6px); border-radius: 999px; transition: width .25s ease, background-color .25s ease; }
+.rinnovo-soddisfazione.is-basso .rinnovo-soddisfazione__riempimento { background: #e2555a; }
+.rinnovo-soddisfazione.is-forse .rinnovo-soddisfazione__riempimento { background: #f0b43c; }
+.rinnovo-soddisfazione.is-pieno .rinnovo-soddisfazione__riempimento { background: #3ccf7a; }
+.rinnovo-soddisfazione small { color: #7f7690; font-size: .64rem; line-height: 1.5; }
+@media (prefers-reduced-motion: reduce) { .rinnovo-soddisfazione__riempimento { transition: none; } }
 /* La risposta del giocatore sopra i pulsanti: nuvoletta con icona e colore dell'esito, rientra a ogni offerta. */
 .rinnovo-replica { --c: #ff9a52; --f: rgba(255,154,82,.14); width: 100%; box-sizing: border-box; display: grid; grid-template-columns: 38px 1fr; gap: 12px; align-items: start;
   padding: 14px 16px; border: 1px solid var(--c); border-radius: 16px 16px 16px 4px; background: linear-gradient(135deg, var(--f), rgba(23,19,31,.92)); text-align: left;

@@ -94,6 +94,8 @@ export type PropostaRinnovo = {
   moltiplicatori?: { durata: number; opzione: OpzioneContratto | null; moltiplicatore: number }[] | null
   /** Nessun ingaggio oltre questo (private.ingaggio_massimo). */
   ingaggio_massimo?: number
+  /** La zona (frazioni della richiesta) dentro cui cade la soglia di accettazione: la barra la mostra sfumata. */
+  zona_accettazione?: { da: number; a: number } | null
 }
 
 /** Risposta del giocatore a un'offerta: mai la cifra esatta, solo quanto si è lontani. */
@@ -963,6 +965,7 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
                 <small>M€ a stagione</small>
               </label>
             </div>
+            {offertaValida && <BarraSoddisfazione offerta={offertaEuro} richiesta={richiestaPer(proposta, gradinoOfferto, durataOfferta, opzioneOfferta)} zona={proposta.zona_accettazione ?? null} />}
           </div>
           {!proposta.pluriennali && <p className="rinnovo-nota">
             La durata non si negozia: un rinnovo estende sempre il contratto di una stagione.
@@ -1342,5 +1345,28 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
         </div>}
       </div>
     </section>
+  </div>
+}
+
+// La barra di soddisfazione della trattativa (9/11/2026): al 100% gli si offre quanto chiede. La zona verde sfumata e'
+// dove cade la soglia di accettazione (public.proposta_rinnovo): sotto non firma, dentro forse, sopra la zona si'.
+// Bandiera, voglia di vincere in una squadra che vince e morale alto la spostano in basso; chi guarda i soldi la tiene
+// vicino al 100%.
+function BarraSoddisfazione({ offerta, richiesta, zona }: { offerta: number; richiesta: number; zona: { da: number; a: number } | null }) {
+  const quota = richiesta > 0 ? offerta / richiesta : 0
+  const percento = Math.round(quota * 100)
+  const stato = !zona ? (quota >= 1 ? 'pieno' : 'basso') : quota >= zona.a ? 'pieno' : quota >= zona.da ? 'forse' : 'basso'
+  const reazione = stato === 'pieno' ? 'Firmerebbe' : stato === 'forse' ? 'Ci pensa' : 'Troppo poco'
+  return <div className={`rinnovo-soddisfazione is-${stato}`}>
+    <div className="rinnovo-soddisfazione__testa">
+      <span>Soddisfazione</span>
+      <b>{percento}%</b>
+      <em>{reazione}</em>
+    </div>
+    <div className="rinnovo-soddisfazione__barra" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, percento)} aria-label="Soddisfazione del giocatore">
+      {zona && <i className="rinnovo-soddisfazione__zona" style={{ left: `${zona.da * 100}%`, width: `${Math.max(2, (zona.a - zona.da) * 100)}%` }} />}
+      <span className="rinnovo-soddisfazione__riempimento" style={{ width: `${Math.min(100, Math.max(0, percento))}%` }} />
+    </div>
+    <small>100% = quello che chiede. Nella zona verde potrebbe accettare: più in alto vai, più è sicuro.</small>
   </div>
 }
