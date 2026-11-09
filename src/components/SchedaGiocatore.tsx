@@ -92,6 +92,8 @@ export type PropostaRinnovo = {
   solo_un_anno?: boolean
   /** Quanto si sposta la richiesta per ogni durata (1-3) e opzione. */
   moltiplicatori?: { durata: number; opzione: OpzioneContratto | null; moltiplicatore: number }[] | null
+  /** Nessun ingaggio oltre questo (private.ingaggio_massimo). */
+  ingaggio_massimo?: number
 }
 
 /** Risposta del giocatore a un'offerta: mai la cifra esatta, solo quanto si è lontani. */
@@ -738,11 +740,12 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
     setListaInCorso(false)
   }
 
-  // Stessa formula del server (public.offri_rinnovo): richiesta del gradino x moltiplicatore, al passo di 0,1 M€.
+  // Stessa formula del server (public.offri_rinnovo): richiesta del gradino x moltiplicatore, al passo di 0,1 M€,
+  // mai oltre l'ingaggio massimo.
   function richiestaPer(dati: PropostaRinnovo, gradino: GradinoMinutaggio | null, durata: number, opzione: OpzioneContratto | null) {
     const base = dati.gradini?.find((g) => g.chiave === gradino)?.richiesta ?? dati.richiesta
     const m = dati.pluriennali ? dati.moltiplicatori?.find((x) => x.durata === durata && x.opzione === opzione)?.moltiplicatore ?? 1 : 1
-    return Math.max(500_000, Math.round((base * m) / 100_000) * 100_000)
+    return Math.min(dati.ingaggio_massimo ?? Infinity, Math.max(500_000, Math.round((base * m) / 100_000) * 100_000))
   }
 
   function scegliTermini(dati: PropostaRinnovo, gradino: GradinoMinutaggio | null, durata: number, opzione: OpzioneContratto | null) {
