@@ -494,12 +494,6 @@ input:disabled { opacity: 0.65; }
 /* Stati globali */
 .loading-screen, .fatal-state { min-height: 100vh; display: grid; place-content: center; justify-items: center; padding: 2rem; text-align: center; }
 .loading-screen { color: #f7f2ff; background: #0b0a11; }
-.loading-logo { width: 96px; height: 122px; display: grid; place-items: center; }
-.loading-logo img { width: 70px; height: 99px; object-fit: contain; filter: drop-shadow(0 10px 16px rgba(151, 89, 239, .24)); animation: loading-logo-galleggia 2.4s ease-in-out infinite; }
-.loading-logo--compatto { width: 54px; height: 64px; }
-.loading-logo--compatto img { width: 38px; height: 54px; }
-@keyframes loading-logo-galleggia { 0%, 100% { transform: translateY(2px); } 50% { transform: translateY(-4px); } }
-@media (prefers-reduced-motion: reduce) { .loading-logo img { animation: none; } }
 .loading-screen p { margin: 1rem 0 0; color: var(--ink-muted); font-weight: 700; }
 .loading-screen p { color: #9d94aa; }
 .fatal-state img { width: 76px; margin-bottom: 2rem; }
@@ -4902,35 +4896,42 @@ button.carta__num { cursor: pointer; text-decoration: underline; text-decoration
 .tabellone-scheda.is-attiva::after { opacity: 1; transform: none; }
 .tabellone-scheda:focus-visible { outline: 2px solid var(--scheda-luce); outline-offset: 2px; }
 
-/* Caricamenti nello stile broadcast: logo dentro un anello luminoso che
-   ruota, testo in Oswald, barra con una luce che scorre. */
-.loading-logo { position: relative; width: 112px; height: 112px; }
-.loading-logo img { position: relative; z-index: 1; width: 52px; height: 72px; }
-.loading-logo--compatto { width: 78px; height: 78px; }
-.loading-logo--compatto img { width: 36px; height: 50px; }
-.loading-logo::before { content: ''; position: absolute; inset: -30%; border-radius: 50%; background: radial-gradient(circle, rgba(155,76,255,.32), transparent 62%); animation: caricamento-respiro 2.4s ease-in-out infinite; }
-.loading-logo__anello { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, transparent 0deg, rgba(166,107,255,.15) 120deg, #a66bff 250deg, #46e3ff 330deg, transparent 360deg); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); filter: drop-shadow(0 0 8px rgba(70,227,255,.55)); animation: caricamento-giro 1.3s linear infinite; }
-.loading-screen { position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 42%, rgba(124,58,237,.28), transparent 60%), repeating-linear-gradient(115deg, rgba(255,255,255,.025) 0 2px, transparent 2px 90px), #0a0812; }
-.loading-screen p, .season-state.is-caricamento p { margin: 6px 0 0; color: rgba(226,214,245,.62); font: 600 .72rem/1.4 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: .14em; text-transform: uppercase; }
-.loading-screen p { margin-top: 22px; color: #fff; font: 700 clamp(1.3rem, 6vw, 1.7rem)/1.1 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: .04em; }
-.loading-screen::after, .caricamento-barra { content: ''; display: block; width: min(220px, 60vw); height: 3px; margin-top: 18px; border-radius: 3px; background: linear-gradient(90deg, transparent, #46e3ff, #a66bff, transparent) -120% 0 / 60% 100% no-repeat, rgba(255,255,255,.08); animation: caricamento-scorre 1.4s cubic-bezier(.45,0,.55,1) infinite; }
-.season-state.is-caricamento h2 { margin: 18px 0 2px; color: #fff; font: 700 clamp(1.4rem, 6.4vw, 1.9rem)/1.1 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: .04em; text-transform: uppercase; }
-@keyframes caricamento-giro { to { transform: rotate(360deg); } }
+/* Caricamenti (9/11/2026): il marchio SpecialOne animato, come nei giochi moderni. Entrata: i pezzi si compongono
+   (corona dall'alto con un piccolo rimbalzo, S da sinistra, 1 da destra, oro dal basso). Poi in ciclo: un riflesso di
+   luce passa sul metallo bianco, il diamante della corona pulsa d'oro, dietro respira un alone viola. Niente anello e
+   niente scritte: il testo dei caricamenti resta solo per i lettori di schermo. */
+.loading-logo { position: relative; display: grid; place-items: center; width: 92px; height: 128px; }
+.loading-logo--compatto { width: 52px; height: 72px; }
+.loading-logo::before { content: ''; position: absolute; inset: -45% -70%; border-radius: 50%; background: radial-gradient(circle, rgba(155,76,255,.34), rgba(70,227,255,.06) 45%, transparent 66%); animation: caricamento-respiro 2.4s ease-in-out infinite; pointer-events: none; }
+.loading-logo__marchio { position: relative; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 10px 18px rgba(124,58,237,.35)); }
+.loading-logo__bianco { fill: #fbfcfe; }
+.loading-logo__oro { fill: #bd932a; }
+.loading-logo__diamante { fill: #e7c25a; transform-box: fill-box; transform-origin: center; animation: marchio-diamante 1.6s ease-in-out .9s infinite; }
+.loading-logo__corona, .loading-logo__barrette, .loading-logo__s, .loading-logo__uno, .loading-logo__freccia { transform-box: fill-box; transform-origin: center; }
+.loading-logo__corona { animation: marchio-corona .7s cubic-bezier(.2,1.5,.4,1) both; }
+.loading-logo__s { animation: marchio-s .55s cubic-bezier(.2,.8,.2,1) .08s both; }
+.loading-logo__uno { animation: marchio-uno .55s cubic-bezier(.2,.8,.2,1) .16s both; }
+.loading-logo__barrette { animation: marchio-oro .5s ease-out .38s both; }
+.loading-logo__freccia { animation: marchio-oro .5s ease-out .46s both, marchio-freccia 2.4s ease-in-out 1s infinite; }
+.loading-logo__riflesso { transform: skewX(-18deg) translateX(0); animation: marchio-riflesso 2.4s cubic-bezier(.45,0,.25,1) .7s infinite; }
+@keyframes marchio-corona { from { opacity: 0; transform: translateY(-38%) scale(.86); } to { opacity: 1; transform: none; } }
+@keyframes marchio-s { from { opacity: 0; transform: translateX(-26%); } to { opacity: 1; transform: none; } }
+@keyframes marchio-uno { from { opacity: 0; transform: translateX(32%); } to { opacity: 1; transform: none; } }
+@keyframes marchio-oro { from { opacity: 0; transform: translateY(40%); } to { opacity: 1; transform: none; } }
+@keyframes marchio-riflesso { 0% { transform: skewX(-18deg) translateX(0); } 55%, 100% { transform: skewX(-18deg) translateX(980px); } }
+@keyframes marchio-diamante { 0%, 100% { fill: #bd932a; filter: none; } 50% { fill: #ffe39a; filter: drop-shadow(0 0 14px rgba(255,214,102,.95)); } }
+@keyframes marchio-freccia { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
 @keyframes caricamento-respiro { 0%, 100% { opacity: .6; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.04); } }
-@keyframes caricamento-scorre { from { background-position: -120% 0, 0 0; } to { background-position: 220% 0, 0 0; } }
-@media (prefers-reduced-motion: reduce) { .loading-logo__anello, .loading-logo::before, .loading-screen::after, .caricamento-barra { animation: none; } }
-
-/* Caricamento con un solo simbolo, il cerchio (2 ottobre 2026: niente piu'
-   barretta sotto). Il cerchio diventa una cometa: pista sottile fissa, scia
-   di luce che gira con un ritmo che accelera e rallenta, testa luminosa in
-   punta. La scia sta su ::before (ritagliata ad anello), la testa su ::after
-   (fuori dal ritaglio, cosi' il suo alone non viene tagliato). */
+@media (prefers-reduced-motion: reduce) {
+  .loading-logo::before, .loading-logo__corona, .loading-logo__s, .loading-logo__uno, .loading-logo__barrette, .loading-logo__freccia, .loading-logo__diamante { animation: none; }
+  .loading-logo__riflesso { display: none; }
+}
+.loading-screen { position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 46%, rgba(124,58,237,.26), transparent 60%), repeating-linear-gradient(115deg, rgba(255,255,255,.025) 0 2px, transparent 2px 90px), #0a0812; }
+/* Le scritte sotto il logo non si vedono piu' (restano per i lettori di schermo). */
+.loading-screen > p, .season-state.is-caricamento > h2, .season-state.is-caricamento > p, .x-stato:has(> .loading-logo) > p {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
 .loading-screen::after, .caricamento-barra { display: none !important; }
-.loading-logo::after { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 3px rgba(255,255,255,.07); pointer-events: none; }
-.loading-logo__anello { background: none; -webkit-mask: none; mask: none; filter: none; animation: caricamento-giro 1.7s cubic-bezier(.55,.12,.45,.88) infinite; }
-.loading-logo__anello::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, transparent 0deg, transparent 80deg, rgba(166,107,255,.45) 210deg, #a66bff 300deg, #46e3ff 356deg, transparent 360deg); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px)); }
-.loading-logo__anello::after { content: ''; position: absolute; top: -2.5px; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: #fff; box-shadow: 0 0 6px 2px #46e3ff, 0 0 18px 5px rgba(70,227,255,.55); }
-.loading-logo--compatto .loading-logo__anello::after { width: 6px; height: 6px; margin-left: -3px; top: -1.5px; }
 .honors-premi { overflow:hidden; border:1px solid #39313e; border-radius:17px; background:#17151f; box-shadow:0 20px 55px rgba(0,0,0,.18); }
 .honors-premi__stagioni { display:flex; flex-wrap:wrap; gap:8px; padding:14px 20px 0; }
 .honors-premi__stagioni button { appearance:none; min-width:48px; padding:7px 12px; border:1px solid #3a3342; border-radius:9px; background:#1d1a26; color:#8f86a0; font:700 .78rem/1 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing:.08em; cursor:pointer; }
