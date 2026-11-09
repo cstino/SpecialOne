@@ -74,6 +74,9 @@ export type DatiScheda = {
 const ARTICOLO_GRADINO: Record<GradinoMinutaggio, string> = { titolare: 'un', turnover: 'un', sporadico: 'uno', promessa: 'una' }
 
 export type PropostaRinnovo = {
+  /** Mentalita' e morale del giocatore (public.proposta_rinnovo): si mostrano nella trattativa. */
+  mentalita?: { bandiera: number; economia: number; vittorie: number }
+  morale?: number
   richiesta: number
   durata: number
   ingaggio_attuale: number
@@ -290,6 +293,22 @@ const RAMI_MENTALITA: Array<[keyof NonNullable<DatiScheda['mentalita']>, string,
   ['economia', 'Economia', 'Prima il contratto: punta sempre all’ingaggio più alto.'],
   ['vittorie', 'Vittorie', 'Prima i risultati: vuole vincere, il resto conta meno.'],
 ]
+
+// I tre rami della mentalita' con il dominante in evidenza (scheda e trattativa di rinnovo).
+function MentalitaRami({ mentalita }: { mentalita: NonNullable<DatiScheda['mentalita']> }) {
+  const rami = RAMI_MENTALITA.map(([chiave, nome, descrizione]) => ({ chiave, nome, descrizione, valore: mentalita[chiave] }))
+  const dominante = rami.reduce((piuAlto, ramo) => ramo.valore > piuAlto.valore ? ramo : piuAlto)
+  return <>
+    <p className="player-modal__mentalita-nota"><b>{dominante.nome}</b> — {dominante.descrizione}</p>
+    <div className="player-modal__mentalita">
+      {rami.map((ramo) => <div className={ramo.chiave === dominante.chiave ? 'is-dominante' : ''} key={ramo.chiave}>
+        <span>{ramo.nome}</span>
+        <i><span style={{ width: `${ramo.valore}%` }} /></i>
+        <b>{ramo.valore}</b>
+      </div>)}
+    </div>
+  </>
+}
 
 function etichettaAttributo(chiave: string) {
   return ETICHETTE_ATTRIBUTI.find(([k]) => k === chiave)?.[1] ?? chiave
@@ -897,12 +916,28 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
           <p>questa è la mia proposta per il mio nuovo ingaggio{proposta.gradino_richiesto ? <>, e vorrei avere lo spazio di {ARTICOLO_GRADINO[proposta.gradino_richiesto]} <strong>{nomeConSoglia(proposta.gradino_richiesto).toLowerCase()}</strong></> : null}.</p>
           <p className="rinnovo-lettera__firma">— {giocatore.nome}, {giocatore.eta} anni</p>
         </blockquote>
+        {(() => {
+          const richiesta = richiestaPer(proposta, gradinoOfferto, durataOfferta, opzioneOfferta)
+          const aumento = proposta.ingaggio_attuale > 0 ? Math.round((richiesta / proposta.ingaggio_attuale - 1) * 100) : 0
+          return <div className="rinnovo-attuale">
+            <span>Prende ora</span>
+            <strong>{milioni(proposta.ingaggio_attuale)}</strong>
+            <em className={aumento > 0 ? 'is-su' : aumento < 0 ? 'is-giu' : ''}>{aumento === 0 ? 'chiede lo stesso' : `chiede ${aumento > 0 ? '+' : '−'}${Math.abs(aumento)}%`}</em>
+          </div>
+        })()}
         <div className="rinnovo-cifre">
           <div><span>Ingaggio richiesto</span><strong>{milioni(richiestaPer(proposta, gradinoOfferto, durataOfferta, opzioneOfferta))}</strong><small>{gradinoOfferto ? `da ${GRADINI_MINUTAGGIO[gradinoOfferto].nome.toLowerCase()}` : 'a stagione'}</small></div>
           {proposta.pluriennali && proposta.stagione_corrente != null
             ? <div><span>Durata</span><strong>{stagioni(durataOfferta)}</strong><small>fino alla stagione {proposta.stagione_corrente + durataOfferta}{opzioneOfferta ? ` ${testoOpzione(opzioneOfferta, proposta.stagione_corrente + durataOfferta)}` : ''}</small></div>
             : <div><span>Durata</span><strong>{stagioni(proposta.durata)}</strong><small>fino alla stagione {proposta.nuova_scadenza}</small></div>}
         </div>
+        {(proposta.mentalita ?? giocatore.mentalita) && <section className="rinnovo-carattere">
+          <div className="rinnovo-carattere__testa">
+            <p className="kicker">Carattere</p>
+            {typeof (proposta.morale ?? giocatore.morale) === 'number' && <span>Morale <b>{etichettaMorale((proposta.morale ?? giocatore.morale)!).testo}</b></span>}
+          </div>
+          <MentalitaRami mentalita={(proposta.mentalita ?? giocatore.mentalita)!} />
+        </section>}
 
         {proposta.gia_rinnovato ? <>
           <p className="rinnovo-nota">Ha rinnovato in questa stagione: se ne potrà ritrattare dalla prossima.</p>
@@ -1085,20 +1120,7 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
               <strong>{etichettaMorale(giocatore.morale).testo}</strong>
             </div>
             <div className="player-modal__morale-bar"><i style={{ width: `${giocatore.morale}%` }} /></div>
-            {giocatore.mentalita && (() => {
-              const rami = RAMI_MENTALITA.map(([chiave, nome, descrizione]) => ({ chiave, nome, descrizione, valore: giocatore.mentalita![chiave] }))
-              const dominante = rami.reduce((piuAlto, ramo) => ramo.valore > piuAlto.valore ? ramo : piuAlto)
-              return <>
-                <p className="player-modal__mentalita-nota"><b>{dominante.nome}</b> — {dominante.descrizione}</p>
-                <div className="player-modal__mentalita">
-                  {rami.map((ramo) => <div className={ramo.chiave === dominante.chiave ? 'is-dominante' : ''} key={ramo.chiave}>
-                    <span>{ramo.nome}</span>
-                    <i><span style={{ width: `${ramo.valore}%` }} /></i>
-                    <b>{ramo.valore}</b>
-                  </div>)}
-                </div>
-              </>
-            })()}
+            {giocatore.mentalita && <MentalitaRami mentalita={giocatore.mentalita} />}
           </section>}
 
           {capitano && <section className="player-modal__capitano">

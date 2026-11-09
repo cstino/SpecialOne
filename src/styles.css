@@ -1861,6 +1861,18 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .rinnovo-cifre span { color: #958b9e; font-size: .64rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
 .rinnovo-cifre strong { color: #ffdd8a; font-size: 1.5rem; font-weight: 950; line-height: 1.15; }
 .rinnovo-cifre small { color: #9990aa; font-size: .66rem; }
+/* Quanto prende oggi, sopra le cifre della trattativa, con l'aumento che chiede. */
+.rinnovo-attuale { width: 100%; box-sizing: border-box; display: flex; align-items: baseline; gap: 10px; padding: 11px 14px; border: 1px solid #393141; border-radius: 12px; background: #1c1726; }
+.rinnovo-attuale span { color: #958b9e; font-size: .64rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.rinnovo-attuale strong { color: #fff; font-size: 1.1rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+.rinnovo-attuale em { margin-left: auto; color: #9990aa; font-size: .72rem; font-style: normal; font-weight: 800; }
+.rinnovo-attuale em.is-su { color: #ffb3a1; } .rinnovo-attuale em.is-giu { color: #7fe3a8; }
+/* Il carattere del giocatore nella trattativa: gli stessi rami della scheda. */
+.rinnovo-carattere { width: 100%; box-sizing: border-box; display: grid; gap: 6px; padding: 12px 14px; border: 1px solid #393141; border-radius: 12px; background: #1c1726; text-align: left; }
+.rinnovo-carattere__testa { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.rinnovo-carattere__testa .kicker { margin: 0; color: #c88cff; }
+.rinnovo-carattere__testa span { color: #958b9e; font-size: .7rem; font-weight: 700; }
+.rinnovo-carattere__testa b { color: #e6dcf0; }
 .rinnovo-nota { margin: 0; color: #a49bb3; font-size: .76rem; line-height: 1.6; }
 .rinnovo-risposta { width: 100%; margin: 0; padding: 12px 14px; border-radius: 11px; font-size: .88rem; font-style: italic; line-height: 1.5; }
 .rinnovo-risposta--rifiutato { color: #ffc79a; border: 1px solid #74452c; background: rgba(116,69,44,.18); }
