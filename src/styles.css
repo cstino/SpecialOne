@@ -7410,3 +7410,63 @@ body.visita-menu .game-sidebar .game-nav-item.is-active { animation: none; }
 .visita-rifai i { grid-column: 2; grid-row: 1 / 3; color: #2fd6f2; font-size: 1.6rem; font-style: normal; }
 .visita-rifai:hover { border-color: #2fd6f2; }
 @media (prefers-reduced-motion: reduce) { .visita, .visita__titolo, .visita__corpo, body.visita-attiva .game-nav-item, body.visita-attiva .game-mobilebar__menu, body.visita-menu .game-sidebar nav { animation: none; } }
+
+/* ===== RoulettOne live (9/11/2026): roulette europea, palco viola e oro come gli altri giochi del casino'. ===== */
+.rl { display: grid; gap: 12px; }
+.rl-storia { display: flex; gap: 6px; margin: 0; padding: 2px 0; list-style: none; overflow-x: auto; scrollbar-width: none; }
+.rl-storia::-webkit-scrollbar { display: none; }
+.rl-storia li { flex: none; display: grid; place-items: center; min-width: 28px; height: 28px; padding: 0 4px; border-radius: 8px; color: #fff; font: 900 .8rem/1 "Bai Jamjuree", sans-serif; font-variant-numeric: tabular-nums; box-shadow: inset 0 1px 0 rgba(255,255,255,.18); }
+.rl-storia li:first-child { outline: 2px solid var(--bet-oro, #f6c453); outline-offset: 1px; }
+.rl-storia li.is-rosso { background: #c8202e; } .rl-storia li.is-nero { background: #17131f; border: 1px solid rgba(255,255,255,.18); } .rl-storia li.is-verde { background: #12924f; }
+.rl-storia__vuota { padding: 6px 4px; color: rgba(255,255,255,.5); font-size: .74rem; }
+.rl-palco { position: relative; display: grid; place-items: center; padding: 18px 10px 14px; border: 2px solid #4a1f6e; border-radius: 22px; overflow: hidden; isolation: isolate;
+  background: radial-gradient(ellipse at 50% 40%, rgba(124,58,237,.35), transparent 65%), repeating-linear-gradient(115deg, rgba(255,255,255,.03) 0 2px, transparent 2px 70px), #0d0518; }
+.rl-insegna { position: absolute; z-index: 2; top: 10px; left: 12px; display: flex; align-items: center; gap: 4px; font: 900 .95rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .06em; opacity: .9; }
+.rl-insegna img { width: 18px; height: 18px; } .rl-insegna span { color: #fff; } .rl-insegna b { color: var(--bet-oro, #f6c453); }
+.rl-ruota { width: min(78vw, 320px); height: auto; filter: drop-shadow(0 14px 26px rgba(0,0,0,.55)); }
+.rl-spicchio.is-rosso { fill: #c8202e; } .rl-spicchio.is-nero { fill: #15111d; } .rl-spicchio.is-verde { fill: #12924f; }
+.rl-spicchio { stroke: #bd932a; stroke-width: .8; }
+.rl-spicchio__numero { fill: #fff; font: 800 11px/1 "Bai Jamjuree", sans-serif; text-anchor: middle; dominant-baseline: middle; }
+.rl-pallina { fill: #fdfcff; stroke: #c9c3d6; stroke-width: 1; filter: drop-shadow(0 0 4px rgba(255,255,255,.75)); transition: opacity .3s ease; }
+.rl-esito { position: absolute; z-index: 3; right: 12px; bottom: 12px; display: grid; justify-items: end; gap: 4px; min-width: 96px; text-align: right; }
+.rl-esito em { color: rgba(255,255,255,.75); font: 700 .66rem/1 "Bai Jamjuree", sans-serif; font-style: normal; letter-spacing: .14em; text-transform: uppercase; }
+.rl-esito b { color: #fff; font: 900 2rem/1 "Bai Jamjuree", sans-serif; font-variant-numeric: tabular-nums; }
+.rl-esito--ruota em { color: var(--bet-oro, #f6c453); font-size: .8rem; }
+.rl-barra { width: 96px; height: 4px; overflow: hidden; border-radius: 4px; background: rgba(255,255,255,.12); }
+.rl-barra i { display: block; height: 100%; background: linear-gradient(90deg, #46e3ff, #a66bff); transform-origin: left; }
+.rl-numero { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 16px; color: #fff; font: 900 2rem/1 "Bai Jamjuree", sans-serif; box-shadow: 0 0 0 3px var(--bet-oro, #f6c453), 0 10px 24px rgba(0,0,0,.5); animation: rl-numero-entra .45s cubic-bezier(.2,1.4,.4,1) both; }
+.rl-numero.is-rosso { background: #c8202e; } .rl-numero.is-nero { background: #17131f; } .rl-numero.is-verde { background: #12924f; }
+@keyframes rl-numero-entra { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: none; } }
+.rl-fiches { display: flex; align-items: center; gap: 8px; }
+.bet-page .rl-fiches .fiche-casino { width: 44px; height: 44px; }
+.rl-totale { display: grid; justify-items: end; margin-left: auto; }
+.rl-totale small { color: rgba(255,255,255,.6); font-size: .62rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.rl-totale b { color: var(--bet-oro, #f6c453); font: 900 1.1rem/1 "Bai Jamjuree", sans-serif; font-variant-numeric: tabular-nums; }
+/* Il tavolo, verticale come sul telefono: lo 0 in cima, i numeri a tre colonne, poi colonne, dozzine e chance. */
+.rl-tavolo { display: grid; gap: 6px; padding: 10px; border: 2px solid #bd932a; border-radius: 16px; background: radial-gradient(ellipse at 50% 0%, #1d7a4a, #0b4a2c 70%); box-shadow: inset 0 0 24px rgba(0,0,0,.45); transition: filter .2s ease; }
+.rl-tavolo.is-chiuso { filter: saturate(.55) brightness(.8); }
+.rl-numeri { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.rl-riga { display: grid; gap: 4px; }
+.rl-riga--3 { grid-template-columns: repeat(3, 1fr); }
+.rl-casella { appearance: none; position: relative; display: grid; place-items: center; min-height: 38px; margin: 0; padding: 0; color: #fff; font: 800 .9rem/1 "Bai Jamjuree", sans-serif; font-variant-numeric: tabular-nums;
+  border: 1px solid rgba(255,255,255,.28); border-radius: 7px; background: rgba(0,0,0,.18); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .1s ease, box-shadow .2s ease; }
+.rl-casella.is-rosso { background: #b81d2a; } .rl-casella.is-nero { background: #15111d; } .rl-casella.is-verde { background: #12924f; }
+.rl-casella--zero { min-height: 40px; }
+.rl-casella--fuori { min-height: 42px; font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; }
+.rl-casella:active:not(:disabled) { transform: scale(.95); }
+.rl-casella:disabled { cursor: default; }
+.rl-casella:focus-visible { outline: 2px solid #ffd84d; outline-offset: 1px; }
+.rl-casella.is-vincente { box-shadow: 0 0 0 2px #ffd84d, 0 0 18px rgba(255,216,77,.8); animation: rl-vince 1s ease-in-out infinite alternate; }
+@keyframes rl-vince { from { filter: brightness(1); } to { filter: brightness(1.35); } }
+.bet-page .rl-fiche { position: absolute; z-index: 1; top: 50%; left: 50%; width: 30px; height: 30px; transform: translate(-50%, -50%); pointer-events: none; cursor: default; }
+.rl-fiche::before { inset: 3px; } .rl-fiche::after { inset: 5px; border-width: 1px; }
+.rl-fiche b { position: relative; z-index: 1; color: #fff; font: 900 .6rem/1 "Bai Jamjuree", sans-serif; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
+.rl-comandi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.rl-comandi button { appearance: none; min-height: 44px; margin: 0; padding: 0 4px; color: #fff; font: 700 .72rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .08em; text-transform: uppercase; border: 1px solid rgba(255,255,255,.18); border-radius: 10px; background: rgba(255,255,255,.06); cursor: pointer; }
+.rl-comandi button:disabled { opacity: .4; cursor: default; }
+.rl-comandi button:focus-visible { outline: 2px solid #ffd84d; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .rl-numero, .rl-casella.is-vincente { animation: none; } }
+/* Copertina provvisoria finche' non arriva la locandina di RoulettOne. */
+.cas-poster__provvisoria { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; background: radial-gradient(circle at 50% 38%, #1d7a4a 0 28%, transparent 29%), radial-gradient(circle at 50% 38%, #bd932a 0 31%, transparent 32%), radial-gradient(ellipse at 50% 30%, #3a1466, #0d0518 75%); }
+.cas-poster__provvisoria img { width: 34%; height: auto; }
+.cas-poster__provvisoria b { font: 900 1.05rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .04em; text-transform: uppercase; }
