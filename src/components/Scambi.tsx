@@ -813,7 +813,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
           : <div className="scambi-proposte-grid">{inviate.map((p) => <article className={`scambi-card${propostaEvidenziata === p.id ? ' is-evidenziata' : ''}`} data-proposta={p.id} key={p.id}>
               <header>{stemma(p.a_team_id)}<strong>A {nomeSquadra(p.a_team_id)}</strong></header>
               {riepilogo(p)}
-              <footer>
+              <footer className="scambi-card__azioni">
                 <button className="button button--secondary" type="button" disabled={inCorso}
                   onClick={() => chiama(() => supabase.rpc('ritira_proposta', { p_proposta_id: p.id }), 'Proposta ritirata.')}>
                   Ritira
