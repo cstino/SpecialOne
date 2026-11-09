@@ -190,6 +190,8 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
   const [vivai, setVivai] = useState<Prospetto[]>([])
   const [messaggio, setMessaggio] = useState('')
   const [sceltaRifiutoId, setSceltaRifiutoId] = useState<number | null>(null)
+  // Accetta in due tocchi: il primo chiede conferma (un tocco sbagliato non chiude mai uno scambio).
+  const [confermaAccettaId, setConfermaAccettaId] = useState<number | null>(null)
   const [contropropostaOrigine, setContropropostaOrigine] = useState<Proposta | null>(null)
   const [inCorso, setInCorso] = useState(false)
   const [esito, setEsito] = useState<string | null>(null)
@@ -515,28 +517,50 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
         {sceltaDati(id) ? etichettaScelta(sceltaDati(id)!) : `#${id}`}
       </span>
 
-  const riepilogo = (p: Proposta) => <>
-    <div className="scambi-riepilogo">
-      <div className="scambi-riepilogo__lato">
-        <small>{p.da_team_id === membership.id ? 'Offri' : 'Ti offre'}</small>
-        <div className="scambi-riepilogo__chips">
-          {p.giocatori_offerti.length + p.scelte_offerte.length + (p.vivaio_offerti?.length ?? 0) === 0
-            ? <span className="scambi-nessuno">niente</span>
-            : tuttiChip(p.giocatori_offerti, p.scelte_offerte, p.vivaio_offerti)}
-        </div>
-      </div>
-      <i className="scambi-riepilogo__freccia" aria-hidden="true">⇄</i>
-      <div className="scambi-riepilogo__lato">
-        <small>{p.da_team_id === membership.id ? 'Chiedi' : 'Ti chiede'}</small>
-        <div className="scambi-riepilogo__chips">
-          {p.giocatori_richiesti.length + p.scelte_richieste.length + (p.vivaio_richiesti?.length ?? 0) === 0
-            ? <span className="scambi-nessuno">niente</span>
-            : tuttiChip(p.giocatori_richiesti, p.scelte_richieste, p.vivaio_richiesti)}
-        </div>
-      </div>
+  // Il contenuto di una proposta (9/11/2026): due blocchi uno sotto l'altro, sempre dal tuo punto di vista ("Ricevi" e
+  // "Cedi"), e ogni giocatore e' una riga-scheda alta 52 px con ruolo, overall ed eta' che apre la sua scheda. Prima
+  // erano etichette piccole attaccate ad "Accetta": gli allenatori avevano paura di toccarle.
+  const rigaGiocatore = (id: number) => {
+    const g = giocatore(id)
+    if (!g) return <span key={`g${id}`} className="scambi-riga is-statica"><span className="scambi-riga__nome"><strong>#{id}</strong></span></span>
+    const macro = macroRuolo(g.posizioni ?? [g.ruolo])
+    return <button key={`g${id}`} type="button" className="scambi-riga" onClick={() => void apriScheda(id)} aria-label={`Apri la scheda di ${g.nome}`}>
+      <span className="scambi-riga__ruolo" style={{ background: MACRO_COLORE[macro] }}>{ruoloIt(g.ruolo)}</span>
+      <span className="scambi-riga__nome"><strong>{g.nome}</strong><small>{g.eta} anni · {milioni(g.ingaggio)}</small></span>
+      <b className="scambi-riga__ovr">{g.overall}</b>
+      <span className="scambi-riga__apri" aria-hidden="true">›</span>
+    </button>
+  }
+  const rigaScelta = (id: number) => <span key={`s${id}`} className={`scambi-riga is-statica scambi-riga--pick-${sceltaDati(id)?.finestra ?? 'on'}`}>
+    <span className="scambi-riga__ruolo is-scelta">Scelta</span>
+    <span className="scambi-riga__nome"><strong>{sceltaDati(id) ? etichettaScelta(sceltaDati(id)!) : `#${id}`}</strong></span>
+  </span>
+  const rigaVivaio = (id: number) => <span key={`v${id}`} className="scambi-riga is-statica">
+    <span className="scambi-riga__ruolo is-vivaio">Vivaio</span>
+    <span className="scambi-riga__nome"><strong>{prospetto(id) ? prospetto(id)!.nome : 'Prospetto'}</strong></span>
+  </span>
+  const latoProposta = (titolo: string, g: number[], sc: number[], v: number[] | undefined, classe: string) => <div className={`scambi-lato ${classe}`}>
+    <p className="scambi-lato__titolo">{titolo}</p>
+    <div className="scambi-lato__righe">
+      {g.length + sc.length + (v?.length ?? 0) === 0
+        ? <span className="scambi-nessuno">niente</span>
+        : <>{g.map(rigaGiocatore)}{sc.map(rigaScelta)}{(v ?? []).map(rigaVivaio)}</>}
     </div>
-    {p.messaggio && <p className="scambi-messaggio">«{p.messaggio}»</p>}
-  </>
+  </div>
+
+  const riepilogo = (p: Proposta) => {
+    const mia = p.da_team_id === membership.id
+    return <>
+      <div className="scambi-riepilogo">
+        {mia
+          ? <>{latoProposta('Ricevi', p.giocatori_richiesti, p.scelte_richieste, p.vivaio_richiesti, 'is-ricevi')}
+              {latoProposta('Cedi', p.giocatori_offerti, p.scelte_offerte, p.vivaio_offerti, 'is-cedi')}</>
+          : <>{latoProposta('Ricevi', p.giocatori_offerti, p.scelte_offerte, p.vivaio_offerti, 'is-ricevi')}
+              {latoProposta('Cedi', p.giocatori_richiesti, p.scelte_richieste, p.vivaio_richiesti, 'is-cedi')}</>}
+      </div>
+      {p.messaggio && <p className="scambi-messaggio">«{p.messaggio}»</p>}
+    </>
+  }
 
   // VETRINA — chi le altre squadre hanno messo in lista.
   //
@@ -662,13 +686,19 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
                 {ricevute.map((p) => <motion.article layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }} className={`scambi-card${propostaEvidenziata === p.id ? ' is-evidenziata' : ''}`} data-proposta={p.id} key={p.id}>
                   <header>{stemma(p.da_team_id)}<strong>{nomeSquadra(p.da_team_id)}</strong></header>
                   {riepilogo(p)}
-                  <footer className={sceltaRifiutoId === p.id ? 'scambi-rifiuto-aperto' : ''}>
-                    {sceltaRifiutoId !== p.id ? <>
+                  <footer className={`scambi-card__azioni${sceltaRifiutoId === p.id ? ' scambi-rifiuto-aperto' : ''}${confermaAccettaId === p.id ? ' is-conferma' : ''}`}>
+                    {confermaAccettaId === p.id ? <>
+                      <p className="scambi-conferma">Confermi lo scambio con <b>{nomeSquadra(p.da_team_id)}</b>? Non si può annullare.</p>
                       <button className="button button--primary" type="button" disabled={inCorso || !aperto}
-                        onClick={() => chiama(() => supabase.rpc('rispondi_a_proposta', { p_proposta_id: p.id, p_accetta: true }), 'Scambio concluso.')}>
+                        onClick={() => { setConfermaAccettaId(null); chiama(() => supabase.rpc('rispondi_a_proposta', { p_proposta_id: p.id, p_accetta: true }), 'Scambio concluso.') }}>
+                        Sì, accetta
+                      </button>
+                      <button className="button button--secondary" type="button" disabled={inCorso} onClick={() => setConfermaAccettaId(null)}>Annulla</button>
+                    </> : sceltaRifiutoId !== p.id ? <>
+                      <button className="button button--primary" type="button" disabled={inCorso || !aperto} onClick={() => { setSceltaRifiutoId(null); setConfermaAccettaId(p.id) }}>
                         Accetta
                       </button>
-                      <button className="button button--secondary" type="button" disabled={inCorso} onClick={() => setSceltaRifiutoId(p.id)}>Rifiuta</button>
+                      <button className="button button--secondary" type="button" disabled={inCorso} onClick={() => { setConfermaAccettaId(null); setSceltaRifiutoId(p.id) }}>Rifiuta</button>
                     </> : <>
                       <button className="button button--primary" type="button" disabled={inCorso || !aperto} onClick={() => preparaControfferta(p)}>Controfferta</button>
                       <button className="button button--danger-ghost" type="button" disabled={inCorso}

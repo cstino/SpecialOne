@@ -3818,7 +3818,30 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 .scambi-card > footer .button { flex: 1; min-width: 130px; }
 .scambi-card > footer.scambi-rifiuto-aperto { padding-top: 10px; border-top: 1px solid rgba(155,76,255,.18); }
 
-.scambi-riepilogo { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 10px; }
+.scambi-riepilogo { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+/* 9/11/2026: proposta come due blocchi (Ricevi / Cedi) di righe-scheda alte 52 px, lontane dai pulsanti. */
+.scambi-lato { display: grid; gap: 7px; min-width: 0; }
+.scambi-lato__titolo { margin: 0; font: 700 .64rem/1 "Bai Jamjuree", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: .18em; text-transform: uppercase; }
+.scambi-lato.is-ricevi .scambi-lato__titolo { color: #6ee7a8; }
+.scambi-lato.is-cedi .scambi-lato__titolo { color: #ff9aa8; }
+.scambi-lato__righe { display: grid; gap: 8px; }
+.scambi-riga { appearance: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto 14px; align-items: center; gap: 10px; width: 100%; min-height: 52px; margin: 0; padding: 8px 12px; box-sizing: border-box;
+  color: #fff; font: inherit; text-align: left; border: 1px solid rgba(255,255,255,.12); border-radius: 11px; background: rgba(255,255,255,.04); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: border-color .15s ease, background-color .15s ease; }
+.scambi-riga:hover { border-color: rgba(255,255,255,.28); background: rgba(255,255,255,.07); }
+.scambi-riga:focus-visible { outline: 2px solid #9ff2c8; outline-offset: 2px; }
+.scambi-riga.is-statica { grid-template-columns: auto minmax(0, 1fr); cursor: default; }
+.scambi-riga__ruolo { min-width: 34px; padding: 4px 6px; border-radius: 6px; color: #0d0b14; font: 800 .62rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .06em; text-align: center; text-transform: uppercase; }
+.scambi-riga__ruolo.is-scelta { background: #f6c453; } .scambi-riga__ruolo.is-vivaio { background: #6ee7a8; }
+.scambi-riga__nome { display: grid; gap: 2px; min-width: 0; }
+.scambi-riga__nome strong { overflow: hidden; font-size: .88rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.scambi-riga__nome small { color: rgba(255,255,255,.55); font-size: .68rem; }
+.scambi-riga__ovr { font: 900 1.15rem/1 "Bai Jamjuree", sans-serif; font-variant-numeric: tabular-nums; }
+.scambi-riga__apri { color: rgba(255,255,255,.45); font-size: 1.2rem; line-height: 1; }
+/* Le azioni stanno in un'area propria, staccata dalle righe; Accetta chiede conferma. */
+.scambi-card > footer.scambi-card__azioni { margin-top: 6px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.1); gap: 10px; }
+.scambi-card > footer.scambi-card__azioni .button { min-height: 48px; }
+.scambi-conferma { flex: 1 0 100%; margin: 0 0 2px; color: #e9e4f3; font-size: .82rem; line-height: 1.45; }
+.scambi-card > footer.is-conferma { border-top-color: rgba(110,231,168,.35); }
 .scambi-riepilogo__lato { min-width: 0; display: grid; gap: 6px; }
 .scambi-riepilogo__lato small { color: #6f8480; font-size: .62rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
 .scambi-riepilogo__chips { display: flex; flex-wrap: wrap; gap: 6px; }
