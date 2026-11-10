@@ -62,3 +62,20 @@ off-season 4, salvo indicazioni diverse. Fino ad allora il lavoro resta su un br
     resta validato e in uso fino al passaggio;
   * il generatore casuale ha lo stato dentro la partita (non globale come in `engine/random.js`): così una partita si
     può fermare, salvare e riprendere dallo stesso punto, che è quello che serve per applicare un ordine in corsa.
+
+* **Stato al 10/11/2026** (lavoro nel branch `feat/season4-live`, cartella `SpecialOne-s4`; niente è in gioco):
+  * **motore (`motore-live/`)**: una partita azione per azione con posizioni in campo, ripartenze, cartellini,
+    stanchezza, tattiche (mentalità, pressing, linea) e pilota dei cambi. Su 3000 partite 16 bersagli su 16
+    (`docs/risultati-motore-live.txt`). I gol restano fra 2,7 e 2,9 a partita da rose di OVR 66 a rose di OVR 85;
+  * **campo 2D (`campo-live/`)**: registro di cosa disegnare, regia dei cinque minuti, disegno su canvas, tabellone,
+    cronaca breve e numeri. Pagina di prova con Mafiester Utd – Fc Riskmond: si costruisce con
+    `node campo-live/prova/costruisci.mjs <file.html>`;
+  * **la regia**: 90 minuti in 5 vuol dire in media 18 volte più veloce del vero. Le occasioni (12-15 a partita, circa
+    90 secondi su 300) si vedono a 1,5 volte la velocità vera, il resto scorre fino a 35-40 volte;
+  * **nella prova ogni tempo è calcolato tutto prima di essere mostrato.** Con i comandi veri (tappa 4) la regia
+    dovrà lavorare con pochi secondi di anticipo: è il pezzo ancora da progettare;
+  * **punto aperto, i moduli non sono alla pari**: contro il 4-3-3 il 5-3-2 vince il 67% delle partite, il 4-2-4 e il
+    4-3-3 offensivo fanno troppi gol (3,3-3,6 a partita). Va sistemato prima di chiudere la tappa 1;
+  * **mancano ancora nel motore nuovo**: infortuni, stili e ampiezza, ruoli e compiti, familiarità coi moduli, fuori
+    ruolo, morale, pubblico, voti, mentalità decisa dal pilota, la prova «pilota contro allenatore che interviene» e
+    il confronto in parallelo su LegaBot.
