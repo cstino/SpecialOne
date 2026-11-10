@@ -75,15 +75,29 @@ off-season 4, salvo indicazioni diverse. Fino ad allora il lavoro resta su un br
   * **nella prova ogni tempo è calcolato tutto prima di essere mostrato.** Con i comandi veri (tappa 4) la regia
     dovrà lavorare con pochi secondi di anticipo: è il pezzo ancora da progettare;
   * **gli 11 moduli sono alla pari** (10/11): in un girone fra moduli a parità di giocatori lo scarto fra il primo e
-    l'ultimo è sceso da 0,57 a 0,20 punti a partita (motore di oggi: 0,13). Tre leve nuove: chi difende si stringe
+    l'ultimo è sceso da 0,57 a 0,19 punti a partita (motore di oggi: 0,13). Tre leve nuove: chi difende si stringe
     contro chi attacca senza uomini larghi, il trequartista cerca più spesso il filtrante, gli esterni di centrocampo
     crossano dalla trequarti. Con gli schemi che la Serie F usa davvero si segnano 3,0 gol a partita (oggi 3,08);
-  * **punto aperto, gli schemi personalizzati**: spostando i giocatori dentro la linea si trovano schemi troppo forti
-    (quattro centrocampisti centrali 1,65 punti a partita, rombo 1,54, contro 1,27-1,47 dei moduli) e schemi troppo
-    deboli (due o tre trequartisti: 1,00-1,13). Nel motore di oggi stanno tutti fra 1,27 e 1,43. Cause trovate: a
-    parità di OVR un centrocampista centrale pressa molto meglio di un esterno o di un trequartista, e più punte
-    centrali vuol dire più tiri. Si chiude in fondo alla tappa 1, dopo ruoli, compiti, stili e fuori ruolo, che
-    spostano tutti questo equilibrio. La prova è `SCHEMI=1 node tools/validazione/prova-moduli-live.mjs`;
+  * **gli schemi personalizzati sono equilibrati** (10/11, indicazione del committente: «ci sta che il 4-2-4 tiri di
+    più, dall'altro lato avrà un centrocampo più scoperto; gli schemi vanno equilibrati, prendi spunto da Football
+    Manager»). Spostando i giocatori dentro la linea l'app permette 1230 schemi: misurati su due campioni da 240,
+    ognuno contro gli 11 moduli. Prima andavano da 0,08 a 1,85 punti a partita, col 59% fuori dalla fascia 1,15-1,55;
+    ora da 0,85 a 1,72 col 18-20% fuori (motore di oggi, stessa prova: da 0,85 a 1,57, 19-20% fuori). I migliori
+    veri valgono 1,55-1,65 contro 1,47 del miglior modulo. Cinque regole, nessuna sposta i posti degli 11 moduli:
+    1. il campo è sempre coperto (un uomo per fascia per linea, i doppioni giocano dentro; una linea con meno di tre
+       uomini gioca al centro; un attacco a tre senza ali allarga le punte);
+    2. pressare è corsa, marcare è mestiere (chi porta palla è disturbato per metà dalla corsa di chi gli sta
+       addosso, non solo dal suo voto difensivo: prima riempire il campo di mediani vinceva sempre);
+    3. lo schema ha due facce: con la palla tre uomini davanti (salgono i centrocampisti avanzati), senza palla
+       quattro a centrocampo (rientrano le ali) e due centrali in mediana (scendono i trequartisti);
+    4. i centrocampisti centrali non fanno gli esterni: in quattro o cinque restano stretti e lasciano le fasce;
+    5. niente tre uomini in colonna: mezzala e mediano soli si sfalsano di lato.
+    **Che cosa resta, da sapere:** un mediano solo davanti alla difesa rende (1,44 contro 1,29 senza); senza mediani
+    né mezzali si subisce troppo (1,16); quattro esterni di centrocampo o quattro punte sono scelte perdenti
+    (0,99 e 1,24); le mediane centrali affollate restano le più forti perché le fasce scoperte costano ancora poco
+    (il blocco di chi difende segue la palla senza ritardo: i cambi di gioco non lo puniscono). La prova è
+    `node tools/validazione/prova-schemi-live.mjs` (`VECCHIO=1` per il motore di oggi). Ruoli, compiti, stili e
+    fuori ruolo sposteranno questo equilibrio: la prova va rifatta dopo ognuno;
   * **mancano ancora nel motore nuovo**: infortuni, stili e ampiezza, ruoli e compiti, familiarità coi moduli, fuori
     ruolo, morale, pubblico, voti, mentalità decisa dal pilota, la prova «pilota contro allenatore che interviene» e
     il confronto in parallelo su LegaBot.
