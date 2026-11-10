@@ -120,7 +120,30 @@ off-season 4, salvo indicazioni diverse. Fino ad allora il lavoro resta su un br
   * **come si lanciano le prove** (10/11): database e server del gioco stanno sullo stesso Mac, e dodici prove del
     motore lanciate insieme li hanno fatti cadere per qualche minuto. Da ora una prova alla volta, in sottofondo sui
     processori lenti (`taskpolicy -b node tools/validazione/...`): 1000 partite con tutte le sezioni durano 9 minuti
-    e il server non se ne accorge. Le batterie lunghe solo in un momento concordato col committente, mai verso le 22;
-  * **mancano ancora nel motore nuovo**: infortuni, stili e ampiezza, ruoli e compiti, familiarità coi moduli, fuori
-    ruolo, morale, pubblico, voti, mentalità decisa dal pilota, la prova «pilota contro allenatore che interviene» e
-    il confronto in parallelo su LegaBot.
+    e il server non se ne accorge. Le batterie lunghe solo in un momento concordato col committente, mai verso le 22.
+    La sera del 10/11 il Mac aveva già un carico di 8 su 8 processori per conto suo (sei processi fermi al 100% da
+    giorni: cinque «Codex» dell'app ChatGPT e uno di VS Code): in queste condizioni solo prove da un paio di minuti,
+    con un freno che le ferma se il server risponde in più di un secondo;
+  * **ruoli e compiti dei giocatori** (10/11, prima taratura; `docs/decisioni-tattiche.md` punti 13, 15, 16, 22, 23,
+    28, 36). Nel motore di oggi spostano punti fra le linee; nel motore nuovo spostano il giocatore sul campo: un
+    ruolo lo fa giocare più su o più dentro quando la squadra ha la palla (5 metri in avanti, 8 verso il centro per
+    un uomo di fascia), un compito lo sbilancia secondo il reparto (un difensore si blocca o si sgancia, un
+    centrocampista copre o si inserisce, una punta pressa il portatore o resta sul filo). Quello che si guadagna e
+    quello che si paga lo decide il campo: chi sale è un uomo in più davanti e uno in meno dietro la palla quando la
+    si perde; chi rientra dalla fascia toglie ampiezza. Saper fare il ruolo vale come nel gioco di oggi (stesso
+    elenco, stessa idoneità, stessi consumi: una fonte sola). Con ruolo base ed «equilibrio» la partita è identica
+    evento per evento. Numeri (4-3-3 contro 4-3-3, 600 partite per riga, punti in più su 38 giornate per chi sceglie,
+    errore 2):
+    * a posto: chi tocca tutto a caso −3,5 (non batte chi non tocca niente); chi sbaglia apposta −10,8 (uguale al
+      motore di oggi); «tutti in attacco» −0,3 con più gol da tutte e due le parti, «tutti in difesa» +0,2 con meno
+      gol; nessun compito e nessun ruolo sopra +1,6;
+    * **da rifinire nella ritaratura**: chi legge bene la rosa va solo in pari (+0,3, nel motore di oggi +4,0),
+      perché uscire dal posto del modulo costa ancora circa 2 punti per gruppo di giocatori; la punta di manovra con
+      una punta sola costa −6,6 (esce dalla zona dei filtranti e nessuno ne prende il posto): così sarebbe una scelta
+      morta; terzini che si sganciano −4,5, incursore −3,7, pressing −3,5, marcatore −3,5 sono al limite. Misurato
+      solo il 4-3-3. Il costo vero del pressing (la condizione fra una partita e l'altra) arriva col pezzo della
+      condizione. La prova è `node tools/validazione/prova-ruoli-live.mjs`;
+  * **mancano ancora nel motore nuovo**: infortuni e condizione, stili e ampiezza, familiarità coi moduli, fuori
+    ruolo, morale, pubblico, voti, mentalità decisa dal pilota, la scelta di ruoli e compiti nella pagina di prova,
+    la prova «pilota contro allenatore che interviene» e il confronto in parallelo su LegaBot. Poi la **ritaratura
+    unica** (moduli, casa, ruoli e compiti, schemi) con batterie lunghe in un momento concordato.
