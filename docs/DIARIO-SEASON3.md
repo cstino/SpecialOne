@@ -137,7 +137,9 @@ provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato
   sempre sull'ingaggio e sul numero dei giocatori della squadra.»
 * **Decisioni:**
   * **massimo 5 prestiti per squadra a stagione**; ogni giocatore **una sola volta a stagione**; **richiamabile** in
-    qualsiasi momento, ma dopo il richiamo non può ripartire (in quella stagione);
+    qualsiasi momento, ma dopo il richiamo non può ripartire (in quella stagione). **Dal 10/11/2026 la regola è per
+    squadra**: chi lo richiama non lo rimanda, ma se lo scambia la nuova squadra può mandarlo in prestito a sua volta
+    (migrazione `20261110100000_prestito_dopo_scambio.sql`);
   * **durata: fino a fine stagione** (o fino al richiamo); **tutti i giocatori** possono andare in prestito;
   * va a **club finti** (non le squadre della lega), gestiti dal sistema come bot;
   * **crescita** come chi gioca il 60% dei minuti: moltiplicatore **1,16** (turnover 1,04, titolare 1,25), per

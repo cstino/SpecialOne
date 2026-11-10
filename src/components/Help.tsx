@@ -157,13 +157,14 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
     corpo: <>
       <p>Dalla Season 3 puoi mandare un giocatore in prestito dalla sua scheda: va in un club reale scelto
         dal sistema e ci resta fino a fine stagione. Ne puoi fare <strong>al massimo 5 a stagione</strong>, e
-        ogni giocatore ci va una volta sola per stagione.</p>
+        ogni giocatore lo puoi mandare una volta sola per stagione.</p>
       <p>In prestito cresce come chi gioca più di metà delle partite, con l'allenamento del club che lo
         ospita: è il club a scegliere il piano di sviluppo e, a volte, a cambiargli ruolo. Non si infortuna,
         il morale resta fermo e la promessa di minuti è sospesa. Resta sul tuo tetto ingaggi e in rosa, ma
         non puoi schierarlo, scambiarlo né svincolarlo.</p>
       <p>Puoi <strong>richiamarlo</strong> quando vuoi: torna disponibile dalla giornata successiva, ma in
-        quella stagione non potrà più ripartire. A fine stagione rientrano tutti da soli, prima dei rinnovi.
+        quella stagione non potrai più farlo ripartire. Se lo scambi, la sua nuova squadra può mandarlo in
+        prestito a sua volta. A fine stagione rientrano tutti da soli, prima dei rinnovi.
         Dopo un prestito devono restarti almeno 18 giocatori e un portiere.</p>
     </>,
   },

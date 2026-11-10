@@ -1317,7 +1317,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
             ].filter(Boolean)
             return parti.length ? `Il club lo allena: ${parti.join(' e ')}.` : 'Il club lo allena come preferisce.'
           })() : null,
-          bloccato: schedaAperta.prestatoStagione ? 'In questa stagione è già stato in prestito.'
+          bloccato: schedaAperta.prestatoStagione ? 'In questa stagione l\'hai già mandato in prestito.'
             : prestitiUsati >= 5 ? 'Hai già usato i 5 prestiti di questa stagione.' : undefined,
           rimasti: Math.max(0, 5 - prestitiUsati),
           onManda: async () => {
