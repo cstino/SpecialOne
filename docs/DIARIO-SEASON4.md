@@ -74,8 +74,16 @@ off-season 4, salvo indicazioni diverse. Fino ad allora il lavoro resta su un br
     90 secondi su 300) si vedono a 1,5 volte la velocità vera, il resto scorre fino a 35-40 volte;
   * **nella prova ogni tempo è calcolato tutto prima di essere mostrato.** Con i comandi veri (tappa 4) la regia
     dovrà lavorare con pochi secondi di anticipo: è il pezzo ancora da progettare;
-  * **punto aperto, i moduli non sono alla pari**: contro il 4-3-3 il 5-3-2 vince il 67% delle partite, il 4-2-4 e il
-    4-3-3 offensivo fanno troppi gol (3,3-3,6 a partita). Va sistemato prima di chiudere la tappa 1;
+  * **gli 11 moduli sono alla pari** (10/11): in un girone fra moduli a parità di giocatori lo scarto fra il primo e
+    l'ultimo è sceso da 0,57 a 0,20 punti a partita (motore di oggi: 0,13). Tre leve nuove: chi difende si stringe
+    contro chi attacca senza uomini larghi, il trequartista cerca più spesso il filtrante, gli esterni di centrocampo
+    crossano dalla trequarti. Con gli schemi che la Serie F usa davvero si segnano 3,0 gol a partita (oggi 3,08);
+  * **punto aperto, gli schemi personalizzati**: spostando i giocatori dentro la linea si trovano schemi troppo forti
+    (quattro centrocampisti centrali 1,65 punti a partita, rombo 1,54, contro 1,27-1,47 dei moduli) e schemi troppo
+    deboli (due o tre trequartisti: 1,00-1,13). Nel motore di oggi stanno tutti fra 1,27 e 1,43. Cause trovate: a
+    parità di OVR un centrocampista centrale pressa molto meglio di un esterno o di un trequartista, e più punte
+    centrali vuol dire più tiri. Si chiude in fondo alla tappa 1, dopo ruoli, compiti, stili e fuori ruolo, che
+    spostano tutti questo equilibrio. La prova è `SCHEMI=1 node tools/validazione/prova-moduli-live.mjs`;
   * **mancano ancora nel motore nuovo**: infortuni, stili e ampiezza, ruoli e compiti, familiarità coi moduli, fuori
     ruolo, morale, pubblico, voti, mentalità decisa dal pilota, la prova «pilota contro allenatore che interviene» e
     il confronto in parallelo su LegaBot.
