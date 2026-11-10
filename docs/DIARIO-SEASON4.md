@@ -94,10 +94,33 @@ off-season 4, salvo indicazioni diverse. Fino ad allora il lavoro resta su un br
     5. niente tre uomini in colonna: mezzala e mediano soli si sfalsano di lato.
     **Che cosa resta, da sapere:** un mediano solo davanti alla difesa rende (1,44 contro 1,29 senza); senza mediani
     né mezzali si subisce troppo (1,16); quattro esterni di centrocampo o quattro punte sono scelte perdenti
-    (0,99 e 1,24); le mediane centrali affollate restano le più forti perché le fasce scoperte costano ancora poco
-    (il blocco di chi difende segue la palla senza ritardo: i cambi di gioco non lo puniscono). La prova è
+    (0,99 e 1,24); le mediane centrali affollate restano le più forti (circa 1,6). Si pensava che dipendesse dal
+    blocco di chi difende che seguiva la palla senza ritardo: l'inerzia del punto qui sotto c'è e non è bastata,
+    quindi la causa va cercata altrove. La prova è
     `node tools/validazione/prova-schemi-live.mjs` (`VECCHIO=1` per il motore di oggi). Ruoli, compiti, stili e
     fuori ruolo sposteranno questo equilibrio: la prova va rifatta dopo ognuno;
+  * **il fuorigioco si vede giusto** (10/11, segnalazione del committente: Retegui serve il numero 11 in netto
+    fuorigioco e il gioco va avanti). Il motore considera in gioco chi riceve e fischia solo sui filtranti; era il
+    disegno a portare chi riceve oltre la linea secondi prima del passaggio. Ora chi riceve resta al di qua della
+    linea finché la palla non parte, e nel fuorigioco fischiato lo si vede oltre. Fuorigioco non fischiati
+    visibili: da 686 su 16.561 passaggi a 0;
+  * **il blocco di chi difende ha inerzia** (10/11): non si sposta più all'istante con la palla ma la rincorre a
+    8 metri al secondo, in profondità e di lato. Sul filtrante riuscito chi riceve è oltre la linea di 1,7 m (prima
+    la difesa era già 3 m alle sue spalle), la linea arretra a 3 m/s mentre la palla vola, e su angoli e punizioni chi
+    riceve si muove durante il tempo morto invece di partire alla battuta. Validazione su 3000 partite: 16 bersagli
+    su 16 (2,66 gol). I comandi presi uno per volta stanno entro un decimo di punto a partita.
+    **Che cosa è costato, da riprendere alla prossima taratura** (insieme a ruoli, compiti e ampiezza, che spostano
+    comunque l'equilibrio: si ritara una volta sola):
+    * i moduli sono passati da 0,19 a 0,25 di scarto (3-5-2 a 1,52 e 5-3-2 a 1,50 in cima, 4-2-4 a 1,26 in fondo).
+      Decisione: l'inerzia resta intera. Togliere la parte laterale avrebbe recuperato circa 0,03, ma è il ritardo di
+      lato che fa valere il cambio di gioco;
+    * le vittorie in casa sono scese dal 47,0% al 43,2%: dentro la fascia 43-47 ma sul bordo, da riportare verso 45;
+    * **punto aperto per la tappa 4**: la coppia «linea alta + mentalità difensiva» vale +0,22 punti a partita
+      (+0,25 già prima dell'inerzia). Nessun comando da solo passa +0,09;
+  * **come si lanciano le prove** (10/11): database e server del gioco stanno sullo stesso Mac, e dodici prove del
+    motore lanciate insieme li hanno fatti cadere per qualche minuto. Da ora una prova alla volta, in sottofondo sui
+    processori lenti (`taskpolicy -b node tools/validazione/...`): 1000 partite con tutte le sezioni durano 9 minuti
+    e il server non se ne accorge. Le batterie lunghe solo in un momento concordato col committente, mai verso le 22;
   * **mancano ancora nel motore nuovo**: infortuni, stili e ampiezza, ruoli e compiti, familiarità coi moduli, fuori
     ruolo, morale, pubblico, voti, mentalità decisa dal pilota, la prova «pilota contro allenatore che interviene» e
     il confronto in parallelo su LegaBot.
