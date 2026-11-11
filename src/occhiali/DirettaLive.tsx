@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { percorsoCurva } from '../lib/pressione'
 import type { Parte, Riga } from '../lib/telecronaca'
 import type { Gol, Risultato } from './dati'
+import { creaSottofondo, SUONO_STADIO } from '../lib/sottofondoStadio'
 
 // La diretta sugli occhiali, a tutto schermo: tabellone, telecronaca dell'app (due righe alla volta, niente
 // scorrimento), grafico della pressione, scena del gol, suoni e voce. Un minuto di partita ogni 0,7 secondi.
@@ -56,21 +57,23 @@ export function DirettaLive({ partita, onEsci, automatica = false }: { partita: 
   const [scena, setScena] = useState<Gol | null>(null)
   const [voce, setVoce] = useState(leggiVoce)
   const radice = useRef<HTMLElement>(null)
-  const audio = useRef<{ ctx: AudioContext | null; stadio: HTMLAudioElement; esultanza: HTMLAudioElement } | null>(null)
+  const audio = useRef<{ ctx: AudioContext | null; stadio: ReturnType<typeof creaSottofondo>; esultanza: HTMLAudioElement } | null>(null)
   const golMostrati = useRef(new Set<number>())
   const fine = partita.fine
 
   // Audio: parte qui perche' la diretta si apre con Invio (un gesto: il browser lo permette).
   useEffect(() => {
     radice.current?.focus()
-    const stadio = new Audio('/suoni-effetti/stadio-sottofondo.m4a'); stadio.loop = true; stadio.volume = 0.25
+    const lettori = [new Audio(SUONO_STADIO), new Audio(SUONO_STADIO)]
+    for (const l of lettori) l.volume = 0.25
+    const stadio = creaSottofondo(lettori[0], lettori[1])
     const esultanza = new Audio('/suoni-effetti/esultanza-gol.m4a'); esultanza.volume = 0.9
     let ctx: AudioContext | null = null
     try { ctx = new AudioContext() } catch { ctx = null }
     audio.current = { ctx, stadio, esultanza }
-    void stadio.play().catch(() => {})
+    stadio.accendi()
     fischio(ctx, 1)
-    return () => { stadio.pause(); esultanza.pause(); void ctx?.close(); window.speechSynthesis?.cancel() }
+    return () => { stadio.smonta(); esultanza.pause(); void ctx?.close(); window.speechSynthesis?.cancel() }
   }, [])
 
   // Avanzamento: si ferma durante la scena del gol e un attimo all'intervallo.
@@ -110,7 +113,7 @@ export function DirettaLive({ partita, onEsci, automatica = false }: { partita: 
     if (minuto === 46) fischio(ctx, 1)
     if (minuto === fine) {
       fischio(ctx, 3)
-      audio.current?.stadio.pause()
+      audio.current?.stadio.spegni()
       if (voce) parla(`Triplice fischio! Finisce ${partita.casa.nome} ${golCasa}, ${partita.ospite.nome} ${golOspite}.`)
     }
   }, [minuto]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -132,7 +135,7 @@ export function DirettaLive({ partita, onEsci, automatica = false }: { partita: 
       e.preventDefault(); setVoce((v) => { salvaVoce(!v); if (v) window.speechSynthesis?.cancel(); return !v })
     } else if (e.key === 'Enter' && minuto >= fine) {
       e.preventDefault(); golMostrati.current.clear(); setScena(null); setMinuto(0)
-      const a = audio.current; if (a) { a.stadio.currentTime = 0; void a.stadio.play().catch(() => {}); fischio(a.ctx, 1) }
+      const a = audio.current; if (a) { a.stadio.daCapo(); fischio(a.ctx, 1) }
     }
   }
 

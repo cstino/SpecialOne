@@ -15,6 +15,7 @@ import { SpotVideo } from './SpotVideo'
 import { RigoriScena, type FaseRigore } from './RigoriScena'
 import { costruisciTelecronaca, type Riga } from '../lib/telecronaca'
 import { coloreStemma, coloriDistinti, curvaPressione, percorsoCurva } from '../lib/pressione'
+import { creaSottofondo, SUONO_STADIO } from '../lib/sottofondoStadio'
 
 type Props = { membership: Membership; matchId: number; onClose: () => void; onRevealed: (matchId: number) => void; onOpenReport: () => void }
 type Player = { id: number; nome: string; foto?: string; posizioni?: string[] }
@@ -121,6 +122,8 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   const [fase, setFase] = useState<FaseSquadra>('regular')
   const suonoGolRef = useRef<HTMLAudioElement>(null)
   const sottofondoRef = useRef<HTMLAudioElement>(null)
+  const sottofondoBisRef = useRef<HTMLAudioElement>(null)
+  const sottofondo = useRef<ReturnType<typeof creaSottofondo> | null>(null)
   // Il gol appena segnato resta in scena da solo (simulazione ferma) prima di
   // "sistemarsi" nella cronaca: popupGol e' quello in scena ora, codaGolRef
   // quelli in attesa (due gol nello stesso minuto sono rari ma possibili).
@@ -364,7 +367,7 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   // sottofondo, che partono da un timer) non vengono piu' rifiutati. Senza
   // questo, chi guardava l'intro fino in fondo restava senza alcun suono.
   useEffect(() => {
-    for (const ref of [suonoGolRef, sottofondoRef]) {
+    for (const ref of [suonoGolRef, sottofondoRef, sottofondoBisRef]) {
       const audio = ref.current
       if (!audio) continue
       // Muto durante lo sblocco: il play() dura finche' la promessa non si
@@ -385,11 +388,13 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   // un gol e' in scena) e si spegne a fine cronaca.
   const sottofondoAcceso = eventi.length > 0 && (inCorso || inRigori || popupGol !== null || popupTiro !== null || annuncio !== null)
   useEffect(() => {
-    const audio = sottofondoRef.current
-    if (!audio) return
-    if (sottofondoAcceso) { audio.muted = false; void audio.play().catch(() => {}) }
-    else audio.pause()
+    if (!sottofondo.current && sottofondoRef.current && sottofondoBisRef.current) {
+      sottofondo.current = creaSottofondo(sottofondoRef.current, sottofondoBisRef.current)
+    }
+    if (sottofondoAcceso) sottofondo.current?.accendi()
+    else sottofondo.current?.spegni()
   }, [sottofondoAcceso])
+  useEffect(() => () => { sottofondo.current?.smonta(); sottofondo.current = null }, [])
 
   // Ogni gol resta in scena da solo per DURATA_POPUP_GOL_MS (sincronizzato col
   // boato dell'esultanza), poi passa al prossimo in coda o si riprende la
@@ -465,7 +470,8 @@ export function MatchReveal({ membership, matchId, onClose, onRevealed, onOpenRe
   // fra stagione regolare (intro corta, spesso saltata) e playoff.
   const elementiAudio = <>
     <audio ref={suonoGolRef} src="/suoni-effetti/esultanza-gol.m4a" preload="auto" />
-    <audio ref={sottofondoRef} src="/suoni-effetti/stadio-sottofondo.m4a" loop preload="auto" />
+    <audio ref={sottofondoRef} src={SUONO_STADIO} preload="auto" />
+    <audio ref={sottofondoBisRef} src={SUONO_STADIO} preload="auto" />
   </>
 
   // Anche mentre i dati si caricano: lo sblocco dell'audio (effect qui sopra)
