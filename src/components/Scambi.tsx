@@ -76,6 +76,8 @@ type Giocatore = {
   overall: number
   eta: number
   ingaggio: number
+  /** Ultima stagione coperta dal contratto (i ragazzi del vivaio non ce l'hanno). */
+  contrattoScadenza?: number | null
   nome: string
   nomeEsteso?: string | null
   ruolo: string
@@ -226,7 +228,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
     setErrore(null)
     const [istanzeRes, scelteRes, proposteRes, trattativeRes, capienzaRes, valutazioniRes] = await Promise.all([
       supabase.from('player_instances')
-        .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, condizione, infortunato_fino_a, ritiro_annunciato, sul_mercato, posizioni_override')
+        .select('id, team_id, player_id, overall_corrente, eta_corrente, ingaggio, contratto_scadenza, condizione, infortunato_fino_a, ritiro_annunciato, sul_mercato, posizioni_override')
         // In prestito (Season 3) non si scambia: va richiamato prima.
         .eq('league_id', league.id).not('team_id', 'is', null).is('prestito_id', null),
       supabase.from('scelte_draft')
@@ -271,7 +273,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
       const posizioni = i.posizioni_override ?? perId.get(i.player_id)?.posizioni ?? []
       return {
       id: i.id, player_id: i.player_id, team_id: i.team_id as number,
-      overall: i.overall_corrente, eta: i.eta_corrente, ingaggio: i.ingaggio,
+      overall: i.overall_corrente, eta: i.eta_corrente, ingaggio: i.ingaggio, contrattoScadenza: i.contratto_scadenza,
       nome: cognome(perId.get(i.player_id)?.nome ?? '—'),
       nomeEsteso: (perId.get(i.player_id) as { nome_completo?: string | null } | undefined)?.nome_completo ?? null,
       ruolo: posizioni[0] ?? '—',
@@ -985,6 +987,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
           nome: schedaAperta.nome, nomeEsteso: schedaAperta.nomeEsteso, club: schedaAperta.club, nazionalita: schedaAperta.nazionalita,
           posizioni: schedaAperta.posizioni ?? [schedaAperta.ruolo], overall: schedaAperta.overall, eta: schedaAperta.eta,
           piede: schedaAperta.piede, altezza: schedaAperta.altezza, ingaggio: schedaAperta.ingaggio,
+          contrattoScadenza: schedaAperta.contrattoScadenza ?? undefined, stagioneCorrente: league.stagione_corrente,
           condizione: schedaAperta.condizione, infortunatoFinoA: schedaAperta.infortunatoFinoA,
           ritiroAnnunciato: schedaAperta.ritiroAnnunciato, attributi: attributiScheda,
         }}

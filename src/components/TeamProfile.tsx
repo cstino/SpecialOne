@@ -1222,9 +1222,10 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
           squalificatoFinoA: schedaAperta.squalificatoFinoA,
           ritiroAnnunciato: schedaAperta.ritiroAnnunciato,
           morale: ownTeam ? schedaAperta.morale : undefined,
-          contrattoScadenza: ownTeam ? schedaAperta.contrattoScadenza : undefined,
+          // la durata del contratto si vede per tutte le squadre (12/11/2026): serve al mercato; morale, mentalita' e opzione restano riservati
+          contrattoScadenza: schedaAperta.contrattoScadenza,
           opzioneContratto: ownTeam ? schedaAperta.opzioneContratto : undefined,
-          stagioneCorrente: ownTeam ? league.stagione_corrente : undefined,
+          stagioneCorrente: league.stagione_corrente,
           mentalita: ownTeam ? schedaAperta.mentalita : undefined,
           minutaggio: schedaAperta.minutaggio,
           attributi: schedaAperta.attributi,
