@@ -51,7 +51,9 @@ type EventoPartita = EventoGol | EventoTiro | EventoSostituzione | EventoInfortu
 // Un cambio come lo restituisce il motore (blocco al cui termine avviene e
 // sosta di gioco: 0 = intervallo o pausa prima dei supplementari) e come lo
 // racconta la cronaca, col suo minuto.
-type CambioMotore = { lato: Lato; blocco: number; esce: number; entra: number; motivo: 'stanchezza' | 'infortunio' | 'rendimento'; sosta: number; tardiva: boolean }
+// motivo 'portiere' (12/11/2026): il secondo portiere entra subito dopo l'espulsione del primo (`espulso`),
+// al posto di un giocatore di movimento. Nella cronaca e' una sostituzione normale, nel minuto dopo il rosso.
+type CambioMotore = { lato: Lato; blocco: number; esce: number; entra: number; motivo: 'stanchezza' | 'infortunio' | 'rendimento' | 'portiere'; sosta: number; tardiva: boolean; espulso?: number }
 type CambioCronaca = CambioMotore & { minuto: number }
 type CartellinoMotore = { lato: Lato; blocco: number; giocatore: number; tipo: 'giallo' | 'rosso_diretto' | 'doppio_giallo' }
 type CartellinoCronaca = CartellinoMotore & { minuto: number }
@@ -666,7 +668,8 @@ function minutiCambi(cambi: CambioMotore[], seed: number): CambioCronaca[] {
     }
     // In ordine di tempo: nello stesso blocco l'infortunio avviene durante il
     // gioco, i cambi per stanchezza e l'intervallo alla sua fine.
-    const momento = (c: CambioMotore) => c.motivo === 'infortunio' ? 0 : 1
+    // Infortunio e cambio del portiere espulso avvengono durante il gioco, non al confine del blocco.
+    const momento = (c: CambioMotore) => c.motivo === 'infortunio' || c.motivo === 'portiere' ? 0 : 1
     const ordinati = [...gruppi.values()].sort((a, b) => a[0].blocco - b[0].blocco || momento(a[0]) - momento(b[0]) || a[0].sosta - b[0].sosta)
     let ultimo = 0
     for (const gruppo of ordinati) {
@@ -680,10 +683,11 @@ function minutiCambi(cambi: CambioMotore[], seed: number): CambioCronaca[] {
         // Infortunio: dentro il blocco in cui succede. Cambio per stanchezza:
         // da poco prima a poco dopo il confine; l'ultimo di una finestra
         // divisa arriva verso la fine.
-        let da = motivo === 'infortunio' ? confine - MINUTI_PER_BLOCCO + 2 : tardiva ? confine + 7 : confine - 4
+        const durante = motivo === 'infortunio' || motivo === 'portiere'
+        let da = durante ? confine - MINUTI_PER_BLOCCO + 2 : tardiva ? confine + 7 : confine - 4
         // L'infortunio resta ad almeno 2' dalla fine del blocco: chi entra puo'
         // ancora prendere un cartellino in quel blocco, dopo il suo ingresso.
-        const a = motivo === 'infortunio' ? confine - 2 : tardiva ? confine + 14 : confine + 10
+        const a = durante ? confine - 2 : tardiva ? confine + 14 : confine + 10
         da = Math.min(Math.max(da, ultimo + 3), a)
         minuto = da + Math.floor(rnd() * (a - da + 1))
       }
@@ -714,7 +718,7 @@ function finestreInCampo(lati: Array<{ lato: Lato; titolari: number[] }>, cambi:
 // I cartellini cadevano tutti a fine blocco (15', 30', 45'...). Ora prendono un
 // minuto nel loro blocco, dentro la finestra in campo del giocatore; un rosso
 // chiude la finestra, il secondo giallo viene dopo il primo.
-function minutiCartellini(cartellini: CartellinoMotore[], finestre: Finestre, seed: number): CartellinoCronaca[] {
+function minutiCartellini(cartellini: CartellinoMotore[], finestre: Finestre, seed: number, cambi: CambioCronaca[] = []): CartellinoCronaca[] {
   const rnd = creaRng(seed ^ 0x27d4eb2f)
   const ultimoPerGiocatore = new Map<number, number>()
   return cartellini.map((cartellino) => {
@@ -723,7 +727,13 @@ function minutiCartellini(cartellini: CartellinoMotore[], finestre: Finestre, se
     let da = Math.max(inizioBlocco, (finestra?.da ?? 0) + 1, (ultimoPerGiocatore.get(cartellino.giocatore) ?? 0) + 1)
     const a = Math.min(cartellino.blocco * MINUTI_PER_BLOCCO, finestra?.a ?? MINUTO_MASSIMO)
     if (da > a) da = a
-    const minuto = Math.max(1, da + Math.floor(rnd() * (a - da + 1)))
+    let minuto = Math.max(1, da + Math.floor(rnd() * (a - da + 1)))
+    // Rosso al portiere col secondo portiere che entra: il cartellino cade nel minuto prima del cambio.
+    const cambioPortiere = cartellino.tipo === 'giallo' ? undefined
+      : cambi.find((c) => c.motivo === 'portiere' && c.lato === cartellino.lato && c.espulso === cartellino.giocatore)
+    if (cambioPortiere) {
+      minuto = Math.max(1, Math.min(cambioPortiere.minuto, Math.max(cambioPortiere.minuto - 1, (ultimoPerGiocatore.get(cartellino.giocatore) ?? 0) + 1)))
+    }
     ultimoPerGiocatore.set(cartellino.giocatore, minuto)
     if (finestra && cartellino.tipo !== 'giallo') finestra.a = minuto
     return { ...cartellino, minuto }
@@ -1165,7 +1175,7 @@ export function simulaAmichevoleCore(d: DatiAmichevole, seed: number) {
     { lato: 'ospite', titolari: titolariAwayIds },
   ], cambiCronaca, result.supplementari ? MINUTO_MASSIMO : BLOCCHI_REGOLAMENTARI * MINUTI_PER_BLOCCO)
   const cartelliniPartita = result.cartelliniInPartita as CartellinoMotore[]
-  const cartelliniCronaca = minutiCartellini(cartelliniPartita, finestre, seed)
+  const cartelliniCronaca = minutiCartellini(cartelliniPartita, finestre, seed, cambiCronaca)
   adattaAiMinutiInCampo(eventi, finestre, creaRng(seed ^ 0x165667b1))
   eventi.sort((a, b) => a.minuto - b.minuto || a.blocco - b.blocco)
   minutiGiocati(finestre.get('casa'), result.perGiocatore?.casa.minuti as Map<number, number> | undefined)
@@ -1715,7 +1725,7 @@ export default {
           { lato: 'ospite', titolari: titolariAwayIds },
         ], cambiCronaca, result.supplementari ? MINUTO_MASSIMO : BLOCCHI_REGOLAMENTARI * MINUTI_PER_BLOCCO)
         const cartelliniPartita = result.cartelliniInPartita as CartellinoMotore[]
-        const cartelliniCronaca = minutiCartellini(cartelliniPartita, finestre, seed)
+        const cartelliniCronaca = minutiCartellini(cartelliniPartita, finestre, seed, cambiCronaca)
         adattaAiMinutiInCampo(eventi, finestre, creaRng(seed ^ 0x165667b1))
         eventi.sort((a, b) => a.minuto - b.minuto || a.blocco - b.blocco)
         minutiGiocati(finestre.get('casa'), result.perGiocatore?.casa.minuti as Map<number, number> | undefined)

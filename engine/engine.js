@@ -94,12 +94,12 @@ export function schiera(rosa, modulo) {
 
 export function forzeLinee(lineup) {
   const acc = { DEF: [0, 0], MID: [0, 0], ATT: [0, 0] };
-  let gk = 60;
+  let gk = 60, portiereDiMovimento = false;
   for (let i = 0; i < lineup.slots.length; i++) {
     const slot = lineup.slots[i], g = lineup.titolari[i];
     if (!g) continue;
     const eff = ovrEfficace(g, slot, dt(lineup, g, slot));
-    if (slot === 'GK') { gk = eff; continue; }
+    if (slot === 'GK') { gk = eff; portiereDiMovimento = REPARTO[g.posizioni[0]] !== 'GK'; continue; }
     // Il compito sposta il peso di questo giocatore da una linea all'altra:
     // un terzino che si sovrappone pesa meno in difesa e di piu' davanti. Il
     // costo e' automatico, perche' questi sono gli stessi pesi con cui si
@@ -111,7 +111,7 @@ export function forzeLinee(lineup) {
     DEF: acc.DEF[1] ? acc.DEF[0] / acc.DEF[1] : 60,
     MID: acc.MID[1] ? acc.MID[0] / acc.MID[1] : 60,
     ATT: acc.ATT[1] ? acc.ATT[0] / acc.ATT[1] : 60,
-    GK: gk,
+    GK: gk, portiereDiMovimento,
     wDEF: acc.DEF[1], wMID: acc.MID[1], wATT: acc.ATT[1],
   };
 }
@@ -420,6 +420,59 @@ function applicaCartellino(lineup, scelto, ammoniti, tipoSeDiretto, lato, blocco
   }
 }
 
+// ---------- La porta non resta mai vuota ----------
+// Deciso col committente il 12/11/2026. Prima, espulso il portiere, lo slot
+// restava vuoto e la porta valeva un 60 fisso: il secondo portiere non entrava
+// nemmeno se c'era, e la porta vuota parava meglio di un giocatore di movimento.
+// Ora, come nel calcio vero:
+//  - se in panchina c'e' un portiere e restano un cambio e una sosta, entra lui
+//    ed esce un giocatore di movimento (la squadra resta con un uomo in meno);
+//    esce chi sta rendendo peggio, se possibile non uno appena entrato;
+//  - altrimenti va in porta il giocatore di movimento che toglie meno alla
+//    squadra, e il suo posto resta vuoto.
+// Non usa numeri casuali: nessun flusso validato si sposta.
+function copriPorta(lineup, rend) {
+  const iGK = lineup.slots.indexOf('GK');
+  if (iGK < 0 || lineup.titolari[iGK]) return null;
+  const inCampo = [];
+  for (let i = 0; i < lineup.titolari.length; i++) if (i !== iGK && lineup.titolari[i]) inCampo.push(i);
+  if (inCampo.length === 0) return null;
+  const valore = (i) => ovrEfficace(lineup.titolari[i], lineup.slots[i], dt(lineup, lineup.titolari[i], lineup.slots[i]));
+
+  let jPor = -1, valPor = -Infinity;
+  if (lineup.cambiFatti < CFG.MAX_CAMBI && (lineup.soste ?? 0) < CFG.MAX_SOSTE) {
+    for (let j = 0; j < lineup.panchina.length; j++) {
+      const r = lineup.panchina[j];
+      if (REPARTO[r.posizioni[0]] !== 'GK') continue;
+      const v = ovrEfficace(r, 'GK', dt(lineup, r, 'GK'));
+      if (v > valPor) { valPor = v; jPor = j; }
+    }
+  }
+  if (jPor >= 0) {
+    const nonAppenaEntrati = inCampo.filter((i) => !lineup.titolari[i]._entrato);
+    const candidati = nonAppenaEntrati.length ? nonAppenaEntrati : inCampo;
+    let iEsce = candidati[0], votoMin = Infinity, valMin = Infinity;
+    for (const i of candidati) {
+      const voto = rend?.voto(lineup.titolari[i].id) ?? 6, val = valore(i);
+      if (voto < votoMin || (voto === votoMin && val < valMin)) { iEsce = i; votoMin = voto; valMin = val; }
+    }
+    const esce = lineup.titolari[iEsce];
+    const entra = lineup.panchina.splice(jPor, 1)[0];
+    lineup.titolari[iEsce] = null;
+    lineup.titolari[iGK] = entra;
+    entra._entrato = true;
+    lineup.cambiFatti++;
+    lineup.soste = (lineup.soste ?? 0) + 1;
+    return { esce: esce.id, entra: entra.id };
+  }
+  let iVa = inCampo[0], valMin = Infinity;
+  for (const i of inCampo) { const val = valore(i); if (val < valMin) { valMin = val; iVa = i; } }
+  const va = lineup.titolari[iVa];
+  lineup.titolari[iGK] = va;
+  lineup.titolari[iVa] = null;
+  return { inPorta: va.id };
+}
+
 // ---------- Statistiche individuali ----------
 
 function distribuisci(lineup, tipo, totale, attributo) {
@@ -516,6 +569,18 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
       tardiva: divisa && k === fatti.length - 1,
     }));
   };
+  // Portiere espulso: la porta si copre subito (vedi copriPorta). Il secondo
+  // portiere che entra e' un cambio come gli altri, col motivo 'portiere' e
+  // l'espulso che sostituisce fra i pali; il giocatore di movimento che va in
+  // porta non e' un cambio e finisce in portieriDiMovimento.
+  const portieriDiMovimento = [];
+  const dopoCartellino = (lato, L, scelto, blocco) => {
+    if (L.slots[scelto.i] !== 'GK' || L.titolari[scelto.i]) return;
+    const esito = copriPorta(L, rend);
+    if (!esito) return;
+    if (esito.entra != null) cambiInPartita.push({ lato, blocco, esce: esito.esce, entra: esito.entra, motivo: 'portiere', espulso: scelto.g.id, sosta: L.soste, tardiva: false });
+    else portieriDiMovimento.push({ lato, blocco, giocatore: esito.inPorta, espulso: scelto.g.id });
+  };
   const ammonitiCasa = new Map(); // id -> true se ha gia' un giallo in questa partita
   const ammonitiOspite = new Map();
   const cartelliniInPartita = [];
@@ -587,15 +652,19 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
 
     let xgC = CFG.XG_BASE_BLOCCO * (ctrlC / 0.5) * Math.exp(CFG.SENSIBILITA_FORZA * clamp(ATT_C - DEF_O, -CFG.DIFF_CLAMP, CFG.DIFF_CLAMP));
     let xgO = CFG.XG_BASE_BLOCCO * (ctrlO / 0.5) * Math.exp(CFG.SENSIBILITA_FORZA * clamp(ATT_O - DEF_C, -CFG.DIFF_CLAMP, CFG.DIFF_CLAMP));
-    xgC *= (1 - (fo.GK - 75) / CFG.DIVISORE_PORTIERE);
-    xgO *= (1 - (fc.GK - 75) / CFG.DIVISORE_PORTIERE);
+    // Con un giocatore di movimento in porta la formula del portiere non si applica
+    // (vale come un portiere medio): il suo costo e' sui gol, poco sotto.
+    xgC *= fo.portiereDiMovimento ? 1 : (1 - (fo.GK - 75) / CFG.DIVISORE_PORTIERE);
+    xgO *= fc.portiereDiMovimento ? 1 : (1 - (fc.GK - 75) / CFG.DIVISORE_PORTIERE);
 
     xgC = Math.max(0, xgC) * ritmoPartita; xgO = Math.max(0, xgO) * ritmoPartita;
     xgTotC += xgC; xgTotO += xgO;
     // stesse due estrazioni di prima, nello stesso ordine: qui vengono solo
     // trattenute per sapere in quale blocco e' caduto ogni gol
-    const nGolC = poisson(xgC);
-    const nGolO = poisson(xgO);
+    // Giocatore di movimento in porta: stessi tiri, ma ne entrano molti di piu'
+    // (CFG.PORTIERE_DI_MOVIMENTO_GOL). xG e tiri restano quelli di sopra.
+    const nGolC = poisson(fo.portiereDiMovimento ? xgC * CFG.PORTIERE_DI_MOVIMENTO_GOL : xgC);
+    const nGolO = poisson(fc.portiereDiMovimento ? xgO * CFG.PORTIERE_DI_MOVIMENTO_GOL : xgO);
     golC += nGolC;
     golO += nGolO;
     golPerBlocco.push({ blocco: b + 1, casa: nGolC, ospite: nGolO });
@@ -713,6 +782,7 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
           if (candidati.length === 0) break;
           const scelto = scegliPesatoLocale(candidati, pesi, rndCartellino);
           applicaCartellino(L, scelto, ammoniti, false, lato, b + 1, cartelliniInPartita);
+          dopoCartellino(lato, L, scelto, b + 1);
         }
         const nRossi = poissonLocale(CFG.CARTELLINO_ROSSO_DIRETTO_LAMBDA_BLOCCO, rndCartellino);
         for (let k = 0; k < nRossi; k++) {
@@ -720,6 +790,7 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
           if (candidati.length === 0) break;
           const scelto = scegliPesatoLocale(candidati, pesi, rndCartellino);
           applicaCartellino(L, scelto, ammoniti, true, lato, b + 1, cartelliniInPartita);
+          dopoCartellino(lato, L, scelto, b + 1);
         }
       }
     }
@@ -893,6 +964,9 @@ export function simulaPartita(rosaCasa, rosaOspite, modCasa, modOspite, opt = {}
     // Ogni cambio col blocco al cui termine e' avvenuto e la sosta di gioco
     // (0 = intervallo o pausa prima dei supplementari, 1-3 a gara in corso).
     cambiInPartita,
+    // Chi e' andato in porta da giocatore di movimento dopo l'espulsione del
+    // portiere, quando in panchina non c'era un secondo portiere (12/11/2026).
+    portieriDiMovimento,
     // I gol da calcio piazzato col blocco, il marcatore, il tipo e chi ha
     // battuto (l'assist, per angoli e punizioni messe in mezzo).
     piazzatiInPartita,

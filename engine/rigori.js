@@ -12,6 +12,7 @@
 // ============================================================
 
 import { rnd } from './random.js';
+import { REPARTO } from './config.js';
 
 export const CFG_RIGORI = {
   // 0,76 e' la percentuale di realizzazione reale nei tie-break dei tornei
@@ -108,7 +109,10 @@ export function portiereDaLineup(lineup) {
   // partita: se lo specialista e' uscito (infortunio, sostituzione) il suo
   // vantaggio esce con lui, perche' questa lineup e' gia' quella finale.
   const bonusRigori = g.specializzazione === 'para_rigori' ? CFG_RIGORI.BONUS_PARA_RIGORI : 0;
-  return { id: g.id, nome: g.nome, ovr: g.ovr, bonusRigori };
+  // Un giocatore di movimento fra i pali vale come in partita (engine.js,
+  // ovrEfficace): al massimo 45, non il suo overall da giocatore di movimento.
+  const ovr = REPARTO[g.posizioni?.[0]] === 'GK' ? g.ovr : Math.min(45, g.ovr * 0.45);
+  return { id: g.id, nome: g.nome, ovr, bonusRigori };
 }
 
 // Decisione matematica: una squadra ha gia' vinto se il suo punteggio supera il

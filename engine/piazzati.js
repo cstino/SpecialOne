@@ -27,6 +27,7 @@
 // ============================================================
 
 import { rnd, gauss, poisson } from './random.js';
+import { CFG, REPARTO } from './config.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -167,7 +168,11 @@ export function calcolaPiazzati(lineup, lineupDif, pressione = 1, quota = 1) {
   const attaccoAereo = migliori(lineup, 'testa', 4);
   const difesaAerea = migliori(lineupDif, 'marcatura', 4);
   const portiere = lineupDif.titolari[lineupDif.slots.indexOf('GK')];
-  const presa = portiere?.piazzati?.presa ?? 55;
+  // Giocatore di movimento in porta (12/11/2026): stessa regola dei gol su
+  // azione. Vale come un portiere medio e le conversioni si moltiplicano.
+  const diMovimento = !!portiere && REPARTO[portiere.posizioni?.[0]] !== 'GK';
+  const presa = diMovimento ? 55 : (portiere?.piazzati?.presa ?? 55);
+  const moltPorta = diMovimento ? CFG.PORTIERE_DI_MOVIMENTO_GOL : 1;
   const forzaDifesa = difesaAerea * 0.75 + presa * 0.25;
 
   let corner = 0, golCorner = 0, tiri = 0, inPorta = 0;
@@ -192,7 +197,7 @@ export function calcolaPiazzati(lineup, lineupDif, pressione = 1, quota = 1) {
     const conv = clamp(
       CFG_PIAZZATI.CORNER_CONVERSIONE * traiettoria
         * (1 + CFG_PIAZZATI.K_AEREO * (forzaAttacco - forzaDifesa)),
-      CFG_PIAZZATI.MIN_CONV, CFG_PIAZZATI.MAX_CONV);
+      CFG_PIAZZATI.MIN_CONV, CFG_PIAZZATI.MAX_CONV) * moltPorta;
 
     for (let i = 0; i < quanti; i++) {
       if (rnd() < conv) {
@@ -212,7 +217,7 @@ export function calcolaPiazzati(lineup, lineupDif, pressione = 1, quota = 1) {
   const forzaPunizione = specialista?.piazzati?.punizione ?? 45;
   const convCorta = clamp(
     CFG_PIAZZATI.PUNIZIONE_CORTA_CONVERSIONE * (1 + CFG_PIAZZATI.K_PUNIZIONE * (forzaPunizione - presa)),
-    CFG_PIAZZATI.MIN_CONV, CFG_PIAZZATI.MAX_CONV_CORTA);
+    CFG_PIAZZATI.MIN_CONV, CFG_PIAZZATI.MAX_CONV_CORTA) * moltPorta;
 
   let golPunizione = 0;
   for (let i = 0; i < corte; i++) {
@@ -231,7 +236,7 @@ export function calcolaPiazzati(lineup, lineupDif, pressione = 1, quota = 1) {
   const forzaCross = attaccoAereo * 0.7 + (crossatore?.piazzati?.battuta ?? 50) * 0.3;
   const convLunga = clamp(
     CFG_PIAZZATI.PUNIZIONE_LUNGA_CONVERSIONE * (1 + CFG_PIAZZATI.K_AEREO * (forzaCross - forzaDifesa)),
-    CFG_PIAZZATI.MIN_CONV, CFG_PIAZZATI.MAX_CONV);
+    CFG_PIAZZATI.MIN_CONV, CFG_PIAZZATI.MAX_CONV) * moltPorta;
 
   for (let i = 0; i < lunghe; i++) {
     if (rnd() < convLunga) {

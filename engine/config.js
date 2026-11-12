@@ -35,6 +35,14 @@ export const CFG = {
   BONUS_CASA_ATT: 2.0,      // in PUNTI di overall, non in %
   BONUS_CASA_MID: 2.0,
   DIVISORE_PORTIERE: 180,
+  // Giocatore di movimento in porta (deciso col committente il 12/11/2026): para 2 tiri
+  // in porta su 10. La formula qui sopra distingue portieri veri fra loro e non basta:
+  // con uno di movimento vale come un portiere medio e i GOL (non i tiri) si
+  // moltiplicano per questo numero. Vale su azione e sui calci piazzati.
+  // Taratura (tools/validazione/prova-portiere.mjs): in questo motore un portiere vero
+  // para 7,6 tiri in porta su 10; con 3.0 sugli stessi tiri ne entrano 8 su 10
+  // (gol subiti x3,3 contando i piazzati). Con 8/3 ne parava ancora 3,1.
+  PORTIERE_DI_MOVIMENTO_GOL: 3.0,
 
   // --- Tattica ---
   // Il counter non e' piu una matrice: emerge dalla STRUTTURA del modulo.
