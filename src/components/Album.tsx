@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { tutteLeRighe } from '../lib/tutteLeRighe'
 import type { useSeasonData } from '../lib/useSeasonData'
 import { urlFotoGiocatore } from '../lib/fotoGiocatore'
 import { cognome } from '../lib/nomi'
@@ -282,8 +283,9 @@ export function Album({ leagueId, teamId, dati, conferenze }: Props) {
     }))
     setPassate(conteggi.filter((n): n is number => n != null).sort((a, b) => b - a))
     const [{ data: f }, { data: p }, { data: cl }] = await Promise.all([
-      supabase.from('album_figurine').select('id, tipo, team_id, player_id, conferenza, overall, aggiornamento, statistiche, posizioni').eq('league_id', leagueId).eq('stagione', vedi ?? st).order('id'),
-      supabase.from('album_possesso').select('figurina_id, normali, rare, ultra, ultimate').eq('league_id', leagueId),
+      // a pagine: le figurine possedute da un utente sono gia' piu' di 900 e il server ne da' al massimo 1000 per lettura
+      tutteLeRighe((da, a) => supabase.from('album_figurine').select('id, tipo, team_id, player_id, conferenza, overall, aggiornamento, statistiche, posizioni').eq('league_id', leagueId).eq('stagione', vedi ?? st).order('id').range(da, a)),
+      tutteLeRighe((da, a) => supabase.from('album_possesso').select('figurina_id, normali, rare, ultra, ultimate').eq('league_id', leagueId).order('figurina_id').range(da, a)),
       supabase.rpc('album_classifica', { p_league_id: leagueId }),
     ])
     const figs = (f ?? []) as Figurina[]

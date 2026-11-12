@@ -180,7 +180,8 @@ export function Quizzone({ leagueId, dati }: { leagueId: number; dati: Dati }) {
       {scheda === 'oggi' && ((st.vincitori ?? []).length > 0
         ? <p className="bet-nota">Vincitore di oggi: {(st.vincitori ?? []).map((w) => dati.teamById.get(w.team_id)?.nome ?? '—').join(', ')} (+{fmt((st.vincitori ?? [])[0].crediti)} crediti).</p>
         : <p className="bet-nota">Alle 21:30 il primo della classifica di oggi vince 500 crediti.</p>)}
-      {scheda === 'winrate' && <p className="bet-nota">Percentuale di risposte giuste, per chi ha giocato almeno {MIN_WIN_RATE} domande.</p>}
+      {scheda === 'totale' && <p className="bet-nota">Risposte dall’inizio della stagione: a ogni nuova stagione si riparte da zero.</p>}
+      {scheda === 'winrate' && <p className="bet-nota">Percentuale di risposte giuste in questa stagione, per chi ha giocato almeno {MIN_WIN_RATE} domande.</p>}
     </section>
 
     {st.oggi.length > 0 && <section className="qz-oggi">

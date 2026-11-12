@@ -26,10 +26,26 @@ function hsl(r: number, g: number, b: number): [number, number, number] {
   return [h * 60, s, l]
 }
 
-// Luminanza percepita: sopra 0,6 lo sfondo e' chiaro e il testo della carta diventa scuro.
-function luminanza(colore: string) {
+// Il testo della carta e' chiaro (#fff4d8) o scuro (#1d1608): si sceglie quello che stacca di piu' dallo sfondo, col
+// rapporto di contrasto delle regole di accessibilita' (WCAG). Prima si guardava solo se lo sfondo era «chiaro» (luminanza
+// sopra 0,6), ma i gialli, gli ori e gli azzurri pieni stanno appena sotto quella soglia e prendevano il testo chiaro,
+// che su di loro si legge male (12/11/2026).
+const TESTO_CHIARO = '#fff4d8', TESTO_SCURO = '#1d1608'
+function luminanzaRelativa(colore: string) {
   const n = parseInt(colore.slice(1), 16)
-  return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255
+  const canale = (v: number) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4 }
+  return 0.2126 * canale(n >> 16) + 0.7152 * canale((n >> 8) & 255) + 0.0722 * canale(n & 255)
+}
+function contrasto(a: string, b: string) {
+  const x = luminanzaRelativa(a), y = luminanzaRelativa(b)
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
+}
+/** true se su quello sfondo si legge meglio il testo scuro. */
+export function vuoleTestoScuro(sfondo: string) {
+  return contrasto(sfondo, TESTO_SCURO) > contrasto(sfondo, TESTO_CHIARO)
+}
+function scurisci(colore: string, quanto: number) {
+  return hex(...[1, 3, 5].map((k) => parseInt(colore.slice(k, k + 2), 16) * (1 - quanto)) as [number, number, number])
 }
 
 function estrai(img: HTMLImageElement): ColoriStemma {
@@ -67,7 +83,10 @@ function estrai(img: HTMLImageElement): ColoriStemma {
   const secondo = lista.find((c) => c !== primo && diverso(c) && c.n >= lista[0].n * 0.06)
   const scuro = hex(...[1, 3, 5].map((k) => parseInt(primo.colore.slice(k, k + 2), 16) * 0.35) as [number, number, number])
   const coppia = { primo: primo.colore, secondo: secondo?.colore ?? scuro }
-  return { ...coppia, chiaro: luminanza(coppia.primo) > 0.6, chiaroBasso: luminanza(coppia.secondo) > 0.6 }
+  // Nome e statistiche stanno sul secondo colore. Se e' un mezzo tono su cui non stacca bene ne' il chiaro ne' lo scuro
+  // (contrasto sotto 4,5), lo si scurisce finche' il testo chiaro si legge: la carta resta dei colori della squadra.
+  for (let giro = 0; giro < 6 && Math.max(contrasto(coppia.secondo, TESTO_CHIARO), contrasto(coppia.secondo, TESTO_SCURO)) < 4.5; giro++) coppia.secondo = scurisci(coppia.secondo, 0.15)
+  return { ...coppia, chiaro: vuoleTestoScuro(coppia.primo), chiaroBasso: vuoleTestoScuro(coppia.secondo) }
 }
 
 export function coloriStemma(url: string): Promise<ColoriStemma> {
