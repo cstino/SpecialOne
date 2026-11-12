@@ -375,9 +375,23 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   const caricaRoster = useCallback(async () => {
       setRosterLoading(true)
       setRosterError(null)
+      // Le statistiche si leggono a pagine: il server non da' piu' di 1000 righe per volta, e una squadra le supera
+      // dopo un paio di stagioni. Lette in un colpo solo, le ultime partite restavano fuori e i minuti della stagione
+      // in corso risultavano 0 (12/11/2026). L'ordine per id garantisce che le pagine non si sovrappongano.
+      const aPagine = async (tabella: 'match_stats' | 'pagelle', colonne: string) => {
+        const PAGINA = 1000, righe: unknown[] = []
+        for (let da = 0; ; da += PAGINA) {
+          const { data, error } = await supabase.from(tabella).select(colonne)
+            .eq('league_id', league.id).eq('team_id', teamId).order('id', { ascending: true }).range(da, da + PAGINA - 1)
+          if (error) return { data: null, error }
+          righe.push(...(data ?? []))
+          if ((data ?? []).length < PAGINA) return { data: righe, error: null }
+        }
+      }
+      const statisticheSquadra = () => aPagine('match_stats', 'match_id, player_instance_id, minuti, gol, assist, tiri, tiri_porta, passaggi_tentati, passaggi_riusciti, contrasti_vinti, dribbling')
       const [instancesResult, statsResult, cambiRuoloResult, specializzazioniResult] = await Promise.all([
         supabase.from('player_instances').select('id, player_id, overall_corrente, overall_inizio_stagione, eta_corrente, ingaggio, condizione, infortunato_fino_a, squalificato_fino_a, ritiro_annunciato, morale, contratto_scadenza, opzione_contratto, rinnovo_stagione, rinnovo_tentativi, sul_mercato, posizioni_override, specializzazione_attiva, prestito_id').eq('league_id', league.id).eq('team_id', teamId),
-        supabase.from('match_stats').select('match_id, player_instance_id, minuti, gol, assist, tiri, tiri_porta, passaggi_tentati, passaggi_riusciti, contrasti_vinti, dribbling').eq('league_id', league.id).eq('team_id', teamId),
+        statisticheSquadra(),
         supabase.from('cambi_ruolo').select('id, player_instance_id, ruolo_precedente, ruolo_target, avviato_giornata, completa_giornata').eq('league_id', league.id).eq('team_id', teamId).is('completato_il', null),
         supabase.from('specializzazioni_giocatore').select('id, player_instance_id, specializzazione_precedente, specializzazione_target, avviato_giornata, completa_giornata').eq('league_id', league.id).eq('team_id', teamId).is('completato_il', null),
       ])
@@ -390,9 +404,8 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       const prestitoPerId = new Map(prestitiRighe.map((riga) => [riga.id, riga]))
       const prestatiStagione = new Set(prestitiRighe.map((riga) => riga.player_instance_id))
       // Le pagelle non sono indispensabili: se mancano la rosa si vede lo stesso.
-      const { data: righePagelle } = await supabase.from('pagelle')
-        .select('match_id, player_instance_id, voto, migliore_in_campo').eq('league_id', league.id).eq('team_id', teamId)
-      setPagelleRows((righePagelle ?? []).map((r) => ({ ...r, voto: r.voto === null ? null : Number(r.voto) })))
+      const { data: righePagelle } = await aPagine('pagelle', 'match_id, player_instance_id, voto, migliore_in_campo')
+      setPagelleRows(((righePagelle ?? []) as { match_id: number; player_instance_id: number; voto: number | string | null; migliore_in_campo: boolean }[]).map((r) => ({ ...r, voto: r.voto === null ? null : Number(r.voto) })))
       setCambiRuolo(new Map(((cambiRuoloResult.data ?? []) as CambioRuoloRiga[]).map((riga) => [riga.player_instance_id, riga])))
       setSpecializzazioni(new Map(((specializzazioniResult.data ?? []) as SpecializzazioneRiga[]).map((riga) => [riga.player_instance_id, riga])))
       const firstError = instancesResult.error ?? statsResult.error
