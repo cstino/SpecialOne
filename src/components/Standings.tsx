@@ -41,6 +41,7 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
   const [conferenzaScelta, setConferenzaScelta] = useState<Conferenza | null>(null)
   const conferenzaVista: Conferenza = conferenzaScelta ?? miaConferenza ?? 'est'
   const righeClassifica = conferenze ? data.standings.filter((riga) => riga.conferenza === conferenzaVista) : data.standings
+  const squadreConference = righeClassifica.length
   const [filtroGiocatori, setFiltroGiocatori] = useState<FiltroConf>('tutte')
   const confDiSquadra = useMemo(() => new Map(data.standings.filter((r) => r.conferenza).map((r) => [r.team_id, r.conferenza as Conferenza])), [data.standings])
   const [righeGiocatori, setRigheGiocatori] = useState<RigaClassificaGiocatori[]>([])
@@ -181,8 +182,12 @@ export function Standings({ membership, onNavigate, onOpenTeam }: Props) {
               // Con le conferenze (opzione B, decisa il 14/10/2026): 1-2 Champions diretta ai quarti, 3-6 play-in
               // Champions, 7-10 play-in Draft Playoffs, 11-12 Draft Playoffs diretta ai quarti (dentro la propria
               // conferenza). Senza conferenze: prime 8 Title, le altre Draft.
+              // Con conference da 14 (Season 3, deciso il 14/11/2026): giocano tutte. Title Playoff 1a-7a (la 1a diretta
+              // ai quarti, 2a-7a al play-in), Draft Playoffs 8a-14a (la 14a diretta ai quarti, 8a-13a al play-in).
+              // Con conference da 12 resta il formato di prima: due dirette per parte.
+              const dirette = squadreConference > 12 ? 1 : 2, meta = Math.floor(squadreConference / 2)
               const zonaPlayoff = conferenze
-                ? (posizione <= 2 ? 'champions' : posizione <= 6 ? 'champions-playin' : posizione <= 10 ? 'draftpo-playin' : 'draftpo')
+                ? (posizione <= dirette ? 'champions' : posizione <= meta ? 'champions-playin' : posizione > squadreConference - dirette ? 'draftpo' : 'draftpo-playin')
                 : data.standings.length >= 8 ? (posizione <= 8 ? 'title' : 'draft') : null
               return <div className={`standings-row ${standing.team_id === membership.id ? 'is-mine' : ''}`} key={standing.team_id}>
                 <span className="standings-position">{posizione}</span>

@@ -567,11 +567,13 @@ export const ARGOMENTI_AIUTO: Argomento[] = [
       <p>A fine stagione regolare la classifica si divide in due tabelloni a eliminazione diretta,
         giocati in parallelo. Il <strong>Title Playoff</strong> prende le prime 8 e assegna il
         titolo; il <strong>Draft Playoff</strong> prende tutte le altre squadre.</p>
-      <p>Nelle leghe con le <strong>conference</strong> ogni conference si divide in due: le prime
-        posizioni vanno al Title Playoff, le altre al Draft Playoffs. Le prime due di ogni conference
-        passano direttamente ai quarti; le altre si giocano l'accesso in un
-        <strong> play-in</strong> incrociato con l'altra conference. Nel Draft Playoffs vale il
-        contrario: le ultime due vanno dirette ai quarti. I posti esatti li trovi nel Tabellone.</p>
+      <p>Nelle leghe con le <strong>conference</strong> ogni conference si divide a metà: la parte
+        alta va al Title Playoff, la parte bassa al Draft Playoffs, e giocano tutte. Con conference
+        da 14 squadre la <strong>1ª</strong> passa direttamente ai quarti e dalla 2ª alla 7ª ci si
+        gioca l'accesso in un <strong>play-in</strong> incrociato con l'altra conference. Nel Draft
+        Playoffs vale il contrario: la <strong>14ª</strong> va diretta ai quarti e dall'8ª alla 13ª
+        si fa il play-in. Con conference da 12 le dirette sono due per parte. I colori accanto alla
+        classifica dicono dove sei; gli incroci esatti li trovi nel Tabellone.</p>
       <p>Ogni sfida è di <strong>andata e ritorno</strong>: passa chi segna di più nella somma (i gol
         in trasferta non valgono doppio); in caso di parità il ritorno va ai supplementari e poi ai
         rigori. La <strong>finale</strong> è una gara secca in campo neutro.</p>

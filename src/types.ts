@@ -148,6 +148,8 @@ export type BracketTie = {
   stato: 'in_attesa' | 'in_corso' | 'concluso'
   // formato B: il quarto aspetta la vincente di questo play-in; conference delle due squadre ('est' / 'ovest')
   da_tie_id?: number | null
+  // conference da 14: il quarto aspetta due vincenti, questa e' quella che fa da prima squadra
+  da_tie_alta_id?: number | null
   conferenza_alta?: string | null
   conferenza_bassa?: string | null
 }

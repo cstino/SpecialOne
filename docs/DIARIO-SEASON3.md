@@ -386,3 +386,20 @@ provato, in attesa di pubblicazione) · `pubblicato` · `rimandato` · `scartato
 * **Proposta:** al rinnovo si chiede quanto si vale oggi, anche meno di prima, con un pavimento (es. 80% dell'ingaggio
   attuale) per evitare crolli di colpo. Da toccare: `rinnovo_proposta` (e quindi `proposta_rinnovo`, `offri_rinnovo`,
   i rinnovi delle squadre PC), testo di Aiuto sui rinnovi, §2 di decisioni-economia.
+
+### 13-bis. Correzione del 14/11/2026: il formato giusto è «giocano tutte»
+
+* **Stato:** `fatto`, da pubblicare con l'ok del committente.
+* Il punto 13 riportava come scelta l'opzione A (7ª e 8ª fuori). **Non era la scelta del committente**: il 7º e l'8º
+  posto sarebbero stati i peggiori in cui finire. Formato confermato il 14/11:
+  * **Title Playoff** 1ª-7ª di ogni conference: la 1ª diretta ai quarti, 2ª-7ª al play-in (2E–7W, 3E–6W, 4E–5W e
+    inversi). **Draft Playoffs** 8ª-14ª, lo specchio: la 14ª diretta, play-in 13E–8W, 12E–9W, 11E–10W e inversi.
+  * **Quarti:** 1ª Est contro vincente 4W–5E; vincente 2W–7E contro vincente 3E–6W; 1ª Ovest contro vincente 4E–5W;
+    vincente 2E–7W contro vincente 3W–6E. Le due prime si incontrano solo in finale.
+  * Serate invariate (play-in, quarti, semifinali, finale: 7). Ordine delle scelte: tutte e 28 dai tabelloni, col
+    percorso di chi ti ha battuto, come prima.
+* **Fatto:** migrazione `20261114000000_playoff_conference_da_14.sql` (`bracket_ties.da_tie_alta_id`,
+  `crea_tabelloni_conferenze` per 12 o 14, `avanza_bracket_conferenze` col quarto fra due vincenti), colori della
+  classifica, pagina Tabellone (lettere A-F e G-L, «la vincente sfida la vincente del play-in X»), guida.
+  Provato su Serie F in una transazione annullata fino alla finale: 28 scelte assegnate senza doppioni.
+* **Resta:** i premi di fine stagione di LootOne (`loot_premi_stagione`) usano ancora le fasce da 12.

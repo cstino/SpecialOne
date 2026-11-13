@@ -16,8 +16,10 @@ const conferenze = (b: Bracket | undefined) => b?.formato === 'conferenze'
 // Anche con le conferenze il titolo resta il Title Playoff con il logo di sempre (decisione del committente, 21/10/2026).
 const titoloDi = (b: Bracket) => conferenze(b) ? (b.tipo === 'title' ? 'Title Playoff' : 'Draft Playoffs') : TITOLO[b.tipo]
 const logoDi = (b: Bracket) => LOGO_FASE[b.tipo]
-// Lettere dei play-in come nel regolamento: Title Playoff A-D, Draft Playoffs E-H.
-const letteraPlayIn = (b: Bracket, posizione: number) => (b.tipo === 'title' ? 'ABCD' : 'EFGH')[posizione] ?? '?'
+// Lettere dei play-in come nel regolamento: Title Playoff A-D e Draft Playoffs E-H con quattro play-in per tabellone
+// (conference da 12); A-F e G-L con sei (conference da 14).
+const letteraPlayIn = (b: Bracket, posizione: number, quanti = 4) =>
+  (quanti > 4 ? (b.tipo === 'title' ? 'ABCDEF' : 'GHIJKL') : (b.tipo === 'title' ? 'ABCD' : 'EFGH'))[posizione] ?? '?'
 const sigla = (conferenza: string | null | undefined, seed: number | null | undefined) => seed == null ? null : conferenza ? `${conferenza === 'est' ? 'E' : 'W'}${seed}` : String(seed)
 
 // Geometria dell'albero verticale "a scalini" (stile bracket UEFA): ogni
@@ -70,7 +72,7 @@ type DatiTabellone = {
   crestUrls: Map<number, string>
   onOpenMatch: (id: number) => void
   // formato B: testo della riga dell'avversario ancora da decidere ("Vincente play-in D")
-  attesaDi?: (tie: BracketTie) => string | null
+  attesaDi?: (tie: BracketTie, lato: 'alta' | 'bassa') => string | null
 }
 
 export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
@@ -139,9 +141,9 @@ export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
       <span>Tabellone</span>
     </header>
     <div className="season-page season-page--narrow tabellone-page">
-      <PopupSpiegazione userId={membership.user_id} hintKey="tabellone-playoff-v2" titolo="Come funzionano i playoff">
+      <PopupSpiegazione userId={membership.user_id} hintKey="tabellone-playoff-v3" titolo="Come funzionano i playoff">
         {league.conferenze_attive
-          ? <p>A fine stagione regolare ogni conference si divide in due: le prime 6 vanno al <strong>Title Playoff</strong>, dalla 7ª alla 12ª nel <strong>Draft Playoffs</strong>. Nel Title Playoff la 1ª e la 2ª di ogni conference vanno direttamente ai quarti, dalla 3ª alla 6ª giocano un <strong>play-in</strong> incrociato con l'altra conference; nel Draft Playoffs è il contrario: 12ª e 11ª dirette ai quarti, dalla 7ª alla 10ª al play-in.</p>
+          ? <p>A fine stagione regolare ogni conference si divide a metà: la parte alta va al <strong>Title Playoff</strong>, la parte bassa al <strong>Draft Playoffs</strong>, e giocano tutte. Con conference da 14 squadre la <strong>1ª</strong> va direttamente ai quarti e dalla 2ª alla 7ª si gioca un <strong>play-in</strong> incrociato con l'altra conference; nel Draft Playoffs è il contrario: la <strong>14ª</strong> diretta ai quarti, dall'8ª alla 13ª al play-in. Con conference da 12 le dirette sono due per parte.</p>
           : <p>A fine stagione regolare la classifica si divide in due tabelloni a eliminazione diretta, giocati in parallelo. Il <strong>Title Playoff</strong> prende le prime 8 e assegna il titolo; il <strong>Draft Playoff</strong> prende tutte le altre squadre.</p>}
         <p>Ogni sfida mostra andata, ritorno e totale. Passa chi segna di più nella somma delle due partite (i gol in trasferta non valgono doppio); in caso di parità il ritorno va ai <strong>supplementari</strong> e poi ai <strong>rigori</strong>. La <strong>finale</strong> invece è una gara secca in campo neutro.</p>
         <p>Il Draft Playoff non è un ripiego: come va lì, e chi ti elimina, decide l'ordine di scelta nel prossimo mercato a scelte. Vale la pena giocarselo fino in fondo.</p>
@@ -201,18 +203,27 @@ export function Tabellone({ membership, onNavigate, onOpenMatch }: Props) {
             const daTie = new Map(playIn.map((t) => [t.id, t]))
             const albero = new Map(suoi.filter((t) => t.turno >= 2).map((t) => [`${t.turno - 1}:${t.posizione}`, t]))
             const quarti = suoi.filter((t) => t.turno === 2)
-            const dati2: DatiTabellone = { ...datiComuni, attesaDi: (t) => t.da_tie_id && daTie.get(t.da_tie_id) ? `Vincente play-in ${letteraPlayIn(bracket, daTie.get(t.da_tie_id)!.posizione)}` : null }
+            const lettera = (t: BracketTie) => letteraPlayIn(bracket, t.posizione, playIn.length)
+            const dati2: DatiTabellone = { ...datiComuni, attesaDi: (t, lato) => {
+              const da = daTie.get((lato === 'alta' ? t.da_tie_alta_id : t.da_tie_id) ?? -1)
+              return da ? `Vincente play-in ${lettera(da)}` : null
+            } }
             return <>
               <section className="tabellone-playin">
                 <h3>Play-in</h3>
-                <p>Incroci East–West, andata e ritorno: la vincente va ai quarti contro una testa di serie.</p>
+                <p>{playIn.length > 4
+                  ? 'Incroci East–West, andata e ritorno: le sei vincenti vanno ai quarti insieme alle due teste di serie.'
+                  : 'Incroci East–West, andata e ritorno: la vincente va ai quarti contro una testa di serie.'}</p>
                 <div className="tabellone-playin__griglia">
                   {playIn.map((t) => {
-                    const quarto = quarti.find((q) => q.da_tie_id === t.id)
-                    const testa = quarto?.alta_team_id ? teamById.get(quarto.alta_team_id) : undefined
+                    const quarto = quarti.find((q) => q.da_tie_id === t.id || q.da_tie_alta_id === t.id)
+                    const testa = quarto?.alta_team_id && !quarto.da_tie_alta_id ? teamById.get(quarto.alta_team_id) : undefined
+                    // conference da 14: nel quarto puo' arrivare un'altra vincente del play-in al posto della testa di serie
+                    const altro = quarto?.da_tie_alta_id ? daTie.get(quarto.da_tie_alta_id === t.id ? quarto.da_tie_id ?? -1 : quarto.da_tie_alta_id) : undefined
                     return <div key={t.id} className="tabellone-playin__posto">
-                      <CartaSfida tie={t} turno={1} turniTotali={4} dati={dati2} etichetta={`Play-in ${letteraPlayIn(bracket, t.posizione)}`} />
+                      <CartaSfida tie={t} turno={1} turniTotali={4} dati={dati2} etichetta={`Play-in ${lettera(t)}`} />
                       {testa && <small>La vincente sfida <b>{testa.nome}</b> ({sigla(quarto?.conferenza_alta, quarto?.alta_seed)})</small>}
+                      {altro && <small>La vincente sfida la <b>vincente del play-in {lettera(altro)}</b></small>}
                     </div>
                   })}
                 </div>
@@ -293,7 +304,7 @@ function CartaSfida({ tie, turno, turniTotali, dati, etichetta }: {
   const ritorno = secca ? undefined : fx.find((f) => f.mano === 2)
 
   const riga = (team: Team | null, seed: string | null, chiave: string) => {
-    const attesa = !team && tie ? attesaDi?.(tie) : null
+    const attesa = !team && tie ? attesaDi?.(tie, chiave === 'alta' ? 'alta' : 'bassa') : null
     if (!team) return <div className="carta__riga carta__riga--vuota" key={chiave}><span>{attesa ?? (turno === 1 && tie && (alta || bassa) ? 'Passa senza giocare' : 'Da definire')}</span></div>
     const a = golDi(team, andata)
     const r = golDi(team, ritorno)
