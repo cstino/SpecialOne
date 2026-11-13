@@ -253,14 +253,23 @@ function buildLineup(lineup: DbLineup, roster: EngineRoster, capitanoId: number 
   // motore non sa nulla di cartellini o squalifiche (e' un vincolo di
   // disponibilita', non un effetto di gioco), quindi senza questo blocco uno
   // squalificato scenderebbe in campo.
+  // La tribuna e' una scelta dell'allenatore e va rispettata: chi ci sta non entra in panchina per completarla
+  // (segnalazione del 13/11/2026: un giocatore messo in tribuna era entrato perche' la panchina salvata aveva 8 nomi).
+  const inTribuna = new Set(lineup.tribuna ?? [])
+  const inElenco = new Set([...lineup.titolari, ...lineup.panchina])
+  const fuoriElenco = roster.giocatori.filter((giocatore) => !inTribuna.has(giocatore.id) && !inElenco.has(giocatore.id))
   const undici: Array<EnginePlayer | undefined> = titolari
   const rimpiazzi: Array<{ esce: string; entra: string }> = []
   for (let i = 0; i < undici.length; i++) {
     const attuale = undici[i]
     if (attuale && attuale.infortunatoFinoA <= 0 && attuale.squalificatoFinoA <= 0) continue
     const inCampo = new Set(undici.filter(Boolean).map((giocatore) => giocatore!.id))
-    const candidati = [...riserveSalvate, ...roster.giocatori]
-      .filter((giocatore) => giocatore.infortunatoFinoA <= 0 && giocatore.squalificatoFinoA <= 0 && !inCampo.has(giocatore.id))
+    const libero = (giocatore: EnginePlayer) => giocatore.infortunatoFinoA <= 0 && giocatore.squalificatoFinoA <= 0 && !inCampo.has(giocatore.id)
+    // Il sostituto si cerca prima fra le riserve scelte dall'allenatore, poi fra chi non sta in nessun elenco (un
+    // acquisto arrivato dopo il salvataggio). Chi e' in tribuna si pesca solo se altrimenti non si arriva a undici:
+    // una squadra senza undici fermerebbe la giornata di tutta la lega.
+    const candidati = [riserveSalvate.filter(libero), fuoriElenco.filter(libero), roster.giocatori.filter(libero)]
+      .find((gruppo) => gruppo.length > 0) ?? []
     if (candidati.length === 0) continue
     let migliore = candidati[0]
     for (const candidato of candidati) {
@@ -288,9 +297,10 @@ function buildLineup(lineup: DbLineup, roster: EngineRoster, capitanoId: number 
     inPanchina.add(giocatore.id)
   }
   // Conserva le riserve sane scelte dall'allenatore e completa gli eventuali
-  // buchi con i migliori giocatori disponibili della rosa.
+  // buchi con i migliori fra chi non sta in nessun elenco. Chi e' in tribuna resta in tribuna: se l'allenatore ha
+  // lasciato la panchina corta, gioca con la panchina corta.
   riserveSalvate.forEach(aggiungiInPanchina)
-  const miglioriDisponibili = [...roster.giocatori].sort((a, b) => b.ovr - a.ovr)
+  const miglioriDisponibili = [...fuoriElenco].sort((a, b) => b.ovr - a.ovr)
   miglioriDisponibili.forEach(aggiungiInPanchina)
 
   // Chi batte piazzati e rigori, scelto dall'allenatore o assegnato in
