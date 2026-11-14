@@ -16,7 +16,7 @@ import { CrestPicker } from './CrestPicker'
 import { GameNav, type GameView } from './GameNav'
 import { PopupSpiegazione } from './PopupSpiegazione'
 import { SchedaGiocatore, type EsitoRinnovo, type PropostaRinnovo, type StatsStagione } from './SchedaGiocatore'
-import { percentuale, statoMinuti, type GradinoMinutaggio } from '../lib/minutaggio'
+import { GRADINI_MINUTAGGIO, nomeConSoglia, percentuale, statoMinuti, type GradinoMinutaggio } from '../lib/minutaggio'
 import { FixtureScore, SeasonState, TeamLabel } from './SeasonUI'
 import { UnderlineTabs } from './ui/underline-tabs'
 import { Icona } from './Icona'
@@ -29,8 +29,9 @@ import { AzioneScheda, AzioniOfferta, BarraSoddisfazione, SceltaContratto, richi
 
 const formatoMilioni = (euro: number) => (euro / 1_000_000).toFixed(1).replace('.', ',')
 // La richiesta del prospetto per una durata e un'opzione (stessa formula di public.offri_promozione).
-const richiestaPromozione = (p: PropostaPromozione, durata: number, opzione: OpzioneContratto | null) =>
-  richiestaContratto(p.richiesta, p.moltiplicatori, p.pluriennali, durata, opzione, p.ingaggio_massimo)
+// Come al rinnovo: richiesta del gradino di minutaggio x moltiplicatore della durata.
+const richiestaPromozione = (p: PropostaPromozione, durata: number, opzione: OpzioneContratto | null, gradino: GradinoMinutaggio | null = null) =>
+  richiestaContratto(p.gradini?.find((g) => g.chiave === gradino)?.richiesta ?? p.richiesta, p.moltiplicatori, p.pluriennali, durata, opzione, p.ingaggio_massimo)
 
 type Props = {
   membership: Membership
@@ -122,15 +123,21 @@ type PropostaPromozione = {
   tentativi_usati: number
   tentativi_totali: number
   trattativa_chiusa: boolean
+  /** Minutaggio promesso (solo nelle leghe con le tattiche): quello che chiede e i gradini offribili, come al rinnovo. */
+  gradino_richiesto?: GradinoMinutaggio | null
+  gradini?: { chiave: GradinoMinutaggio; richiesta: number; rifiuto: string | null }[] | null
 }
 
 /** Risposta del prospetto a un'offerta di promozione: mai la cifra esatta, solo quanto si è lontani. */
 type EsitoPromozione = {
-  esito: 'accettato' | 'rifiutato' | 'chiusa'
+  /** gradino_rifiutato: il minutaggio offerto non gli basta; non consuma un tentativo. */
+  esito: 'accettato' | 'rifiutato' | 'chiusa' | 'gradino_rifiutato'
   messaggio: string
+  motivo?: string
   tentativi_usati: number
   ingaggio?: number
   contratto_scadenza?: number
+  minutaggio?: GradinoMinutaggio | null
   opzione?: OpzioneContratto | null
 }
 
@@ -250,6 +257,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     offertaM: string
     durata: number
     opzione: OpzioneContratto | null
+    gradino: GradinoMinutaggio | null
   } | null>(null)
   const [cambiRuolo, setCambiRuolo] = useState<Map<number, CambioRuoloRiga>>(new Map())
   const [prestitiUsati, setPrestitiUsati] = useState(0)
@@ -562,11 +570,11 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
   // resta chiusa per sempre (deciso con l'utente), il prospetto aspetta solo
   // che scada il countdown in giornate.
   async function apriTrattativaPromozione(id: number) {
-    setVivaioTrattativa({ id, proposta: null, esito: null, errore: null, inCorso: true, offertaM: '', durata: 1, opzione: null })
+    setVivaioTrattativa({ id, proposta: null, esito: null, errore: null, inCorso: true, offertaM: '', durata: 1, opzione: null, gradino: null })
     const { data, error } = await supabase.rpc('proposta_promozione', { p_vivaio_id: id })
     if (error) { setVivaioTrattativa((corrente) => corrente && corrente.id === id ? { ...corrente, inCorso: false, errore: error.message } : corrente); return }
     const proposta = data as PropostaPromozione
-    setVivaioTrattativa((corrente) => corrente && corrente.id === id ? { ...corrente, inCorso: false, proposta, offertaM: formatoMilioni(richiestaPromozione(proposta, 1, null)) } : corrente)
+    setVivaioTrattativa((corrente) => corrente && corrente.id === id ? { ...corrente, inCorso: false, proposta, gradino: proposta.gradini?.length ? proposta.gradino_richiesto ?? null : null, offertaM: formatoMilioni(richiestaPromozione(proposta, 1, null, proposta.gradino_richiesto ?? null)) } : corrente)
   }
 
   async function inviaOffertaPromozione() {
@@ -575,7 +583,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
     const offertaEuro = Math.round(parseFloat(trattativa.offertaM.replace(',', '.')) * 10) * 100_000
     if (!Number.isFinite(offertaEuro) || offertaEuro < 500_000) return
     setVivaioTrattativa({ ...trattativa, inCorso: true, errore: null })
-    const { data, error } = await supabase.rpc('offri_promozione', { p_vivaio_id: trattativa.id, p_ingaggio: offertaEuro, p_durata: trattativa.durata, p_opzione: trattativa.opzione })
+    const { data, error } = await supabase.rpc('offri_promozione', { p_vivaio_id: trattativa.id, p_ingaggio: offertaEuro, p_durata: trattativa.durata, p_opzione: trattativa.opzione, ...(trattativa.gradino ? { p_minutaggio: trattativa.gradino } : {}) })
     if (error) { setVivaioTrattativa({ ...trattativa, inCorso: false, errore: error.message }); return }
     const esito = data as EsitoPromozione
     setVivaioTrattativa({ ...trattativa, inCorso: false, esito })
@@ -1108,25 +1116,39 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                         {trattativa.proposta && trattativa.esito?.esito !== 'accettato' && <>
                           <div>
                             <strong>Trattativa per il primo contratto</strong>
-                            <p>{g.nome} chiede <b>{money(richiestaPromozione(trattativa.proposta, trattativa.durata, trattativa.opzione))}</b>/stagione per firmare.</p>
+                            <p>{g.nome} chiede <b>{money(richiestaPromozione(trattativa.proposta, trattativa.durata, trattativa.opzione, trattativa.gradino))}</b>/stagione per firmare{trattativa.gradino ? ` da ${GRADINI_MINUTAGGIO[trattativa.gradino].nome.toLowerCase()}` : ''}.</p>
                           </div>
-                          {trattativa.esito && <p className={`rinnovo-risposta rinnovo-risposta--${trattativa.esito.esito}`}>«{trattativa.esito.messaggio}»</p>}
+                          {trattativa.esito && <p className={`rinnovo-risposta rinnovo-risposta--${trattativa.esito.esito === 'gradino_rifiutato' ? 'rifiutato' : trattativa.esito.esito}`}>«{trattativa.esito.messaggio}»{trattativa.esito.motivo && <small>{trattativa.esito.motivo}</small>}</p>}
                           {chiusa ? <>
                             <p className="rinnovo-nota">La trattativa è chiusa: resterà in cantera finché non scade il countdown in giornate.</p>
                             <div><button className="button button--secondary" type="button" onClick={() => setVivaioTrattativa(null)}>Chiudi</button></div>
                           </> : <>
+                            {trattativa.proposta.gradini && trattativa.proposta.gradini.length > 0 && <div className="rinnovo-gradini">
+                              <p className="kicker">Minutaggio promesso</p>
+                              <div className="rinnovo-gradini__scelte" role="radiogroup" aria-label="Minutaggio promesso">
+                                {trattativa.proposta.gradini.map((gr) => <button key={gr.chiave} type="button" role="radio" aria-checked={trattativa.gradino === gr.chiave}
+                                  className={`rinnovo-gradino${trattativa.gradino === gr.chiave ? ' is-scelto' : ''}${gr.rifiuto ? ' is-rifiutato' : ''}`}
+                                  disabled={Boolean(gr.rifiuto) || trattativa.inCorso}
+                                  onClick={() => setVivaioTrattativa({ ...trattativa, gradino: gr.chiave, offertaM: formatoMilioni(richiestaPromozione(trattativa.proposta!, trattativa.durata, trattativa.opzione, gr.chiave)) })}>
+                                  <strong>{GRADINI_MINUTAGGIO[gr.chiave].nome} <em>(min. {GRADINI_MINUTAGGIO[gr.chiave].soglia}%)</em></strong>
+                                  <small>{gr.rifiuto ?? GRADINI_MINUTAGGIO[gr.chiave].detto}</small>
+                                  {!gr.rifiuto && <b>{formatoMilioni(richiestaPromozione(trattativa.proposta!, trattativa.durata, trattativa.opzione, gr.chiave))} M€</b>}
+                                </button>)}
+                              </div>
+                              <p className="rinnovo-nota">Più minuti prometti, meno chiede; un gradino sotto la sua richiesta costa di più, due non li accetta. Se poi non lo fai giocare come promesso, prima ti richiama, poi chiede la cessione e non rinnova più.</p>
+                            </div>}
                             {trattativa.proposta.pluriennali && typeof trattativa.proposta.stagione_corrente === 'number' && <SceltaContratto
                               durata={trattativa.durata} opzione={trattativa.opzione} disabled={trattativa.inCorso}
                               // il primo contratto conta la stagione in corso: 1 stagione = fino a fine stagione
                               stagioneFine={(d) => trattativa.proposta!.stagione_corrente! + d - 1}
-                              richiestaPer={(d, o) => richiestaPromozione(trattativa.proposta!, d, o)}
-                              onScegli={(d, o) => setVivaioTrattativa({ ...trattativa, durata: d, opzione: o, offertaM: formatoMilioni(richiestaPromozione(trattativa.proposta!, d, o)) })} />}
+                              richiestaPer={(d, o) => richiestaPromozione(trattativa.proposta!, d, o, trattativa.gradino)}
+                              onScegli={(d, o) => setVivaioTrattativa({ ...trattativa, durata: d, opzione: o, offertaM: formatoMilioni(richiestaPromozione(trattativa.proposta!, d, o, trattativa.gradino)) })} />}
                             <div className="rinnovo-offerta">
                               <label>
                                 <span>La tua offerta (M€ a stagione)</span>
                                 <input type="text" inputMode="decimal" value={trattativa.offertaM} onChange={(evento) => setVivaioTrattativa({ ...trattativa, offertaM: evento.target.value })} aria-label="Ingaggio offerto in milioni" />
                               </label>
-                              {offertaValida && <BarraSoddisfazione offerta={offertaEuro} richiesta={richiestaPromozione(trattativa.proposta, trattativa.durata, trattativa.opzione)} />}
+                              {offertaValida && <BarraSoddisfazione offerta={offertaEuro} richiesta={richiestaPromozione(trattativa.proposta, trattativa.durata, trattativa.opzione, trattativa.gradino)} />}
                             </div>
                             <AzioniOfferta inCorso={trattativa.inCorso} disabilitato={!offertaValida}
                               tentativiRimasti={trattativa.proposta.tentativi_totali - tentativiUsati} tentativiTotali={trattativa.proposta.tentativi_totali}
@@ -1134,7 +1156,7 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                           </>}
                         </>}
                         {trattativa.esito?.esito === 'accettato' && <>
-                          <p className="rinnovo-nota">«{trattativa.esito.messaggio}» {g.nome} firma il primo contratto: {money(trattativa.esito.ingaggio ?? 0)}/stagione{typeof trattativa.esito.contratto_scadenza === 'number' ? ` fino alla stagione ${trattativa.esito.contratto_scadenza}` : ''}{trattativa.esito.opzione && typeof trattativa.esito.contratto_scadenza === 'number' ? `, ${testoOpzione(trattativa.esito.opzione, trattativa.esito.contratto_scadenza)}` : ''}.</p>
+                          <p className="rinnovo-nota">«{trattativa.esito.messaggio}» {g.nome} firma il primo contratto: {money(trattativa.esito.ingaggio ?? 0)}/stagione{typeof trattativa.esito.contratto_scadenza === 'number' ? ` fino alla stagione ${trattativa.esito.contratto_scadenza}` : ''}{trattativa.esito.opzione && typeof trattativa.esito.contratto_scadenza === 'number' ? `, ${testoOpzione(trattativa.esito.opzione, trattativa.esito.contratto_scadenza)}` : ''}{trattativa.esito.minutaggio ? `. Minutaggio promesso: ${nomeConSoglia(trattativa.esito.minutaggio)}` : ''}.</p>
                           <div><button className="button button--primary" type="button" onClick={() => setVivaioTrattativa(null)}>Chiudi</button></div>
                         </>}
                       </div>

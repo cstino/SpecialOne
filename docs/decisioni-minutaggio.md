@@ -173,3 +173,11 @@ delle partite). Le partite giocate prima del 4 ottobre non hanno storico e conta
 
 I numeri (quote, sconti, soglie, cadenza) sono tutti qui: se il committente vuole ritoccarli,
 si cambiano in un posto solo.
+
+## Primo contratto dal vivaio (14/11/2026)
+
+Anche la promozione dal vivaio fa vedere e trattare il minutaggio, con le stesse formule del rinnovo
+(`private.richiesta_per_gradino`, `private.gradino_rifiutato`). Parte selezionato il gradino che il ragazzo chiede
+(di solito «promessa futura»; «titolare fisso» se è già da titolare). Un gradino rifiutato non consuma un tentativo.
+Senza scelta (app vecchia) resta il comportamento di prima: il gradino lo mette il trigger della firma.
+Migrazione `20261114060000_minutaggio_al_primo_contratto.sql`.

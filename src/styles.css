@@ -4132,7 +4132,7 @@ input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #9b62df;
 /* La trattativa del primo contratto: riquadro neutro (non rosso come le conferme), spazi da trattativa. */
 .team-roster-player > .player-modal__confirm.vivaio-trattativa { display: grid; gap: 14px; padding: 16px 14px; border-color: #3d3156; background: linear-gradient(180deg, rgba(124,58,237,.10), rgba(18,15,26,.9)); }
 .vivaio-trattativa > div:first-child strong { color: #fff; font-size: .95rem; }
-.vivaio-trattativa .rinnovo-durata { margin: 0; }
+.vivaio-trattativa .rinnovo-gradini { margin: 0; }
 .player-modal__confirm > div.trattativa-azioni { display: grid; gap: 6px; }
 .vivaio-trattativa input { border-color: #4a3e5d; background: #1d1827; }
 .vivaio-trattativa input:focus-visible { outline-color: #b48cf0; }
