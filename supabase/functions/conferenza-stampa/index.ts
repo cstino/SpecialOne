@@ -950,6 +950,31 @@ async function rispondiRichiesta(admin: any, userId: string, richiestaId: number
   if (!presa?.length) return json(409, { errore: 'Hai già risposto a questa richiesta.' })
 
   try {
+    return json(200, await valutaRichiesta(admin, r, testo))
+  } catch (errore) {
+    // Valutazione fallita: la risposta si libera e l'allenatore puo' riprovare.
+    await admin.from('richieste_giocatori').update({ risposta: null, risposta_il: null }).eq('id', richiestaId).eq('stato', 'aperta')
+    console.error('conferenza-stampa rispondiRichiesta', errore)
+    return json(502, { errore: 'Il giocatore non risponde, riprova tra poco.' })
+  }
+}
+
+// Una risposta rimasta a meta' (salvata ma mai valutata: la funzione e' caduta o e' stata riavviata mentre l'AI
+// rispondeva) viene ripresa dal sistema: private.rilancia_richieste_a_meta() chiama questa azione. Qui la risposta
+// NON si libera se la valutazione fallisce: si riprova al giro dopo. Bug del 12/11/2026: una risposta data davvero
+// era stata trattata alla scadenza come un silenzio.
+async function riprendiRichiesta(admin: any, richiestaId: number) {
+  const { data: r } = await admin.from('richieste_giocatori')
+    .select('id, league_id, team_id, player_instance_id, tipo, testo, giornata_target, stato, risposta').eq('id', richiestaId).single()
+  if (!r) return json(404, { errore: 'Richiesta non trovata.' })
+  if (r.stato !== 'aperta' || !r.risposta) return json(409, { errore: 'Niente da riprendere.' })
+  return json(200, await valutaRichiesta(admin, r, String(r.risposta)))
+}
+
+// deno-lint-ignore no-explicit-any
+async function valutaRichiesta(admin: any, r: any, testo: string) {
+  const richiestaId = r.id as number
+  {
     const { data: g } = await admin.from('player_instances').select('id, morale, overall_corrente, eta_corrente, players(nome, posizioni)').eq('id', r.player_instance_id).single()
     const { data: pagelle } = await admin.from('pagelle').select('voto').eq('player_instance_id', r.player_instance_id).not('voto', 'is', null).order('id', { ascending: false }).limit(3)
     const forma = (pagelle ?? []).length
@@ -1001,12 +1026,7 @@ async function rispondiRichiesta(admin: any, userId: string, richiestaId: number
       p_valutazione: { insensata: Boolean(v.insensata), voto_ai: v.voto, promessa_ai: v.promessa ?? null },
     })
     if (error) throw error
-    return json(200, { voto, reazione, effetto_morale: effetto, promessa, tipo: r.tipo, giornata_target: r.giornata_target })
-  } catch (errore) {
-    // Valutazione fallita: la risposta si libera e l'allenatore puo' riprovare.
-    await admin.from('richieste_giocatori').update({ risposta: null, risposta_il: null }).eq('id', richiestaId).eq('stato', 'aperta')
-    console.error('conferenza-stampa rispondiRichiesta', errore)
-    return json(502, { errore: 'Il giocatore non risponde, riprova tra poco.' })
+    return { voto, reazione, effetto_morale: effetto, promessa, tipo: r.tipo, giornata_target: r.giornata_target }
   }
 }
 
@@ -1023,6 +1043,10 @@ export default {
         if (ctx.authMode !== 'secret') return json(403, { errore: 'Solo il sistema.' })
         const b = body as { tipo?: string; id?: number }
         return await rispondiClaude(ctx.supabaseAdmin, String(b.tipo ?? ''), Number(b.id))
+      }
+      if (body.azione === 'riprendi_richiesta') {
+        if (ctx.authMode !== 'secret') return json(403, { errore: 'Solo il sistema.' })
+        return await riprendiRichiesta(ctx.supabaseAdmin, Number(body.richiesta_id))
       }
       if (body.azione === 'genera_pre') {
         if (ctx.authMode !== 'secret') return json(403, { errore: 'Solo il sistema genera le domande.' })
