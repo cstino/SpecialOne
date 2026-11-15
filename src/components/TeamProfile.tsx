@@ -178,7 +178,9 @@ function contratto(player: RosterPlayer, stagioneCorrente: number) {
   if (residue <= 0 && player.opzioneContratto === 'giocatore') return { testo: 'ultima stagione · opz. giocatore', urgente: true }
   if (residue <= 0) return { testo: 'ultima stagione', urgente: true }
   const opzione = player.opzioneContratto ? ` +1 ${player.opzioneContratto === 'squadra' ? 'opz. squadra' : 'opz. giocatore'}` : ''
-  return { testo: `ancora ${residue} ${residue === 1 ? 'stagione' : 'stagioni'}${opzione}`, urgente: false }
+  // «ancora 1 stagione» si leggeva come «ne resta una sola», mentre contava quelle DOPO questa: un contratto di due
+  // stagioni appena firmato sembrava di una (segnalazione del 15/11/2026). Ora si dice fino a quando dura.
+  return { testo: `fino alla stagione ${player.contrattoScadenza}${opzione}`, urgente: false }
 }
 
 // Anteprima della buonuscita che chiederà svincola_giocatore: meta' (per
