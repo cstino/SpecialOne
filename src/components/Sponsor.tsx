@@ -14,6 +14,7 @@ type Stato = 'offerta' | 'attiva' | 'completata' | 'fallita' | 'rinunciata'
 type Contratto = {
   id: number; categoria: Categoria; tipo: string; titolo: string; descrizione: string; premio: number; effetto_tifo: number
   partite: number; stato: Stato; progresso: { fatto?: number; di?: number }; scelta_il: string | null; chiusa_il: string | null
+  restano?: number | null   // partite del contratto ancora da giocare (solo se firmato)
   azienda: { nome: string; slug: string; colore: string }
 }
 type StatoSponsor = { attivi: boolean; contratti: Contratto[]; pausa: Partial<Record<Categoria, string>> | null; crediti: number | null }
@@ -91,6 +92,9 @@ export function PaginaSponsor({ membership, onNavigate }: Props) {
               {attivo ? <article className="sp-contratto is-attivo">
                 <div className="sp-contratto__testa"><Logo azienda={attivo.azienda} /><div><small>{attivo.azienda.nome} · contratto firmato</small><strong>{attivo.titolo}</strong></div><Premio c={attivo} /></div>
                 <p>{attivo.descrizione}</p>
+                {attivo.restano != null && <p className={`sp-restano${attivo.restano <= 1 ? ' is-ultima' : ''}`}>
+                  {attivo.restano === 0 ? 'Partite finite: il contratto si chiude alla prossima verifica.' : attivo.restano === 1 ? <>Ti resta <b>1 partita</b> su {attivo.partite}: è l’ultima.</> : <>Ti restano <b>{attivo.restano} partite</b> su {attivo.partite}.</>}
+                </p>}
                 {attivo.progresso?.di != null && <div className="sp-progresso" aria-label={`Avanzamento ${attivo.progresso.fatto ?? 0} su ${attivo.progresso.di}`}>
                   <i style={{ width: `${Math.min(100, ((attivo.progresso.fatto ?? 0) * 100) / Math.max(1, attivo.progresso.di))}%` }} />
                   <span>{attivo.progresso.fatto ?? 0} / {attivo.progresso.di}</span>

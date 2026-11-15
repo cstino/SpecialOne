@@ -7343,6 +7343,9 @@ strong.vivaio-apri-scheda { text-decoration: underline; text-decoration-color: r
 .sp-progresso { position: relative; height: 22px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.07); }
 .sp-progresso i { position: absolute; inset: 0 auto 0 0; border-radius: 99px; background: linear-gradient(90deg, #8a4bff, #e29bff); box-shadow: 0 0 12px rgba(180,110,255,.5); }
 .sp-progresso span { position: relative; display: grid; place-items: center; height: 100%; color: #fff; font-size: .7rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+.sp-restano { margin: 0; color: rgba(255,255,255,.78); font-size: .88rem; line-height: 1.4; }
+.sp-restano b { color: #fff; font-weight: 700; }
+.sp-restano.is-ultima b { color: #ffbe55; }
 .sp-rinuncia { justify-self: start; padding: 0; border: 0; background: none; color: #8d84a0; font: inherit; font-size: .7rem; font-weight: 700; text-decoration: underline; cursor: pointer; }
 .sp-conferma { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: #c9c0d6; font-size: .72rem; }
 .sp-vuoto { margin: 0; padding: 16px; border: 1px dashed #3a3349; border-radius: 14px; color: #8d84a0; font-size: .76rem; text-align: center; }
