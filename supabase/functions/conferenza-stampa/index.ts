@@ -161,6 +161,10 @@ async function formaRecente(admin: any, seasonId: number, giornata: number, team
   })
 }
 
+// La forma all'AI in parole intere, mai in lettere: «P» per pareggio veniva letta come «persa»
+// (18/11: tre pareggi dei Disonesti diventati «tre sconfitte consecutive» nella domanda e nella valutazione).
+const formaInParole = (f: string[]) => f.map((x) => (x === 'V' ? 'vittoria' : x === 'S' ? 'sconfitta' : 'pareggio')).join(', ')
+
 // I numeri li calcola il server, mai l'AI: differenze di punti e serie di risultati, scritti gia' pronti nel riepilogo.
 // (L'AI aveva scritto "dieci punti di vantaggio sulla seconda" con 3 punti reali.)
 function fattiNumerici(opts: {
@@ -196,7 +200,7 @@ function fattiNumerici(opts: {
     out.push(`Nelle ultime ${opts.forma.length} partite: ${cont('V')} vittorie, ${cont('P')} pareggi, ${cont('S')} sconfitte.`)
     let n = 0
     while (n < opts.forma.length && opts.forma[n] === opts.forma[0]) n++
-    if (n >= 3) out.push(`Serie in corso: ${n} ${opts.forma[0] === 'V' ? 'vittorie' : opts.forma[0] === 'S' ? 'sconfitte' : 'pareggi'} consecutive.`)
+    if (n >= 3) out.push(`Serie in corso: ${n} ${opts.forma[0] === 'V' ? 'vittorie consecutive' : opts.forma[0] === 'S' ? 'sconfitte consecutive' : 'pareggi consecutivi'}.`)
   }
   return out.join(' ')
 }
@@ -438,7 +442,7 @@ async function genera(admin: any, matchId: number) {
       derby ? `Questa partita è un DERBY: ${avversario} è il grande rivale di ${t.nome} (o ${t.nome} lo è per ${avversario}).` : '',
       rivaleScheda,
       obiettivi ? `Da inizio stagione (${pos ? `${t.nome} è ${pos.posizione}° con ${pos.punti} punti` : 'classifica ancora vuota'}): una domanda può chiedere all'allenatore gli obiettivi di stagione della squadra e fin dove pensa di arrivare.` : '',
-      ultime.length ? `Risultati precedenti di ${t.nome} (dal più recente): ${ultime.join(' ')}${senzaVittorie === -1 ? ` — nessuna vittoria nelle ultime ${ultime.length}` : senzaVittorie >= 2 ? ` — senza vittorie da ${senzaVittorie} partite` : ''}.` : '',
+      ultime.length ? `Risultati precedenti di ${t.nome} (dal più recente): ${formaInParole(ultime)}${senzaVittorie === -1 ? ` — nessuna vittoria nelle ultime ${ultime.length}` : senzaVittorie >= 2 ? ` — senza vittorie da ${senzaVittorie} partite` : ''}.` : '',
     ].filter(Boolean).join('\n')
 
     const out = await chiediAI<{ domande: Array<{ giornalista: string; domanda: string }> }>(
@@ -571,8 +575,8 @@ async function generaPre(admin: any, fixtureId: number) {
       `Squadra dell'allenatore: ${t.nome} (${inCasa ? 'in casa' : 'in trasferta'}). Avversario: ${avv.nome}.`,
       inPlayoff ? await schedaPlayoff(admin, f.bracket_tie_id, f.id, t.id, new Map(Array.from(squadra.values()).map((x) => [x.id, x.nome]))) : '',
       pos && !inPlayoff ? `Classifica: ${t.nome} ${pos.posizione}° con ${pos.punti} punti in ${pos.giocate} partite${posAvv ? `; ${avv.nome} ${posAvv.posizione}° con ${posAvv.punti}` : ''}.` : '',
-      mie.length ? `Ultimi risultati di ${t.nome} (dal più recente): ${mie.join(' ')}.` : '',
-      loro.length ? `Ultimi risultati di ${avv.nome} (dal più recente): ${loro.join(' ')}.` : '',
+      mie.length ? `Ultimi risultati di ${t.nome} (dal più recente): ${formaInParole(mie)}.` : '',
+      loro.length ? `Ultimi risultati di ${avv.nome} (dal più recente): ${formaInParole(loro)}.` : '',
       campionato,
       fattiNumerici({ nome: t.nome, gruppo: inPlayoff ? [] : gruppo, teamId: t.id, nomi: new Map(Array.from(squadra.values()).map((x) => [x.id, x.nome])), forma: mie, avversarioId: avvId }),
       derby ? `Questa partita è un DERBY: ${avv.nome} è il grande rivale di ${t.nome} (o ${t.nome} lo è per ${avv.nome}).` : '',
@@ -673,7 +677,7 @@ async function rispondiClaude(admin: any, tipo: string, id: number) {
     const scheda = [
       `Lega: ${lg?.nome ?? ''}. Squadra: Atletico Neurale.`, momento,
       pos ? `Classifica: ${pos.posizione}° con ${pos.punti} punti in ${pos.giocate} partite.` : '',
-      forma.length ? `Ultimi risultati (dal più recente): ${forma.join(' ')}.` : '',
+      forma.length ? `Ultimi risultati (dal più recente): ${formaInParole(forma)}.` : '',
       (prec ?? []).length ? `Le tue ultime risposte (NON ripeterne le parole):\n${(prec ?? []).map((x: { risposta: string }) => '- ' + String(x.risposta).slice(0, 240)).join('\n')}` : '',
       `Domanda del giornalista: ${d.domanda}`,
     ].filter(Boolean).join('\n')
@@ -797,7 +801,7 @@ async function rispondi(admin: any, userId: string, domandaId: number, testo: st
     const ultime = fixt ? await formaRecente(admin, fixt.season_id, pre ? fixt.giornata : fixt.giornata + 1, d.team_id) : []
     const memoria = [
       pre ? 'Questa conferenza viene PRIMA della partita di stasera: non c\'è ancora nessun risultato da commentare.' : esitoOra ? `Questa conferenza viene dopo una ${esitoOra} (${mieiOra}-${loroOra}).` : '',
-      ultime.length ? `Ultimi risultati della squadra (dal più recente): ${ultime.join(' ')}.` : '',
+      ultime.length ? `Ultimi risultati della squadra (dal più recente): ${formaInParole(ultime)}.` : '',
       (storico ?? []).length
         ? `Le sue ultime conferenze (dalla più recente):\n${(storico ?? []).map((x: { match_id: number | null; tipo?: string; domanda: string; risposta: string; voto: number }, n: number) => `${n + 1}. [${x.tipo === 'pre' ? 'prima di una partita' : `dopo una ${esitoPartita.get(x.match_id as number) ?? 'partita'}`}] Domanda: ${x.domanda.slice(0, 160)}\n   Risposta: ${x.risposta.slice(0, 280)}\n   Esito: ${x.voto}`).join('\n')}`
         : 'È la sua prima conferenza.',
