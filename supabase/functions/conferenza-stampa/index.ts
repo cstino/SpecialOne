@@ -69,9 +69,18 @@ function schemaGemini(nodo: unknown): unknown {
   return out
 }
 
-async function chiediGemini<T>(modello: string, chiave: string, system: string, messaggio: string, strumento: Strumento): Promise<T> {
+// Tempo massimo per una chiamata all'AI e per tutta la catena di tentativi (19/11/2026). Il server delle funzioni
+// chiude una richiesta dopo 150 s: senza limiti un modello che non risponde teneva appesa la valutazione, la funzione
+// veniva chiusa a meta' e la card restava su "La sala stampa sta ascoltando…" (Detroit Pigeons, 18-19/11).
+// Cosi' un modello lento si salta dopo 25 s e la catena si ferma entro 100 s, in tempo per liberare la risposta.
+const LIMITE_CHIAMATA = 25_000
+const LIMITE_CATENA = 100_000
+const segnale = (scadenza: number) => AbortSignal.timeout(Math.max(1_000, Math.min(LIMITE_CHIAMATA, scadenza - Date.now())))
+
+async function chiediGemini<T>(modello: string, chiave: string, system: string, messaggio: string, strumento: Strumento, scadenza: number): Promise<T> {
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modello}:generateContent`, {
     method: 'POST',
+    signal: segnale(scadenza),
     headers: { 'x-goog-api-key': chiave, 'content-type': 'application/json' },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: system }] },
@@ -89,9 +98,10 @@ async function chiediGemini<T>(modello: string, chiave: string, system: string, 
   return JSON.parse(testo) as T
 }
 
-async function chiediGroq<T>(system: string, messaggio: string, strumento: Strumento): Promise<T> {
+async function chiediGroq<T>(system: string, messaggio: string, strumento: Strumento, scadenza: number): Promise<T> {
   const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
+    signal: segnale(scadenza),
     headers: { Authorization: `Bearer ${CHIAVE_GROQ}`, 'content-type': 'application/json' },
     body: JSON.stringify({
       model: MODELLO_GROQ,
@@ -112,11 +122,13 @@ async function chiediGroq<T>(system: string, messaggio: string, strumento: Strum
 // libero da interpretare. Gemini prima, Groq se Gemini fallisce.
 async function chiediAI<T>(system: string, messaggio: string, strumento: Strumento): Promise<T> {
   const errori: string[] = []
+  const scadenza = Date.now() + LIMITE_CATENA
+  const tempoFinito = () => Date.now() > scadenza - 2_000
   // Due giri: se tutti i modelli sono sovraccarichi (429/503, quote al minuto) si aspetta qualche secondo e si
   // riprova una volta, utile quando molti allenatori rispondono insieme.
   for (let giro = 0; giro < 2; giro++) {
     if (giro > 0) {
-      if (!errori.some((e) => /\b(429|503)\b/.test(e))) break
+      if (!errori.some((e) => /\b(429|503)\b/.test(e)) || Date.now() + 9_000 > scadenza - 20_000) break
       await new Promise((r) => setTimeout(r, 9000))
     }
     if (CHIAVI_GEMINI.length) {
@@ -126,12 +138,13 @@ async function chiediAI<T>(system: string, messaggio: string, strumento: Strumen
         const partenza = giroChiave++ % CHIAVI_GEMINI.length
         for (let k = 0; k < CHIAVI_GEMINI.length; k++) {
           const chiave = CHIAVI_GEMINI[(partenza + k) % CHIAVI_GEMINI.length]
-          try { const out = await chiediGemini<T>(modello, chiave, system, messaggio, strumento); ultimoModello = modello; return out } catch (e) { errori.push(String(e)) }
+          if (tempoFinito()) break
+          try { const out = await chiediGemini<T>(modello, chiave, system, messaggio, strumento, scadenza); ultimoModello = modello; return out } catch (e) { errori.push(String(e)) }
         }
       }
     }
-    if (CHIAVE_GROQ) {
-      try { const out = await chiediGroq<T>(system, messaggio, strumento); ultimoModello = 'groq:' + MODELLO_GROQ; return out } catch (e) { errori.push(String(e)) }
+    if (CHIAVE_GROQ && !tempoFinito()) {
+      try { const out = await chiediGroq<T>(system, messaggio, strumento, scadenza); ultimoModello = 'groq:' + MODELLO_GROQ; return out } catch (e) { errori.push(String(e)) }
     }
   }
   throw new Error(errori.length ? errori.join(' | ') : 'Nessuna chiave AI (GEMINI_API_KEY / GROQ_API_KEY) nelle funzioni.')
