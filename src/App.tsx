@@ -169,7 +169,9 @@ export default function App() {
     const proposta = notifica.dati?.proposta_id
     const versoScambi = notifica.dati?.view === 'scambi' || typeof proposta === 'number'
     const viaDiretta = notifica.dati?.view === 'salastampa' || notifica.dati?.view === 'spogliatoio' || notifica.dati?.view === 'social' || notifica.dati?.view === 'rivalita' || notifica.dati?.view === 'betone' || notifica.dati?.view === 'album' || notifica.dati?.view === 'quizzone' || notifica.dati?.view === 'casinone'
-    setGameView(viaDiretta ? notifica.dati?.view as GameView : notifica.dati?.view === 'squad' ? 'squad' : versoScambi ? 'scambi' : 'overview')
+    // Il prospetto del vivaio che sta per scadere (20/11/2026) porta al Club, dove si tratta la promozione.
+    const versoVivaio = notifica.dati?.view === 'team' && notifica.dati?.vivaio === true
+    setGameView(viaDiretta ? notifica.dati?.view as GameView : versoVivaio ? 'team' : notifica.dati?.view === 'squad' ? 'squad' : versoScambi ? 'scambi' : 'overview')
     if (typeof proposta === 'number') setPropostaDaMostrare((p) => ({ id: proposta, n: (p?.n ?? 0) + 1 }))
     else if (notifica.dati?.view === 'scambi') setScorriScambi((n) => n + 1)
     const partita = notifica.dati?.match_id
