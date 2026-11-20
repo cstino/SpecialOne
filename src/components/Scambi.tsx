@@ -289,7 +289,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
       sulMercato: i.sul_mercato,
     }}))
     // Vivai di tutta la lega (leggibili ai membri): nome e ruolo dal catalogo, potenziale con la propria scouting.
-    const { data: prospettiDb } = await supabase.from('vivaio_prospetti').select('id, team_id, player_id, giornate_rimanenti, ingaggio, posizioni_override').eq('league_id', league.id)
+    const { data: prospettiDb } = await supabase.from('vivaio_prospetti').select('id, team_id, player_id, giornate_rimanenti, ingaggio, posizioni_override, eta_corrente').eq('league_id', league.id)
     const idPros = [...new Set((prospettiDb ?? []).map((v) => v.player_id))]
     const [anaPros, fascePros] = idPros.length
       ? await Promise.all([
@@ -303,7 +303,7 @@ export function Scambi({ membership, onNavigate, scorriAConclusi = 0, preselezio
       const a = anaPerId.get(v.player_id); const f = fasciaPerId.get(v.player_id)
       // Dopo un cambio ruolo completato valgono posizioni_override, non le posizioni del catalogo.
       const pos = (v as { posizioni_override?: string[] | null }).posizioni_override?.length ? (v as { posizioni_override: string[] }).posizioni_override : a?.posizioni ?? []
-      return { id: v.id, team_id: v.team_id, player_id: v.player_id, nome: a?.nome ?? 'Prospetto', overall: a?.overall ?? 0, eta: a?.eta ?? 0,
+      return { id: v.id, team_id: v.team_id, player_id: v.player_id, nome: a?.nome ?? 'Prospetto', overall: a?.overall ?? 0, eta: (v as { eta_corrente?: number | null }).eta_corrente ?? a?.eta ?? 0,
         ruolo: pos[0] ?? '—', posizioni: pos, giornate: v.giornate_rimanenti, ingaggio: v.ingaggio,
         potMin: f?.potenziale_min ?? null, potMax: f?.potenziale_max ?? null }
     }))
