@@ -593,6 +593,7 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
   const [opzioneInCorso, setOpzioneInCorso] = useState(false)
   const [opzioneEsito, setOpzioneEsito] = useState<string | null>(null)
   const [opzioneErrore, setOpzioneErrore] = useState<string | null>(null)
+  const [infoOpzione, setInfoOpzione] = useState(false)
   const [inLista, setInLista] = useState(listaMercato?.inLista ?? false)
   const [listaInCorso, setListaInCorso] = useState(false)
   const [listaEsito, setListaEsito] = useState<string | null>(null)
@@ -1086,12 +1087,28 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
                   const residue = giocatore.contrattoScadenza - giocatore.stagioneCorrente
                   return <span className="fatto-contratto" title={residue > 0 ? `Contratto fino alla stagione ${giocatore.contrattoScadenza}` : undefined}>
                     <small>{residue <= 0 ? 'In scadenza a fine stagione' : `Ancora ${stagioni(residue)}`}</small>
-                    {giocatore.opzioneContratto && <small>+ {NOME_OPZIONE[giocatore.opzioneContratto]}</small>}
                   </span>
                 })()}
+                {giocatore.opzioneContratto && <small className="fatto-ingaggio__opzione">+opzione</small>}
               </dd>
+              {giocatore.opzioneContratto && <button type="button" className="fatto-ingaggio__info" aria-label="Quale opzione ha e come funziona" onClick={() => setInfoOpzione(true)}>i</button>}
             </div>}
           </dl>
+
+          {/* Bottone info del riquadro ingaggio (20/11/2026): quale opzione ha il contratto e come funziona. Sopra la
+              scheda (z-index 100), quindi in un portal con un livello piu' alto. */}
+          {infoOpzione && giocatore.opzioneContratto && createPortal(<div className="popup-spiegazione-sfondo popup-spiegazione-sfondo--sopra-scheda" role="dialog" aria-modal="true" aria-label="Come funziona l'opzione del contratto" onClick={() => setInfoOpzione(false)}>
+            <div className="popup-spiegazione" onClick={(e) => e.stopPropagation()}>
+              <h2>{giocatore.opzioneContratto === 'squadra' ? 'Opzione squadra' : 'Opzione giocatore'}</h2>
+              <div className="popup-spiegazione__corpo">
+                <p>Il contratto di <strong>{giocatore.nome}</strong> ha un'<strong>{NOME_OPZIONE[giocatore.opzioneContratto]}</strong>: una stagione in più, allo stesso ingaggio, che si decide durante l'ultima stagione del contratto.</p>
+                {giocatore.opzioneContratto === 'squadra'
+                  ? <p><strong>Decidi tu.</strong> Nell'ultima stagione del contratto, dalla pagina Mercato della scheda, scegli se esercitarla e tenerlo un anno in più o rinunciarci. Se non decidi entro l'inizio dell'off-season vale come <strong>rifiutata</strong>: il contratto scade e puoi provare a rinnovarlo. Per questa opzione, alla firma ha chiesto l'8% in più.</p>
+                  : <p><strong>Decide lui</strong>, in automatico all'inizio dell'off-season. Resta se il suo ingaggio vale ancora quanto lui (rinuncia se ormai vale più del 10% sopra quello che prende) e se non è scontento (rinuncia con il morale sotto 40). Se rinuncia, il contratto scade e puoi provare a rinnovarlo. Per questa opzione, alla firma ha fatto il 5% di sconto.</p>}
+              </div>
+              <button className="button button--primary" type="button" onClick={() => setInfoOpzione(false)}>Ho capito</button>
+            </div>
+          </div>, document.body)}
 
           {giocatore.minutaggio?.cessione
             ? <p className="player-minutaggio-avviso is-cessione"><b>Ha chiesto la cessione.</b> Non ha avuto lo spazio promesso: non rinnoverà il contratto.</p>

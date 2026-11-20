@@ -1084,6 +1084,13 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       <strong className="vivaio-apri-scheda" role="button" tabIndex={0} onClick={() => void apriSchedaVivaio(prospetto)}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void apriSchedaVivaio(prospetto) } }}>{g.nome}</strong>
                       <small>{ruoliIt(g.posizioni)} · {g.eta} anni · <em>{money(prospetto.ingaggio)}/stagione</em></small>
+                      {/* Il timer ben visibile sotto i ruoli, all'altezza dell'etichetta del ruolo (20/11/2026). */}
+                      <span
+                        className={`vivaio-giornate ${prospetto.giornate_rimanenti <= 3 ? 'vivaio-countdown--urgente' : prospetto.giornate_rimanenti <= 8 ? 'vivaio-countdown--attenzione' : ''}`}
+                        title="Giornate prima del rilascio automatico sul mercato UNDER"
+                      >
+                        {prospetto.giornate_rimanenti} {prospetto.giornate_rimanenti === 1 ? 'giornata rimasta' : 'giornate rimaste'}
+                      </span>
                     </div>
                     <div className="vivaio-overall">
                       <span className="vivaio-ovr-riga">
@@ -1098,12 +1105,6 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                         </span>
                       </b>
                       </span>
-                      <em
-                        className={`vivaio-countdown ${prospetto.giornate_rimanenti <= 3 ? 'vivaio-countdown--urgente' : prospetto.giornate_rimanenti <= 8 ? 'vivaio-countdown--attenzione' : ''}`}
-                        title={`${prospetto.giornate_rimanenti} ${prospetto.giornate_rimanenti === 1 ? 'giornata' : 'giornate'} prima del rilascio automatico sul mercato UNDER`}
-                      >
-                        {prospetto.giornate_rimanenti}g
-                      </em>
                     </div>
                     {ownTeam && vivaioTrattativa?.id === prospetto.id && (() => {
                       const trattativa = vivaioTrattativa

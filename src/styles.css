@@ -7523,3 +7523,15 @@ body.visita-menu .game-sidebar .game-nav-item.is-active { animation: none; }
 .cas-poster__provvisoria { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; background: radial-gradient(circle at 50% 38%, #1d7a4a 0 28%, transparent 29%), radial-gradient(circle at 50% 38%, #bd932a 0 31%, transparent 32%), radial-gradient(ellipse at 50% 30%, #3a1466, #0d0518 75%); }
 .cas-poster__provvisoria img { width: 34%; height: auto; }
 .cas-poster__provvisoria b { font: 900 1.05rem/1 "Bai Jamjuree", sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+
+/* Scheda giocatore: «+opzione» e bottone info nel riquadro ingaggio (20/11/2026). */
+.player-modal__facts .fatto-ingaggio { position: relative; }
+.player-modal__facts .fatto-ingaggio__opzione { display: block; margin-top: 2px; color: #c9a6ff; font-weight: 850; letter-spacing: .02em; }
+.fatto-ingaggio__info { position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; display: grid; place-items: center; padding: 0; border: 1px solid rgba(201,166,255,.55); border-radius: 50%; color: #c9a6ff; background: rgba(124,58,237,.18); font: italic 800 .66rem/1 Georgia, serif; cursor: pointer; }
+.fatto-ingaggio__info:hover { background: rgba(124,58,237,.35); color: #fff; }
+.fatto-ingaggio__info:focus-visible { outline: 2px solid #c77dff; outline-offset: 2px; }
+.popup-spiegazione-sfondo--sopra-scheda { z-index: 120; }
+/* Vivaio: giornate rimaste sotto i ruoli, ben leggibili. */
+.team-roster-player > div .vivaio-giornate { justify-self: start; margin-top: 5px; padding: 2px 9px; border-radius: 999px; color: #c7becf; background: #221d2f; font-size: .68rem; font-weight: 850; letter-spacing: .02em; white-space: nowrap; }
+.team-roster-player > div .vivaio-giornate.vivaio-countdown--attenzione { color: #f2c94c; background: rgba(242,201,74,.16); }
+.team-roster-player > div .vivaio-giornate.vivaio-countdown--urgente { color: #ff7188; background: rgba(255,113,136,.16); }
