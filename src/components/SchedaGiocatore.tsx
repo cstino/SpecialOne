@@ -1101,10 +1101,14 @@ function SchedaGiocatoreInterna({ fase = 'regular', tatticheAttive = false, user
             <div className="popup-spiegazione" onClick={(e) => e.stopPropagation()}>
               <h2>{giocatore.opzioneContratto === 'squadra' ? 'Opzione squadra' : 'Opzione giocatore'}</h2>
               <div className="popup-spiegazione__corpo">
-                <p>Il contratto di <strong>{giocatore.nome}</strong> ha un'<strong>{NOME_OPZIONE[giocatore.opzioneContratto]}</strong>: una stagione in più, allo stesso ingaggio, che si decide durante l'ultima stagione del contratto.</p>
                 {giocatore.opzioneContratto === 'squadra'
-                  ? <p><strong>Decidi tu.</strong> Nell'ultima stagione del contratto, dalla pagina Mercato della scheda, scegli se esercitarla e tenerlo un anno in più o rinunciarci. Se non decidi entro l'inizio dell'off-season vale come <strong>rifiutata</strong>: il contratto scade e puoi provare a rinnovarlo. Per questa opzione, alla firma ha chiesto l'8% in più.</p>
-                  : <p><strong>Decide lui</strong>, in automatico all'inizio dell'off-season. Resta se il suo ingaggio vale ancora quanto lui (rinuncia se ormai vale più del 10% sopra quello che prende) e se non è scontento (rinuncia con il morale sotto 40). Se rinuncia, il contratto scade e puoi provare a rinnovarlo. Per questa opzione, alla firma ha fatto il 5% di sconto.</p>}
+                  ? <>
+                    <p>Quando il contratto di <strong>{giocatore.nome}</strong> sta per finire, <strong>decidi tu</strong> se tenerlo per un'altra stagione, allo stesso ingaggio, oppure lasciarlo andare.</p>
+                    <p>La scelta la fai durante l'ultima stagione del contratto, dalla pagina Mercato della sua scheda. Se non scegli niente, l'opzione salta e il contratto scade.</p>
+                  </>
+                  : <>
+                    <p>Il giocatore può scegliere in autonomia di prolungare il suo contratto per un'ulteriore stagione, alla stessa cifra, anche se la squadra non è interessata.</p>
+                  </>}
               </div>
               <button className="button button--primary" type="button" onClick={() => setInfoOpzione(false)}>Ho capito</button>
             </div>
