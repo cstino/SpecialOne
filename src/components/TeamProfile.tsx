@@ -1,5 +1,5 @@
 import { NOME_SQUADRA_MAX, SUGGERIMENTO_NOME_SQUADRA, pulisciNomeSquadra } from '../lib/nomeSquadra'
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { ROSA_MASSIMA, ROSA_MINIMA } from '../lib/league'
 import { supabase } from '../lib/supabase'
 import { attributiCorrenti } from '../lib/attributiGiocatore'
@@ -1169,12 +1169,12 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
                       ? <div className="player-modal__confirm">
                           <div>
                             <strong>Confermi il rilascio?</strong>
-                            <p>{g.nome} torna sul mercato UNDER: l'operazione non si può annullare.</p>
+                            <p>{g.nome} torna sul mercato UNDER: l'operazione non si può annullare. Tieni premuto il bottone rosso per 3 secondi.</p>
                           </div>
                           <div>
-                            <button className="button button--danger" type="button" disabled={inCorso} onClick={() => void rilascia(prospetto.id)}>
-                              {inCorso ? 'Attendi…' : 'Rilascia definitivamente'}
-                            </button>
+                            <TieniPremuto disabled={inCorso} onConferma={() => void rilascia(prospetto.id)}>
+                              {inCorso ? 'Attendi…' : 'Tieni premuto per rilasciare'}
+                            </TieniPremuto>
                             <button className="button button--secondary" type="button" disabled={inCorso} onClick={() => setVivaioConferma(null)}>Annulla</button>
                           </div>
                         </div>
@@ -1417,4 +1417,24 @@ export function TeamProfile({ membership, teamId, onNavigate, onOpenMatch, onTea
       </div>
     </>}
   </main>
+}
+
+// Rilascio dal vivaio (20/11/2026): il bottone va tenuto premuto 3 secondi, cosi' un tocco per sbaglio non basta.
+function TieniPremuto({ disabled, onConferma, children }: { disabled?: boolean; onConferma: () => void; children: ReactNode }) {
+  const [premuto, setPremuto] = useState(false)
+  const timer = useRef<number | null>(null)
+  const ferma = () => { if (timer.current != null) window.clearTimeout(timer.current); timer.current = null; setPremuto(false) }
+  const parti = () => {
+    if (disabled || timer.current != null) return
+    setPremuto(true)
+    timer.current = window.setTimeout(() => { timer.current = null; setPremuto(false); onConferma() }, 3000)
+  }
+  useEffect(() => () => { if (timer.current != null) window.clearTimeout(timer.current) }, [])
+  return <button type="button" className={`button button--danger tieni-premuto${premuto ? ' is-premuto' : ''}`} disabled={disabled}
+    onPointerDown={parti} onPointerUp={ferma} onPointerLeave={ferma} onPointerCancel={ferma} onContextMenu={(e) => e.preventDefault()}
+    onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { e.preventDefault(); parti() } }}
+    onKeyUp={(e) => { if (e.key === 'Enter' || e.key === ' ') ferma() }}>
+    <i className="tieni-premuto__riempimento" aria-hidden="true" />
+    <span>{children}</span>
+  </button>
 }

@@ -7535,3 +7535,8 @@ body.visita-menu .game-sidebar .game-nav-item.is-active { animation: none; }
 .team-roster-player > div .vivaio-giornate { justify-self: start; margin-top: 5px; padding: 2px 9px; border-radius: 999px; color: #c7becf; background: #221d2f; font-size: .68rem; font-weight: 850; letter-spacing: .02em; white-space: nowrap; }
 .team-roster-player > div .vivaio-giornate.vivaio-countdown--attenzione { color: #f2c94c; background: rgba(242,201,74,.16); }
 .team-roster-player > div .vivaio-giornate.vivaio-countdown--urgente { color: #ff7188; background: rgba(255,113,136,.16); }
+/* Rilascio dal vivaio: si riempie mentre lo tieni premuto (3 secondi). */
+.tieni-premuto { position: relative; overflow: hidden; isolation: isolate; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.tieni-premuto > span { position: relative; z-index: 1; }
+.tieni-premuto__riempimento { position: absolute; inset: 0; z-index: 0; background: rgba(255,255,255,.28); transform: scaleX(0); transform-origin: left; }
+.tieni-premuto.is-premuto .tieni-premuto__riempimento { transform: scaleX(1); transition: transform 3s linear; }
