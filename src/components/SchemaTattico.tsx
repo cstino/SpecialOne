@@ -141,6 +141,21 @@ const resaFamiliarita = (distanza: number) =>
 
 const uguali = (a: string[], b: string[]) => a.reduce((n, s, i) => n + (s === b[i] ? 1 : 0), 0)
 
+// La barra «disposizione» (0..1) per uno schieramento: se e' gia' stato giocato conta le sue partite, altrimenti si
+// eredita dal piu' simile (stessa formula di private.avanza_familiarita). Lo stesso modulo puo' avere piu' righe di
+// esperienza, una per ogni disposizione: l'indice FTSG di Formazione deve usare questa e non il solo nome del modulo.
+export function quotaDisposizioneDi(xp: XpDisposizione[], schema: string[]): number {
+  const esatta = xp.find((r) => r.disposizione?.length === 11 && uguali(r.disposizione, schema) === 11)
+  if (esatta) return Math.min(1, esatta.partite / FAM_PARTITE_PIENA)
+  let migliore = 0
+  for (const r of xp) {
+    if (!r.disposizione || r.disposizione.length !== 11) continue
+    const q = Math.min(1, r.partite / FAM_PARTITE_PIENA) * resaFamiliarita(1 - uguali(r.disposizione, schema) / 11)
+    if (q > migliore) migliore = q
+  }
+  return Math.min(1, Math.round(migliore * FAM_PARTITE_PIENA) / FAM_PARTITE_PIENA)
+}
+
 // Oltre questa distanza dal centro di una postazione la calamita non prende e
 // la card torna dov'era. In percentuale del campo.
 const RAGGIO_CALAMITA = 13
@@ -167,17 +182,7 @@ export default function SchemaTattico({
   const posti = useMemo(() => schieramentoInCampo(schema), [schema])
 
   // --- le due barre, calcolate come in SQL e nell'Edge Function ---
-  const quotaDisposizione = useMemo(() => {
-    const esatta = xpDisposizione.find((r) => r.disposizione?.length === 11 && uguali(r.disposizione, schema) === 11)
-    if (esatta) return Math.min(1, esatta.partite / FAM_PARTITE_PIENA)
-    let migliore = 0
-    for (const r of xpDisposizione) {
-      if (!r.disposizione || r.disposizione.length !== 11) continue
-      const q = Math.min(1, r.partite / FAM_PARTITE_PIENA) * resaFamiliarita(1 - uguali(r.disposizione, schema) / 11)
-      if (q > migliore) migliore = q
-    }
-    return Math.min(1, Math.round(migliore * FAM_PARTITE_PIENA) / FAM_PARTITE_PIENA)
-  }, [xpDisposizione, schema])
+  const quotaDisposizione = useMemo(() => quotaDisposizioneDi(xpDisposizione, schema), [xpDisposizione, schema])
 
   // Ventotto elementi come in SQL (private.avanza_familiarita): lo stile,
   // gli undici ruoli, gli undici compiti, dove si attacca, linea, ampiezza,

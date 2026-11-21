@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactM
 import { supabase } from '../lib/supabase'
 import { attributiCorrenti } from '../lib/attributiGiocatore'
 import { disponiCard, nomeSchieramento, schieramentoInCampo } from '../lib/schieramento'
-import SchemaTattico, { type XpDisposizione, type IndicazioniGiocate } from './SchemaTattico'
+import SchemaTattico, { quotaDisposizioneDi, type XpDisposizione, type IndicazioniGiocate } from './SchemaTattico'
 import { erroreSimmetriaSchema } from '../lib/simmetriaSchema'
 import { STILE_LABEL, assiDelloStile } from '../lib/stili'
 import { idoneitaRuolo, segnoIdoneita } from '../lib/tattica'
@@ -630,7 +630,10 @@ export function Formazione({ membership, onNavigate }: FormazioneProps) {
   // per il malus di familiarita' sul modulo/stile selezionati ORA, anche
   // prima di salvare — cosi' si vede subito l'effetto di un cambio prima
   // di confermarlo.
-  const ftsgModuloPct = Math.min(100, ((esperienzaModulo[modulo] ?? 0) / FAM_PARTITE_PIENA) * 100)
+  // La metà «modulo» dell'indice e' la barra disposizione dello schieramento in campo ORA (come in simula-giornata), non
+  // l'esperienza del solo nome del modulo: lo stesso modulo ha una riga per ogni disposizione provata, e prendere
+  // quella sbagliata mostrava per esempio 60% a chi ha giocato 12 partite con il suo 3-4-3 (21/11/2026).
+  const ftsgModuloPct = Math.round(quotaDisposizioneDi(xpDisposizione, slots) * 100)
   const ftsgStilePct = Math.min(100, ((esperienzaStile[stile] ?? 0) / FAM_PARTITE_PIENA) * 100)
 
   const locations: Record<PlayerZone, PlayerLocation[]> = {
