@@ -7540,3 +7540,17 @@ body.visita-menu .game-sidebar .game-nav-item.is-active { animation: none; }
 .tieni-premuto > span { position: relative; z-index: 1; }
 .tieni-premuto__riempimento { position: absolute; inset: 0; z-index: 0; background: rgba(255,255,255,.28); transform: scaleX(0); transform-origin: left; }
 .tieni-premuto.is-premuto .tieni-premuto__riempimento { transform: scaleX(1); transition: transform 3s linear; }
+
+/* iPhone Duo e schermi con zone riservate di lato (23/11/2026): sul display esterno l'ora, la batteria e la
+   fotocamera stanno in colonna sul bordo destro, non in alto. Si rispettano i margini di sicurezza laterali,
+   che su un iPhone normale in verticale valgono 0 e non cambiano niente. */
+@media (max-width: 899px) {
+  body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+  .game-drawer { padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .game-mobile-nav { padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: max(6px, env(safe-area-inset-right, 0px)); }
+  .modale-sfondo, .player-modal-backdrop, .popup-spiegazione-sfondo { padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+}
+
+/* Misura dello schermo per la diagnosi: si accende aprendo l'app con ?schermo nell'indirizzo. */
+.misura-schermo { position: fixed; z-index: 99999; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(92vw, 340px); padding: 14px 16px; border: 2px solid #5fffb0; border-radius: 12px; color: #fff; background: rgba(5, 10, 8, .94); font: 600 13px/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap; }
+.misura-schermo__sonda { position: fixed; visibility: hidden; padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
