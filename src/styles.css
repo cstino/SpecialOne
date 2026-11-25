@@ -7554,3 +7554,20 @@ body.visita-menu .game-sidebar .game-nav-item.is-active { animation: none; }
 /* Misura dello schermo per la diagnosi: si accende aprendo l'app con ?schermo nell'indirizzo. */
 .misura-schermo { position: fixed; z-index: 99999; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(92vw, 340px); padding: 14px 16px; border: 2px solid #5fffb0; border-radius: 12px; color: #fff; background: rgba(5, 10, 8, .94); font: 600 13px/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap; }
 .misura-schermo__sonda { position: fixed; visibility: hidden; padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
+
+/* Classifica su schermi medi (iPhone Duo aperto in verticale, ~700px): la tabella
+   aveva una larghezza minima di 760px e PT finiva fuori schermo. Qui le colonne
+   numeriche si stringono e la tabella entra intera, senza scorrere di lato. */
+@media (min-width: 641px) and (max-width: 899px) {
+  .standings-panel { overflow-x: hidden; }
+  .standings-head, .standings-row { min-width: 0; grid-template-columns: 40px minmax(0, 1fr) repeat(7, 38px) 46px 26px; padding-inline: 10px; }
+  .standings-panel footer { min-width: 0; }
+  .standings-row .season-team strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+/* Menu laterale su schermi bassi (iPhone Duo aperto in orizzontale, ~670px di
+   altezza): era fisso senza scorrimento, quindi le voci in fondo e i sottomenu
+   aperti finivano fuori schermo e non si potevano toccare. Ora scorre da solo. */
+.game-sidebar { overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.game-sidebar::-webkit-scrollbar { display: none; }
+.game-sidebar > * { flex-shrink: 0; }
