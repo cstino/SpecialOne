@@ -7552,7 +7552,7 @@ body.visita-menu .game-sidebar .game-nav-item.is-active { animation: none; }
 }
 
 /* Misura dello schermo per la diagnosi: si accende aprendo l'app con ?schermo nell'indirizzo. */
-.misura-schermo { position: fixed; z-index: 99999; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(92vw, 340px); padding: 14px 16px; border: 2px solid #5fffb0; border-radius: 12px; color: #fff; background: rgba(5, 10, 8, .94); font: 600 13px/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap; }
+.misura-schermo { position: fixed; z-index: 99999; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(92vw, 340px); padding: 14px 16px; border: 2px solid #5fffb0; border-radius: 12px; color: #fff; background: rgba(5, 10, 8, .94); font: 600 13px/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 .misura-schermo__sonda { position: fixed; visibility: hidden; padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
 
 /* Classifica su schermi medi (iPhone Duo aperto in verticale, ~700px): la tabella
@@ -7568,6 +7568,16 @@ body.visita-menu .game-sidebar .game-nav-item.is-active { animation: none; }
 /* Menu laterale su schermi bassi (iPhone Duo aperto in orizzontale, ~670px di
    altezza): era fisso senza scorrimento, quindi le voci in fondo e i sottomenu
    aperti finivano fuori schermo e non si potevano toccare. Ora scorre da solo. */
-.game-sidebar { overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.game-sidebar { overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .game-sidebar::-webkit-scrollbar { display: none; }
 .game-sidebar > * { flex-shrink: 0; }
+/* Su iPhone il tocco su un testo semplice non genera "click" se l'elemento non sembra
+   cliccabile: serve per aprire la misura dello schermo toccando 5 volte queste scritte. */
+@media (hover: none) { .game-version, .game-drawer > footer small, .game-mobilebar__league { cursor: pointer; } }
+/* Da PC (mouse) la barra di scorrimento del menu si vede, sottile: senza, su uno schermo basso
+   non si capisce che le ultime voci sono più giù. Sul telefono resta nascosta. */
+@media (hover: hover) and (pointer: fine) {
+  .game-sidebar { scrollbar-width: thin; scrollbar-color: rgba(166,107,255,.35) transparent; }
+  .game-sidebar::-webkit-scrollbar { display: block; width: 6px; }
+  .game-sidebar::-webkit-scrollbar-thumb { border-radius: 3px; background: rgba(166,107,255,.35); }
+}
